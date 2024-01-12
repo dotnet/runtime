@@ -5,7 +5,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
-
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <FeatureWasmThreads Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+  </PropertyGroup>
+  <!-- Compiled Source Files -->
   <ItemGroup>
     <Compile Include="System\Linq\Parallel\Channels\AsynchronousChannel.cs" />
     <Compile Include="System\Linq\Parallel\Channels\SynchronousChannel.cs" />
@@ -152,7 +157,8 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading" Condition="'$(MonoWasmBuildVariant)' != 'multithread'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.WebAssembly.Threading\ref\System.Threading.WebAssembly.Threading.csproj" Condition="'$(MonoWasmBuildVariant)' == 'multithread'" />
   </ItemGroup>
 
 </Project>

@@ -442,8 +442,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[0]), vector);
         }
 
         /// <summary>Copies a <see cref="Vector512{T}" /> to a given array starting at the specified index.</summary>
@@ -469,8 +468,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
-            Unsafe.WriteUnaligned(ref Unsafe.Add(ref address, startIndex), vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[startIndex]), vector);
         }
 
         /// <summary>Copies a <see cref="Vector512{T}" /> to a given span.</summary>
@@ -1807,6 +1805,38 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector512<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
             LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
+
+        /// <inheritdoc cref="Vector256.Log2(Vector256{double})" />
+        public static Vector512<double> Log2(Vector512<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Double<Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Log2(vector._lower),
+                    Vector256.Log2(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.Log2(Vector256{float})" />
+        public static Vector512<float> Log2(Vector512<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Single<Vector512<float>, Vector512<int>, Vector512<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Log2(vector._lower),
+                    Vector256.Log2(vector._upper)
+                );
+            }
+        }
 
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

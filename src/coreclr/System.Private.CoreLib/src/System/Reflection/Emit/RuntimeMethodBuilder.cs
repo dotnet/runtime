@@ -88,8 +88,8 @@ namespace System.Reflection.Emit
             }
             else if ((attributes & MethodAttributes.Virtual) != 0)
             {
-                // On an interface, the rule is slighlty different
-                if (((attributes & MethodAttributes.Abstract) == 0))
+                // On an interface, the rule is slightly different
+                if ((attributes & MethodAttributes.Abstract) == 0)
                     throw new ArgumentException(SR.Arg_NoStaticVirtual);
             }
 
@@ -122,7 +122,7 @@ namespace System.Reflection.Emit
             m_ubBody = null;
             m_ilGenerator = null;
 
-            // Default is managed IL. Manged IL has bit flag 0x0020 set off
+            // Default is managed IL. Managed IL has bit flag 0x0020 set off
             m_dwMethodImplFlags = MethodImplAttributes.IL;
         }
 

@@ -9,24 +9,24 @@ namespace System.Runtime.InteropServices.JavaScript
     public sealed class Uint8Array : JSObject
     {
         public Uint8Array(int length)
-            : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { length }))
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { length }), JSProxyContext.MainThreadContext)
         {
 #if FEATURE_WASM_THREADS
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
-            LegacyHostImplementation.RegisterCSOwnedObject(this);
+            JSProxyContext.MainThreadContext.RegisterCSOwnedObject(this);
         }
 
         public Uint8Array(ArrayBuffer buffer)
-            : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { buffer }))
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { buffer }), JSProxyContext.MainThreadContext)
         {
 #if FEATURE_WASM_THREADS
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
-            LegacyHostImplementation.RegisterCSOwnedObject(this);
+            JSProxyContext.MainThreadContext.RegisterCSOwnedObject(this);
         }
 
-        internal Uint8Array(IntPtr jsHandle) : base(jsHandle)
+        internal Uint8Array(IntPtr jsHandle) : base(jsHandle, JSProxyContext.MainThreadContext)
         { }
 
         public int Length

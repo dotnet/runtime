@@ -515,7 +515,7 @@ namespace System.Net.Sockets
             if (socketAddressLen == 0)
             {
                 // We can fail to get peer address on TCP
-                socketAddressLen =  socketAddress.Length;
+                socketAddressLen = socketAddress.Length;
                 SocketAddressPal.Clear(socketAddress);
             }
             ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
@@ -886,7 +886,7 @@ namespace System.Net.Sockets
                     if (socketAddress.Length > 0 && receivedSocketAddressLength == 0)
                     {
                         // We can fail to get peer address on TCP
-                        receivedSocketAddressLength =  socketAddress.Length;
+                        receivedSocketAddressLength = socketAddress.Length;
                         SocketAddressPal.Clear(socketAddress.Span);
                     }
                     bytesReceived = received;

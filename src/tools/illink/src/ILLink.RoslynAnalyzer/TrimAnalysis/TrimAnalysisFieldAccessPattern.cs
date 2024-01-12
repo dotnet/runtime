@@ -2,7 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
+using ILLink.RoslynAnalyzer.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -10,28 +13,44 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	public readonly record struct TrimAnalysisFieldAccessPattern
 	{
-		public IFieldSymbol Field { init; get; }
-		public IFieldReferenceOperation Operation { init; get; }
-		public ISymbol OwningSymbol { init; get; }
+		public IFieldSymbol Field { get; init; }
+		public IFieldReferenceOperation Operation { get; init; }
+		public ISymbol OwningSymbol { get; init; }
+		public FeatureContext FeatureContext { get; init; }
 
 		public TrimAnalysisFieldAccessPattern (
 			IFieldSymbol field,
 			IFieldReferenceOperation operation,
-			ISymbol owningSymbol)
+			ISymbol owningSymbol,
+			FeatureContext featureContext)
 		{
 			Field = field;
 			Operation = operation;
 			OwningSymbol = owningSymbol;
+			FeatureContext = featureContext;
 		}
 
-		// No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
-		// and there's only one way to "access" a field.
+		public TrimAnalysisFieldAccessPattern Merge (
+			ValueSetLattice<SingleValue> lattice,
+			FeatureContextLattice featureContextLattice,
+			TrimAnalysisFieldAccessPattern other)
+		{
+			Debug.Assert (SymbolEqualityComparer.Default.Equals (Field, other.Field));
+			Debug.Assert (Operation == other.Operation);
+			Debug.Assert (SymbolEqualityComparer.Default.Equals (OwningSymbol, other.OwningSymbol));
+
+			return new TrimAnalysisFieldAccessPattern (
+				Field,
+				Operation,
+				OwningSymbol,
+				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
+		}
 
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
 			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers) {
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, Field, OwningSymbol, context, out Diagnostic? diag))
+				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, Field, OwningSymbol, context, FeatureContext, out Diagnostic? diag))
 					diagnosticContext.AddDiagnostic (diag);
 			}
 

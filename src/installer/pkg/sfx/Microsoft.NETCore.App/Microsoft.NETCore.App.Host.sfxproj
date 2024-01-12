@@ -2,7 +2,7 @@
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
-    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipBuild>
     <PlatformPackageType>AppHostPack</PlatformPackageType>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ArchiveName>dotnet-apphost-pack</ArchiveName>

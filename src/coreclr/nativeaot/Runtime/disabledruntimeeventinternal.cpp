@@ -84,4 +84,12 @@ EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogExceptionThrown(
 {
 }
 
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStart(uint8_t WaitSource, intptr_t AssociatedObjectID, uint16_t ClrInstanceID)
+{
+}
+
+EXTERN_C NATIVEAOT_API void __cdecl NativeRuntimeEventSource_LogWaitHandleWaitStop(uint16_t ClrInstanceID)
+{
+}
+
 #endif // FEATURE_PERFTRACING

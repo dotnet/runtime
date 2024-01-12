@@ -1237,7 +1237,7 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 	if (G_UNLIKELY (external_eventloop)) {
 		/* if the thread wants to stay alive in an external eventloop, don't clean up after it */
 		if (mono_thread_platform_external_eventloop_keepalive_check ())
-			return 0;
+			return 0; // MONO_ENTER_GC_SAFE_UNBALANCED is done in start_wrapper
 	}
 
 	/* Do any cleanup needed for apartment state. This

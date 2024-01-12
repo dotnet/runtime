@@ -129,7 +129,7 @@ namespace Microsoft.Extensions
             public StringComparison? NSC { get; }
             public char? NC { get; }
 
-            public ClassWhereParametersHaveDefaultValue(string? name, string address, 
+            public ClassWhereParametersHaveDefaultValue(string? name = "John Doe", string address = "1 Microsoft Way",
                 int age = 42, float f = 42.0f, double d = 3.14159, decimal m = 3.1415926535897932384626433M, StringComparison sc = StringComparison.Ordinal, char c = 'q',
                 int? nage = 42, float? nf = 42.0f, double? nd = 3.14159, decimal? nm = 3.1415926535897932384626433M, StringComparison? nsc = StringComparison.Ordinal, char? nc = 'q')
             {
@@ -150,13 +150,19 @@ namespace Microsoft.Extensions
             }
         }
 
-
         public class ClassWithPrimaryCtor(string color, int length)
         {
             public string Color { get; } = color;
             public int Length { get; } = length;
         }
 
+        public class ClassWithPrimaryCtorDefaultValues(string color = "blue", int length = 15, decimal height = 5.946238490567943927384M, EditorBrowsableState eb = EditorBrowsableState.Never)
+        {
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+            public decimal Height { get; } = height;
+            public EditorBrowsableState EB { get;} = eb;
+        }
         public record RecordTypeOptions(string Color, int Length);
 
         public record Line(string Color, int Length, int Thickness);

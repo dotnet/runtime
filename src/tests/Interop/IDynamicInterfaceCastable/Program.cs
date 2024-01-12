@@ -334,9 +334,11 @@ namespace IDynamicInterfaceCastableTests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/55742", TestRuntimes.Mono)]
     public class Program
     {
-        private static void ValidateBasicInterface()
+        [Fact]
+        public static void ValidateBasicInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateBasicInterface)}");
 
@@ -367,7 +369,9 @@ namespace IDynamicInterfaceCastableTests
             Assert.Same(castableObj, func());
         }
 
-        private static void ValidateGenericInterface()
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/1442", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+        public static void ValidateGenericInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateGenericInterface)}");
 
@@ -426,7 +430,8 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(expectedStr, funcVar(expectedStr));
         }
 
-        private static void ValidateOverriddenInterface()
+        [Fact]
+        public static void ValidateOverriddenInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateOverriddenInterface)}");
 
@@ -459,7 +464,8 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(IOverrideTestImpl.GetMyTypeReturnValue, funcGetType());
         }
 
-        private static void ValidateNotImplemented()
+        [Fact]
+        public static void ValidateNotImplemented()
         {
             Console.WriteLine($"Running {nameof(ValidateNotImplemented)}");
 
@@ -473,7 +479,8 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(INotImplemented)), ex.Message);
         }
 
-        private static void ValidateDirectlyImplemented()
+        [Fact]
+        public static void ValidateDirectlyImplemented()
         {
             Console.WriteLine($"Running {nameof(ValidateDirectlyImplemented)}");
 
@@ -495,7 +502,8 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(DynamicInterfaceCastable.ImplementedMethodReturnValue, func());
         }
 
-        private static void ValidateErrorHandling()
+        [Fact]
+        public static void ValidateErrorHandling()
         {
             Console.WriteLine($"Running {nameof(ValidateErrorHandling)}");
 
@@ -556,29 +564,6 @@ namespace IDynamicInterfaceCastableTests
             castableObj.InvalidImplementation = BadDynamicInterfaceCastable.InvalidReturn.DefaultHandle;
             ex = Assert.Throws<InvalidCastException>(() => testObj.GetMyType());
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
-        }
-
-        [Fact]
-        public static int TestEntryPoint()
-        {
-            try
-            {
-                ValidateBasicInterface();
-                ValidateGenericInterface();
-                ValidateOverriddenInterface();
-
-                ValidateDirectlyImplemented();
-                ValidateNotImplemented();
-
-                ValidateErrorHandling();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Test Failure: {e}");
-                return 101;
-            }
-
-            return 100;
         }
     }
 }

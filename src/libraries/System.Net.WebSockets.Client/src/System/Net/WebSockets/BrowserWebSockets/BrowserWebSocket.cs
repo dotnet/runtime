@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices.JavaScript;
-using System.Buffers;
 
 namespace System.Net.WebSockets
 {
@@ -120,7 +120,7 @@ namespace System.Net.WebSockets
                 throw new InvalidOperationException(SR.net_WebSockets_AlreadyStarted);
             }
 #if FEATURE_WASM_THREADS
-            JSHost.CurrentOrMainJSSynchronizationContext!.Send(_ =>
+            JSHost.CurrentOrMainJSSynchronizationContext.Send(_ =>
             {
                 lock (_thisLock)
                 {
@@ -130,7 +130,7 @@ namespace System.Net.WebSockets
                 }
             }, null);
 
-            return JSHost.CurrentOrMainJSSynchronizationContext.Send(() =>
+            return JSHost.CurrentOrMainJSSynchronizationContext.Post(() =>
             {
                 return ConnectAsyncCore(cancellationToken);
             });
@@ -167,7 +167,7 @@ namespace System.Net.WebSockets
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
 #if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Send(() =>
+            return _innerWebSocket!.SynchronizationContext.Post(() =>
             {
                 Task promise;
                 lock (_thisLock)
@@ -200,7 +200,7 @@ namespace System.Net.WebSockets
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
 #if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Send(() =>
+            return _innerWebSocket!.SynchronizationContext.Post(() =>
             {
                 Task<WebSocketReceiveResult> promise;
                 lock (_thisLock)
@@ -228,7 +228,7 @@ namespace System.Net.WebSockets
             }
 
 #if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Send(() =>
+            return _innerWebSocket!.SynchronizationContext.Post(() =>
             {
                 Task promise;
                 lock (_thisLock)
@@ -240,7 +240,7 @@ namespace System.Net.WebSockets
                     {
                         throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, state, "Connecting, Open, CloseSent, Aborted"));
                     }
-                    if(state != WebSocketState.Open && state != WebSocketState.Connecting && state != WebSocketState.Aborted)
+                    if (state != WebSocketState.Open && state != WebSocketState.Connecting && state != WebSocketState.Aborted)
                     {
                         return Task.CompletedTask;
                     }
@@ -268,7 +268,7 @@ namespace System.Net.WebSockets
             }
 
 #if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Send(() =>
+            return _innerWebSocket!.SynchronizationContext.Post(() =>
             {
                 Task promise;
                 lock (_thisLock)
@@ -476,13 +476,17 @@ namespace System.Net.WebSockets
             try
             {
                 var sendTask = BrowserInterop.UnsafeSendSync(_innerWebSocket!, buffer, messageType, endOfMessage);
-                if (sendTask == null)
+                if (sendTask != null)
                 {
-                    // return synchronously
-                    return;
+                    await CancelationHelper(sendTask, cancellationToken, FastState).ConfigureAwait(true);
                 }
-
-                await CancelationHelper(sendTask, cancellationToken, FastState).ConfigureAwait(true);
+#if FEATURE_WASM_THREADS
+                // return synchronously, not supported with MT
+                else
+                {
+                    Environment.FailFast("BrowserWebSocket.SendAsyncCore: Unexpected synchronous result");
+                }
+#endif
             }
             catch (JSException ex)
             {
@@ -502,19 +506,18 @@ namespace System.Net.WebSockets
                 using (MemoryHandle pinBuffer = bufferMemory.Pin())
                 {
                     var receiveTask = BrowserInterop.ReceiveUnsafeSync(_innerWebSocket!, pinBuffer, bufferMemory.Length);
-                    if (receiveTask == null)
+                    if (receiveTask != null)
                     {
-                        // return synchronously
-#if FEATURE_WASM_THREADS
-                        lock (_thisLock)
-                        {
-#endif
-                            return ConvertResponse(this);
-#if FEATURE_WASM_THREADS
-                        } //lock
-#endif
+                        await CancelationHelper(receiveTask, cancellationToken, FastState).ConfigureAwait(true);
                     }
-                    await CancelationHelper(receiveTask, cancellationToken, FastState).ConfigureAwait(true);
+#if FEATURE_WASM_THREADS
+                    // return synchronously, not supported with MT
+                    else
+                    {
+                        Environment.FailFast("BrowserWebSocket.ReceiveAsyncCore: Unexpected synchronous result");
+                    }
+#endif
+
 
 #if FEATURE_WASM_THREADS
                     lock (_thisLock)
@@ -555,8 +558,18 @@ namespace System.Net.WebSockets
             _closeStatus = closeStatus;
             _closeStatusDescription = statusDescription;
 
-            var closeTask = BrowserInterop.WebSocketClose(_innerWebSocket!, (int)closeStatus, statusDescription, waitForCloseReceived) ?? Task.CompletedTask;
-            await CancelationHelper(closeTask, cancellationToken, FastState).ConfigureAwait(true);
+            var closeTask = BrowserInterop.WebSocketClose(_innerWebSocket!, (int)closeStatus, statusDescription, waitForCloseReceived);
+            if (closeTask != null)
+            {
+                await CancelationHelper(closeTask, cancellationToken, FastState).ConfigureAwait(true);
+            }
+#if FEATURE_WASM_THREADS
+            // return synchronously, not supported with MT
+            else
+            {
+                Environment.FailFast("BrowserWebSocket.CloseAsyncCore: Unexpected synchronous result");
+            }
+#endif
 
 #if FEATURE_WASM_THREADS
             lock (_thisLock)

@@ -55,7 +55,7 @@ namespace System
         public static bool IsAppleMobile => IsMacCatalyst || IsiOS || IstvOS;
         public static bool IsNotAppleMobile => !IsAppleMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
-        public static bool IsBsdLike => IsOSXLike || IsFreeBSD || IsNetBSD;
+        public static bool IsBsdLike => IsApplePlatform || IsFreeBSD || IsNetBSD;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -106,9 +106,20 @@ namespace System
         public static bool IsReleaseLibrary(Assembly assembly) => !IsDebuggable(assembly);
         public static bool IsDebugLibrary(Assembly assembly) => IsDebuggable(assembly);
 
-        // For use as needed on tests that time out when run on a Debug runtime.
+        // For use as needed on tests that time out when run on a Debug or Checked runtime.
         // Not relevant for timeouts on external activities, such as network timeouts.
-        public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
+        public static int SlowRuntimeTimeoutModifier
+        {
+            get
+            {
+                if (IsReleaseRuntime)
+                    return 1;
+                if (IsRiscV64Process)
+                    return IsDebugRuntime? 10 : 2;
+                else
+                    return IsDebugRuntime? 5 : 1;
+            }
+        }
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
         public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
@@ -210,6 +221,8 @@ namespace System
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
         public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host
         public static bool IsSingleFile => !HasAssemblyFiles;
+
+        public static bool IsReadyToRunCompiled => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
@@ -373,10 +386,13 @@ namespace System
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsNotHybridGlobalization => !IsHybridGlobalization;
         public static bool IsNotHybridGlobalizationOnOSX => !IsHybridGlobalizationOnOSX;
-        public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
+
+        // HG on apple platforms implies ICU 
+        public static bool IsIcuGlobalization => !IsInvariantGlobalization && (IsHybridGlobalizationOnOSX || ICUVersion > new Version(0, 0, 0, 0));
+
         public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
         public static bool IsIcuGlobalizationAndNotHybrid => IsIcuGlobalization && IsNotHybridGlobalization;
-        public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
+        public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization && !IsHybridGlobalization;
 
         public static bool IsSubstAvailable
         {
@@ -403,19 +419,26 @@ namespace System
         private static Version GetICUVersion()
         {
             int version = 0;
-            try
+            // When HG on Apple platforms, our ICU lib is not loaded
+            if (IsNotHybridGlobalizationOnOSX)
             {
-                Type interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
-                if (interopGlobalization != null)
+                try
                 {
-                    MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
-                    if (methodInfo != null)
+                    Type interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
+                    if (interopGlobalization != null)
                     {
-                        version = (int)methodInfo.Invoke(null, null);
+                        MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
+                        if (methodInfo != null)
+                        {
+                            // Ensure that ICU has been loaded
+                            GC.KeepAlive(System.Globalization.CultureInfo.InstalledUICulture);
+
+                            version = (int)methodInfo.Invoke(null, null);
+                        }
                     }
                 }
+                catch { }
             }
-            catch { }
 
             return new Version(version >> 24,
                               (version >> 16) & 0xFF,
@@ -524,7 +547,7 @@ namespace System
         private static bool GetTls10Support()
         {
             // on macOS and Android TLS 1.0 is supported.
-            if (IsOSXLike || IsAndroid)
+            if (IsApplePlatform || IsAndroid)
             {
                 return true;
             }
@@ -552,7 +575,7 @@ namespace System
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
             // on macOS and Android TLS 1.1 is supported.
-            else if (IsOSXLike || IsAndroid)
+            else if (IsApplePlatform || IsAndroid)
             {
                 return true;
             }

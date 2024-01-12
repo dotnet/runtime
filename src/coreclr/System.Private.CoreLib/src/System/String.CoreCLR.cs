@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -11,30 +12,25 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern string FastAllocateString(int length);
 
-        // Set extra byte for odd-sized strings that came from interop as BSTR.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern void SetTrailByte(byte data);
-        // Try to retrieve the extra byte - returns false if not present.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern bool TryGetTrailByte(out byte data);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern string Intern();
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern string? IsInterned();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_Intern")]
+        private static partial void Intern(StringHandleOnStack src);
 
         public static string Intern(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
-
-            return str.Intern();
+            Intern(new StringHandleOnStack(ref str!));
+            return str!;
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial void IsInterned(StringHandleOnStack src);
 
         public static string? IsInterned(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
-
-            return str.IsInterned();
+            Intern(new StringHandleOnStack(ref str!));
+            return str;
         }
 
         // Copies the source String (byte buffer) to the destination IntPtr memory allocated with len bytes.

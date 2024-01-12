@@ -82,7 +82,7 @@ namespace System.Text.RegularExpressions
 
             if (count == 1)
             {
-                return new[] { input };
+                return [input];
             }
 
             count--;
@@ -109,7 +109,7 @@ namespace System.Text.RegularExpressions
 
                 if (state.results.Count == 0)
                 {
-                    return new[] { input };
+                    return [input];
                 }
 
                 state.results.Add(input.Substring(state.prevat));
@@ -137,7 +137,7 @@ namespace System.Text.RegularExpressions
 
                 if (state.results.Count == 0)
                 {
-                    return new[] { input };
+                    return [input];
                 }
 
                 state.results.Add(input.Substring(0, state.prevat));

@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -12,10 +13,20 @@ using System.Text;
 
 namespace ILLink.Shared.DataFlow
 {
-	public readonly struct ValueSet<TValue> : IEquatable<ValueSet<TValue>>, IEnumerable<TValue>, IDeepCopyValue<ValueSet<TValue>>
+	public readonly struct ValueSet<TValue> : IEquatable<ValueSet<TValue>>, IDeepCopyValue<ValueSet<TValue>>
 		where TValue : notnull
 	{
 		const int MaxValuesInSet = 256;
+
+		public static readonly ValueSet<TValue> Empty;
+
+		private sealed class ValueSetSentinel
+		{
+		}
+
+		private static readonly ValueSetSentinel UnknownSentinel = new ();
+
+		public static readonly ValueSet<TValue> Unknown = new (UnknownSentinel);
 
 		// Since we're going to do lot of type checks for this class a lot, it is much more efficient
 		// if the class is sealed (as then the runtime can do a simple method table pointer comparison)
@@ -117,11 +128,25 @@ namespace ILLink.Shared.DataFlow
 			}
 		}
 
+		public readonly struct Enumerable : IEnumerable<TValue>
+		{
+			private readonly object? _values;
+
+			public Enumerable (object? values) => _values = values;
+
+			public Enumerator GetEnumerator () => new (_values);
+
+			IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator () => GetEnumerator ();
+
+			IEnumerator IEnumerable.GetEnumerator () => GetEnumerator ();
+		}
+
 		// This stores the values. By far the most common case will be either no values, or a single value.
 		// Cases where there are multiple values stored are relatively very rare.
 		//   null - no values (empty set)
 		//   TValue - single value itself
 		//   EnumerableValues typed object - multiple values, stored in the hashset
+		//   ValueSetSentinel.Unknown - unknown value, or "any possible value"
 		private readonly object? _values;
 
 		public ValueSet (TValue value) => _values = value;
@@ -130,8 +155,11 @@ namespace ILLink.Shared.DataFlow
 
 		private ValueSet (EnumerableValues values) => _values = values;
 
+		private ValueSet (ValueSetSentinel sentinel) => _values = sentinel;
+
 		public static implicit operator ValueSet<TValue> (TValue value) => new (value);
 
+		// Note: returns false for Unknown
 		public bool HasMultipleValues => _values is EnumerableValues;
 
 		public override bool Equals (object? obj) => obj is ValueSet<TValue> other && Equals (other);
@@ -146,14 +174,24 @@ namespace ILLink.Shared.DataFlow
 			if (_values is EnumerableValues enumerableValues) {
 				if (other._values is EnumerableValues otherValuesSet) {
 					return enumerableValues.Equals (otherValuesSet);
-				} else
-					return enumerableValues.Equals ((TValue) other._values);
-			} else {
-				if (other._values is EnumerableValues otherEnumerableValues) {
-					return otherEnumerableValues.Equals ((TValue) _values);
+				} else if (other._values is TValue otherValue) {
+					return enumerableValues.Equals (otherValue);
+				} else {
+					Debug.Assert (other._values == UnknownSentinel);
+					return false;
 				}
-
-				return EqualityComparer<TValue>.Default.Equals ((TValue) _values, (TValue) other._values);
+			} else if (_values is TValue value) {
+				if (other._values is EnumerableValues otherEnumerableValues) {
+					return otherEnumerableValues.Equals (value);
+				} else if (other._values is TValue otherValue) {
+					return EqualityComparer<TValue>.Default.Equals (value, otherValue);
+				} else {
+					Debug.Assert (other._values == UnknownSentinel);
+					return false;
+				}
+			} else {
+				Debug.Assert (_values == UnknownSentinel);
+				return other._values == UnknownSentinel;
 			}
 		}
 
@@ -171,24 +209,30 @@ namespace ILLink.Shared.DataFlow
 			return _values.GetHashCode ();
 		}
 
-		public Enumerator GetEnumerator () => new (_values);
+		public Enumerable GetKnownValues () => new Enumerable (_values == UnknownSentinel ? null : _values);
 
-		IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator () => GetEnumerator ();
+		// Note: returns false for Unknown
+		public bool Contains (TValue value)
+		{
+			if (_values is null)
+				return false;
+			if (_values is EnumerableValues valuesSet)
+				return valuesSet.Contains (value);
+			if (_values is TValue thisValue)
+				return EqualityComparer<TValue>.Default.Equals (value, thisValue);
+			Debug.Assert (_values == UnknownSentinel);
+			return false;
+		}
 
-		IEnumerator IEnumerable.GetEnumerator () => GetEnumerator ();
-
-		public bool Contains (TValue value) => _values is null
-			? false
-			: _values is EnumerableValues valuesSet
-				? valuesSet.Contains (value)
-				: EqualityComparer<TValue>.Default.Equals (value, (TValue) _values);
-
-		internal static ValueSet<TValue> Meet (ValueSet<TValue> left, ValueSet<TValue> right)
+		internal static ValueSet<TValue> Union (ValueSet<TValue> left, ValueSet<TValue> right)
 		{
 			if (left._values == null)
 				return right.DeepCopy ();
 			if (right._values == null)
 				return left.DeepCopy ();
+
+			if (left._values == UnknownSentinel || right._values == UnknownSentinel)
+				return Unknown;
 
 			if (left._values is not EnumerableValues && right.Contains ((TValue) left._values))
 				return right.DeepCopy ();
@@ -196,22 +240,48 @@ namespace ILLink.Shared.DataFlow
 			if (right._values is not EnumerableValues && left.Contains ((TValue) right._values))
 				return left.DeepCopy ();
 
-			var values = new EnumerableValues (left.DeepCopy ());
-			values.UnionWith (right.DeepCopy ());
+			var values = new EnumerableValues (left.DeepCopy ().GetKnownValues ());
+			values.UnionWith (right.DeepCopy ().GetKnownValues ());
 			// Limit the number of values we track, to prevent hangs in case of patterns that
-			// create exponentially many possible values. This will result in analysis holes.
+			// create exponentially many possible values.
 			if (values.Count > MaxValuesInSet)
-				return default;
+				return Unknown;
+			return new ValueSet<TValue> (values);
+		}
+
+		internal static ValueSet<TValue> Intersection (ValueSet<TValue> left, ValueSet<TValue> right)
+		{
+			if (left._values == null || right._values == null)
+				return Empty;
+
+			if (left._values == UnknownSentinel)
+				return right.DeepCopy ();
+
+			if (right._values == UnknownSentinel)
+				return left.DeepCopy ();
+
+			if (left._values is not EnumerableValues)
+				return right.Contains ((TValue) left._values) ? left.DeepCopy () : Empty;
+
+			if (right._values is not EnumerableValues)
+				return left.Contains ((TValue) right._values) ? right.DeepCopy () : Empty;
+
+			var values = new EnumerableValues (left.DeepCopy ().GetKnownValues ());
+			values.IntersectWith (right.GetKnownValues ());
 			return new ValueSet<TValue> (values);
 		}
 
 		public bool IsEmpty () => _values == null;
 
+		public bool IsUnknown () => _values == UnknownSentinel;
+
 		public override string ToString ()
 		{
+			if (IsUnknown ())
+				return "Unknown";
 			StringBuilder sb = new ();
 			sb.Append ('{');
-			sb.Append (string.Join (",", this.Select (v => v.ToString ())));
+			sb.Append (string.Join (",", GetKnownValues ().Select (v => v.ToString ())));
 			sb.Append ('}');
 			return sb.ToString ();
 		}
@@ -223,6 +293,9 @@ namespace ILLink.Shared.DataFlow
 			if (_values is null)
 				return this;
 
+			if (_values == UnknownSentinel)
+				return this;
+
 			// Optimize for the most common case with only a single value
 			if (_values is not EnumerableValues) {
 				if (_values is IDeepCopyValue<TValue> copyValue)
@@ -231,7 +304,7 @@ namespace ILLink.Shared.DataFlow
 					return this;
 			}
 
-			return new ValueSet<TValue> (this.Select (value => value is IDeepCopyValue<TValue> copyValue ? copyValue.DeepCopy () : value));
+			return new ValueSet<TValue> (GetKnownValues ().Select (value => value is IDeepCopyValue<TValue> copyValue ? copyValue.DeepCopy () : value));
 		}
 	}
 }

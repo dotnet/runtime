@@ -66,7 +66,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else if (slot.Type == MarshalerType.Array)
             {
-                if(slot.ElementType == MarshalerType.Byte)
+                if (slot.ElementType == MarshalerType.Byte)
                 {
                     ToManaged(out byte[]? val);
                     value = val;
@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new NotSupportedException(SR.Format(SR.ToManagedNotImplemented, slot.ElementType+ "[]"));
+                    throw new NotSupportedException(SR.Format(SR.ToManagedNotImplemented, slot.ElementType + "[]"));
                 }
             }
             else if (slot.Type == MarshalerType.Task || slot.Type == MarshalerType.TaskResolved || slot.Type == MarshalerType.TaskRejected)
@@ -259,12 +259,12 @@ namespace System.Runtime.InteropServices.JavaScript
                 Exception? val = value as Exception;
                 ToJS(val);
             }
-            else if (typeof(Task<object>)==type)
+            else if (typeof(Task<object>) == type)
             {
                 Task<object>? val = value as Task<object>;
                 ToJS<object>(val, (ref JSMarshalerArgument arg, object value) =>
                 {
-                    object? valueRef= value;
+                    object? valueRef = value;
                     arg.ToJS(valueRef);
                 });
             }
@@ -317,7 +317,8 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
                 slot.Type = MarshalerType.Object;
-                slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(value);
+                var ctx = ToJSContext;
+                slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(value);
             }
         }
 
@@ -344,7 +345,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 arg.ToManaged(out val);
                 value[i] = val;
             }
+#if !ENABLE_JS_INTEROP_BY_VALUE
             Interop.Runtime.DeregisterGCRoot(slot.IntPtrValue);
+#endif
             Marshal.FreeHGlobal(slot.IntPtrValue);
         }
 
@@ -366,7 +369,9 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.Type = MarshalerType.Array;
             JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);
             Unsafe.InitBlock(payload, 0, (uint)bytes);
-            Interop.Runtime.RegisterGCRoot((IntPtr)payload, bytes, IntPtr.Zero);
+#if !ENABLE_JS_INTEROP_BY_VALUE
+            Interop.Runtime.RegisterGCRoot(payload, bytes, IntPtr.Zero);
+#endif
             for (int i = 0; i < slot.Length; i++)
             {
                 ref JSMarshalerArgument arg = ref payload[i];

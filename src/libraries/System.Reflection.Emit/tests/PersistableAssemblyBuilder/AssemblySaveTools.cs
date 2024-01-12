@@ -47,6 +47,8 @@ namespace System.Reflection.Emit.Tests
                 {
                     tb.DefineField(field.Name, field.FieldType, field.Attributes);
                 }
+
+                tb.CreateType();
             }
         }
 
@@ -64,10 +66,13 @@ namespace System.Reflection.Emit.Tests
         internal static AssemblyBuilder PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder typeBuilder, out MethodInfo saveMethod)
         {
             AssemblyBuilder ab = PopulateAssemblyBuilderAndSaveMethod(s_assemblyName, null, typeof(string), out saveMethod);
-            typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public);
+            typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
             return ab;
         }
-        
+
+        internal static AssemblyBuilder PopulateAssemblyBuilderAndSaveMethod(AssemblyName assemblyName, out MethodInfo saveMethod) =>
+            PopulateAssemblyBuilderAndSaveMethod(assemblyName, null, typeof(string), out saveMethod);
+
         internal static AssemblyBuilder PopulateAssemblyBuilderAndSaveMethod(AssemblyName assemblyName,
             List<CustomAttributeBuilder>? assemblyAttributes, Type parameterType, out MethodInfo saveMethod)
         {

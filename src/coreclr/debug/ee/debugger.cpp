@@ -63,8 +63,6 @@ SVAL_IMPL_INIT(BOOL, Debugger, s_fCanChangeNgenFlags, TRUE);
 // process is waiting for JIT debugging attach.
 GVAL_IMPL_INIT(ULONG, CLRJitAttachState, 0);
 
-bool g_EnableSIS = false;
-
 // The following instances are used for invoking overloaded new/delete
 InteropSafe interopsafe;
 
@@ -1829,9 +1827,6 @@ HRESULT Debugger::Startup(void)
 #endif // !TARGET_UNIX
     {
         DebuggerLockHolder dbgLockHolder(this);
-
-        // Stubs in Stacktraces are always enabled.
-        g_EnableSIS = true;
 
         // We can get extra Interop-debugging test coverage by having some auxiliary unmanaged
         // threads running and throwing debug events. Keep these stress procs separate so that
@@ -7958,12 +7953,6 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
             e = pFrame->GetTransitionType();
         }
 #endif
-    }
-
-    // @todo - when Stubs-In-Stacktraces is always enabled, remove this.
-    if (!g_EnableSIS)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
     }
 
     // Stubs don't have an IL offset.
@@ -15055,6 +15044,8 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         filterContext->R0 = (DWORD)pDE;
 #elif defined(TARGET_ARM64)
         filterContext->X0 = (SIZE_T)pDE;
+#elif defined(TARGET_RISCV64)
+        filterContext->A0 = (SIZE_T)pDE;
 #else
         PORTABILITY_ASSERT("Debugger::FuncEvalSetup is not implemented on this platform.");
 #endif
@@ -15770,7 +15761,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
     if (success)
     {
         // Check single-step flag
-        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(pCtx) ARM_ARG(pThread) ARM64_ARG(pThread)))
+        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(pCtx) ARM_ARG(pThread) ARM64_ARG(pThread) RISCV64_ARG(pThread)))
         {
             // Can't hijack a thread whose SS-flag is set. This could lead to races
             // with the thread taking the SS-exception.

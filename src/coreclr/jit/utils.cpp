@@ -1319,28 +1319,19 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
 
 #ifdef DEBUG
 
-void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size)
+void hexDump(FILE* dmpf, BYTE* addr, size_t size)
 {
-    if (!size)
+    if (size == 0)
     {
         return;
     }
 
-    assert(addr);
+    assert(addr != nullptr);
 
-    fprintf(dmpf, "Hex dump of %s:\n", name);
-
-    for (unsigned i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
-        if ((i % 16) == 0)
-        {
-            fprintf(dmpf, "\n    %04X: ", i);
-        }
-
-        fprintf(dmpf, "%02X ", *addr++);
+        fprintf(dmpf, "%02X", *addr++);
     }
-
-    fprintf(dmpf, "\n\n");
 }
 
 #endif // DEBUG

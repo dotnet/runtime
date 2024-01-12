@@ -280,6 +280,8 @@ namespace System.Text.Json.SourceGeneration
                 JsonUnmappedMemberHandling? unmappedMemberHandling = null;
                 bool? useStringEnumConverter = null;
                 bool? writeIndented = null;
+                char? indentCharacter = null;
+                int? indentSize = null;
 
                 if (attributeData.ConstructorArguments.Length > 0)
                 {
@@ -373,6 +375,14 @@ namespace System.Text.Json.SourceGeneration
                             writeIndented = (bool)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.IndentCharacter):
+                            indentCharacter = (char)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.IndentSize):
+                            indentSize = (int)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.GenerationMode):
                             generationMode = (JsonSourceGenerationMode)namedArg.Value.Value!;
                             break;
@@ -404,6 +414,8 @@ namespace System.Text.Json.SourceGeneration
                     UnmappedMemberHandling = unmappedMemberHandling,
                     UseStringEnumConverter = useStringEnumConverter,
                     WriteIndented = writeIndented,
+                    IndentCharacter = indentCharacter,
+                    IndentSize = indentSize,
                 };
             }
 

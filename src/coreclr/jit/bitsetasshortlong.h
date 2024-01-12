@@ -561,6 +561,124 @@ public:
         }
     };
 
+    //------------------------------------------------------------------------
+    // VisitBits: Invoke a callback for each index that is set in the bit
+    // vector, in ascending order of indices.
+    //
+    // Type parameters:
+    //   TFunc - Type of callback functor
+    //
+    // Arguments:
+    //   env  - The traits
+    //   bs   - The bit vector
+    //   func - The functor callback. Return true to continue to the next bit,
+    //   and false to abort.
+    //
+    // Returns:
+    //   True if all bits were iterated; false if the callback returned false
+    //   and iteration was aborted.
+    //
+    template <typename TFunc>
+    static bool VisitBits(Env env, BitSetShortLongRep bs, TFunc func)
+    {
+#ifdef HOST_64BIT
+#define BitScanForwardSizeT BitScanForward64
+#else
+#define BitScanForwardSizeT BitScanForward
+#endif
+
+        if (BitSetOps::IsShort(env))
+        {
+            size_t bits = reinterpret_cast<size_t>(bs);
+            DWORD  index;
+            while (BitScanForwardSizeT(&index, bits))
+            {
+                if (!func(index))
+                    return false;
+
+                bits ^= size_t(1) << index;
+            }
+        }
+        else
+        {
+            unsigned len = BitSetTraits::GetArrSize(env);
+            for (unsigned i = 0; i < len; i++)
+            {
+                size_t bits = bs[i];
+                DWORD  index;
+                while (BitScanForwardSizeT(&index, bits))
+                {
+                    if (!func(i * BitsInSizeT + index))
+                        return false;
+
+                    bits ^= size_t(1) << index;
+                }
+            }
+        }
+
+        return true;
+#undef BitScanForwardSizeT
+    }
+
+    //------------------------------------------------------------------------
+    // VisitBitsReverse: Invoke a callback for each index that is set in the
+    // bit vector, in descending order of indices.
+    //
+    // Type parameters:
+    //   TFunc - Type of callback functor
+    //
+    // Arguments:
+    //   env  - The traits
+    //   bs   - The bit vector
+    //   func - The functor callback. Return true to continue to the next bit,
+    //   and false to abort.
+    //
+    // Returns:
+    //   True if all bits were iterated; false if the callback returned false
+    //   and iteration was aborted.
+    //
+    template <typename TFunc>
+    static bool VisitBitsReverse(Env env, BitSetShortLongRep bs, TFunc func)
+    {
+#ifdef HOST_64BIT
+#define BitScanReverseSizeT BitScanReverse64
+#else
+#define BitScanReverseSizeT BitScanReverse
+#endif
+
+        if (BitSetOps::IsShort(env))
+        {
+            size_t bits = reinterpret_cast<size_t>(bs);
+            DWORD  index;
+            while (BitScanReverseSizeT(&index, bits))
+            {
+                if (!func(index))
+                    return false;
+
+                bits ^= size_t(1) << index;
+            }
+        }
+        else
+        {
+            unsigned len = BitSetTraits::GetArrSize(env);
+            for (unsigned i = len; i != 0; i--)
+            {
+                size_t bits = bs[i - 1];
+                DWORD  index;
+                while (BitScanReverseSizeT(&index, bits))
+                {
+                    if (!func((i - 1) * BitsInSizeT + index))
+                        return false;
+
+                    bits ^= size_t(1) << index;
+                }
+            }
+        }
+
+        return true;
+#undef BitScanReverseSizeT
+    }
+
     typedef const BitSetShortLongRep& ValArgType;
     typedef BitSetShortLongRep        RetValType;
 };

@@ -9,8 +9,8 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -105,9 +105,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float CopySign(float x, float y)
         {
-            if (Sse.IsSupported || AdvSimd.IsSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
-                return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0f), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
+                return Vector128.ConditionalSelect(Vector128.CreateScalarUnsafe(-0.0f), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
             }
             else
             {

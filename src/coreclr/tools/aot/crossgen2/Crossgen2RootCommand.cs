@@ -282,9 +282,9 @@ namespace ILCompiler
             });
         }
 
-        public static IEnumerable<Action<HelpContext>> GetExtendedHelp(HelpContext _)
+        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext _)
         {
-            foreach (Action<HelpContext> sectionDelegate in HelpBuilder.Default.GetLayout())
+            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
                 yield return sectionDelegate;
 
             yield return _ =>
@@ -294,7 +294,7 @@ namespace ILCompiler
                 Console.WriteLine(SR.DashDashHelp);
                 Console.WriteLine();
 
-                string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64"};
+                string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64"};
                 string[] ValidOS = new string[] {"windows", "linux", "osx"};
 
                 Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
@@ -343,6 +343,7 @@ namespace ILCompiler
                 Console.WriteLine();
                 Console.WriteLine(SR.CpuFamilies);
                 Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
+                return true;
             };
         }
 

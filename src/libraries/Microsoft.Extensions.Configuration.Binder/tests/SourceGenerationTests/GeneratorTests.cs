@@ -32,6 +32,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             Diagnostic diagnostic = Assert.Single(result.Diagnostics);
             Assert.True(diagnostic.Id == "SYSLIB1102");
+            Assert.Contains("C# 12", diagnostic.Descriptor.MessageFormat.ToString(CultureInfo.InvariantCulture));
             Assert.Contains("C# 12", diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         }
@@ -43,7 +44,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 using System;
                 using System.Collections.Generic;
                 using Microsoft.Extensions.Configuration;
-                
+
                 public class Program
                 {
                 	public static void Main()
@@ -131,14 +132,14 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 using Microsoft.AspNetCore.Builder;
                 using Microsoft.Extensions.Configuration;
                 using Microsoft.Extensions.DependencyInjection;
-                
+
                 public class Program
                 {
                 	public static void Main()
                 	{
                 		ConfigurationBuilder configurationBuilder = new();
                 		IConfiguration config = configurationBuilder.Build();
-                
+
                 		PerformGenericBinderCalls<MyClass>(config);
                 	}
 
@@ -263,7 +264,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 using Microsoft.AspNetCore.Builder;
                 using Microsoft.Extensions.Configuration;
                 using Microsoft.Extensions.DependencyInjection;
-                
+
                 public class Program
                 {
                 	public static void Main()

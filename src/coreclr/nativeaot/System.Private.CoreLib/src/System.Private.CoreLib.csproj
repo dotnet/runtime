@@ -94,6 +94,7 @@
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs">
       <Link>Common\src\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs</Link>
     </Compile>
+    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.cs" />
     <Compile Include="Internal\Runtime\ThreadStatics.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Extensions.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ArrayHelpers.cs" />
@@ -177,7 +178,7 @@
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.NativeAot.cs" />
     <Compile Include="System\Diagnostics\Eventing\EventPipe.NativeAot.cs" />
-    <Compile Include="System\Diagnostics\Eventing\NativeRuntimeEventSource.Threading.NativeSinks.NativeAot.cs" />
+    <Compile Include="System\Diagnostics\Eventing\NativeRuntimeEventSource.Threading.NativeSinks.NativeAot.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="System\Enum.NativeAot.cs" />
     <Compile Include="System\Environment.NativeAot.cs" />
     <Compile Include="System\GC.NativeAot.cs" />
@@ -252,6 +253,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\BuiltInVariantExtensions.cs">
@@ -291,6 +293,7 @@
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Unix.cs" />
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
@@ -301,6 +304,15 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MMap.cs">
+      <Link>Interop\Unix\System.Native\Interop.MMap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs">
+      <Link>Interop\Unix\System.Native\Interop.MProtect.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MUnmap.cs">
+      <Link>Interop\Unix\System.Native\Interop.MUnmap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -407,11 +419,11 @@
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
     <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
     <Compile Include="System\Reflection\Runtime\General\LegacyCustomAttributeApis.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ListBuilder.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
     <Compile Include="System\Reflection\Runtime\General\NativeFormat\DefaultValueParser.cs" />
-    <Compile Include="System\Reflection\Runtime\General\RuntimeTypeHandleKey.cs" />
     <Compile Include="System\Reflection\Runtime\General\ThunkedApis.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeContext.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeForwardInfo.cs" />

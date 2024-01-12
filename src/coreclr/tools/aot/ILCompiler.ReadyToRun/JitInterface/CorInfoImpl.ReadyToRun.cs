@@ -1889,7 +1889,7 @@ namespace Internal.JitInterface
             // a static method would have never found an instance method.
             if (originalMethod.Signature.IsStatic && isCallVirt)
             {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
+                ThrowHelper.ThrowMissingMethodException("?");
             }
 
             exactType = type;
@@ -2095,7 +2095,7 @@ namespace Internal.JitInterface
                     // Compensate for always treating delegates as direct calls above
                     !(isLdftn && isVirtualBehaviorUnresolved))
                 {
-                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallAbstractMethod, targetMethod);
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, targetMethod);
                 }
 
                 bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
@@ -3356,6 +3356,15 @@ namespace Internal.JitInterface
                 // rarely used feature, and we can fix that if we need to.
                 throw new RequiresRuntimeJitException($"Type equivalent valuetype '{type}' not directly referenced from member reference");
             }
+        }
+
+        private bool notifyMethodInfoUsage(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            MethodDesc method = HandleToObject(ftn);
+            Debug.Assert(method != null);
+            // If ftn isn't within the current version bubble we can't rely on methodInfo being
+            // stable e.g. mark calls as no-return if their IL has no rets.
+            return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
         }
     }
 }

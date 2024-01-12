@@ -1805,7 +1805,7 @@ namespace Mono.Linker.Steps
 			}
 
 			var parent = field.DeclaringType;
-			if (!Annotations.HasPreservedStaticCtor (parent)) {
+			if (field.IsStatic && !Annotations.HasPreservedStaticCtor (parent)) {
 				var cctorReason = reason.Kind switch {
 					// Report an edge directly from the method accessing the field to the static ctor it triggers
 					DependencyKind.FieldAccess => new DependencyInfo (DependencyKind.TriggersCctorThroughFieldAccess, reason.Source),

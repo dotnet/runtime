@@ -68,6 +68,8 @@
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
     <Compile Include="System\Net\DelegatedStream.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
@@ -147,7 +149,6 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.Security" />
-    <Reference Include="System.Net.ServicePoint" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />

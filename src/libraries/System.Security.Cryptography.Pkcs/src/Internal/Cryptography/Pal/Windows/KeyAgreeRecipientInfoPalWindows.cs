@@ -3,12 +3,10 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
-using System.Runtime.InteropServices;
-
 using Microsoft.Win32.SafeHandles;
-
 using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal.Windows

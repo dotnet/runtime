@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
-
-using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
 using SafePasswordHandle = Microsoft.Win32.SafeHandles.SafePasswordHandle;
+using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
 
 namespace System.Security.Cryptography.X509Certificates
 {

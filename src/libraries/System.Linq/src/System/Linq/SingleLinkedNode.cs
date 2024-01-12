@@ -99,14 +99,14 @@ namespace System.Linq
         /// <summary>
         /// Fills a start of a span with the items of this node's singly-linked list.
         /// </summary>
-        /// <param name="span">The span to fill. Must be the precise size required.</param>
+        /// <param name="span">The span to fill. Must be at least the size required.</param>
         public void Fill(Span<TSource> span)
         {
             int index = 0;
             for (SingleLinkedNode<TSource>? node = this; node != null; node = node.Linked)
             {
-               span[index] = node.Item;
-               index++;
+                span[index] = node.Item;
+                index++;
             }
         }
 

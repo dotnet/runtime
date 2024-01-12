@@ -391,8 +391,13 @@ GVAL_DECL(DWORD,            g_TlsIndex);
 
 #ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);
+GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
+GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
 GVAL_DECL(bool,             g_isNewExceptionHandlingEnabled);
 #endif
+
+// Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
+GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);
 
 // Global System Information
 extern SYSTEM_INFO g_SystemInfo;
