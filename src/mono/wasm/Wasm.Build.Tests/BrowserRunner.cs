@@ -159,7 +159,7 @@ internal class BrowserRunner : IAsyncDisposable
         await Task.WhenAny(RunTask!, _exited.Task, Task.Delay(timeout));
         if (_exited.Task.IsCompleted)
         {
-            _testOutput.WriteLine ($"Exited with {await _exited.Task}");
+            _testOutput.WriteLine ($"(browser app) Exited with {await _exited.Task}");
             return;
         }
 

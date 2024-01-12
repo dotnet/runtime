@@ -110,8 +110,8 @@ namespace Wasm.Build.Tests
                 _testOutput.WriteLine("ToolCommand.Dispose calling Kill");
                 CurrentProcess.Kill();//entireProcessTree: true);
                 _testOutput.WriteLine($"ToolCommand.Dispose back from calling Kill, hasexited: {CurrentProcess.HasExited}, and calling waitforexit");
-                CurrentProcess.WaitForExit();
-                _testOutput.WriteLine($"ToolCommand.Dispose back from calling waitforexit, hasexited: {CurrentProcess.HasExited}");
+                // CurrentProcess.WaitForExit();
+                // _testOutput.WriteLine($"ToolCommand.Dispose back from calling waitforexit, hasexited: {CurrentProcess.HasExited}");
                 CurrentProcess.Dispose();
                 CurrentProcess = null;
             }
@@ -125,7 +125,8 @@ namespace Wasm.Build.Tests
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
             CurrentProcess.EnableRaisingEvents = true;
-            CurrentProcess.Exited += (_, e) => _testOutput.WriteLine($"Exited raised for {executable} {args}");
+            TaskCompletionSource<bool> tcs = new();
+            CurrentProcess.Exited += (_, e) => { _testOutput.WriteLine($"Exited raised for {executable} {args}"); tcs.TrySetResult(true); };
             if (!CurrentProcess.Start())
                 throw new ArgumentException("No CurrentProcess was started: CurrentProcess.Start() returned false.");
 
@@ -178,8 +179,9 @@ namespace Wasm.Build.Tests
                     _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync timed out, attemping to kill it, process-is-null: {CurrentProcess is null} hasExited: {CurrentProcess!.HasExited}");
                     CurrentProcess.Kill();//entireProcessTree: true);
                     _testOutput.WriteLine($"[{pid}] back from CurrentProcess.kill, exited: {CurrentProcess.HasExited}");
-                    DumpProcess($"After killing, and calling waitforexit", pid);
-                    CurrentProcess.WaitForExit();
+                    DumpProcess($"After killing, and waiting for exited event", pid);
+                    //CurrentProcess.WaitForExit();
+                    await tcs.Task.ConfigureAwait(false);
                     _testOutput.WriteLine($"[{pid}] back from CurrentProcess.WaitForExit, exited: {CurrentProcess.HasExited}");
                     lock (syncObj)
                     {
@@ -193,9 +195,10 @@ namespace Wasm.Build.Tests
                 // this will ensure that all the async event handling has completed
                 // and should be called after CurrentProcess.WaitForExit(int)
                 // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.CurrentProcess.waitforexit?view=net-5.0#System_Diagnostics_CurrentProcess_WaitForExit_System_Int32_
-                _testOutput.WriteLine($"[{pid}] calling CurrentProcess.WaitForExit, hasExited: {CurrentProcess!.HasExited}");
-                CurrentProcess!.WaitForExit();
-                _testOutput.WriteLine($"[{pid}] back from calling CurrentProcess.WaitForExit: {CurrentProcess.HasExited}");
+                _testOutput.WriteLine($"[{pid}] waiting on exited event, hasExited: {CurrentProcess!.HasExited}");
+                // CurrentProcess!.WaitForExit();
+                await tcs.Task.ConfigureAwait(false);
+                _testOutput.WriteLine($"[{pid}] back from waiting on exited event: hasexited: {CurrentProcess.HasExited}");
 
                 CurrentProcess.ErrorDataReceived -= logStdErr;
                 CurrentProcess.OutputDataReceived -= logStdOut;
