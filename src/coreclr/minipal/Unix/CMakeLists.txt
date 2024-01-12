@@ -7,6 +7,12 @@ if(NOT CLR_CROSS_COMPONENTS_BUILD)
     list(APPEND SOURCES
         ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
     )
+
+    if(CLR_CMAKE_HOST_OSX)
+        list(APPEND SOURCES
+            ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
+        )
+    endif()
 endif()
 
 add_library(coreclrminipal

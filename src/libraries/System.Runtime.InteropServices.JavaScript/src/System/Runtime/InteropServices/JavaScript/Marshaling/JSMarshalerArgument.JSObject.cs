@@ -40,10 +40,8 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else
             {
-#if !FEATURE_WASM_THREADS
                 value.AssertNotDisposed();
-#else
-                value.AssertNotDisposed();
+#if FEATURE_WASM_THREADS
                 var ctx = value.ProxyContext;
 
                 if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)

@@ -1240,6 +1240,7 @@ protected:
 #ifndef TARGET_X86
     void genCodeForInitBlkHelper(GenTreeBlk* initBlkNode);
 #endif
+    void genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     void genJumpTable(GenTree* tree);

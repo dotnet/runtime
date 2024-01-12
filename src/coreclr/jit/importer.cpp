@@ -5448,6 +5448,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
 
+    // By default, we assume it's 50/50 with the slow path.
+    unsigned fastPathLikelihood = 50;
+
     // Legality check.
     //
     // Not all classclass/isinst operations can be inline expanded.
@@ -5507,6 +5510,13 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             if (likelyClassCount > 0)
             {
 #ifdef DEBUG
+                for (UINT32 i = 0; i < likelyClassCount; i++)
+                {
+                    const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
+                    JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+                            likelyClasses[i].likelihood);
+                }
+
                 // Optional stress mode to pick a random known class, rather than
                 // the most likely known class.
                 if (JitConfig.JitRandomGuardedDevirtualization() != 0)
@@ -5525,8 +5535,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 LikelyClassMethodRecord likelyClass = likelyClasses[0];
                 CORINFO_CLASS_HANDLE    likelyCls   = (CORINFO_CLASS_HANDLE)likelyClass.handle;
 
-                if ((likelyCls != NO_CLASS_HANDLE) &&
-                    (likelyClass.likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
+                // if there is a dominating candidate with >= 40% likelihood, use it
+                const unsigned likelihoodMinThreshold = 40;
+                if ((likelyCls != NO_CLASS_HANDLE) && (likelyClass.likelihood > likelihoodMinThreshold))
                 {
                     TypeCompareState castResult =
                         info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass);
@@ -5548,10 +5559,11 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                             JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
                                     eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
 
-                            reversedMTCheck = castResult == TypeCompareState::MustNot;
-                            canExpandInline = true;
-                            partialExpand   = true;
-                            exactCls        = likelyCls;
+                            reversedMTCheck    = castResult == TypeCompareState::MustNot;
+                            canExpandInline    = true;
+                            partialExpand      = true;
+                            exactCls           = likelyCls;
+                            fastPathLikelihood = likelyClass.likelihood;
                         }
                     }
                 }
@@ -5572,13 +5584,20 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         op2->gtFlags |= GTF_DONT_CSE;
 
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
+
+        // Instrument this castclass/isinst
         if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact)
         {
-            HandleHistogramProfileCandidateInfo* pInfo  = new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-            pInfo->ilOffset                             = ilOffset;
-            pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
-            call->gtHandleHistogramProfileCandidateInfo = pInfo;
-            compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
+            // It doesn't make sense to instrument "x is T" or "(T)x" for shared T
+            if ((info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) == 0)
+            {
+                HandleHistogramProfileCandidateInfo* pInfo =
+                    new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+                pInfo->ilOffset                             = ilOffset;
+                pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
+                call->gtHandleHistogramProfileCandidateInfo = pInfo;
+                compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
+            }
         }
         return call;
     }
@@ -5657,7 +5676,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         condTrue = gtNewIconNode(0, TYP_REF);
     }
 
-    GenTree* qmarkMT;
+    GenTreeQmark* qmarkMT;
     //
     // Generate first QMARK - COLON tree
     //
@@ -5669,6 +5688,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
     temp    = new (this, GT_COLON) GenTreeColon(TYP_REF, condTrue, condFalse);
     qmarkMT = gtNewQmarkNode(TYP_REF, condMT, temp->AsColon());
+    qmarkMT->SetThenNodeLikelihood(fastPathLikelihood);
 
     if (isCastClass && isClassExact && condTrue->OperIs(GT_CALL))
     {
