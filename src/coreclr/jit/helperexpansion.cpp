@@ -515,7 +515,9 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     assert(prevBb != nullptr && block != nullptr);
 
     unsigned finalLclNum         = lvaGrabTemp(true DEBUGARG("Final offset"));
-    lvaTable[finalLclNum].lvType = TYP_I_IMPL;
+    // Note, `tlsRoot` refers to the TLS blob object, which is an unpinned managed object,
+    // thus the type of the local is TYP_REF
+    lvaTable[finalLclNum].lvType = TYP_REF;
     GenTree* finalLcl            = gtNewLclVarNode(finalLclNum);
 
     // Block ops inserted by the split need to be morphed here since we are after morph.
@@ -580,7 +582,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         GenTree* tlsRootAddrDef            = gtNewStoreLclVarNode(tlsRootAddrLclNum, tlsRootAddr);
         GenTree* tlsRootAddrUse            = gtNewLclVarNode(tlsRootAddrLclNum);
 
-        GenTree* tlsRootVal = gtNewIndir(TYP_I_IMPL, tlsRootAddrUse, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        // See comments near finalLclNum above regarding TYP_REF
+        GenTree* tlsRootVal = gtNewIndir(TYP_REF, tlsRootAddrUse, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
         GenTree* tlsRootDef = gtNewStoreLclVarNode(finalLclNum, tlsRootVal);
 
@@ -594,8 +597,9 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
         CORINFO_CONST_LOOKUP threadStaticSlowHelper = threadStaticInfo.threadStaticBaseSlow;
 
+        // See comments near finalLclNum above regarding TYP_REF
         GenTreeCall* slowHelper =
-            gtNewIndCallNode(gtNewIconHandleNode((size_t)threadStaticSlowHelper.addr, GTF_ICON_TLS_HDL), TYP_I_IMPL);
+            gtNewIndCallNode(gtNewIconHandleNode((size_t)threadStaticSlowHelper.addr, GTF_ICON_TLS_HDL), TYP_REF);
         GenTree* helperArg = gtClone(tlsRootAddrUse);
         slowHelper->gtArgs.PushBack(this, NewCallArg::Primitive(helperArg));
         fgMorphArgs(slowHelper);
