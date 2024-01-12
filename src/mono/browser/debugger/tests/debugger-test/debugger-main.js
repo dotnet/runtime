@@ -19,6 +19,23 @@ try {
         debugger: (level, message) => console.log({ level, message }),
     };*/
     App.runtime = runtime;
+
+    // this is fake implementation of legacy `bind_static_method`
+    // so that we don't have to rewrite all the tests which use it via `invoke_static_method`
+    App.bind_static_method = (method_name) => {
+        const methodInfo = App.exports.DebuggerTests.BindStaticMethod.Find(method_name);
+        const signature = App.exports.DebuggerTests.BindStaticMethod.GetSignature(methodInfo);
+        const invoker = App.exports.DebuggerTests.BindStaticMethod[signature];
+        if (!invoker) {
+            const message = `bind_static_method: Could not find invoker for ${method_name} with signature ${signature}`;
+            console.error(message);
+            throw new Error(message);
+        }
+        return function () {
+            return invoker(methodInfo, ...arguments);
+        }
+    }
+
     await App.init();
 }
 catch (err) {

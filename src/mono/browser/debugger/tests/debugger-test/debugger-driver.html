@@ -7,7 +7,7 @@
 		var App = {
 			static_method_table: {},
 			init: async () => {
-				const exports = await App.runtime.getAssemblyExports("debugger-test.dll");
+				const exports = App.exports = await App.runtime.getAssemblyExports("debugger-test.dll");
 				App.int_add = exports.Math.IntAdd;
 				App.use_complex = exports.Math.UseComplex;
 				App.delegates_test = exports.Math.DelegatesTest;
@@ -23,7 +23,7 @@
 		function invoke_static_method (method_name, ...args) {
 			var method = App.static_method_table [method_name];
 			if (method == undefined)
-				method = App.static_method_table[method_name] = App.runtime.BINDING.bind_static_method(method_name);
+				method = App.static_method_table[method_name] = App.bind_static_method(method_name);
 
 			return method (...args);
 		}
@@ -31,7 +31,7 @@
 		async function invoke_static_method_async (method_name, ...args) {
 			var method = App.static_method_table [method_name];
 			if (method == undefined) {
-				method = App.static_method_table[method_name] = App.runtime.BINDING.bind_static_method(method_name);
+				method = App.static_method_table[method_name] = App.bind_static_method(method_name);
 			}
 
 			return await method (...args);
