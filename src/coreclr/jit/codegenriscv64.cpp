@@ -5420,13 +5420,6 @@ void CodeGen::genRangeCheck(GenTree* oper)
     genConsumeRegs(index);
     genConsumeRegs(length);
 
-    if (genActualType(index) == TYP_INT)
-    {
-        regNumber tempReg = oper->GetSingleTempReg();
-        GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, indexReg, 0); // sign-extend
-        indexReg = tempReg;
-    }
-
 #ifdef DEBUG
     var_types lengthType = genActualType(length);
     var_types indexType  = genActualType(index);
