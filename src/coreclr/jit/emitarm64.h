@@ -1030,7 +1030,7 @@ inline static bool insScalableOptsWithPredicatePair(insScalableOpts sopt)
 inline static bool insScalableOptsWithVectorLength(insScalableOpts sopt)
 {
     // `sopt` is any of the scalable types that are valid for use with instructions with a vector length specifier (vl).
-    return ((sopt == INS_SCALABLE_OPTS_VL_2X) || (sopt <= INS_SCALABLE_OPTS_VL_4X));
+    return ((sopt == INS_SCALABLE_OPTS_VL_2X) || (sopt == INS_SCALABLE_OPTS_VL_4X));
 }
 
 static bool isValidImmCond(ssize_t imm);
