@@ -18,6 +18,9 @@ namespace Wasm.Build.Tests
     {
         private string _label;
         protected ITestOutputHelper _testOutput;
+        private TaskCompletionSource<bool> _exited = new();
+        private CancellationTokenSource _cancelRequested = new();
+        private int pid = -1;
 
         protected string _command;
 
@@ -102,16 +105,18 @@ namespace Wasm.Build.Tests
             return ExecuteAsyncInternal(resolvedCommand, fullArgs);
         }
 
-        public virtual void Dispose()
+        public virtual async void Dispose()
         {
-            _testOutput.WriteLine("ToolCommand.Dispose ENTER");
+            _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose ENTER, cancel'ing cancelRequested");
+            _cancelRequested.Cancel();
             if (CurrentProcess is not null && !CurrentProcess.HasExited)
             {
-                _testOutput.WriteLine("ToolCommand.Dispose calling Kill");
+                _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose calling Kill, exited: {_exited.Task.Status}");
                 CurrentProcess.Kill();//entireProcessTree: true);
-                _testOutput.WriteLine($"ToolCommand.Dispose back from calling Kill, hasexited: {CurrentProcess.HasExited}, and calling waitforexit");
+                _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose back from calling Kill, hasexited: {CurrentProcess.HasExited}, and calling waitforexit, _exited: {_exited.Task.Status}");
+                await _exited.Task.ConfigureAwait(false);
                 // CurrentProcess.WaitForExit();
-                // _testOutput.WriteLine($"ToolCommand.Dispose back from calling waitforexit, hasexited: {CurrentProcess.HasExited}");
+                _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose back from waiting on exited event, hasexited: {CurrentProcess.HasExited}");
                 CurrentProcess.Dispose();
                 CurrentProcess = null;
             }
@@ -125,13 +130,12 @@ namespace Wasm.Build.Tests
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
             CurrentProcess.EnableRaisingEvents = true;
-            TaskCompletionSource<bool> tcs = new();
-            CurrentProcess.Exited += (_, e) => { _testOutput.WriteLine($"Exited raised for {executable} {args}"); tcs.TrySetResult(true); };
+            CurrentProcess.Exited += (_, e) => { _testOutput.WriteLine($"[{pid}] Exited raised for {executable} {args}"); _exited.TrySetResult(true); };
             if (!CurrentProcess.Start())
                 throw new ArgumentException("No CurrentProcess was started: CurrentProcess.Start() returned false.");
 
             object syncObj = new();
-            int pid = CurrentProcess.Id;
+            pid = CurrentProcess.Id;
             DataReceivedEventHandler logStdErr = (s, e) =>
             {
                 if (e.Data == null)
@@ -181,7 +185,7 @@ namespace Wasm.Build.Tests
                     _testOutput.WriteLine($"[{pid}] back from CurrentProcess.kill, exited: {CurrentProcess.HasExited}");
                     DumpProcess($"After killing, and waiting for exited event", pid);
                     //CurrentProcess.WaitForExit();
-                    await tcs.Task.ConfigureAwait(false);
+                    await _exited.Task.ConfigureAwait(false);
                     _testOutput.WriteLine($"[{pid}] back from CurrentProcess.WaitForExit, exited: {CurrentProcess.HasExited}");
                     lock (syncObj)
                     {
@@ -195,16 +199,16 @@ namespace Wasm.Build.Tests
                 // this will ensure that all the async event handling has completed
                 // and should be called after CurrentProcess.WaitForExit(int)
                 // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.CurrentProcess.waitforexit?view=net-5.0#System_Diagnostics_CurrentProcess_WaitForExit_System_Int32_
-                _testOutput.WriteLine($"[{pid}] waiting on exited event, hasExited: {CurrentProcess!.HasExited}");
+                _testOutput.WriteLine($"[{pid}] going to wait on exited event, current-is-null: {CurrentProcess is null}, hasExited: {CurrentProcess?.HasExited}, _exited: {_exited.Task.IsCompleted}");
                 // CurrentProcess!.WaitForExit();
-                await tcs.Task.ConfigureAwait(false);
-                _testOutput.WriteLine($"[{pid}] back from waiting on exited event: hasexited: {CurrentProcess.HasExited}");
+                await _exited.Task.ConfigureAwait(false);
+                _testOutput.WriteLine($"[{pid}] back from waiting on exited event, null: {CurrentProcess is null}: hasexited: {CurrentProcess?.HasExited}, _exited: {_exited.Task.IsCompleted}");
 
-                CurrentProcess.ErrorDataReceived -= logStdErr;
-                CurrentProcess.OutputDataReceived -= logStdOut;
+                CurrentProcess!.ErrorDataReceived -= logStdErr;
+                CurrentProcess!.OutputDataReceived -= logStdOut;
                 _testOutput.WriteLine($"[{pid}] cancelling err/out");
-                CurrentProcess.CancelErrorRead();
-                CurrentProcess.CancelOutputRead();
+                CurrentProcess!.CancelErrorRead();
+                CurrentProcess!.CancelOutputRead();
 
                 lock (syncObj)
                 {
@@ -221,8 +225,11 @@ namespace Wasm.Build.Tests
             }
             catch (Exception ex) when (ex is not XunitException)
             {
-                _testOutput.WriteLine($"[{pid}] -- exception -- {ex}");
-                throw;
+                _testOutput.WriteLine($"[{pid}] -- exception -- {ex}. CurrentProcess is null: {CurrentProcess is null}, hasExited: {CurrentProcess?.HasExited}, _exited: {_exited.Task.Status}, _cancelRequested: {_cancelRequested.IsCancellationRequested}");
+                if (!_cancelRequested.IsCancellationRequested)
+                    throw;
+                else
+                    throw new Exception($"IGNORE this exception.. it's expected because the toolcommand is being cancelled: {ex.Message}", ex);
             }
         }
 
