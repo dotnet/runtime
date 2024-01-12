@@ -9,10 +9,8 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    public sealed class NoMarshallingInfoErrorMarshallingFactory : IMarshallingGeneratorFactory
+    public sealed class NoMarshallingInfoErrorResolver : IMarshallingGeneratorResolver
     {
-        private readonly IMarshallingGeneratorFactory _inner;
-
         public ResolvedGenerator Create(
             TypePositionInfo info,
             StubCodeContext context)
@@ -24,17 +22,16 @@ namespace Microsoft.Interop
                     NotSupportedDetails = errorMessage
                 });
             }
-            return _inner.Create(info, context);
+            return ResolvedGenerator.UnresolvedGenerator;
         }
 
-        public NoMarshallingInfoErrorMarshallingFactory(IMarshallingGeneratorFactory inner, string stringMarshallingAttribute)
-            : this(inner, DefaultTypeToErrorMessageMap(stringMarshallingAttribute))
+        public NoMarshallingInfoErrorResolver(string stringMarshallingAttribute)
+            : this(DefaultTypeToErrorMessageMap(stringMarshallingAttribute))
         {
         }
 
-        private NoMarshallingInfoErrorMarshallingFactory(IMarshallingGeneratorFactory inner, ImmutableDictionary<ManagedTypeInfo, string> customTypeToErrorMessageMap)
+        private NoMarshallingInfoErrorResolver(ImmutableDictionary<ManagedTypeInfo, string> customTypeToErrorMessageMap)
         {
-            _inner = inner;
             CustomTypeToErrorMessageMap = customTypeToErrorMessageMap;
         }
 
