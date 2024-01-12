@@ -905,27 +905,6 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
-#ifdef FEATURE_COMINTEROP
-FCIMPL1(void, ThreadNative::DisableComObjectEagerCleanup, ThreadBaseObject* pThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(pThisUNSAFE != NULL);
-    VALIDATEOBJECT(pThisUNSAFE);
-    Thread *pThread = pThisUNSAFE->GetInternal();
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    if (pThread == NULL)
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_CANNOT_GET);
-
-    pThread->SetDisableComObjectEagerCleanup();
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-#endif //FEATURE_COMINTEROP
-
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len)
 {
     QCALL_CONTRACT;
@@ -1046,6 +1025,24 @@ extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
 
     YieldProcessorNormalized(iterations);
 }
+
+#ifdef FEATURE_COMINTEROP
+extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    thread->SetDisableComObjectEagerCleanup();
+
+    END_QCALL;
+}
+#endif //FEATURE_COMINTEROP
 
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread()
 {

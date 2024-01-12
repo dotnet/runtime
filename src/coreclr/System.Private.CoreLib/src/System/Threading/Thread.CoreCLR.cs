@@ -309,12 +309,15 @@ namespace System.Threading
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #if FEATURE_COMINTEROP
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern void DisableComObjectEagerCleanup();
-#else // !FEATURE_COMINTEROP
         public void DisableComObjectEagerCleanup()
         {
+            DisableComObjectEagerCleanup(GetNativeHandle());
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_DisableComObjectEagerCleanup")]
+        private static partial void DisableComObjectEagerCleanup(ThreadHandle t);
+#else // !FEATURE_COMINTEROP
+        public void DisableComObjectEagerCleanup() { }
 #endif // FEATURE_COMINTEROP
 
         /// <summary>

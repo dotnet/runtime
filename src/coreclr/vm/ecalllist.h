@@ -361,9 +361,6 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("GetApartmentStateNative", ThreadNative::GetApartmentState)
     FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-#ifdef FEATURE_COMINTEROP
-    FCFuncElement("DisableComObjectEagerCleanup", ThreadNative::DisableComObjectEagerCleanup)
-#endif // FEATURE_COMINTEROP
     FCFuncElement("Interrupt", ThreadNative::Interrupt)
     FCFuncElement("Join", ThreadNative::Join)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
