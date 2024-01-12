@@ -4995,7 +4995,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
 
         fgReplaceJumpTarget(enterBlock, preheader, header);
     }
-    
+
     // For BBJ_COND blocks preceding header, fgReplaceJumpTarget set their false targets to preheader.
     // Direct fallthrough to preheader by inserting a jump after the block.
     // TODO-NoFallThrough: Remove this, and just rely on fgReplaceJumpTarget to do the fixup

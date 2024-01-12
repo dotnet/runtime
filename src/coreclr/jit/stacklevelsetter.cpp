@@ -80,7 +80,7 @@ PhaseStatus StackLevelSetter::DoPhase()
             madeChanges = true;
         }
     }
-    
+
     // The above loop might have moved a BBJ_COND's true target to its next block.
     // In such cases, reverse the condition so we can remove a branch.
     if (madeChanges)
