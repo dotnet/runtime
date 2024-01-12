@@ -140,6 +140,16 @@ namespace ILCompiler.ObjectWriter
                 });
             }
 
+            if (_machine is EM_ARM && section.Type is SectionType.Executable)
+            {
+                _symbols.Add(new ElfSymbol
+                {
+                    Section = _sections[sectionIndex],
+                    Info = STT_NOTYPE,
+                    Name = $"$t.{sectionIndex}"
+                });
+            }
+
             base.CreateSection(section, comdatName, symbolName ?? sectionName, sectionStream);
         }
 
