@@ -297,65 +297,7 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_element_class(MonoClas
     return (MonoClass*)reinterpret_cast<MonoClass_clr*>(klass)->GetArrayElementTypeHandle().GetMethodTable();
 }
 
-extern "C" EXPORT_API MonoClassField* EXPORT_CC mono_class_get_field_from_name(MonoClass *klass, const char *name)
-{
-    CONTRACTL
-    {
-    GC_TRIGGERS;
-    PRECONDITION(klass != NULL);
-    }
-    CONTRACTL_END;
-
-    MonoClass_clr* mt = reinterpret_cast<MonoClass_clr*>(klass);
-    FieldDesc* retVal = NULL;
-    // FindField only checks the fields of the current class and not inherited ones.
-    while (retVal == NULL && mt != NULL)
-    {
-        retVal = MemberLoader::FindField(mt, name, NULL, NULL, NULL);
-        mt = mt->GetParentMethodTable();
-    }
-
-    return (MonoClassField*)retVal;
-}
-
 thread_local ThreadLocalPoolAllocator<ApproxFieldDescIterator,5> g_ApproxFieldDescIteratorAlloc;
-
-extern "C" EXPORT_API MonoClassField* EXPORT_CC mono_class_get_fields(MonoClass* klass, gpointer *iter)
-{
-    TRACE_API("%p, %p", klass, iter);
-
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(klass != NULL);
-    }
-    CONTRACTL_END;
-
-    if (!iter)
-    {
-        return NULL;
-    }
-    MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
-
-    ApproxFieldDescIterator* iterator = (ApproxFieldDescIterator*)*iter;
-    if (iterator == nullptr)
-    {
-        iterator = g_ApproxFieldDescIteratorAlloc.Alloc();
-        iterator->Init(klass_clr, ApproxFieldDescIterator::INSTANCE_FIELDS | ApproxFieldDescIterator::STATIC_FIELDS);
-        *iter = iterator;
-    }
-
-    auto nextField = iterator->Next();
-    if (nextField == nullptr)
-    {
-        *iter = nullptr;
-        g_ApproxFieldDescIteratorAlloc.Free(iterator);
-        return nullptr;
-    }
-
-    return (MonoClassField*)nextField;
-}
 
 extern "C" EXPORT_API guint32 EXPORT_CC mono_class_get_flags(MonoClass *klass)
 {
@@ -727,11 +669,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_exit_internal_call(MonoInternalCallFra
     frame->~FrameWithCookie<HelperMethodFrame>();
 }
 
-extern "C" EXPORT_API guint32 EXPORT_CC mono_field_get_flags(MonoClassField *field)
-{
-    return ((FieldDesc*)field)->GetAttributes();
-}
-
 extern "C" EXPORT_API const char* EXPORT_CC mono_field_get_name(MonoClassField *field)
 {
     CONTRACTL
@@ -767,37 +704,6 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_field_get_parent(MonoClassField 
     return (MonoClass*)fieldDesc->GetApproxEnclosingMethodTable();
 }
 
-extern "C" EXPORT_API MonoType* EXPORT_CC mono_field_get_type(MonoClassField *field)
-{
-    CONTRACTL
-    {
-        PRECONDITION(field != NULL);
-    }
-    CONTRACTL_END;
-
-    auto field_clr = (MonoClassField_clr*)field;
-
-    MonoType_clr typeHandle = field_clr->GetFieldTypeHandleThrowing();
-
-    return MonoType_clr_to_MonoType(typeHandle);
-}
-
-extern "C" EXPORT_API MonoType* EXPORT_CC mono_field_get_type_specific(MonoClassField *field, MonoClass* owner)
-{
-    CONTRACTL
-    {
-        PRECONDITION(field != NULL);
-    }
-    CONTRACTL_END;
-
-    auto field_clr = (MonoClassField_clr*)field;
-    auto klass_clr = (MonoClass_clr*)owner;
-
-    MonoType_clr typeHandle = field_clr->GetExactFieldType(klass_clr);
-
-    return MonoType_clr_to_MonoType(typeHandle);
-}
-
 extern "C" EXPORT_API void EXPORT_CC mono_gc_collect(int generation)
 {
     FCALL_CONTRACT;
@@ -822,14 +728,9 @@ static inline uintptr_t handle_to_uintptr(OBJECTHANDLE h, bool pinned)
     return p;
 }
 
-extern "C" EXPORT_API void EXPORT_CC mono_gchandle_free_v2(uintptr_t gchandle)
-{
-    OBJECTHANDLE objectHandle = handle_from_uintptr(gchandle);
-
-    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(objectHandle);
-}
-
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_get_object_class()
+// The embedding api has moved to managed, however, there is still a usage by another native embedding api that will need to be moved to managed
+// before this can be removed
+MonoClass* mono_get_object_class()
 {
     return (MonoClass*)CoreLibBinder::GetClass(CLASS__OBJECT);
 }
@@ -1508,12 +1409,6 @@ extern "C" EXPORT_API gboolean EXPORT_CC mono_thread_has_sufficient_execution_st
     return TRUE;
 }
 
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_type_get_class(MonoType *type)
-{
-    TypeHandle handle = TypeHandle::FromPtr((PTR_VOID)type);
-    return (MonoClass*)handle.AsMethodTable();
-}
-
 extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name(MonoType *type)
 {
     // To be compatible with Mono behavior.
@@ -1651,12 +1546,6 @@ retry:
     }
 }
 
-extern "C" EXPORT_API gboolean EXPORT_CC mono_type_is_byref (MonoType * type)
-{
-    TypeHandle clrType = TypeHandle::FromPtr(reinterpret_cast<PTR_VOID>(type));
-    return clrType.IsByRef();
-}
-
 extern "C" EXPORT_API uint32_t EXPORT_CC mono_unity_allocation_granularity ()
 {
     ASSERT_NOT_IMPLEMENTED;
@@ -1671,12 +1560,6 @@ extern "C" EXPORT_API int EXPORT_CC mono_unity_backtrace_from_context(void* cont
     return 0;
 }
 #endif
-
-extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_field_is_literal (MonoClassField * field)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return FALSE;
-}
 
 extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_has_failure (MonoClass * klass)
 {
@@ -1724,18 +1607,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_set_vprintf_func(vprintf_func fu
 extern "C" EXPORT_API void EXPORT_CC mono_unity_type_get_name_full_chunked(MonoType * type, MonoDataFunc appendCallback, void* userData)
 {
     ASSERT_NOT_IMPLEMENTED;
-}
-
-extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_type_is_pointer_type(MonoType * type)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return FALSE;
-}
-
-extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_type_is_static(MonoType * type)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return FALSE;
 }
 
 #ifdef _DEBUG
