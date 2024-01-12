@@ -2778,7 +2778,7 @@ static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
 }
 
 template <uint8_t UpperMaskSize>
-static ssize_t UpperWordDoubleWordSignExtend(ssize_t doubleWord)
+static ssize_t UpperWordOfDoubleWordSingleSignExtend(ssize_t doubleWord)
 {
     static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (31 - UpperMaskSize);
 
@@ -2786,7 +2786,7 @@ static ssize_t UpperWordDoubleWordSignExtend(ssize_t doubleWord)
 }
 
 template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
-static ssize_t UpperWordOfDoubleWordSignExtend(ssize_t doubleWord)
+static ssize_t UpperWordOfDoubleWordDoubleSignExtend(ssize_t doubleWord)
 {
     return UpperWordOfDoubleWord(DoubleWordSignExtend<UpperMaskSize, LowerMaskSize>(doubleWord));
 }
@@ -2987,7 +2987,7 @@ BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumbe
     assert((immediate >> (32 + 20)) == 0);
 
     regNumber rsvdReg      = codeGen->rsGetRsvdReg();
-    ssize_t   upperSignExt = UpperWordOfDoubleWordSignExtend<32, 52>(immediate);
+    ssize_t   upperSignExt = UpperWordOfDoubleWordDoubleSignExtend<32, 52>(immediate);
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(immediate));
@@ -3036,7 +3036,7 @@ BYTE* emitter::emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate)
 {
     // Make target address with offset, then jump (JALR) with the target address
     immediate -= 2 * 4;
-    ssize_t high = UpperWordDoubleWordSignExtend<0>(immediate);
+    ssize_t high = UpperWordOfDoubleWordSingleSignExtend<0>(immediate);
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, REG_RA, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(dst, INS_addi, REG_RA, REG_RA, LowerNBitsOfWord<12>(high));
