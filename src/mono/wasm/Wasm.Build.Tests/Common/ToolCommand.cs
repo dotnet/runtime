@@ -203,7 +203,6 @@ namespace Wasm.Build.Tests
                     CurrentProcess.Kill(entireProcessTree: true);
                     _testOutput.WriteLine($"[{pid}] back from CurrentProcess.kill, exited: {CurrentProcess.HasExited}");
                     DumpProcess($"After killing, and waiting for exited event", pid);
-                    //CurrentProcess.WaitForExit();
                     await _exited.Task.WaitAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
                     _testOutput.WriteLine($"[{pid}] back from CurrentProcess.WaitForExit, exited: {CurrentProcess.HasExited}");
                     lock (syncObj)

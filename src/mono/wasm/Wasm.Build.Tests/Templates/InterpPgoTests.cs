@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Collections.Generic;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -20,6 +21,96 @@ public class InterpPgoTests : WasmTemplateTestBase
     public InterpPgoTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
+    }
+
+    public static TheoryData<int> GetTestData(int count)
+    {
+        var data = new TheoryData<int>();
+        for (int i = 0; i < count; i ++)
+            data.Add(i);
+        return data;
+    }
+
+    [Fact]
+    public async Task BrowserRun()
+    {
+        await BrowserRunTwiceWithAndThenWithoutBuildAsync("Debug");
+        _testOutput.WriteLine($"Running simple new now ..");
+
+        string secondDir = Path.Combine(BuildEnvironment.TmpPath, $"d_n_{GetRandomId()}");
+        Directory.CreateDirectory(secondDir);
+        await using var runCommand = new DotNetCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(secondDir)
+                                    .WithTimeout(TimeSpan.FromSeconds(60));
+        var res = await runCommand.ExecuteWithCapturedOutputAsync("new wasmbrowser");
+        res.EnsureSuccessful();
+        _testOutput.WriteLine($"done");
+    }
+
+    private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    {
+        base.UpdateBrowserMainJs((mainJsContent) => {
+            // .withExitOnUnhandledError() is available only only >net7.0
+            mainJsContent = mainJsContent.Replace(".create()",
+                    (targetFramework == "net8.0" || targetFramework == "net9.0")
+                        ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
+                        : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
+
+            mainJsContent = mainJsContent.Replace("from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
+
+            return mainJsContent;
+        }, targetFramework, runtimeAssetsRelativePath);
+    }
+    private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
+    {
+        string id = $"browser_{config}_{GetRandomId()}";
+        string projectFile = await CreateWasmTemplateProjectAsync(id, "wasmbrowser");
+
+        UpdateBrowserMainJs(DefaultTargetFramework);
+
+        if (!string.IsNullOrEmpty(extraProperties))
+            AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+
+        string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
+
+        {
+            await using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(workingDir);
+
+            await using var runner = new BrowserRunner(_testOutput);
+            var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFile}\" --forward-console");
+            await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+            Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+        }
+
+        _testOutput.WriteLine($"-- waiting a bit before running again --");
+        await Task.Delay(2000);
+
+        {
+            await using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(workingDir);
+
+            await using var runner = new BrowserRunner(_testOutput);
+            var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console");
+            await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+            Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+        }
+    }
+
+#if false
+    [Theory]
+    [MemberData(nameof(GetTestData), parameters: 10)]
+    public async Task RunDotnetNewRepeatedly(int idx)
+    {
+        string id = $"dotnet_new_{idx}_{GetRandomId()}";
+        InitPaths(id);
+        InitProjectDir(_projectDir);
+        await using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(_projectDir!)
+                                    .WithTimeout(TimeSpan.FromSeconds(60));
+        var res = await runCommand.ExecuteWithCapturedOutputAsync("dotnet new wasmbrowser");
+        res.EnsureSuccessful();
+        _testOutput.WriteLine($"[{idx}] done");
     }
 
     [Theory]
@@ -121,4 +212,5 @@ public class InterpPgoTests : WasmTemplateTestBase
         (context as IDisposable)?.Dispose();
         (browser as IDisposable)?.Dispose();
     }
+#endif
 }
