@@ -120,7 +120,8 @@ namespace Wasm.Build.Tests
                     _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose back from calling Kill, hasexited: {CurrentProcess.HasExited}");
                 }
                 _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose waiting on _exited: {_exited.Task.Status}");
-                await _exited.Task.ConfigureAwait(false);
+                //await _exited.Task.ConfigureAwait(false);
+                await _exited.Task.WaitAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
                 // CurrentProcess.WaitForExit();
                 _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose back from waiting on exited event, hasexited: {CurrentProcess.HasExited}");
                 CurrentProcess.Dispose();
@@ -206,7 +207,7 @@ namespace Wasm.Build.Tests
                     _testOutput.WriteLine($"[{pid}] back from CurrentProcess.kill, exited: {CurrentProcess.HasExited}");
                     DumpProcess($"After killing, and waiting for exited event", pid);
                     //CurrentProcess.WaitForExit();
-                    await _exited.Task.ConfigureAwait(false);
+                    await _exited.Task.WaitAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
                     _testOutput.WriteLine($"[{pid}] back from CurrentProcess.WaitForExit, exited: {CurrentProcess.HasExited}");
                     lock (syncObj)
                     {
