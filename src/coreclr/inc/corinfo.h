@@ -658,6 +658,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
     CORINFO_HELP_COUNTPROFILE32,            // Update 32-bit block or edge count profile
     CORINFO_HELP_COUNTPROFILE64,            // Update 64-bit block or edge count profile
+    CORINFO_HELP_VALUEPROFILE32,            // Update 32-bit value profile
+    CORINFO_HELP_VALUEPROFILE64,            // Update 64-bit value profile
 
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
@@ -2049,6 +2051,19 @@ public:
 
     // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) & CORINFO_FLG_INTRINSIC, except faster.
     virtual bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) = 0;
+
+    // Notify EE about intent to rely on given MethodInfo in the current method
+    // EE returns false if we're not allowed to do so and the methodinfo may change.
+    // Example of a scenario addressed by notifyMethodInfoUsage:
+    //  1) Crossgen (with --opt-cross-module=MyLib) attempts to inline a call from MyLib.dll into MyApp.dll
+    //     and realizes that the call always throws.
+    //  2) JIT aborts the inlining attempt and marks the call as no-return instead. The code that follows the call is 
+    //     replaced with a breakpoint instruction that is expected to be unreachable.
+    //  3) MyLib is updated to a new version so it's no longer within the same version bubble with MyApp.dll
+    //     and the new version of the call no longer throws and does some work.
+    //  4) The breakpoint instruction is now reachable in the MyApp.dll.
+    //
+    virtual bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn) = 0;
 
     // return flags (a bitfield of CorInfoFlags values)
     virtual uint32_t getMethodAttribs (

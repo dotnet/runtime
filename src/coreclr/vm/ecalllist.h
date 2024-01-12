@@ -244,10 +244,6 @@ FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("GetLoaderAllocator", RuntimeFieldHandle::GetLoaderAllocator)
 FCFuncEnd()
 
-FCFuncStart(gCOMModuleFuncs)
-    FCFuncElement("GetTypes", COMModule::GetTypes)
-FCFuncEnd()
-
 FCFuncStart(gCOMModuleHandleFuncs)
     FCFuncElement("GetToken", ModuleHandle::GetToken)
     FCFuncElement("GetDynamicMethod", ModuleHandle::GetDynamicMethod)
@@ -271,28 +267,17 @@ FCFuncEnd()
 
 FCFuncStart(gRuntimeAssemblyFuncs)
     FCFuncElement("FCallIsDynamic", AssemblyNative::IsDynamic)
-    FCFuncElement("GetReferencedAssemblies", AssemblyNative::GetReferencedAssemblies)
-    FCFuncElement("GetManifestResourceNames", AssemblyNative::GetManifestResourceNames)
     FCFuncElement("GetManifestModule", AssemblyHandle::GetManifestModule)
     FCFuncElement("GetToken", AssemblyHandle::GetToken)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyLoadContextFuncs)
-    FCFuncElement("GetLoadedAssemblies", AppDomainNative::GetLoadedAssemblies)
     FCFuncElement("IsTracingEnabled", AssemblyNative::IsTracingEnabled)
 FCFuncEnd()
 
 FCFuncStart(gDelegateFuncs)
-    FCFuncElement("BindToMethodName", COMDelegate::BindToMethodName)
-    FCFuncElement("BindToMethodInfo", COMDelegate::BindToMethodInfo)
     FCFuncElement("GetMulticastInvoke", COMDelegate::GetMulticastInvoke)
     FCFuncElement("GetInvokeMethod", COMDelegate::GetInvokeMethod)
-    FCFuncElement("InternalAlloc", COMDelegate::InternalAlloc)
-    FCFuncElement("InternalAllocLike", COMDelegate::InternalAllocLike)
-    FCFuncElement("InternalEqualMethodHandles", COMDelegate::InternalEqualMethodHandles)
-    FCFuncElement("FindMethodHandle", COMDelegate::FindMethodHandle)
-    FCFuncElement("AdjustTarget", COMDelegate::AdjustTarget)
-    FCFuncElement("GetCallStub", COMDelegate::GetCallStub)
 
     // The FCall mechanism knows how to wire multiple different constructor calls into a
     // single entrypoint, without the following entry.  But we need this entry to satisfy
@@ -434,8 +419,6 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("GetGenerationWR", GCInterface::GetGenerationWR)
     FCFuncElement("_RegisterForFullGCNotification", GCInterface::RegisterForFullGCNotification)
     FCFuncElement("_CancelFullGCNotification", GCInterface::CancelFullGCNotification)
-    FCFuncElement("_WaitForFullGCApproach", GCInterface::WaitForFullGCApproach)
-    FCFuncElement("_WaitForFullGCComplete", GCInterface::WaitForFullGCComplete)
     FCFuncElement("_CollectionCount", GCInterface::CollectionCount)
     FCFuncElement("GetMemoryInfo", GCInterface::GetMemoryInfo)
     FCFuncElement("_GetTotalPauseDuration", GCInterface::GetTotalPauseDuration)
@@ -449,7 +432,7 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("_ReRegisterForFinalize", GCInterface::ReRegisterForFinalize)
 
     FCFuncElement("GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
-    FCFuncElement("GetTotalAllocatedBytes", GCInterface::GetTotalAllocatedBytes)
+    FCFuncElement("GetTotalAllocatedBytesApproximate", GCInterface::GetTotalAllocatedBytesApproximate)
 
     FCFuncElement("AllocateNewArray", GCInterface::AllocateNewArray)
 FCFuncEnd()
@@ -468,11 +451,7 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetExceptionCode", ExceptionNative::GetExceptionCode)
     FCFuncElement("GetExceptionPointers", ExceptionNative::GetExceptionPointers)
 
-    FCFuncElement("OffsetOfHelper", MarshalNative::OffsetOfHelper)
-    FCFuncElement("GetExceptionForHRInternal", MarshalNative::GetExceptionForHR)
-
 #ifdef FEATURE_COMINTEROP
-    FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
     FCFuncElement("AreComObjectsAvailableForCleanup", MarshalNative::AreComObjectsAvailableForCleanup)
 #endif // FEATURE_COMINTEROP
 FCFuncEnd()
@@ -686,7 +665,6 @@ FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelpers)
 FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)
-FCClassElement("RuntimeModule", "System.Reflection", gCOMModuleFuncs)
 FCClassElement("RuntimeType", "System", gSystem_RuntimeType)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 

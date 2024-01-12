@@ -185,6 +185,7 @@ function _marshal_datetime_to_js(arg: JSMarshalerArgument): Date | null {
     return get_arg_date(arg);
 }
 
+// NOTE: at the moment, this can't dispatch async calls (with Task/Promise return type). Therefore we don't have to worry about pre-created Task.
 function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: MarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs): Function | null {
     const type = get_arg_type(arg);
     if (type === MarshalerType.None) {
@@ -265,7 +266,7 @@ export function end_marshal_task_to_js(args: JSMarshalerArguments, res_converter
     }
 
     // otherwise drop the eagerPromise's handle
-    const js_handle = get_arg_js_handle(res);
+    const js_handle = mono_wasm_get_js_handle(eagerPromise);
     mono_wasm_release_cs_owned_object(js_handle);
 
     // get the synchronous result
@@ -348,11 +349,18 @@ export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments):
         mono_assert(holder, () => `Cannot find Promise for JSHandle ${js_handle}`);
 
         holder.resolve_or_reject(type, js_handle, arg_value);
-
+        if (MonoWasmThreads) {
+            // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
+            Module._free(args as any);
+            return;
+        }
         set_arg_type(res, MarshalerType.Void);
         set_arg_type(exc, MarshalerType.None);
 
     } catch (ex: any) {
+        if (MonoWasmThreads) {
+            mono_assert(false, () => `Failed to resolve or reject promise ${ex}`);
+        }
         marshal_exception_to_cs(exc, ex);
     }
 }

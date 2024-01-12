@@ -18,7 +18,7 @@ export const bound_js_function_symbol = Symbol.for("wasm bound_js_function");
 export const imported_js_function_symbol = Symbol.for("wasm imported_js_function");
 export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
 
-export const JavaScriptMarshalerArgSize = 16;
+export const JavaScriptMarshalerArgSize = 32;
 export const JSMarshalerTypeSize = 32;
 export const JSMarshalerSignatureHeaderSize = 4 * 8; // without Exception and Result
 
@@ -26,6 +26,7 @@ export function alloc_stack_frame(size: number): JSMarshalerArguments {
     const bytes = JavaScriptMarshalerArgSize * size;
     const args = Module.stackAlloc(bytes) as any;
     _zero_region(args, bytes);
+    set_args_context(args);
     return args;
 }
 
@@ -38,6 +39,15 @@ export function is_args_exception(args: JSMarshalerArguments): boolean {
     mono_assert(args, "Null args");
     const exceptionType = get_arg_type(<any>args);
     return exceptionType !== MarshalerType.None;
+}
+
+export function set_args_context(args: JSMarshalerArguments): void {
+    if (!MonoWasmThreads) return;
+    mono_assert(args, "Null args");
+    const exc = get_arg(args, 0);
+    const res = get_arg(args, 1);
+    set_arg_proxy_context(exc);
+    set_arg_proxy_context(res);
 }
 
 export function get_sig(signature: JSFunctionSignature, index: number): JSMarshalerType {
@@ -252,9 +262,16 @@ export function get_arg_js_handle(arg: JSMarshalerArgument): JSHandle {
     return <any>getI32(<any>arg + 4);
 }
 
+export function set_arg_proxy_context(arg: JSMarshalerArgument): void {
+    if (!MonoWasmThreads) return;
+    mono_assert(arg, "Null arg");
+    setI32(<any>arg + 16, <any>runtimeHelpers.proxy_context_gc_handle);
+}
+
 export function set_js_handle(arg: JSMarshalerArgument, jsHandle: JSHandle): void {
     mono_assert(arg, "Null arg");
     setI32(<any>arg + 4, <any>jsHandle);
+    set_arg_proxy_context(arg);
 }
 
 export function get_arg_gc_handle(arg: JSMarshalerArgument): GCHandle {
@@ -265,6 +282,7 @@ export function get_arg_gc_handle(arg: JSMarshalerArgument): GCHandle {
 export function set_gc_handle(arg: JSMarshalerArgument, gcHandle: GCHandle): void {
     mono_assert(arg, "Null arg");
     setI32(<any>arg + 4, <any>gcHandle);
+    set_arg_proxy_context(arg);
 }
 
 export function get_string_root(arg: JSMarshalerArgument): WasmRoot<MonoString> {
@@ -331,7 +349,7 @@ export class ManagedError extends Error implements IDisposable {
         if (this.managed_stack) {
             return this.managed_stack;
         }
-        if (loaderHelpers.is_runtime_running() && (!MonoWasmThreads || runtimeHelpers.jsSynchronizationContextInstalled)) {
+        if (loaderHelpers.is_runtime_running() && (!MonoWasmThreads || runtimeHelpers.proxy_context_gc_handle)) {
             const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
             if (gc_handle !== GCHandleNull) {
                 const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);

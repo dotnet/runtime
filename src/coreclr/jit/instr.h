@@ -67,7 +67,7 @@ enum instruction : uint32_t
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 
 #elif defined(TARGET_LOONGARCH64)
-    #define INST(id, nm, ldst, e1) INS_##id,
+    #define INST(id, nm, ldst, e1, msk, fmt) INS_##id,
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
@@ -303,44 +303,21 @@ enum insOpts : unsigned
     INS_OPTS_SCALABLE_H,
     INS_OPTS_SCALABLE_S,
     INS_OPTS_SCALABLE_D,
+    INS_OPTS_SCALABLE_Q,
+};
 
-    INS_OPTS_SCALABLE_WIDE_B,
-    INS_OPTS_SCALABLE_WIDE_H,
-    INS_OPTS_SCALABLE_WIDE_S,
+// When a single instruction has different encodings variants, this is used
+// to distinguish those that can't be determined solely by register usage.
+enum insScalableOpts : unsigned
+{
+    INS_SCALABLE_OPTS_NONE,                // No Variants exist
 
-    INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR,
-    INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR,
-    INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR,
-    INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR,
-
-    INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR,
-    INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR,
-    INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR,
-    INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR,
-
-    INS_OPTS_SCALABLE_B_WITH_SCALAR,
-    INS_OPTS_SCALABLE_H_WITH_SCALAR,
-    INS_OPTS_SCALABLE_S_WITH_SCALAR,
-    INS_OPTS_SCALABLE_D_WITH_SCALAR,
-
-    INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE,
-    INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE,
-    INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE,
-    INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE,
-
-    INS_OPTS_SCALABLE_B_WITH_PREDICATE_PAIR,
-    INS_OPTS_SCALABLE_H_WITH_PREDICATE_PAIR,
-    INS_OPTS_SCALABLE_S_WITH_PREDICATE_PAIR,
-    INS_OPTS_SCALABLE_D_WITH_PREDICATE_PAIR,
-
-    INS_OPTS_SCALABLE_B_VL_2X,
-    INS_OPTS_SCALABLE_B_VL_4X,
-    INS_OPTS_SCALABLE_H_VL_2X,
-    INS_OPTS_SCALABLE_H_VL_4X,
-    INS_OPTS_SCALABLE_S_VL_2X,
-    INS_OPTS_SCALABLE_S_VL_4X,
-    INS_OPTS_SCALABLE_D_VL_2X,
-    INS_OPTS_SCALABLE_D_VL_4X,
+    INS_SCALABLE_OPTS_WIDE,                // Variants with wide elements (eg asr)
+    INS_SCALABLE_OPTS_WITH_SIMD_SCALAR,    // Variants with a NEON SIMD register (eg clasta)
+    INS_SCALABLE_OPTS_PREDICATE_MERGE,     // Variants with a Pg/M predicate (eg brka)
+    INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR, // Variants with {<Pd1>.<T>, <Pd2>.<T>} predicate pair (eg whilege)
+    INS_SCALABLE_OPTS_VL_2X,               // Variants with a vector length specifier of 2x (eg whilege)
+    INS_SCALABLE_OPTS_VL_4X,               // Variants with a vector length specifier of 4x (eg whilege)
 };
 
 enum insCond : unsigned

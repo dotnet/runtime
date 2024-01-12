@@ -82,6 +82,7 @@ namespace System.Reflection.Emit.Tests
             EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(int));
 
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.SpecialName, typeof(int), null);
+            method.GetILGenerator().Emit(OpCodes.Ret);
             CustomAttributeBuilder customAttrBuilder = new CustomAttributeBuilder(typeof(IntPropertyAttribute).GetConstructor([typeof(int)]), [10]);
             type.CreateType();
 
