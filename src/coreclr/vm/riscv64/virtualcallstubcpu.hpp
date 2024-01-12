@@ -3,8 +3,8 @@
 //
 // VirtualCallStubCpu.hpp
 //
-#ifndef _VIRTUAL_CALL_STUB_ARM_H
-#define _VIRTUAL_CALL_STUB_ARM_H
+#ifndef _VIRTUAL_CALL_STUB_RISCV64_H
+#define _VIRTUAL_CALL_STUB_RISCV64_H
 
 #define DISPATCH_STUB_FIRST_DWORD 0x00000e97
 #define RESOLVE_STUB_FIRST_DWORD 0x00053e03
@@ -513,4 +513,4 @@ void VTableCallHolder::Initialize(unsigned slot)
 
 #endif //DECLARE_DATA
 
-#endif // _VIRTUAL_CALL_STUB_ARM_H
+#endif // _VIRTUAL_CALL_STUB_RISCV64_H
