@@ -54,7 +54,7 @@ public class IcuTests : BlazorWasmTestBase
             Assert.DoesNotContain(warning, res.Output);
         }
 
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
+        await BlazorRunForBuildWithDotnetRunAsync(new BlazorRunOptions() { Config = config });
     }
 
     [Theory]
@@ -91,7 +91,7 @@ public class IcuTests : BlazorWasmTestBase
             Assert.DoesNotContain(warning, res.Output);
         }
 
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
+        await BlazorRunForBuildWithDotnetRunAsync(new BlazorRunOptions() { Config = config });
     }
 
     [Theory]
@@ -129,6 +129,6 @@ public class IcuTests : BlazorWasmTestBase
              Assert.DoesNotContain(warning, res.Output);
         }
 
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
+        await BlazorRunForBuildWithDotnetRunAsync(new BlazorRunOptions() { Config = config });
     }
 }

@@ -43,7 +43,7 @@ public class AppsettingsTests : BlazorWasmTestBase
         bool existsChecked = false;
         bool contentChecked = false;
 
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions()
+        await BlazorRunForBuildWithDotnetRunAsync(new BlazorRunOptions()
         {
             Config = "debug",
             OnConsoleMessage = msg =>

@@ -31,7 +31,7 @@ public class SimpleRunTests : BlazorWasmTestBase
         string projectFile = await CreateWasmTemplateProjectAsync(id, "blazorwasm");
 
         await BlazorBuildAsync(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
+        await BlazorRunForBuildWithDotnetRunAsync(new BlazorRunOptions() { Config = config });
     }
 
     [Theory]
@@ -73,7 +73,7 @@ public class SimpleRunTests : BlazorWasmTestBase
             };
         }
         await BlazorBuildAsync(buildOptions);
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
+        await BlazorRunForBuildWithDotnetRunAsync(new BlazorRunOptions() { Config = config });
     }
 
     [Theory]
@@ -93,6 +93,6 @@ public class SimpleRunTests : BlazorWasmTestBase
             config,
             aot ? NativeFilesType.AOT
                 : (config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack)));
-        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
+        await BlazorRunForPublishWithWebServerAsync(new BlazorRunOptions() { Config = config });
     }
 }

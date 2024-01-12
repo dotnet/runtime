@@ -172,12 +172,7 @@ namespace Wasm.Build.Tests
                     _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync(id:{pid} timed out, exited: {CurrentProcess?.HasExited}");
                     CurrentProcess?.Refresh();
                     DumpProcess($"timed out", pid);
-                }
-                _testOutput.WriteLine($"[{pid}] back from calling CurrentProcess.WaitForExitAsync{pid}.. somehow");
 
-                if (cts.IsCancellationRequested)
-                {
-                    // CurrentProcess didn't exit
                     _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync(id:{pid}) timed out, attemping to kill it, process-is-null: {CurrentProcess is null} hasExited: {CurrentProcess!.HasExited}");
                     CurrentProcess.Kill();//entireProcessTree: true);
                     _testOutput.WriteLine($"[{pid}] back from CurrentProcess.kill for id:{pid}, exited: {CurrentProcess.HasExited}");
@@ -189,6 +184,7 @@ namespace Wasm.Build.Tests
                         throw new XunitException($"[{pid}] CurrentProcess timed out.{System.Environment.NewLine}----------------{System.Environment.NewLine}{string.Join(System.Environment.NewLine, output)}--------------------");
                     }
                 }
+                _testOutput.WriteLine($"[{pid}] back from calling CurrentProcess.WaitForExitAsync{pid}");
 
                 // this will ensure that all the async event handling has completed
                 // and should be called after CurrentProcess.WaitForExit(int)
@@ -221,24 +217,6 @@ namespace Wasm.Build.Tests
                 _testOutput.WriteLine($"[{pid}] -- exception -- {ex}");
                 throw;
             }
-
-
-            //_testOutput.WriteLine($"Calling StartAndWaitForExitAsync for {executable} {args}");
-            //var completionTask = CurrentProcess.StartAndWaitForExitAsync(_testOutput);
-            //CurrentProcess.BeginOutputReadLine();
-            //CurrentProcess.BeginErrorReadLine();
-            //_testOutput.WriteLine($"Waiting on the task returned from .. StartAndWaitForExitAsync for 5mins, on process: {CurrentProcess.HasExited}, {executable} {args}, task: {completionTask.Status}");
-
-            //await Task.WhenAny(completionTask, Task.Delay(TimeSpan.FromMinutes(5))).ConfigureAwait(false);
-
-            ////if (!completionTask.Wait(TimeSpan.FromMinutes(5)))
-            //if (!completionTask.IsCompleted)
-            //{
-                //_testOutput.WriteLine($"** process task timed out, hasexited: {CurrentProcess.HasExited}, task status: {completionTask.Status}, trying to kill");
-                //CurrentProcess.Kill
-            //}
-            //_testOutput.WriteLine("back from waiting on the task returned from .. StartAndWaitForExitAsync");
-
         }
 
         private void DumpProcess(string message, int pid)

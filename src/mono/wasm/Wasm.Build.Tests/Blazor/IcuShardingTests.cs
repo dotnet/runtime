@@ -41,7 +41,7 @@ public class IcuShardingTests : BlazorWasmTestBase
                 $"<BlazorIcuDataFileName>{fileName}</BlazorIcuDataFileName>");
 
         (CommandResult res, string logPath) = await BlazorBuildAsync(buildOptions);
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
+        await BlazorRunForBuildWithDotnetRunAsync(new BlazorRunOptions() { Config = config });
     }
 
     [Theory]
@@ -107,6 +107,6 @@ public class IcuShardingTests : BlazorWasmTestBase
                 GlobalizationMode: GlobalizationMode.PredefinedIcu,
                 PredefinedIcudt: IcuTestsBase.CustomIcuPath
             ));
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
+        await BlazorRunForBuildWithDotnetRunAsync(new BlazorRunOptions() { Config = config });
     }
 }

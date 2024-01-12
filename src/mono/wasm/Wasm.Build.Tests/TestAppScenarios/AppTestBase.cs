@@ -65,7 +65,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 OnConsoleMessage: OnConsoleMessage,
                 QueryString: queryString);
 
-        await BlazorRunForBuildWithDotnetRun(blazorRunOptions);
+        await BlazorRunForBuildWithDotnetRunAsync(blazorRunOptions);
 
         void OnConsoleMessage(IConsoleMessage msg)
         {

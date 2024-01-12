@@ -32,10 +32,10 @@ public class BuildPublishTests : BlazorWasmTestBase
         await CreateBlazorWasmTemplateProjectAsync(id);
 
         await BlazorBuildAsync(new BlazorBuildOptions(id, config));
-        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions() { Config = config });
+        await BlazorRunForBuildWithDotnetRunAsync(new BlazorRunOptions() { Config = config });
 
         await BlazorPublishAsync(new BlazorBuildOptions(id, config));
-        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
+        await BlazorRunForPublishWithWebServerAsync(new BlazorRunOptions() { Config = config });
     }
 
 
@@ -190,7 +190,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         AddItemsPropertiesToProject(projectFile, extraProperties);
 
         await BlazorPublishAsync(new BlazorBuildOptions(id, config, NativeFilesType.AOT, AssertAppBundle : false));
-        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
+        await BlazorRunForPublishWithWebServerAsync(new BlazorRunOptions() { Config = config });
 
         string frameworkDir = Path.Combine(projectDirectory, "bin", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "publish", "wwwroot", "_framework");
         string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");

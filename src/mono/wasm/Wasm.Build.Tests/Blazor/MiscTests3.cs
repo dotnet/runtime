@@ -79,9 +79,9 @@ public class MiscTests3 : BlazorWasmTestBase
 
         BlazorRunOptions runOptions = new() { Config = config, Test = TestDllImport };
         if (publish)
-            await BlazorRunForPublishWithWebServer(runOptions);
+            await BlazorRunForPublishWithWebServerAsync(runOptions);
         else
-            await BlazorRunForBuildWithDotnetRun(runOptions);
+            await BlazorRunForBuildWithDotnetRunAsync(runOptions);
 
         async Task TestDllImport(IPage page)
         {

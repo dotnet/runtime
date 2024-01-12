@@ -117,7 +117,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         }
 
         StringBuilder sbOutput = new();
-        await BlazorRunTest(new BlazorRunOptions()
+        await BlazorRunTestAsync(new BlazorRunOptions()
         {
             Config = config,
             Host = publish ? BlazorRunHost.WebServer : BlazorRunHost.DotnetRun,

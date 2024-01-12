@@ -58,7 +58,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
             RuntimeType: RuntimeVariant.MultiThreaded));
 
         StringBuilder errorOutput = new();
-        await BlazorRunForPublishWithWebServer(
+        await BlazorRunForPublishWithWebServerAsync(
                 runOptions: new BlazorRunOptions(
                     Config: config,
                     ExtraArgs: "--web-server-use-cors --web-server-use-cop",

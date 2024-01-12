@@ -49,7 +49,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         CommandResult res = await new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutputAsync("new blazorwasm");
+                .ExecuteWithCapturedOutputAsync("new blazorwasm")
+                .ConfigureAwait(false);
         res.EnsureSuccessful();
 
         return Path.Combine(_projectDir!, $"{id}.csproj");
@@ -60,7 +61,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = await BlazorBuildInternalAsync(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
+        (CommandResult res, string logPath) = await BlazorBuildInternalAsync(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs).ConfigureAwait(false);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
             AssertBundle(res.Output, options with { IsPublish = false });
@@ -73,7 +74,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = await BlazorBuildInternalAsync(options.Id, options.Config, publish: true, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
+        (CommandResult res, string logPath) = await BlazorBuildInternalAsync(options.Id, options.Config, publish: true, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs).ConfigureAwait(false);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
@@ -101,7 +102,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
                         {
                             "-p:BlazorEnableCompression=false",
                             setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
-                        }).ToArray());
+                        }).ToArray()).ConfigureAwait(false);
         }
         catch (XunitException xe)
         {
@@ -160,26 +161,26 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
-    public Task BlazorRunForBuildWithDotnetRun(BlazorRunOptions runOptions)
-        => BlazorRunTest(runOptions with { Host = BlazorRunHost.DotnetRun });
+    public Task BlazorRunForBuildWithDotnetRunAsync(BlazorRunOptions runOptions)
+        => BlazorRunTestAsync(runOptions with { Host = BlazorRunHost.DotnetRun });
 
-    public Task BlazorRunForPublishWithWebServer(BlazorRunOptions runOptions)
-        => BlazorRunTest(runOptions with { Host = BlazorRunHost.WebServer });
+    public Task BlazorRunForPublishWithWebServerAsync(BlazorRunOptions runOptions)
+        => BlazorRunTestAsync(runOptions with { Host = BlazorRunHost.WebServer });
 
-    public Task BlazorRunTest(BlazorRunOptions runOptions) => runOptions.Host switch
+    public Task BlazorRunTestAsync(BlazorRunOptions runOptions) => runOptions.Host switch
     {
         BlazorRunHost.DotnetRun =>
-                BlazorRunTest($"run -c {runOptions.Config} --no-build", _projectDir!, runOptions),
+                BlazorRunTestAsync($"run -c {runOptions.Config} --no-build", _projectDir!, runOptions),
 
         BlazorRunHost.WebServer =>
-                BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
+                BlazorRunTestAsync($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
                      Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(runOptions.Config, forPublish: true), "..")),
                      runOptions),
 
         _ => throw new NotImplementedException(runOptions.Host.ToString())
     };
 
-    public async Task BlazorRunTest(string runArgs,
+    public async Task BlazorRunTestAsync(string runArgs,
                                     string workingDirectory,
                                     BlazorRunOptions runOptions)
     {
