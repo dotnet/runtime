@@ -316,7 +316,7 @@ namespace System.Numerics
                 ref uint leftElement = ref left[i];
                 if (leftElement < digit)
                     ++carry;
-                leftElement = unchecked(leftElement - digit);
+                leftElement -= digit;
             }
 
             return (uint)carry;
@@ -336,19 +336,9 @@ namespace System.Numerics
             ulong chkLo = divLo * q;
 
             chkHi += (chkLo >> 32);
-            chkLo &= 0xFFFFFFFF;
+            uint chkLoUInt32 = (uint)(chkLo);
 
-            if (chkHi < valHi)
-                return false;
-            if (chkHi > valHi)
-                return true;
-
-            if (chkLo < valLo)
-                return false;
-            if (chkLo > valLo)
-                return true;
-
-            return false;
+            return (chkHi > valHi) || ((chkHi == valHi) && (chkLoUInt32 > valLo));
         }
 
         private static void DivideBurnikelZiegler(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> quotient, Span<uint> remainder)
