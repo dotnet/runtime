@@ -3010,12 +3010,6 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
     bool result = false;
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        // TODO-Quirk: Remove
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
         JITDUMP("Considering loop " FMT_LP " to clone for optimizations.\n", loop->GetIndex());
         NaturalLoopIterInfo iterInfo;
         if (loop->AnalyzeIteration(&iterInfo))
@@ -3169,7 +3163,7 @@ PhaseStatus Compiler::optCloneLoops()
         fgRenumberBlocks();
 
         m_dfsTree = fgComputeDfs();
-        optFindNewLoops();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }
 
 #ifdef DEBUG

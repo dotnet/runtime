@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    public sealed class MarshalAsMarshallingGeneratorFactory : IMarshallingGeneratorFactory
+    public sealed class MarshalAsMarshallingGeneratorResolver : IMarshallingGeneratorResolver
     {
         private static readonly ByteBoolMarshaller s_byteBool = new(signed: false);
         private static readonly ByteBoolMarshaller s_signed_byteBool = new(signed: true);
@@ -19,12 +19,10 @@ namespace Microsoft.Interop
         private static readonly BlittableMarshaller s_blittable = new();
         private static readonly DelegateMarshaller s_delegate = new();
         private InteropGenerationOptions Options { get; }
-        private IMarshallingGeneratorFactory InnerFactory { get; }
 
-        public MarshalAsMarshallingGeneratorFactory(InteropGenerationOptions options, IMarshallingGeneratorFactory inner)
+        public MarshalAsMarshallingGeneratorResolver(InteropGenerationOptions options)
         {
             Options = options;
-            InnerFactory = inner;
         }
 
         /// <summary>
@@ -94,7 +92,7 @@ namespace Microsoft.Interop
                     return ResolvedGenerator.Resolved(s_forwarder);
 
                 default:
-                    return InnerFactory.Create(info, context);
+                    return ResolvedGenerator.UnresolvedGenerator;
             }
         }
     }

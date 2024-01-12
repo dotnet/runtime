@@ -12,9 +12,14 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public readonly record struct AttributedMarshallingModelOptions(bool RuntimeMarshallingDisabled, MarshalMode ManagedToUnmanagedMode, MarshalMode BidirectionalMode, MarshalMode UnmanagedToManagedMode);
+    public readonly record struct AttributedMarshallingModelOptions(
+        bool RuntimeMarshallingDisabled,
+        MarshalMode ManagedToUnmanagedMode,
+        MarshalMode BidirectionalMode,
+        MarshalMode UnmanagedToManagedMode,
+        bool ResolveElementsFromSelf);
 
-    public class AttributedMarshallingModelGeneratorFactory : IMarshallingGeneratorFactory
+    public class AttributedMarshallingModelGeneratorResolver : IMarshallingGeneratorResolver
     {
         private static readonly ImmutableDictionary<string, string> AddDisableRuntimeMarshallingAttributeProperties =
             ImmutableDictionary<string, string>.Empty.Add(GeneratorDiagnosticProperties.AddDisableRuntimeMarshallingAttribute, GeneratorDiagnosticProperties.AddDisableRuntimeMarshallingAttribute);
@@ -22,28 +27,18 @@ namespace Microsoft.Interop
         private static readonly BlittableMarshaller s_blittable = new BlittableMarshaller();
         private static readonly Forwarder s_forwarder = new Forwarder();
 
-        private readonly IMarshallingGeneratorFactory _innerMarshallingGenerator;
-        private readonly IMarshallingGeneratorFactory _elementMarshallingGenerator;
+        private readonly IMarshallingGeneratorResolver _elementGeneratorResolver;
 
-        public AttributedMarshallingModelGeneratorFactory(
-            IMarshallingGeneratorFactory innerMarshallingGenerator,
+        public AttributedMarshallingModelGeneratorResolver(
+            IMarshallingGeneratorResolver elementGeneratorResolver,
             AttributedMarshallingModelOptions options)
         {
             Options = options;
-            _innerMarshallingGenerator = innerMarshallingGenerator;
-            // Unless overridden, default to using this generator factory for creating generators for collection elements.
-            _elementMarshallingGenerator = this;
-        }
-
-        public AttributedMarshallingModelGeneratorFactory(
-            IMarshallingGeneratorFactory innerMarshallingGenerator,
-            IMarshallingGeneratorFactory elementMarshallingGenerator,
-            AttributedMarshallingModelOptions options)
-        {
-            Options = options;
-            _innerMarshallingGenerator = innerMarshallingGenerator;
-
-            _elementMarshallingGenerator = elementMarshallingGenerator;
+            _elementGeneratorResolver = elementGeneratorResolver;
+            if (options.ResolveElementsFromSelf)
+            {
+                _elementGeneratorResolver = new CompositeMarshallingGeneratorResolver(this, _elementGeneratorResolver);
+            }
         }
 
         private AttributedMarshallingModelOptions Options { get; }
@@ -75,7 +70,7 @@ namespace Microsoft.Interop
                 return ResolvedGenerator.Resolved(s_forwarder);
             }
 
-            return _innerMarshallingGenerator.Create(info, context);
+            return ResolvedGenerator.UnresolvedGenerator;
         }
 
         private record struct ExpressionOrNotSupported(ExpressionSyntax? Expression, GeneratorDiagnostic.NotSupported? NotSupported)
@@ -316,11 +311,11 @@ namespace Microsoft.Interop
                 ManagedIndex = info.ManagedIndex,
                 RefKind = CreateElementRefKind(info.RefKind, info.ByValueContentsMarshalKind)
             };
-            ResolvedGenerator resolvedElementMarshaller = _elementMarshallingGenerator.Create(
+            ResolvedGenerator resolvedElementMarshaller = _elementGeneratorResolver.Create(
                 elementInfo,
                 new LinearCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, string.Empty, context));
 
-            if (!resolvedElementMarshaller.ResolvedSuccessfully)
+            if (!resolvedElementMarshaller.IsResolvedWithoutErrors)
             {
                 return resolvedElementMarshaller;
             }
