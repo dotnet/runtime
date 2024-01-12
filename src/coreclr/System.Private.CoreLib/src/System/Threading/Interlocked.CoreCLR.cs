@@ -61,7 +61,7 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern static int Exchange32(ref int location1, int value);
+        private static extern int Exchange32(ref int location1, int value);
 
         /// <summary>Sets a 64-bit signed integer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
@@ -82,7 +82,7 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern static long Exchange64(ref long location1, long value);
+        private static extern long Exchange64(ref long location1, long value);
 
         /// <summary>Sets an object to the specified value and returns a reference to the original object, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
@@ -101,7 +101,7 @@ namespace System.Threading
 
         [return: NotNullIfNotNull(nameof(location1))]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern static object? ExchangeObject([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
+        private static extern object? ExchangeObject([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
 
         // The below whole method reduces to a single call to Exchange(ref object, object) but
         // the JIT thinks that it will generate more native code than it actually does.
