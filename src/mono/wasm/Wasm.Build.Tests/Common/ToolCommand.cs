@@ -116,7 +116,7 @@ namespace Wasm.Build.Tests
                 if (!CurrentProcess.HasExited)
                 {
                     _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose has not exited, so calling Kill, exited: {_exited.Task.Status}");
-                    CurrentProcess.Kill();//entireProcessTree: true);
+                    CurrentProcess.Kill(entireProcessTree: true);
                     _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose back from calling Kill, hasexited: {CurrentProcess.HasExited}");
                 }
                 _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose waiting on _exited: {_exited.Task.Status}");
@@ -187,6 +187,14 @@ namespace Wasm.Build.Tests
                     if (_cancelRequested.IsCancellationRequested)
                     {
                         _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync cancelled, cancelRequested, returning");
+                        if (CurrentProcess is not null && !CurrentProcess.HasExited)
+                        {
+                            _testOutput.WriteLine($"[{pid}] cancelling err/out");
+                            CurrentProcess.ErrorDataReceived -= logStdErr;
+                            CurrentProcess.OutputDataReceived -= logStdOut;
+                            CurrentProcess.CancelErrorRead();
+                            CurrentProcess.CancelOutputRead();
+                        }
                         throw new Exception($"IGNORE this exception.. it's expected because the toolcommand is being cancelled");
                     }
                     _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync timed out, exited: {CurrentProcess?.HasExited}");
@@ -194,7 +202,7 @@ namespace Wasm.Build.Tests
                     DumpProcess($"timed out", pid);
 
                     _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync timed out, attemping to kill it, process-is-null: {CurrentProcess is null} hasExited: {CurrentProcess!.HasExited}");
-                    CurrentProcess.Kill();//entireProcessTree: true);
+                    CurrentProcess.Kill(entireProcessTree: true);
                     _testOutput.WriteLine($"[{pid}] back from CurrentProcess.kill, exited: {CurrentProcess.HasExited}");
                     DumpProcess($"After killing, and waiting for exited event", pid);
                     //CurrentProcess.WaitForExit();
