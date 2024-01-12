@@ -100,7 +100,7 @@ namespace System.Numerics
         {
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
-            Debug.Assert(Compare(left, right) >= 0);
+            Debug.Assert(CompareActual(left, right) >= 0);
             Debug.Assert(bits.Length == left.Length);
 
             // Switching to managed references helps eliminating
@@ -132,7 +132,7 @@ namespace System.Numerics
         private static void SubtractSelf(Span<uint> left, ReadOnlySpan<uint> right)
         {
             Debug.Assert(left.Length >= right.Length);
-            Debug.Assert(Compare(left, right) >= 0);
+            Debug.Assert(CompareActual(left, right) >= 0);
 
             int i = 0;
             long carry = 0L;

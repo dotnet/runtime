@@ -58,7 +58,7 @@ namespace System.Numerics
         {
             Debug.Assert(left.Length >= 2);
             Debug.Assert(right.Length >= 2);
-            Debug.Assert(Compare(left, right) >= 0);
+            Debug.Assert(CompareActual(left, right) >= 0);
             Debug.Assert(result.Length == left.Length);
 
             left.CopyTo(result);
