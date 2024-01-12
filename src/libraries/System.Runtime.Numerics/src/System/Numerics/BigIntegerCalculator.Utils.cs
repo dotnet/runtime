@@ -17,18 +17,14 @@ namespace System.Numerics
 
         public static int Compare(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right)
         {
-            Debug.Assert(left.Length == 0 || left[^1] > 0);
-            Debug.Assert(right.Length == 0 || right[^1] > 0);
+            Debug.Assert(left.Length <= right.Length || left.Slice(right.Length).ContainsAnyExcept(0u));
+            Debug.Assert(left.Length >= right.Length || right.Slice(left.Length).ContainsAnyExcept(0u));
 
             if (left.Length != right.Length)
                 return left.Length < right.Length ? -1 : 1;
 
             int iv = left.Length;
-            while (--iv >= 0)
-            {
-                if (left[iv] != right[iv])
-                    break;
-            }
+            while (--iv >= 0 && left[iv] == right[iv]) ;
 
             if (iv < 0)
                 return 0;
