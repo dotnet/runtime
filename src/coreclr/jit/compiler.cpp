@@ -5231,21 +5231,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
 #if FEATURE_LOOP_ALIGN
 
-// TODO-Quirk: Remove
-static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
-{
-    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
-    {
-        if (child->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-            return true;
-
-        if (HasOldChildLoop(comp, child))
-            return true;
-    }
-
-    return false;
-}
-
 //------------------------------------------------------------------------
 // shouldAlignLoop: Check if it is legal and profitable to align a loop.
 //
@@ -5265,16 +5250,7 @@ static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 //
 bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 {
-    // TODO-Quirk: Remove. When removing we will likely need to add some
-    // form of "lexicality" heuristic here: only align loops whose blocks
-    // are fairly tightly packed together physically.
-    if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-    {
-        return false;
-    }
-
-    // TODO-Quirk: Switch to loop->GetChild() != nullptr
-    if (HasOldChildLoop(this, loop))
+    if (loop->GetChild() != nullptr)
     {
         JITDUMP("Skipping alignment for " FMT_LP "; not an innermost loop\n", loop->GetIndex());
         return false;
