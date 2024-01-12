@@ -1258,7 +1258,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 unspillType = lcl->TypeGet();
             }
 
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (varTypeIsFloating(unspillType) && emitter::isGeneralRegister(tree->GetRegNum()))
             {
                 unspillType = unspillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
@@ -1310,15 +1310,22 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // The spill temp allocated for it is associated with the original tree that defined the
             // register that it was spilled from.
             // So we use 'unspillTree' to recover that spill temp.
-            TempDsc* t        = regSet.rsUnspillInPlace(unspillTree, unspillTree->GetRegNum());
-            emitAttr emitType = emitActualTypeSize(unspillTree->TypeGet());
+            TempDsc* t            = regSet.rsUnspillInPlace(unspillTree, unspillTree->GetRegNum());
+            var_types unspillType = unspillTree->TypeGet();
+
             // Reload into the register specified by 'tree' which may be a GT_RELOAD.
             regNumber dstReg = tree->GetRegNum();
-            GetEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType), emitType, dstReg, t->tdTempNum(), 0);
+#ifdef TARGET_RISCV64
+            if (varTypeIsFloating(unspillType) && emitter::isGeneralRegister(dstReg))
+            {
+                unspillType = (unspillType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
+            }
+#endif // TARGET_RISCV64
+            GetEmitter()->emitIns_R_S(ins_Load(unspillType), emitActualTypeSize(unspillType), dstReg, t->tdTempNum(), 0);
             regSet.tmpRlsTemp(t);
 
             unspillTree->gtFlags &= ~GTF_SPILLED;
-            gcInfo.gcMarkRegPtrVal(dstReg, unspillTree->TypeGet());
+            gcInfo.gcMarkRegPtrVal(dstReg, unspillType);
         }
     }
 }

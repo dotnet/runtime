@@ -7045,6 +7045,12 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             if (!treeNode->IsMultiRegNode())
             {
                 type = getDefType(treeNode);
+#ifdef TARGET_RISCV64
+                if (isFloatRegType(type) && genIsValidIntReg(treeNode->GetRegNum()))
+                {
+                    type = (type == TYP_FLOAT) ? TYP_INT : TYP_LONG;
+                }
+#endif // TARGET_RISCV64
             }
             else
             {
