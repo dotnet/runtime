@@ -131,12 +131,43 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RunDivRemMedium()
+        {
+            Test();
+            BigIntTools.Utils.RunWithFakeThreshold("DivideThreshold", 5, Test);
+
+            void Test()
+            {
+                byte[] tempByteArray1 = new byte[0];
+                byte[] tempByteArray2 = new byte[0];
+
+                for (int i = 1; i < 8; i++)
+                {
+                    var num = 1 << i;
+                    tempByteArray1 = GetRandomByteArray(s_random, num);
+                    tempByteArray2 = GetRandomByteArray(s_random, num / 2);
+                    VerifyDivRemString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivRem");
+                }
+
+                // Divide Method - Two Large BigIntegers
+                for (int i = -1; i <= 1; i++)
+                    for (int j = -1; j <= 1; j++)
+                    {
+                        int num = (1 << 7) + i;
+                        tempByteArray1 = GetRandomByteArray(s_random, num);
+                        tempByteArray2 = GetRandomByteArray(s_random, num / 3 + j);
+                        VerifyDivRemString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivRem");
+                    }
+            }
+        }
+
+        [Fact]
         public static void RunDivRemLarge()
         {
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
 
-            for (int i = 1; i < 15; i += 3)
+            for (int i = 8; i < 10; i++)
             {
                 var num = 1 << i;
                 tempByteArray1 = GetRandomByteArray(s_random, num);
@@ -148,7 +179,7 @@ namespace System.Numerics.Tests
             for (int i = -1; i <= 1; i++)
                 for (int j = -1; j <= 1; j++)
                 {
-                    int num = (1 << 13) + i;
+                    int num = (1 << 10) + i;
                     tempByteArray1 = GetRandomByteArray(s_random, num);
                     tempByteArray2 = GetRandomByteArray(s_random, num / 3 + j);
                     VerifyDivRemString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivRem");
