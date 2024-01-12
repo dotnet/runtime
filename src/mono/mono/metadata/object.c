@@ -615,8 +615,8 @@ retry_top:
 		if (!lock->done) {
 			int timeout_ms = 500;
 			int wait_result = mono_coop_cond_timedwait (&lock->cond, &lock->mutex, timeout_ms);
-			if (wait_result == -1) {
-				/* timed out - go around again from the beginning.  If we got here
+			if (wait_result == -1 || (wait_result == 0 && !lock->done)) {
+				/* timed out or spurious wakeup - go around again from the beginning.  If we got here
 				 * from the "is_blocked = FALSE" case, above (another thread was
 				 * blocked on the current thread, but on a lock that was already
 				 * done but it didn't get to wake up yet), then it might still be
@@ -647,7 +647,7 @@ retry_top:
 					g_hash_table_remove (type_initialization_hash, vtable);
 				mono_type_initialization_unlock ();
 				goto retry_top;
-			} else if (wait_result == 0) {
+			} else if (wait_result == 0 && lock->done) {
 				/* Success: we were signaled that the other thread is done.  Proceed */
 			} else {
 				g_assert_not_reached ();
