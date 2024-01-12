@@ -1059,11 +1059,11 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
             elemsize = id->idOpSize();
             assert(isScalableVectorSize(elemsize));
-            assert(insOptsScalableSimple(id->idInsOpt())); // xx
-            assert(isPredicateRegister(id->idReg1()));     // DDDD
-            assert(isLowPredicateRegister(id->idReg2()));  // ggg
-            assert(isVectorRegister(id->idReg3()));        // nnnnn
-            assert(isVectorRegister(id->idReg4()));        // mmmmm
+            assert(insOptsScalableStandard(id->idInsOpt())); // xx
+            assert(isPredicateRegister(id->idReg1()));       // DDDD
+            assert(isLowPredicateRegister(id->idReg2()));    // ggg
+            assert(isVectorRegister(id->idReg3()));          // nnnnn
+            assert(isVectorRegister(id->idReg4()));          // mmmmm
             break;
 
         case IF_SVE_CX_4A_A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
@@ -10652,13 +10652,14 @@ void emitter::emitIns_R_R_I_I(
  *  Add an instruction referencing four registers.
  */
 
-void emitter::emitIns_R_R_R_R(instruction ins,
-                              emitAttr    attr,
-                              regNumber   reg1,
-                              regNumber   reg2,
-                              regNumber   reg3,
-                              regNumber   reg4,
-                              insOpts     opt /* = INS_OPT_NONE*/)
+void emitter::emitIns_R_R_R_R(instruction     ins,
+                              emitAttr        attr,
+                              regNumber       reg1,
+                              regNumber       reg2,
+                              regNumber       reg3,
+                              regNumber       reg4,
+                              insOpts         opt /* = INS_OPT_NONE*/,
+                              insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
     emitAttr  size = EA_SIZE(attr);
     insFormat fmt  = IF_NONE;
