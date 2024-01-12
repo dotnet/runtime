@@ -28,12 +28,19 @@ namespace Wasm.Build.Tests
             if (process.WaitForExit((int)timeout.TotalMilliseconds))
             {
                 stdout = process.StandardOutput.ReadToEnd();
-                return process.ExitCode;
+            }
+            else
+            {
+                process.Kill(entireProcessTree: true);
+                if (!process.WaitForExit((int)timeout.TotalMilliseconds))
+                {
+                    Console.WriteLine ($"Failed to kill process for {fileName}, ignoring.");
+                    // sigkill - 128+9(sigkill)
+                    return 137;
+                }
             }
 
-            process.Kill(entireProcessTree: true);
-            // sigkill - 128+9(sigkill)
-            return 137;
+            return process.ExitCode;
         }
 
         public static Task StartAndWaitForExitAsync(this Process subject)
