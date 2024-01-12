@@ -458,21 +458,24 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	 * on this cond var.
 	 */
 
+	HANDLE_FUNCTION_ENTER ();
+
 retry_top:
+	(void)0; // appease C compiler; label must preceed a statement not a var declaration
+
+	gboolean ret = FALSE;
+
 	mono_type_initialization_lock ();
 	/* double check... */
 	if (vtable->initialized) {
 		mono_type_initialization_unlock ();
-		return TRUE;
+		goto return_true;
 	}
 
 	gboolean do_initialization = FALSE;
 	TypeInitializationLock *lock = NULL;
 	gboolean pending_tae = FALSE;
 
-	gboolean ret = FALSE;
-
-	HANDLE_FUNCTION_ENTER ();
 
 	if (vtable->init_failed) {
 		/* The type initialization already failed once, rethrow the same exception */
