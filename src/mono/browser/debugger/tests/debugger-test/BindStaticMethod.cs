@@ -5,6 +5,7 @@ using System.Runtime.InteropServices.JavaScript;
 using System;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DebuggerTests
 {
@@ -49,10 +50,33 @@ namespace DebuggerTests
             foreach (var p in method.GetParameters())
             {
                 sb.Append("_");
-                sb.Append(p.ParameterType.Name);
+                if (typeof(Task).IsAssignableFrom(p.ParameterType))
+                {
+                    sb.Append("Task");
+                }
+                else if (p.ParameterType.GenericTypeArguments.Length > 0)
+                {
+                    throw new NotImplementedException($"Parameter {p.Name} type {p.ParameterType.FullName}");
+                }
+                else
+                {
+                    sb.Append(p.ParameterType.Name);
+                }
             }
+
             sb.Append("_");
-            sb.Append(method.ReturnType.Name);
+            if (typeof(Task).IsAssignableFrom(method.ReturnType))
+            {
+                sb.Append("Task");
+            }
+            else if (method.ReturnType.GenericTypeArguments.Length > 0)
+            {
+                throw new NotImplementedException($"Method return type {method.ReturnType.FullName}");
+            }
+            else
+            {
+                sb.Append(method.ReturnType.Name);
+            }
 
             return sb.ToString();
         }
@@ -65,10 +89,94 @@ namespace DebuggerTests
         }
 
         [JSExport]
+        public static Task Invoke_Task([JSMarshalAs<JSType.Any>()] object methodInfo)
+        {
+            var method = (MethodInfo)methodInfo;
+            return (Task)method.Invoke(null, null);
+        }
+
+        [JSExport]
+        public static void Invoke_Boolean_Void([JSMarshalAs<JSType.Any>()] object methodInfo, bool p1)
+        {
+            var method = (MethodInfo)methodInfo;
+            method.Invoke(null, new object[] { p1 });
+        }
+
+        [JSExport]
+        public static Task Invoke_Boolean_Task([JSMarshalAs<JSType.Any>()] object methodInfo, bool p1)
+        {
+            var method = (MethodInfo)methodInfo;
+            return (Task)method.Invoke(null, new object[] { p1 });
+        }
+
+        [JSExport]
+        public static void Invoke_Int32_Void([JSMarshalAs<JSType.Any>()] object methodInfo, int p1)
+        {
+            var method = (MethodInfo)methodInfo;
+            method.Invoke(null, new object[] { p1 });
+        }
+
+        [JSExport]
+        public static void Invoke_Int32_Int32_Void([JSMarshalAs<JSType.Any>()] object methodInfo, int p1, int p2)
+        {
+            var method = (MethodInfo)methodInfo;
+            method.Invoke(null, new object[] { p1, p2 });
+        }
+
+        [JSExport]
+        public static void Invoke_Int32_Int32_Int32_Void([JSMarshalAs<JSType.Any>()] object methodInfo, int p1, int p2, int p3)
+        {
+            var method = (MethodInfo)methodInfo;
+            method.Invoke(null, new object[] { p1, p2, p3 });
+        }
+
+        [JSExport]
+        public static int Invoke_Int32([JSMarshalAs<JSType.Any>()] object methodInfo)
+        {
+            var method = (MethodInfo)methodInfo;
+            return (int)method.Invoke(null, null);
+        }
+
+        [JSExport]
+        public static int Invoke_Int32_Int32([JSMarshalAs<JSType.Any>()] object methodInfo, int p1)
+        {
+            var method = (MethodInfo)methodInfo;
+            return (int)method.Invoke(null, new object[] { p1 });
+        }
+
+        [JSExport]
+        public static int Invoke_Int32_Int32_Int32([JSMarshalAs<JSType.Any>()] object methodInfo, int p1, int p2)
+        {
+            var method = (MethodInfo)methodInfo;
+            return (int)method.Invoke(null, new object[] { p1, p2 });
+        }
+
+        [JSExport]
+        public static void Invoke_String_Void([JSMarshalAs<JSType.Any>()] object methodInfo, string p1)
+        {
+            var method = (MethodInfo)methodInfo;
+            method.Invoke(null, new object[] { p1 });
+        }
+
+        [JSExport]
         public static void Invoke_String_String_Void([JSMarshalAs<JSType.Any>()] object methodInfo, string p1, string p2)
         {
             var method = (MethodInfo)methodInfo;
             method.Invoke(null, new object[] { p1, p2 });
+        }
+
+        [JSExport]
+        public static void Invoke_String_String_String_String_Void([JSMarshalAs<JSType.Any>()] object methodInfo, string p1, string p2, string p3, string p4)
+        {
+            var method = (MethodInfo)methodInfo;
+            method.Invoke(null, new object[] { p1, p2, p3, p4 });
+        }
+
+        [JSExport]
+        public static void Invoke_String_String_String_String_String_String_String_String_Void([JSMarshalAs<JSType.Any>()] object methodInfo, string p1, string p2, string p3, string p4, string p5, string p6, string p7, string p8)
+        {
+            var method = (MethodInfo)methodInfo;
+            method.Invoke(null, new object[] { p1, p2, p3, p4, p5, p6, p7, p8 });
         }
     }
 }
