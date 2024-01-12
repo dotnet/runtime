@@ -7946,7 +7946,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     emitter* emit = GetEmitter();
 
     // ensure offset of sd/ld
-    if (totalFrameSize < 2040)
+    if (totalFrameSize <= 2040)
     {
         frameType = 1;
 
