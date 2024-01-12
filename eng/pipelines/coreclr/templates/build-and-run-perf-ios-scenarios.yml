@@ -1,8 +1,5 @@
-parameters:
-  hybridGlobalization: True
-
 jobs:
-  # build mono iOS scenarios HybridGlobalization
+  # build mono iOS scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -24,9 +21,9 @@ jobs:
               archiveExtension: '.tar.gz'
               archiveType: tar
               tarCompression: gz
-              hybridGlobalization: ${{ parameters.hybridGlobalization }}
+              hybridGlobalization: True
 
-  # build NativeAOT iOS scenarios HybridGlobalization
+  # build NativeAOT iOS scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -48,7 +45,7 @@ jobs:
               archiveExtension: '.tar.gz'
               archiveType: tar
               tarCompression: gz
-              hybridGlobalization: ${{ parameters.hybridGlobalization }}
+              hybridGlobalization: True
 
   # run mono iOS scenarios scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -85,7 +82,7 @@ jobs:
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: False
         iOSStripSymbols: True
-        hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        hybridGlobalization: True
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -103,7 +100,7 @@ jobs:
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: True
         iOSStripSymbols: False
-        hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        hybridGlobalization: True
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -121,9 +118,9 @@ jobs:
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: True
         iOSStripSymbols: True
-        hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        hybridGlobalization: True
 
-  # run NativeAOT iOS scenarios HybridGlobalization
+  # run NativeAOT iOS scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -139,7 +136,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSStripSymbols: False
-        hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        hybridGlobalization: True
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -156,4 +153,4 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSStripSymbols: True
-        hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        hybridGlobalization: True
