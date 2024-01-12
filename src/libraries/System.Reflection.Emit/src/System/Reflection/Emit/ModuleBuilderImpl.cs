@@ -185,7 +185,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:DynamicallyAccessedMembers", Justification = "Members are retrieved from internal cache")]
         private void WriteInterfaceImplementations(TypeBuilderImpl typeBuilder, TypeDefinitionHandle typeHandle)
         {
             if (typeBuilder._interfaces != null)
@@ -535,8 +534,9 @@ namespace System.Reflection.Emit
             return memberHandle;
         }
 
-        private EntityHandle GetMethodReference(MethodInfo method, Type[] optionalParameterTypes)
+        private EntityHandle GetMethodReference(MethodInfo methodInfo, Type[] optionalParameterTypes)
         {
+            MethodInfo method = (MethodInfo)GetOriginalMemberIfConstructedType(methodInfo);
             BlobBuilder signature = GetMethodSignature(method, optionalParameterTypes);
             KeyValuePair<MethodInfo, BlobBuilder> pair = new(method, signature);
             if (!_memberReferences.TryGetValue(pair, out var memberHandle))
@@ -549,16 +549,28 @@ namespace System.Reflection.Emit
             return memberHandle;
         }
 
-        private BlobBuilder GetMethodSignature(MethodInfo method, Type[] optionalParameterTypes) =>
+        private BlobBuilder GetMethodSignature(MethodInfo method, Type[]? optionalParameterTypes) =>
             MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), method.ReturnType,
                 MethodBuilderImpl.GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
 
-        private BlobBuilder GetMemberSignature(MemberInfo member)
+        private static MemberInfo GetOriginalMemberIfConstructedType(MemberInfo memberInfo)
         {
+            Type declaringType = memberInfo.DeclaringType!;
+            if (declaringType.IsConstructedGenericType && declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl)
+            {
+                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(memberInfo);
+            }
+
+            return memberInfo;
+        }
+
+        private BlobBuilder GetMemberSignature(MemberInfo memberInfo)
+        {
+            MemberInfo member = GetOriginalMemberIfConstructedType(memberInfo);
+
             if (member is MethodInfo method)
             {
-                return MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), method.ReturnType,
-                    MethodBuilderImpl.GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic);
+                return GetMethodSignature(method, optionalParameterTypes: null);
             }
 
             if (member is FieldInfo field)

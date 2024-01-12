@@ -788,16 +788,10 @@ void* BasicBlock::MemoryPhiArg::operator new(size_t sz, Compiler* comp)
 //    varNum - lclVar uses with lclNum `varNum` will be replaced; can be ~0 to indicate no replacement.
 //    varVal - If replacing uses of `varNum`, replace them with int constants with value `varVal`.
 //
-// Return Value:
-//    Cloning may fail because this routine uses `gtCloneExpr` for cloning and it can't handle all
-//    IR nodes.  If cloning of any statement fails, `false` will be returned and block `to` may be
-//    partially populated.  If cloning of all statements succeeds, `true` will be returned and
-//    block `to` will be fully populated.
-//
 // Note:
 //    Leaves block ref count at zero, and pred edge list empty.
 //
-bool BasicBlock::CloneBlockState(
+void BasicBlock::CloneBlockState(
     Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum, int varVal)
 {
     assert(to->bbStmtList == nullptr);
@@ -819,16 +813,9 @@ bool BasicBlock::CloneBlockState(
     for (Statement* const fromStmt : from->Statements())
     {
         GenTree* newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
-        if (!newExpr)
-        {
-            // gtCloneExpr doesn't handle all opcodes, so may fail to clone a statement.
-            // When that happens, it returns nullptr; abandon the rest of this block and
-            // return `false` to the caller to indicate that cloning was unsuccessful.
-            return false;
-        }
+        assert(newExpr != nullptr);
         compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr, fromStmt->GetDebugInfo()));
     }
-    return true;
 }
 
 //------------------------------------------------------------------------

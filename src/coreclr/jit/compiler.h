@@ -2089,7 +2089,8 @@ struct NaturalLoopIterInfo
 //   loop can reach every other block of the loop.
 //
 // * All loop blocks are dominated by the header block, i.e. the header block
-//   is guaranteed to be entered on every iteration.
+//   is guaranteed to be entered on every iteration. Note that in the prescence
+//   of exceptional flow the header might not fully execute on every iteration.
 //
 // * From the above it follows that the loop can only be entered at the header
 //   block. FlowGraphNaturalLoop::EntryEdges() gives a vector of these edges.
@@ -4982,9 +4983,6 @@ public:
     // optimization phases. They are invalidated once RBO runs and modifies the
     // flow graph.
     FlowGraphNaturalLoops* m_loops;
-    struct LoopDsc;
-    LoopDsc** m_newToOldLoop;
-    FlowGraphNaturalLoop** m_oldToNewLoop;
     LoopSideEffects* m_loopSideEffects;
     BlockToNaturalLoopMap* m_blockToLoop;
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
@@ -5369,7 +5367,7 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block);
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
-    GenTree* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
+    GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
     bool fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
@@ -5984,9 +5982,7 @@ public:
 
     PhaseStatus fgCanonicalizeFirstBB();
 
-    bool fgCreateLoopPreHeader(unsigned lnum);
-
-    void fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top);
+    void fgSetEHRegionForNewPreheader(BasicBlock* preheader);
 
     void fgUnreachableBlock(BasicBlock* block);
 
@@ -6865,7 +6861,9 @@ public:
 
     void optFindLoops();
     void optFindNewLoops();
-    void optCrossCheckIterInfo(const NaturalLoopIterInfo& iterInfo, const LoopDsc& dsc);
+    bool optCanonicalizeLoops(FlowGraphNaturalLoops* loops);
+    bool optCreatePreheader(FlowGraphNaturalLoop* loop);
+    void optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader);
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
@@ -7166,22 +7164,6 @@ protected:
         BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
 
     void optFindNaturalLoops();
-
-    // Ensures that all the loops in the loop nest rooted at "loopInd" (an index into the loop table) are 'canonical' --
-    // each loop has a unique "top."  Returns "true" iff the flowgraph has been modified.
-    bool optCanonicalizeLoopNest(unsigned char loopInd);
-
-    // Ensures that the loop "loopInd" (an index into the loop table) is 'canonical' -- it has a unique "top,"
-    // unshared with any other loop.  Returns "true" iff the flowgraph has been modified
-    bool optCanonicalizeLoop(unsigned char loopInd);
-
-    enum class LoopCanonicalizationOption
-    {
-        Outer,
-        Current
-    };
-
-    bool optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizationOption option);
 
     // Requires "l1" to be a valid loop table index, and not "BasicBlock::NOT_IN_LOOP".
     // Requires "l2" to be a valid loop table index, or else "BasicBlock::NOT_IN_LOOP".

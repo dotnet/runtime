@@ -1954,14 +1954,6 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    // Don't compact blocks from different loops.
-    //
-    if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (bNext->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
-        (block->bbNatLoopNum != bNext->bbNatLoopNum))
-    {
-        return false;
-    }
-
     // If there is a switch predecessor don't bother because we'd have to update the uniquesuccs as well
     // (if they are valid).
     for (BasicBlock* const predBlock : bNext->PredBlocks())
@@ -2829,14 +2821,13 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 }
             }
 
-            /* special case if this is the last BB */
-            if (block == fgLastBB)
+            /* special case if this is the only BB */
+            if (block->IsFirst() && block->IsLast())
             {
-                if (!bPrev)
-                {
-                    break;
-                }
-                fgLastBB = bPrev;
+                assert(block == fgFirstBB);
+                assert(block == fgLastBB);
+                assert(bPrev == nullptr);
+                break;
             }
 
             // When using profile weights, fgComputeEdgeWeights expects the first non-internal block to have profile

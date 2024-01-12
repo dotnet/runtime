@@ -81,6 +81,11 @@ namespace System.Linq
         {
             T value;
 
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
             if (source.TryGetSpan(out ReadOnlySpan<T> span))
             {
                 if (span.IsEmpty)
@@ -196,6 +201,11 @@ namespace System.Linq
         public static decimal Min(this IEnumerable<decimal> source)
         {
             decimal value;
+
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
 
             if (source.TryGetSpan(out ReadOnlySpan<decimal> span))
             {

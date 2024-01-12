@@ -3775,6 +3775,23 @@ mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_v
 		(mono_class_is_ginst (method->klass) || mono_class_is_gtd (method->klass));
 }
 
+/*
+ * mono_method_needs_mrgctx_arg_for_eh:
+ *
+ *   Return TRUE if the mrgctx arg to the gshared method METHOD cannot be eliminated.
+ */
+gboolean
+mono_method_needs_mrgctx_arg_for_eh (MonoMethod *method)
+{
+	if (method->is_inflated && mono_method_get_context (method)->method_inst)
+		return TRUE;
+
+	return ((method->flags & METHOD_ATTRIBUTE_STATIC) ||
+			m_class_is_valuetype (method->klass) ||
+			mini_method_is_default_method (method)) &&
+		(mono_class_is_ginst (method->klass) || mono_class_is_gtd (method->klass));
+}
+
 static MonoGenericInst*
 get_object_generic_inst (int type_argc)
 {

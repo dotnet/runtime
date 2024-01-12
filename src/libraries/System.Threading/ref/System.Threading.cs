@@ -14,25 +14,41 @@ namespace System.Threading
         public long CurrentPhaseNumber { get { throw null; } }
         public int ParticipantCount { get { throw null; } }
         public int ParticipantsRemaining { get { throw null; } }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public long AddParticipant() { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public long AddParticipants(int participantCount) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void RemoveParticipant() { }
         public void RemoveParticipants(int participantCount) { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void SignalAndWait() { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool SignalAndWait(int millisecondsTimeout) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool SignalAndWait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void SignalAndWait(System.Threading.CancellationToken cancellationToken) { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool SignalAndWait(System.TimeSpan timeout) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool SignalAndWait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class BarrierPostPhaseException : System.Exception
@@ -62,17 +78,29 @@ namespace System.Threading
         public bool Signal(int signalCount) { throw null; }
         public bool TryAddCount() { throw null; }
         public bool TryAddCount(int signalCount) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Wait() { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(int millisecondsTimeout) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(System.TimeSpan timeout) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class HostExecutionContext : System.IDisposable
@@ -313,17 +341,29 @@ namespace System.Threading
         protected virtual void Dispose(bool disposing) { }
         public void Reset() { }
         public void Set() { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Wait() { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(int millisecondsTimeout) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(System.TimeSpan timeout) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public static partial class Monitor
@@ -341,15 +381,25 @@ namespace System.Threading
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken) { }
         public static bool TryEnter(object obj, System.TimeSpan timeout) { throw null; }
         public static void TryEnter(object obj, System.TimeSpan timeout, ref bool lockTaken) { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static bool Wait(object obj) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static bool Wait(object obj, int millisecondsTimeout) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static bool Wait(object obj, int millisecondsTimeout, bool exitContext) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static bool Wait(object obj, System.TimeSpan timeout) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static bool Wait(object obj, System.TimeSpan timeout, bool exitContext) { throw null; }
     }
     public sealed partial class Mutex : System.Threading.WaitHandle
