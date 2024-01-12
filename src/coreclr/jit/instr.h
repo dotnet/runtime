@@ -276,30 +276,6 @@ enum insOpts : unsigned
     INS_OPTS_SCALABLE_D,
     INS_OPTS_SCALABLE_Q,
 
-    INS_OPTS_SCALABLE_WIDE_B,
-    INS_OPTS_SCALABLE_WIDE_H,
-    INS_OPTS_SCALABLE_WIDE_S,
-
-    INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR,
-    INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR,
-    INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR,
-    INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR,
-
-    INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR,
-    INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR,
-    INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR,
-    INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR,
-
-    INS_OPTS_SCALABLE_B_WITH_SCALAR,
-    INS_OPTS_SCALABLE_H_WITH_SCALAR,
-    INS_OPTS_SCALABLE_S_WITH_SCALAR,
-    INS_OPTS_SCALABLE_D_WITH_SCALAR,
-
-    INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE,
-    INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE,
-    INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE,
-    INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE,
-
     INS_OPTS_MSL,     // Vector Immediate (shifting ones variant)
 
     INS_OPTS_S_TO_4BYTE,  // Single to INT32
@@ -326,6 +302,17 @@ enum insOpts : unsigned
 #if FEATURE_LOOP_ALIGN
     , INS_OPTS_ALIGN      // Align instruction
 #endif
+};
+
+// When a single instruction has different encodings variants, this is used
+// to distinguish those that can't be determined soley by register usage.
+enum insScalableOpts : unsigned
+{
+    INS_SCALABLE_OPTS_NONE,              // No Variants exist
+
+    INS_SCALABLE_OPTS_WIDE,              // Variants with wide elements (eg asr)
+    INS_SCALABLE_OPTS_WITH_SIMD_SCALAR,  // Variants with a NEON SIMD register (eg clasta)
+    INS_SCALABLE_OPTS_PREDICATE_MERGE,   // Variants with a Pg/M predicate (eg brka)
 };
 
 enum insCond : unsigned
