@@ -379,10 +379,10 @@ namespace System.Runtime.InteropServices
         /// up an IErrorInfo for the exception.
         /// </summary>
         public static int GetHRForException(Exception? e)
-            => GetHRForExceptionInternal(ObjectHandleOnStack.Create(ref e));
+            => GetHRForException(ObjectHandleOnStack.Create(ref e));
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetHRForException")]
-        private static partial int GetHRForExceptionInternal(ObjectHandleOnStack exception);
+        private static partial int GetHRForException(ObjectHandleOnStack exception);
 
         /// <summary>
         /// Given a managed object that wraps an ITypeInfo, return its name.
