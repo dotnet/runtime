@@ -108,7 +108,7 @@ namespace Wasm.Build.Tests
             if (CurrentProcess is not null && !CurrentProcess.HasExited)
             {
                 _testOutput.WriteLine("ToolCommand.Dispose calling Kill");
-                CurrentProcess.Kill(entireProcessTree: true);
+                CurrentProcess.Kill();//entireProcessTree: true);
                 _testOutput.WriteLine("ToolCommand.Dispose back from calling Kill");
                 CurrentProcess.Dispose();
                 CurrentProcess = null;
@@ -179,7 +179,7 @@ namespace Wasm.Build.Tests
                 {
                     // CurrentProcess didn't exit
                     _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync(id:{pid}) timed out, attemping to kill it, process-is-null: {CurrentProcess is null} hasExited: {CurrentProcess!.HasExited}");
-                    CurrentProcess.Kill(entireProcessTree: true);
+                    CurrentProcess.Kill();//entireProcessTree: true);
                     _testOutput.WriteLine($"[{pid}] back from CurrentProcess.kill for id:{pid}, exited: {CurrentProcess.HasExited}");
                     DumpProcess($"After killing", pid);
                     lock (syncObj)
