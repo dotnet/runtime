@@ -85,18 +85,12 @@ namespace Wasm.Build.Tests
             return this;
         }
 
-        // public virtual CommandResult Execute(params string[] args)
-        // {
-        //     return Task.Run(async () => await ExecuteAsync(args)).Result;
-        // }
-        //
-
-        public async virtual Task<CommandResult> ExecuteAsync(params string[] args)
+        public virtual Task<CommandResult> ExecuteAsync(params string[] args)
         {
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
             _testOutput.WriteLine($"[{_label}] Executing - {resolvedCommand} {fullArgs} {WorkingDirectoryInfo()}");
-            return await ExecuteAsyncInternal(resolvedCommand, fullArgs);
+            return ExecuteAsyncInternal(resolvedCommand, fullArgs);
         }
 
         public virtual Task<CommandResult> ExecuteWithCapturedOutputAsync(params string[] args)
@@ -111,7 +105,10 @@ namespace Wasm.Build.Tests
         {
             _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose ENTER, cancel'ing cancelRequested");
             _cancelRequested.Cancel();
-            if (CurrentProcess is not null)// && !CurrentProcess.HasExited)
+            if (CurrentProcess is null)
+                return;
+
+            try
             {
                 if (!CurrentProcess.HasExited)
                 {
@@ -120,15 +117,15 @@ namespace Wasm.Build.Tests
                     _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose back from calling Kill, hasexited: {CurrentProcess.HasExited}");
                 }
                 _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose waiting on _exited: {_exited.Task.Status}");
-                //await _exited.Task.ConfigureAwait(false);
-                await _exited.Task.WaitAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
-                // CurrentProcess.WaitForExit();
+                await _exited.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
                 _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose back from waiting on exited event, hasexited: {CurrentProcess.HasExited}");
-                CurrentProcess.Dispose();
-                CurrentProcess = null;
-
-                await Task.Delay(100);
             }
+            catch (Exception ex)
+            {
+                _testOutput.WriteLine($"ToolCommand.Dispose failed with {ex}, but ignoring this as the caller does not care!");
+            }
+            CurrentProcess.Dispose();
+            CurrentProcess = null;
         }
 
         protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
@@ -222,7 +219,6 @@ namespace Wasm.Build.Tests
                 // and should be called after CurrentProcess.WaitForExit(int)
                 // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.CurrentProcess.waitforexit?view=net-5.0#System_Diagnostics_CurrentProcess_WaitForExit_System_Int32_
                 _testOutput.WriteLine($"[{pid}] going to wait on exited event, current-is-null: {CurrentProcess is null}, hasExited: {CurrentProcess?.HasExited}, _exited: {_exited.Task.IsCompleted}");
-                // CurrentProcess!.WaitForExit();
                 await _exited.Task.ConfigureAwait(false);
                 _testOutput.WriteLine($"[{pid}] back from waiting on exited event, null: {CurrentProcess is null}: hasexited: {CurrentProcess?.HasExited}, _exited: {_exited.Task.IsCompleted}");
 
