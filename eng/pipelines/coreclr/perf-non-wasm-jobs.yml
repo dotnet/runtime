@@ -70,7 +70,7 @@ jobs:
   #     platforms:
   #     - linux_x64
 
-  # Build and run iOS Mono and NativeAOT scenarios with HybridGlobalization
+  # Build and run iOS Mono and NativeAOT scenarios
   - template: /eng/pipelines/coreclr/templates/build-and-run-perf-ios-scenarios.yml
     parameters:
       hybridGlobalization: True
