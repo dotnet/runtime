@@ -361,6 +361,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 break;
             case GlobalizationMode.Hybrid:
                 expected.Add("icudt_hybrid.dat");
+                expected.Add("segmentation-rules.json");
                 break;
             case GlobalizationMode.PredefinedIcu:
                 if (string.IsNullOrEmpty(assertOptions.PredefinedIcudt))
