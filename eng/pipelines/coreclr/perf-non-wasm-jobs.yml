@@ -65,7 +65,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - Android_arm64
+      - Android_arm64_perf_specific
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: AndroidMono
