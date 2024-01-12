@@ -96,11 +96,11 @@ bool IsRedundantLdStr(
 
 static code_t insEncodeRTypeInstr(
     unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned rs2, unsigned funct7);
-static code_t insEncodeITypeInstr(unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, int imm12);
-static code_t insEncodeSTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, int imm12);
-static code_t insEncodeUTypeInstr(unsigned opcode, unsigned rd, int imm20);
-static code_t insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, int imm13);
-static code_t insEncodeJTypeInstr(unsigned opcode, unsigned rd, int imm21);
+static code_t insEncodeITypeInstr(unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned imm12);
+static code_t insEncodeSTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm12);
+static code_t insEncodeUTypeInstr(unsigned opcode, unsigned rd, unsigned imm20);
+static code_t insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm13);
+static code_t insEncodeJTypeInstr(unsigned opcode, unsigned rd, unsigned imm21);
 
 #ifdef DEBUG
 static void emitOutput_RTypeInstr_SanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);
