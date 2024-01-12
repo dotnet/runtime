@@ -410,6 +410,18 @@ namespace System.Tests
         [Theory]
         public static void ExplicitConversion_ToSingle(Half value, float expected) // Check the underlying bits for verifying NaNs
         {
+            if (PlatformDetection.IsRiscV64Process)
+            {
+                if (BitConverter.HalfToUInt16Bits(value) == 0b0_11111_1010101010)  // Positive Signalling NaN - RISC-V does not preserve payload
+                {
+                    expected = BitConverter.Int32BitsToSingle(0x7FC00000);
+                }
+                else if (BitConverter.HalfToUInt16Bits(value) == 0b1_11111_1010101010) // Negative Signalling NaN - RISC-V does not preserve payload
+                {
+                    expected = BitConverter.Int32BitsToSingle(unchecked((int)0xFFC00000));
+                }
+            }
+
             float f = (float)value;
             Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(f));
         }
@@ -553,6 +565,18 @@ namespace System.Tests
         [Theory]
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
+            if (PlatformDetection.IsRiscV64Process)
+            {
+                if (BitConverter.SingleToInt32Bits(f) == 0x7FD55555) // Positive Signalling NaN - RISC-V does not preserve payload
+                {
+                    expected = BitConverter.UInt16BitsToHalf(0b0_11111_1000000000);
+                }
+                else if (BitConverter.SingleToInt32Bits(f) == unchecked((int)0xFFD55555)) // Negative - Signalling NaN RISC-V does not preserve payload
+                {
+                    expected = BitConverter.UInt16BitsToHalf(0b1_11111_1000000000);
+                }
+            }
+
             Half h = (Half)f;
             Assert.Equal(BitConverter.HalfToUInt16Bits(expected), BitConverter.HalfToUInt16Bits(h));
         }
