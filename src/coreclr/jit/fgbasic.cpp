@@ -704,11 +704,15 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             break;
 
         case BBJ_COND:
+        {
+            FlowEdge* oldEdge = fgGetPredForBlock(oldTarget, block);
+            assert(oldEdge != nullptr);
 
             if (block->TrueTargetIs(oldTarget))
             {
                 if (block->FalseTargetIs(oldTarget))
                 {
+                    assert(oldEdge->getDupCount() == 2);
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
                     block->SetTarget(newTarget);
@@ -724,9 +728,11 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
                 block->SetFalseTarget(newTarget);
             }
 
+            assert(oldEdge->getDupCount() == 1);
             fgRemoveRefPred(oldTarget, block);
             fgAddRefPred(newTarget, block);
             break;
+        }
 
         case BBJ_SWITCH:
         {
