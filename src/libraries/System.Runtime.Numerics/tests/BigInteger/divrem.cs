@@ -134,7 +134,7 @@ namespace System.Numerics.Tests
         public static void RunDivRemMedium()
         {
             Test();
-            BigIntTools.Utils.RunWithFakeThreshold("DivideThreshold", 5, Test);
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.DivideThreshold, 5, Test);
 
             void Test()
             {
