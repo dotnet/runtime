@@ -12764,7 +12764,8 @@ emit_method_inner (EmitContext *ctx)
 		return;
 	}
 
-	if (sig->pinvoke && cfg->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && !cfg->llvm_only) {
+	if (sig->pinvoke && cfg->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE &&
+		cfg->method->wrapper_type != MONO_WRAPPER_NATIVE_TO_MANAGED && !cfg->llvm_only) {
 		set_failure (ctx, "pinvoke signature");
 		return;
 	}
