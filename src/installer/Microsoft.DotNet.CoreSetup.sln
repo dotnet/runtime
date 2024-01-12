@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28803.352
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34327.274
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5A29E8E3-A0FC-4C57-81DD-297B56D1A119}"
 	ProjectSection(SolutionItems) = preProject
@@ -18,8 +18,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppHost.Bundle.Tests", "tests\Microsoft.NET.HostModel.Tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj", "{2745A51D-3425-4F68-8349-A8B8BC27DD87}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.HostModel.Bundle.Tests", "tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj", "{1E76A78E-9E39-480D-8CD3-B7D0A858FECB}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BundleHelper", "tests\Microsoft.NET.HostModel.Tests\Helpers\BundleHelper.csproj", "{8116F946-FB24-4524-9028-43F5A3A80EE3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DotNet.CoreSetup.Packaging.Tests", "tests\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj", "{F1584324-A41A-4CE7-B23F-DB2252CFE276}"
 EndProject
@@ -119,22 +117,6 @@ Global
 		{1E76A78E-9E39-480D-8CD3-B7D0A858FECB}.RelWithDebInfo|Any CPU.Build.0 = Release|Any CPU
 		{1E76A78E-9E39-480D-8CD3-B7D0A858FECB}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
 		{1E76A78E-9E39-480D-8CD3-B7D0A858FECB}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.Debug|x64.Build.0 = Debug|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.MinSizeRel|Any CPU.ActiveCfg = Debug|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.MinSizeRel|Any CPU.Build.0 = Debug|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.MinSizeRel|x64.ActiveCfg = Debug|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.MinSizeRel|x64.Build.0 = Debug|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.Release|x64.ActiveCfg = Release|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.Release|x64.Build.0 = Release|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.RelWithDebInfo|Any CPU.ActiveCfg = Release|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.RelWithDebInfo|Any CPU.Build.0 = Release|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
-		{8116F946-FB24-4524-9028-43F5A3A80EE3}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
 		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F1584324-A41A-4CE7-B23F-DB2252CFE276}.Debug|x64.ActiveCfg = Debug|Any CPU

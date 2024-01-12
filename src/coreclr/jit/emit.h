@@ -979,7 +979,7 @@ protected:
 #ifdef TARGET_ARM64
                 // For 64-bit architecture this 32-bit structure can pack with these unsigned bit fields
                 emitLclVarAddr iiaLclVar;
-                unsigned       _idReg3Scaled : 1; // Reg3 is scaled by idOpSize bits
+                unsigned       _idRegBit : 1; // Reg3 is scaled by idOpSize bits
                 GCtype         _idGCref2 : 2;
 #endif
                 regNumber _idReg3 : REGNUM_BITS;
@@ -1403,12 +1403,22 @@ protected:
         bool idReg3Scaled() const
         {
             assert(!idIsSmallDsc());
-            return (idAddr()->_idReg3Scaled == 1);
+            return (idAddr()->_idRegBit == 1);
         }
         void idReg3Scaled(bool val)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg3Scaled = val ? 1 : 0;
+            idAddr()->_idRegBit = val ? 1 : 0;
+        }
+        bool idPredicateReg2Merge() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idRegBit == 1);
+        }
+        void idPredicateReg2Merge(bool val)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idRegBit = val ? 1 : 0;
         }
 #endif // TARGET_ARM64
 
