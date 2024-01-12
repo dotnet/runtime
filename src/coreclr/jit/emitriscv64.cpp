@@ -2446,7 +2446,7 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
         case INS_fsw:
         case INS_fsd:
             assert(isGeneralRegister(rs1));
-            assert(isFloatRegType(rs2));
+            assert(isFloatReg(rs2));
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_STypeInstr!");
@@ -2524,7 +2524,7 @@ static unsigned castFloatOrIntegralReg(regNumber reg)
 {
     static constexpr unsigned kRegisterMask = 0x1f;
 
-    assert(isGeneralRegisterOrR0(reg) || isFloatRegType(reg));
+    assert(isGeneralRegisterOrR0(reg) || isFloatReg(reg));
 
     return reg & kRegisterMask;
 }
