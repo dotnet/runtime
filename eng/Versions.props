@@ -143,8 +143,8 @@
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.0.1-prerelease-00006</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>6.0.0-prerelease.23455.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
-    <MicrosoftDotNetXHarnessCLIVersion>6.0.0-prerelease.23455.2</MicrosoftDotNetXHarnessCLIVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>6.0.0-prerelease.23531.3</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
+    <MicrosoftDotNetXHarnessCLIVersion>6.0.0-prerelease.23531.3</MicrosoftDotNetXHarnessCLIVersion>
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>6.0.0-alpha.0.23518.4</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>6.0.0-alpha.0.23367.3</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <XUnitVersion>2.4.2-pre.9</XUnitVersion>
