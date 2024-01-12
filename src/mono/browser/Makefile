@@ -131,7 +131,7 @@ submit-debugger-tests-helix: build-debugger-tests-helix
 
 submit-wbt-helix:
 	PATH="$(JSVU):$(PATH)" \
-		$(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /v:m /p:ArchiveTests=true /t:ArchiveTests $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS) && \
+	$(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /v:m /p:ArchiveTests=true /t:ArchiveTests /bl:$(LOG_PATH)/Build-Wasm.Build.Tests.binlog $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS) && \
 	EMSDK_PATH=$(EMSDK_PATH) BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
 		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
 		/p:TestRunNamePrefixSuffix=WasmBuildTests /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \

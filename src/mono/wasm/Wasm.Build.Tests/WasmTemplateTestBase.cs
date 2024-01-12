@@ -46,7 +46,8 @@ public abstract class WasmTemplateTestBase : BuildTestBase
             extraArgs += $" -f {DefaultTargetFramework}";
         CommandResult res = await new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutputAsync($"new {template} {extraArgs}");
+                .WithTimeout(TimeSpan.FromMinutes(1))
+                .ExecuteWithCapturedOutputAsync($"new {template} --no-update-check -v diag -d {extraArgs}");
         res.EnsureSuccessful();
 
         string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");

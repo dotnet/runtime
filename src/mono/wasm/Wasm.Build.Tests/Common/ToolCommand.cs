@@ -30,6 +30,7 @@ namespace Wasm.Build.Tests
         public event DataReceivedEventHandler? OutputDataReceived;
 
         public string? WorkingDirectory { get; set; }
+        public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(30);
 
         public ToolCommand(string command, ITestOutputHelper testOutput, string label="")
         {
@@ -73,10 +74,17 @@ namespace Wasm.Build.Tests
             return this;
         }
 
+        public ToolCommand WithTimeout(TimeSpan timeout)
+        {
+            Timeout = timeout;
+            return this;
+        }
+
         // public virtual CommandResult Execute(params string[] args)
         // {
         //     return Task.Run(async () => await ExecuteAsync(args)).Result;
         // }
+        //
 
         public async virtual Task<CommandResult> ExecuteAsync(params string[] args)
         {
@@ -114,13 +122,21 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"ToolCommand.ExecuteAsyncInternal ENTER: {executable} {args}");
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
+            CurrentProcess.EnableRaisingEvents = true;
+            CurrentProcess.Exited += (_, e) => _testOutput.WriteLine($"Exited raised for {executable} {args}");
+            if (!CurrentProcess.Start())
+                throw new ArgumentException("No CurrentProcess was started: CurrentProcess.Start() returned false.");
+
+            object syncObj = new();
+            int pid = CurrentProcess.Id;
             DataReceivedEventHandler logStdErr = (s, e) =>
             {
                 if (e.Data == null)
                     return;
 
-                string msg = $"[{_label}] {e.Data}";
-                output.Add(msg);
+                string msg = $"[{pid}] [{_label}] {e.Data}";
+                lock (syncObj)
+                    output.Add(msg);
                 _testOutput.WriteLine(msg);
                 ErrorDataReceived?.Invoke(s, e);
             };
@@ -130,81 +146,79 @@ namespace Wasm.Build.Tests
                 if (e.Data == null)
                     return;
 
-                string msg = $"[{_label}] {e.Data}";
-                output.Add(msg);
+                string msg = $"[{pid}] [{_label}] {e.Data}";
+                lock (syncObj)
+                    output.Add(msg);
                 _testOutput.WriteLine(msg);
                 OutputDataReceived?.Invoke(s, e);
             };
 
-            if (!CurrentProcess.Start())
-                throw new ArgumentException("No CurrentProcess was started: CurrentProcess.Start() returned false.");
-
             try
             {
-                //DataReceivedEventHandler logStdErr = (sender, e) => LogData($"[{label}-stderr]", e.Data);
-                //DataReceivedEventHandler logStdOut = (sender, e) => LogData($"[{label}]", e.Data);
-
+                _testOutput.WriteLine($"[{pid}] Started CurrentProcess for {executable} {args}");
                 CurrentProcess.ErrorDataReceived += logStdErr;
                 CurrentProcess.OutputDataReceived += logStdOut;
                 CurrentProcess.BeginOutputReadLine();
                 CurrentProcess.BeginErrorReadLine();
 
                 using CancellationTokenSource cts = new();
-                int timeoutMs = 5*60*1000;
-                cts.CancelAfter(timeoutMs);
+                cts.CancelAfter((int)Timeout.TotalMilliseconds);
 
-                _testOutput.WriteLine($"calling CurrentProcess.WaitForExitAsync with timeout: {timeoutMs}");
+                _testOutput.WriteLine($"[{pid}] calling CurrentProcess.WaitForExitAsync, exited: {CurrentProcess.HasExited}");
                 try {
                     await CurrentProcess.WaitForExitAsync(cts.Token);
-                } catch (TaskCanceledException tce) {
-                    _testOutput.WriteLine($"CurrentProcess.WaitForExitAsync timed out{tce}");
+                } catch (TaskCanceledException) {
+                    _testOutput.WriteLine($"[{pid}] CurrentProcess is null: {CurrentProcess is null}");
+                    _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync(id:{pid} timed out, exited: {CurrentProcess?.HasExited}");
+                    CurrentProcess?.Refresh();
+                    DumpProcess($"timed out", pid);
                 }
-                _testOutput.WriteLine($"back from calling CurrentProcess.WaitForExitAsync.. somehow");
+                _testOutput.WriteLine($"[{pid}] back from calling CurrentProcess.WaitForExitAsync{pid}.. somehow");
 
                 if (cts.IsCancellationRequested)
                 {
                     // CurrentProcess didn't exit
-                    _testOutput.WriteLine($"CurrentProcess.WaitForExitAsync timed out, attemping to kill it");
+                    _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync(id:{pid}) timed out, attemping to kill it, process-is-null: {CurrentProcess is null} hasExited: {CurrentProcess!.HasExited}");
                     CurrentProcess.Kill(entireProcessTree: true);
-                    _testOutput.WriteLine($"back from CurrentProcess.kill");
-                    //lock (syncObj)
-                    //{
-                    RemoveNullTerminator(output);
-                    var lastLines = output.TakeLast(20);
-                    throw new XunitException($"CurrentProcess timed out. Last 20 lines of output:{System.Environment.NewLine}{string.Join(System.Environment.NewLine, lastLines)}");
-                    //}
+                    _testOutput.WriteLine($"[{pid}] back from CurrentProcess.kill for id:{pid}, exited: {CurrentProcess.HasExited}");
+                    DumpProcess($"After killing", pid);
+                    lock (syncObj)
+                    {
+                        RemoveNullTerminator(output);
+                        // var lastLines = output.TakeLast(20);
+                        throw new XunitException($"[{pid}] CurrentProcess timed out.{System.Environment.NewLine}----------------{System.Environment.NewLine}{string.Join(System.Environment.NewLine, output)}--------------------");
+                    }
                 }
 
                 // this will ensure that all the async event handling has completed
                 // and should be called after CurrentProcess.WaitForExit(int)
                 // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.CurrentProcess.waitforexit?view=net-5.0#System_Diagnostics_CurrentProcess_WaitForExit_System_Int32_
-                _testOutput.WriteLine($"calling CurrentProcess.WaitForExit");
-                CurrentProcess.WaitForExit();
-                _testOutput.WriteLine($"back from calling CurrentProcess.WaitForExit");
+                _testOutput.WriteLine($"[{pid}] calling CurrentProcess.WaitForExit, hasExited: {CurrentProcess!.HasExited}");
+                CurrentProcess!.WaitForExit();
+                _testOutput.WriteLine($"[{pid}] back from calling CurrentProcess.WaitForExit: {CurrentProcess.HasExited}");
 
                 CurrentProcess.ErrorDataReceived -= logStdErr;
                 CurrentProcess.OutputDataReceived -= logStdOut;
-                _testOutput.WriteLine($"cancelling err/out");
+                _testOutput.WriteLine($"[{pid}] cancelling err/out");
                 CurrentProcess.CancelErrorRead();
                 CurrentProcess.CancelOutputRead();
 
-                //lock (syncObj)
-                //{
+                lock (syncObj)
+                {
                     var exitCode = CurrentProcess.ExitCode;
                     RemoveNullTerminator(output);
                     //return (CurrentProcess.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
                     // return (CurrentProcess.ExitCode, string.Join(System.Environment.NewLine, output));
-                //}
-                // RemoveNullTerminator(output);
+                    return new CommandResult(
+                        CurrentProcess.StartInfo,
+                        CurrentProcess.ExitCode,
+                        string.Join(System.Environment.NewLine, output));
+                }
 
-                return new CommandResult(
-                    CurrentProcess.StartInfo,
-                    CurrentProcess.ExitCode,
-                    string.Join(System.Environment.NewLine, output));
             }
             catch (Exception ex) when (ex is not XunitException)
             {
-                _testOutput.WriteLine($"-- exception -- {ex}");
+                _testOutput.WriteLine($"[{pid}] -- exception -- {ex}");
                 throw;
             }
 
@@ -225,6 +239,18 @@ namespace Wasm.Build.Tests
             //}
             //_testOutput.WriteLine("back from waiting on the task returned from .. StartAndWaitForExitAsync");
 
+        }
+
+        private void DumpProcess(string message, int pid)
+        {
+            try
+            {
+                Process process = Process.GetProcessById(pid);
+                _testOutput.WriteLine($"[{pid}] DumpProcess: {message}: {process.HasExited}");
+            } catch (Exception ex)
+            {
+                _testOutput.WriteLine($"Could not GetProcessById for {pid}: {ex.Message}");
+            }
         }
 
         private Process CreateProcess(string executable, string args)
