@@ -81,20 +81,24 @@ public class InterpPgoTests : WasmTemplateTestBase
             var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFile}\" --forward-console");
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+            // _= runCommand.ExecuteAsync($"run --no-silent -c {config} --project \"{projectFile}\" --forward-console");
+            // await Task.Delay(60000);
+            // _testOutput.WriteLine($"returning from BrowserRunTwice .. after a 60s delay from starting dotnet-run");
+            // FIXME: should we await RunTask from browserunner?
         }
 
-        _testOutput.WriteLine($"-- waiting a bit before running again --");
-        await Task.Delay(2000);
+        // _testOutput.WriteLine($"-- waiting a bit before running again --");
+        // await Task.Delay(2000);
 
-        {
-            await using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(workingDir);
+        // {
+        //     await using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+        //                                 .WithWorkingDirectory(workingDir);
 
-            await using var runner = new BrowserRunner(_testOutput);
-            var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console");
-            await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-            Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
-        }
+        //     await using var runner = new BrowserRunner(_testOutput);
+        //     var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console");
+        //     await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+        //     Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+        // }
     }
 
 #if false

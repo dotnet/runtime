@@ -28,8 +28,9 @@ internal class BrowserRunner : IAsyncDisposable
     public IPlaywright? Playwright { get; private set; }
     public IBrowser? Browser { get; private set; }
     public Task<CommandResult>? RunTask { get; private set; }
+    private ToolCommand? _runCommand;
     public IList<string> OutputLines { get; private set; } = new List<string>();
-    private TaskCompletionSource<int> _exited = new();
+    private TaskCompletionSource<int> _appExited = new();
     private readonly ITestOutputHelper _testOutput;
 
     public BrowserRunner(ITestOutputHelper testOutput) => _testOutput = testOutput;
@@ -63,11 +64,12 @@ internal class BrowserRunner : IAsyncDisposable
             m = s_exitRegex.Match(msg);
             if (m.Success)
             {
-                _exited.TrySetResult(int.Parse(m.Groups["exitCode"].Value));
+                _appExited.TrySetResult(int.Parse(m.Groups["exitCode"].Value));
                 return;
             }
         };
 
+        _runCommand = cmd;
         cmd.WithErrorDataReceived(outputHandler).WithOutputDataReceived(outputHandler);
         var runTask = cmd.ExecuteAsync(args);
 
@@ -113,6 +115,13 @@ internal class BrowserRunner : IAsyncDisposable
         Func<string, string>? modifyBrowserUrl = null)
     {
         _testOutput.WriteLine("BrowserRunner.RunAsync ENTER");
+        if (RunTask is not null && !RunTask.IsCompleted)
+            throw new Exception($"RunTask is still pending: {RunTask.Status}");
+        RunTask = null;
+        if (_runCommand is not null)
+            throw new Exception($"{nameof(_runCommand)} is not null. Make sure to dispose it and reset to null");
+        _runCommand = null;
+
         var urlString = await StartServerAndGetUrlAsync(cmd, args);
         var browser = await SpawnBrowserAsync(urlString, headless);
         _testOutput.WriteLine("BrowserRunner.RunAsync browser spawned creating new context");
@@ -130,7 +139,7 @@ internal class BrowserRunner : IAsyncDisposable
         bool resetExitedState = false
     ) {
         if (resetExitedState)
-            _exited = new ();
+            _appExited = new ();
 
         if (modifyBrowserUrl != null)
             browserUrl = modifyBrowserUrl(browserUrl);
@@ -156,33 +165,33 @@ internal class BrowserRunner : IAsyncDisposable
         if (RunTask is null || RunTask.IsCompleted)
             throw new Exception($"No run task, or already completed");
 
-        await Task.WhenAny(RunTask!, _exited.Task, Task.Delay(timeout));
-        if (_exited.Task.IsCompleted)
+        await Task.WhenAny(RunTask!, _appExited.Task, Task.Delay(timeout));
+        if (_appExited.Task.IsCompleted)
         {
-            _testOutput.WriteLine ($"(browser app) Exited with {await _exited.Task}");
+            _testOutput.WriteLine ($"(browser app) Exited with {await _appExited.Task}");
             return;
+        }
+
+        if (RunTask.IsCompletedSuccessfully)
+            throw new Exception($"run command exited before the app");
+
+        if (RunTask.IsFaulted)
+        {
+            // surface the exception
+            await RunTask;
         }
 
         throw new Exception($"Timed out after {timeout.TotalSeconds}s waiting for 'WASM EXIT' message");
     }
 
-    public async Task WaitForProcessExitAsync(TimeSpan timeout)
-    {
-        if (RunTask is null || RunTask.IsCompleted)
-            throw new Exception($"No run task, or already completed");
-
-        await Task.WhenAny(RunTask!, _exited.Task, Task.Delay(timeout));
-        if (RunTask.IsCanceled)
-        {
-            _testOutput.WriteLine ($"Exited with {(await RunTask).ExitCode}");
-            return;
-        }
-
-        throw new Exception($"Timed out after {timeout.TotalSeconds}s waiting for process to exit");
-    }
-
     public async ValueTask DisposeAsync()
     {
+        if (RunTask is not null && !RunTask.IsCompleted)
+        {
+            if (_runCommand is not null)
+                await _runCommand.DisposeAsync();
+            await RunTask;
+        }
         if (Browser is not null)
             await Browser.DisposeAsync();
         Playwright?.Dispose();

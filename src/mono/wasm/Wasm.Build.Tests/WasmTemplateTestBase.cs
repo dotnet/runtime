@@ -47,7 +47,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         await using var cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
                 .WithTimeout(TimeSpan.FromMinutes(1));
-        var res = await cmd.ExecuteWithCapturedOutputAsync($"new {template} --no-update-check {extraArgs}");
+        var res = await cmd.ExecuteWithCapturedOutputAsync($"new {template} --no-update-check {extraArgs}").ConfigureAwait(false);
         res.EnsureSuccessful();
 
         string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");

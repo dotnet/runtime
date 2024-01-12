@@ -110,6 +110,7 @@ namespace Wasm.Build.Tests
 
             try
             {
+                // TODO: maybe do in the main loop only?
                 if (!CurrentProcess.HasExited)
                 {
                     _testOutput.WriteLine($"[{pid}] ToolCommand.Dispose has not exited, so calling Kill, exited: {_exited.Task.Status}");
@@ -130,6 +131,12 @@ namespace Wasm.Build.Tests
 
         protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
 
+        private void OnExited(object? sender, EventArgs args)
+        {
+            _testOutput.WriteLine($"[{pid}] Exited raised");
+            _exited.TrySetResult(true);
+        }
+
         private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
         {
             _linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_cancelRequested.Token, _timeoutCts.Token);
@@ -139,7 +146,7 @@ namespace Wasm.Build.Tests
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
             CurrentProcess.EnableRaisingEvents = true;
-            CurrentProcess.Exited += (_, e) => { _testOutput.WriteLine($"[{pid}] Exited raised for {executable} {args}"); _exited.TrySetResult(true); };
+            CurrentProcess.Exited += OnExited;
             if (!CurrentProcess.Start())
                 throw new ArgumentException("No CurrentProcess was started: CurrentProcess.Start() returned false.");
 
@@ -187,13 +194,17 @@ namespace Wasm.Build.Tests
                         _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync cancelled, cancelRequested, returning");
                         if (CurrentProcess is not null && !CurrentProcess.HasExited)
                         {
-                            _testOutput.WriteLine($"[{pid}] cancelling err/out");
+                            _testOutput.WriteLine($"[{pid}] killing the process");
+                            CurrentProcess.Kill(entireProcessTree: true);
+                            _testOutput.WriteLine($"[{pid}] removing handlers, and cancel'ing reads");
                             CurrentProcess.ErrorDataReceived -= logStdErr;
                             CurrentProcess.OutputDataReceived -= logStdOut;
+                            CurrentProcess.Exited -= OnExited;
                             CurrentProcess.CancelErrorRead();
                             CurrentProcess.CancelOutputRead();
                         }
-                        throw new Exception($"IGNORE this exception.. it's expected because the toolcommand is being cancelled");
+                        // throw new Exception($"IGNORE this exception.. it's expected because the toolcommand is being cancelled");
+                        return new CommandResult(CurrentProcess?.StartInfo ?? new ProcessStartInfo(), -999, "process was cancelled on request");
                     }
                     _testOutput.WriteLine($"[{pid}] CurrentProcess.WaitForExitAsync timed out, exited: {CurrentProcess?.HasExited}");
                     CurrentProcess?.Refresh();
@@ -226,6 +237,7 @@ namespace Wasm.Build.Tests
                 _testOutput.WriteLine($"[{pid}] cancelling err/out");
                 CurrentProcess!.CancelErrorRead();
                 CurrentProcess!.CancelOutputRead();
+                CurrentProcess.Exited -= OnExited;
 
                 lock (syncObj)
                 {
