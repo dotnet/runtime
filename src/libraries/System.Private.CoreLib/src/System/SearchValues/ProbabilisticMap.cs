@@ -371,7 +371,7 @@ namespace System.Buffers
         {
             if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && searchSpaceLength >= 16)
             {
-                return Avx512Vbmi.VL.IsSupported
+                return Vector512.IsHardwareAccelerated && Avx512Vbmi.VL.IsSupported
                     ? IndexOfAnyVectorizedAvx512(ref charMap, ref searchSpace, searchSpaceLength, values)
                     : IndexOfAnyVectorized(ref charMap, ref searchSpace, searchSpaceLength, values);
             }
