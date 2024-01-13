@@ -169,6 +169,8 @@ internal class BrowserRunner : IAsyncDisposable
         if (_appExited.Task.IsCompleted)
         {
             _testOutput.WriteLine ($"(browser app) Exited with {await _appExited.Task}");
+            if (_runCommand is not null)
+                await _runCommand.CancelAsync();
             return;
         }
 
