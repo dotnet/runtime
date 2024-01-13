@@ -2,7 +2,7 @@
   <Import Project="$(RepositoryEngineeringDir)testing\workloads-testing.targets" />
 
   <PropertyGroup>
-    <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">00:40:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
 
     <BrowserBuildTargetsDir>$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'build'))</BrowserBuildTargetsDir>
@@ -86,11 +86,11 @@
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <!--<HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">-->
-        <!--<PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>-->
-        <!--<Command>$(HelixCommand)</Command>-->
-        <!--<Timeout>$(_workItemTimeout)</Timeout>-->
-      <!--</HelixWorkItem>-->
+      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
     </ItemGroup>
   </Target>
 </Project>
