@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Configuration
         /// Initializes a new instance of <see cref="ConfigurationKeyNameAttribute"/>.
         /// </summary>
         /// <param name="name">The key name.</param>
-        public ConfigurationKeyNameAttribute(string name) => Name = name;
+        public ConfigurationKeyNameAttribute([System.Runtime.CompilerServices.CallerMemberName] string? name = null) => Name = name ?? "";
 
         /// <summary>
         /// The key name for a configuration property.
