@@ -128,24 +128,21 @@ namespace System.Numerics
 
             while (Vector512.IsHardwareAccelerated && d.Length - offset >= Vector512<uint>.Count)
             {
-                Vector512<uint> vector = Vector512.LoadUnsafe(ref start, (nuint)offset);
-                Vector512<uint> complement = Vector512.OnesComplement(vector);
+                Vector512<uint> complement = ~Vector512.LoadUnsafe(ref start, (nuint)offset);
                 Vector512.StoreUnsafe(complement, ref start, (nuint)offset);
                 offset += Vector512<uint>.Count;
             }
 
             while (Vector256.IsHardwareAccelerated && d.Length - offset >= Vector256<uint>.Count)
             {
-                Vector256<uint> vector = Vector256.LoadUnsafe(ref start, (nuint)offset);
-                Vector256<uint> complement = Vector256.OnesComplement(vector);
+                Vector256<uint> complement = ~Vector256.LoadUnsafe(ref start, (nuint)offset);
                 Vector256.StoreUnsafe(complement, ref start, (nuint)offset);
                 offset += Vector256<uint>.Count;
             }
 
             while (Vector128.IsHardwareAccelerated && d.Length - offset >= Vector128<uint>.Count)
             {
-                Vector128<uint> vector = Vector128.LoadUnsafe(ref start, (nuint)offset);
-                Vector128<uint> complement = Vector128.OnesComplement(vector);
+                Vector128<uint> complement = ~Vector128.LoadUnsafe(ref start, (nuint)offset);
                 Vector128.StoreUnsafe(complement, ref start, (nuint)offset);
                 offset += Vector128<uint>.Count;
             }
