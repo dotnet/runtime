@@ -33,10 +33,10 @@ namespace DebuggerTests
                 throw new ArgumentException($"Type not found {typeName}");
             }
 
-            var method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public);
+            var method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             if (method == null)
             {
-                throw new ArgumentException($"Method not found {typeName}.{methodName}");
+                throw new ArgumentException($"Method not found {clazzName}.{methodName}");
             }
 
             return method;
@@ -170,6 +170,13 @@ namespace DebuggerTests
         {
             var method = (MethodInfo)methodInfo;
             method.Invoke(null, new object[] { p1, p2, p3, p4 });
+        }
+
+        [JSExport]
+        public static string Invoke_String_String_String([JSMarshalAs<JSType.Any>()] object methodInfo, string p1, string p2)
+        {
+            var method = (MethodInfo)methodInfo;
+            return (string)method.Invoke(null, new object[] { p1, p2 });
         }
 
         [JSExport]
