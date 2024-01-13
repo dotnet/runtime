@@ -127,6 +127,17 @@ static void OpenLibraryOnce(void)
     {
         DlOpen(MAKELIB("111"));
     }
+    // FreeBSD uses this for OpenSSL3 from ports. OpenSSL3.1 would be "13"
+    // Ports version of OpenSSL is used over base where possible
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("12"));
+    }
+    // FreeBSD uses this for OpenSSL3 from base as found in FreeBSD 14.0
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("30"));
+    }
 }
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;
