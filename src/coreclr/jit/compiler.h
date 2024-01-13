@@ -1568,22 +1568,6 @@ enum API_ICorJitInfo_Names
     API_COUNT
 };
 
-enum class FlowGraphUpdates
-{
-    COMPUTE_BASICS = 0,      // renumber blocks, reachability, etc
-    COMPUTE_DOMS   = 1 << 0, // recompute dominators
-};
-
-inline constexpr FlowGraphUpdates operator|(FlowGraphUpdates a, FlowGraphUpdates b)
-{
-    return (FlowGraphUpdates)((unsigned int)a | (unsigned int)b);
-}
-
-inline constexpr FlowGraphUpdates operator&(FlowGraphUpdates a, FlowGraphUpdates b)
-{
-    return (FlowGraphUpdates)((unsigned int)a & (unsigned int)b);
-}
-
 // Profile checking options
 //
 // clang-format off
@@ -2011,8 +1995,8 @@ public:
         return m_hasCycle;
     }
 
-    bool Contains(BasicBlock* block) const;
-    bool IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const;
+    bool Contains(const BasicBlock* block) const;
+    bool IsAncestor(const BasicBlock* ancestor, const BasicBlock* descendant) const;
 };
 
 // Represents the result of induction variable analysis. See
@@ -2348,7 +2332,7 @@ public:
 class FlowGraphDominatorTree
 {
     template<typename TVisitor>
-    friend class NewDomTreeVisitor;
+    friend class DomTreeVisitor;
 
     const FlowGraphDfsTree* m_dfsTree;
     const DomTreeNode* m_domTree;
@@ -2363,12 +2347,19 @@ class FlowGraphDominatorTree
     {
     }
 
-    static BasicBlock* IntersectDom(BasicBlock* block1, BasicBlock* block2);
+    static BasicBlock* IntersectDom(const DomTreeNode* nodes, BasicBlock* block1, BasicBlock* block2);
+    static FlowGraphDominatorTree* FinishFromIDoms(const FlowGraphDfsTree* dfsTree, DomTreeNode* nodes);
 public:
+    BasicBlock* IDom(const BasicBlock* block);
     BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
-    bool Dominates(BasicBlock* dominator, BasicBlock* dominated);
+    bool Dominates(const BasicBlock* dominator, const BasicBlock* dominated);
+
+#ifdef DEBUG
+    void Dump();
+#endif
 
     static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfsTree);
+    static FlowGraphDominatorTree* BuildForRegularFlow(const FlowGraphDfsTree* dfsTree);
 };
 
 // Represents a reverse mapping from block back to its (most nested) containing loop.
@@ -5010,16 +5001,9 @@ public:
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
     FlowGraphDominatorTree* m_domTree;
+    // Dominator tree used for scaling block weights. Takes only regular flow into account.
+    FlowGraphDominatorTree* m_regularFlowDomTree;
     BlockReachabilitySets* m_reachabilitySets;
-
-    // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
-    // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
-    // postorder number, respectively. The arrays are indexed by basic block number. (Note that blocks are numbered
-    // starting from one. Thus, we always waste element zero. This makes debugging easier and makes the code less likely
-    // to suffer from bugs stemming from forgetting to add or subtract one from the block number to form an array
-    // index). The arrays are of size fgBBNumMax + 1.
-    unsigned* fgDomTreePreOrder;
-    unsigned* fgDomTreePostOrder;
 
     bool fgBBVarSetsInited;
 
@@ -5140,7 +5124,6 @@ public:
 
     bool fgModified;             // True if the flow graph has been modified recently
     bool fgPredsComputed;        // Have we computed the bbPreds list
-    bool fgDomsComputed;         // Have we computed the dominator sets?
     bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
     bool fgCanonicalizedFirstBB; // TODO-Quirk: did we end up canonicalizing first BB?
@@ -5788,18 +5771,9 @@ public:
     void vnPrint(ValueNum vn, unsigned level);
 #endif
 
-    bool fgDominate(const BasicBlock* b1, const BasicBlock* b2); // Return true if b1 dominates b2
-
     // Dominator computation member functions
     // Not exposed outside Compiler
 protected:
-    // Compute immediate dominators, the dominator tree and and its pre/post-order travsersal numbers.
-    void fgComputeDoms();
-
-    BlockSet_ValRet_T fgGetDominatorSet(BasicBlock* block); // Returns a set of blocks that dominate the given block.
-    // Note: this is relatively slow compared to calling fgDominate(),
-    // especially if dealing with a single block versus block check.
-
     void fgComputeReturnBlocks(); // Initialize fgReturnBlocks to a list of BBJ_RETURN blocks.
 
     // Remove blocks determined to be unreachable by the 'canRemoveBlock'.
@@ -5808,33 +5782,9 @@ protected:
 
     PhaseStatus fgComputeReachability(); // Perform flow graph node reachability analysis.
 
-    PhaseStatus fgComputeDominators(); // Compute (new) dominators
+    PhaseStatus fgComputeDominators(); // Compute dominators
 
     bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
-
-    BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
-
-    unsigned fgDfsReversePostorder();
-    void fgDfsReversePostorderHelper(BasicBlock* block,
-                                     BlockSet&   visited,
-                                     unsigned&   preorderIndex,
-                                     unsigned&   reversePostorderIndex);
-
-    INDEBUG(void fgDispDomTree(DomTreeNode* domTree);) // Helper that prints out the Dominator Tree in debug builds.
-
-    DomTreeNode* fgBuildDomTree(); // Once we compute all the immediate dominator sets for each node in the flow graph
-                                   // (performed by fgComputeDoms), this procedure builds the dominance tree represented
-                                   // adjacency lists.
-
-    // In order to speed up the queries of the form 'Does A dominates B', we can perform a DFS preorder and postorder
-    // traversal of the dominance tree and the dominance query will become A dominates B iif preOrder(A) <= preOrder(B)
-    // && postOrder(A) >= postOrder(B) making the computation O(1).
-    void fgNumberDomTree(DomTreeNode* domTree);
-
-    // When the flow graph changes, we need to update the block numbers, reachability sets,
-    // dominators, and possibly loops.
-    //
-    void fgUpdateChangedFlowGraph(FlowGraphUpdates updates);
 
 public:
     enum GCPollType
@@ -6124,7 +6074,6 @@ public:
 
 #ifdef DEBUG
 
-    void fgDispDoms();
     void fgDispBBLiveness(BasicBlock* block);
     void fgDispBBLiveness();
     void fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth = 0);
@@ -12010,93 +11959,12 @@ public:
 template <typename TVisitor>
 class DomTreeVisitor
 {
-protected:
-    Compiler* const    m_compiler;
-    DomTreeNode* const m_domTree;
-
-    DomTreeVisitor(Compiler* compiler, DomTreeNode* domTree) : m_compiler(compiler), m_domTree(domTree)
-    {
-    }
-
-    void Begin()
-    {
-    }
-
-    void PreOrderVisit(BasicBlock* block)
-    {
-    }
-
-    void PostOrderVisit(BasicBlock* block)
-    {
-    }
-
-    void End()
-    {
-    }
-
-public:
-    //------------------------------------------------------------------------
-    // WalkTree: Walk the dominator tree, starting from fgFirstBB.
-    //
-    // Parameter:
-    //    tree - Dominator tree nodes.
-    //
-    // Notes:
-    //    This performs a non-recursive, non-allocating walk of the tree by using
-    //    DomTreeNode's firstChild and nextSibling links to locate the children of
-    //    a node and BasicBlock's bbIDom parent link to go back up the tree when
-    //    no more children are left.
-    //
-    //    Forests are also supported, provided that all the roots are chained via
-    //    DomTreeNode::nextSibling to fgFirstBB.
-    //
-    void WalkTree()
-    {
-        static_cast<TVisitor*>(this)->Begin();
-
-        for (BasicBlock *next, *block = m_compiler->fgFirstBB; block != nullptr; block = next)
-        {
-            static_cast<TVisitor*>(this)->PreOrderVisit(block);
-
-            next = m_domTree[block->bbNum].firstChild;
-
-            if (next != nullptr)
-            {
-                assert(next->bbIDom == block);
-                continue;
-            }
-
-            do
-            {
-                static_cast<TVisitor*>(this)->PostOrderVisit(block);
-
-                next = m_domTree[block->bbNum].nextSibling;
-
-                if (next != nullptr)
-                {
-                    assert(next->bbIDom == block->bbIDom);
-                    break;
-                }
-
-                block = block->bbIDom;
-
-            } while (block != nullptr);
-        }
-
-        static_cast<TVisitor*>(this)->End();
-    }
-};
-
-// A dominator tree visitor implemented using the curiously-recurring-template pattern, similar to GenTreeVisitor.
-template <typename TVisitor>
-class NewDomTreeVisitor
-{
     friend class FlowGraphDominatorTree;
 
 protected:
     Compiler* m_compiler;
 
-    NewDomTreeVisitor(Compiler* compiler) : m_compiler(compiler)
+    DomTreeVisitor(Compiler* compiler) : m_compiler(compiler)
     {
     }
 
@@ -12125,11 +11993,11 @@ private:
         {
             static_cast<TVisitor*>(this)->PreOrderVisit(block);
 
-            next = tree[block->bbNewPostorderNum].firstChild;
+            next = tree[block->bbPostorderNum].firstChild;
 
             if (next != nullptr)
             {
-                assert(next->bbIDom == block);
+                assert(tree[next->bbPostorderNum].parent == block);
                 continue;
             }
 
@@ -12137,15 +12005,15 @@ private:
             {
                 static_cast<TVisitor*>(this)->PostOrderVisit(block);
 
-                next = tree[block->bbNewPostorderNum].nextSibling;
+                next = tree[block->bbPostorderNum].nextSibling;
 
                 if (next != nullptr)
                 {
-                    assert(next->bbIDom == block->bbIDom);
+                    assert(tree[next->bbPostorderNum].parent == tree[block->bbPostorderNum].parent);
                     break;
                 }
 
-                block = block->bbIDom;
+                block = tree[block->bbPostorderNum].parent;
 
             } while (block != nullptr);
         }
@@ -12304,7 +12172,6 @@ extern size_t   gcPtrMapNSize;
 #if COUNT_BASIC_BLOCKS
 extern Histogram bbCntTable;
 extern Histogram bbOneBBSizeTable;
-extern Histogram domsChangedIterationTable;
 extern Histogram computeReachabilitySetsIterationTable;
 #endif
 

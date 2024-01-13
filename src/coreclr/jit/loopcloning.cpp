@@ -3159,7 +3159,6 @@ PhaseStatus Compiler::optCloneLoops()
 
     if (optLoopsCloned > 0)
     {
-        fgDomsComputed = false;
         fgRenumberBlocks();
 
         fgInvalidateDfsTree();
