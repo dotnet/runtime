@@ -96,6 +96,7 @@ namespace Microsoft.CSharp
 
             b.Append('\"');
 
+            bool isStringMultiline = false;
             int i = 0;
             while (i < value.Length)
             {
@@ -148,11 +149,22 @@ namespace Microsoft.CSharp
                     b.Append(Environment.NewLine);
                     b.Append(indentObj.IndentationString);
                     b.Append('\"');
+
+                    if (!isStringMultiline)
+                    {
+                        isStringMultiline = true;
+                    }
                 }
                 ++i;
             }
 
             b.Append('\"');
+
+            if (isStringMultiline)
+            {
+                b.Insert(0, '(');
+                b.Append(')');
+            }
 
             return b.ToString();
         }
