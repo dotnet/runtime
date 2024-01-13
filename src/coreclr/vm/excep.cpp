@@ -6563,7 +6563,7 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
 #if defined(FEATURE_EH_FUNCLETS)
     *frame->GetGSCookiePtr() = GetProcessGSCookie();
 #endif // FEATURE_EH_FUNCLETS
-    pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    //pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     frame->InitAndLink(pContext);
 
     Thread *pThread = GetThread();
@@ -7103,12 +7103,14 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                 //
                 // On 64-bit, some additional work is required..
 #ifdef FEATURE_EH_FUNCLETS
+                pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
 #endif // defined(FEATURE_EH_FUNCLETS)
             }
             else if (AdjustContextForVirtualStub(pExceptionRecord, pContext))
             {
 #ifdef FEATURE_EH_FUNCLETS
+                pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
 #endif
             }
@@ -7444,6 +7446,8 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }
+
+    pExceptionInfo->ContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
 
     // WARNING
     //

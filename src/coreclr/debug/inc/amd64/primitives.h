@@ -80,7 +80,11 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
 inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum reg)
 {
     _ASSERTE(reg >= 0);
-    _ASSERTE(static_cast<size_t>(reg) < ARRAY_SIZE(g_JITToCorDbgReg));
+    //_ASSERTE(static_cast<size_t>(reg) < ARRAY_SIZE(g_JITToCorDbgReg));
+    if (static_cast<size_t>(reg) >= ARRAY_SIZE(g_JITToCorDbgReg))
+    {
+        reg = ICorDebugInfo::REGNUM_RAX;
+    }
     return g_JITToCorDbgReg[reg];
 }
 

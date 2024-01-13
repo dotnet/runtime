@@ -1234,6 +1234,12 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
     // process the REGDISPLAY and stop at the first frame
     ProcessIp(GetControlPC(m_crawl.pRD));
+#ifdef FEATURE_EH_FUNCLETS
+    if (m_crawl.isFrameless && !!(m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE))
+    {
+        m_crawl.hasFaulted = true;
+    }
+#endif // FEATURE_EH_FUNCLETS
     ProcessCurrentFrame();
 
     // advance to the next frame which matches the stackwalk flags
@@ -1401,12 +1407,12 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
                 }
 
                 m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD);
-#ifdef FEATURE_EH_FUNCLETS
-                if ((m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) == 0)
-                {
-                    m_crawl.hasFaulted = false;
-                }
-#endif // FEATURE_EH_FUNCLETS
+// #ifdef FEATURE_EH_FUNCLETS
+//                 if ((m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) == 0)
+//                 {
+//                     m_crawl.hasFaulted = false;
+//                 }
+// #endif // FEATURE_EH_FUNCLETS
                 _ASSERTE(curPc == GetControlPC(m_crawl.pRD));
             }
 
@@ -2727,12 +2733,12 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             if (m_crawl.isFrameless)
             {
                 m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD);
-#ifdef FEATURE_EH_FUNCLETS
-                if ((m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) == 0)
-                {
-                    m_crawl.hasFaulted = false;
-                }
-#endif // FEATURE_EH_FUNCLETS
+// #ifdef FEATURE_EH_FUNCLETS
+//                 if ((m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) == 0)
+//                 {
+//                     m_crawl.hasFaulted = false;
+//                 }
+// #endif // FEATURE_EH_FUNCLETS
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)
                 CONSISTENCY_CHECK(NULL == m_pvResumableFrameTargetSP);

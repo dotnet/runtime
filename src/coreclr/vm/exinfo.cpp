@@ -331,14 +331,25 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     m_StackTraceInfo.AllocateStackTrace();
     pThread->GetExceptionState()->m_pCurrentTracker = this;
     memcpy(&m_exContext, pExceptionContext, sizeof(CONTEXT));
-    if (pThread->GetFrame() != FRAME_TOP)
-    {
-        Thread::VirtualUnwindToFirstManagedCallFrame(&m_exContext);
-    }
-    SetIP(&m_exContext, 0);
+    // HACK
+    // if (!(pExceptionContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE))
+    // {
+    //     memcpy(&m_exContext, pExceptionContext, sizeof(CONTEXT));
+    // }
+    // else
+    // {
+    //     m_exContext = {};
+    //     m_exContext.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+    // }
+    // if (pThread->GetFrame() != FRAME_TOP)
+    // {
+    //     Thread::VirtualUnwindToFirstManagedCallFrame(&m_exContext);
+    // }
+    // SetIP(&m_exContext, 0);
     // m_exContext.ContextFlags = CONTEXT_FLOATING_POINT;
     // ClrCaptureContext(&m_exContext);
-    // m_exContext.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+    //m_exContext.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | (m_exContext.ContextFlags & CONTEXT_EXCEPTION_ACTIVE);
+    m_exContext.ContextFlags = m_exContext.ContextFlags & (CONTEXT_ALL | CONTEXT_EXCEPTION_ACTIVE);
 }
 
 #if defined(TARGET_UNIX)

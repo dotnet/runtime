@@ -899,15 +899,15 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
     else
     {
         GCX_COOP();
-        FrameWithCookie<NativeToManagedExceptionFrame> frameWithCookie;
-        NativeToManagedExceptionFrame *frame = &frameWithCookie;
-    #if defined(FEATURE_EH_FUNCLETS)
-        *frame->GetGSCookiePtr() = GetProcessGSCookie();
-    #endif // FEATURE_EH_FUNCLETS
-        frame->InitAndLink(pContextRecord);
+    //     FrameWithCookie<NativeToManagedExceptionFrame> frameWithCookie;
+    //     NativeToManagedExceptionFrame *frame = &frameWithCookie;
+    // #if defined(FEATURE_EH_FUNCLETS)
+    //     *frame->GetGSCookiePtr() = GetProcessGSCookie();
+    // #endif // FEATURE_EH_FUNCLETS
+    //     frame->InitAndLink(pContextRecord);
 
         OBJECTREF oref = ExceptionTracker::CreateThrowable(pExceptionRecord, FALSE);
-        DispatchManagedException(oref);
+        DispatchManagedException(oref, pContextRecord);
     }
 #endif // !HOST_UNIX
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, _T("SEH exception leaked into managed code"));
@@ -4930,9 +4930,13 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 {
     if (g_isNewExceptionHandlingEnabled)
     {
+        if (!isHardwareException)
+        {
+            RtlCaptureContext(ex.GetContextRecord());
+        }
         GCX_COOP();
         OBJECTREF throwable = ExceptionTracker::CreateThrowable(ex.GetExceptionRecord(), FALSE);
-        DispatchManagedException(throwable);
+        DispatchManagedException(throwable, ex.GetContextRecord());
     }
 
     do
@@ -5544,7 +5548,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
 #endif // TARGET_UNIX
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preserveStackTrace)
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, bool preserveStackTrace)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5554,12 +5558,14 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preser
 
    _ASSERTE(IsException(throwable->GetMethodTable()));
 
+    Thread *pThread = GetThread();
+
     if (preserveStackTrace)
     {
+        pThread->IncPreventAbort();
         ExceptionPreserveStackTrace(throwable);
+        pThread->DecPreventAbort();
     }
-
-    Thread *pThread = GetThread();
 
     ULONG_PTR hr = GetHRFromThrowable(throwable);
 
@@ -5570,10 +5576,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preser
     exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation, hr);
     exceptionRecord.ExceptionRecord = NULL;
 
-    CONTEXT exceptionContext;
-    RtlCaptureContext(&exceptionContext);
-
-    ExInfo exInfo(pThread, &exceptionRecord, &exceptionContext, ExKind::Throw);
+    ExInfo exInfo(pThread, &exceptionRecord, pExceptionContext, ExKind::Throw);
 
     if (pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&throwable))
     {
@@ -5602,6 +5605,28 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preser
     GCPROTECT_END();
     GCPROTECT_END();
 
+    UNREACHABLE();
+}
+
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preserveStackTrace)
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    CONTEXT exceptionContext;
+    RtlCaptureContext(&exceptionContext);
+//    Thread::VirtualUnwindToFirstManagedCallFrame(&exceptionContext);
+
+//     GCX_COOP();
+//     FrameWithCookie<NativeToManagedExceptionFrame> frameWithCookie;
+//     NativeToManagedExceptionFrame *frame = &frameWithCookie;
+// #if defined(FEATURE_EH_FUNCLETS)
+//     *frame->GetGSCookiePtr() = GetProcessGSCookie();
+// #endif // FEATURE_EH_FUNCLETS
+//     frame->InitAndLink(&exceptionContext);
+
+    DispatchManagedException(throwable, &exceptionContext, preserveStackTrace);
     UNREACHABLE();
 }
 
@@ -8126,6 +8151,62 @@ static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExIn
     pExInfo->m_pMDToReportFunctionLeave = pMD;
 }
 
+static void UnwindPastFrame(REGDISPLAY* pRD, Frame* pFrame)
+{
+    if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
+    {
+        if (InlinedCallFrame::FrameHasActiveCall(pFrame))
+        {
+            InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
+            while (GetRegdisplaySP(pRD) < (TADDR)pInlinedCallFrame->GetCallSiteSP())
+            {
+#ifdef TARGET_UNIX
+                PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+                SyncRegDisplayToCurrentContext(pRD);
+#else
+                Thread::VirtualUnwindCallFrame(pRD);
+#endif
+            }
+        }
+    }
+    else
+    {
+        while (GetRegdisplaySP(pRD) < (TADDR)pFrame)
+        {
+#ifdef TARGET_UNIX
+            PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+            SyncRegDisplayToCurrentContext(pRD);
+#else
+            Thread::VirtualUnwindCallFrame(pRD);
+#endif
+        }
+        if ((pFrame->GetFrameAttribs() & Frame::FRAME_ATTR_CAPTURE_DEPTH_2) != 0)
+        {
+#ifdef TARGET_UNIX
+            PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+            SyncRegDisplayToCurrentContext(pRD);
+#else
+            Thread::VirtualUnwindCallFrame(pRD);
+#endif
+        }
+    }
+
+#ifdef TARGET_UNIX
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+#endif
+
+    // EECodeManager::EnsureCallerContextIsValid(pRD, NULL);
+    // while (GetSP(pRD->pCallerContext) < (TADDR)pFrame)
+    // {
+    //     // TODO: reuse EEInfo??
+    //     Thread::VirtualUnwindCallFrame(pRD);
+    //     EECodeManager::EnsureCallerContextIsValid(pRD, NULL);
+    // }
+    // TODO: see if we can get rid of this. Maybe adding a reset to cached codeInfo in the stack frame iterator would do
+    //EECodeManager::EnsureCallerContextIsValid(pRD, NULL);
+}
+
 extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault, bool* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
@@ -8203,6 +8284,9 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                 }
             }
         }
+
+        UnwindPastFrame(pThis->m_crawl.GetRegisterSet(), pFrame);
+        
         StackWalkAction retVal = pThis->Next();
         result = (retVal != SWA_FAILED);
     }
@@ -8239,6 +8323,11 @@ static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrame
 
     do
     {
+        if (pStackFrameIterator->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION || pStackFrameIterator->GetFrameState() == StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION)
+        {
+            Frame* pFrame = pStackFrameIterator->m_crawl.GetFrame();
+            UnwindPastFrame(pStackFrameIterator->m_crawl.GetRegisterSet(), pFrame);
+        }
         retVal = pStackFrameIterator->Next();
         if (retVal == SWA_FAILED)
         {
@@ -8381,6 +8470,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
         {
             // Detect collided unwind
             pFrame = pThis->m_crawl.GetFrame();
+            UnwindPastFrame(pThis->m_crawl.GetRegisterSet(), pFrame);
 
             if (InlinedCallFrame::FrameHasActiveCall(pFrame))
             {

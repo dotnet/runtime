@@ -1053,7 +1053,7 @@ class FaultingExceptionFrame : public Frame
     TADDR                   m_ReturnAddress;
     T_CONTEXT               m_ctx;
 #endif // !FEATURE_EH_FUNCLETS
-
+    
     VPTR_VTABLE_CLASS(FaultingExceptionFrame, Frame)
 
 public:
@@ -1081,7 +1081,11 @@ public:
     unsigned GetFrameAttribs()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#ifdef FEATURE_EH_FUNCLETS
+        return FRAME_ATTR_EXCEPTION | (!!(m_ctx.ContextFlags & CONTEXT_EXCEPTION_ACTIVE) ? FRAME_ATTR_FAULTED : 0);
+#else
         return FRAME_ATTR_EXCEPTION | FRAME_ATTR_FAULTED;
+#endif        
     }
 
 #ifndef FEATURE_EH_FUNCLETS
@@ -1108,6 +1112,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return &m_fFilterExecuted;
     }
+
 #endif // FEATURE_EH_FUNCLETS
 
     virtual BOOL NeedsUpdateRegDisplay()
