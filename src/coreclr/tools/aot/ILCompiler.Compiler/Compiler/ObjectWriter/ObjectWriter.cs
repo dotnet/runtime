@@ -388,7 +388,7 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
-                    bool isMethod = n.Offset == 0 && node is IMethodNode or AssemblyStubNode;
+                    bool isMethod = n.Offset == 0 && node is (IMethodNode or AssemblyStubNode) and not FatFunctionPointerNode;
                     sectionWriter.EmitSymbolDefinition(
                         n == node ? currentSymbolName : GetMangledName(n),
                         n.Offset,
