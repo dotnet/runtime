@@ -212,6 +212,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
         await Task.Delay(10_000);
 
+        await runCommand.CancelAsync();
+
         void OnConsoleMessage(IConsoleMessage msg)
         {
             _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
