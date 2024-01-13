@@ -223,16 +223,14 @@ namespace Wasm.Build.Tests
                     await CurrentProcess.WaitForExitAsync(_linkedCts.Token);
                 } catch (TaskCanceledException) {
                     _testOutput.WriteLine($"[{pid}] CurrentProcess.ExecuteAsyncInternal got tce");
-                    if (CurrentProcess.HasExited)
+                    //if (CurrentProcess.HasExited)
+                    //{
+                        //_testOutput.WriteLine($"[{pid}] CurrentProcess.ExecuteAsyncInternal: -- TCE received but the task is gone too!");
+                        //return new CommandResult(CurrentProcess.StartInfo, -999, "tce received but the task is gone too");
+                    //}
+                    if (_linkedCts.IsCancellationRequested)
                     {
-                        _testOutput.WriteLine($"[{pid}] CurrentProcess.ExecuteAsyncInternal: CurrentProcess is null or already exited, nothing more to do really. FIXME: maybe disconnect the handlers?");
-                        return new CommandResult(CurrentProcess.StartInfo, -999, "process was cancelled on request");
-                        // return null;
-                    }
-
-                    if (_cancelRequested.IsCancellationRequested)
-                    {
-                        _testOutput.WriteLine($"[{pid}] CurrentProcess.ExecuteAsyncInternal: cancelRequested");
+                        _testOutput.WriteLine($"[{pid}] CurrentProcess.ExecuteAsyncInternal: _linkedCts is canceled, cancelreq: {_cancelRequested.IsCancellationRequested}, _timeout: {_timeoutCts.IsCancellationRequested}");
                         if (!CurrentProcess.HasExited)
                         {
                             _testOutput.WriteLine($"[{pid}] CurrentProcess.ExecuteAsyncInternal: killing the process");
@@ -241,13 +239,18 @@ namespace Wasm.Build.Tests
                             // FIXME: racy??? cp could become null??
                             ClearHandlers();
                         }
-                        // throw new Exception($"IGNORE this exception.. it's expected because the toolcommand is being cancelled");
-                        return new CommandResult(CurrentProcess.StartInfo, -999, "process was cancelled on request");
-                        // return null;
+
+                        if (_cancelRequested.IsCancellationRequested)
+                            return new CommandResult(CurrentProcess.StartInfo, -999, "process was cancelled on request");
+                        else
+                            throw new TimeoutException($"timed out waiting for exit on the process: {Timeout}");
                     }
+
+                    // dunno why this was thrown
+                    throw;
                 }
 
-                _testOutput.WriteLine($"[{pid}] CurrentProcess.ExecuteAsyncInternal: back from calling CurrentProcess.WaitForExitAsync{pid}");
+                _testOutput.WriteLine($"[{pid}] CurrentProcess.ExecuteAsyncInternal: back from calling CurrentProcess.WaitForExitAsync");
 
                 // this will ensure that all the async event handling has completed
                 // and should be called after CurrentProcess.WaitForExit(int)
