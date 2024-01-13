@@ -346,6 +346,10 @@ namespace System
             scoped Span<byte> buffer;
             byte[]? arrayFromPool = null;
 
+            if (value.Length == 0)
+            {
+                goto FailExit;
+            }
             if (value.Length < 255)
             {
                 buffer = stackalloc byte[value.Length + 1 + 1];
@@ -363,8 +367,7 @@ namespace System
 
                 if (!TryStringToNumber(value, style, ref number, info))
                 {
-                    result = default;
-                    ret = ParsingStatus.Failed;
+                    goto FailExit;
                 }
                 else
                 {
@@ -378,6 +381,9 @@ namespace System
             }
 
             return ret;
+        FailExit:
+            result = default;
+            return ParsingStatus.Failed;
         }
 
         internal static BigInteger ParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info)
