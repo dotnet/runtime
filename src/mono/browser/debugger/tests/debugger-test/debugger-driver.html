@@ -92,6 +92,14 @@
 			window.location.replace("http://localhost:9400/wasm-page-without-assets.html");
 			console.debug ("#debugger-app-ready#");
 		}
+		function invoke_static_method_native (method_name, ...args) {
+			const native_method_name = "Native:" + method_name;
+			var method = App.static_method_table [native_method_name];
+			if (method == undefined)
+				method = App.static_method_table[native_method_name] = App.bind_static_method_native(method_name);
+
+			return method (...args);
+		}
 		</script>
 
 		<script type="text/javascript" src="other.js"></script>

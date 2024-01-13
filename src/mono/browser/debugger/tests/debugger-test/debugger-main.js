@@ -36,6 +36,29 @@ try {
         }
     }
 
+    App.bind_static_method_native = (method_name) => {
+        try {
+            // as opposed to [JSExport], `mono_wasm_invoke_method_raw` doesn't handle exceptions. 
+            // Same way as old `bind_static_method` didn't
+            const monoMethodPtr = App.exports.DebuggerTests.BindStaticMethod.GetMonoMethodPtr(method_name);
+            // this is only implemented for void methods with no arguments
+            const invoker = runtime.Module.cwrap("mono_wasm_invoke_method_raw", "number", ["number", "number"]);
+            return function () {
+                try {
+                    return invoker(monoMethodPtr);
+                }
+                catch (err) {
+                    console.error(err);
+                    throw err;
+                }
+            }
+        }
+        catch (err) {
+            console.error(err);
+            throw err;
+        }
+    }
+
     await App.init();
 }
 catch (err) {

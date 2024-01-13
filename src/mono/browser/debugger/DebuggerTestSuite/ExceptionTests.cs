@@ -201,7 +201,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("function () { exceptions_test (); }", null, 0, 0, "exception_uncaught_test", "RangeError", "exception uncaught")]
-        [InlineData("function () { invoke_static_method ('[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions'); }",
+        [InlineData("function () { invoke_static_method_native ('[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions'); }",
             "dotnet://debugger-test.dll/debugger-exception-test.cs", 28, 16, "DebuggerTests.ExceptionTestsClass.TestUncaughtException.run",
             "DebuggerTests.CustomException", "not implemented uncaught")]
         public async Task ExceptionTestUncaught(string eval_fn, string loc, int line, int col, string fn_name,
@@ -240,7 +240,7 @@ namespace DebuggerTests
                                     }));
             await insp.WaitFor(Inspector.APP_READY);
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+            var eval_expr = "window.setTimeout(function() { invoke_static_method_native (" +
                 $"'{entry_method_name}'" +
                 "); }, 1);";
 

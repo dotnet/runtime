@@ -6,6 +6,11 @@ using System;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace DebuggerTests
 {
@@ -16,17 +21,30 @@ namespace DebuggerTests
 
         [JSExport]
         [return: JSMarshalAs<JSType.Any>()]
-        public static object Find(string monoMethodName)
+        public static object GetMethodInfo(string monoMethodName)
+        {
+            return GetMethodInfoImpl(monoMethodName);
+        }
+
+        [JSExport]
+        public static unsafe IntPtr GetMonoMethodPtr(string monoMethodName)
+        {
+            var methodInfo = GetMethodInfoImpl(monoMethodName);
+            var temp = new IntPtrAndHandle { methodHandle = methodInfo.MethodHandle };
+            return temp.ptr;
+        }
+
+        public static MethodInfo GetMethodInfoImpl(string monoMethodName)
         {
             ArgumentNullException.ThrowIfNullOrEmpty(monoMethodName, nameof(monoMethodName));
             // [debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers
             var partsA = monoMethodName.Split(' ');
             var assemblyName = partsA[0].Substring(1, partsA[0].Length - 2);
             var partsN = partsA[1].Split(':');
-            var clazzName = partsN[0];
+            var className = partsN[0];
             var methodName = partsN[1];
 
-            var typeName = $"{clazzName}, {assemblyName}";
+            var typeName = $"{className}, {assemblyName}";
             Type type = Type.GetType(typeName);
             if (type == null)
             {
@@ -36,7 +54,7 @@ namespace DebuggerTests
             var method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             if (method == null)
             {
-                throw new ArgumentException($"Method not found {clazzName}.{methodName}");
+                throw new ArgumentException($"Method not found {className}.{methodName}");
             }
 
             return method;
@@ -46,7 +64,7 @@ namespace DebuggerTests
         public static string GetSignature([JSMarshalAs<JSType.Any>()] object methodInfo)
         {
             var method = (MethodInfo)methodInfo;
-            var sb = new StringBuilder("Invoke");
+            var sb = new StringBuilder();
             foreach (var p in method.GetParameters())
             {
                 sb.Append("_");
@@ -184,6 +202,19 @@ namespace DebuggerTests
         {
             var method = (MethodInfo)methodInfo;
             method.Invoke(null, new object[] { p1, p2, p3, p4, p5, p6, p7, p8 });
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        private struct IntPtrAndHandle
+        {
+            [FieldOffset(0)]
+            internal IntPtr ptr;
+
+            [FieldOffset(0)]
+            internal RuntimeMethodHandle methodHandle;
+
+            [FieldOffset(0)]
+            internal RuntimeTypeHandle typeHandle;
         }
     }
 }
