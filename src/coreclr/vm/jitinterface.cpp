@@ -9150,6 +9150,12 @@ CorInfoType CEEInfo::getFieldType (CORINFO_FIELD_HANDLE fieldHnd,
 
     JIT_TO_EE_TRANSITION();
 
+    PTR_MethodTable fldType = ((FieldDesc*)fieldHnd)->GetApproxEnclosingMethodTable();
+    if ((owner != nullptr) && !TypeHandle(owner).AsMethodTable()->HasSameTypeDefAs(fldType))
+    {
+        owner = nullptr;
+    }
+
     result = getFieldTypeInternal(fieldHnd, pTypeHnd, owner);
 
     EE_TO_JIT_TRANSITION();

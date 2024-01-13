@@ -18809,16 +18809,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
 
     if (fieldCorType == CORINFO_TYPE_CLASS)
     {
-        // Now let's see if the fieldOwnerCls is more specific than the fieldClass we just got.
-        // e.g. List<_Canon> is less specific than List<String>.
-        // We can't use fieldOwnerCls in the first place because it could be e.g. System.Object
-        // and getFieldType won't like it.
-        if ((fieldOwnerCls != NO_CLASS_HANDLE) && (fieldClass != fieldOwnerCls) &&
-            (info.compCompHnd->isMoreSpecificType(fieldClass, fieldOwnerCls)))
-        {
-            info.compCompHnd->getFieldType(fieldHnd, &fieldClass, fieldOwnerCls);
-        }
-
         // Optionally, look at the actual type of the field's value
         bool queryForCurrentClass = true;
         INDEBUG(queryForCurrentClass = (JitConfig.JitQueryCurrentStaticFieldClass() > 0););
