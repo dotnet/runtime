@@ -1406,6 +1406,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 sizeRegMask    = RBM_RCX;
                 break;
 
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for offsetReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                break;
+
 #ifdef TARGET_AMD64
             case GenTreeBlk::BlkOpKindHelper:
                 dstAddrRegMask = RBM_ARG_0;
