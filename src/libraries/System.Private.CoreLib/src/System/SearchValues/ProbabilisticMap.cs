@@ -472,7 +472,7 @@ namespace System.Buffers
             }
             else
             {
-                Debug.Assert(searchSpaceLength is >= 16 and < 32);
+                Debug.Assert(searchSpaceLength is >= 16 and <= 32);
 
                 // Process the first and last vector in the search space.
                 // They may overlap, but we'll handle that in the index calculation if we do get a match.
