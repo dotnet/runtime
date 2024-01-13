@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.AppHost;
@@ -12,7 +11,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundledAppWithSubDirs : BundleTestBase, IClassFixture<BundledAppWithSubDirs.SharedTestState>
+    public class BundledAppWithSubDirs : IClassFixture<BundledAppWithSubDirs.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -23,7 +22,7 @@ namespace AppHost.Bundle.Tests
 
         private void RunTheApp(string path, bool selfContained)
         {
-            RunTheApp(path, selfContained ? null : RepoDirectoriesProvider.Default.BuiltDotnet)
+            RunTheApp(path, selfContained ? null : TestContext.BuiltDotNet.BinPath)
                 .Should().Pass()
                 .And.HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
@@ -63,7 +62,7 @@ namespace AppHost.Bundle.Tests
             using (new TestArtifact(dotnetWithMockHostFxr))
             {
                 Directory.CreateDirectory(dotnetWithMockHostFxr);
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "mockhostfxrFrameworkMissingFailure")
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrFrameworkMissingFailure")
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(2, 2, 0));
                 var dotnet = dotnetBuilder.Build();
@@ -93,14 +92,14 @@ namespace AppHost.Bundle.Tests
                 Directory.CreateDirectory(dotnetWithMockHostFxr);
                 string expectedErrorCode = Constants.ErrorCode.BundleExtractionFailure.ToString("x");
 
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "mockhostfxrBundleVersionFailure")
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrBundleVersionFailure")
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(5, 0, 0));
                 var dotnet = dotnetBuilder.Build();
 
                 Command command = Command.Create(singleFile)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(dotnet.BinPath, sharedTestState.RepoDirectories.BuildArchitecture)
+                    .DotNetRoot(dotnet.BinPath, TestContext.BuildArchitecture)
                     .MultilevelLookup(false)
                     .Start();
 
@@ -179,7 +178,7 @@ namespace AppHost.Bundle.Tests
             RunTheApp(singleFile, selfContained: true);
         }
 
-        public class SharedTestState : SharedTestStateBase, IDisposable
+        public class SharedTestState : IDisposable
         {
             public SingleFileTestApp FrameworkDependentApp { get; }
             public SingleFileTestApp SelfContainedApp { get; }
@@ -188,15 +187,15 @@ namespace AppHost.Bundle.Tests
             public SharedTestState()
             {
                 FrameworkDependentApp = SingleFileTestApp.CreateFrameworkDependent("AppWithSubDirs");
-                BundleHelper.AddLongNameContentToAppWithSubDirs(FrameworkDependentApp.NonBundledLocation);
+                AddLongNameContent(FrameworkDependentApp.NonBundledLocation);
 
                 SelfContainedApp = SingleFileTestApp.CreateSelfContained("AppWithSubDirs");
-                BundleHelper.AddLongNameContentToAppWithSubDirs(SelfContainedApp.NonBundledLocation);
+                AddLongNameContent(SelfContainedApp.NonBundledLocation);
 
                 // ACTIVE ISSUE: https://github.com/dotnet/runtime/issues/54234
                 //               This should be an app built with the equivalent of PublishReadyToRun=true and PublishReadyToRunComposite=true
                 SelfContainedCompositeApp = SingleFileTestApp.CreateSelfContained("AppWithSubDirs");
-                BundleHelper.AddLongNameContentToAppWithSubDirs(SelfContainedCompositeApp.NonBundledLocation);
+                AddLongNameContent(SelfContainedCompositeApp.NonBundledLocation);
             }
 
             public void Dispose()
@@ -204,6 +203,20 @@ namespace AppHost.Bundle.Tests
                 FrameworkDependentApp.Dispose();
                 SelfContainedApp.Dispose();
                 SelfContainedCompositeApp.Dispose();
+            }
+
+            public static void AddLongNameContent(string directory)
+            {
+                // For tests using the AppWithSubDirs, One of the sub-directories with a really long name
+                // is generated during test-runs rather than being checked in as a test asset.
+                // This prevents git-clone of the repo from failing if long-file-name support is not enabled on windows.
+                var longDirName = "This is a really, really, really, really, really, really, really, really, really, really, really, really, really, really long file name for punctuation";
+                var longDirPath = Path.Combine(directory, "Sentence", longDirName);
+                Directory.CreateDirectory(longDirPath);
+                using (var writer = File.CreateText(Path.Combine(longDirPath, "word")))
+                {
+                    writer.Write(".");
+                }
             }
         }
     }

@@ -15,9 +15,9 @@
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == '' and '$(FeatureWasmThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
     <WasmEnableLegacyJsInterop Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
-    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
-    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" >$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
-    <DefineConstants Condition="'$(WasmEnableJsInteropByValue)' == 'true'" >$(DefineConstants);ENABLE_JS_INTEROP_BY_VALUE</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
+    <DefineConstants Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(DefineConstants);ENABLE_JS_INTEROP_BY_VALUE</DefineConstants>
     <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
@@ -46,6 +46,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\SynchronizationContextExtensions.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSProxyContext.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.BigInt64.cs" />
@@ -81,7 +82,7 @@
 
   <!-- only include threads support when FeatureWasmThreads is enabled -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(FeatureWasmThreads)' == 'true'">
-    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorker.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\JSWebWorker.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(MonoWasmBuildVariant)' == 'multithread'">

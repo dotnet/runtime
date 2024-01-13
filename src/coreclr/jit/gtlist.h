@@ -53,7 +53,7 @@ GTNODE(CNS_VEC          , GenTreeVecCon      ,0,0,GTK_LEAF)
 //-----------------------------------------------------------------------------
 
 GTNODE(NOT              , GenTreeOp          ,0,0,GTK_UNOP)
-GTNODE(NOP              , GenTree            ,0,0,GTK_UNOP|DBK_NOCONTAIN)
+GTNODE(NOP              , GenTree            ,0,1,GTK_LEAF|DBK_NOCONTAIN)
 GTNODE(NEG              , GenTreeOp          ,0,0,GTK_UNOP)
 
 GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,0,GTK_BINOP|GTK_EXOP)

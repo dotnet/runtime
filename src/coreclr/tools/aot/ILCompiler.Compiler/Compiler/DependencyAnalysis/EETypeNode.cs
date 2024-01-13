@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
             _writableDataNode = SupportsWritableData(factory.Target) && !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
-            if (EmitVirtualSlotsAndInterfaces)
+            if (EmitVirtualSlots)
                 _virtualMethodAnalysisFlags = AnalyzeVirtualMethods(type);
 
             factory.TypeSystemContext.EnsureLoadableType(type);
@@ -201,7 +201,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (!_mightHaveInterfaceDispatchMap.HasValue)
             {
-                _mightHaveInterfaceDispatchMap = EmitVirtualSlotsAndInterfaces && InterfaceDispatchMapNode.MightHaveInterfaceDispatchMap(_type, factory);
+                _mightHaveInterfaceDispatchMap = EmitVirtualSlots && InterfaceDispatchMapNode.MightHaveInterfaceDispatchMap(_type, factory);
             }
 
             return _mightHaveInterfaceDispatchMap.Value;
@@ -238,7 +238,7 @@ namespace ILCompiler.DependencyAnalysis
         public static int GetMinimumObjectSize(TypeSystemContext typeSystemContext)
             => typeSystemContext.Target.PointerSize * 3;
 
-        protected virtual bool EmitVirtualSlotsAndInterfaces => false;
+        protected virtual bool EmitVirtualSlots => false;
 
         public override bool InterestingForDynamicDependencyAnalysis
             => (_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.InterestingForDynamicDependencies) != 0;
@@ -305,7 +305,7 @@ namespace ILCompiler.DependencyAnalysis
                     return true;
                 }
 
-                if (!EmitVirtualSlotsAndInterfaces)
+                if (!EmitVirtualSlots)
                     return false;
 
                 // Since the vtable is dependency driven, generate conditional static dependencies for
@@ -373,7 +373,7 @@ namespace ILCompiler.DependencyAnalysis
                     "Information about static bases for type with template"));
             }
 
-            if (!EmitVirtualSlotsAndInterfaces)
+            if (!EmitVirtualSlots)
                 return result;
 
             DefType defType = _type.GetClosestDefType();
@@ -531,7 +531,7 @@ namespace ILCompiler.DependencyAnalysis
                                 if (!isStaticInterfaceMethod && defaultIntfMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                                 {
                                     // Canonical instance default methods need to go through a thunk that adds the right generic context
-                                    defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, _type.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
+                                    defaultIntfMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(defaultIntfMethod, defType.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
                                 }
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
 
@@ -586,7 +586,7 @@ namespace ILCompiler.DependencyAnalysis
             // emitting it.
             dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
 
-            if (EmitVirtualSlotsAndInterfaces)
+            if (EmitVirtualSlots)
             {
                 if (!_type.IsArrayTypeWithoutGenericInterfaces())
                 {
@@ -677,7 +677,7 @@ namespace ILCompiler.DependencyAnalysis
 
             objData.EmitInt(_type.GetHashCode());
 
-            if (EmitVirtualSlotsAndInterfaces)
+            if (EmitVirtualSlots)
             {
                 // Emit VTable
                 Debug.Assert(objData.CountBytes - ((ISymbolDefinitionNode)this).Offset == GetVTableOffset(objData.TargetPointerSize));
@@ -687,22 +687,20 @@ namespace ILCompiler.DependencyAnalysis
                 // Update slot count
                 int numberOfVtableSlots = virtualSlotCounter.CountSlots(ref /* readonly */ objData);
                 objData.EmitShort(vtableSlotCountReservation, checked((short)numberOfVtableSlots));
-
-                // Emit interface map
-                SlotCounter interfaceSlotCounter = SlotCounter.BeginCounting(ref /* readonly */ objData);
-                OutputInterfaceMap(factory, ref objData);
-
-                // Update slot count
-                int numberOfInterfaceSlots = interfaceSlotCounter.CountSlots(ref /* readonly */ objData);
-                objData.EmitShort(interfaceCountReservation, checked((short)numberOfInterfaceSlots));
-
             }
             else
             {
                 // If we're not emitting any slots, the number of slots is zero.
                 objData.EmitShort(vtableSlotCountReservation, 0);
-                objData.EmitShort(interfaceCountReservation, 0);
             }
+
+            // Emit interface map
+            SlotCounter interfaceSlotCounter = SlotCounter.BeginCounting(ref /* readonly */ objData);
+            OutputInterfaceMap(factory, ref objData);
+
+            // Update slot count
+            int numberOfInterfaceSlots = interfaceSlotCounter.CountSlots(ref /* readonly */ objData);
+            objData.EmitShort(interfaceCountReservation, checked((short)numberOfInterfaceSlots));
 
             OutputTypeManagerIndirection(factory, ref objData);
             OutputWritableData(factory, ref objData);
@@ -751,7 +749,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeFlags.GenericVarianceFlag;
             }
 
-            if (EmitVirtualSlotsAndInterfaces && !_type.IsArrayTypeWithoutGenericInterfaces())
+            if (EmitVirtualSlots && !_type.IsArrayTypeWithoutGenericInterfaces())
             {
                 SealedVTableNode sealedVTable = factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
                 if (sealedVTable.BuildSealedVTableSlots(factory, relocsOnly) && sealedVTable.NumSealedVTableEntries > 0)
@@ -949,7 +947,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType, TypeDesc templateType, bool relocsOnly)
         {
-            Debug.Assert(EmitVirtualSlotsAndInterfaces);
+            Debug.Assert(EmitVirtualSlots);
 
             declType = declType.GetClosestDefType();
             templateType = templateType.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -1096,8 +1094,6 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            Debug.Assert(EmitVirtualSlotsAndInterfaces);
-
             foreach (var itf in _type.RuntimeInterfaces)
             {
                 objData.EmitPointerReloc(GetInterfaceTypeNode(factory, itf));
@@ -1150,7 +1146,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputSealedVTable(NodeFactory factory, bool relocsOnly, ref ObjectDataBuilder objData)
         {
-            if (EmitVirtualSlotsAndInterfaces && !_type.IsArrayTypeWithoutGenericInterfaces())
+            if (EmitVirtualSlots && !_type.IsArrayTypeWithoutGenericInterfaces())
             {
                 // Sealed vtables have relative pointers, so to minimize size, we build sealed vtables for the canonical types
                 SealedVTableNode sealedVTable = factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific));

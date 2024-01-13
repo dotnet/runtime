@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System;
 using Xunit;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class ClientPInvokeIntNativeTest
 {
     [DllImport("PInvokeIntNative")]
@@ -27,7 +28,7 @@ public class ClientPInvokeIntNativeTest
 
     [DllImport("PInvokeIntNative")]
     private static extern int Marshal_InMany([In]short i1, [In]short i2, [In]short i3, [In]short i4, [In]short i5, [In]short i6, [In]short i7, [In]short i8, [In]short i9, [In]short i10, [In]short i11, [In]byte i12, [In]byte i13, [In]int i14, [In]short i15);
-    
+
     [DllImport("PInvokeIntNative")]
     private static extern int Marshal_InMany_InOutPointer([In]short i1, [In]short i2, [In]short i3, [In]short i4, [In]short i5, [In]short i6, [In]short i7, [In]short i8, [In]short i9, [In]short i10, [In]short i11, [In]byte i12, [In]byte i13, [In]int i14, [In]short i15, ref int pintValue);
 
@@ -112,7 +113,7 @@ public class ClientPInvokeIntNativeTest
             failures++;
             Console.WriteLine("InMany return value is wrong");
         }
-        
+
         int int7 = intManaged;
         if(120 != Marshal_InMany_InOutPointer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, ref int7))
         {

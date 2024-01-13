@@ -78,12 +78,14 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 await connection.FinishConnectAsync(options, linkedCts.Token).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException)
             {
-                // handshake timeout elapsed, tear down the connection.
-                // Note that since handshake is not done yet, application error code is not sent.
                 await connection.DisposeAsync().ConfigureAwait(false);
 
+                // throw OCE with correct token if cancellation requested by user
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // cancellation by the linkedCts.CancelAfter. Convert to Timeout
                 throw new QuicException(QuicError.ConnectionTimeout, null, SR.Format(SR.net_quic_handshake_timeout, options.HandshakeTimeout));
             }
             catch
@@ -187,7 +189,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Gets the name of the server the client is trying to connect to. That name is used for server certificate validation. It can be a DNS name or an IP address.
     /// </summary>
     /// <returns>The name of the server the client is trying to connect to.</returns>
-    public string TargetHostName => _sslConnectionOptions.TargetHost ?? string.Empty;
+    public string TargetHostName => _sslConnectionOptions.TargetHost;
 
     /// <summary>
     /// The certificate provided by the peer.
@@ -310,16 +312,16 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _sslConnectionOptions = new SslConnectionOptions(
                 this,
                 isClient: true,
-                options.ClientAuthenticationOptions.TargetHost ?? string.Empty,
+                options.ClientAuthenticationOptions.TargetHost ?? host ?? address.ToString(),
                 certificateRequired: true,
                 options.ClientAuthenticationOptions.CertificateRevocationCheckMode,
                 options.ClientAuthenticationOptions.RemoteCertificateValidationCallback,
                 options.ClientAuthenticationOptions.CertificateChainPolicy?.Clone());
             _configuration = MsQuicConfiguration.Create(options);
 
-            // RFC 6066 forbids IP literals
-            // DNI mapping is handled by MsQuic
-            string sni = (TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? address?.ToString() ?? string.Empty;
+            // RFC 6066 forbids IP literals.
+            // IDN mapping is handled by MsQuic.
+            string sni = (TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? string.Empty;
 
             IntPtr targetHostPtr = Marshal.StringToCoTaskMemUTF8(sni);
             try

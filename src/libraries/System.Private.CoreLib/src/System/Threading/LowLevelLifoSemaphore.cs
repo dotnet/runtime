@@ -16,7 +16,7 @@ namespace System.Threading
         private const int SpinSleep0Threshold = 10;
 
         public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount, Action onWait)
-            : base (initialSignalCount, maximumSignalCount, spinCount, onWait)
+            : base(initialSignalCount, maximumSignalCount, spinCount, onWait)
         {
             Create(maximumSignalCount);
         }

@@ -51,6 +51,9 @@ namespace ILCompiler
 
         private readonly List<InterfaceDispatchCellNode> _interfaceDispatchCells = new List<InterfaceDispatchCellNode>();
         private readonly SortedSet<NonGCStaticsNode> _cctorContextsGenerated = new SortedSet<NonGCStaticsNode>(CompilerComparer.Instance);
+        private readonly SortedSet<MetadataType> _typesWithGCStaticsGenerated = new SortedSet<MetadataType>(CompilerComparer.Instance);
+        private readonly SortedSet<MetadataType> _typesWithNonGCStaticsGenerated = new SortedSet<MetadataType>(CompilerComparer.Instance);
+        private readonly SortedSet<MetadataType> _typesWithThreadStaticsGenerated = new SortedSet<MetadataType>(CompilerComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _methodsGenerated = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
@@ -245,10 +248,22 @@ namespace ILCompiler
                 _reflectableMethods.Add(reflectedMethodNode.Method);
             }
 
-            var nonGcStaticSectionNode = obj as NonGCStaticsNode;
-            if (nonGcStaticSectionNode != null && nonGcStaticSectionNode.HasLazyStaticConstructor)
+            if (obj is NonGCStaticsNode nonGcStaticSectionNode)
             {
-                _cctorContextsGenerated.Add(nonGcStaticSectionNode);
+                if (nonGcStaticSectionNode.HasLazyStaticConstructor)
+                    _cctorContextsGenerated.Add(nonGcStaticSectionNode);
+
+                _typesWithNonGCStaticsGenerated.Add(nonGcStaticSectionNode.Type);
+            }
+
+            if (obj is GCStaticsNode gcStaticsNode)
+            {
+                _typesWithGCStaticsGenerated.Add(gcStaticsNode.Type);
+            }
+
+            if (obj is TypeThreadStaticIndexNode threadStaticsNode)
+            {
+                _typesWithThreadStaticsGenerated.Add(threadStaticsNode.Type);
             }
 
             var gvmEntryNode = obj as TypeGVMEntriesNode;
@@ -533,7 +548,7 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to delegate targets.
         /// </summary>
-        public virtual void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, MethodDesc target)
+        public virtual void GetDependenciesDueToDelegateCreation(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the construction
             // of a delegate to a method.
@@ -716,6 +731,20 @@ namespace ILCompiler
         {
             return _cctorContextsGenerated;
         }
+
+        internal IEnumerable<MetadataType> GetTypesWithStaticBases()
+        {
+            var allTypes = new SortedSet<MetadataType>(CompilerComparer.Instance);
+            allTypes.UnionWith(_typesWithNonGCStaticsGenerated);
+            allTypes.UnionWith(_typesWithGCStaticsGenerated);
+            allTypes.UnionWith(_typesWithThreadStaticsGenerated);
+            return allTypes;
+        }
+
+        internal bool HasNonGcStaticBase(MetadataType type) => _typesWithNonGCStaticsGenerated.Contains(type);
+        internal bool HasGcStaticBase(MetadataType type) => _typesWithGCStaticsGenerated.Contains(type);
+        internal bool HasThreadStaticBase(MetadataType type) => _typesWithThreadStaticsGenerated.Contains(type);
+        internal bool HasConstructedEEType(TypeDesc type) => _typesWithConstructedEETypesGenerated.Contains(type);
 
         internal IEnumerable<TypeGVMEntriesNode> GetTypeGVMEntries()
         {

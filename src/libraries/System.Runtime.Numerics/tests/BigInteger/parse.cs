@@ -37,7 +37,8 @@ namespace System.Numerics.Tests
         public static void RunParseToStringTests(CultureInfo culture)
         {
             Test();
-            BigNumberTools.Utils.RunWithFakeThreshold("s_naiveThreshold", 0, Test);
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
             void Test()
             {
                 byte[] tempByteArray1 = new byte[0];
@@ -101,7 +102,9 @@ namespace System.Numerics.Tests
         public void Parse_Subspan_Success(string input, int offset, int length, string expected)
         {
             Test();
-            BigNumberTools.Utils.RunWithFakeThreshold("s_naiveThreshold", 0, Test);
+
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
             void Test()
             {
                 Eval(BigInteger.Parse(input.AsSpan(offset, length)), expected);
@@ -114,7 +117,8 @@ namespace System.Numerics.Tests
         public void Parse_EmptySubspan_Fails()
         {
             Test();
-            BigNumberTools.Utils.RunWithFakeThreshold("s_naiveThreshold", 0, Test);
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
             void Test()
             {
                 Assert.False(BigInteger.TryParse("12345".AsSpan(0, 0), out BigInteger result));
@@ -164,6 +168,33 @@ namespace System.Numerics.Tests
         {
             Assert.True(BigInteger.TryParse(input, NumberStyles.BinaryNumber, null, out BigInteger result));
             Assert.Equal(expectedValue, result);
+        }
+
+        public static IEnumerable<object[]> RegressionIssueRuntime94610_TestData()
+        {
+            yield return new object[]
+            {
+                new string('9', 865),
+            };
+
+            yield return new object[]
+            {
+                new string('9', 20161),
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(RegressionIssueRuntime94610_TestData))]
+        public void RegressionIssueRuntime94610(string text)
+        {
+            // Regression test for: https://github.com/dotnet/runtime/issues/94610
+            Test();
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
+            void Test()
+            {
+                VerifyParseToString(text, NumberStyles.Integer, true);
+            }
         }
 
         private static void RunFormatProviderParseStrings()
@@ -798,7 +829,7 @@ namespace System.Numerics.Tests
         {
             string result = string.Empty;
             int size = random.Next(min, max);
-            
+
             for (int i = 0; i < size; i++)
             {
                 result += random.Next(0, 2);

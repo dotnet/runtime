@@ -1,17 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using BundleTests.Helpers;
-using Microsoft.DotNet.Cli.Build.Framework;
-using Microsoft.DotNet.CoreSetup.Test;
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Linq;
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.Extensions.DependencyModel;
 using Xunit;
+using static Microsoft.DotNet.CoreSetup.Test.NetCoreAppBuilder;
 
 namespace AppHost.Bundle.Tests
 {
-    public class HammerServiceTest : BundleTestBase, IClassFixture<HammerServiceTest.SharedTestState>
+    public class HammerServiceTest : IClassFixture<HammerServiceTest.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -24,21 +25,14 @@ namespace AppHost.Bundle.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "On Windows, the hammer servicing location is %ProgramFiles%\\coreservicing. Since writing to this location requires administrative privilege, we do not run the test on Windows.")]
         private void SingleFile_Apps_Are_Serviced()
         {
-            // On Unix systems, the servicing location is obtained from the environment variable $CORE_SERVICING.
-
-            var fixture = sharedTestState.TestFixture.Copy();
-            var servicer = sharedTestState.ServiceFixture.Copy();
-
-            // Annotate the app as servicible, and then publish to a single-file.
-            string depsjson = BundleHelper.GetDepsJsonPath(fixture);
-            File.WriteAllText(depsjson, File.ReadAllText(depsjson).Replace("\"serviceable\": false", "\"serviceable\": true"));
-            var singleFile = BundleSelfContainedApp(fixture);
+            var singleFile = sharedTestState.App.Bundle();
 
             // Create the servicing directory, and copy the servived DLL from service fixture to the servicing directory.
-            var serviceBasePath = Path.Combine(fixture.TestProject.ProjectDirectory, "coreservicing");
-            var servicePath = Path.Combine(serviceBasePath, "pkgs", BundleHelper.GetAppBaseName(servicer), "1.0.0");
+            var serviced = sharedTestState.ServicedLibrary;
+            var serviceBasePath = Path.Combine(sharedTestState.App.Location, "coreservicing");
+            var servicePath = Path.Combine(serviceBasePath, "pkgs", serviced.Name, "1.0.0");
             Directory.CreateDirectory(servicePath);
-            File.Copy(BundleHelper.GetAppPath(servicer), Path.Combine(servicePath, BundleHelper.GetAppName(servicer)));
+            File.Copy(serviced.AppDll, Path.Combine(servicePath, Path.GetFileName(serviced.AppDll)));
 
             // Verify that the test DLL is loaded from the bundle when not being serviced
             Command.Create(singleFile)
@@ -48,41 +42,64 @@ namespace AppHost.Bundle.Tests
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("Hi Bellevue!");
+                .HaveStdOutContaining("SharedLibrary.SharedType.Value = SharedLibrary");
 
             // Verify that the test DLL is loaded from the servicing location when being serviced
+            // On Unix systems, the servicing location is obtained from the environment variable $CORE_SERVICING.
             Command.Create(singleFile)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .EnvironmentVariable(BundleHelper.CoreServicingEnvVariable, serviceBasePath)
+                .EnableHostTracing()
+                .EnvironmentVariable(Constants.CoreServicing.EnvironmentVariable, serviceBasePath)
                 .Execute()
                 .Should()
                 .Pass()
                 .And
-                .HaveStdOutContaining("Hi Bengaluru!");
+                .HaveStdOutContaining("SharedLibrary.SharedType.Value = ServicedLibrary");
         }
 
-        public class SharedTestState : SharedTestStateBase, IDisposable
+        public class SharedTestState : IDisposable
         {
-            public TestProjectFixture TestFixture { get; set; }
-            public TestProjectFixture ServiceFixture { get; set; }
+            public SingleFileTestApp App { get; set; }
+            public TestApp ServicedLibrary { get; set; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = PreparePublishedSelfContainedTestProject("HammerServiceApp");
+                App = SingleFileTestApp.CreateSelfContained("HammerServicing");
+                ServicedLibrary = TestApp.CreateFromBuiltAssets("SharedLibrary", "ServicedLibrary");
 
-                ServiceFixture = new TestProjectFixture("ServicedLocation", RepoDirectories, assemblyName: "Location");
-                ServiceFixture
-                    .EnsureRestored()
-                    .PublishProject(outputDirectory: BundleHelper.GetPublishPath(ServiceFixture));
+                // Add the SharedLibrary as a dependency and annotate it as serviceable
+                string depsJson = Path.Combine(App.NonBundledLocation, $"{App.Name}.deps.json");
+                using (FileStream fileStream = File.Open(depsJson, FileMode.Open, FileAccess.ReadWrite))
+                using (DependencyContextJsonReader reader = new DependencyContextJsonReader())
+                {
+                    DependencyContext context = reader.Read(fileStream);
+                    DependencyContext newContext = new DependencyContext(
+                        context.Target,
+                        context.CompilationOptions,
+                        context.CompileLibraries,
+                        context.RuntimeLibraries.Append(new RuntimeLibrary(
+                            RuntimeLibraryType.project.ToString(),
+                            ServicedLibrary.Name,
+                            "1.0.0",
+                            string.Empty,
+                            new[] { new RuntimeAssetGroup(string.Empty, "SharedLibrary.dll" ) },
+                            Array.Empty<RuntimeAssetGroup>(),
+                            Enumerable.Empty<ResourceAssembly>(),
+                            Enumerable.Empty<Dependency>(),
+                            serviceable: true)),
+                        context.RuntimeGraph);
 
+                    fileStream.Seek(0, SeekOrigin.Begin);
+                    DependencyContextWriter writer = new DependencyContextWriter();
+                    writer.Write(newContext, fileStream);
+                }
             }
 
             public void Dispose()
             {
-                TestFixture.Dispose();
-                ServiceFixture.Dispose();
+                App?.Dispose();
+                ServicedLibrary?.Dispose();
             }
         }
     }

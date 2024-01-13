@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 
+namespace MarshalArrayAsField.ByValArray;
 #pragma warning disable 618
 
 #region Struct Definition

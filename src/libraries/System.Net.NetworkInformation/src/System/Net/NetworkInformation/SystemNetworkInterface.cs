@@ -43,7 +43,7 @@ namespace System.Net.NetworkInformation
         private static unsafe int GetBestInterfaceForAddress(IPAddress addr)
         {
             int index;
-            Span<byte> buffer= stackalloc byte[SocketAddressPal.IPv6AddressSize];
+            Span<byte> buffer = stackalloc byte[SocketAddressPal.IPv6AddressSize];
             IPEndPointExtensions.SetIPAddress(buffer, addr);
 
             int error = (int)Interop.IpHlpApi.GetBestInterfaceEx(buffer, &index);
