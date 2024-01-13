@@ -85,7 +85,6 @@ namespace System.Buffers.Text
                             goto DoneExit;
                     }
 
-#if !MONO // https://github.com/dotnet/runtime/issues/93081
                     end = srcMax - 48;
                     if (AdvSimd.Arm64.IsSupported && (end >= src))
                     {
@@ -94,7 +93,6 @@ namespace System.Buffers.Text
                         if (src == srcEnd)
                             goto DoneExit;
                     }
-#endif
 
                     end = srcMax - 16;
                     if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
@@ -491,7 +489,6 @@ namespace System.Buffers.Text
             destBytes = dest;
         }
 
-#if !MONO // https://github.com/dotnet/runtime/issues/93081
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static unsafe void AdvSimdEncode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
@@ -549,7 +546,6 @@ namespace System.Buffers.Text
             srcBytes = src;
             destBytes = dest;
         }
-#endif // !MONO
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
