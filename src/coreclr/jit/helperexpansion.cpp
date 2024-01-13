@@ -514,7 +514,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     var_types callType       = call->TypeGet();
     assert(prevBb != nullptr && block != nullptr);
 
-    unsigned finalLclNum         = lvaGrabTemp(true DEBUGARG("Final offset"));
+    unsigned finalLclNum = lvaGrabTemp(true DEBUGARG("Final offset"));
     // Note, `tlsRoot` refers to the TLS blob object, which is an unpinned managed object,
     // thus the type of the local is TYP_REF
     lvaTable[finalLclNum].lvType = TYP_REF;
