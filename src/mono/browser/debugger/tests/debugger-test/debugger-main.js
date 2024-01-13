@@ -36,10 +36,12 @@ try {
         }
     }
 
+    // this is fake implementation of legacy `bind_static_method` which uses `mono_wasm_invoke_method_raw`
+    // We have unit tests that stop on unhandled managed exceptions.
+    // as opposed to [JSExport], the `mono_wasm_invoke_method_raw` doesn't handle managed exceptions.
+    // Same way as old `bind_static_method` didn't
     App.bind_static_method_native = (method_name) => {
         try {
-            // as opposed to [JSExport], `mono_wasm_invoke_method_raw` doesn't handle exceptions. 
-            // Same way as old `bind_static_method` didn't
             const monoMethodPtr = App.exports.DebuggerTests.BindStaticMethod.GetMonoMethodPtr(method_name);
             // this is only implemented for void methods with no arguments
             const invoker = runtime.Module.cwrap("mono_wasm_invoke_method_raw", "number", ["number", "number"]);
