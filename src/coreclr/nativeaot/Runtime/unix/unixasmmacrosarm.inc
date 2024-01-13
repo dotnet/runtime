@@ -259,18 +259,24 @@ C_FUNC(\Name):
         ldr     r0, 2f
 1:
         add     r0, pc, r0
-        bl      __tls_get_addr(PLT)
-        // push data at the end of text section
-        .pushsection .text.tlsvar, "aM", %progbits, 4
-        .balign 4
+        bl      __tls_get_addr
+        b       3f
+
+        // Inline data
+        // LLVM assembler has no concept of subsections and this is not expressible as
+        // cross-section relocation.
+        .p2align 2
 2:
-        .4byte  \Var@TLSGD + (. - 1b - 4)
-        .popsection
+        .extern \Var
+        .type \Var, tls_object
+        .long  \Var(TLSGD) + (2b - 1b - 4)
+3:
 .endm
 
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR tls_CurrentThread
+        //bl C_FUNC(RhpGetThread)
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
