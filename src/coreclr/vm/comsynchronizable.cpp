@@ -386,28 +386,6 @@ FCIMPL2(void, ThreadNative::SetPriority, ThreadBaseObject* pThisUNSAFE, INT32 iP
 }
 FCIMPLEND
 
-// This service can be called on unstarted and dead threads.  For unstarted ones, the
-// next wait will be interrupted.  For dead ones, this service quietly does nothing.
-FCIMPL1(void, ThreadNative::Interrupt, ThreadBaseObject* pThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    if (pThisUNSAFE==NULL)
-        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
-
-    Thread  *thread = pThisUNSAFE->GetInternal();
-
-    if (thread == 0)
-        FCThrowExVoid(kThreadStateException, IDS_EE_THREAD_CANNOT_GET, NULL, NULL, NULL);
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    thread->UserInterrupt(Thread::TI_Interrupt);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
 FCIMPL1(FC_BOOL_RET, ThreadNative::IsAlive, ThreadBaseObject* pThisUNSAFE)
 {
     FCALL_CONTRACT;
@@ -460,18 +438,6 @@ FCIMPL2(FC_BOOL_RET, ThreadNative::Join, ThreadBaseObject* pThisUNSAFE, INT32 Ti
     HELPER_METHOD_FRAME_END();
 
     FC_RETURN_BOOL(retVal);
-}
-FCIMPLEND
-
-FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    GetThread()->UserSleep(iTime);
-
-    HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
 
@@ -556,48 +522,6 @@ FCIMPL1(void, ThreadNative::Initialize, ThreadBaseObject* pThisUNSAFE)
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
-
-
-// Set whether or not this is a background thread.
-FCIMPL2(void, ThreadNative::SetBackground, ThreadBaseObject* pThisUNSAFE, CLR_BOOL isBackground)
-{
-    FCALL_CONTRACT;
-
-    if (pThisUNSAFE==NULL)
-        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
-
-    // validate the thread
-    Thread  *thread = pThisUNSAFE->GetInternal();
-
-    if (ThreadIsDead(thread))
-        FCThrowResVoid(kThreadStateException, W("ThreadState_Dead_State"));
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    thread->SetBackground(isBackground);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-// Return whether or not this is a background thread.
-FCIMPL1(FC_BOOL_RET, ThreadNative::IsBackground, ThreadBaseObject* pThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
-
-    // validate the thread
-    Thread  *thread = pThisUNSAFE->GetInternal();
-
-    if (ThreadIsDead(thread))
-        FCThrowRes(kThreadStateException, W("ThreadState_Dead_State"));
-
-    FC_RETURN_BOOL(thread->IsBackground());
-}
-FCIMPLEND
-
 
 // Deliver the state of the thread as a consistent set of bits.
 // This copied in VM\EEDbgInterfaceImpl.h's
@@ -905,6 +829,50 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
+// Return whether or not this is a background thread.
+extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
+
+    BOOL res = FALSE;
+
+    BEGIN_QCALL;
+
+    if (ThreadIsDead(thread))
+        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
+
+    res = (thread->IsBackground() != 0) ? TRUE : FALSE;
+
+    END_QCALL;
+
+    return res;
+}
+
+// Set whether or not this is a background thread.
+extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    if (ThreadIsDead(thread))
+        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
+
+    thread->SetBackground(value);
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len)
 {
     QCALL_CONTRACT;
@@ -1024,6 +992,35 @@ extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
     }
 
     YieldProcessorNormalized(iterations);
+}
+
+// This service can be called on unstarted and dead threads.  For unstarted ones, the
+// next wait will be interrupted.  For dead ones, this service quietly does nothing.
+extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    thread->UserInterrupt(Thread::TI_Interrupt);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ThreadNative_SleepWorker(INT32 iTime)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GetThread()->UserSleep(iTime);
+
+    END_QCALL;
 }
 
 #ifdef FEATURE_COMINTEROP
