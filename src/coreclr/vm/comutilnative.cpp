@@ -1490,13 +1490,9 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
 
 #include <optsmallperfcritical.h>
 
-FCIMPL2(INT32,COMInterlocked::Exchange, INT32 *location, INT32 value)
+FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     return InterlockedExchange((LONG *) location, value);
 }
@@ -1506,21 +1502,13 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
 {
     FCALL_CONTRACT;
 
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
     return InterlockedExchange64((INT64 *) location, value);
 }
 FCIMPLEND
 
-FCIMPL3(INT32, COMInterlocked::CompareExchange, INT32* location, INT32 value, INT32 comparand)
+FCIMPL3(INT32, COMInterlocked::CompareExchange32, INT32* location, INT32 value, INT32 comparand)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     return InterlockedCompareExchange((LONG*)location, value, comparand);
 }
@@ -1530,10 +1518,6 @@ FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 val
 {
     FCALL_CONTRACT;
 
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
     return InterlockedCompareExchange64((INT64*)location, value, comparand);
 }
 FCIMPLEND
@@ -1541,10 +1525,6 @@ FCIMPLEND
 FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     LPVOID ret = InterlockedExchangeT(location, value);
 #ifdef _DEBUG
@@ -1558,10 +1538,6 @@ FCIMPLEND
 FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID value, LPVOID comparand)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     // <TODO>@todo: only set ref if is updated</TODO>
     LPVOID ret = InterlockedCompareExchangeT(location, value, comparand);
@@ -1579,10 +1555,6 @@ FCIMPL2(INT32,COMInterlocked::ExchangeAdd32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
 
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
     return InterlockedExchangeAdd((LONG *) location, value);
 }
 FCIMPLEND
@@ -1590,10 +1562,6 @@ FCIMPLEND
 FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     return InterlockedExchangeAdd64((INT64 *) location, value);
 }

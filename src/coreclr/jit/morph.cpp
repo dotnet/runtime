@@ -13213,7 +13213,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 /* dest block must also be marked as a loop head and     */
                 /* We must be able to reach the backedge block           */
                 if (optLoopTableValid && block->GetTrueTarget()->isLoopHead() &&
-                    (block->GetTrueTarget()->bbNum <= block->bbNum) && fgReachable(block->GetTrueTarget(), block))
+                    (block->GetTrueTarget()->bbNum <= block->bbNum) &&
+                    m_reachabilitySets->CanReach(block->GetTrueTarget(), block))
                 {
                     optUnmarkLoopBlocks(block->GetTrueTarget(), block);
                 }
@@ -14189,6 +14190,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             fgAddRefPred(genReturnBB, block);
             fgReturnCount--;
         }
+
         if (genReturnLocal != BAD_VAR_NUM)
         {
             // replace the GT_RETURN node to be a STORE_LCL_VAR that stores the return value into genReturnLocal.
@@ -14243,7 +14245,15 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             noway_assert(ret->TypeGet() == TYP_VOID);
             noway_assert(ret->gtGetOp1() == nullptr);
 
-            fgRemoveStmt(block, lastStmt);
+            if (opts.compDbgCode && lastStmt->GetDebugInfo().IsValid())
+            {
+                // We can't remove the return as it might remove a sequence point. Convert it to a NOP.
+                ret->gtBashToNOP();
+            }
+            else
+            {
+                fgRemoveStmt(block, lastStmt);
+            }
         }
 
         JITDUMP("\nUpdate " FMT_BB " to jump to common return block.\n", block->bbNum);

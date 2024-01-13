@@ -293,9 +293,6 @@ Histogram domsChangedIterationTable(domsChangedIterationBuckets);
 unsigned  computeReachabilitySetsIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
 Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIterationBuckets);
 
-unsigned  computeReachabilityIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
-Histogram computeReachabilityIterationTable(computeReachabilityIterationBuckets);
-
 #endif // COUNT_BASIC_BLOCKS
 
 /*****************************************************************************
@@ -1575,12 +1572,6 @@ void Compiler::compShutdown()
     jitprintf("fgComputeReachabilitySets `while (change)` iterations:\n");
     jitprintf("--------------------------------------------------\n");
     computeReachabilitySetsIterationTable.dump(jitstdout());
-    jitprintf("--------------------------------------------------\n");
-
-    jitprintf("--------------------------------------------------\n");
-    jitprintf("fgComputeReachability `while (change)` iterations:\n");
-    jitprintf("--------------------------------------------------\n");
-    computeReachabilityIterationTable.dump(jitstdout());
     jitprintf("--------------------------------------------------\n");
 
 #endif // COUNT_BASIC_BLOCKS
@@ -5231,21 +5222,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
 #if FEATURE_LOOP_ALIGN
 
-// TODO-Quirk: Remove
-static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
-{
-    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
-    {
-        if (child->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-            return true;
-
-        if (HasOldChildLoop(comp, child))
-            return true;
-    }
-
-    return false;
-}
-
 //------------------------------------------------------------------------
 // shouldAlignLoop: Check if it is legal and profitable to align a loop.
 //
@@ -5265,16 +5241,7 @@ static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 //
 bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 {
-    // TODO-Quirk: Remove. When removing we will likely need to add some
-    // form of "lexicality" heuristic here: only align loops whose blocks
-    // are fairly tightly packed together physically.
-    if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-    {
-        return false;
-    }
-
-    // TODO-Quirk: Switch to loop->GetChild() != nullptr
-    if (HasOldChildLoop(this, loop))
+    if (loop->GetChild() != nullptr)
     {
         JITDUMP("Skipping alignment for " FMT_LP "; not an innermost loop\n", loop->GetIndex());
         return false;
@@ -5854,6 +5821,7 @@ void Compiler::RecomputeFlowGraphAnnotations()
     optSetBlockWeights();
     optFindLoops();
 
+    fgInvalidateDfsTree();
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
 
@@ -9650,7 +9618,14 @@ JITDBGAPI void __cdecl cReach(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Reach %u\n", sequenceNumber++);
-    comp->fgDispReach();
+    if (comp->m_reachabilitySets != nullptr)
+    {
+        comp->m_reachabilitySets->Dump();
+    }
+    else
+    {
+        printf("  Not computed\n");
+    }
 }
 
 JITDBGAPI void __cdecl cDoms(Compiler* comp)

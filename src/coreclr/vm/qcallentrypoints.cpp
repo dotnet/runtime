@@ -252,12 +252,17 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_GetGenerationBudget)
     DllImportEntry(GCHandle_InternalAllocWithGCTransition)
     DllImportEntry(GCHandle_InternalFreeWithGCTransition)
+    DllImportEntry(MarshalNative_OffsetOf)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
     DllImportEntry(MarshalNative_TryGetStructMarshalStub)
     DllImportEntry(MarshalNative_SizeOfHelper)
     DllImportEntry(MarshalNative_GetDelegateForFunctionPointerInternal)
     DllImportEntry(MarshalNative_GetFunctionPointerForDelegateInternal)
+    DllImportEntry(MarshalNative_GetExceptionForHR)
+#if defined(FEATURE_COMINTEROP)
+    DllImportEntry(MarshalNative_GetHRForException)
+#endif // FEATURE_COMINTEROP
     DllImportEntry(MarshalNative_GetHINSTANCE)
 #ifdef _DEBUG
     DllImportEntry(MarshalNative_GetIsInCooperativeGCModeFunctionPointer)

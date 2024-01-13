@@ -1860,25 +1860,6 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
 /*****************************************************************************/
 #ifdef DEBUG
 
-void Compiler::fgDispReach()
-{
-    printf("------------------------------------------------\n");
-    printf("BBnum  Reachable by \n");
-    printf("------------------------------------------------\n");
-
-    for (BasicBlock* const block : Blocks())
-    {
-        printf(FMT_BB " : ", block->bbNum);
-        BlockSetOps::Iter iter(this, block->bbReach);
-        unsigned          bbNum = 0;
-        while (iter.NextElem(&bbNum))
-        {
-            printf(FMT_BB " ", bbNum);
-        }
-        printf("\n");
-    }
-}
-
 void Compiler::fgDispDoms()
 {
     // Don't bother printing this when we have a large number of BasicBlocks in the method
