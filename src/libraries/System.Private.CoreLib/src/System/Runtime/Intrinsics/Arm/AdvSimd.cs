@@ -1706,7 +1706,7 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: LD1R { Vt.2D }, [Xn]
             /// </summary>
             public static unsafe Vector128<double> LoadAndReplicateToVector128(double* address) => LoadAndReplicateToVector128(address);
-           
+
             /// <summary>
             /// int64x2_t vld1q_dup_s64 (int64_t const * ptr)
             ///   A64: LD1R { Vt.2D }, [Xn]
