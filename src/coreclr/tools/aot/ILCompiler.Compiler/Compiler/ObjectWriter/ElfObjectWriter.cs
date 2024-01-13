@@ -177,6 +177,10 @@ namespace ILCompiler.ObjectWriter
                 {
                     addend -= 4;
                 }
+                else if (relocType is IMAGE_REL_BASED_THUMB_MOV32_PCREL)
+                {
+                    addend -= 12;
+                }
 
                 if (!_useInlineRelocationAddends)
                 {
