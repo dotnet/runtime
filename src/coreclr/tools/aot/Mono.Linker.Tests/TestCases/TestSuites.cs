@@ -38,6 +38,20 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
         [Theory]
+        [MemberData(nameof(TestDatabase.Inheritance_Interaces), MemberType = typeof(TestDatabase))]
+        public void Inheritance_Interfaces(string t)
+        {
+            switch (t) {
+            case ".InterfaceWithoutNewSlot":
+                Run (t);
+                break;
+            default:
+                // Skip the rest for now
+                break;
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TestDatabase.Libraries), MemberType = typeof(TestDatabase))]
         public void Libraries(string t)
         {
