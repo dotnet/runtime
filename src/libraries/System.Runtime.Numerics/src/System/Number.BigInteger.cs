@@ -1343,16 +1343,16 @@ namespace System
         static virtual bool TryParseSingleBlock(ReadOnlySpan<TChar> input, out uint result)
             => TParser.TryParseUnalignedBlock(input, out result);
 
-        static virtual bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<uint> destiniation)
+        static virtual bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<uint> destination)
         {
-            Debug.Assert(destiniation.Length * TParser.DigitsPerBlock == input.Length);
+            Debug.Assert(destination.Length * TParser.DigitsPerBlock == input.Length);
             ref TChar lastWholeBlockStart = ref Unsafe.Add(ref MemoryMarshal.GetReference(input), input.Length - TParser.DigitsPerBlock);
 
-            for (int i = 0; i < destiniation.Length; i++)
+            for (int i = 0; i < destination.Length; i++)
             {
                 if (!TParser.TryParseSingleBlock(
                     MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Subtract(ref lastWholeBlockStart, i * TParser.DigitsPerBlock), TParser.DigitsPerBlock),
-                    out destiniation[i]))
+                    out destination[i]))
                 {
                     return false;
                 }
@@ -1373,22 +1373,22 @@ namespace System
         public static uint GetSignBitsIfValid(uint ch) => (uint)((ch & 0b_1111_1000) == 0b_0011_0000 ? 0 : -1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<uint> destiniation)
+        public static bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<uint> destination)
         {
             if (typeof(TChar) == typeof(char))
             {
-                if (Convert.FromHexString(MemoryMarshal.Cast<TChar, char>(input), MemoryMarshal.AsBytes(destiniation), out _, out _) != OperationStatus.Done)
+                if (Convert.FromHexString(MemoryMarshal.Cast<TChar, char>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done)
                 {
                     return false;
                 }
 
                 if (BitConverter.IsLittleEndian)
                 {
-                    MemoryMarshal.AsBytes(destiniation).Reverse();
+                    MemoryMarshal.AsBytes(destination).Reverse();
                 }
                 else
                 {
-                    destiniation.Reverse();
+                    destination.Reverse();
                 }
 
                 return true;
