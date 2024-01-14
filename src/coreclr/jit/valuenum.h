@@ -2126,7 +2126,7 @@ inline bool ValueNumStore::VNFuncIsAllocator(VNFunc vnf)
         case VNF_JitReadyToRunNew:
         case VNF_JitReadyToRunNewArr:
         case VNF_Box:
-        case VNF_BoxNullable:
+        // case VNF_BoxNullable:
             return true;
         default:
             return false;
