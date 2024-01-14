@@ -18805,7 +18805,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
                                                      bool*                pIsNonNull)
 {
     CORINFO_CLASS_HANDLE fieldClass   = nullptr;
-    CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
+    CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass, fieldOwnerCls);
 
     if (fieldCorType == CORINFO_TYPE_CLASS)
     {
