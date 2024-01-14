@@ -523,6 +523,24 @@ FCIMPL1(void, ThreadNative::Initialize, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
+// Return whether or not this is a background thread.
+FCIMPL1(FC_BOOL_RET, ThreadNative::GetIsBackground, ThreadBaseObject* pThisUNSAFE)
+{
+    FCALL_CONTRACT;
+
+    if (pThisUNSAFE==NULL)
+        FCThrowRes(kNullReferenceException, W("NullReference_This"));
+
+    // validate the thread
+    Thread  *thread = pThisUNSAFE->GetInternal();
+
+    if (ThreadIsDead(thread))
+        FCThrowRes(kThreadStateException, W("ThreadState_Dead_State"));
+
+    FC_RETURN_BOOL(thread->IsBackground());
+}
+FCIMPLEND
+
 // Deliver the state of the thread as a consistent set of bits.
 // This copied in VM\EEDbgInterfaceImpl.h's
 //     CorDebugUserState GetUserState( Thread *pThread )
@@ -829,30 +847,6 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
-// Return whether or not this is a background thread.
-extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
-
-    BOOL res = FALSE;
-
-    BEGIN_QCALL;
-
-    if (ThreadIsDead(thread))
-        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
-
-    res = (thread->IsBackground() != 0) ? TRUE : FALSE;
-
-    END_QCALL;
-
-    return res;
-}
-
 // Set whether or not this is a background thread.
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value)
 {
@@ -1012,7 +1006,7 @@ extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread)
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ThreadNative_SleepWorker(INT32 iTime)
+extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime)
 {
     QCALL_CONTRACT;
 

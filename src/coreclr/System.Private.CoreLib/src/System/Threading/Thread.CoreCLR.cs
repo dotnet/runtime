@@ -115,13 +115,8 @@ namespace System.Threading
         /// forces the thread to give up the remainder of its timeslice.  If timeout
         /// == Timeout.Infinite, no timeout will occur.
         /// </summary>
-        private static void SleepInternal(int millisecondsTimeout)
-        {
-            SleepWorker(millisecondsTimeout);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SleepWorker")]
-        private static partial void SleepWorker(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Sleep")]
+        private static partial void SleepInternal(int millisecondsTimeout);
 
         // Max iterations to be done in SpinWait without switching GC modes.
         private const int SpinWaitCoopThreshold = 1024;
@@ -176,6 +171,7 @@ namespace System.Threading
         partial void ThreadNameChanged(string? value)
         {
             InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
+            GC.KeepAlive(this);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_InformThreadNameChange", StringMarshalling = StringMarshalling.Utf16)]
@@ -194,10 +190,11 @@ namespace System.Threading
         /// </summary>
         public bool IsBackground
         {
-            get => GetIsBackground(GetNativeHandle()) != Interop.BOOL.FALSE;
+            get => GetIsBackground();
             set
             {
                 SetIsBackground(GetNativeHandle(), value ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+                GC.KeepAlive(this);
                 if (!value)
                 {
                     _mayNeedResetForThreadPool = true;
@@ -205,8 +202,8 @@ namespace System.Threading
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetIsBackground")]
-        private static partial Interop.BOOL GetIsBackground(ThreadHandle t);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern bool GetIsBackground();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetIsBackground")]
         private static partial void SetIsBackground(ThreadHandle t, Interop.BOOL value);
@@ -317,6 +314,7 @@ namespace System.Threading
         public void DisableComObjectEagerCleanup()
         {
             DisableComObjectEagerCleanup(GetNativeHandle());
+            GC.KeepAlive(this);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_DisableComObjectEagerCleanup")]
@@ -333,6 +331,7 @@ namespace System.Threading
         public void Interrupt()
         {
             Interrupt(GetNativeHandle());
+            GC.KeepAlive(this);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Interrupt")]

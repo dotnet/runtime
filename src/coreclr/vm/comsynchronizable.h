@@ -57,6 +57,7 @@ public:
     static FCDECL1(FC_BOOL_RET, IsAlive,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(FC_BOOL_RET, Join,          ThreadBaseObject* pThisUNSAFE, INT32 Timeout);
     static FCDECL1(void,    Initialize,        ThreadBaseObject* pThisUNSAFE);
+    static FCDECL1(FC_BOOL_RET, GetIsBackground,  ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(INT32,   GetThreadState,    ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(INT32,   GetThreadContext,  ThreadBaseObject* pThisUNSAFE);
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -87,7 +88,6 @@ private:
 };
 
 extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName);
-extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value);
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
 extern "C" UINT64 QCALLTYPE ThreadNative_GetProcessDefaultStackSize();
@@ -97,7 +97,7 @@ extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
 extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread);
-extern "C" void QCALLTYPE ThreadNative_SleepWorker(INT32 iTime);
+extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime);
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP

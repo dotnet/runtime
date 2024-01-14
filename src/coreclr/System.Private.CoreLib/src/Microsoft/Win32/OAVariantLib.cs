@@ -66,6 +66,8 @@ namespace Microsoft.Win32
 
         #region Internal Methods
 
+#pragma warning disable CS8500
+
         /**
          * Changes a Variant from one type to another, calling the OLE
          * Automation VariantChangeTypeEx routine.  Note the legal types here are
@@ -80,8 +82,8 @@ namespace Microsoft.Win32
 
             Variant result = default;
             ChangeType(
-                Unsafe.AsPointer<Variant>(ref result),
-                Unsafe.AsPointer<Variant>(ref source),
+                &result,
+                &source,
                 culture.LCID,
                 targetClass.TypeHandle.Value,
                 GetCVTypeFromClass(targetClass),
@@ -90,7 +92,9 @@ namespace Microsoft.Win32
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "OAVariant_ChangeType")]
-        private static partial void ChangeType(void* result, void* source, int lcid, IntPtr typeHandle, int cvType, short flags);
+        private static partial void ChangeType(Variant* result, Variant* source, int lcid, IntPtr typeHandle, int cvType, short flags);
+
+#pragma warning restore CS8500
 
         #endregion
 
