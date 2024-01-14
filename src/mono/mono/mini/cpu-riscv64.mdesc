@@ -113,7 +113,7 @@ atomic_store_i8: dest:b src1:i len:8
 atomic_store_u8: dest:b src1:i len:8
 atomic_load_i1: dest:b src1:i len:12
 atomic_load_u1: dest:b src1:i len:12
-atomic_load_i2: dest:b src1:i len:12
+atomic_load_i2: dest:b src1:i len:24
 atomic_load_u2: dest:b src1:i len:12
 atomic_load_i4: dest:b src1:i len:12
 atomic_load_u4: dest:b src1:i len:12
