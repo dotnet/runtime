@@ -1331,21 +1331,20 @@ mono_arch_is_inst_imm (int opcode, int imm_opcode, gint64 imm)
 
 gint static mono_arch_get_memory_ordering (int memory_barrier_kind)
 {
-	gint ordering;
 	switch (memory_barrier_kind) {
 	case MONO_MEMORY_BARRIER_ACQ:
-		ordering = RISCV_ORDER_AQ;
+		return RISCV_ORDER_AQ;
 		break;
 	case MONO_MEMORY_BARRIER_REL:
-		ordering = RISCV_ORDER_RL;
+		return RISCV_ORDER_RL;
 		break;
 	case MONO_MEMORY_BARRIER_SEQ:
-		ordering = RISCV_ORDER_ALL;
+		return RISCV_ORDER_ALL;
+		break;
 	default:
-		ordering = RISCV_ORDER_NONE;
+		return RISCV_ORDER_NONE;
 		break;
 	}
-	return ordering;
 }
 
 GList *
@@ -4787,7 +4786,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* Atomic */
 		case OP_MEMORY_BARRIER:
-			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
+			riscv_fence (code, mono_arch_get_memory_ordering(ins->backend.memory_barrier_kind), mono_arch_get_memory_ordering(ins->backend.memory_barrier_kind));
 			break;
 		case OP_ATOMIC_ADD_I4:
 			riscv_amoadd_w (code, RISCV_ORDER_ALL, ins->dreg, ins->sreg2, ins->sreg1);
@@ -4820,7 +4819,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_W);
 			code = mono_riscv_emit_store (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset, 1);
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
-				riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
+				riscv_fence (code, RISCV_FENCE_ALL, RISCV_FENCE_ALL);
 			break;
 		}
 		case OP_ATOMIC_STORE_I2:
@@ -4828,7 +4827,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_W);
 			code = mono_riscv_emit_store (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset, 2);
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
-				riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
+				riscv_fence (code, RISCV_FENCE_ALL, RISCV_FENCE_ALL);
 			break;
 		}
 		case OP_ATOMIC_STORE_I4:
@@ -4836,14 +4835,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_W);
 			code = mono_riscv_emit_store (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset, 4);
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
-				riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
+				riscv_fence (code, RISCV_FENCE_ALL, RISCV_FENCE_ALL);
 			break;
 		}
 		case OP_ATOMIC_CAS_I4: {
 			g_assert (riscv_stdext_a);
 			/**
 			 * loop_start:
-			 * 	lr.w	t0, rs1
+			 * 	lr.w.aqrl	t0, rs1
 			 * 	bne		t0, rs3, loop_end
 			 * 	sc.w.rl t1, rs2, rs1
 			 * 	bnez t1, loop_start
@@ -4855,7 +4854,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *loop_start, *branch_label;
 			/* sreg2 is the value, sreg3 is the comparand */
 			loop_start = code;
-			riscv_lr_w (code, RISCV_ORDER_NONE, RISCV_T0, ins->sreg1);
+			riscv_lr_w (code, RISCV_ORDER_ALL, RISCV_T0, ins->sreg1);
 			branch_label = code;
 			riscv_bne (code, RISCV_T0, ins->sreg3, 0);
 			riscv_sc_w (code, RISCV_ORDER_RL, RISCV_T1, ins->sreg2, ins->sreg1);
@@ -4878,7 +4877,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_W);
 			code = mono_riscv_emit_store (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset, 8);
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
-				riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
+				riscv_fence (code, RISCV_FENCE_ALL, RISCV_FENCE_ALL);
 			break;
 		}
 		case OP_ATOMIC_LOAD_I8:
@@ -4894,7 +4893,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *loop_start, *branch_label;
 			/* sreg2 is the value, sreg3 is the comparand */
 			loop_start = code;
-			riscv_lr_d (code, RISCV_ORDER_NONE, RISCV_T0, ins->sreg1);
+			riscv_lr_d (code, RISCV_ORDER_ALL, RISCV_T0, ins->sreg1);
 			branch_label = code;
 			riscv_bne (code, RISCV_T0, ins->sreg3, 0);
 			riscv_sc_d (code, RISCV_ORDER_RL, RISCV_T1, ins->sreg2, ins->sreg1);
