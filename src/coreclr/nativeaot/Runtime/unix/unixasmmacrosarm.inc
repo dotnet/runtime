@@ -276,7 +276,6 @@ C_FUNC(\Name):
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR tls_CurrentThread
-        //bl C_FUNC(RhpGetThread)
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
