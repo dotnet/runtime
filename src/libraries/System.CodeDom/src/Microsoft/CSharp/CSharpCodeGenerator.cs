@@ -145,13 +145,12 @@ namespace Microsoft.CSharp
                         b.Append(value[++i]);
                     }
 
-                    b.Append("\" +");
-                    b.Append(Environment.NewLine);
-                    b.Append(indentObj.IndentationString);
-                    b.Append('\"');
-
-                    if (!isStringMultiline)
+                    if (i != value.Length - 1)
                     {
+                        b.Append("\" +");
+                        b.Append(Environment.NewLine);
+                        b.Append(indentObj.IndentationString);
+                        b.Append('\"');
                         isStringMultiline = true;
                     }
                 }
