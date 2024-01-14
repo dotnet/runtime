@@ -2347,10 +2347,8 @@ class FlowGraphDominatorTree
     {
     }
 
-    static BasicBlock* IntersectDom(const DomTreeNode* nodes, BasicBlock* block1, BasicBlock* block2);
-    static FlowGraphDominatorTree* FinishFromIDoms(const FlowGraphDfsTree* dfsTree, DomTreeNode* nodes);
+    static BasicBlock* IntersectDom(BasicBlock* block1, BasicBlock* block2);
 public:
-    BasicBlock* IDom(const BasicBlock* block);
     BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
     bool Dominates(const BasicBlock* dominator, const BasicBlock* dominated);
 
@@ -2359,7 +2357,6 @@ public:
 #endif
 
     static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfsTree);
-    static FlowGraphDominatorTree* BuildForRegularFlow(const FlowGraphDfsTree* dfsTree);
 };
 
 // Represents a reverse mapping from block back to its (most nested) containing loop.
@@ -5001,8 +4998,6 @@ public:
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
     FlowGraphDominatorTree* m_domTree;
-    // Dominator tree used for scaling block weights. Takes only regular flow into account.
-    FlowGraphDominatorTree* m_regularFlowDomTree;
     BlockReachabilitySets* m_reachabilitySets;
 
     bool fgBBVarSetsInited;
@@ -11997,7 +11992,7 @@ private:
 
             if (next != nullptr)
             {
-                assert(tree[next->bbPostorderNum].parent == block);
+                assert(next->bbIDom == block);
                 continue;
             }
 
@@ -12009,11 +12004,11 @@ private:
 
                 if (next != nullptr)
                 {
-                    assert(tree[next->bbPostorderNum].parent == tree[block->bbPostorderNum].parent);
+                    assert(next->bbIDom == block->bbIDom);
                     break;
                 }
 
-                block = tree[block->bbPostorderNum].parent;
+                block = block->bbIDom;
 
             } while (block != nullptr);
         }

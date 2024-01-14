@@ -682,7 +682,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     // exactly this tree's VN...
     //
     BasicBlock*    prevBlock   = block;
-    BasicBlock*    domBlock    = m_domTree->IDom(block);
+    BasicBlock*    domBlock    = block->bbIDom;
     int            relopValue  = -1;
     ValueNum       treeExcVN   = ValueNumStore::NoVN;
     ValueNum       domCmpExcVN = ValueNumStore::NoVN;
@@ -723,7 +723,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
             // It's possible that bbIDom is not up to date at this point due to recent BB modifications
             // so let's try to quickly calculate new one
             domBlock = fgGetDomSpeculatively(block);
-            if (domBlock == m_domTree->IDom(block))
+            if (domBlock == block->bbIDom)
             {
                 // We already checked this one
                 break;
@@ -877,7 +877,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
         // Keep looking higher up in the tree
         //
         prevBlock = domBlock;
-        domBlock  = m_domTree->IDom(domBlock);
+        domBlock  = domBlock->bbIDom;
     }
 
     // Did we determine the relop value via dominance checks? If so, optimize.
@@ -1211,7 +1211,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
     // we might need to duplicate a lot of code to thread
     // the jumps. See if that's the case.
     //
-    const bool isIDom = domBlock == m_domTree->IDom(block);
+    const bool isIDom = domBlock == block->bbIDom;
     if (!isIDom)
     {
         // Walk up the dom tree until we hit dom block.
@@ -1220,7 +1220,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
         // then we must have already optimized them, and
         // so should not have to duplicate code to thread.
         //
-        BasicBlock* idomBlock = m_domTree->IDom(block);
+        BasicBlock* idomBlock = block->bbIDom;
         while ((idomBlock != nullptr) && (idomBlock != domBlock))
         {
             if (idomBlock->KindIs(BBJ_COND))
@@ -1229,8 +1229,8 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
                 return false;
             }
             JITDUMP(" -- bypassing %sdom " FMT_BB " as it was already optimized\n",
-                    (idomBlock == m_domTree->IDom(block)) ? "i" : "", idomBlock->bbNum);
-            idomBlock = m_domTree->IDom(idomBlock);
+                    (idomBlock == block->bbIDom) ? "i" : "", idomBlock->bbNum);
+            idomBlock = idomBlock->bbIDom;
         }
 
         // If we didn't bail out above, we should have reached domBlock.

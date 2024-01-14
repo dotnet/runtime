@@ -60,13 +60,12 @@ void Compiler::fgInit()
     fgBBVarSetsInited       = false;
     fgReturnCount           = 0;
 
-    m_dfsTree            = nullptr;
-    m_loops              = nullptr;
-    m_loopSideEffects    = nullptr;
-    m_blockToLoop        = nullptr;
-    m_domTree            = nullptr;
-    m_regularFlowDomTree = nullptr;
-    m_reachabilitySets   = nullptr;
+    m_dfsTree          = nullptr;
+    m_loops            = nullptr;
+    m_loopSideEffects  = nullptr;
+    m_blockToLoop      = nullptr;
+    m_domTree          = nullptr;
+    m_reachabilitySets = nullptr;
 
     // Initialize BlockSet data.
     fgCurBBEpoch             = 0;

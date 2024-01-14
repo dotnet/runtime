@@ -1294,6 +1294,8 @@ public:
     void reorderPredList(Compiler* compiler);
 
     union {
+        BasicBlock* bbIDom;          // Represent the closest dominator to this block (called the Immediate
+                                     // Dominator) used to compute the dominance tree.
         FlowEdge* bbLastPred;        // Used early on by fgLinkBasicBlock/fgAddRefPred
         void*     bbSparseProbeList; // Used early on by fgInstrument
     };
@@ -2276,10 +2278,10 @@ public:
     }
 };
 
-// Dominator tree node that keeps track of a node's parent, first child and next sibling.
+// Simple dominator tree node that keeps track of a node's first child and next sibling.
+// The parent is provided by BasicBlock::bbIDom.
 struct DomTreeNode
 {
-    BasicBlock* parent;
     BasicBlock* firstChild;
     BasicBlock* nextSibling;
 };

@@ -163,8 +163,8 @@ void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, Bl
             // Along this way, make "block"/B3 part of the dom frontier of the B1.
             // When we reach this immediate dominator, the definition no longer applies, since this
             // potential B1 *does* dominate "block"/B3, so we stop.
-            for (BasicBlock* b1 = predBlock; (b1 != nullptr) && (b1 != domTree->IDom(block)); // !root && !loop
-                 b1             = domTree->IDom(b1))
+            for (BasicBlock* b1 = predBlock; (b1 != nullptr) && (b1 != block->bbIDom); // !root && !loop
+                 b1             = b1->bbIDom)
             {
                 DBG_SSA_JITDUMP("      Adding " FMT_BB " to dom frontier of pred dom " FMT_BB ".\n", block->bbNum,
                                 b1->bbNum);

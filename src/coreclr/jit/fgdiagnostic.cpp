@@ -5073,7 +5073,7 @@ void Compiler::fgDebugCheckLoopTable()
                 while ((cur != nullptr) && (cur != loop.lpEntry))
                 {
                     assert(m_domTree->Dominates(cur, loop.lpExit));
-                    cur = m_domTree->IDom(cur);
+                    cur = cur->bbIDom;
                 }
                 assert(cur == loop.lpEntry); // We must be able to reach the entry from the exit via the IDom tree.
             }

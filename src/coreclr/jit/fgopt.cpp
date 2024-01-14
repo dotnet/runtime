@@ -187,8 +187,8 @@ PhaseStatus Compiler::fgComputeReachability()
     madeChanges |= fgRenumberBlocks();
 
     fgComputeReturnBlocks();
-    m_reachabilitySets   = BlockReachabilitySets::Build(m_dfsTree);
-    m_regularFlowDomTree = FlowGraphDominatorTree::BuildForRegularFlow(m_dfsTree);
+    m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
+    m_domTree          = FlowGraphDominatorTree::Build(m_dfsTree);
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -340,8 +340,8 @@ PhaseStatus Compiler::fgComputeDominators()
         for (unsigned i = m_dfsTree->GetPostOrderCount() - 1; i != 0; i--)
         {
             BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
-            assert(m_domTree->IDom(block) != nullptr);
-            if (m_domTree->IDom(block)->IsDominatedByExceptionalEntryFlag())
+            assert(block->bbIDom != nullptr);
+            if (block->bbIDom->IsDominatedByExceptionalEntryFlag())
             {
                 block->SetDominatedByExceptionalEntryFlag();
             }
