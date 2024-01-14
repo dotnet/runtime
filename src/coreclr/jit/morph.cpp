@@ -10724,7 +10724,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-#if TARGET_XARCH
+#if defined(TARGET_XARCH)
             if ((node->GetSimdSize() == 8) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
                 // When SSE4.1 isn't supported then Vector2 only needs a single horizontal add
