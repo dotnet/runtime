@@ -64,7 +64,7 @@ namespace DebuggerTests
         public static string GetSignature([JSMarshalAs<JSType.Any>()] object methodInfo)
         {
             var method = (MethodInfo)methodInfo;
-            var sb = new StringBuilder();
+            var sb = new StringBuilder("Invoke");
             foreach (var p in method.GetParameters())
             {
                 sb.Append("_");

@@ -25,7 +25,7 @@ namespace DebuggerTests
 
             await SetPauseOnException("all");
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+            var eval_expr = "window.setTimeout(function() { invoke_static_method_native (" +
                 $"'{entry_method_name}'" +
                 "); }, 1);";
 
@@ -157,7 +157,7 @@ namespace DebuggerTests
                 {
                     type = "object",
                     subtype = "error",
-                    className = "Error" // BUG?: "DebuggerTests.CustomException"
+                    className = "ManagedError" // BUG?: "DebuggerTests.CustomException"
                 }), "exception");
 
                 return;
@@ -303,7 +303,7 @@ namespace DebuggerTests
             await taskWait;
             _testOutput.WriteLine ($"* Resumed {count} times");
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+            var eval_expr = "window.setTimeout(function() { invoke_static_method_native (" +
                 $"'{entry_method_name}'" +
                 "); }, 1);";
 
