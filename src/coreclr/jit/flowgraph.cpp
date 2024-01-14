@@ -3952,7 +3952,7 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
 //    If the block was added after the DFS tree was computed, then this
 //    function returns false.
 //
-bool FlowGraphDfsTree::Contains(const BasicBlock* block) const
+bool FlowGraphDfsTree::Contains(BasicBlock* block) const
 {
     return (block->bbPostorderNum < m_postOrderCount) && (m_postOrder[block->bbPostorderNum] == block);
 }
@@ -3972,7 +3972,7 @@ bool FlowGraphDfsTree::Contains(const BasicBlock* block) const
 // Notes:
 //   If return value is false, then `ancestor` does not dominate `descendant`.
 //
-bool FlowGraphDfsTree::IsAncestor(const BasicBlock* ancestor, const BasicBlock* descendant) const
+bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const
 {
     assert(Contains(ancestor) && Contains(descendant));
     return (ancestor->bbPreorderNum <= descendant->bbPreorderNum) &&
@@ -5548,7 +5548,7 @@ BasicBlock* FlowGraphDominatorTree::Intersect(BasicBlock* block1, BasicBlock* bl
 // Returns:
 //   True "dominator" dominates "dominated".
 //
-bool FlowGraphDominatorTree::Dominates(const BasicBlock* dominator, const BasicBlock* dominated)
+bool FlowGraphDominatorTree::Dominates(BasicBlock* dominator, BasicBlock* dominated)
 {
     assert(m_dfsTree->Contains(dominator) && m_dfsTree->Contains(dominated));
 
@@ -5599,7 +5599,9 @@ void FlowGraphDominatorTree::Dump()
 //   dfsTree - DFS tree.
 //
 // Returns:
-//   Data structure representing dominator tree.
+//   Data structure representing dominator tree. Immediate dominators are
+//   marked directly into the BasicBlock structures, in the bbIDom field, so
+//   multiple instances cannot be simultaneously used.
 //
 // Remarks:
 //   As a precondition it is required that the flow graph has a unique root.

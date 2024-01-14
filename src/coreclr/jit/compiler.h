@@ -1995,8 +1995,8 @@ public:
         return m_hasCycle;
     }
 
-    bool Contains(const BasicBlock* block) const;
-    bool IsAncestor(const BasicBlock* ancestor, const BasicBlock* descendant) const;
+    bool Contains(BasicBlock* block) const;
+    bool IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const;
 };
 
 // Represents the result of induction variable analysis. See
@@ -2350,7 +2350,7 @@ class FlowGraphDominatorTree
     static BasicBlock* IntersectDom(BasicBlock* block1, BasicBlock* block2);
 public:
     BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
-    bool Dominates(const BasicBlock* dominator, const BasicBlock* dominated);
+    bool Dominates(BasicBlock* dominator, BasicBlock* dominated);
 
 #ifdef DEBUG
     void Dump();

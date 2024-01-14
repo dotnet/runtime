@@ -130,8 +130,11 @@ PhaseStatus Compiler::optSetBlockWeights()
 
                 if (block == fgFirstBB)
                 {
-                    // Don't scale the weight of the first block, since it is guaranteed to execute.
                     firstBBDominatesAllReturns = blockDominatesAllReturns;
+
+                    // Don't scale the weight of the first block, since it is guaranteed to execute.
+                    // If the first block does not dominate all the returns, we won't scale any of the function's
+                    // block weights.
                 }
                 else
                 {

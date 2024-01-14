@@ -644,7 +644,6 @@ CONFIG_INTEGER(JitCheckSynthesizedCounts, W("JitCheckSynthesizedCounts"), 0)
 // If instrumenting the method, run synthesis and save the synthesis results
 // as edge or block profile data. Do not actually instrument.
 CONFIG_INTEGER(JitPropagateSynthesizedCountsToProfileData, W("JitPropagateSynthesizedCountsToProfileData"), 0)
-
 #endif
 
 // Devirtualize virtual calls with getExactClasses (NativeAOT only for now)
