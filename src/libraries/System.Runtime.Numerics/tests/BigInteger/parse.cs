@@ -126,7 +126,7 @@ namespace System.Numerics.Tests
                 Assert.False(BigInteger.TryParse("12345".AsSpan(0, 0), out result));
                 Assert.Equal(0, result);
 
-                Assert.False(BigInteger.TryParse(new ReadOnlySpan<char>(), out result));
+                Assert.False(BigInteger.TryParse([], out result));
                 Assert.Equal(0, result);
             }
         }
