@@ -33,117 +33,112 @@ namespace BasicEventSourceTests
         [SkipOnCoreClr("Test should only be run in non-stress modes", ~RuntimeTestModes.RegularRun)]
         public void Test_EventSource_EtwManifestGeneration()
         {
-            RemoteInvokeOptions options = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
-            RemoteExecutor.Invoke(() =>
+            var pid = Process.GetCurrentProcess().Id;
+            var etlFileName = $"file.{pid}.etl";
+            var tracesession = new TraceEventSession("testname", etlFileName);
+
+            tracesession.EnableProvider("SimpleEventSource");
+
+            RemoteInvokeOptions localOptions = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() =>
             {
-                RemoteInvokeOptions localOptions = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
-                using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() =>
+                var es = new SimpleEventSource();
+                for (var i = 0; i < 100; i++)
                 {
-                    var es = new SimpleEventSource();
-                    for (var i = 0; i < 100; i++)
-                    {
-                        es.WriteSimpleInt(i);
-                        Thread.Sleep(100);
-                    }
-                }, localOptions))
-                {
-                    var etlFileName = @"file.etl";
-                    var tracesession = new TraceEventSession("testname", etlFileName);
-
-                    tracesession.EnableProvider("SimpleEventSource");
-
-                    Thread.Sleep(TimeSpan.FromSeconds(5));
-
-                    tracesession.Flush();
-
-                    tracesession.DisableProvider("SimpleEventSource");
-                    tracesession.Dispose();
-
-                    var manifestExists = false;
-                    var max_retries = 50;
-
-                    for (int i = 0; i < max_retries; i++)
-                    {
-                        if (VerifyManifestAndRemoveFile(etlFileName))
-                        {
-                            manifestExists = true;
-                            break;
-                        }
-                        Thread.Sleep(1000);
-                    }
-                    Assert.True(manifestExists);
+                    es.WriteSimpleInt(i);
+                    Thread.Sleep(100);
                 }
-            }, options).Dispose();
+            }, localOptions))
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+
+                tracesession.Flush();
+
+                tracesession.DisableProvider("SimpleEventSource");
+                tracesession.Dispose();
+
+                var manifestExists = false;
+                var max_retries = 50;
+
+                for (int i = 0; i < max_retries; i++)
+                {
+                    if (VerifyManifestAndRemoveFile(etlFileName))
+                    {
+                        manifestExists = true;
+                        break;
+                    }
+                    Thread.Sleep(1000);
+                }
+                Assert.True(manifestExists);
+            }
         }
 
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
         [SkipOnCoreClr("Test should only be run in non-stress modes", ~RuntimeTestModes.RegularRun)]
         public void Test_EventSource_EtwManifestGenerationRollover()
         {
-            RemoteExecutor.Invoke(() =>
+            var pid = Process.GetCurrentProcess().Id;
+            var initialFileName = $"initialFile.{pid}.etl";
+            var rolloverFileName = $"rolloverFile.{pid}.etl";
+            var tracesession = new TraceEventSession("testname", initialFileName);
+
+            tracesession.EnableProvider("SimpleEventSource");
+
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() =>
             {
-                using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() =>
+                var es = new SimpleEventSource();
+                for (var i = 0; i < 100; i++)
                 {
-                    var es = new SimpleEventSource();
-                    for (var i = 0; i < 100; i++)
-                    {
-                        es.WriteSimpleInt(i);
-                        Thread.Sleep(100);
-                    }
-                }))
-                {
-                    var initialFileName = @"initialFile.etl";
-                    var rolloverFileName = @"rolloverFile.etl";
-                    var tracesession = new TraceEventSession("testname", initialFileName);
-                    var max_retries = 50;
-
-                    tracesession.EnableProvider("SimpleEventSource");
-
-                    Thread.Sleep(TimeSpan.FromSeconds(5));
-
-                    tracesession.Flush();
-
-                    tracesession.SetFileName(rolloverFileName);
-
-                    Thread.Sleep(TimeSpan.FromSeconds(5));
-
-                    tracesession.Flush();
-
-                    tracesession.DisableProvider("SimpleEventSource");
-                    tracesession.Dispose();
-
-                    bool initialFileHasManifest = false;
-                    bool rollOverFileHasManifest = false;
-
-                    for (int i = 0; i < max_retries; i++)
-                    {
-                        if (VerifyManifestAndRemoveFile(initialFileName))
-                        {
-                            initialFileHasManifest = true;
-                            break;
-                        }
-                        Thread.Sleep(1000);
-                    }
-                    for (int i = 0; i < max_retries; i++)
-                    {
-                        if (VerifyManifestAndRemoveFile(rolloverFileName))
-                        {
-                            rollOverFileHasManifest = true;
-                            break;
-                        }
-                        Thread.Sleep(1000);
-                    }
-                    Assert.True(initialFileHasManifest);
-                    Assert.True(rollOverFileHasManifest);
+                    es.WriteSimpleInt(i);
+                    Thread.Sleep(100);
                 }
-            }).Dispose();
+            }))
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+
+                tracesession.Flush();
+
+                tracesession.SetFileName(rolloverFileName);
+
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+
+                tracesession.Flush();
+
+                tracesession.DisableProvider("SimpleEventSource");
+                tracesession.Dispose();
+
+                bool initialFileHasManifest = false;
+                bool rollOverFileHasManifest = false;
+
+                var max_retries = 50;
+                for (int i = 0; i < max_retries; i++)
+                {
+                    if (VerifyManifestAndRemoveFile(initialFileName))
+                    {
+                        initialFileHasManifest = true;
+                        break;
+                    }
+                    Thread.Sleep(1000);
+                }
+                for (int i = 0; i < max_retries; i++)
+                {
+                    if (VerifyManifestAndRemoveFile(rolloverFileName))
+                    {
+                        rollOverFileHasManifest = true;
+                        break;
+                    }
+                    Thread.Sleep(1000);
+                }
+                Assert.True(initialFileHasManifest);
+                Assert.True(rollOverFileHasManifest);
+            }
         }
 
         private bool VerifyManifestAndRemoveFile(string fileName)
         {
             Assert.True(File.Exists(fileName));
 
-            ETWTraceEventSource source = new ETWTraceEventSource(fileName);
+            using var source = new ETWTraceEventSource(fileName);
 
             Dictionary<string, int> providers = new Dictionary<string, int>();
             int eventCount = 0;
