@@ -5026,6 +5026,17 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                     resultVN = arg1VN;
                     break;
                 }
+
+                // If either operands is an allocator then the result is always false.
+                // NOTE: BOX is NOT expected to cache values (https://github.com/dotnet/runtime/issues/7079)
+                VNFuncApp funcApp;
+                if ((GetVNFunc(arg0VN, &funcApp) && VNFuncIsAllocator(funcApp.m_func)) ||
+                    (GetVNFunc(arg1VN, &funcApp) && VNFuncIsAllocator(funcApp.m_func)))
+                {
+                    resultVN = VNZeroForType(typ);
+                    break;
+                }
+
                 // (x == x) == true (integer only)
                 FALLTHROUGH;
             case GT_GE:
@@ -5102,6 +5113,18 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                     if (rev1VN != NoVN)
                     {
                         resultVN = rev1VN;
+                        break;
+                    }
+                }
+                else
+                {
+                    // If either operands is an allocator then the result is always true.
+                    // NOTE: BOX is NOT expected to cache values (https://github.com/dotnet/runtime/issues/7079)
+                    VNFuncApp funcApp;
+                    if ((GetVNFunc(arg0VN, &funcApp) && VNFuncIsAllocator(funcApp.m_func)) ||
+                        (GetVNFunc(arg1VN, &funcApp) && VNFuncIsAllocator(funcApp.m_func)))
+                    {
+                        resultVN = VNOneForType(typ);
                         break;
                     }
                 }

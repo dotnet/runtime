@@ -1055,6 +1055,9 @@ public:
     // Returns "true" iff "vnf" is a signed comparison (and thus binary) operator.
     static bool VNFuncIsSignedComparison(VNFunc vnf);
 
+    // Returns "true" iff "vnf" is an allocator
+    static bool VNFuncIsAllocator(VNFunc vnf);
+
     // Convert a vartype_t to the value number's storage type for that vartype_t.
     // For example, ValueNum of type TYP_LONG are stored in a map of INT64 variables.
     // Lang is the language (C++) type for the corresponding vartype_t.
@@ -2111,6 +2114,23 @@ inline bool ValueNumStore::VNFuncIsSignedComparison(VNFunc vnf)
         return false;
     }
     return GenTree::OperIsCompare(genTreeOps(vnf)) != 0;
+}
+
+inline bool ValueNumStore::VNFuncIsAllocator(VNFunc vnf)
+{
+    switch (vnf)
+    {
+        case VNF_JitNew:
+        case VNF_JitNewArr:
+        case VNF_JitNewMdArr:
+        case VNF_JitReadyToRunNew:
+        case VNF_JitReadyToRunNewArr:
+        case VNF_Box:
+        case VNF_BoxNullable:
+            return true;
+        default:
+            return false;
+    }
 }
 
 template <>
