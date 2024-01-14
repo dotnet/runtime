@@ -114,6 +114,13 @@ namespace DebuggerTests
         }
 
         [JSExport]
+        public static string Invoke_String([JSMarshalAs<JSType.Any>()] object methodInfo)
+        {
+            var method = (MethodInfo)methodInfo;
+            return (string)method.Invoke(null, null);
+        }
+
+        [JSExport]
         public static void Invoke_Boolean_Void([JSMarshalAs<JSType.Any>()] object methodInfo, bool p1)
         {
             var method = (MethodInfo)methodInfo;
