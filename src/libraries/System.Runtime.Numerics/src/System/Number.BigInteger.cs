@@ -348,7 +348,8 @@ namespace System
 
             if (value.Length == 0)
             {
-                goto FailExit;
+                result = default;
+                return ParsingStatus.Failed;
             }
             if (value.Length < 255)
             {
@@ -367,7 +368,8 @@ namespace System
 
                 if (!TryStringToNumber(value, style, ref number, info))
                 {
-                    goto FailExit;
+                    result = default;
+                    ret = ParsingStatus.Failed;
                 }
                 else
                 {
@@ -381,9 +383,6 @@ namespace System
             }
 
             return ret;
-        FailExit:
-            result = default;
-            return ParsingStatus.Failed;
         }
 
         internal static BigInteger ParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info)
