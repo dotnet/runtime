@@ -23,7 +23,7 @@ try {
     // this is fake implementation of legacy `bind_static_method`
     // so that we don't have to rewrite all the tests which use it via `invoke_static_method`
     App.bind_static_method = (method_name) => {
-        const methodInfo = App.exports.DebuggerTests.BindStaticMethod.Find(method_name);
+        const methodInfo = App.exports.DebuggerTests.BindStaticMethod.GetMethodInfo(method_name);
         const signature = App.exports.DebuggerTests.BindStaticMethod.GetSignature(methodInfo);
         const invoker = App.exports.DebuggerTests.BindStaticMethod[signature];
         if (!invoker) {
