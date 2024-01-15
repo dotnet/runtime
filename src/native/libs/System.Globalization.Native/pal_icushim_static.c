@@ -11,7 +11,7 @@
 #include <unicode/uversion.h>
 #include <unicode/localpointer.h>
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !APPLE_HYBRID_GLOBALIZATION
 #include <unicode/utrace.h>
 #endif
 
@@ -21,7 +21,7 @@
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
 #endif
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !APPLE_HYBRID_GLOBALIZATION
 static int32_t isLoaded = 0;
 static int32_t isDataSet = 0;
 
@@ -173,7 +173,7 @@ error:
 int32_t
 GlobalizationNative_LoadICUData(const char* path)
 {
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if APPLE_HYBRID_GLOBALIZATION
     if (path && path[0] != '/')
     {
         // if the path is relative, prepend the app bundle root
