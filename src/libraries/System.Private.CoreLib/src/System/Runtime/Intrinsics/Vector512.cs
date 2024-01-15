@@ -1806,6 +1806,38 @@ namespace System.Runtime.Intrinsics
         internal static Vector512<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
             LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
 
+        /// <inheritdoc cref="Vector256.Log2(Vector256{double})" />
+        public static Vector512<double> Log2(Vector512<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Double<Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Log2(vector._lower),
+                    Vector256.Log2(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.Log2(Vector256{float})" />
+        public static Vector512<float> Log2(Vector512<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Single<Vector512<float>, Vector512<int>, Vector512<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Log2(vector._lower),
+                    Vector256.Log2(vector._upper)
+                );
+            }
+        }
+
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>

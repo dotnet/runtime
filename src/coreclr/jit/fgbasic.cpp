@@ -34,10 +34,6 @@ void Compiler::fgInit()
     fgDomsComputed         = false;
     fgReturnBlocksComputed = false;
 
-#ifdef DEBUG
-    fgReachabilitySetsValid = false;
-#endif // DEBUG
-
     /* Initialize the basic block list */
 
     fgFirstBB          = nullptr;
@@ -66,10 +62,12 @@ void Compiler::fgInit()
     fgBBVarSetsInited       = false;
     fgReturnCount           = 0;
 
-    m_dfsTree         = nullptr;
-    m_loops           = nullptr;
-    m_loopSideEffects = nullptr;
-    m_blockToLoop     = nullptr;
+    m_dfsTree          = nullptr;
+    m_loops            = nullptr;
+    m_loopSideEffects  = nullptr;
+    m_blockToLoop      = nullptr;
+    m_domTree          = nullptr;
+    m_reachabilitySets = nullptr;
 
     // Initialize BlockSet data.
     fgCurBBEpoch             = 0;
@@ -118,14 +116,7 @@ void Compiler::fgInit()
     /* We will record a list of all BBJ_RETURN blocks here */
     fgReturnBlocks = nullptr;
 
-    /* This is set by fgComputeReachability */
-    fgEnterBlks = BlockSetOps::UninitVal();
-
     fgUsedSharedTemps = nullptr;
-
-#ifdef DEBUG
-    fgEnterBlksSetValid = false;
-#endif // DEBUG
 
 #if !defined(FEATURE_EH_FUNCLETS)
     ehMaxHndNestingCount = 0;

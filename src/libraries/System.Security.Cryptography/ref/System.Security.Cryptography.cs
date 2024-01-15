@@ -1651,6 +1651,94 @@ namespace System.Security.Cryptography
         public int MinSize { get { throw null; } }
         public int SkipSize { get { throw null; } }
     }
+    public sealed partial class Kmac128 : System.IDisposable
+    {
+        public Kmac128(byte[] key, byte[]? customizationString = null) { }
+        public Kmac128(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static bool IsSupported { get { throw null; } }
+        public void AppendData(byte[] data) { }
+        public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public void Dispose() { }
+        public byte[] GetCurrentHash(int outputLength) { throw null; }
+        public void GetCurrentHash(System.Span<byte> destination) { }
+        public byte[] GetHashAndReset(int outputLength) { throw null; }
+        public void GetHashAndReset(System.Span<byte> destination) { }
+        public static byte[] HashData(byte[] key, byte[] source, int outputLength, byte[]? customizationString = null) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source, int outputLength, byte[]? customizationString = null) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, int outputLength, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static void HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, int outputLength, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static void HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, int outputLength, byte[]? customizationString = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, int outputLength, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class Kmac256 : System.IDisposable
+    {
+        public Kmac256(byte[] key, byte[]? customizationString = null) { }
+        public Kmac256(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static bool IsSupported { get { throw null; } }
+        public void AppendData(byte[] data) { }
+        public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public void Dispose() { }
+        public byte[] GetCurrentHash(int outputLength) { throw null; }
+        public void GetCurrentHash(System.Span<byte> destination) { }
+        public byte[] GetHashAndReset(int outputLength) { throw null; }
+        public void GetHashAndReset(System.Span<byte> destination) { }
+        public static byte[] HashData(byte[] key, byte[] source, int outputLength, byte[]? customizationString = null) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source, int outputLength, byte[]? customizationString = null) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, int outputLength, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static void HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, int outputLength, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static void HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, int outputLength, byte[]? customizationString = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, int outputLength, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class KmacXof128 : System.IDisposable
+    {
+        public KmacXof128(byte[] key, byte[]? customizationString = null) { }
+        public KmacXof128(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static bool IsSupported { get { throw null; } }
+        public void AppendData(byte[] data) { }
+        public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public void Dispose() { }
+        public byte[] GetCurrentHash(int outputLength) { throw null; }
+        public void GetCurrentHash(System.Span<byte> destination) { }
+        public byte[] GetHashAndReset(int outputLength) { throw null; }
+        public void GetHashAndReset(System.Span<byte> destination) { }
+        public static byte[] HashData(byte[] key, byte[] source, int outputLength, byte[]? customizationString = null) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source, int outputLength, byte[]? customizationString = null) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, int outputLength, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static void HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, int outputLength, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static void HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, int outputLength, byte[]? customizationString = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, int outputLength, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class KmacXof256 : System.IDisposable
+    {
+        public KmacXof256(byte[] key, byte[]? customizationString = null) { }
+        public KmacXof256(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static bool IsSupported { get { throw null; } }
+        public void AppendData(byte[] data) { }
+        public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public void Dispose() { }
+        public byte[] GetCurrentHash(int outputLength) { throw null; }
+        public void GetCurrentHash(System.Span<byte> destination) { }
+        public byte[] GetHashAndReset(int outputLength) { throw null; }
+        public void GetHashAndReset(System.Span<byte> destination) { }
+        public static byte[] HashData(byte[] key, byte[] source, int outputLength, byte[]? customizationString = null) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source, int outputLength, byte[]? customizationString = null) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, int outputLength, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static void HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, int outputLength, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static void HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, System.ReadOnlySpan<byte> customizationString = default(System.ReadOnlySpan<byte>)) { }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, int outputLength, byte[]? customizationString = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, int outputLength, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.ReadOnlyMemory<byte> customizationString = default(System.ReadOnlyMemory<byte>), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
     public abstract partial class MaskGenerationMethod
     {
         protected MaskGenerationMethod() { }
