@@ -3532,6 +3532,23 @@ namespace Internal.JitInterface
             if (pIsSpeculative != null)
                 *pIsSpeculative = 1;
 
+            FieldDesc fieldDesc = HandleToObject(field);
+
+            if (fieldDesc.IsStatic && !fieldDesc.IsThreadStatic && fieldDesc.OwningType is MetadataType owningType &&
+                !fieldDesc.FieldType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                if (pIsSpeculative != null && _compilation.IsInitOnly(fieldDesc))
+                {
+                    // RVA -> initialized
+                    // No cctor -> initialized (to its default value)
+                    // Preinitialized cctor -> initialized
+                    if (fieldDesc.HasRva || !owningType.HasStaticConstructor || _compilation.NodeFactory.PreinitializationManager.IsPreinitialized(owningType))
+                    {
+                        *pIsSpeculative = 0;
+                    }
+                }
+                return ObjectToHandle(owningType);
+            }
             return null;
         }
 

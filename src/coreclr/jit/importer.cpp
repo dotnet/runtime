@@ -3935,18 +3935,17 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
 
         default:
         {
-            bool isStaticReadOnlyInitedRef = false;
+            bool isStaticReadOnlyInited = false;
 
 #ifdef TARGET_64BIT
             // TODO-CQ: enable this optimization for 32 bit targets.
-            if (!isBoxedStatic && (lclTyp == TYP_REF) && ((access & CORINFO_ACCESS_GET) != 0) &&
-                ((*pIndirFlags & GTF_IND_VOLATILE) == 0))
+            if (!isBoxedStatic && ((access & CORINFO_ACCESS_GET) != 0) && ((*pIndirFlags & GTF_IND_VOLATILE) == 0))
             {
                 bool isSpeculative = true;
                 if ((info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative) !=
                      NO_CLASS_HANDLE))
                 {
-                    isStaticReadOnlyInitedRef = !isSpeculative;
+                    isStaticReadOnlyInited = !isSpeculative;
                 }
             }
 #endif // TARGET_64BIT
@@ -3958,7 +3957,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             {
                 handleKind = GTF_ICON_STATIC_BOX_PTR;
             }
-            else if (isStaticReadOnlyInitedRef)
+            else if (isStaticReadOnlyInited)
             {
                 handleKind = GTF_ICON_CONST_PTR;
             }
@@ -3970,13 +3969,9 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             op1         = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
             INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
 
-            if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
+            if (isStaticReadOnlyInited)
             {
-                indirFlags |= GTF_IND_INITCLASS;
-            }
-            if (isStaticReadOnlyInitedRef)
-            {
-                indirFlags |= (GTF_IND_INVARIANT | GTF_IND_NONNULL);
+                indirFlags |= GTF_IND_INVARIANT;
             }
             break;
         }
