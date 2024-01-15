@@ -2117,6 +2117,7 @@ AGAIN:
 
 unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code) const
 {
+    assert(dst != nullptr);
     assert(sizeof(code_t) == 4);
     memcpy(dst + writeableOffset, &code, sizeof(code_t));
     return sizeof(code_t);
