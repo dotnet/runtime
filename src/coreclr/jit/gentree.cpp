@@ -18799,13 +18799,14 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
         CORINFO_CLASS_HANDLE currentClass = info.compCompHnd->getStaticFieldCurrentClass(fieldHnd);
         if (currentClass != NO_CLASS_HANDLE)
         {
+            fieldClass  = currentClass;
             *pIsExact   = true;
             *pIsNonNull = true;
             JITDUMP("Runtime reports field is init-only and initialized and has class %s\n",
-                    eeGetClassName(currentClass));
-            return currentClass;
+                    eeGetClassName(fieldClass));
         }
-        JITDUMP("Field's current class not available\n");
+        JITDUMP("Field's current class is not available\n");
+        return fieldClass;
     }
 
     return NO_CLASS_HANDLE;
