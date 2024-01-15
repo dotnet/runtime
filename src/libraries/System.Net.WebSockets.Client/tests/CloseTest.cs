@@ -38,7 +38,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServersAndBoolean))]
         public async Task CloseAsync_ServerInitiatedClose_Success(Uri server, bool useCloseOutputAsync)
         {
-            const string closeWebSocketMetaCommand = ".shutdown";
+            const string shutdownWebSocketMetaCommand = ".shutdown";
 
             using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
@@ -46,7 +46,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 _output.WriteLine("SendAsync starting.");
                 await cws.SendAsync(
-                    WebSocketData.GetBufferFromText(closeWebSocketMetaCommand),
+                    WebSocketData.GetBufferFromText(shutdownWebSocketMetaCommand),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
@@ -59,13 +59,13 @@ namespace System.Net.WebSockets.Client.Tests
 
                 // Verify received server-initiated close message.
                 Assert.Equal(WebSocketCloseStatus.NormalClosure, recvResult.CloseStatus);
-                Assert.Equal(closeWebSocketMetaCommand, recvResult.CloseStatusDescription);
+                Assert.Equal(shutdownWebSocketMetaCommand, recvResult.CloseStatusDescription);
                 Assert.Equal(WebSocketMessageType.Close, recvResult.MessageType);
 
                 // Verify current websocket state as CloseReceived which indicates only partial close.
                 Assert.Equal(WebSocketState.CloseReceived, cws.State);
                 Assert.Equal(WebSocketCloseStatus.NormalClosure, cws.CloseStatus);
-                Assert.Equal(closeWebSocketMetaCommand, cws.CloseStatusDescription);
+                Assert.Equal(shutdownWebSocketMetaCommand, cws.CloseStatusDescription);
 
                 // Send back close message to acknowledge server-initiated close.
                 _output.WriteLine("Close starting.");
@@ -79,7 +79,7 @@ namespace System.Net.WebSockets.Client.Tests
                 // Verify that there is no follow-up echo close message back from the server by
                 // making sure the close code and message are the same as from the first server close message.
                 Assert.Equal(WebSocketCloseStatus.NormalClosure, cws.CloseStatus);
-                Assert.Equal(closeWebSocketMetaCommand, cws.CloseStatusDescription);
+                Assert.Equal(shutdownWebSocketMetaCommand, cws.CloseStatusDescription);
             }
         }
 

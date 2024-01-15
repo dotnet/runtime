@@ -24,9 +24,10 @@ const wasm_ws_pending_open_promise_used = Symbol.for("wasm wasm_ws_pending_open_
 const wasm_ws_pending_close_promises = Symbol.for("wasm ws_pending_close_promises");
 const wasm_ws_pending_send_promises = Symbol.for("wasm ws_pending_send_promises");
 const wasm_ws_is_aborted = Symbol.for("wasm ws_is_aborted");
+const wasm_ws_close_sent = Symbol.for("wasm wasm_ws_close_sent");
+const wasm_ws_close_received = Symbol.for("wasm wasm_ws_close_received");
 const wasm_ws_receive_status_ptr = Symbol.for("wasm ws_receive_status_ptr");
 
-let mono_wasm_web_socket_close_warning = false;
 const ws_send_buffer_blocking_threshold = 65536;
 const emptyBuffer = new Uint8Array();
 
@@ -74,6 +75,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         if (ws[wasm_ws_is_aborted]) return;
         if (loaderHelpers.is_exited()) return;
 
+        ws[wasm_ws_close_received] = true;
         ws["close_status"] = ev.code;
         ws["close_status_description"] = ev.reason;
 
@@ -126,6 +128,10 @@ export function ws_wasm_open(ws: WebSocketExtension): Promise<WebSocketExtension
 export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer_length: number, message_type: number, end_of_message: boolean): Promise<void> | null {
     mono_assert(!!ws, "ERR17: expected ws instance");
 
+    if (ws[wasm_ws_is_aborted] || ws[wasm_ws_close_sent]) {
+        return rejectedPromise("InvalidState: The WebSocket is not connected.");
+    }
+
     const buffer_view = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
     const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_view, message_type, end_of_message);
 
@@ -138,6 +144,15 @@ export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer
 
 export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer_length: number): Promise<void> | null {
     mono_assert(!!ws, "ERR18: expected ws instance");
+
+    // we can't quickly return if wasm_ws_close_received==true, because there could be pending messages
+    if (ws[wasm_ws_is_aborted]) {
+        const receive_status_ptr = ws[wasm_ws_receive_status_ptr];
+        setI32(receive_status_ptr, 0); // count
+        setI32(<any>receive_status_ptr + 4, 2); // type:close
+        setI32(<any>receive_status_ptr + 8, 1);// end_of_message: true
+        return resolvedPromise();
+    }
 
     const receive_event_queue = ws[wasm_ws_pending_receive_event_queue];
     const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
@@ -171,10 +186,10 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
 export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: string | null, wait_for_close_received: boolean): Promise<void> | null {
     mono_assert(!!ws, "ERR19: expected ws instance");
 
-    if (ws.readyState == WebSocket.CLOSED) {
+    if (ws[wasm_ws_is_aborted] || ws[wasm_ws_close_sent] || ws.readyState == WebSocket.CLOSED) {
         return resolvedPromise();
     }
-
+    ws[wasm_ws_close_sent] = true;
     if (wait_for_close_received) {
         const { promise, promise_control } = createPromiseController<void>();
         ws[wasm_ws_pending_close_promises].push(promise_control);
@@ -187,10 +202,6 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
         return promise;
     }
     else {
-        if (!mono_wasm_web_socket_close_warning) {
-            mono_wasm_web_socket_close_warning = true;
-            mono_log_warn("WARNING: Web browsers do not support closing the output side of a WebSocket. CloseOutputAsync has closed the socket and discarded any incoming messages.");
-        }
         if (typeof reason === "string") {
             ws.close(code, reason);
         } else {
@@ -202,6 +213,10 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
 
 export function ws_wasm_abort(ws: WebSocketExtension): void {
     mono_assert(!!ws, "ERR18: expected ws instance");
+
+    if (ws[wasm_ws_is_aborted] || ws[wasm_ws_close_sent]) {
+        return;
+    }
 
     ws[wasm_ws_is_aborted] = true;
     reject_promises(ws, new Error("OperationCanceledException"));
@@ -413,6 +428,8 @@ type WebSocketExtension = WebSocket & {
     [wasm_ws_pending_send_promises]: PromiseController<void>[]
     [wasm_ws_pending_close_promises]: PromiseController<void>[]
     [wasm_ws_is_aborted]: boolean
+    [wasm_ws_close_received]: boolean
+    [wasm_ws_close_sent]: boolean
     [wasm_ws_receive_status_ptr]: VoidPtr
     [wasm_ws_pending_send_buffer_offset]: number
     [wasm_ws_pending_send_buffer_type]: number
@@ -446,4 +463,9 @@ function resolvedPromise(): Promise<void> | null {
         // in practice the `resolve()` callback would arrive before the `reject()` of the cancelation.
         return wrap_as_cancelable<void>(resolved);
     }
+}
+
+function rejectedPromise(message: string): Promise<void> | null {
+    const resolved = Promise.reject(new Error(message));
+    return wrap_as_cancelable<void>(resolved);
 }
