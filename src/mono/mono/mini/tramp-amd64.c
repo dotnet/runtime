@@ -1035,7 +1035,7 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	guint8 *label_start_copy, *label_exit_copy;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	int buf_len, i, cfa_offset, framesize = 8, off_ctxregs, off_methodargs, off_targetaddr;
+	int buf_len, i, cfa_offset, framesize = 8, off_methodargs, off_targetaddr;
 
 	buf_len = 512;
 	start = code = (guint8 *) mono_global_codeman_reserve (buf_len + MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE);
@@ -1057,7 +1057,7 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 
 	/* allocate space for saving the target addr, call context, and context registers */
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
-	off_ctxregs = -framesize;
+	int off_ctxregs = -framesize;
 	framesize += CTX_REGS * sizeof (host_mgreg_t);
 #endif
 
