@@ -116,8 +116,21 @@ static void OpenLibraryOnce(void)
         DlOpen(MAKELIB("10"));
     }
 
-    // FreeBSD uses a different suffix numbering convention.
-    // Current supported FreeBSD releases should use the order .11 -> .111
+    // FreeBSD uses a different suffix numbering convention
+    // The ports version of OpenSSL is used over base where possible
+    if (libssl == NULL)
+    {
+        // FreeBSD uses .12 for OpenSSL 3.0 from ports
+        DlOpen(MAKELIB("12"));
+    }
+
+    if (libssl == NULL)
+    {
+        // FreeBSD uses .30 for OpenSSL 3.0 from base as found in FreeBSD 14.0
+        DlOpen(MAKELIB("30"));
+    }
+
+    // FreeBSD OpenSSL 1.1.x are numbered below
     if (libssl == NULL)
     {
         DlOpen(MAKELIB("11"));
@@ -126,17 +139,6 @@ static void OpenLibraryOnce(void)
     if (libssl == NULL)
     {
         DlOpen(MAKELIB("111"));
-    }
-    // FreeBSD uses this for OpenSSL3 from ports. OpenSSL3.1 would be "13"
-    // Ports version of OpenSSL is used over base where possible
-    if (libssl == NULL)
-    {
-        DlOpen(MAKELIB("12"));
-    }
-    // FreeBSD uses this for OpenSSL3 from base as found in FreeBSD 14.0
-    if (libssl == NULL)
-    {
-        DlOpen(MAKELIB("30"));
     }
 }
 
