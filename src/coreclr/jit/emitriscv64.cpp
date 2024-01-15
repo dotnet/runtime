@@ -2920,7 +2920,7 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
 
 BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, regNumber reg1)
 {
-    ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) - reinterpret_cast<ssize_t>(dst);
+    ssize_t immediate = emitConsBlock - dst;
     assert(immediate > 0);
     assert((immediate & 0x03) == 0);
 
@@ -2974,7 +2974,7 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
 
 BYTE* emitter::emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber reg1)
 {
-    ssize_t immediate = reinterpret_cast<ssize_t>(emitCodeBlock) + igOffs - reinterpret_cast<ssize_t>(dst);
+    ssize_t immediate = (emitCodeBlock - dst) + igOffs;
     assert((immediate & 0x03) == 0);
 
     dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
