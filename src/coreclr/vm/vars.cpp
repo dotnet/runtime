@@ -13,11 +13,6 @@
 
 #ifndef DACCESS_COMPILE
 //
-// Allow use of native images?
-//
-bool g_fAllowNativeImages = true;
-
-//
 // Default install library
 //
 const WCHAR g_pwBaseLibrary[]     = CoreLibName_IL_W;

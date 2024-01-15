@@ -995,6 +995,12 @@ inline static bool insOptsScalableAtLeastHalf(insOpts opt)
     return ((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
 }
 
+inline static bool insOptsScalableAtMaxHalf(insOpts opt)
+{
+    // `opt` is any of the standard half and below scalable types.
+    return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H));
+}
+
 inline static bool insOptsScalableFloat(insOpts opt)
 {
     // `opt` is any of the scalable types that are valid for FP.
@@ -1100,13 +1106,14 @@ void emitIns_R_R_R_Ext(instruction ins,
 void emitIns_R_R_I_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_R_R_R(instruction ins,
-                     emitAttr    attr,
-                     regNumber   reg1,
-                     regNumber   reg2,
-                     regNumber   reg3,
-                     regNumber   reg4,
-                     insOpts     opt = INS_OPTS_NONE);
+void emitIns_R_R_R_R(instruction     ins,
+                     emitAttr        attr,
+                     regNumber       reg1,
+                     regNumber       reg2,
+                     regNumber       reg3,
+                     regNumber       reg4,
+                     insOpts         opt  = INS_OPTS_NONE,
+                     insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 
