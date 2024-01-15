@@ -10,7 +10,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if APPLE_HYBRID_GLOBALIZATION
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 /*
 Function:
 GetCalendarIdentifier

@@ -173,7 +173,7 @@ error:
 int32_t
 GlobalizationNative_LoadICUData(const char* path)
 {
-#if APPLE_HYBRID_GLOBALIZATION
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
     if (path && path[0] != '/')
     {
         // if the path is relative, prepend the app bundle root

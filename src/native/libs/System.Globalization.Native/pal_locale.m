@@ -36,7 +36,7 @@ char* DetectDefaultAppleLocaleName(void)
     return strdup([localeName UTF8String]);
 }
 
-#if APPLE_HYBRID_GLOBALIZATION
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 {
     @autoreleasepool

@@ -42,7 +42,7 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(const UChar* lo
                                                                  LocaleNumberData localeGroupingData,
                                                                  int32_t* primaryGroupSize,
                                                                  int32_t* secondaryGroupSize);
-#if APPLE_HYBRID_GLOBALIZATION
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName,
                                                              LocaleNumberData localeNumberData);
 
