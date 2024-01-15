@@ -492,7 +492,7 @@ typedef struct {
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
 
-#if defined(TARGET_LINUX) || defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
+#if defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
 #define MONO_ARCH_HAVE_SWIFTCALL 1
 #endif
 

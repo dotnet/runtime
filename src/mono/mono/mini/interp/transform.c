@@ -3749,13 +3749,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	int *call_args = create_call_args (td, num_args);
 
-	if (mono_method_signature_has_ext_callconv (csignature, MONO_EXT_CALLCONV_SWIFTCALL)) {
 #ifndef MONO_ARCH_HAVE_SWIFTCALL
-		// Swift calling convention is not supported on this platform.
+	if (mono_method_signature_has_ext_callconv (csignature, MONO_EXT_CALLCONV_SWIFTCALL)) {
 		mono_error_set_not_supported (error, "CallConvSwift is not supported on this platform.");
 		return FALSE;
-#endif
 	}
+#endif
 
 	// We overwrite it with the return local, save it for future use
 	if (csignature->param_count || csignature->hasthis)

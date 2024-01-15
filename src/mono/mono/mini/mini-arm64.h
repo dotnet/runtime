@@ -206,7 +206,7 @@ typedef struct {
 #define MONO_ARCH_EXPLICIT_NULL_CHECKS 1
 #endif
 
-#if defined(TARGET_LINUX) || defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
+#if defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
 #define MONO_ARCH_HAVE_SWIFTCALL 1
 #endif
 

@@ -11171,12 +11171,12 @@ field_access_end:
 			const MonoJitICallId jit_icall_id = (MonoJitICallId)token;
 			MonoJitICallInfo * const jit_icall_info = mono_find_jit_icall_info (jit_icall_id);
 
-			if (mono_method_signature_has_ext_callconv (method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
 #ifndef MONO_ARCH_HAVE_SWIFTCALL
+			if (mono_method_signature_has_ext_callconv (method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
 				// Swift calling convention is not supported on this platform.
 				emit_not_supported_failure (cfg);
-#endif
 			}
+#endif
 
 			CHECK_STACK (jit_icall_info->sig->param_count);
 			sp -= jit_icall_info->sig->param_count;

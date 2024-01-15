@@ -1056,8 +1056,10 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	mono_add_unwind_op_fp_alloc (unwind_ops, code, start, AMD64_RBP, 0);
 
 	/* allocate space for saving the target addr, call context, and context registers */
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 	off_ctxregs = -framesize;
 	framesize += CTX_REGS * sizeof (host_mgreg_t);
+#endif
 
 	off_methodargs = -framesize;
 	framesize += sizeof (host_mgreg_t);
@@ -1104,11 +1106,13 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < FLOAT_PARAM_REGS; ++i)
 		amd64_sse_movsd_reg_membase (code, i, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 	/* store the values of context registers onto the stack and set the context registers from CallContext */
 	for (i = 0; i < CTX_REGS; i++) {
 		amd64_mov_membase_reg (code, AMD64_RBP, off_ctxregs - i * sizeof (target_mgreg_t), i + CTX_REGS_OFFSET, sizeof (target_mgreg_t));
 		amd64_mov_reg_membase (code, i + CTX_REGS_OFFSET, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, gregs) + (i + CTX_REGS_OFFSET) * sizeof (target_mgreg_t), sizeof (target_mgreg_t));		
 	}
+#endif
 
 	/* load target addr */
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, off_targetaddr, sizeof (target_mgreg_t));
@@ -1125,11 +1129,13 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < FLOAT_RETURN_REGS; i++)
 		amd64_sse_movsd_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double), i);
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 	/* set context registers to CallContext and load context registers from the stack */	
 	for (i = 0; i < CTX_REGS; i++) {
 		amd64_mov_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, gregs) + (i + CTX_REGS_OFFSET) * sizeof (target_mgreg_t), i + CTX_REGS_OFFSET, sizeof (target_mgreg_t));
 		amd64_mov_reg_membase (code, i + CTX_REGS_OFFSET, AMD64_RBP, off_ctxregs - i * sizeof (target_mgreg_t), sizeof (target_mgreg_t));
 	}
+#endif
 
 #if TARGET_WIN32
 	amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, 0);
