@@ -3369,8 +3369,7 @@ namespace Internal.JitInterface
 
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
         {
-            if (pIsSpeculative != null)
-                *pIsSpeculative = 1;
+            Debug.Assert(pIsSpeculative == null); // to be deleted
             return null;
         }
     }
