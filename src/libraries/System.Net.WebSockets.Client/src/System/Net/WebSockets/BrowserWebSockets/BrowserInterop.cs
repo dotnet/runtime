@@ -29,7 +29,8 @@ namespace System.Net.WebSockets
 
         public static string? GetCloseStatusDescription(JSObject? webSocket)
         {
-            if (webSocket == null || webSocket.IsDisposed) return null;
+            if (webSocket == null || webSocket.IsDisposed)
+                return null;
             string? description = webSocket.GetPropertyAsString("close_status_description");
             return description;
         }
