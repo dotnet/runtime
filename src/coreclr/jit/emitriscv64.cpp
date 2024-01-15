@@ -4049,6 +4049,12 @@ void emitter::emitDispIns(
         instrSize = sizeof(code_t);
         code_t instruction;
         memcpy(&instruction, instr, instrSize);
+#ifdef DEBUG
+        if (emitComp->verbose && i != 0)
+        {
+            printf("        ");
+        }
+#endif
         emitDispInsName(instruction, instr, doffs, offset, id, ig);
     }
 }
