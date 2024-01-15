@@ -63,13 +63,6 @@ namespace ILCompiler
 
                 sb ??= new StringBuilder(s, 0, i, s.Length);
 
-                // For CppCodeGen, replace "." (C# namespace separator) with "::" (C++ namespace separator)
-                if (typeName && c == '.')
-                {
-                    sb.Append("::");
-                    continue;
-                }
-
                 // Everything else is replaced by underscore.
                 // TODO: We assume that there won't be collisions with our own or C++ built-in identifiers.
                 sb.Append('_');
