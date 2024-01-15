@@ -31,7 +31,7 @@ public static class Runtime_96939
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    public static Vector4 TestVector4(Vector2 value)
+    public static Vector4 TestVector4(Vector4 value)
     {
         return Vector4.Dot(value, value) * new Vector4(1, 1, 1, 1);
     }
