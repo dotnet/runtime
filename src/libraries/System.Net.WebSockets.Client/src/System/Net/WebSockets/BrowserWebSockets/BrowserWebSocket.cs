@@ -347,6 +347,10 @@ namespace System.Net.WebSockets
             }
             catch (Exception)
             {
+                lock (_lockObject)
+                {
+                    FastState = WebSocketState.Closed;
+                }
                 Dispose();
                 throw;
             }
