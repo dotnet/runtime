@@ -272,7 +272,7 @@ namespace System.Net.WebSockets
             // if this is finalizer thread, we need to postpone the abort -> dispose
             _innerWebSocket?.SynchronizationContext.Post(Cleanup, this);
 #else
-            Cleanup();
+            Cleanup(this);
 #endif
         }
 
