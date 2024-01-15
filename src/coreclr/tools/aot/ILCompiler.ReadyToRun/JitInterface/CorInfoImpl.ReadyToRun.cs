@@ -3366,5 +3366,12 @@ namespace Internal.JitInterface
             // stable e.g. mark calls as no-return if their IL has no rets.
             return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
         }
+
+        private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
+        {
+            if (pIsSpeculative != null)
+                *pIsSpeculative = 1;
+            return null;
+        }
     }
 }
