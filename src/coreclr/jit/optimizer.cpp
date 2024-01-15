@@ -75,7 +75,7 @@ PhaseStatus Compiler::optSetBlockWeights()
     for (BasicBlock* const block : Blocks())
     {
         /* Blocks that can't be reached via the first block are rarely executed */
-        if (!fgReachable(fgFirstBB, block) && !block->isRunRarely())
+        if (!m_reachabilitySets->CanReach(fgFirstBB, block) && !block->isRunRarely())
         {
             madeChanges = true;
             block->bbSetRunRarely();
@@ -155,7 +155,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 {
     noway_assert(begBlk->bbNum <= endBlk->bbNum);
     noway_assert(begBlk->isLoopHead());
-    noway_assert(fgReachable(begBlk, endBlk));
+    noway_assert(m_reachabilitySets->CanReach(begBlk, endBlk));
     noway_assert(!opts.MinOpts());
 
 #ifdef DEBUG
@@ -213,7 +213,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
         // (since this is a loop) begBlk must likewise be reachable from curBlk.
 
-        if (fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
+        if (m_reachabilitySets->CanReach(curBlk, begBlk) && m_reachabilitySets->CanReach(begBlk, curBlk))
         {
             // If `curBlk` reaches any of the back edge blocks we set `reachable`.
             // If `curBlk` dominates any of the back edge blocks we set `dominates`.
@@ -224,7 +224,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             {
                 BasicBlock* backedge = tmp->getSourceBlock();
 
-                reachable |= fgReachable(curBlk, backedge);
+                reachable |= m_reachabilitySets->CanReach(curBlk, backedge);
                 dominates |= fgDominate(curBlk, backedge);
 
                 if (dominates && reachable)
@@ -319,7 +319,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #endif
         return;
     }
-    noway_assert(fgReachable(begBlk, endBlk));
+    noway_assert(m_reachabilitySets->CanReach(begBlk, endBlk));
 
 #ifdef DEBUG
     if (verbose)
@@ -357,7 +357,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
         // (since this is a loop) begBlk must likewise be reachable from curBlk.
         //
-        if (fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
+        if (m_reachabilitySets->CanReach(curBlk, begBlk) && m_reachabilitySets->CanReach(begBlk, curBlk))
         {
             weight_t scale = 1.0 / BB_LOOP_WEIGHT_SCALE;
 
@@ -503,17 +503,18 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
     {
         // This block must reach conditionally or always
 
-        if (block->KindIs(BBJ_ALWAYS) &&                   // This block always reaches
-            block->GetTarget()->isLoopHead() &&            // to a loop head...
-            (block->GetTarget()->bbNum <= block->bbNum) && // This is a backedge...
-            fgReachable(block->GetTarget(), block))        // Block's back edge target can reach block...
+        if (block->KindIs(BBJ_ALWAYS) &&                             // This block always reaches
+            block->GetTarget()->isLoopHead() &&                      // to a loop head...
+            (block->GetTarget()->bbNum <= block->bbNum) &&           // This is a backedge...
+            m_reachabilitySets->CanReach(block->GetTarget(), block)) // Block's back edge target can reach block...
         {
             optUnmarkLoopBlocks(block->GetTarget(), block); // Unscale the blocks in such loop.
         }
-        else if (block->KindIs(BBJ_COND) &&                         // This block conditionally reaches
-                 block->GetTrueTarget()->isLoopHead() &&            // to a loop head...
-                 (block->GetTrueTarget()->bbNum <= block->bbNum) && // This is a backedge...
-                 fgReachable(block->GetTrueTarget(), block))        // Block's back edge target can reach block...
+        else if (block->KindIs(BBJ_COND) &&                                   // This block conditionally reaches
+                 block->GetTrueTarget()->isLoopHead() &&                      // to a loop head...
+                 (block->GetTrueTarget()->bbNum <= block->bbNum) &&           // This is a backedge...
+                 m_reachabilitySets->CanReach(block->GetTrueTarget(), block)) // Block's back edge target can reach
+                                                                              // block...
         {
             optUnmarkLoopBlocks(block->GetTrueTarget(), block); // Unscale the blocks in such loop.
         }
@@ -2546,6 +2547,7 @@ NO_MORE_LOOPS:
 
     if (mod)
     {
+        fgInvalidateDfsTree();
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
@@ -3937,6 +3939,7 @@ RETRY_UNROLL:
     {
         fgDomsComputed = false;
         fgRenumberBlocks(); // For proper lexical visit
+        fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         passes++;
@@ -4647,7 +4650,7 @@ void Compiler::optMarkLoopHeads()
         printf("*************** In optMarkLoopHeads()\n");
     }
 
-    assert(fgReachabilitySetsValid);
+    assert(m_reachabilitySets != nullptr);
     fgDebugCheckBBNumIncreasing();
 
     int loopHeadsMarked = 0;
@@ -4659,10 +4662,9 @@ void Compiler::optMarkLoopHeads()
     {
         // Set BBF_LOOP_HEAD if we have backwards branches to this block.
 
-        unsigned blockNum = block->bbNum;
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if (blockNum <= predBlock->bbNum)
+            if (block->bbNum <= predBlock->bbNum)
             {
                 if (predBlock->KindIs(BBJ_CALLFINALLY))
                 {
@@ -4671,7 +4673,7 @@ void Compiler::optMarkLoopHeads()
                 }
 
                 // If block can reach predBlock then we have a loop head
-                if (BlockSetOps::IsMember(this, predBlock->bbReach, blockNum))
+                if (m_reachabilitySets->CanReach(block, predBlock))
                 {
                     hasLoops = true;
                     block->SetFlags(BBF_LOOP_HEAD);
@@ -4740,6 +4742,12 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
     // This code depends on block number ordering.
     INDEBUG(fgDebugCheckBBNumIncreasing());
 
+    assert(m_dfsTree != nullptr);
+    if (m_reachabilitySets == nullptr)
+    {
+        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
+    }
+
     unsigned generalLoopCount = 0;
 
     // We will use the following terminology:
@@ -4774,7 +4782,7 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
             }
 
             /* the top block must be able to reach the bottom block */
-            if (!fgReachable(top, bottom))
+            if (!m_reachabilitySets->CanReach(top, bottom))
             {
                 continue;
             }
@@ -4885,6 +4893,7 @@ void Compiler::optFindNewLoops()
 
     if (optCanonicalizeLoops(m_loops))
     {
+        fgInvalidateDfsTree();
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);

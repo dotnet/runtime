@@ -660,12 +660,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_CreateDumpDiagnostics, W("CreateDumpDiagnostic
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EnableDumpOnSigTerm, W("EnableDumpOnSigTerm"), 0, "Enable crash dump generation on SIGTERM")
 
 ///
-/// Zap
+/// R2R
 ///
-RETAIL_CONFIG_STRING_INFO(INTERNAL_ZapBBInstr, W("ZapBBInstr"), "")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapBBInstrDir, W("ZapBBInstrDir"), "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ZapDisable, W("ZapDisable"), 0, "")
-
 RETAIL_CONFIG_STRING_INFO(INTERNAL_NativeImageSearchPaths, W("NativeImageSearchPaths"), "Extra search paths for native composite R2R images")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ReadyToRun, W("ReadyToRun"), 1, "Enable/disable use of ReadyToRun native code") // On by default for CoreCLR
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_ReadyToRunExcludeList, W("ReadyToRunExcludeList"), "List of assemblies that cannot use Ready to Run images")

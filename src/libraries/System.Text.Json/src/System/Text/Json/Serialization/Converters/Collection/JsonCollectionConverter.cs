@@ -206,13 +206,13 @@ namespace System.Text.Json.Serialization
                     {
                         if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
                         {
-                            state.Current.PropertyState = StackFramePropertyState.ReadValue;
-
-                            if (!SingleValueReadWithReadAhead(elementConverter.RequiresReadAhead, ref reader, ref state))
+                            if (!reader.TryAdvanceWithOptionalReadAhead(elementConverter.RequiresReadAhead))
                             {
                                 value = default;
                                 return false;
                             }
+
+                            state.Current.PropertyState = StackFramePropertyState.ReadValue;
                         }
 
                         if (state.Current.PropertyState < StackFramePropertyState.ReadValueIsEnd)
@@ -246,8 +246,6 @@ namespace System.Text.Json.Serialization
 
                 if (state.Current.ObjectState < StackFrameObjectState.EndToken)
                 {
-                    state.Current.ObjectState = StackFrameObjectState.EndToken;
-
                     // Array payload is nested inside a $values metadata property.
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Values) != 0)
                     {
@@ -257,6 +255,8 @@ namespace System.Text.Json.Serialization
                             return false;
                         }
                     }
+
+                    state.Current.ObjectState = StackFrameObjectState.EndToken;
                 }
 
                 if (state.Current.ObjectState < StackFrameObjectState.EndTokenValidation)
