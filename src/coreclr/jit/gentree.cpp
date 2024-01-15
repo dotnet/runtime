@@ -18799,8 +18799,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
         CORINFO_CLASS_HANDLE currentClass = info.compCompHnd->getStaticFieldCurrentClass(fieldHnd);
         if (currentClass != NO_CLASS_HANDLE)
         {
-            assert(!eeIsValueClass(currentClass));
-
             *pIsExact   = true;
             *pIsNonNull = true;
             JITDUMP("Runtime reports field is init-only and initialized and has class %s\n",
