@@ -5303,67 +5303,79 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
     bool                 isNonNull = false;
     CORINFO_CLASS_HANDLE fromClass = gtGetClassHandle(op1, &isExact, &isNonNull);
 
-    if (fromClass != nullptr)
+    if (fromClass == nullptr)
     {
-        CORINFO_CLASS_HANDLE toClass = pResolvedToken->hClass;
-        JITDUMP("\nConsidering optimization of %s from %s%p (%s) to %p (%s)\n", isCastClass ? "castclass" : "isinst",
-                isExact ? "exact " : "", dspPtr(fromClass), eeGetClassName(fromClass), dspPtr(toClass),
-                eeGetClassName(toClass));
+        JITDUMP("\nCannot optimize since fromClass is unknown\n");
+        return nullptr;
+    }
 
-        // Perhaps we know if the cast will succeed or fail.
-        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass);
+    CORINFO_CLASS_HANDLE toClass = pResolvedToken->hClass;
+    JITDUMP("\nConsidering optimization of %s from %s%p (%s) to %p (%s)\n", isCastClass ? "castclass" : "isinst",
+            isExact ? "exact " : "", dspPtr(fromClass), eeGetClassName(fromClass), dspPtr(toClass),
+            eeGetClassName(toClass));
 
-        if (castResult == TypeCompareState::Must)
+    // Perhaps we know if the cast will succeed or fail.
+    TypeCompareState castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass);
+
+    if (castResult == TypeCompareState::Must)
+    {
+        // Cast will succeed, result is simply op1.
+        JITDUMP("Cast will succeed, optimizing to simply return input\n");
+        return op1;
+    }
+
+    if (castResult == TypeCompareState::MustNot)
+    {
+        if (isCastClass)
         {
-            // Cast will succeed, result is simply op1.
-            JITDUMP("Cast will succeed, optimizing to simply return input\n");
-            return op1;
+            // TODO-CQ: Throw cast exception inline? Probably not important.
+            JITDUMP("Cannot optimize potentially failing castclass\n");
+            return nullptr;
         }
-        else if (castResult == TypeCompareState::MustNot)
+
+        if (!isExact)
         {
-            // See if we can sharpen exactness by looking for final classes
-            if (!isExact)
+            // TODO: More efficient way to check if two type hierarchies are
+            // disjoint? (Also, compareTypesForCast(interfaceType, otherType)
+            // returning MustNot seems odd. Fix this on EE side so we can avoid
+            // this getClassAttribs call?)
+            if ((info.compCompHnd->getClassAttribs(fromClass) & CORINFO_FLG_INTERFACE) != 0)
             {
-                isExact = impIsClassExact(fromClass);
+                JITDUMP("Cannot optimize potentially failing isinst from interface type\n");
+                return nullptr;
             }
 
-            // Cast to exact type will fail. Handle case where we have
-            // an exact type (that is, fromClass is not a subtype)
-            // and we're not going to throw on failure.
-            if (isExact && !isCastClass)
+            if ((info.compCompHnd->getClassAttribs(toClass) & CORINFO_FLG_INTERFACE) != 0)
             {
-                JITDUMP("Cast will fail, optimizing to return null\n");
-
-                // If the cast was fed by a box, we can remove that too.
-                if (op1->IsBoxedValue())
-                {
-                    JITDUMP("Also removing upstream box\n");
-                    gtTryRemoveBoxUpstreamEffects(op1);
-                }
-
-                if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
-                {
-                    impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
-                }
-                return gtNewNull();
+                JITDUMP("Cannot optimize potentially failing isinst to interface type\n");
+                return nullptr;
             }
-            else if (isExact)
+
+            if (info.compCompHnd->compareTypesForCast(toClass, fromClass) != TypeCompareState::MustNot)
             {
-                JITDUMP("Not optimizing failing castclass (yet)\n");
-            }
-            else
-            {
-                JITDUMP("Can't optimize since fromClass is inexact\n");
+                JITDUMP("Cannot optimize potentially failing isinst: derived type cast may succeed\n");
+                return nullptr;
             }
         }
-        else
+
+        JITDUMP("Cast will fail, optimizing to return null\n");
+
+        // If the cast was fed by a box, we can remove that too.
+        if (op1->IsBoxedValue())
         {
-            JITDUMP("Result of cast unknown, must generate runtime test\n");
+            JITDUMP("Also removing upstream box\n");
+            gtTryRemoveBoxUpstreamEffects(op1);
         }
+
+        if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
+        {
+            impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+        }
+        return gtNewNull();
     }
     else
     {
-        JITDUMP("\nCan't optimize since fromClass is unknown\n");
+        JITDUMP("Result of cast unknown, must generate runtime test\n");
     }
 
     return nullptr;
