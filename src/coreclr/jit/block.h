@@ -1302,7 +1302,7 @@ public:
 
     void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
 
-    unsigned bbPreorderNum;  // the block's  preorder number in the graph (1...fgMaxBBNum]
+    unsigned bbPreorderNum;  // the block's  preorder number in the graph [0...postOrderCount)
     unsigned bbPostorderNum; // the block's postorder number in the graph [0...postOrderCount)
 
     IL_OFFSET bbCodeOffs;    // IL offset of the beginning of the block
