@@ -5317,68 +5317,69 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
     // Perhaps we know if the cast will succeed or fail.
     TypeCompareState castResult = info.compCompHnd->compareTypesForCast(fromClass, toClass);
 
+    if (castResult == TypeCompareState::May)
+    {
+        JITDUMP("Result of cast unknown, must generate runtime test\n");
+        return nullptr;
+    }
+
     if (castResult == TypeCompareState::Must)
     {
-        // Cast will succeed, result is simply op1.
+        // Even if op1 is more derived we know that it will still succeed.
         JITDUMP("Cast will succeed, optimizing to simply return input\n");
         return op1;
     }
 
-    if (castResult == TypeCompareState::MustNot)
+    assert(castResult == TypeCompareState::MustNot);
+    if (isCastClass)
     {
-        if (isCastClass)
+        // TODO-CQ: Throw cast exception inline? Probably not important.
+        JITDUMP("Cannot optimize potentially failing castclass\n");
+        return nullptr;
+    }
+
+    // We know that an object of type fromClass cannot be cast to toClass, but
+    // if it is more derived it could still succeed a cast.
+    if (!isExact)
+    {
+        // We can still fail some type casts if they are between two types that
+        // belong to disjoint type hierarchies.
+        // TODO: compareTypesForCast(interfaceType, otherType) returning
+        // MustNot seems less useful than just having it return May. If we
+        // change this on EE side we can avoid these getClassAttribs calls.
+        if ((info.compCompHnd->getClassAttribs(fromClass) & CORINFO_FLG_INTERFACE) != 0)
         {
-            // TODO-CQ: Throw cast exception inline? Probably not important.
-            JITDUMP("Cannot optimize potentially failing castclass\n");
+            JITDUMP("Cannot optimize potentially failing isinst from interface type\n");
             return nullptr;
         }
 
-        if (!isExact)
+        if ((info.compCompHnd->getClassAttribs(toClass) & CORINFO_FLG_INTERFACE) != 0)
         {
-            // TODO: More efficient way to check if two type hierarchies are
-            // disjoint? (Also, compareTypesForCast(interfaceType, otherType)
-            // returning MustNot seems odd. Fix this on EE side so we can avoid
-            // this getClassAttribs call?)
-            if ((info.compCompHnd->getClassAttribs(fromClass) & CORINFO_FLG_INTERFACE) != 0)
-            {
-                JITDUMP("Cannot optimize potentially failing isinst from interface type\n");
-                return nullptr;
-            }
-
-            if ((info.compCompHnd->getClassAttribs(toClass) & CORINFO_FLG_INTERFACE) != 0)
-            {
-                JITDUMP("Cannot optimize potentially failing isinst to interface type\n");
-                return nullptr;
-            }
-
-            if (info.compCompHnd->compareTypesForCast(toClass, fromClass) != TypeCompareState::MustNot)
-            {
-                JITDUMP("Cannot optimize potentially failing isinst: derived type cast may succeed\n");
-                return nullptr;
-            }
+            JITDUMP("Cannot optimize potentially failing isinst to interface type\n");
+            return nullptr;
         }
 
-        JITDUMP("Cast will fail, optimizing to return null\n");
-
-        // If the cast was fed by a box, we can remove that too.
-        if (op1->IsBoxedValue())
+        if (info.compCompHnd->compareTypesForCast(toClass, fromClass) != TypeCompareState::MustNot)
         {
-            JITDUMP("Also removing upstream box\n");
-            gtTryRemoveBoxUpstreamEffects(op1);
+            JITDUMP("Cannot optimize potentially failing isinst: derived type cast may succeed\n");
+            return nullptr;
         }
-
-        if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
-        {
-            impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
-        }
-        return gtNewNull();
     }
-    else
+
+    JITDUMP("Cast will fail, optimizing to return null\n");
+
+    // If the cast was fed by a box, we can remove that too.
+    if (op1->IsBoxedValue())
     {
-        JITDUMP("Result of cast unknown, must generate runtime test\n");
+        JITDUMP("Also removing upstream box\n");
+        gtTryRemoveBoxUpstreamEffects(op1);
     }
 
-    return nullptr;
+    if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
+    {
+        impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+    }
+    return gtNewNull();
 }
 
 //------------------------------------------------------------------------
