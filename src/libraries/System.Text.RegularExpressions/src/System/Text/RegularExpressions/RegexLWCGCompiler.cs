@@ -24,8 +24,8 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         private static readonly bool s_includePatternInName = Environment.GetEnvironmentVariable(IncludePatternInNamesEnvVar) == "1";
 
-        /// <summary>Parameter types for the generated Go and FindFirstChar methods.</summary>
-        private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) };
+        /// <summary>Parameter types for the generated TryFindNextPossibleStartingPosition and TryMatchAtCurrentPosition methods.</summary>
+        private static readonly Type[] s_paramTypes = [typeof(RegexRunner), typeof(ReadOnlySpan<char>)];
 
         /// <summary>Id number to use for the next compiled regex.</summary>
         private static int s_regexCount;
@@ -60,7 +60,7 @@ namespace System.Text.RegularExpressions
             DynamicMethod tryMatchAtCurrentPositionMethod = DefineDynamicMethod($"Regex{regexNum}_TryMatchAtCurrentPosition{description}", typeof(bool), typeof(CompiledRegexRunner), s_paramTypes);
             EmitTryMatchAtCurrentPosition();
 
-            DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), new[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) });
+            DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), [typeof(RegexRunner), typeof(ReadOnlySpan<char>)]);
             EmitScan(options, tryfindNextPossibleStartPositionMethod, tryMatchAtCurrentPositionMethod);
 
             return new CompiledRegexRunnerFactory(scanMethod, _searchValues?.ToArray(), regexTree.Culture);

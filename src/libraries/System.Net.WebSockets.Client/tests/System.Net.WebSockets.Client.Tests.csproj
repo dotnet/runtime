@@ -15,8 +15,11 @@
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
 
-    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-wasm.targets -->
+    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
+
+    <!-- Active issue https://github.com/dotnet/runtime/issues/96173 -->
+    <_XUnitBackgroundExec>false</_XUnitBackgroundExec>
   </PropertyGroup>
 
   <ItemGroup>

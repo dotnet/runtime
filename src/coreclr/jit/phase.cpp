@@ -170,6 +170,11 @@ void Phase::PostPhase(PhaseStatus status)
         {
             comp->fgDebugCheckLinkedLocals();
         }
+
+        if (comp->m_dfsTree != nullptr)
+        {
+            comp->fgDebugCheckDfsTree();
+        }
     }
 #endif // DEBUG
 }

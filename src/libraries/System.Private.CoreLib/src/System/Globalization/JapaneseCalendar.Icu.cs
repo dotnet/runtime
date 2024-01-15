@@ -8,7 +8,7 @@ namespace System.Globalization
 {
     public partial class JapaneseCalendar : Calendar
     {
-        private static readonly string [] s_abbreviatedEnglishEraNames = { "M", "T", "S", "H", "R" };
+        private static readonly string[] s_abbreviatedEnglishEraNames = { "M", "T", "S", "H", "R" };
 
         private static EraInfo[]? IcuGetJapaneseEras()
         {

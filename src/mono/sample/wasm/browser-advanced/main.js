@@ -7,6 +7,10 @@ function add(a, b) {
     return a + b;
 }
 
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 let testAbort = true;
 let testError = true;
 
@@ -32,6 +36,7 @@ try {
         // It is preferred to use specific 'with***' methods instead in all other cases.
         .withConfig({
             startupMemoryCache: true,
+            maxParallelDownloads: 1,
             resources: {
                 modulesAfterConfigLoaded: {
                     "advanced-sample.lib.module.js": ""
@@ -71,7 +76,8 @@ try {
     setModuleImports("main.js", {
         Sample: {
             Test: {
-                add
+                add,
+                delay,
             }
         }
     });
@@ -89,6 +95,9 @@ try {
     if (!exports.Sample.Test.IsPrime(meaning)) {
         document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;
     }
+
+    const deepMeaning = new Promise(resolve => setTimeout(() => resolve(meaning), 100));
+    exports.Sample.Test.PrintMeaning(deepMeaning);
 
     let exit_code = await runMain(config.mainAssemblyName, []);
     exit(exit_code);

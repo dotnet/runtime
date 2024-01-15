@@ -91,6 +91,26 @@ inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
     return returnKind;
 }
 
+#elif defined(TARGET_ARM)
+
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_R0_IS_GCREF == ((uint64_t)GCRK_Object << 14));
+C_ASSERT(PTFF_R0_IS_BYREF == ((uint64_t)GCRK_Byref << 14));
+
+inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    // just need to report gc ref bits here.
+    // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
+    return ((uint64_t)returnKind << 14);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_R0_IS_GCREF | PTFF_R0_IS_BYREF)) >> 14);
+    ASSERT((returnKind == GCRK_Scalar) || (transFrameFlags & PTFF_SAVE_R0));
+    return returnKind;
+}
+
 #endif
 
 // Extract individual GCRefKind components from a composite return kind

@@ -612,7 +612,7 @@ namespace System.Xml
 
             if (needWrap)
             {
-                if ( baseReader is IXmlNamespaceResolver readerAsNsResolver)
+                if (baseReader is IXmlNamespaceResolver readerAsNsResolver)
                 {
                     return new XmlCharCheckingReaderWithNS(baseReader, readerAsNsResolver, checkChars, noWhitespace, noComments, noPIs, dtdProc);
                 }

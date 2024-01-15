@@ -569,7 +569,7 @@ namespace Microsoft.Interop
                     .Where(context => context.UnmanagedToManagedStub.Diagnostics.All(diag => diag.Descriptor.DefaultSeverity != DiagnosticSeverity.Error))
                     .Select(context => context.GenerationContext),
                 vtableLocalName,
-                ComInterfaceGeneratorHelpers.GetGeneratorFactory);
+                ComInterfaceGeneratorHelpers.GetGeneratorResolver);
 
             return ImplementationInterfaceTemplate
                 .AddMembers(

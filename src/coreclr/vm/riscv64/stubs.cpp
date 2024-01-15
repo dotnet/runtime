@@ -4,7 +4,7 @@
 // File: stubs.cpp
 //
 // This file contains stub functions for unimplemented features need to
-// run on the ARM64 platform.
+// run on the RISCV64 platform.
 
 #include "common.h"
 #include "dllimportcallback.h"
@@ -985,7 +985,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
 
 void FlushWriteBarrierInstructionCache()
 {
-    // this wouldn't be called in arm64, just to comply with gchelpers.h
+    // this wouldn't be called in riscv64, just to comply with gchelpers.h
 }
 
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)

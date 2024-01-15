@@ -830,7 +830,7 @@ ClrDataFrame::GetArgumentByIndex(
                     *nameLen = 5;
                 }
 
-                StringCchCopy(name, bufLen, W("this"));
+                u16_strcpy_s(name, bufLen, W("this"));
             }
             else
             {

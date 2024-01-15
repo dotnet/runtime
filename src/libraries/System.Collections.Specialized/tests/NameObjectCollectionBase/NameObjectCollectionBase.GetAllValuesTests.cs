@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class GetAllValuesTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData(0, typeof(object))]
         [InlineData(0, typeof(Foo))]
         [InlineData(10, typeof(object))]
@@ -33,7 +33,7 @@ namespace System.Collections.Specialized.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public static void GetAllValues_Invalid()
         {
             MyNameObjectCollection nameObjectCollection = new MyNameObjectCollection();

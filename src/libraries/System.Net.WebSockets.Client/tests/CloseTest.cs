@@ -224,7 +224,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/83517", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [SkipOnPlatform(TestPlatforms.Browser, "This never really worked for browser, it was just lucky timing that browser's `close` event was executed in next browser tick, for this test. See also https://github.com/dotnet/runtime/issues/45538")]
         public async Task CloseOutputAsync_ClientInitiated_CanReceive_CanClose(Uri server)
         {
             string message = "Hello WebSockets!";
@@ -233,8 +233,7 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
-                // See issue for Browser websocket differences https://github.com/dotnet/runtime/issues/45538
-                var closeStatus = PlatformDetection.IsBrowser ? WebSocketCloseStatus.NormalClosure : WebSocketCloseStatus.InvalidPayloadData;
+                var closeStatus = WebSocketCloseStatus.InvalidPayloadData;
                 string closeDescription = "CloseOutputAsync_Client_InvalidPayloadData";
 
                 await cws.SendAsync(WebSocketData.GetBufferFromText(message), WebSocketMessageType.Text, true, cts.Token);

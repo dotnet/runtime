@@ -56,6 +56,7 @@ namespace Internal.JitInterface
             ARM = 0x01c4,
             ARM64 = 0xaa64,
             LoongArch64 = 0x6264,
+            RiscV64 = 0x5064,
         }
 
         internal const string JitLibrary = "clrjitilc";
@@ -3233,7 +3234,7 @@ namespace Internal.JitInterface
         public static CORINFO_OS TargetToOs(TargetDetails target)
         {
             return target.IsWindows ? CORINFO_OS.CORINFO_WINNT :
-                   target.IsOSXLike ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
+                   target.IsApplePlatform ? CORINFO_OS.CORINFO_APPLE : CORINFO_OS.CORINFO_UNIX;
         }
 
         private void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
@@ -3883,6 +3884,19 @@ namespace Internal.JitInterface
                             return 0;
                     }
                 }
+                case TargetArchitecture.RiscV64:
+                {
+                    const ushort IMAGE_REL_RISCV64_PC = 3;
+
+                    switch (fRelocType)
+                    {
+                        case IMAGE_REL_RISCV64_PC:
+                            return RelocType.IMAGE_REL_BASED_RISCV64_PC;
+                        default:
+                            Debug.Fail("Invalid RelocType: " + fRelocType);
+                            return 0;
+                    }
+                }
                 default:
                     return (RelocType)fRelocType;
             }
@@ -3984,6 +3998,8 @@ namespace Internal.JitInterface
                     return (uint)ImageFileMachine.ARM64;
                 case TargetArchitecture.LoongArch64:
                     return (uint)ImageFileMachine.LoongArch64;
+                case TargetArchitecture.RiscV64:
+                    return (uint)ImageFileMachine.RiscV64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }

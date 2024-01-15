@@ -70,7 +70,7 @@ namespace System
 
             for (int i = 0; i < mainMethodArgs.Length; i++)
             {
-                 commandLineArgs[i + 1] = mainMethodArgs[i] = new string(argv[i]);
+                commandLineArgs[i + 1] = mainMethodArgs[i] = new string(argv[i]);
             }
 
             s_commandLineArgs = commandLineArgs;

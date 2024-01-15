@@ -104,7 +104,7 @@ The various task inputs correspond to properties as:
 
 This should be a step towards eventually having this build as a sdk.
 
-Refer to `WasmApp.targets` for more information about the properties/items used as inputs to the process.
+Refer to `BrowserWasmApp.targets` for more information about the properties/items used as inputs to the process.
 
 ## Updating dependencies needed for building wasm apps
 

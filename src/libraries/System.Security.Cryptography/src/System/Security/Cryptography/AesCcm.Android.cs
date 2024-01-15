@@ -179,10 +179,10 @@ namespace System.Security.Cryptography
         {
             return keySizeInBits switch
             {
-                 128 => Interop.Crypto.EvpAes128Ccm(),
-                 192 => Interop.Crypto.EvpAes192Ccm(),
-                 256 => Interop.Crypto.EvpAes256Ccm(),
-                 _ => IntPtr.Zero
+                128 => Interop.Crypto.EvpAes128Ccm(),
+                192 => Interop.Crypto.EvpAes192Ccm(),
+                256 => Interop.Crypto.EvpAes256Ccm(),
+                _ => IntPtr.Zero
             };
         }
 

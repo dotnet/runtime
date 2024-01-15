@@ -20,7 +20,7 @@ namespace System.Diagnostics
             int hash = 5381;
             hash = ((hash << 5) + hash) + TraceId.GetHashCode();
             hash = ((hash << 5) + hash) + SpanId.GetHashCode();
-            hash = ((hash << 5) + hash) + (int) TraceFlags;
+            hash = ((hash << 5) + hash) + (int)TraceFlags;
             hash = ((hash << 5) + hash) + (TraceState == null ? 0 : TraceState.GetHashCode());
 
             return hash;
