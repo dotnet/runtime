@@ -18,7 +18,8 @@ namespace System.Net.WebSockets
 
         public static WebSocketCloseStatus? GetCloseStatus(JSObject? webSocket)
         {
-            if (webSocket == null || webSocket.IsDisposed) return null;
+            if (webSocket == null || webSocket.IsDisposed)
+                return null;
             if (!webSocket.HasProperty("close_status"))
             {
                 return null;
