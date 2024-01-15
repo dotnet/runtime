@@ -16499,6 +16499,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 code = insEncodeSveElemsize_dtype(ins, optGetSveElemsize(id->idInsOpt()), code);
             }
+
             dst += emitOutput_Instr(dst, code);
             break;
 

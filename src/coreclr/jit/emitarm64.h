@@ -1019,11 +1019,13 @@ inline static bool insOptsScalableWide(insOpts opt)
 
 inline static bool insScalableOptsNone(insScalableOpts sopt)
 {
+    // `sopt` is used for instructions with no extra encoding variants.
     return sopt == INS_SCALABLE_OPTS_NONE;
 }
 
 inline static bool insScalableOptsWithPredicatePair(insScalableOpts sopt)
 {
+    // `sopt` denotes the instruction's predicate register should be encoded as a {<Pd1>.<T>, <Pd2>.<T>} pair.
     return sopt == INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR;
 }
 

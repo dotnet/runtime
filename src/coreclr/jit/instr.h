@@ -270,6 +270,12 @@ enum insOpts : unsigned
     INS_OPTS_1D,
     INS_OPTS_2D,
 
+    INS_OPTS_SCALABLE_B,
+    INS_OPTS_SCALABLE_H,
+    INS_OPTS_SCALABLE_S,
+    INS_OPTS_SCALABLE_D,
+    INS_OPTS_SCALABLE_Q,
+
     INS_OPTS_MSL,         // Vector Immediate (shifting ones variant)
 
     INS_OPTS_S_TO_4BYTE,  // Single to INT32
@@ -294,16 +300,8 @@ enum insOpts : unsigned
     INS_OPTS_D_TO_H,      // Double to Half
 
 #if FEATURE_LOOP_ALIGN
-    INS_OPTS_ALIGN,       // Align instruction
+    INS_OPTS_ALIGN        // Align instruction
 #endif
-
-    // There should be no overlap between non-SVE and SVE values,
-    // so reset value to 1 here
-    INS_OPTS_SCALABLE_B = 1,
-    INS_OPTS_SCALABLE_H,
-    INS_OPTS_SCALABLE_S,
-    INS_OPTS_SCALABLE_D,
-    INS_OPTS_SCALABLE_Q,
 };
 
 // When a single instruction has different encodings variants, this is used
