@@ -1,7 +1,6 @@
 v1.8.0
 https://github.com/libunwind/libunwind/commit/2c2566c79c4f9cb505e6a23e4ab884d856ef88fe
 
-Apply https://github.com/libunwind/libunwind/pull/699
 Apply https://github.com/libunwind/libunwind/pull/700
 Apply https://github.com/libunwind/libunwind/pull/701
 Apply https://github.com/libunwind/libunwind/pull/703

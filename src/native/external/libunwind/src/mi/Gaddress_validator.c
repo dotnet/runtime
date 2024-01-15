@@ -70,7 +70,6 @@ _do_pipe2 (int pipefd[2])
     }
   _set_pipe_flags(pipefd[0]);
   _set_pipe_flags(pipefd[1]);
-  return 0;
 }
 #endif
 
