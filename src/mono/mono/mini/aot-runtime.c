@@ -862,16 +862,15 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	guint8 *p = buf;
 	gboolean hasthis, explicit_this, has_gen_params, pinvoke;
 
-	flags = *p;
-	p ++;
+	flags = decode_value (p, &p);
 	has_gen_params = (flags & 0x10) != 0;
 	hasthis = (flags & 0x20) != 0;
-	explicit_this = (flags & 0x40) != 0;
-	pinvoke = (flags & 0x80) != 0;
+	pinvoke = (flags & 0x40) != 0;
+	explicit_this = (flags & 0x80) != 0;
 	call_conv = flags & 0x0F;
 
-	ext_callconv = *p;
-	p ++;
+	if ((flags & 0x100) != 0)
+		ext_callconv = GINT32_TO_UINT8 (decode_value (p, &p));
 
 	if (has_gen_params)
 		gen_param_count = decode_value (p, &p);
