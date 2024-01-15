@@ -2398,25 +2398,29 @@ namespace Internal.JitInterface
 
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
         {
-            if (pIsSpeculative != null)
-                *pIsSpeculative = 1;
+            Debug.Assert(pIsSpeculative == null); // To be deleted
 
             FieldDesc fieldDesc = HandleToObject(field);
 
             if (fieldDesc.IsStatic && !fieldDesc.IsThreadStatic && fieldDesc.OwningType is MetadataType owningType &&
-                !fieldDesc.FieldType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                !owningType.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                if (pIsSpeculative != null && _compilation.IsInitOnly(fieldDesc))
+                // Generally, this API is only used for reference types to provide better information to the JIT
+                // for possible devirtualizations. Value types are usually handled separately and folded to constants
+                // via getStaticFieldContent. However, some artificial RVA fields aren't foldable (e.g. cpuFeatures)
+                // so let's tell the JIT it can rely on them being invariant too.
+                if (fieldDesc.HasRva)
                 {
-                    // RVA -> initialized
-                    // No cctor -> initialized (to its default value)
-                    // Preinitialized cctor -> initialized
-                    if (fieldDesc.HasRva || !owningType.HasStaticConstructor || _compilation.NodeFactory.PreinitializationManager.IsPreinitialized(owningType))
-                    {
-                        *pIsSpeculative = 0;
-                    }
+                    Debug.Assert(fieldDesc.FieldType.IsValueType);
+                    return ObjectToHandle(fieldDesc.FieldType);
                 }
-                return ObjectToHandle(owningType);
+
+                PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
+                if (!fieldDesc.FieldType.IsValueType && preinitManager.IsPreinitialized(owningType) &&
+                    preinitManager.GetPreinitializationInfo(owningType).GetFieldValue(fieldDesc) != null)
+                {
+                    return ObjectToHandle(fieldDesc.FieldType);
+                }
             }
             return null;
         }

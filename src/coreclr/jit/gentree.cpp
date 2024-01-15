@@ -18809,27 +18809,20 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
 #endif // DEBUG
 
             // Is this a fully initialized init-only static field?
-            //
-            // Note we're not asking for speculative results here, yet.
             CORINFO_CLASS_HANDLE currentClass = info.compCompHnd->getStaticFieldCurrentClass(fieldHnd);
-
             if (currentClass != NO_CLASS_HANDLE)
             {
                 // Yes! We know the class exactly and can rely on this to always be true.
                 fieldClass  = currentClass;
                 *pIsExact   = true;
                 *pIsNonNull = true;
-#ifdef DEBUG
-                char buffer[128];
                 JITDUMP("Runtime reports field is init-only and initialized and has class %s\n",
-                        eeGetClassName(fieldClass, buffer, sizeof(buffer)));
-#endif
+                        eeGetClassName(fieldClass));
             }
             else
             {
                 JITDUMP("Field's current class not available\n");
             }
-
             return fieldClass;
         }
     }

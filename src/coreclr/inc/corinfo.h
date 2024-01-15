@@ -3268,20 +3268,11 @@ public:
             int                     valueOffset
             ) = 0;
 
-    // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed
-    // static readonly fields, if there is a unique location for the static and the class
-    // is already initialized.
-    //
-    // If pIsSpeculative is not NULL, fetch the class handle for the value of all ref-class
-    // typed static fields, if there is a unique location for the static and the field is
-    // not null.
-    //
-    // Set *pIsSpeculative true if this type may change over time (field is not readonly or
-    // is readonly but class has not yet finished initialization). Set *pIsSpeculative false
-    // if this type will not change.
+    // Return field's exact type if its value is known to be never changed and is not null.
+    // E.g. static readonly in an initialized class. Returns nullptr otherwise.
     virtual CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
             CORINFO_FIELD_HANDLE    field,
-            bool                   *pIsSpeculative = NULL
+            bool                   *pIsSpeculative = NULL // unused, to be deleted
             ) = 0;
 
     // registers a vararg sig & returns a VM cookie for it (which can contain other stuff)

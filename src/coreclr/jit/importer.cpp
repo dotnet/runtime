@@ -3936,17 +3936,16 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
         default:
         {
             bool isStaticReadOnlyInited = false;
+            bool isStaticReadNotNull    = false;
 
 #ifdef TARGET_64BIT
             // TODO-CQ: enable this optimization for 32 bit targets.
-            if (!isBoxedStatic && ((access & CORINFO_ACCESS_GET) != 0) && ((*pIndirFlags & GTF_IND_VOLATILE) == 0))
+            if (!isBoxedStatic && ((access & CORINFO_ACCESS_GET) != 0) && ((*pIndirFlags & GTF_IND_VOLATILE) == 0) &&
+                (info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField) != NO_CLASS_HANDLE))
             {
-                bool isSpeculative = true;
-                if ((info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative) !=
-                     NO_CLASS_HANDLE))
-                {
-                    isStaticReadOnlyInited = !isSpeculative;
-                }
+                isStaticReadOnlyInited = true;
+                isStaticReadNotNull    = lclTyp == TYP_REF;
+                // if it's not TYP_REF then its value could be 0 so don't append GTF_IND_NONNULL flag.
             }
 #endif // TARGET_64BIT
 
@@ -3972,6 +3971,10 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             if (isStaticReadOnlyInited)
             {
                 indirFlags |= GTF_IND_INVARIANT;
+                if (isStaticReadNotNull)
+                {
+                    indirFlags |= GTF_IND_NONNULL;
+                }
             }
             break;
         }

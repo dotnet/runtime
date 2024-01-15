@@ -11806,10 +11806,8 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE
 
     CORINFO_CLASS_HANDLE result = NULL;
 
-    if (pIsSpeculative != NULL)
-    {
-        *pIsSpeculative = true;
-    }
+    // TODO: delete
+    _ASSERT(pIsSpeculative == NULL);
 
     JIT_TO_EE_TRANSITION();
 
@@ -11853,19 +11851,10 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE
     {
         // Figure out what to report back.
         bool isResultImmutable = isClassInitialized && IsFdInitOnly(field->GetAttributes());
-
-        if (pIsSpeculative != NULL)
+        // Caller only wants to see immutable results.
+        if (!isResultImmutable)
         {
-            // Caller is ok with potentially mutable results.
-            *pIsSpeculative = !isResultImmutable;
-        }
-        else
-        {
-            // Caller only wants to see immutable results.
-            if (!isResultImmutable)
-            {
-                result = NULL;
-            }
+            result = NULL;
         }
     }
 
