@@ -50,7 +50,7 @@ namespace System.Net.WebSockets
 #if FEATURE_WASM_THREADS
                 return _innerWebSocket!.SynchronizationContext.Send(GetReadyState, this);
 #else
-                return FastState = GetReadyState(this);
+                return GetReadyState(this);
 #endif
             }
         }
@@ -648,6 +648,7 @@ namespace System.Net.WebSockets
                         st = WebSocketState.CloseSent;
                     }
                 }
+                self.FastState = st;
                 return st;
 #if FEATURE_WASM_THREADS
             } //lock
