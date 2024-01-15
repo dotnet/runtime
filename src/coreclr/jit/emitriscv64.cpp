@@ -2845,7 +2845,7 @@ BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruc
 
 BYTE* emitter::emitOutputInstr_OptsI(BYTE* dst, const instrDesc* id)
 {
-    ssize_t         immediate = BitCast<ssize_t>(id->idAddr()->iiaAddr);
+    ssize_t         immediate = reinterpret_cast<ssize_t>(id->idAddr()->iiaAddr);
     const regNumber reg1      = id->idReg1();
 
     switch (id->idCodeSize())
@@ -2919,7 +2919,7 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
 
 BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, regNumber reg1)
 {
-    ssize_t immediate = BitCast<ssize_t>(emitConsBlock) - BitCast<ssize_t>(dst);
+    ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) - reinterpret_cast<ssize_t>(dst);
     assert(immediate > 0);
     assert((immediate & 0x03) == 0);
 
@@ -2939,7 +2939,7 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, regNumbe
 
 BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
-    ssize_t immediate = BitCast<ssize_t>(emitConsBlock) + offset;
+    ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) + offset;
     assert((immediate >> 40) == 0);
     regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
@@ -2973,7 +2973,7 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
 
 BYTE* emitter::emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber reg1)
 {
-    ssize_t immediate = BitCast<ssize_t>(emitCodeBlock) + igOffs - BitCast<ssize_t>(dst);
+    ssize_t immediate = reinterpret_cast<ssize_t>(emitCodeBlock) + igOffs - reinterpret_cast<ssize_t>(dst);
     assert((immediate & 0x03) == 0);
 
     dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
@@ -2983,7 +2983,7 @@ BYTE* emitter::emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber 
 
 BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1)
 {
-    ssize_t immediate = BitCast<ssize_t>(emitCodeBlock) + igOffs;
+    ssize_t immediate = reinterpret_cast<ssize_t>(emitCodeBlock) + igOffs;
     assert((immediate >> (32 + 20)) == 0);
 
     regNumber rsvdReg      = codeGen->rsGetRsvdReg();
