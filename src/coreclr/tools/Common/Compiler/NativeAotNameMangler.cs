@@ -286,8 +286,7 @@ namespace ILCompiler
                 default:
                     // Case of a generic type. If `type' is a type definition we use the type name
                     // for mangling, otherwise we use the mangling of the type and its generic type
-                    // parameters, e.g. A <B> becomes A_<___B_>_ in RyuJIT compilation, or A_A___B_V_
-                    // in C++ compilation.
+                    // parameters, e.g. A <B> becomes A_<___B_>_.
                     var typeDefinition = type.GetTypeDefinition();
                     if (typeDefinition != type)
                     {
