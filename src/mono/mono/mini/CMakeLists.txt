@@ -658,3 +658,6 @@ if(NOT DISABLE_EXECUTABLES)
 
   install_with_stripped_symbols(mono-sgen TARGETS bin)
 endif()
+configure_file(
+  ${CLR_SRC_NATIVE_DIR}/libs/Common/pal_config.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/pal_config.h)
