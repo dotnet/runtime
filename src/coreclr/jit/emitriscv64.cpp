@@ -3023,9 +3023,6 @@ BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insG
 
 BYTE* emitter::emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate)
 {
-    assert((INS_blt <= ins && ins <= INS_bgeu) || (INS_beq == ins) || (INS_bne == ins) || (INS_bnez == ins) ||
-           (INS_beqz == ins));
-
     regNumber reg2 = ((ins != INS_beqz) && (ins != INS_bnez)) ? jmp->idReg2() : REG_R0;
 
     dst += emitOutput_BTypeInstr_InvertComparation(dst, ins, jmp->idReg1(), reg2, 0x8);
