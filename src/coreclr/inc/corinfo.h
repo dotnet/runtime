@@ -3268,8 +3268,8 @@ public:
             int                     valueOffset
             ) = 0;
 
-    // Return field's exact type if its value is known to be never changed and is not null.
-    // E.g. static readonly in an initialized class. Returns nullptr otherwise.
+    // Return field's exact type if its value is known to be never changed and
+    // is not null (for reference types). Returns nullptr otherwise.
     virtual CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
             CORINFO_FIELD_HANDLE    field,
             bool                   *pIsSpeculative = NULL // unused, to be deleted

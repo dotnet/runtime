@@ -2405,12 +2405,14 @@ namespace Internal.JitInterface
             if (fieldDesc.IsStatic && !fieldDesc.IsThreadStatic && fieldDesc.OwningType is MetadataType owningType &&
                 !owningType.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                // Generally, this API is only used for reference types to provide better information to the JIT
-                // for possible devirtualizations. Value types are usually handled separately and folded to constants
-                // via getStaticFieldContent. However, some artificial RVA fields aren't foldable (e.g. cpuFeatures)
-                // so let's tell the JIT it can rely on them being invariant too.
+                // Generally, this API is only used for reference types to provide better information
+                // to the JIT for possible devirtualizations. Value types are typically handled
+                // separately and folded to constants via getStaticFieldContent. However, some
+                // fields aren't foldable (e.g. ExternSymbolMappedField), so let's tell the JIT
+                // it can rely on them being invariant too.
                 if (fieldDesc.HasRva)
                 {
+                    // Read-only RVA fields need no "is class initialized" check.
                     Debug.Assert(fieldDesc.FieldType.IsValueType);
                     return ObjectToHandle(fieldDesc.FieldType);
                 }
