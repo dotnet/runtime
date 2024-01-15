@@ -140,7 +140,7 @@ namespace ILCompiler.ObjectWriter
 
         public DwarfExpressionBuilder GetExpressionBuilder()
         {
-            _expressionBufferWriter.Clear();
+            _expressionBufferWriter.ResetWrittenCount();
             return new DwarfExpressionBuilder(TargetArchitecture, TargetPointerSize, _expressionBufferWriter);
         }
 
