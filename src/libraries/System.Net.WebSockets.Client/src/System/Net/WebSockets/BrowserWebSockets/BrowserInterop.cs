@@ -11,7 +11,7 @@ namespace System.Net.WebSockets
     {
         public static string? GetProtocol(JSObject? webSocket)
         {
-            if (webSocket == null || webSocket.IsDisposed) 
+            if (webSocket == null || webSocket.IsDisposed)
             {
                 return null;
             }
@@ -48,7 +48,7 @@ namespace System.Net.WebSockets
 
         public static int GetReadyState(JSObject? webSocket)
         {
-            if (webSocket == null || webSocket.IsDisposed) 
+            if (webSocket == null || webSocket.IsDisposed)
             {
                 return -1;
             }
