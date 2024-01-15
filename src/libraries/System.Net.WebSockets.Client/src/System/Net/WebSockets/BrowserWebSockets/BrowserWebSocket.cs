@@ -248,8 +248,7 @@ namespace System.Net.WebSockets
 
             } // lock
 
-            // if this is finalizer thread, we need to postpone the abort -> dispose
-            _innerWebSocket?.SynchronizationContext.Post(static _state =>
+            static void Cleanup(object? _state)
             {
                 var self = (BrowserWebSocket)_state!;
                 var state = self.State;
@@ -264,11 +263,17 @@ namespace System.Net.WebSockets
                         // This will reject/resolve some promises
                         BrowserInterop.WebSocketAbort(self._innerWebSocket!);
                     }
-                    self._innerWebSocket?.Dispose();
-                    self.responseStatusHandle?.Dispose();
                 }
+                self._innerWebSocket?.Dispose();
+                self.responseStatusHandle?.Dispose();
+            }
 
-            }, this);
+#if FEATURE_WASM_THREADS
+            // if this is finalizer thread, we need to postpone the abort -> dispose
+            _innerWebSocket?.SynchronizationContext.Post(Cleanup, this);
+#else
+            Cleanup();
+#endif
         }
 
         private void ThrowIfDisposed()

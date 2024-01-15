@@ -11,7 +11,11 @@ namespace System.Net.WebSockets
     {
         public static string? GetProtocol(JSObject? webSocket)
         {
-            if (webSocket == null || webSocket.IsDisposed) return null;
+            if (webSocket == null || webSocket.IsDisposed) 
+            {
+                return null;
+            }
+
             string? protocol = webSocket.GetPropertyAsString("protocol");
             return protocol;
         }
@@ -19,11 +23,14 @@ namespace System.Net.WebSockets
         public static WebSocketCloseStatus? GetCloseStatus(JSObject? webSocket)
         {
             if (webSocket == null || webSocket.IsDisposed)
+            {
                 return null;
+            }
             if (!webSocket.HasProperty("close_status"))
             {
                 return null;
             }
+
             int status = webSocket.GetPropertyAsInt32("close_status");
             return (WebSocketCloseStatus)status;
         }
@@ -31,16 +38,27 @@ namespace System.Net.WebSockets
         public static string? GetCloseStatusDescription(JSObject? webSocket)
         {
             if (webSocket == null || webSocket.IsDisposed)
+            {
                 return null;
+            }
+
             string? description = webSocket.GetPropertyAsString("close_status_description");
             return description;
         }
 
         public static int GetReadyState(JSObject? webSocket)
         {
-            if (webSocket == null || webSocket.IsDisposed) return -1;
+            if (webSocket == null || webSocket.IsDisposed) 
+            {
+                return -1;
+            }
+
             int? readyState = webSocket.GetPropertyAsInt32("readyState");
-            if (!readyState.HasValue) return -1;
+            if (!readyState.HasValue)
+            {
+                return -1;
+            }
+
             return readyState.Value;
         }
 
