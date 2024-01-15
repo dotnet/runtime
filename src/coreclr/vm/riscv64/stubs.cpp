@@ -1560,7 +1560,24 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
 
     BEGIN_DYNAMIC_HELPER_EMIT(32);
 
-    EmitHelperWithArg(p, rxOffset, pAllocator, arg, target);
+    const IntReg RegR0 = 0, RegT0 = 5, RegA0 = 10;
+
+    *(DWORD*)p = UTypeInstr(0x17, RegT0, 0);// auipc t0, 0
+    p += 4;
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegT0, 16);// ld a1, 16(t0)
+    p += 4;
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 24);;// ld t0, 24(t0)
+    p += 4;
+    *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegT0, 0);// jalr zero, 0(t0)
+    p += 4;
+
+    // label:
+    // arg
+    *(TADDR*)p = arg;
+    p += 8;
+    // target
+    *(PCODE*)p = target;
+    p += 8;
 
     END_DYNAMIC_HELPER_EMIT();
 }
@@ -1570,11 +1587,11 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
 {
     STANDARD_VM_CONTRACT;
 
-    const IntReg RegR0 = 0, RegT0 = 5, RegA0 = 10;
+    const IntReg RegR0 = 0, RegT0 = 5, RegA1 = 11;
 
     *(DWORD*)p = UTypeInstr(0x17, RegT0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegT0, 16);// ld a0, 16(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA1, RegT0, 16);// ld a1, 16(t0)
     p += 4;
     *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 24);;// ld t0, 24(t0)
     p += 4;
