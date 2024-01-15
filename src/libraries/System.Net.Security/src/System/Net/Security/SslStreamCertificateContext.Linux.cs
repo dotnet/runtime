@@ -286,7 +286,15 @@ namespace System.Net.Security
                     // Note that if server does not send OCSP staples, clients may still
                     // contact OCSP responders directly.
                     _nextDownload = DateTimeOffset.UtcNow.AddSeconds(5);
-                    _ocspExpiration = _nextDownload;
+
+                    if (_ocspExpiration < _nextDownload)
+                    {
+                        // this prevent forced download on next call if called before _nextDownload.
+                        _ocspExpiration = _nextDownload;
+
+                        // Drop the cached OCSP response, it expires in next few seconds anyway.
+                        _ocspResponse = null;
+                    }
                 }
                 return ret;
             }
