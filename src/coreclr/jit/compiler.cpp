@@ -293,9 +293,6 @@ Histogram domsChangedIterationTable(domsChangedIterationBuckets);
 unsigned  computeReachabilitySetsIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
 Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIterationBuckets);
 
-unsigned  computeReachabilityIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
-Histogram computeReachabilityIterationTable(computeReachabilityIterationBuckets);
-
 #endif // COUNT_BASIC_BLOCKS
 
 /*****************************************************************************
@@ -1577,12 +1574,6 @@ void Compiler::compShutdown()
     computeReachabilitySetsIterationTable.dump(jitstdout());
     jitprintf("--------------------------------------------------\n");
 
-    jitprintf("--------------------------------------------------\n");
-    jitprintf("fgComputeReachability `while (change)` iterations:\n");
-    jitprintf("--------------------------------------------------\n");
-    computeReachabilityIterationTable.dump(jitstdout());
-    jitprintf("--------------------------------------------------\n");
-
 #endif // COUNT_BASIC_BLOCKS
 
 #if COUNT_LOOPS
@@ -2637,6 +2628,32 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
 
+    // Setup assembly name list for disassembly and dump, if not already set up.
+    if (!s_pJitDisasmIncludeAssembliesListInitialized)
+    {
+        const WCHAR* assemblyNameList = JitConfig.JitDisasmAssemblies();
+        if (assemblyNameList != nullptr)
+        {
+            s_pJitDisasmIncludeAssembliesList = new (HostAllocator::getHostAllocator())
+                AssemblyNamesList2(assemblyNameList, HostAllocator::getHostAllocator());
+        }
+        s_pJitDisasmIncludeAssembliesListInitialized = true;
+    }
+
+    // Check for a specific set of assemblies to dump.
+    // If we have an assembly name list for disassembly, also check this method's assembly.
+    bool assemblyInIncludeList = true; // assume we'll dump, if there's not an include list (or it's empty).
+    if (s_pJitDisasmIncludeAssembliesList != nullptr && !s_pJitDisasmIncludeAssembliesList->IsEmpty())
+    {
+        const char* assemblyName = info.compCompHnd->getAssemblyName(
+            info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+        if (!s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
+        {
+            // We have a list, and the current assembly is not in it, so we won't dump.
+            assemblyInIncludeList = false;
+        }
+    }
+
     bool altJitConfig = !pfAltJit->isEmpty();
 
     bool verboseDump = false;
@@ -2658,6 +2675,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 verboseDump = true;
             }
         }
+    }
+
+    // Optionally suppress dumping if not in specified list of included assemblies.
+    //
+    if (verboseDump && !assemblyInIncludeList)
+    {
+        verboseDump = false;
     }
 
     // Optionally suppress dumping Tier0 jit requests.
@@ -2801,7 +2825,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             assert(fgPgoSchema == nullptr);
         }
-#endif
+#endif // DEBUG
     }
 
     if (compIsForInlining())
@@ -2838,6 +2862,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspDiffable  = false;
     opts.disAlignment = false;
     opts.disCodeBytes = false;
+
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -2866,28 +2891,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         bool disEnabled = true;
 
-        // Setup assembly name list for disassembly, if not already set up.
-        if (!s_pJitDisasmIncludeAssembliesListInitialized)
+        // Optionally suppress dumping if not in specified list of included assemblies.
+        //
+        if (!assemblyInIncludeList)
         {
-            const WCHAR* assemblyNameList = JitConfig.JitDisasmAssemblies();
-            if (assemblyNameList != nullptr)
-            {
-                s_pJitDisasmIncludeAssembliesList = new (HostAllocator::getHostAllocator())
-                    AssemblyNamesList2(assemblyNameList, HostAllocator::getHostAllocator());
-            }
-            s_pJitDisasmIncludeAssembliesListInitialized = true;
-        }
-
-        // If we have an assembly name list for disassembly, also check this method's assembly.
-        if (s_pJitDisasmIncludeAssembliesList != nullptr && !s_pJitDisasmIncludeAssembliesList->IsEmpty())
-        {
-            const char* assemblyName = info.compCompHnd->getAssemblyName(
-                info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
-
-            if (!s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
-            {
-                disEnabled = false;
-            }
+            disEnabled = false;
         }
 
         if (disEnabled)
@@ -2927,6 +2935,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 opts.dspDebugInfo = true;
             }
         }
+
         if (opts.disAsm && JitConfig.JitDisasmWithGC())
         {
             opts.disasmWithGC = true;
@@ -2934,14 +2943,16 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef LATE_DISASM
         if (JitConfig.JitLateDisasm().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+        {
             opts.doLateDisasm = true;
+        }
 #endif // LATE_DISASM
 
-        // This one applies to both Ngen/Jit Disasm output: DOTNET_JitDasmWithAddress=1
         if (JitConfig.JitDasmWithAddress() != 0)
         {
             opts.disAddr = true;
         }
+
         if (JitConfig.JitLongAddress() != 0)
         {
             opts.compLongAddress = true;
@@ -4842,14 +4853,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Compute dominators and exceptional entry blocks
         //
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
-
-        // The loop table is no longer valid.
-        optLoopTableValid = false;
-        optLoopTable      = nullptr;
-        optLoopCount      = 0;
-
-        // Old dominators and reachability sets are no longer valid.
-        fgDomsComputed = false;
     }
 
 #ifdef DEBUG
@@ -5239,21 +5242,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
 #if FEATURE_LOOP_ALIGN
 
-// TODO-Quirk: Remove
-static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
-{
-    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
-    {
-        if (child->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-            return true;
-
-        if (HasOldChildLoop(comp, child))
-            return true;
-    }
-
-    return false;
-}
-
 //------------------------------------------------------------------------
 // shouldAlignLoop: Check if it is legal and profitable to align a loop.
 //
@@ -5273,16 +5261,7 @@ static bool HasOldChildLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 //
 bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 {
-    // TODO-Quirk: Remove. When removing we will likely need to add some
-    // form of "lexicality" heuristic here: only align loops whose blocks
-    // are fairly tightly packed together physically.
-    if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-    {
-        return false;
-    }
-
-    // TODO-Quirk: Switch to loop->GetChild() != nullptr
-    if (HasOldChildLoop(this, loop))
+    if (loop->GetChild() != nullptr)
     {
         JITDUMP("Skipping alignment for " FMT_LP "; not an innermost loop\n", loop->GetIndex());
         return false;
@@ -5862,8 +5841,14 @@ void Compiler::RecomputeFlowGraphAnnotations()
     optSetBlockWeights();
     optFindLoops();
 
+    fgInvalidateDfsTree();
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
+
+    if (fgHasLoops)
+    {
+        optFindAndScaleGeneralLoopBlocks();
+    }
 
     m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
 
@@ -9653,7 +9638,14 @@ JITDBGAPI void __cdecl cReach(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Reach %u\n", sequenceNumber++);
-    comp->fgDispReach();
+    if (comp->m_reachabilitySets != nullptr)
+    {
+        comp->m_reachabilitySets->Dump();
+    }
+    else
+    {
+        printf("  Not computed\n");
+    }
 }
 
 JITDBGAPI void __cdecl cDoms(Compiler* comp)

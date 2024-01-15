@@ -5352,6 +5352,10 @@ struct GenTreeCall final : public GenTree
     {
         return IsVirtualStub() && (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
     }
+    bool IsSpecialIntrinsic() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0;
+    }
 
     bool IsR2RRelativeIndir() const
     {
@@ -5643,6 +5647,8 @@ struct GenTreeCall final : public GenTree
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
 
+    bool IsSpecialIntrinsic(Compiler* compiler, NamedIntrinsic ni) const;
+
     CorInfoHelpFunc GetHelperNum() const;
 
     bool AreArgsComplete() const;
@@ -5795,21 +5801,42 @@ struct GenTreeFptrVal : public GenTree
 /* gtQmark */
 struct GenTreeQmark : public GenTreeOp
 {
-    GenTreeQmark(var_types type, GenTree* cond, GenTreeColon* colon) : GenTreeOp(GT_QMARK, type, cond, colon)
+    unsigned gtThenLikelihood;
+
+    GenTreeQmark(var_types type, GenTree* cond, GenTreeColon* colon, unsigned thenLikelihood = 50)
+        : GenTreeOp(GT_QMARK, type, cond, colon), gtThenLikelihood(thenLikelihood)
     {
         // These must follow a specific form.
         assert((cond != nullptr) && cond->TypeIs(TYP_INT));
         assert((colon != nullptr) && colon->OperIs(GT_COLON));
     }
 
-    GenTree* ThenNode()
+    GenTree* ThenNode() const
     {
         return gtOp2->AsColon()->ThenNode();
     }
 
-    GenTree* ElseNode()
+    GenTree* ElseNode() const
     {
         return gtOp2->AsColon()->ElseNode();
+    }
+
+    unsigned ThenNodeLikelihood() const
+    {
+        assert(gtThenLikelihood <= 100);
+        return gtThenLikelihood;
+    }
+
+    unsigned ElseNodeLikelihood() const
+    {
+        assert(gtThenLikelihood <= 100);
+        return 100 - gtThenLikelihood;
+    }
+
+    void SetThenNodeLikelihood(unsigned thenLikelihood)
+    {
+        assert(thenLikelihood <= 100);
+        gtThenLikelihood = thenLikelihood;
     }
 
 #if DEBUGGABLE_GENTREE

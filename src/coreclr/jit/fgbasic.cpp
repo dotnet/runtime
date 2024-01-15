@@ -34,10 +34,6 @@ void Compiler::fgInit()
     fgDomsComputed         = false;
     fgReturnBlocksComputed = false;
 
-#ifdef DEBUG
-    fgReachabilitySetsValid = false;
-#endif // DEBUG
-
     /* Initialize the basic block list */
 
     fgFirstBB          = nullptr;
@@ -66,12 +62,12 @@ void Compiler::fgInit()
     fgBBVarSetsInited       = false;
     fgReturnCount           = 0;
 
-    m_dfsTree         = nullptr;
-    m_loops           = nullptr;
-    m_newToOldLoop    = nullptr;
-    m_oldToNewLoop    = nullptr;
-    m_loopSideEffects = nullptr;
-    m_blockToLoop     = nullptr;
+    m_dfsTree          = nullptr;
+    m_loops            = nullptr;
+    m_loopSideEffects  = nullptr;
+    m_blockToLoop      = nullptr;
+    m_domTree          = nullptr;
+    m_reachabilitySets = nullptr;
 
     // Initialize BlockSet data.
     fgCurBBEpoch             = 0;
@@ -120,14 +116,7 @@ void Compiler::fgInit()
     /* We will record a list of all BBJ_RETURN blocks here */
     fgReturnBlocks = nullptr;
 
-    /* This is set by fgComputeReachability */
-    fgEnterBlks = BlockSetOps::UninitVal();
-
     fgUsedSharedTemps = nullptr;
-
-#ifdef DEBUG
-    fgEnterBlksSetValid = false;
-#endif // DEBUG
 
 #if !defined(FEATURE_EH_FUNCLETS)
     ehMaxHndNestingCount = 0;
@@ -183,6 +172,7 @@ void Compiler::fgInit()
     fgPgoInlineeNoPgoSingleBlock = 0;
     fgCountInstrumentor          = nullptr;
     fgHistogramInstrumentor      = nullptr;
+    fgValueInstrumentor          = nullptr;
     fgPredListSortVector         = nullptr;
     fgCanonicalizedFirstBB       = false;
 }
@@ -5144,17 +5134,15 @@ void Compiler::fgUnlinkBlock(BasicBlock* block)
             fgFirstBBScratch = nullptr;
         }
     }
+    else if (block->IsLast())
+    {
+        assert(fgLastBB == block);
+        fgLastBB = block->Prev();
+        fgLastBB->SetNextToNull();
+    }
     else
     {
-        if (block == fgLastBB)
-        {
-            fgLastBB = block->Prev();
-            fgLastBB->SetNextToNull();
-        }
-        else
-        {
-            block->Prev()->SetNext(block->Next());
-        }
+        block->Prev()->SetNext(block->Next());
     }
 }
 
@@ -5300,9 +5288,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         // The block cannot follow a non-retless BBJ_CALLFINALLY (because we don't know who may jump to it).
         noway_assert(!block->isBBCallFinallyPairTail());
-
-        /* This cannot be the last basic block */
-        noway_assert(block != fgLastBB);
 
 #ifdef DEBUG
         if (verbose)

@@ -4025,12 +4025,11 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
 //
 void Compiler::fgInvalidateDfsTree()
 {
-    m_dfsTree      = nullptr;
-    m_loops        = nullptr;
-    m_domTree      = nullptr;
-    m_newToOldLoop = nullptr;
-    m_oldToNewLoop = nullptr;
-    fgSsaValid     = false;
+    m_dfsTree          = nullptr;
+    m_loops            = nullptr;
+    m_domTree          = nullptr;
+    m_reachabilitySets = nullptr;
+    fgSsaValid         = false;
 }
 
 //------------------------------------------------------------------------
@@ -4891,16 +4890,28 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
 //   lclNum - The local.
 //
 // Returns:
-//   Tree that represents a def of the local; nullptr if no def was found.
+//   Tree that represents a def of the local, or a def of the parent local if
+//   the local is a field; nullptr if no def was found.
 //
 // Remarks:
-//   Does not take promotion into account.
+//   Does not support promoted struct locals, but does support fields of
+//   promoted structs.
 //
 GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 {
+    LclVarDsc* dsc = m_dfsTree->GetCompiler()->lvaGetDesc(lclNum);
+    assert(!dsc->lvPromoted);
+
+    unsigned lclNum2 = BAD_VAR_NUM;
+
+    if (dsc->lvIsStructField)
+    {
+        lclNum2 = dsc->lvParentLcl;
+    }
+
     GenTreeLclVarCommon* result = nullptr;
-    VisitDefs([&result, lclNum](GenTreeLclVarCommon* def) {
-        if (def->GetLclNum() == lclNum)
+    VisitDefs([&result, lclNum, lclNum2](GenTreeLclVarCommon* def) {
+        if ((def->GetLclNum() == lclNum) || (def->GetLclNum() == lclNum2))
         {
             result = def;
             return false;
@@ -5086,6 +5097,8 @@ void FlowGraphNaturalLoop::MatchInit(NaturalLoopIterInfo* info, BasicBlock* init
 //
 bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
 {
+    Compiler* comp = m_dfsTree->GetCompiler();
+
     // Obtain the relop from the "test" tree.
     GenTree* relop;
     if (test->OperIs(GT_JTRUE))
@@ -5141,8 +5154,14 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
     }
     else if (limitOp->OperIs(GT_LCL_VAR))
     {
-        // See if limit var is a loop invariant
+        // See if limit var is loop invariant
         //
+        if (comp->lvaGetDesc(limitOp->AsLclVarCommon())->IsAddressExposed())
+        {
+            JITDUMP("  Limit var V%02u is address exposed\n", limitOp->AsLclVarCommon()->GetLclNum());
+            return false;
+        }
+
         GenTreeLclVarCommon* def = FindDef(limitOp->AsLclVarCommon()->GetLclNum());
         if (def != nullptr)
         {
@@ -5165,7 +5184,13 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
             return false;
         }
 
-        GenTreeLclVarCommon* def = FindDef(array->AsLclVar()->GetLclNum());
+        if (comp->lvaGetDesc(array->AsLclVarCommon())->IsAddressExposed())
+        {
+            JITDUMP("  Array base local V%02u is address exposed\n", array->AsLclVarCommon()->GetLclNum());
+            return false;
+        }
+
+        GenTreeLclVarCommon* def = FindDef(array->AsLclVarCommon()->GetLclNum());
         if (def != nullptr)
         {
             JITDUMP("  Array limit var V%02u modified by [%06u]\n", array->AsLclVarCommon()->GetLclNum(),
@@ -5754,3 +5779,125 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
 
     return new (comp, CMK_Loops) BlockToNaturalLoopMap(loops, indices);
 }
+
+//------------------------------------------------------------------------
+// BlockReachabilitySets::Build: Build the reachability sets.
+//
+// Parameters:
+//   dfsTree - DFS tree
+//
+// Returns:
+//   The sets.
+//
+// Remarks:
+//   This algorithm consumes O(n^2) memory because we're using dense
+//   bitsets to represent reachability.
+//
+BlockReachabilitySets* BlockReachabilitySets::Build(FlowGraphDfsTree* dfsTree)
+{
+    Compiler*    comp            = dfsTree->GetCompiler();
+    BitVecTraits postOrderTraits = dfsTree->PostOrderTraits();
+    BitVec*      sets            = new (comp, CMK_Reachability) BitVec[dfsTree->GetPostOrderCount()];
+
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        sets[i] = BitVecOps::MakeSingleton(&postOrderTraits, i);
+    }
+
+    // Find the reachable blocks. Also, set BBF_GC_SAFE_POINT.
+    bool     change;
+    unsigned changedIterCount = 1;
+    do
+    {
+        change = false;
+
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+
+            for (BasicBlock* const predBlock : block->PredBlocks())
+            {
+                change |= BitVecOps::UnionDChanged(&postOrderTraits, sets[block->bbNewPostorderNum],
+                                                   sets[predBlock->bbNewPostorderNum]);
+            }
+        }
+
+        ++changedIterCount;
+    } while (change);
+
+#if COUNT_BASIC_BLOCKS
+    computeReachabilitySetsIterationTable.record(changedIterCount);
+#endif // COUNT_BASIC_BLOCKS
+
+    BlockReachabilitySets* reachabilitySets = new (comp, CMK_Reachability) BlockReachabilitySets(dfsTree, sets);
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("\nAfter computing reachability sets:\n");
+        reachabilitySets->Dump();
+    }
+#endif
+
+    return reachabilitySets;
+}
+
+//------------------------------------------------------------------------
+// BlockReachabilitySets::CanReach: Check if "from" can flow to "to" through
+// only regular control flow edges.
+//
+// Parameters:
+//   from - Start block
+//   to   - Candidate destination block
+//
+// Returns:
+//   True if so.
+//
+bool BlockReachabilitySets::CanReach(BasicBlock* from, BasicBlock* to)
+{
+    assert(m_dfsTree->Contains(from));
+
+    if (!m_dfsTree->Contains(to))
+    {
+        return false;
+    }
+
+    BitVecTraits poTraits = m_dfsTree->PostOrderTraits();
+    return BitVecOps::IsMember(&poTraits, m_reachabilitySets[to->bbNewPostorderNum], from->bbNewPostorderNum);
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// BlockReachabilitySets::Dump: Dump the reachability sets to stdout.
+//
+void BlockReachabilitySets::Dump()
+{
+    printf("------------------------------------------------\n");
+    printf("BBnum  Reachable by \n");
+    printf("------------------------------------------------\n");
+
+    Compiler*    comp            = m_dfsTree->GetCompiler();
+    BitVecTraits postOrderTraits = m_dfsTree->PostOrderTraits();
+
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        printf(FMT_BB " : ", block->bbNum);
+        if (m_dfsTree->Contains(block))
+        {
+            BitVecOps::Iter iter(&postOrderTraits, m_reachabilitySets[block->bbNewPostorderNum]);
+            unsigned        poNum = 0;
+            const char*     sep   = "";
+            while (iter.NextElem(&poNum))
+            {
+                printf("%s" FMT_BB, sep, m_dfsTree->GetPostOrder(poNum)->bbNum);
+                sep = " ";
+            }
+        }
+        else
+        {
+            printf("[unreachable]");
+        }
+        printf("\n");
+    }
+}
+#endif
