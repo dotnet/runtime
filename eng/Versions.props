@@ -204,7 +204,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>8.0.0-preview-20230918.1</MicrosoftPrivateIntellisenseVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23617.1</MicrosoftDotNetCecilVersion>
+    <MicrosoftDotNetCecilVersion>0.11.4-alpha.24052.1</MicrosoftDotNetCecilVersion>
     <!-- ILCompiler -->
     <MicrosoftDotNetILCompilerVersion>9.0.0-alpha.1.23617.5</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
@@ -250,7 +250,7 @@
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- installer version, for testing workloads -->
-    <MicrosoftDotnetSdkInternalVersion>9.0.100-alpha.1.24054.1</MicrosoftDotnetSdkInternalVersion>
+    <MicrosoftDotnetSdkInternalVersion>9.0.100-alpha.1.24061.3</MicrosoftDotnetSdkInternalVersion>
     <SdkVersionForWorkloadTesting>$(MicrosoftDotnetSdkInternalVersion)</SdkVersionForWorkloadTesting>
   </PropertyGroup>
 </Project>

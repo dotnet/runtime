@@ -36,7 +36,9 @@ namespace System.Linq.Parallel
     /// Finally, if the producer notices that its buffer has exceeded an even greater threshold, it will
     /// go to sleep and wait until the consumer takes the entire buffer.
     /// </summary>
+#if !FEATURE_WASM_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
     internal sealed class OrderPreservingPipeliningMergeHelper<TOutput, TKey> : IMergeHelper<TOutput>
     {
         private readonly QueryTaskGroupState _taskGroupState; // State shared among tasks.
