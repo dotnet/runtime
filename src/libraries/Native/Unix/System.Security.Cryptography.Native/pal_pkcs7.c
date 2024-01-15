@@ -46,9 +46,19 @@ int32_t CryptoNative_GetPkcs7Certificates(PKCS7* p7, X509Stack** certs)
     switch (OBJ_obj2nid(p7->type))
     {
         case NID_pkcs7_signed:
+            if (!p7->d.sign)
+            {
+                return 0;
+            }
+
             *certs = p7->d.sign->cert;
             return 1;
         case NID_pkcs7_signedAndEnveloped:
+            if (!p7->d.signed_and_enveloped)
+            {
+                return 0;
+            }
+
             *certs = p7->d.signed_and_enveloped->cert;
             return 1;
     }
