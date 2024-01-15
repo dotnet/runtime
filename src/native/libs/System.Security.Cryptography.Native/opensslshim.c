@@ -116,21 +116,21 @@ static void OpenLibraryOnce(void)
         DlOpen(MAKELIB("10"));
     }
 
-    // FreeBSD uses a different suffix numbering convention
+#ifdef __FreeBSD__
     // The ports version of OpenSSL is used over base where possible
     if (libssl == NULL)
     {
-        // FreeBSD uses .12 for OpenSSL 3.0 from ports
+        // OpenSSL 3.0 from ports
         DlOpen(MAKELIB("12"));
     }
 
     if (libssl == NULL)
     {
-        // FreeBSD uses .30 for OpenSSL 3.0 from base as found in FreeBSD 14.0
+        // OpenSSL 3.0 from base as found in FreeBSD 14.0
         DlOpen(MAKELIB("30"));
     }
 
-    // FreeBSD OpenSSL 1.1.x are numbered below
+    // Fallbacks for OpenSSL 1.1.x
     if (libssl == NULL)
     {
         DlOpen(MAKELIB("11"));
@@ -140,6 +140,8 @@ static void OpenLibraryOnce(void)
     {
         DlOpen(MAKELIB("111"));
     }
+#endif
+
 }
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;
