@@ -2953,7 +2953,7 @@ void* emitter::emitAddInlineLabel()
 // emitPrintLabel: Print the assembly label for an insGroup. We could use emitter::emitLabelString()
 // to be consistent, but that seems silly.
 //
-void emitter::emitPrintLabel(insGroup* ig)
+void emitter::emitPrintLabel(const insGroup* ig) const
 {
     printf("G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
 }
@@ -2966,7 +2966,7 @@ void emitter::emitPrintLabel(insGroup* ig)
 // Returns:
 //    String with insGroup label
 //
-const char* emitter::emitLabelString(insGroup* ig)
+const char* emitter::emitLabelString(const insGroup* ig) const
 {
     const int       TEMP_BUFFER_LEN = 40;
     static unsigned curBuf          = 0;
@@ -4297,11 +4297,20 @@ void emitter::emitDispJumpList()
                 printf(" -> %s", getRegName(jmp->idReg1()));
             }
             else
+#endif // TARGET_ARM64
             {
                 printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
             }
-#else
-            printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
+
+            if (jmp->idjShort)
+            {
+                printf(" (short)");
+            }
+
+            if (jmp->idjKeepLong)
+            {
+                printf(" (long)");
+            }
 
 #if defined(TARGET_XARCH)
             if (jmp->idjIsRemovableJmpCandidate)
@@ -4309,7 +4318,13 @@ void emitter::emitDispJumpList()
                 printf(" ; removal candidate");
             }
 #endif // TARGET_XARCH
-#endif // !TARGET_ARM64
+
+#if defined(TARGET_AMD64)
+            if (jmp->idjIsAfterCallBeforeEpilog)
+            {
+                printf(" ; after call before epilog");
+            }
+#endif // TARGET_AMD64
         }
         printf("\n");
         jmpCount += 1;
@@ -4328,7 +4343,7 @@ void emitter::emitDispJumpList()
 //   id - the pointer to the current instrDesc
 //   idSize - the size of the current instrDesc
 //
-void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
+void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const
 {
     assert(idSize == emitSizeOfInsDsc(*id));
     char* idData = reinterpret_cast<char*>(*id);
@@ -4346,7 +4361,7 @@ void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
 // Returns:
 //   A pointer to the first instrDesc.
 //
-emitter::instrDesc* emitter::emitFirstInstrDesc(BYTE* idData)
+emitter::instrDesc* emitter::emitFirstInstrDesc(BYTE* idData) const
 {
     return reinterpret_cast<instrDesc*>(idData + m_debugInfoSize);
 }
@@ -6597,19 +6612,23 @@ void emitter::emitComputeCodeSizes()
 }
 
 //------------------------------------------------------------------------
-// emitEndCodeGen: called at end of code generation to create code, data, and gc info
+// emitEndCodeGen: called at end of code generation to create code, data, and GC info
 //
 // Arguments:
-//    comp - compiler instance
+//    comp           - compiler instance
 //    contTrkPtrLcls - true if tracked stack pointers are contiguous on the stack
-//    fullInt - true if method has fully interruptible gc reporting
-//    fullPtrMap - true if gc reporting should use full register pointer map
-//    xcptnsCount - number of EH clauses to report for the method
-//    prologSize [OUT] - prolog size in bytes
-//    epilogSize [OUT] - epilog size in bytes (see notes)
-//    codeAddr [OUT] - address of the code buffer
-//    coldCodeAddr [OUT] - address of the cold code buffer (if any)
-//    consAddr [OUT] - address of the read only constant buffer (if any)
+//    fullyInt       - true if method has fully interruptible GC reporting
+//    fullPtrMap     - true if gc reporting should use full register pointer map
+//    xcptnsCount    - number of EH clauses to report for the method
+//    prologSize     - [OUT] prolog size in bytes
+//    epilogSize     - [OUT] epilog size in bytes (see notes)
+//    codeAddr       - [OUT] address of the code buffer
+//    codeAddrRW     - [OUT] Read/write address of the code buffer
+//    coldCodeAddr   - [OUT] address of the cold code buffer (if any)
+//    coldCodeAddrRW - [OUT] Read/write address of the cold code buffer (if any)
+//    consAddr       - [OUT] address of the read only constant buffer (if any)
+//    consAddrRW     - [OUT] Read/write address of the read only constant buffer (if any)
+//    instrCount     - [OUT] [DEBUG ONLY] number of instructions generated.
 //
 // Notes:
 //    Currently, in methods with multiple epilogs, all epilogs must have the same
@@ -6627,8 +6646,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                                  unsigned* prologSize,
                                  unsigned* epilogSize,
                                  void**    codeAddr,
+                                 void**    codeAddrRW,
                                  void**    coldCodeAddr,
-                                 void** consAddr DEBUGARG(unsigned* instrCount))
+                                 void**    coldCodeAddrRW,
+                                 void**    consAddr,
+                                 void** consAddrRW DEBUGARG(unsigned* instrCount))
 {
 #ifdef DEBUG
     if (emitComp->verbose)
@@ -6885,8 +6907,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     /* Give the block addresses to the caller and other functions here */
 
     *codeAddr = emitCodeBlock = codeBlock;
+    *codeAddrRW               = codeBlockRW;
     *coldCodeAddr = emitColdCodeBlock = coldCodeBlock;
+    *coldCodeAddrRW                   = coldCodeBlockRW;
     *consAddr = emitConsBlock = consBlock;
+    *consAddrRW               = consBlockRW;
 
     /* Nothing has been pushed on the stack */
     CLANG_FORMAT_COMMENT_ANCHOR;
@@ -7664,7 +7689,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
  *  instruction number for this instruction
  */
 
-unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
+unsigned emitter::emitFindInsNum(const insGroup* ig, const instrDesc* idMatch) const
 {
     instrDesc* id = emitFirstInstrDesc(ig->igData);
 
@@ -7700,7 +7725,7 @@ unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
  *  to find the true offset by looking for the instruction within the group.
  */
 
-UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
+UNATIVE_OFFSET emitter::emitFindOffset(const insGroup* ig, unsigned insNum) const
 {
     instrDesc*     id = emitFirstInstrDesc(ig->igData);
     UNATIVE_OFFSET of = 0;

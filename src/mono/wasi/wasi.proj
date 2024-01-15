@@ -133,8 +133,8 @@
 
       <_WasiCompileFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'include').Replace('\','/'))"/>
       <_WasiCompileFlags Condition="'$(MonoWasmThreads)' != 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'include').Replace('\','/'))"/>
-      <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include').Replace('\','/'))"/>
-      <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'mono-include').Replace('\','/'))"/>
+      <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(WasiProjectRoot)', 'include').Replace('\','/'))"/>
+      <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(WasiProjectRoot)', 'mono-include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'mono', 'eglib').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
@@ -226,17 +226,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_FilesToCopy Include="$(MSBuildThisFileDirectory)..\wasm\runtime\runtime.c"   DestinationFolder="$(NativeBinDir)src" />
-      <_FilesToCopy Include="$(MSBuildThisFileDirectory)..\wasm\runtime\pinvoke.c"   DestinationFolder="$(NativeBinDir)src" />
+      <_FilesToCopy Include="$(BrowserProjectRoot)runtime\runtime.c"                 DestinationFolder="$(NativeBinDir)src" />
+      <_FilesToCopy Include="$(BrowserProjectRoot)runtime\pinvoke.c"                 DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/driver.c"            DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/main.c"              DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/stubs.c"             DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/synthetic-pthread.c" DestinationFolder="$(NativeBinDir)src" />
 
-      <_FilesToCopy Include="$(MonoProjectRoot)wasi\mono-include\driver.h"           DestinationFolder="$(NativeBinDir)include\wasm" />
-      <_FilesToCopy Include="$(MonoProjectRoot)wasm\runtime\gc-common.h"             DestinationFolder="$(NativeBinDir)include\wasm" />
-      <_FilesToCopy Include="$(MSBuildThisFileDirectory)..\wasm\runtime\runtime.h"   DestinationFolder="$(NativeBinDir)include\wasm" />
-      <_FilesToCopy Include="$(MSBuildThisFileDirectory)..\wasm\runtime\pinvoke.h"   DestinationFolder="$(NativeBinDir)include\wasm" />
+      <_FilesToCopy Include="$(WasiProjectRoot)mono-include\driver.h"           DestinationFolder="$(NativeBinDir)include\wasm" />
+      <_FilesToCopy Include="$(BrowserProjectRoot)runtime\gc-common.h"               DestinationFolder="$(NativeBinDir)include\wasm" />
+      <_FilesToCopy Include="$(BrowserProjectRoot)runtime\runtime.h"                 DestinationFolder="$(NativeBinDir)include\wasm" />
+      <_FilesToCopy Include="$(BrowserProjectRoot)runtime\pinvoke.h"                 DestinationFolder="$(NativeBinDir)include\wasm" />
     </ItemGroup>
 
     <Copy SourceFiles="$(PInvokeTableFile)"

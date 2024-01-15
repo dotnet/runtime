@@ -7,35 +7,8 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static IEnumerable<TResult> Join<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, TInner, TResult> resultSelector)
-        {
-            if (outer == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outer);
-            }
-
-            if (inner == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.inner);
-            }
-
-            if (outerKeySelector == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outerKeySelector);
-            }
-
-            if (innerKeySelector == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.innerKeySelector);
-            }
-
-            if (resultSelector == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
-            }
-
-            return JoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, null);
-        }
+        public static IEnumerable<TResult> Join<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, TInner, TResult> resultSelector) =>
+            Join(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer: null);
 
         public static IEnumerable<TResult> Join<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, TInner, TResult> resultSelector, IEqualityComparer<TKey>? comparer)
         {
@@ -62,6 +35,11 @@ namespace System.Linq
             if (resultSelector == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
+            }
+
+            if (IsEmptyArray(outer))
+            {
+                return [];
             }
 
             return JoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer);

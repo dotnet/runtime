@@ -33,7 +33,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     };
 
     public string? ProjectDir { get; set; } = _projectDir;
-    protected ITestOutputHelper _testOutput = _testOutput;
+    protected ITestOutputHelper _testOutput = new TestOutputWrapper(_testOutput);
     protected BuildEnvironment _buildEnv = BuildTestBase.s_buildEnv;
     public string BundleDirName { get; set; } = "wwwroot";
 

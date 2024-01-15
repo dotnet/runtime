@@ -203,7 +203,7 @@ namespace System.Text.RegularExpressions.Tests
             // Prevent a StackOverflow recursion in the constructor
             if (createCaptures)
             {
-                Captures = new CaptureData[] { new CaptureData(value, index, length, false) };
+                Captures = [new CaptureData(value, index, length, false)];
             }
         }
 

@@ -22,10 +22,10 @@ namespace Microsoft.Interop
         public UnmanagedToManagedStubGenerator(
             ImmutableArray<TypePositionInfo> argTypes,
             GeneratorDiagnosticsBag diagnosticsBag,
-            IMarshallingGeneratorFactory generatorFactory)
+            IMarshallingGeneratorResolver generatorResolver)
         {
             _context = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingDiagnostics);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new Forwarder(), out var bindingDiagnostics);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 

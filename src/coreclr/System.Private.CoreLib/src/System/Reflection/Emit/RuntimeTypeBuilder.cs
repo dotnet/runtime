@@ -145,9 +145,9 @@ namespace System.Reflection.Emit
             Type? runtimeType2;
 
             // set up the runtimeType and TypeBuilder type corresponding to t1 and t2
-            if (t1 is RuntimeTypeBuilder)
+            if (t1 is RuntimeTypeBuilder rtb1)
             {
-                tb1 = (RuntimeTypeBuilder)t1;
+                tb1 = rtb1;
                 // This will be null if it is not baked.
                 runtimeType1 = tb1.m_bakedRuntimeType;
             }
@@ -156,9 +156,9 @@ namespace System.Reflection.Emit
                 runtimeType1 = t1;
             }
 
-            if (t2 is RuntimeTypeBuilder)
+            if (t2 is RuntimeTypeBuilder rtb2)
             {
-                tb2 = (RuntimeTypeBuilder)t2;
+                tb2 = rtb2;
                 // This will be null if it is not baked.
                 runtimeType2 = tb2.m_bakedRuntimeType;
             }
