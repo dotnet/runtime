@@ -43,7 +43,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void WriteIf_Interpolation()
         {
             Debug.WriteIfInterpolatedStringHandler handler;
@@ -77,7 +76,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void WriteLineIf_Interpolation()
         {
             Debug.WriteIfInterpolatedStringHandler handler;
@@ -99,7 +97,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Trace and debug listeners were processed using ILStrip.")]
         public void WriteLineIf_Interpolation_Syntax()
         {
             VerifyLogged(() => Debug.WriteLineIf(true, $"{EmptyToString.Instance}logged"), "logged" + Environment.NewLine);

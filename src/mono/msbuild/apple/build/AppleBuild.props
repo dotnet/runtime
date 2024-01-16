@@ -16,7 +16,7 @@
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
     <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''" >false</StripDebugSymbols>
-    <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
+    <ShouldILStrip Condition="'$(ShouldILStrip)' == '' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
 
     <_IsLibraryMode Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
 
