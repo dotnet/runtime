@@ -35,8 +35,6 @@ endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
-add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-W3>)
-
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------
