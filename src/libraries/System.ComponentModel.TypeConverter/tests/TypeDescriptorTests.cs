@@ -1355,7 +1355,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]  // Mock will try to JIT
         [MemberData(nameof(GetConverterWithAddProvider_ByMultithread_Success_TestData))]
         public async void GetConverterWithAddProvider_ByMultithread_Success(Type typeForGetConverter, Type expectedConverterType)
         {

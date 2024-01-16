@@ -7,11 +7,7 @@ import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/i
 import { Int32Ptr } from "../types/emscripten";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { localHeapViewU16, setU16_local } from "../memory";
-
-const SURROGATE_HIGHER_START = "\uD800";
-const SURROGATE_HIGHER_END = "\uDBFF";
-const SURROGATE_LOWER_START = "\uDC00";
-const SURROGATE_LOWER_END = "\uDFFF";
+import { isSurrogate } from "./helpers";
 
 export function mono_wasm_change_case_invariant(src: number, srcLength: number, dst: number, dstLength: number, toUpper: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): void {
     const exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
@@ -158,15 +154,6 @@ export function mono_wasm_change_case(culture: MonoStringRef, src: number, srcLe
         cultureRoot.release();
         exceptionRoot.release();
     }
-}
-
-function isSurrogate(str: string, startIdx: number) : boolean
-{
-    return SURROGATE_HIGHER_START <= str[startIdx] &&
-        str[startIdx] <= SURROGATE_HIGHER_END &&
-        startIdx+1 < str.length &&
-        SURROGATE_LOWER_START <= str[startIdx+1] &&
-        str[startIdx+1] <= SURROGATE_LOWER_END;
 }
 
 function appendSurrogateToMemory(heapI16: Uint16Array, dst: number, surrogate: string, idx: number)

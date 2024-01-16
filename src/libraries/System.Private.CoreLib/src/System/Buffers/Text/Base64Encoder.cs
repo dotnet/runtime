@@ -85,17 +85,6 @@ namespace System.Buffers.Text
                             goto DoneExit;
                     }
 
-#if !MONO // https://github.com/dotnet/runtime/issues/93081
-                    end = srcMax - 48;
-                    if (AdvSimd.Arm64.IsSupported && (end >= src))
-                    {
-                        AdvSimdEncode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
-
-                        if (src == srcEnd)
-                            goto DoneExit;
-                    }
-#endif
-
                     end = srcMax - 16;
                     if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
                     {
@@ -490,66 +479,6 @@ namespace System.Buffers.Text
             srcBytes = src + 4;
             destBytes = dest;
         }
-
-#if !MONO // https://github.com/dotnet/runtime/issues/93081
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        private static unsafe void AdvSimdEncode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
-        {
-            // C# implementatino of https://github.com/aklomp/base64/blob/3a5add8652076612a8407627a42c768736a4263f/lib/arch/neon64/enc_loop.c
-            Vector128<byte> str1;
-            Vector128<byte> str2;
-            Vector128<byte> str3;
-            Vector128<byte> res1;
-            Vector128<byte> res2;
-            Vector128<byte> res3;
-            Vector128<byte> res4;
-            Vector128<byte> tblEnc1 = Vector128.Create("ABCDEFGHIJKLMNOP"u8).AsByte();
-            Vector128<byte> tblEnc2 = Vector128.Create("QRSTUVWXYZabcdef"u8).AsByte();
-            Vector128<byte> tblEnc3 = Vector128.Create("ghijklmnopqrstuv"u8).AsByte();
-            Vector128<byte> tblEnc4 = Vector128.Create("wxyz0123456789+/"u8).AsByte();
-            byte* src = srcBytes;
-            byte* dest = destBytes;
-
-            // If we have Neon support, pick off 48 bytes at a time for as long as we can.
-            do
-            {
-                // Load 48 bytes and deinterleave:
-                AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
-                (str1, str2, str3) = AdvSimd.Arm64.LoadVector128x3AndUnzip(src);
-
-                // Divide bits of three input bytes over four output bytes:
-                res1 = AdvSimd.ShiftRightLogical(str1, 2);
-                res2 = AdvSimd.ShiftRightLogical(str2, 4);
-                res3 = AdvSimd.ShiftRightLogical(str3, 6);
-                res2 = AdvSimd.ShiftLeftAndInsert(res2, str1, 4);
-                res3 = AdvSimd.ShiftLeftAndInsert(res3, str2, 2);
-
-                // Clear top two bits:
-                res2 &= AdvSimd.DuplicateToVector128((byte)0x3F);
-                res3 &= AdvSimd.DuplicateToVector128((byte)0x3F);
-                res4 = str3 & AdvSimd.DuplicateToVector128((byte)0x3F);
-
-                // The bits have now been shifted to the right locations;
-                // translate their values 0..63 to the Base64 alphabet.
-                // Use a 64-byte table lookup:
-                res1 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res1);
-                res2 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res2);
-                res3 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res3);
-                res4 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res4);
-
-                // Interleave and store result:
-                AssertWrite<Vector128<byte>>(dest, destStart, destLength);
-                AdvSimd.Arm64.StoreVector128x4AndZip(dest, (res1, res2, res3, res4));
-
-                src += 48;
-                dest += 64;
-            } while (src <= srcEnd);
-
-            srcBytes = src;
-            destBytes = dest;
-        }
-#endif // !MONO
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
