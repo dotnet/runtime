@@ -857,7 +857,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	guint16 param_count;
 	unsigned int gen_param_count = 0;
 	int call_conv;
-	uint8_t ext_callconv;
+	uint8_t ext_callconv = 0;
 
 	guint8 *p = buf;
 	gboolean hasthis, explicit_this, has_gen_params, pinvoke;
