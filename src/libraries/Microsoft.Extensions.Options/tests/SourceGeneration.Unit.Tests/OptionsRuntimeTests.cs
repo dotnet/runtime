@@ -399,6 +399,28 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
 
             Assert.Equal(results.Count(), generatorResult.Failures.Count());
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void TestGeneratedRangeAttributeThreadSafety()
+        {
+            OptionsWithTimeSpanRangeAttribute options = new OptionsWithTimeSpanRangeAttribute() { Name = "T1", Period = TimeSpan.FromHours(1) };
+            TimeSpanRangeAttributeValidator validator = new TimeSpanRangeAttributeValidator();
+
+            Task[] tasks = new Task[8];
+            for (int i = 0; i < 8; i++)
+            {
+                int taskNumber = i;
+
+                tasks[i] = Task.Run(() =>
+                {
+                    Task.Delay(10).Wait();
+                    ValidateOptionsResult result = validator.Validate("T1", options);
+                    Assert.True(result.Succeeded);
+                });
+            }
+
+            Task.WaitAll(tasks);
+        }
     }
 
     public class FakeCount(int count) { public int Count { get { return count; } } }
@@ -605,4 +627,18 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     }
 #endif // NET8_0_OR_GREATER
 
+
+    public class OptionsWithTimeSpanRangeAttribute
+    {
+        [Required]
+        public string Name { get; set; }
+
+        [RangeAttribute(typeof(TimeSpan), "01:00:00", "23:59:59")]
+        public TimeSpan Period { get; set; }
+    }
+
+    [OptionsValidator]
+    public partial class TimeSpanRangeAttributeValidator : IValidateOptions<OptionsWithTimeSpanRangeAttribute>
+    {
+    }
 }

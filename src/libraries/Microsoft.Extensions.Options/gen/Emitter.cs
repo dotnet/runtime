@@ -382,26 +382,26 @@ namespace Microsoft.Extensions.Options.Generators
 
             string initializationString = emitTimeSpanSupport ?
             """
-                                if (OperandType == typeof(global::System.TimeSpan))
-                                {
-                                    if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
-                                        !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
-                                    {
-                                        throw new global::System.InvalidOperationException(c_minMaxError);
-                                    }
-                                    Minimum = timeSpanMinimum;
-                                    Maximum = timeSpanMaximum;
-                                }
-                                else
-                                {
-                                    Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                                    Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                                }
+                                        if (OperandType == typeof(global::System.TimeSpan))
+                                        {
+                                            if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
+                                                !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
+                                            {
+                                                throw new global::System.InvalidOperationException(c_minMaxError);
+                                            }
+                                            Minimum = timeSpanMinimum;
+                                            Maximum = timeSpanMaximum;
+                                        }
+                                        else
+                                        {
+                                            Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                                            Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                                        }
             """
             :
             """
-                                Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                                Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                                        Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                                        Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
             """;
 
             string convertValue = emitTimeSpanSupport ?
@@ -491,25 +491,31 @@ namespace Microsoft.Extensions.Options.Generators
         {
             if (!Initialized)
             {
-                if (Minimum is null || Maximum is null)
+                lock (this)
                 {
-                    throw new global::System.InvalidOperationException(c_minMaxError);
-                }
-                if (NeedToConvertMinMax)
-                {
-                    System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+                    if (!Initialized)
+                    {
+                        if (Minimum is null || Maximum is null)
+                        {
+                            throw new global::System.InvalidOperationException(c_minMaxError);
+                        }
+                        if (NeedToConvertMinMax)
+                        {
+                            System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
 {{initializationString}}
+                        }
+                        int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
+                        if (cmp > 0)
+                        {
+                            throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
+                        }
+                        else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
+                        {
+                            throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
+                        }
+                        Initialized = true;
+                    }
                 }
-                int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
-                if (cmp > 0)
-                {
-                    throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
-                }
-                else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
-                {
-                    throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
-                }
-                Initialized = true;
             }
 
             if (value is null or string { Length: 0 })

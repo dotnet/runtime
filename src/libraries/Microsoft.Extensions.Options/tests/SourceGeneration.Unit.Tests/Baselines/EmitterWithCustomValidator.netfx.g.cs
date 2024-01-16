@@ -103,26 +103,32 @@ namespace __OptionValidationGeneratedAttributes
         {
             if (!Initialized)
             {
-                if (Minimum is null || Maximum is null)
+                lock (this)
                 {
-                    throw new global::System.InvalidOperationException(c_minMaxError);
+                    if (!Initialized)
+                    {
+                        if (Minimum is null || Maximum is null)
+                        {
+                            throw new global::System.InvalidOperationException(c_minMaxError);
+                        }
+                        if (NeedToConvertMinMax)
+                        {
+                            System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+                            Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                            Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                        }
+                        int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
+                        if (cmp > 0)
+                        {
+                            throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
+                        }
+                        else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
+                        {
+                            throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
+                        }
+                        Initialized = true;
+                    }
                 }
-                if (NeedToConvertMinMax)
-                {
-                    System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-                    Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                    Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                }
-                int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
-                if (cmp > 0)
-                {
-                    throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
-                }
-                else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
-                {
-                    throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
-                }
-                Initialized = true;
             }
 
             if (value is null or string { Length: 0 })
