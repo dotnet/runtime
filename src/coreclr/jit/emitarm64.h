@@ -56,6 +56,8 @@ void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elem
 void emitDispSveConsecutiveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
 void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
+void emitDispLowPredicateRegPair(regNumber reg, insOpts opt);
+void emitDispVectorLengthSpecifier(instrDesc* id);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -417,6 +419,9 @@ static code_t insEncodeDatasizeBF(code_t code, emitAttr size);
 
 // Returns the encoding to select the vectorsize for SIMD Arm64 instructions
 static code_t insEncodeVectorsize(emitAttr size);
+
+// Returns the encoding to set the vector length specifier (vl) for an Arm64 SVE instruction
+static code_t insEncodeVectorLengthSpecifier(instrDesc* id);
 
 // Returns the encoding to select 'index' for an Arm64 vector elem instruction
 static code_t insEncodeVectorIndex(emitAttr elemsize, ssize_t index);
@@ -859,12 +864,17 @@ inline static bool isFloatReg(regNumber reg)
 
 inline static bool isPredicateRegister(regNumber reg)
 {
-    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LAST);
+    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LAST);
 }
 
 inline static bool isLowPredicateRegister(regNumber reg)
 {
-    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LOW_LAST);
+    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LOW_LAST);
+}
+
+inline static bool isHighPredicateRegister(regNumber reg)
+{
+    return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
 }
 
 inline static bool insOptsNone(insOpts opt)
@@ -1015,7 +1025,20 @@ inline static bool insOptsScalableWide(insOpts opt)
 
 inline static bool insScalableOptsNone(insScalableOpts sopt)
 {
+    // `sopt` is used for instructions with no extra encoding variants.
     return sopt == INS_SCALABLE_OPTS_NONE;
+}
+
+inline static bool insScalableOptsWithPredicatePair(insScalableOpts sopt)
+{
+    // `sopt` denotes the instruction's predicate register should be encoded as a {<Pd1>.<T>, <Pd2>.<T>} pair.
+    return sopt == INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR;
+}
+
+inline static bool insScalableOptsWithVectorLength(insScalableOpts sopt)
+{
+    // `sopt` is any of the scalable types that are valid for use with instructions with a vector length specifier (vl).
+    return ((sopt == INS_SCALABLE_OPTS_VL_2X) || (sopt == INS_SCALABLE_OPTS_VL_4X));
 }
 
 static bool isValidImmCond(ssize_t imm);
