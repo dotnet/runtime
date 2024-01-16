@@ -8,7 +8,7 @@ using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    internal sealed class JSProxyContext : IDisposable
+    internal sealed class JSProxyContext : JSProxyContextBase, IDisposable
     {
         private bool _isDisposed;
 
@@ -182,8 +182,10 @@ namespace System.Runtime.InteropServices.JavaScript
             set => _currentThreadContext.Value = value;
         }
 
-        [ThreadStatic]
-        public static JSProxyContext? CurrentThreadContext;
+        public static JSProxyContext? CurrentThreadContext {
+            get => CurrentThreadContextBase as JSProxyContext;
+            set => CurrentThreadContextBase = value;
+        }
 
         // This is context to dispatch into. In order of preference
         // - captured context by arguments of current/pending JSImport call

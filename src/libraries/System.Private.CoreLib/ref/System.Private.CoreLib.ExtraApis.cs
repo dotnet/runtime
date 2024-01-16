@@ -37,3 +37,11 @@ namespace System.Diagnostics
         public static System.Diagnostics.DebugProvider SetProvider(System.Diagnostics.DebugProvider provider) { throw null; }
     }
 }
+
+namespace System.Runtime.InteropServices.JavaScript
+{
+    public class JSProxyContextBase {
+        [ThreadStatic]
+        public static JSProxyContextBase? CurrentThreadContextBase;
+    }
+}

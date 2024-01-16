@@ -77,6 +77,12 @@ namespace System.Threading
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);
+#if FEATURE_WASM_THREADS
+            if (System.Runtime.InteropServices.JavaScript.JSProxyContextBase.CurrentThreadContextBase != null)
+            {
+                throw new PlatformNotSupportedException("blocking Wait is not supported on the JS interop thread.");
+            }
+#endif
             return ObjWait(millisecondsTimeout, obj);
         }
 
