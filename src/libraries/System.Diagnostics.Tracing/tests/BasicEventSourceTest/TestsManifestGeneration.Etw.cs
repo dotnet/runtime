@@ -37,7 +37,7 @@ namespace BasicEventSourceTests
             var etlFileName = $"file.{pid}.etl";
             var tracesession = new TraceEventSession("testname", etlFileName);
 
-            tracesession.EnableProvider("SimpleEventSource");
+            tracesession.EnableProvider(nameof(SimpleEventSource));
 
             RemoteInvokeOptions localOptions = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
             using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() =>
@@ -54,7 +54,7 @@ namespace BasicEventSourceTests
 
                 tracesession.Flush();
 
-                tracesession.DisableProvider("SimpleEventSource");
+                tracesession.DisableProvider(nameof(SimpleEventSource));
                 tracesession.Dispose();
 
                 var manifestExists = false;
@@ -82,7 +82,7 @@ namespace BasicEventSourceTests
             var rolloverFileName = $"rolloverFile.{pid}.etl";
             var tracesession = new TraceEventSession("testname", initialFileName);
 
-            tracesession.EnableProvider("SimpleEventSource");
+            tracesession.EnableProvider(nameof(SimpleEventSource));
 
             using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() =>
             {
@@ -104,7 +104,7 @@ namespace BasicEventSourceTests
 
                 tracesession.Flush();
 
-                tracesession.DisableProvider("SimpleEventSource");
+                tracesession.DisableProvider(nameof(SimpleEventSource));
                 tracesession.Dispose();
 
                 bool initialFileHasManifest = false;
@@ -152,7 +152,7 @@ namespace BasicEventSourceTests
                 }
                 providers[eventData.ProviderName]++;
 
-                if (eventData.ProviderName.Equals("SimpleEventSource") && eventData.EventName.Equals("ManifestData"))
+                if (eventData.ProviderName.Equals(nameof(SimpleEventSource)) && eventData.EventName.Equals("ManifestData"))
                 {
                     sawManifestData = true;
                 }
@@ -162,7 +162,7 @@ namespace BasicEventSourceTests
 
             if (!sawManifestData)
             {
-                Console.WriteLine("Did not see ManifestData event from SimpleEventSource, test will fail. Additional info:");
+                Console.WriteLine($"Did not see ManifestData event from {nameof(SimpleEventSource)}, test will fail. Additional info:");
                 Console.WriteLine($"    file name {fileName}");
                 Console.WriteLine($"    total event count {eventCount}");
                 Console.WriteLine($"    total providers {providers.Count}");
