@@ -36,6 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             instance1.Dispose();
         }
 
+#if !FEATURE_WASM_THREADS // because in MT JSHost.ImportAsync is really async, it will finish before the caller could cancel it
         [Fact]
         public async Task CancelableImportAsync()
         {
@@ -48,6 +49,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs", new CancellationToken(true)));
             Assert.Equal("Error: OperationCanceledException", actualEx.Message);
         }
+#endif
 
         [Fact]
         public unsafe void GlobalThis()
@@ -187,7 +189,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Func<double, double, double> doubleThrows = Utils.CreateFunctionDoubleDoubleDouble("a", "b", "throw Error('test '+a+' '+b);");
             var ex = Assert.Throws<JSException>(() => doubleThrows(1, 2));
             Assert.Equal("Error: test 1 2", ex.Message);
+
+#if !FEATURE_WASM_THREADS
             Assert.Contains("create_function", ex.StackTrace);
+#else
+            Assert.Contains("omitted JavaScript stack trace", ex.StackTrace);
+#endif
         }
 
         [Fact]
@@ -2002,12 +2009,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var exThrow0 = Assert.Throws<JSException>(() => JavaScriptTestHelper.throw0());
             Assert.Contains("throw-0-msg", exThrow0.Message);
             Assert.DoesNotContain(" at ", exThrow0.Message);
+#if !FEATURE_WASM_THREADS
             Assert.Contains("throw0fn", exThrow0.StackTrace);
+#else
+            Assert.Contains("omitted JavaScript stack trace", exThrow0.StackTrace);
+#endif
 
             var exThrow1 = Assert.Throws<JSException>(() => throw1(value));
             Assert.Contains("throw1-msg", exThrow1.Message);
             Assert.DoesNotContain(" at ", exThrow1.Message);
+#if !FEATURE_WASM_THREADS
             Assert.Contains("throw1fn", exThrow1.StackTrace);
+#else
+            Assert.Contains("omitted JavaScript stack trace", exThrow0.StackTrace);
+#endif
 
             // anything is a system.object, sometimes it would be JSObject wrapper
             if (typeof(T).IsPrimitive)

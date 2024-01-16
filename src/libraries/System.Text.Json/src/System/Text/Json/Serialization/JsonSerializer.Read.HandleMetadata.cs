@@ -31,13 +31,13 @@ namespace System.Text.Json
             {
                 if (state.Current.PropertyState == StackFramePropertyState.None)
                 {
-                    state.Current.PropertyState = StackFramePropertyState.ReadName;
-
                     // Read the property name.
                     if (!reader.Read())
                     {
                         return false;
                     }
+
+                    state.Current.PropertyState = StackFramePropertyState.ReadName;
                 }
 
                 if (state.Current.PropertyState < StackFramePropertyState.Name)
@@ -140,13 +140,13 @@ namespace System.Text.Json
 
                 if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
                 {
-                    state.Current.PropertyState = StackFramePropertyState.ReadValue;
-
                     // Read the property value.
                     if (!reader.Read())
                     {
                         return false;
                     }
+
+                    state.Current.PropertyState = StackFramePropertyState.ReadValue;
                 }
 
                 Debug.Assert(state.Current.PropertyState == StackFramePropertyState.ReadValue);

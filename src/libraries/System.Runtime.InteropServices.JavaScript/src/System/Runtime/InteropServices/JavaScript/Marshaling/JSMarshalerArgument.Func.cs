@@ -19,9 +19,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
                 // and would also allow the JS function to be collected
 
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
@@ -53,9 +50,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public void InvokeJS(T arg1)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
@@ -93,9 +87,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public void InvokeJS(T1 arg1, T2 arg2)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
@@ -138,9 +129,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public void InvokeJS(T1 arg1, T2 arg2, T3 arg3)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
@@ -266,9 +254,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public TResult InvokeJS()
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
                 // and would also allow the JS function to be collected
@@ -309,9 +294,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public TResult InvokeJS(T arg1)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
@@ -353,9 +335,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public TResult InvokeJS(T1 arg1, T2 arg2)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
@@ -402,9 +381,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public TResult InvokeJS(T1 arg1, T2 arg2, T3 arg3)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];
                 ref JSMarshalerArgument args_exception = ref arguments[0];

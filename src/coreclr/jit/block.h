@@ -398,10 +398,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_LOOP_ALIGN           = MAKE_BBFLAG(16), // Block is lexically the first block in a loop we intend to align.
     BBF_HAS_ALIGN            = MAKE_BBFLAG(17), // BB ends with 'align' instruction
     BBF_HAS_JMP              = MAKE_BBFLAG(18), // BB executes a JMP instruction (instead of return)
-    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(19), // BB has a GC safe point (a call).  More abstractly, BB does not require a
-                                                // (further) poll -- this may be because this BB has a call, or, in some
-                                                // cases, because the BB occurs in a loop, and we've determined that all
-                                                // paths in the loop body leading to BB include a call.
+    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(19), // BB has a GC safe point (e.g. a call)
     BBF_HAS_IDX_LEN          = MAKE_BBFLAG(20), // BB contains simple index or length expressions on an SD array local var.
     BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(21), // BB contains simple index, length, or lower bound expressions on an MD array local var.
     BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(22), // Block has a multi-dimensional array reference
@@ -431,6 +428,7 @@ enum BasicBlockFlags : unsigned __int64
                                                           // This is just to reduce diffs from removing BBJ_NONE.
                                                           // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
     BBF_OLD_LOOP_HEADER_QUIRK          = MAKE_BBFLAG(42), // Block was the header ('entry') of a loop recognized by old loop finding
+    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(43), // Block has a node that needs a value probing
 
     // The following are sets of flags.
 
@@ -460,7 +458,7 @@ enum BasicBlockFlags : unsigned __int64
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_NONE_QUIRK,
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_NONE_QUIRK,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
     // limit processing of a block if the code in question doesn't exist. This is conservative; we might not
@@ -565,11 +563,14 @@ public:
 
     void SetPrev(BasicBlock* prev)
     {
-        bbPrev = prev;
-        if (prev)
-        {
-            prev->bbNext = this;
-        }
+        assert(prev != nullptr);
+        bbPrev       = prev;
+        prev->bbNext = this;
+    }
+
+    void SetPrevToNull()
+    {
+        bbPrev = nullptr;
     }
 
     BasicBlock* Next() const
@@ -579,17 +580,14 @@ public:
 
     void SetNext(BasicBlock* next)
     {
-        bbNext = next;
-        if (next)
-        {
-            next->bbPrev = this;
-        }
+        assert(next != nullptr);
+        bbNext       = next;
+        next->bbPrev = this;
+    }
 
-        // BBJ_COND convenience: This ensures bbFalseTarget is always consistent with bbNext.
-        // For now, if a BBJ_COND's bbTrueTarget is not taken, we expect to fall through,
-        // so bbFalseTarget must be the next block.
-        // TODO-NoFallThrough: Remove this once we allow bbFalseTarget to diverge from bbNext
-        bbFalseTarget = next;
+    void SetNextToNull()
+    {
+        bbNext = nullptr;
     }
 
     bool IsFirst() const
@@ -616,7 +614,9 @@ public:
 
     bool IsFirstColdBlock(Compiler* compiler) const;
 
-    bool CanRemoveJumpToNext(Compiler* compiler);
+    bool CanRemoveJumpToNext(Compiler* compiler) const;
+
+    bool CanRemoveJumpToFalseTarget(Compiler* compiler) const;
 
     unsigned GetTargetOffs() const
     {
@@ -700,12 +700,14 @@ public:
         return (bbFalseTarget == target);
     }
 
-    void SetCond(BasicBlock* trueTarget)
+    void SetCond(BasicBlock* trueTarget, BasicBlock* falseTarget)
     {
         assert(trueTarget != nullptr);
-        bbKind       = BBJ_COND;
-        bbTrueTarget = trueTarget;
-        // TODO-NoFallThrough: also set bbFalseTarget
+        // TODO-NoFallThrough: Allow falseTarget to diverge from bbNext
+        assert(falseTarget == bbNext);
+        bbKind        = BBJ_COND;
+        bbTrueTarget  = trueTarget;
+        bbFalseTarget = falseTarget;
     }
 
     // Set both the block kind and target. This can clear `bbTarget` when setting
@@ -1291,8 +1293,6 @@ public:
     void ensurePredListOrder(Compiler* compiler);
     void reorderPredList(Compiler* compiler);
 
-    BlockSet bbReach; // Set of all blocks that can reach this one
-
     union {
         BasicBlock* bbIDom;          // Represent the closest dominator to this block (called the Immediate
                                      // Dominator) used to compute the dominance tree.
@@ -1656,10 +1656,9 @@ public:
         return BBCompilerSuccList(comp, this);
     }
 
-    // Try to clone block state and statements from `from` block to `to` block (which must be new/empty),
-    // optionally replacing uses of local `varNum` with IntCns `varVal`.  Return true if all statements
-    // in the block are cloned successfully, false (with partially-populated `to` block) if one fails.
-    static bool CloneBlockState(
+    // Clone block state and statements from `from` block to `to` block (which must be new/empty),
+    // optionally replacing uses of local `varNum` with IntCns `varVal`.
+    static void CloneBlockState(
         Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum = (unsigned)-1, int varVal = 0);
 
     // Copy the block kind and targets. The `from` block is untouched.

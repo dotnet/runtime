@@ -283,7 +283,7 @@ namespace Microsoft.Interop.JavaScript
                 incrementalContext.JSExportData,
                 incrementalContext.SignatureContext,
                 diagnostics,
-                new JSGeneratorFactory());
+                new JSGeneratorResolver());
 
             var wrapperName = "__Wrapper_" + incrementalContext.StubMethodSyntaxTemplate.Identifier + "_" + incrementalContext.SignatureContext.TypesHash;
 

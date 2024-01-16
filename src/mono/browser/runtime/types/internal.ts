@@ -142,6 +142,7 @@ export type LoaderHelpers = {
     mono_download_assets: () => Promise<void>,
     resolve_single_asset_path: (behavior: AssetBehaviors) => AssetEntryInternal,
     setup_proxy_console: (id: string, console: Console, origin: string) => void
+    mono_set_thread_name: (tid: string) => void
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     locateFile: (path: string, prefix?: string) => string,
     out(message: string): void;
@@ -214,6 +215,7 @@ export type RuntimeHelpers = {
     stringify_as_error_with_stack?: (error: any) => string,
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
+    instantiate_segmentation_rules_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (x: boolean) => string,
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
 }
