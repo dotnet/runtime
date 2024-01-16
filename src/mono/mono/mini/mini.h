@@ -133,9 +133,6 @@ typedef struct SeqPointInfo SeqPointInfo;
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
-#if defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
-#define MONO_ARCH_HAVE_SWIFTCALL 1
-#endif
 typedef struct
 {
 	MonoClass *klass;
@@ -3028,10 +3025,5 @@ MonoMemoryManager* mini_get_default_mem_manager (void);
 
 MONO_COMPONENT_API int
 mono_wasm_get_debug_level (void);
-
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-static GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
-#endif
 
 #endif /* __MONO_MINI_H__ */

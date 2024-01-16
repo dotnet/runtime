@@ -125,6 +125,9 @@ static WARN_UNUSED_RESULT guint8* emit_load_regset (guint8 *code, guint64 regs, 
 static guint8* emit_brx (guint8 *code, int reg);
 static guint8* emit_blrx (guint8 *code, int reg);
 
+static GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
+
 const char*
 mono_arch_regname (int reg)
 {

@@ -207,6 +207,10 @@ typedef struct {
 #define MONO_ARCH_EXPLICIT_NULL_CHECKS 1
 #endif
 
+#if defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
+#define MONO_ARCH_HAVE_SWIFTCALL 1
+#endif
+
 /* Relocations */
 #define MONO_R_ARM64_B 1
 #define MONO_R_ARM64_BCC 2
