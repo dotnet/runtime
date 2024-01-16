@@ -279,7 +279,7 @@ namespace System.Runtime.InteropServices.JavaScript
         // void InstallMainSynchronizationContext()
         public static void InstallMainSynchronizationContext()
         {
-            InstallWebWorkerInterop(true);
+            JSSynchronizationContext.InstallWebWorkerInterop(true, CancellationToken.None);
         }
 
 #endif

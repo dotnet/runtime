@@ -23,13 +23,10 @@ export interface PThreadLibrary {
     returnWorkerToPool: (worker: PThreadWorker) => void,
 }
 
-interface EmscriptenPThreadInfo {
-    threadInfoStruct: pthreadPtr;
-}
 
 /// N.B. emscripten deletes the `pthread` property from the worker when it is not actively running a pthread
 export interface PThreadWorker extends Worker {
-    pthread: EmscriptenPThreadInfo;
+    pthread_ptr: pthreadPtr;
     loaded: boolean;
     interopInstalled: boolean;
 }
@@ -60,8 +57,7 @@ export const Internals = !MonoWasmThreads ? null as any : {
         /// They hang a "pthread" object from the worker if the worker is running a thread, and remove it when the thread stops by doing `pthread_exit` or when it's joined using `pthread_join`.
         if (!isRunningPThreadWorker(worker))
             return undefined;
-        const emscriptenThreadInfo = worker.pthread;
-        return emscriptenThreadInfo.threadInfoStruct;
+        return worker.pthread_ptr;
     },
     allocateUnusedWorker: (): void => {
         /// See library_pthread.js in Emscripten.

@@ -6340,10 +6340,19 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 // Notes:
 //   This function needs to handle somewhat complex IR that appears after
 //   tailcall candidates due to inlining.
+//   Does not support checking struct returns since physical promotion can
+//   create very hard to validate IR patterns.
 //
 void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
 {
 #ifdef DEBUG
+    if (call->TypeIs(TYP_STRUCT))
+    {
+        // Due to struct fields it can be very hard to track valid return
+        // patterns; just give up on validating those.
+        return;
+    }
+
     class TailCallIRValidatorVisitor final : public GenTreeVisitor<TailCallIRValidatorVisitor>
     {
         GenTreeCall* m_tailcall;
@@ -9139,7 +9148,6 @@ DONE_MORPHING_CHILDREN:
         case GT_LE:
         case GT_GE:
         case GT_GT:
-
             // Change "CNS relop op2" to "op2 relop* CNS"
             if (!optValnumCSE_phase && op1->IsIntegralConst() && tree->OperIsCompare() && gtCanSwapOrder(op1, op2))
             {
@@ -12966,7 +12974,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
     const bool makeCondAssertions =
         tree->OperIs(GT_JTRUE) && compCurBB->KindIs(BBJ_COND) && (compCurBB->NumSucc() == 2);
 
-    // Intialize apLocalIfTrue if we might look for it later,
+    // Initialize apLocalIfTrue if we might look for it later,
     // even if it ends up identical to apLocal.
     //
     if (makeCondAssertions)
@@ -13004,14 +13012,14 @@ void Compiler::fgAssertionGen(GenTree* tree)
 
         if (ifTrueAssertionIndex != NO_ASSERTION_INDEX)
         {
-            announce(ifTrueAssertionIndex, " [if true]");
+            announce(ifTrueAssertionIndex, "[if true] ");
             unsigned const bvIndex = ifTrueAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocalIfTrue, bvIndex);
         }
 
         if (ifFalseAssertionIndex != NO_ASSERTION_INDEX)
         {
-            announce(ifFalseAssertionIndex, " [if false]");
+            announce(ifFalseAssertionIndex, "[if false] ");
             unsigned const bvIndex = ifFalseAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocal, ifFalseAssertionIndex - 1);
         }
@@ -13205,7 +13213,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 /* dest block must also be marked as a loop head and     */
                 /* We must be able to reach the backedge block           */
                 if (optLoopTableValid && block->GetTrueTarget()->isLoopHead() &&
-                    (block->GetTrueTarget()->bbNum <= block->bbNum) && fgReachable(block->GetTrueTarget(), block))
+                    (block->GetTrueTarget()->bbNum <= block->bbNum) &&
+                    m_reachabilitySets->CanReach(block->GetTrueTarget(), block))
                 {
                     optUnmarkLoopBlocks(block->GetTrueTarget(), block);
                 }
@@ -13471,7 +13480,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 //
 // Returns:
 //    true if 'stmt' was removed from the block.
-//  s false if 'stmt' is still in the block (even if other statements were removed).
+//    false if 'stmt' is still in the block (even if other statements were removed).
 //
 // Notes:
 //   Can be called anytime, unlike fgMorphStmts() which should only be called once.
@@ -13843,8 +13852,6 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //
 // Arguments:
 //    block - block in question
-//    highestReachablePostorder - maximum postorder number for a
-//     reachable block.
 //
 void Compiler::fgMorphBlock(BasicBlock* block)
 {
@@ -13998,7 +14005,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
 //
 // Note:
 //   Morph almost always changes IR, so we don't actually bother to
-//   track if it made any changees.
+//   track if it made any changes.
 //
 PhaseStatus Compiler::fgMorphBlocks()
 {
@@ -14181,6 +14188,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             fgAddRefPred(genReturnBB, block);
             fgReturnCount--;
         }
+
         if (genReturnLocal != BAD_VAR_NUM)
         {
             // replace the GT_RETURN node to be a STORE_LCL_VAR that stores the return value into genReturnLocal.
@@ -14235,7 +14243,15 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             noway_assert(ret->TypeGet() == TYP_VOID);
             noway_assert(ret->gtGetOp1() == nullptr);
 
-            fgRemoveStmt(block, lastStmt);
+            if (opts.compDbgCode && lastStmt->GetDebugInfo().IsValid())
+            {
+                // We can't remove the return as it might remove a sequence point. Convert it to a NOP.
+                ret->gtBashToNOP();
+            }
+            else
+            {
+                fgRemoveStmt(block, lastStmt);
+            }
         }
 
         JITDUMP("\nUpdate " FMT_BB " to jump to common return block.\n", block->bbNum);
@@ -14518,22 +14534,22 @@ void Compiler::fgPostExpandQmarkChecks()
 // Returns:
 //    The GT_QMARK node, or nullptr if there is no top level qmark.
 //
-GenTree* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = NULL */)
+GenTreeQmark* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = NULL */)
 {
     if (ppDst != nullptr)
     {
         *ppDst = nullptr;
     }
 
-    GenTree* topQmark = nullptr;
+    GenTreeQmark* topQmark = nullptr;
 
     if (expr->gtOper == GT_QMARK)
     {
-        topQmark = expr;
+        topQmark = expr->AsQmark();
     }
     else if (expr->OperIsLocalStore() && expr->AsLclVarCommon()->Data()->OperIs(GT_QMARK))
     {
-        topQmark = expr->AsLclVarCommon()->Data();
+        topQmark = expr->AsLclVarCommon()->Data()->AsQmark();
 
         if (ppDst != nullptr)
         {
@@ -14596,8 +14612,8 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     bool     introducedThrow = false;
     GenTree* expr            = stmt->GetRootNode();
 
-    GenTree* dst   = nullptr;
-    GenTree* qmark = fgGetTopLevelQmark(expr, &dst);
+    GenTree*      dst   = nullptr;
+    GenTreeQmark* qmark = fgGetTopLevelQmark(expr, &dst);
 
     noway_assert(dst != nullptr);
     assert(dst->OperIsLocalStore());
@@ -14614,11 +14630,13 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     GenTree* true2Expr;
     GenTree* false2Expr;
 
+    unsigned nestedQmarkElseLikelihood = 50;
     if (nestedQmark->gtOper == GT_QMARK)
     {
-        cond2Expr  = nestedQmark->gtGetOp1();
-        true2Expr  = nestedQmark->gtGetOp2()->AsColon()->ThenNode();
-        false2Expr = nestedQmark->gtGetOp2()->AsColon()->ElseNode();
+        cond2Expr                 = nestedQmark->gtGetOp1();
+        true2Expr                 = nestedQmark->gtGetOp2()->AsColon()->ThenNode();
+        false2Expr                = nestedQmark->gtGetOp2()->AsColon()->ElseNode();
+        nestedQmarkElseLikelihood = nestedQmark->AsQmark()->ElseNodeLikelihood();
     }
     else
     {
@@ -14677,17 +14695,38 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     block->SetTarget(asgBlock);
     fgAddRefPred(asgBlock, block);
     fgAddRefPred(cond1Block, asgBlock);
+    fgAddRefPred(remainderBlock, helperBlock);
+
+    cond1Block->SetFalseTarget(cond2Block);
+    cond2Block->SetFalseTarget(helperBlock);
     fgAddRefPred(cond2Block, cond1Block);
     fgAddRefPred(helperBlock, cond2Block);
-    fgAddRefPred(remainderBlock, helperBlock);
     fgAddRefPred(remainderBlock, cond1Block);
     fgAddRefPred(remainderBlock, cond2Block);
 
     // Set the weights; some are guesses.
     asgBlock->inheritWeight(block);
     cond1Block->inheritWeight(block);
+
+    // We only have likelihood for the fast path (and fallback), but we don't know
+    // how often we have null in the root QMARK (although, we might be able to guess it too)
+    // so leave 50/50 for now. Thus, we have:
+    //
+    //   [weight 1.0]
+    //   if (obj != null)
+    //   {
+    //       [weight 0.5]
+    //       if (obj.GetType() == typeof(FastType))
+    //       {
+    //           [weight 0.5 * <likelihood of FastType>]
+    //       }
+    //       else
+    //       {
+    //           [weight 0.5 * <100 - likelihood of FastType>]
+    //       }
+    //
     cond2Block->inheritWeightPercentage(cond1Block, 50);
-    helperBlock->inheritWeightPercentage(cond2Block, 50);
+    helperBlock->inheritWeightPercentage(cond2Block, nestedQmarkElseLikelihood);
 
     // Append cond1 as JTRUE to cond1Block
     GenTree*   jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condExpr);
@@ -14810,8 +14849,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     GenTree* expr            = stmt->GetRootNode();
 
     // Retrieve the Qmark node to be expanded.
-    GenTree* dst   = nullptr;
-    GenTree* qmark = fgGetTopLevelQmark(expr, &dst);
+    GenTree*      dst   = nullptr;
+    GenTreeQmark* qmark = fgGetTopLevelQmark(expr, &dst);
     if (qmark == nullptr)
     {
         return false;
@@ -14872,6 +14911,9 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     condBlock->inheritWeight(block);
 
+    // Make sure remainderBlock gets exactly the same weight as block after split
+    assert(condBlock->bbWeight == remainderBlock->bbWeight);
+
     assert(block->KindIs(BBJ_ALWAYS));
     block->SetTarget(condBlock);
     condBlock->SetTarget(elseBlock);
@@ -14898,10 +14940,10 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetCond(elseBlock);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true, remainderBlock);
         thenBlock->SetFlags(propagateFlagsToAll);
+        condBlock->SetCond(elseBlock, thenBlock);
         if (!block->HasFlag(BBF_INTERNAL))
         {
             thenBlock->RemoveFlags(BBF_INTERNAL);
@@ -14911,8 +14953,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         fgAddRefPred(thenBlock, condBlock);
         fgAddRefPred(remainderBlock, thenBlock);
 
-        thenBlock->inheritWeightPercentage(condBlock, 50);
-        elseBlock->inheritWeightPercentage(condBlock, 50);
+        thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
+        elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
     }
     else if (hasTrueExpr)
     {
@@ -14923,13 +14965,13 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         gtReverseCond(condExpr);
-        condBlock->SetCond(remainderBlock);
+        condBlock->SetCond(remainderBlock, elseBlock);
         fgAddRefPred(remainderBlock, condBlock);
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
         elseBlock = nullptr;
 
-        thenBlock->inheritWeightPercentage(condBlock, 50);
+        thenBlock->inheritWeightPercentage(condBlock, qmark->ThenNodeLikelihood());
     }
     else if (hasFalseExpr)
     {
@@ -14939,10 +14981,10 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->------------+
         //              bbj_cond(true)
         //
-        condBlock->SetCond(remainderBlock);
+        condBlock->SetCond(remainderBlock, elseBlock);
         fgAddRefPred(remainderBlock, condBlock);
 
-        elseBlock->inheritWeightPercentage(condBlock, 50);
+        elseBlock->inheritWeightPercentage(condBlock, qmark->ElseNodeLikelihood());
     }
 
     assert(condBlock->KindIs(BBJ_COND));

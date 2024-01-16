@@ -83,74 +83,6 @@ bool Compiler::fgDominate(const BasicBlock* b1, const BasicBlock* b2)
 }
 
 //------------------------------------------------------------------------
-// fgReachable: Returns true if block `b1` can reach block `b2`.
-//
-// Arguments:
-//    b1, b2 -- Two blocks to compare.
-//
-// Return Value:
-//    true if `b1` can reach `b2` via some path. If either b1 or b2 were created after dominators were calculated,
-//    but the dominator information still exists, try to determine if we can make a statement about
-//    b1 reaching b2 based on existing reachability information and other information, such as
-//    predecessor lists.
-//
-// Assumptions:
-//    -- Dominators have been calculated (`fgDomsComputed` is true).
-//    -- Reachability information has been calculated (`fgReachabilitySetsValid` is true).
-//
-bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
-{
-    noway_assert(fgDomsComputed);
-
-    //
-    // If the fgModified flag is false then we made some modifications to
-    // the flow graph, like adding a new block or changing a conditional branch
-    // into an unconditional branch.
-    //
-    // We can continue to use the dominator and reachable information to
-    // unmark loops as long as we haven't renumbered the blocks or we aren't
-    // asking for information about a new block
-    //
-
-    if (b2->bbNum > fgDomBBcount)
-    {
-        if (b1 == b2)
-        {
-            return true;
-        }
-
-        for (BasicBlock* const predBlock : b2->PredBlocks())
-        {
-            if (fgReachable(b1, predBlock))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    if (b1->bbNum > fgDomBBcount)
-    {
-        noway_assert(b1->KindIs(BBJ_ALWAYS, BBJ_COND));
-
-        if (b1->KindIs(BBJ_COND))
-        {
-            return fgReachable(b1->GetFalseTarget(), b2) || fgReachable(b1->GetTrueTarget(), b2);
-        }
-        else
-        {
-            return fgReachable(b1->GetTarget(), b2);
-        }
-    }
-
-    /* Check if b1 can reach b2 */
-    assert(fgReachabilitySetsValid);
-    assert(BasicBlockBitSetTraits::GetSize(this) == fgDomBBcount + 1);
-    return BlockSetOps::IsMember(this, b2->bbReach, b1->bbNum);
-}
-
-//------------------------------------------------------------------------
 // fgUpdateChangedFlowGraph: Update changed flow graph information.
 //
 // If the flow graph has changed, we need to recompute various information if we want to use it again.
@@ -167,113 +99,17 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 void Compiler::fgUpdateChangedFlowGraph(FlowGraphUpdates updates)
 {
     const bool computeDoms = ((updates & FlowGraphUpdates::COMPUTE_DOMS) == FlowGraphUpdates::COMPUTE_DOMS);
-    const bool computeReturnBlocks =
-        ((updates & FlowGraphUpdates::COMPUTE_RETURNS) == FlowGraphUpdates::COMPUTE_RETURNS);
-    const bool computeLoops = ((updates & FlowGraphUpdates::COMPUTE_LOOPS) == FlowGraphUpdates::COMPUTE_LOOPS);
 
     // We need to clear this so we don't hit an assert calling fgRenumberBlocks().
     fgDomsComputed = false;
 
-    if (computeReturnBlocks)
-    {
-        fgComputeReturnBlocks();
-    }
-
     JITDUMP("\nRenumbering the basic blocks for fgUpdateChangeFlowGraph\n");
     fgRenumberBlocks();
-    fgComputeEnterBlocksSet();
     fgDfsReversePostorder();
-    fgComputeReachabilitySets();
     if (computeDoms)
     {
         fgComputeDoms();
     }
-    if (computeLoops)
-    {
-        // Reset the loop info annotations and find the loops again.
-        // Note: this is similar to `RecomputeLoopInfo`.
-        optResetLoopInfo();
-        optSetBlockWeights();
-        optFindLoops();
-    }
-}
-
-//------------------------------------------------------------------------
-// fgComputeReachabilitySets: Compute the bbReach sets.
-//
-// This can be called to recompute the bbReach sets after the flow graph changes, such as when the
-// number of BasicBlocks change (and thus, the BlockSet epoch changes).
-//
-// This also sets the BBF_GC_SAFE_POINT flag on blocks.
-//
-// This depends on `fgBBReversePostorder` being correct.
-//
-// TODO-Throughput: This algorithm consumes O(n^2) because we're using dense bitsets to
-// represent reachability. While this yields O(1) time queries, it bloats the memory usage
-// for large code.  We can do better if we try to approach reachability by
-// computing the strongly connected components of the flow graph.  That way we only need
-// linear memory to label every block with its SCC.
-//
-void Compiler::fgComputeReachabilitySets()
-{
-    assert(fgPredsComputed);
-    assert(fgBBReversePostorder != nullptr);
-
-#ifdef DEBUG
-    fgReachabilitySetsValid = false;
-#endif // DEBUG
-
-    for (BasicBlock* const block : Blocks())
-    {
-        // Initialize the per-block bbReach sets. It creates a new empty set,
-        // because the block epoch could change since the previous initialization
-        // and the old set could have wrong size.
-        block->bbReach = BlockSetOps::MakeEmpty(this);
-
-        /* Mark block as reaching itself */
-        BlockSetOps::AddElemD(this, block->bbReach, block->bbNum);
-    }
-
-    // Find the reachable blocks. Also, set BBF_GC_SAFE_POINT.
-
-    bool     change;
-    unsigned changedIterCount = 1;
-    do
-    {
-        change = false;
-
-        for (unsigned i = 1; i <= fgBBNumMax; ++i)
-        {
-            BasicBlock* const block = fgBBReversePostorder[i];
-
-            if (block->bbPreds != nullptr)
-            {
-                BasicBlockFlags predGcFlags = BBF_GC_SAFE_POINT; // Do all of our predecessor blocks have a GC safe bit?
-                for (BasicBlock* const predBlock : block->PredBlocks())
-                {
-                    change |= BlockSetOps::UnionDChanged(this, block->bbReach, predBlock->bbReach);
-                    predGcFlags &= predBlock->GetFlagsRaw();
-                }
-                block->SetFlags(predGcFlags);
-            }
-        }
-
-        ++changedIterCount;
-    } while (change);
-
-#if COUNT_BASIC_BLOCKS
-    computeReachabilitySetsIterationTable.record(changedIterCount);
-#endif // COUNT_BASIC_BLOCKS
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nAfter computing reachability sets:\n");
-        fgDispReach();
-    }
-
-    fgReachabilitySetsValid = true;
-#endif // DEBUG
 }
 
 //------------------------------------------------------------------------
@@ -314,56 +150,6 @@ void Compiler::fgComputeReturnBlocks()
         }
         printf("\n");
     }
-#endif // DEBUG
-}
-
-//------------------------------------------------------------------------
-// fgComputeEnterBlocksSet: Compute the entry blocks set.
-//
-// Initialize fgEnterBlks to the set of blocks for which we don't have explicit control
-// flow edges. These are the entry basic block and each of the EH handler blocks.
-//
-void Compiler::fgComputeEnterBlocksSet()
-{
-#ifdef DEBUG
-    fgEnterBlksSetValid = false;
-#endif // DEBUG
-
-    fgEnterBlks = BlockSetOps::MakeEmpty(this);
-
-    /* Now set the entry basic block */
-    BlockSetOps::AddElemD(this, fgEnterBlks, fgFirstBB->bbNum);
-    assert(fgFirstBB->bbNum == 1);
-
-    /* Also 'or' in the handler basic blocks */
-    if (!compIsForInlining())
-    {
-        for (EHblkDsc* const HBtab : EHClauses(this))
-        {
-            if (HBtab->HasFilter())
-            {
-                BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdFilter->bbNum);
-            }
-            BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdHndBeg->bbNum);
-        }
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("Enter blocks: ");
-        BlockSetOps::Iter iter(this, fgEnterBlks);
-        unsigned          bbNum = 0;
-        while (iter.NextElem(&bbNum))
-        {
-            printf(FMT_BB " ", bbNum);
-        }
-        printf("\n");
-    }
-#endif // DEBUG
-
-#ifdef DEBUG
-    fgEnterBlksSetValid = true;
 #endif // DEBUG
 }
 
@@ -493,70 +279,21 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 //
 //   Assumes the predecessor lists are computed and correct.
 //
-//   Use `fgReachable()` to check reachability.
-//   Use `fgDominate()` to check dominance.
-//
 PhaseStatus Compiler::fgComputeReachability()
 {
     assert(fgPredsComputed);
 
+    bool madeChanges = fgDfsBlocksAndRemove() != PhaseStatus::MODIFIED_NOTHING;
+
+    madeChanges |= fgRenumberBlocks();
+
+    fgDfsReversePostorder();
+
+    // fgDfsReversePostorder reassigns preorder numbers, so recompute the DFS.
+    m_dfsTree = fgComputeDfs();
+
     fgComputeReturnBlocks();
-
-    // Compute reachability and then delete blocks determined to be unreachable. If we delete blocks, we
-    // need to loop, as that might have caused more blocks to become unreachable. This can happen in the
-    // case where a call to a finally is unreachable and deleted (maybe the call to the finally is
-    // preceded by a throw or an infinite loop), making the blocks following the finally unreachable.
-    // However, all EH entry blocks are considered global entry blocks, causing the blocks following the
-    // call to the finally to stay rooted, until a second round of reachability is done.
-    // The dominator algorithm expects that all blocks can be reached from the fgEnterBlks set.
-    unsigned passNum = 1;
-    bool     changed;
-
-    auto canRemoveBlock = [&](BasicBlock* block) -> bool {
-        // If any of the entry blocks can reach this block, then we skip it.
-        if (!BlockSetOps::IsEmptyIntersection(this, fgEnterBlks, block->bbReach))
-        {
-            return false;
-        }
-
-        return true;
-    };
-
-    bool madeChanges = false;
-
-    do
-    {
-        // Just to be paranoid, avoid infinite loops; fall back to minopts.
-        if (passNum > 10)
-        {
-            noway_assert(!"Too many unreachable block removal loops");
-        }
-
-        // Walk the flow graph, reassign block numbers to keep them in ascending order.
-        JITDUMP("\nRenumbering the basic blocks for fgComputeReachability pass #%u\n", passNum);
-        passNum++;
-        madeChanges |= fgRenumberBlocks();
-
-        //
-        // Compute fgEnterBlks, reverse post-order, and bbReach.
-        //
-
-        fgComputeEnterBlocksSet();
-        fgDfsReversePostorder();
-        fgComputeReachabilitySets();
-
-        //
-        // Use reachability information to delete unreachable blocks.
-        //
-
-        changed = fgRemoveUnreachableBlocks(canRemoveBlock);
-        madeChanges |= changed;
-
-    } while (changed);
-
-#if COUNT_BASIC_BLOCKS
-    computeReachabilityIterationTable.record(passNum - 1);
-#endif // COUNT_BASIC_BLOCKS
+    m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
 
     //
     // Now, compute the dominators
@@ -1766,7 +1503,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     GenTree* const jumpIfEntryStateZero = gtNewOperNode(GT_JTRUE, TYP_VOID, compareEntryStateToZero);
                     fgNewStmtAtBeg(fromBlock, jumpIfEntryStateZero);
 
-                    fromBlock->SetCond(toBlock);
+                    fromBlock->SetCond(toBlock, newBlock);
                     fgAddRefPred(toBlock, fromBlock);
                     newBlock->inheritWeight(fromBlock);
 
@@ -1952,14 +1689,6 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         {
             return false;
         }
-    }
-
-    // Don't compact blocks from different loops.
-    //
-    if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (bNext->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
-        (block->bbNatLoopNum != bNext->bbNatLoopNum))
-    {
-        return false;
     }
 
     // If there is a switch predecessor don't bother because we'd have to update the uniquesuccs as well
@@ -2307,12 +2036,12 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
 
         case BBJ_COND:
-            block->SetCond(bNext->GetTrueTarget());
+            block->SetCond(bNext->GetTrueTarget(), bNext->GetFalseTarget());
 
-            /* Update the predecessor list for 'bNext->bbTarget' */
+            /* Update the predecessor list for 'bNext->bbTrueTarget' */
             fgReplacePred(bNext->GetTrueTarget(), bNext, block);
 
-            /* Update the predecessor list for 'bNext->bbFalseTarget' if it is different than 'bNext->bbTarget' */
+            /* Update the predecessor list for 'bNext->bbFalseTarget' if it is different than 'bNext->bbTrueTarget' */
             if (!bNext->TrueTargetIs(bNext->GetFalseTarget()))
             {
                 fgReplacePred(bNext->GetFalseTarget(), bNext, block);
@@ -2356,54 +2085,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         block->RemoveFlags(BBF_NONE_QUIRK);
     }
 
-    // If we're collapsing a block created after the dominators are
-    // computed, copy block number the block and reuse dominator
-    // information from bNext to block.
-    //
-    // Note we have to do this renumbering after the full set of pred list
-    // updates above, since those updates rely on stable bbNums; if we renumber
-    // before the updates, we can create pred lists with duplicate m_block->bbNum
-    // values (though different m_blocks).
-    //
-    if ((fgDomsComputed || fgCompactRenumberQuirk) && (block->bbNum > fgDomBBcount))
-    {
-        if (fgDomsComputed)
-        {
-            assert(fgReachabilitySetsValid);
-            BlockSetOps::Assign(this, block->bbReach, bNext->bbReach);
-            BlockSetOps::ClearD(this, bNext->bbReach);
-
-            block->bbIDom = bNext->bbIDom;
-            bNext->bbIDom = nullptr;
-
-            // In this case, there's no need to update the preorder and postorder numbering
-            // since we're changing the bbNum, this makes the basic block all set.
-            //
-            JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " to preserve dominator information\n", block->bbNum,
-                    bNext->bbNum);
-        }
-        else
-        {
-            // TODO-Quirk: Remove
-            JITDUMP("Renumbering " FMT_BB " to be " FMT_BB " for a quirk\n", block->bbNum, bNext->bbNum);
-        }
-
-        block->bbNum = bNext->bbNum;
-
-        // Because we may have reordered pred lists when we swapped in
-        // block for bNext above, we now need to re-reorder pred lists
-        // to reflect the bbNum update.
-        //
-        // This process of reordering and re-reordering could likely be avoided
-        // via a different update strategy. But because it's probably rare,
-        // and we avoid most of the work if pred lists are already in order,
-        // we'll just ensure everything is properly ordered.
-        //
-        for (BasicBlock* const checkBlock : Blocks())
-        {
-            checkBlock->ensurePredListOrder(this);
-        }
-    }
+    assert(!fgDomsComputed);
 
     if (optLoopTableValid)
     {
@@ -2586,7 +2268,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     {
         printf("Block " FMT_BB " becoming a BBJ_ALWAYS to " FMT_BB " (jump target is the same whether the condition"
                " is true or false)\n",
-               block->bbNum, block->GetFalseTarget()->bbNum);
+               block->bbNum, block->GetTarget()->bbNum);
     }
 #endif
 
@@ -2979,14 +2661,13 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 }
             }
 
-            /* special case if this is the last BB */
-            if (block == fgLastBB)
+            /* special case if this is the only BB */
+            if (block->IsFirst() && block->IsLast())
             {
-                if (!bPrev)
-                {
-                    break;
-                }
-                fgLastBB = bPrev;
+                assert(block == fgFirstBB);
+                assert(block == fgLastBB);
+                assert(bPrev == nullptr);
+                break;
             }
 
             // When using profile weights, fgComputeEdgeWeights expects the first non-internal block to have profile
@@ -3295,7 +2976,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             fgSetStmtSeq(switchStmt);
         }
 
-        block->SetCond(block->GetSwitchTargets()->bbsDstTab[0]);
+        block->SetCond(block->GetSwitchTargets()->bbsDstTab[0], block->GetSwitchTargets()->bbsDstTab[1]);
 
         JITDUMP("After:\n");
         DISPNODE(switchTree);
@@ -3703,16 +3384,16 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         fgInsertStmtAtEnd(block, cloneStmt);
     }
 
-    // Fix up block's flow
-    //
-    block->SetCond(target->GetTrueTarget());
-    fgAddRefPred(block->GetTrueTarget(), block);
-    fgRemoveRefPred(target, block);
-
     // add an unconditional block after this block to jump to the target block's fallthrough block
     //
     assert(!target->IsLast());
     BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetFalseTarget());
+
+    // Fix up block's flow
+    //
+    block->SetCond(target->GetTrueTarget(), next);
+    fgAddRefPred(block->GetTrueTarget(), block);
+    fgRemoveRefPred(target, block);
 
     // The new block 'next' will inherit its weight from 'block'
     //
@@ -4117,8 +3798,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->CopyFlags(bDest, BBF_COPY_PROPAGATE);
 
-    bJump->SetCond(bDestNormalTarget);
-    bJump->SetFalseTarget(bJump->Next());
+    bJump->SetCond(bDestNormalTarget, bJump->Next());
 
     /* Update bbRefs and bbPreds */
 
@@ -4278,7 +3958,7 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Wire up the new control flow.
         //
-        block->SetCond(dominantTarget);
+        block->SetCond(dominantTarget, newBlock);
         FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
         FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
         assert(blockToNewBlockEdge->getSourceBlock() == block);
@@ -5991,6 +5671,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             {
                 if (bPrev)
                 {
+                    assert(!block->IsLast());
                     bPrev->SetNext(block->Next());
                 }
                 else
@@ -6199,13 +5880,12 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                             if (bDest->KindIs(BBJ_COND))
                             {
                                 BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true, bDestNext);
+                                bDest->SetFalseTarget(bFixup);
                                 bFixup->inheritWeight(bDestNext);
 
                                 fgRemoveRefPred(bDestNext, bDest);
                                 fgAddRefPred(bFixup, bDest);
                                 fgAddRefPred(bDestNext, bFixup);
-
-                                bDest->SetFalseTarget(bDest->Next());
                             }
                         }
                     }
@@ -6234,6 +5914,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
                         // Optimize the Conditional JUMP to go to the new target
                         block->SetTrueTarget(bNext->GetTarget());
+                        block->SetFalseTarget(bNext->Next());
 
                         fgAddRefPred(bNext->GetTarget(), block, fgRemoveRefPred(bNext->GetTarget(), bNext));
 
@@ -6474,6 +6155,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 //
 PhaseStatus Compiler::fgDfsBlocksAndRemove()
 {
+    fgInvalidateDfsTree();
     m_dfsTree = fgComputeDfs();
 
     PhaseStatus status = PhaseStatus::MODIFIED_NOTHING;

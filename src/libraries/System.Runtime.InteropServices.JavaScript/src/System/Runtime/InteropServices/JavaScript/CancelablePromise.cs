@@ -29,6 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             _CancelPromise(holder.GCHandle);
 #else
+            // this need to be manually dispatched via holder.ProxyContext, because we don't pass JSObject with affinity
             holder.ProxyContext.SynchronizationContext.Post(static (object? h) =>
             {
                 var holder = (JSHostImplementation.PromiseHolder)h!;
@@ -62,6 +63,7 @@ namespace System.Runtime.InteropServices.JavaScript
             _CancelPromise(holder.GCHandle);
             callback.Invoke(state);
 #else
+            // this need to be manually dispatched via holder.ProxyContext, because we don't pass JSObject with affinity
             holder.ProxyContext.SynchronizationContext.Post(_ =>
             {
                 lock (holder.ProxyContext)

@@ -12,6 +12,7 @@
 # Show all commands run and exit on any errors
 
 set -xeuo pipefail
+cd "$(dirname "$0")"
 
 # Parse command line
 
@@ -72,20 +73,25 @@ app_dll=$(realpath $app_dll)
 
 output_dir=$(mktemp -d)
 
+# Add the emit tests to the end of Main
+export DOTNET_JitEmitUnitTests=Main
+export DOTNET_JitEmitUnitTestsSections=$group
+# Dump the disassembly for Main to a file
+export DOTNET_JitDisasm=Main
+export DOTNET_JitStdOutFile=$output_dir/clr_output.txt
+# Dump the hex for Main to a file
 export DOTNET_JitRawHexCode=Main
 export DOTNET_JitRawHexCodeFile=$output_dir/clr_hex.txt
-export DOTNET_JitDump=Main
-export DOTNET_JitDumpEmitUnitTests=$group
 
 # Run the dummy app in clr
 
-$CORE_ROOT/corerun $app_dll > $output_dir/clr_output.txt
+$CORE_ROOT/corerun $app_dll
 
 # Extract the instructions from the clr output, from the first NOP to the first set of 2 NOPS.
 
-egrep "IN.*: 00" $output_dir/clr_output.txt \
-| cut -f 8- -d ' ' | tr -s ' \t' ' ' \
-| awk '{ if ($1=="nop") { go=1; if (prev=="nop") fin=1; } if (go && !fin) print $0; prev=$1 }' \
+grep "^         " $output_dir/clr_output.txt \
+| tr -s ' \t' ' ' \
+| awk '{ $1=$1; if ($1=="nop") { go=1; if (prev=="nop") fin=1; } if (go && !fin) print $0; prev=$1 }' \
 > $output_dir/clr_instrs.txt
 
 # Run the raw hex through capstone
@@ -94,9 +100,9 @@ $cstool $arch $output_dir/clr_hex.txt > $output_dir/capstone_output.txt
 
 # Extract the instructions from the capstone output, from the first NOP to the first set of 2 NOPS.
 
-cat $output_dir/capstone_output.txt \
-| cut -f 3- -d ' ' | tr -s ' \t' ' ' \
-| awk '{ if ($1=="nop") { go=1; if (prev=="nop") fin=1; } if (go && !fin) print $0; prev=$1 }' \
+cut -f 3- -d ' ' $output_dir/capstone_output.txt \
+| tr -s ' \t' ' ' \
+| awk '{ $1=$1; if ($1=="nop") { go=1; if (prev=="nop") fin=1; } if (go && !fin) print $0; prev=$1 }' \
 > $output_dir/capstone_instrs.txt
 
 # Show some of the output

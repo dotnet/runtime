@@ -294,10 +294,25 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 // Returns:
 //    true if block is a BBJ_ALWAYS to the next block that we can fall into
 //
-bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler)
+bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
     return JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbTarget);
+}
+
+//------------------------------------------------------------------------
+// CanRemoveJumpToFalseTarget: determine if jump to false target can be omitted
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+// Returns:
+//    true if block is a BBJ_COND that can fall into its false target
+//
+bool BasicBlock::CanRemoveJumpToFalseTarget(Compiler* compiler) const
+{
+    assert(KindIs(BBJ_COND));
+    return NextIs(bbFalseTarget) && !hasAlign() && !compiler->fgInDifferentRegions(this, bbFalseTarget);
 }
 
 //------------------------------------------------------------------------
@@ -509,11 +524,17 @@ void BasicBlock::dspFlags() const
         {BBF_OLD_LOOP_HEADER_QUIRK, "loopheader"},
     };
 
+    bool first = true;
     for (unsigned i = 0; i < ArrLen(bbFlagDisplay); i++)
     {
         if (HasFlag(bbFlagDisplay[i].flag))
         {
-            printf("%s ", bbFlagDisplay[i].displayString);
+            if (!first)
+            {
+                printf(" ");
+            }
+            printf("%s", bbFlagDisplay[i].displayString);
+            first = false;
         }
     }
 }
@@ -771,22 +792,15 @@ void* BasicBlock::MemoryPhiArg::operator new(size_t sz, Compiler* comp)
 //    varNum - lclVar uses with lclNum `varNum` will be replaced; can be ~0 to indicate no replacement.
 //    varVal - If replacing uses of `varNum`, replace them with int constants with value `varVal`.
 //
-// Return Value:
-//    Cloning may fail because this routine uses `gtCloneExpr` for cloning and it can't handle all
-//    IR nodes.  If cloning of any statement fails, `false` will be returned and block `to` may be
-//    partially populated.  If cloning of all statements succeeds, `true` will be returned and
-//    block `to` will be fully populated.
-//
 // Note:
 //    Leaves block ref count at zero, and pred edge list empty.
 //
-bool BasicBlock::CloneBlockState(
+void BasicBlock::CloneBlockState(
     Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum, int varVal)
 {
     assert(to->bbStmtList == nullptr);
     to->CopyFlags(from);
     to->bbWeight = from->bbWeight;
-    BlockSetOps::AssignAllowUninitRhs(compiler, to->bbReach, from->bbReach);
     to->copyEHRegion(from);
     to->bbCatchTyp    = from->bbCatchTyp;
     to->bbStkTempsIn  = from->bbStkTempsIn;
@@ -803,16 +817,9 @@ bool BasicBlock::CloneBlockState(
     for (Statement* const fromStmt : from->Statements())
     {
         GenTree* newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
-        if (!newExpr)
-        {
-            // gtCloneExpr doesn't handle all opcodes, so may fail to clone a statement.
-            // When that happens, it returns nullptr; abandon the rest of this block and
-            // return `false` to the caller to indicate that cloning was unsuccessful.
-            return false;
-        }
+        assert(newExpr != nullptr);
         compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr, fromStmt->GetDebugInfo()));
     }
-    return true;
 }
 
 //------------------------------------------------------------------------
@@ -835,7 +842,8 @@ void BasicBlock::CopyTarget(Compiler* compiler, const BasicBlock* from)
             SetEhf(new (compiler, CMK_BasicBlock) BBehfDesc(compiler, from->GetEhfTargets()));
             break;
         case BBJ_COND:
-            SetCond(from->GetTrueTarget());
+            // TODO-NoFallThrough: Copy false target, too?
+            SetCond(from->GetTrueTarget(), Next());
             break;
         case BBJ_ALWAYS:
             SetKindAndTarget(from->GetKind(), from->GetTarget());
@@ -876,7 +884,8 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             from->bbEhfTargets = nullptr; // Make sure nobody uses the descriptor after this.
             break;
         case BBJ_COND:
-            SetCond(from->GetTrueTarget());
+            // TODO-NoFallThrough: Copy false target, too?
+            SetCond(from->GetTrueTarget(), Next());
             break;
         case BBJ_ALWAYS:
             SetKindAndTarget(from->GetKind(), from->GetTarget());
@@ -1123,7 +1132,7 @@ bool BasicBlock::bbFallsThrough() const
             return false;
 
         case BBJ_COND:
-            return NextIs(GetFalseTarget());
+            return true;
 
         case BBJ_CALLFINALLY:
             return !HasFlag(BBF_RETLESS_CALL);

@@ -175,13 +175,15 @@ namespace System.Reflection.Emit
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:DynamicallyAccessedMembers", Justification = "The interface methods should be available at this point")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder. The interface methods should be available at this point")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder")]
         private void CheckInterfaces(Type[] _interfaces)
         {
             foreach (Type interfaceType in _interfaces)
             {
+#pragma warning disable IL2075 // Analyzer produces a different warning code than illink. The IL2065 suppression takes care of illink: https://github.com/dotnet/runtime/issues/96646
                 MethodInfo[] interfaceMethods = interfaceType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+#pragma warning restore IL2075
                 for (int i = 0; i < interfaceMethods.Length; i++)
                 {
                     MethodInfo interfaceMethod = interfaceMethods[i];
@@ -194,7 +196,9 @@ namespace System.Reflection.Emit
                 }
 
                 // Check parent interfaces too
+#pragma warning disable IL2075 // Analyzer produces a different warning code than illink. The IL2065 suppression takes care of illink: https://github.com/dotnet/runtime/issues/96646
                 CheckInterfaces(interfaceType.GetInterfaces());
+#pragma warning restore IL2075
             }
         }
 

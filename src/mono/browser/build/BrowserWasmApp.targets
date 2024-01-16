@@ -46,9 +46,9 @@
 
     <_WasmGenerateAppBundleDependsOn>_GetWasmGenerateAppBundleDependencies;$(_WasmGenerateAppBundleDependsOn)</_WasmGenerateAppBundleDependsOn>
 
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)ILLink.Substitutions.LegacyJsInterop.xml&quot;</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.LegacyJsInterop.xml"</_ExtraTrimmerArgs>
 
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
     <WasmClang>emcc</WasmClang>
@@ -104,8 +104,9 @@
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <_HybridGlobalizationDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
+      <_HybridGlobalizationDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)segmentation-rules.json"/>
       <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*"  Exclude="@(_HybridGlobalizationDataFiles);$(_WasmIcuDataFileName)"/>
-      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
+      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' == 'true'" Include="@(_HybridGlobalizationDataFiles)"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
@@ -427,8 +428,8 @@
       <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-nosimd.a</_WasmSIMDLib>
       <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-simd.a</_WasmSIMDLibToExclude>
       <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true'">libmono-wasm-nosimd.a</_WasmSIMDLibToExclude>
-      <_EmccExportedLibraryFunction>&quot;[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedLibraryFunction>
-      <_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>
+      <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
+      <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
     <ItemGroup>

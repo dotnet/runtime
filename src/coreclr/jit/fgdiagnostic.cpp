@@ -1810,17 +1810,7 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
             fprintf(m_file, "%*ssubgraph cluster_%d {\n", m_indent, "", m_loopIndex++);
             m_indent += 4;
 
-            fprintf(m_file, "%*slabel = \"" FMT_LP, m_indent, "", loop->GetIndex());
-            if (comp->m_newToOldLoop[loop->GetIndex()] != nullptr)
-            {
-                fprintf(m_file, " (old: " FMT_LP ")\";\n",
-                        (unsigned)(comp->m_newToOldLoop[loop->GetIndex()] - comp->optLoopTable));
-            }
-            else
-            {
-                fprintf(m_file, "\";\n");
-            }
-
+            fprintf(m_file, "%*slabel = \"" FMT_LP "\";\n", m_indent, "", loop->GetIndex());
             fprintf(m_file, "%*scolor = blue;\n", m_indent, "");
             fprintf(m_file, "%*s", m_indent, "");
 
@@ -1869,25 +1859,6 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
 
 /*****************************************************************************/
 #ifdef DEBUG
-
-void Compiler::fgDispReach()
-{
-    printf("------------------------------------------------\n");
-    printf("BBnum  Reachable by \n");
-    printf("------------------------------------------------\n");
-
-    for (BasicBlock* const block : Blocks())
-    {
-        printf(FMT_BB " : ", block->bbNum);
-        BlockSetOps::Iter iter(this, block->bbReach);
-        unsigned          bbNum = 0;
-        while (iter.NextElem(&bbNum))
-        {
-            printf(FMT_BB " ", bbNum);
-        }
-        printf("\n");
-    }
-}
 
 void Compiler::fgDispDoms()
 {
@@ -2572,6 +2543,10 @@ void Compiler::fgDumpBlockMemorySsaIn(BasicBlock* block)
         if (block->bbMemorySsaPhiFunc[memoryKind] == nullptr)
         {
             printf(" = m:%u\n", block->bbMemorySsaNumIn[memoryKind]);
+        }
+        else if (block->bbMemorySsaPhiFunc[memoryKind] == BasicBlock::EmptyMemoryPhiDef)
+        {
+            printf(" = phi([not filled])\n");
         }
         else
         {
@@ -4789,6 +4764,15 @@ void Compiler::fgDebugCheckSsa()
 //
 void Compiler::fgDebugCheckLoopTable()
 {
+    if ((m_loops != nullptr) && optLoopsRequirePreHeaders)
+    {
+        for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+        {
+            assert(loop->EntryEdges().size() == 1);
+            assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
+        }
+    }
+
 #ifdef DEBUG
     if (!optLoopTableValid)
     {

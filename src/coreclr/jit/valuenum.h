@@ -1052,6 +1052,9 @@ public:
     // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
     static bool VNFuncIsComparison(VNFunc vnf);
 
+    // Returns "true" iff "vnf" is a signed comparison (and thus binary) operator.
+    static bool VNFuncIsSignedComparison(VNFunc vnf);
+
     // Convert a vartype_t to the value number's storage type for that vartype_t.
     // For example, ValueNum of type TYP_LONG are stored in a map of INT64 variables.
     // Lang is the language (C++) type for the corresponding vartype_t.
@@ -2099,6 +2102,15 @@ inline bool ValueNumStore::VNFuncIsComparison(VNFunc vnf)
     }
     genTreeOps gtOp = genTreeOps(vnf);
     return GenTree::OperIsCompare(gtOp) != 0;
+}
+
+inline bool ValueNumStore::VNFuncIsSignedComparison(VNFunc vnf)
+{
+    if (vnf >= VNF_Boundary)
+    {
+        return false;
+    }
+    return GenTree::OperIsCompare(genTreeOps(vnf)) != 0;
 }
 
 template <>
