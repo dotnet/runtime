@@ -146,6 +146,8 @@ By default, `chrome` browser is used.
 
 ## AOT library tests
 
+- Running AOT tests requires AOT runtime build. Add `/p:RunAOTCompilation=true` to your build command, e.g. `build.sh mono+libs -c release -os browser /p:RunAOTCompilation=true`.
+
 - Building library tests with AOT, and (even) with `EnableAggressiveTrimming` takes 3-9mins on CI, and that adds up for all the assemblies, causing
 a large build time. To circumvent that on CI, we build the test assemblies on the build machine, but skip the WasmApp build part of it, since
 that includes the expensive AOT step.
