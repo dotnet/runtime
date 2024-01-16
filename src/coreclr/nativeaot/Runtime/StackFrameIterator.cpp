@@ -179,8 +179,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 #if !defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of regdisplay
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
     m_RegDisplay.SetIP((PCODE)pFrame->m_RIP);
-    m_RegDisplay.SetAddrOfIP((PTR_PCODE)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP));
-    SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.pIP)));
+    SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     PTR_UIntNative pPreservedRegsCursor = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_PreservedRegs);
 
@@ -388,7 +387,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     SetControlPC(dac_cast<PTR_VOID>(pCtx->GetIp()));
     m_RegDisplay.SP   = pCtx->GetSp();
     m_RegDisplay.IP   = pCtx->GetIp();
-    m_RegDisplay.pIP  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, IP);
 
 #ifdef TARGET_ARM
     //
@@ -540,8 +538,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 
 #ifdef TARGET_ARM64
 
-    m_RegDisplay.pIP  = (PTR_PCODE)PTR_TO_REG(pCtx, Pc);
-
     //
     // preserved regs
     //
@@ -582,8 +578,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pX18 = (PTR_UIntNative)PTR_TO_REG(pCtx, X18);
 
 #elif defined(TARGET_X86) || defined(TARGET_AMD64)
-
-    m_RegDisplay.pIP  = (PTR_PCODE)PTR_TO_REG(pCtx, Rip);
 
     //
     // preserved regs
@@ -779,10 +773,9 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #ifdef TARGET_X86
     // First, unwind RhpCallFunclet
     SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
-    m_RegDisplay.SetAddrOfIP(SP);
     m_RegDisplay.SetIP(*SP++);
     m_RegDisplay.SetSP((uintptr_t)dac_cast<TADDR>(SP));
-    SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.pIP)));
+    SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     ASSERT(
         EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ||
@@ -966,7 +959,6 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     m_RegDisplay.pFP  = SP++;
 
-    m_RegDisplay.SetAddrOfIP((PTR_PCODE)SP);
     m_RegDisplay.SetIP(*SP++);
 
     m_RegDisplay.pX19 = SP++;
@@ -986,12 +978,11 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #endif
 
 #if !defined(TARGET_ARM64)
-    m_RegDisplay.SetAddrOfIP((PTR_PCODE)SP);
     m_RegDisplay.SetIP(*SP++);
 #endif
 
     m_RegDisplay.SetSP((uintptr_t)dac_cast<TADDR>(SP));
-    SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.pIP)));
+    SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     // We expect to be called by the runtime's C# EH implementation, and since this function's notion of how
     // to unwind through the stub is brittle relative to the stub itself, we want to check as soon as we can.
@@ -1170,10 +1161,9 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
     stackFrame->UnwindNonVolatileRegisters(&m_RegDisplay);
 
     PTR_UIntNative addressOfPushedCallerIP = stackFrame->get_AddressOfPushedCallerIP();
-    m_RegDisplay.SetAddrOfIP((PTR_PCODE)addressOfPushedCallerIP);
     m_RegDisplay.SetIP(*addressOfPushedCallerIP);
     m_RegDisplay.SetSP((uintptr_t)dac_cast<TADDR>(stackFrame->get_CallerSP()));
-    SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.pIP)));
+    SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     // All universal transition cases rely on conservative GC reporting being applied to the
     // full argument set that flowed into the call.  Report the lower bound of this range (the
@@ -1262,7 +1252,6 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
 
-    m_RegDisplay.SetAddrOfIP(PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, IP));
     m_RegDisplay.SetIP(pContext->IP);
     m_RegDisplay.SetSP(pContext->GetSp());
     SetControlPC(dac_cast<PTR_VOID>(pContext->IP));

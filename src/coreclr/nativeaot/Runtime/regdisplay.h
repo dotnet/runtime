@@ -30,7 +30,6 @@ struct REGDISPLAY
 #endif // TARGET_AMD64
 
     uintptr_t   SP;
-    PTR_PCODE    pIP;
     PCODE        IP;
 
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
@@ -46,7 +45,6 @@ struct REGDISPLAY
     inline uintptr_t GetPP() { return *pRbx; }
 
     inline void SetIP(PCODE IP) { this->IP = IP; }
-    inline void SetAddrOfIP(PTR_PCODE pIP) { this->pIP = pIP; }
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
 };
 
@@ -70,7 +68,6 @@ struct REGDISPLAY
     PTR_UIntNative pLR;
 
     uintptr_t   SP;
-    PTR_PCODE    pIP;
     PCODE        IP;
 
     uint64_t       D[16-8]; // preserved D registers D8..D15 (note that D16-D31 are not preserved according to the ABI spec)
@@ -82,7 +79,6 @@ struct REGDISPLAY
     inline uintptr_t GetSP() { return SP; }
     inline uintptr_t GetFP() { return *pR11; }
     inline void SetIP(PCODE IP) { this->IP = IP; }
-    inline void SetAddrOfIP(PTR_PCODE pIP) { this->pIP = pIP; }
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
 };
 
@@ -123,7 +119,6 @@ struct REGDISPLAY
     PTR_UIntNative pLR; // X30
 
     uintptr_t   SP;
-    PTR_PCODE    pIP;
     PCODE        IP;
 
     uint64_t       D[16-8]; // Only the bottom 64-bit value of the V registers V8..V15 needs to be preserved
@@ -137,7 +132,6 @@ struct REGDISPLAY
     inline uintptr_t GetFP() { return *pFP; }
 
     inline void SetIP(PCODE IP) { this->IP = IP; }
-    inline void SetAddrOfIP(PTR_PCODE pIP) { this->pIP = pIP; }
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
 };
 #elif defined(TARGET_WASM)
@@ -147,7 +141,6 @@ struct REGDISPLAY
     // TODO: WebAssembly doesn't really have registers. What exactly do we need here?
 
     uintptr_t   SP;
-    PTR_PCODE    pIP;
     PCODE        IP;
 
     inline PCODE GetIP() { return NULL; }
@@ -155,7 +148,6 @@ struct REGDISPLAY
     inline uintptr_t GetFP() { return 0; }
 
     inline void SetIP(PCODE IP) { }
-    inline void SetAddrOfIP(PTR_PCODE pIP) { }
     inline void SetSP(uintptr_t SP) { }
 };
 #endif // HOST_X86 || HOST_AMD64 || HOST_ARM || HOST_ARM64 || HOST_WASM
