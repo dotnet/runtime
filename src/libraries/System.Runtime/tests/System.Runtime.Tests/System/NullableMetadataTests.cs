@@ -129,6 +129,7 @@ namespace System.Runtime.Tests
             Assert.True(foundAtLeastOneNullableAttribute);
         }
 
+        [ActiveIssue("TODO: Open issue. Rooting input assemblies is not enough when trimming with ILLinker forwarded types we would have to root all forwarded assemblies as well", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         [Theory]
         [InlineData("mscorlib")]
         [InlineData("System.Threading.Overlapped")]
