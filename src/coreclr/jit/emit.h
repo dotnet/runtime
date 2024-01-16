@@ -1419,6 +1419,16 @@ protected:
             assert(!idIsSmallDsc());
             idAddr()->_idRegBit = val ? 1 : 0;
         }
+        bool idVectorLength4x() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idRegBit == 1);
+        }
+        void idVectorLength4x(bool val)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idRegBit = val ? 1 : 0;
+        }
 #endif // TARGET_ARM64
 
 #endif // TARGET_ARMARCH
