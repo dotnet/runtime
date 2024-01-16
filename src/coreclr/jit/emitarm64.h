@@ -514,10 +514,10 @@ static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
 static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
-static emitter::code_t emitter::insEncodeSimm5_20_to_16(ssize_t imm);
+static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
-static emitter::code_t emitter::insEncodeUimm7_20_to_14(ssize_t imm);
+static code_t insEncodeUimm7_20_to_14(ssize_t imm);
 
 // Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
 // This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
