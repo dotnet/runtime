@@ -7616,6 +7616,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_sse_pabsw_reg_reg(code, ins->dreg, ins->sreg1);
 				break;
 			case MONO_TYPE_I4:
+			case MONO_TYPE_I:
 				amd64_sse_pabsd_reg_reg(code, ins->dreg, ins->sreg1);
 				break;
 			default:

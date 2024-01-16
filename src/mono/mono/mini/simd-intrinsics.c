@@ -1479,7 +1479,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
 
 			// SSSE3 does not support i64
-			if (arg0_type == MONO_TYPE_I8) {
+			if (arg0_type == MONO_TYPE_I8 || (TARGET_SIZEOF_VOID_P == 8 && arg0_type == MONO_TYPE_I)) {
 				MonoInst *zero = emit_xzero (cfg, klass);
 				MonoInst *neg = emit_simd_ins (cfg, klass, OP_XBINOP, zero->dreg, args [0]->dreg);
 				neg->inst_c0 = OP_ISUB;
