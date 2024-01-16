@@ -1475,10 +1475,25 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			ins->inst_c1 = arg0_type;
 			return ins;
 		} else {
-			if (!COMPILE_LLVM (cfg))
-				// FIXME:
-				return NULL;
-			return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
+			if (COMPILE_LLVM (cfg))
+				return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
+
+			// SSSE3 does not support i64
+			if (arg0_type == MONO_TYPE_I8) {
+				MonoInst *zero = emit_xzero (cfg, klass);
+				MonoInst *neg = emit_simd_ins (cfg, klass, OP_XBINOP, zero->dreg, args [0]->dreg);
+				neg->inst_c0 = OP_ISUB;
+				neg->inst_c1 = MONO_TYPE_I8;
+				MonoInst *ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, neg->dreg);
+				ins->inst_c0 = OP_IMAX;
+				ins->inst_c1 = MONO_TYPE_I8;
+				return ins;
+			}
+			
+			if (is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3)) 
+				return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
+
+			return NULL;
 		}
 #elif defined(TARGET_WASM)
 		if (type_enum_is_float(arg0_type)) {
