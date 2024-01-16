@@ -768,8 +768,6 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.IsRootAssembly(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -838,8 +836,6 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetRootAssembly(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
