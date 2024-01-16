@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.20)
 # Set the project name
 project(CoreCLR)
 
+cmake_policy(SET CMP0117 NEW)
+
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
