@@ -3257,12 +3257,13 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
     genConsumeReg(dstNode);
     const regNumber dstReg = dstNode->GetRegNum();
 
-#ifndef TARGET_ARM64
     GenTree* const zeroNode = initBlkNode->Data();
     genConsumeReg(zeroNode);
-    const regNumber zeroReg = zeroNode->GetRegNum();
-#else
+
+#ifdef TARGET_ARM64
     const regNumber zeroReg = REG_ZR;
+#else
+    const regNumber zeroReg = zeroNode->GetRegNum();
 #endif
 
     if (initBlkNode->IsVolatile())
