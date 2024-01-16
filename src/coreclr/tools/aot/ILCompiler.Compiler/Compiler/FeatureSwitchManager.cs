@@ -925,6 +925,8 @@ namespace ILCompiler
 
                 PEMemoryBlock resourceDirectory = module.PEReader.GetSectionData(module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
 
+                BodyAndFieldSubstitutions substitutions = default;
+
                 foreach (var resourceHandle in module.MetadataReader.ManifestResources)
                 {
                     ManifestResource resource = module.MetadataReader.GetManifestResource(resourceHandle);
@@ -947,13 +949,7 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        BodyAndFieldSubstitutions substitutions = BodySubstitutionsParser.GetSubstitutions(logger, module.Context, ms, resource, module, "name", featureSwitchValues);
-
-                        // Also apply any global substitutions
-                        // Note we allow these to overwrite substitutions in the assembly
-                        substitutions.AppendFrom(globalSubstitutions);
-
-                        (BodySubstitutions, FieldSubstitutions) = (substitutions.BodySubstitutions, substitutions.FieldSubstitutions);
+                        substitutions = BodySubstitutionsParser.GetSubstitutions(logger, module.Context, ms, resource, module, "name", featureSwitchValues);
                     }
                     else if (InlineableStringsResourceNode.IsInlineableStringsResource(module, resourceName))
                     {
@@ -977,6 +973,12 @@ namespace ILCompiler
                         }
                     }
                 }
+
+                // Also apply any global substitutions
+                // Note we allow these to overwrite substitutions in the assembly
+                substitutions.AppendFrom(globalSubstitutions);
+
+                (BodySubstitutions, FieldSubstitutions) = (substitutions.BodySubstitutions, substitutions.FieldSubstitutions);
             }
         }
     }
