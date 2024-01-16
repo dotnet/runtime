@@ -125,9 +125,6 @@ static WARN_UNUSED_RESULT guint8* emit_load_regset (guint8 *code, guint64 regs, 
 static guint8* emit_brx (guint8 *code, int reg);
 static guint8* emit_blrx (guint8 *code, int reg);
 
-static GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
-
 const char*
 mono_arch_regname (int reg)
 {
@@ -1874,6 +1871,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			}
 		}
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
@@ -1886,6 +1884,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				}
 			}
 		}
+#endif
 	}
 
 	/* Handle the case where there are no implicit arguments */

@@ -53,9 +53,6 @@
 MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
-static GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
-
 
 #define IS_IMM32(val) ((((guint64)val) >> 32) == 0)
 
@@ -1080,6 +1077,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			g_assert_not_reached ();
 		}
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
@@ -1092,6 +1090,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				}
 			}
 		}
+#endif
 	}
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n > 0) && (sig->sentinelpos == sig->param_count)) {

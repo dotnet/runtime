@@ -927,6 +927,9 @@ MonoClass* mono_class_get_##shortname##_class (void);
 #define GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(shortname) \
 MonoClass* mono_class_try_get_##shortname##_class (void);
 
+#define GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE_DECL(shortname) \
+MonoClass* mono_class_try_get_##shortname##_ptr_class (void);
+
 static inline MonoImage *
 mono_class_generate_get_corlib_impl (void)
 {
