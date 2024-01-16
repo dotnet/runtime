@@ -7151,6 +7151,12 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     compSetOptimizationLevel();
 
+    if ((JitConfig.JitDisasmOnlyOptimized() != 0) && (!opts.OptimizationEnabled()))
+    {
+        // Disable JitDisasm for non-optimized code.
+        opts.disAsm = false;
+    }
+
 #if COUNT_BASIC_BLOCKS
     bbCntTable.record(fgBBcount);
 
