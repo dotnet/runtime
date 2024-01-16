@@ -221,6 +221,7 @@
     <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\Array.NativeAot.cs" />
     <Compile Include="System\Delegate.cs" />
+    <Compile Include="System\StartupHookProvider.NativeAot.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\Exception.NativeAot.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
