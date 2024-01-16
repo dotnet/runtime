@@ -1242,12 +1242,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
+        case IF_SVE_DL_2A: // ........xx...... .....l.NNNNddddd -- SVE predicate count (predicate-as-counter)
+           assert(id->idOpSize() == EA_8BYTE);
+           //assert(isValidVectorLength()); // l
+           
+           FALLTHROUGH;
         case IF_SVE_DO_2A: // ........xx...... .....X.MMMMddddd -- SVE saturating inc/dec register by predicate count
-            assert(isValidGeneralDatasize(id->idOpSize())); // X
-
-            FALLTHROUGH;
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
-            assert(insOptsScalableStandard(id->idInsOpt())); // xx
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             assert(isGeneralRegister(id->idReg1()));         // ddddd
             assert(isPredicateRegister(id->idReg2()));       // MMMM
             assert(isValidGeneralDatasize(id->idOpSize()));
@@ -16380,6 +16383,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_DL_2A: // ........xx...... .....l.NNNNddddd -- SVE predicate count (predicate-as-counter)
+           code = emitInsCodeSve(ins, fmt);
+           //code |= insEncodeVectorLength(); // l
+           code |= insEncodeReg_R_4_to_0(id->idReg1()); // ddddd
+           code |= insEncodeReg_P_8_to_5(id->idReg2()); // NNNN
+           code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+           dst += emitOutput_Instr(dst, code);
+           break;
+
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_R_4_to_0(id->idReg1());                     // ddddd
@@ -21746,6 +21758,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
             }
             break;
+
+        case IF_SVE_DL_2A: // ........xx...... .....l.NNNNddddd -- SVE predicate count (predicate-as-counter)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
 
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
         case IF_SVE_DN_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec vector by predicate count
