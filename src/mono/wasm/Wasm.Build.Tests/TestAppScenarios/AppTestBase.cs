@@ -28,12 +28,12 @@ public abstract class AppTestBase : BlazorWasmTestBase
         Id = $"{generatedProjectNamePrefix ?? assetName}_{GetRandomId()}";
         InitBlazorWasmProjectDir(Id);
 
+        LogPath = Path.Combine(s_buildEnv.LogRootPath, Id);
+        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
+
         // WasmBasicTestApp consists of App + Library projects
         if (assetName == "WasmBasicTestApp")
             _projectDir = Path.Combine(_projectDir!, "App");
-
-        LogPath = Path.Combine(s_buildEnv.LogRootPath, Id);
-        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
     }
 
     protected void BuildProject(string configuration)
