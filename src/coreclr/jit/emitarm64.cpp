@@ -1243,16 +1243,16 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_DL_2A: // ........xx...... .....l.NNNNddddd -- SVE predicate count (predicate-as-counter)
-           assert(id->idOpSize() == EA_8BYTE);
-           //assert(isValidVectorLength()); // l
-           
-           FALLTHROUGH;
+            assert(id->idOpSize() == EA_8BYTE);
+            // assert(isValidVectorLength()); // l
+
+            FALLTHROUGH;
         case IF_SVE_DO_2A: // ........xx...... .....X.MMMMddddd -- SVE saturating inc/dec register by predicate count
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
-            assert(isGeneralRegister(id->idReg1()));         // ddddd
-            assert(isPredicateRegister(id->idReg2()));       // MMMM
+            assert(isGeneralRegister(id->idReg1()));                          // ddddd
+            assert(isPredicateRegister(id->idReg2()));                        // MMMM
             assert(isValidGeneralDatasize(id->idOpSize()));
             break;
 
@@ -6447,8 +6447,12 @@ void emitter::emitIns_Mov(
  *  Add an instruction referencing two registers
  */
 
-void emitter::emitIns_R_R(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts opt /* = INS_OPTS_NONE */)
+void emitter::emitIns_R_R(instruction     ins,
+                          emitAttr        attr,
+                          regNumber       reg1,
+                          regNumber       reg2,
+                          insOpts         opt /* = INS_OPTS_NONE */,
+                          insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
     if (IsMovInstruction(ins))
     {
@@ -7093,6 +7097,15 @@ void emitter::emitIns_R_R(
             }
             break;
 
+        case INS_sve_cntp:
+            assert(insOptsScalable(opt));
+            assert(insScalableOptsWithVectorLength(sopt));         // l
+            assert(isGeneralRegister(reg1));                       // ddddd
+            assert(isPredicateRegister(reg2));                     // NNNN
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_DL_2A;
+            break;
+
         case INS_sve_incp:
         case INS_sve_decp:
             assert(isPredicateRegister(reg2)); // MMMM
@@ -7184,7 +7197,17 @@ void emitter::emitIns_R_R(
 
     assert(fmt != IF_NONE);
 
-    instrDesc* id = emitNewInstrSmall(attr);
+    instrDesc* id;
+
+    if (insScalableOptsWithVectorLength(sopt))
+    {
+        id = emitNewInstr(attr);
+        id->idVectorLength4x(sopt == INS_SCALABLE_OPTS_VL_4X);
+    }
+    else
+    {
+        id = emitNewInstrSmall(attr);
+    }
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -13093,7 +13116,16 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     if (id->idVectorLength4x())
     {
-        return 0x2000; // set the bit at location 13
+        switch (id->idInsFmt())
+        {
+            case IF_SVE_DL_2A:
+                return 0x400; // set the bit at location 10
+            case IF_SVE_DY_3A:
+                return 0x2000; // set the bit at location 13
+            default:
+                assert(!"Unexpected format");
+                break;
+        }
     }
 
     return 0;
@@ -16384,13 +16416,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SVE_DL_2A: // ........xx...... .....l.NNNNddddd -- SVE predicate count (predicate-as-counter)
-           code = emitInsCodeSve(ins, fmt);
-           //code |= insEncodeVectorLength(); // l
-           code |= insEncodeReg_R_4_to_0(id->idReg1()); // ddddd
-           code |= insEncodeReg_P_8_to_5(id->idReg2()); // NNNN
-           code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
-           dst += emitOutput_Instr(dst, code);
-           break;
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeVectorLengthSpecifier(id);                      // l
+            code |= insEncodeReg_R_4_to_0(id->idReg1());                     // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2());                     // NNNN
+            code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
 
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
             code = emitInsCodeSve(ins, fmt);
@@ -19042,6 +19074,13 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                        // ddddd
             emitDispSveConsecutiveRegList(id->idReg2(), 2, INS_OPTS_SCALABLE_S, true); // nnnn
             emitDispImm(emitGetInsSC(id), false);                                      // iiii
+            break;
+
+        // <Xd>, <PNn>.<T>, <vl>
+        case IF_SVE_DL_2A: // ........xx...... .....l.NNNNddddd -- SVE predicate count (predicate-as-counter)
+            emitDispReg(id->idReg1(), id->idOpSize(), true);                           // ddddd
+            emitDispPredicateReg(id->idReg2(), PREDICATE_SIZED, id->idInsOpt(), true); // NNNN
+            emitDispVectorLengthSpecifier(id);
             break;
 
         // <Xdn>, <Pm>.<T>
