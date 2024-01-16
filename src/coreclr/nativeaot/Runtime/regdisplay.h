@@ -41,7 +41,6 @@ struct REGDISPLAY
 #endif // TARGET_AMD64 && !UNIX_AMD64_ABI
 
     inline PCODE GetIP() { return IP; }
-    inline PTR_PCODE GetAddrOfIP() { return pIP; }
     inline uintptr_t GetSP() { return SP; }
     inline uintptr_t GetFP() { return *pRbp; }
     inline uintptr_t GetPP() { return *pRbx; }
@@ -80,7 +79,6 @@ struct REGDISPLAY
                           // their values, not their addresses
 
     inline PCODE GetIP() { return IP; }
-    inline PTR_PCODE GetAddrOfIP() { return pIP; }
     inline uintptr_t GetSP() { return SP; }
     inline uintptr_t GetFP() { return *pR11; }
     inline void SetIP(PCODE IP) { this->IP = IP; }
@@ -135,7 +133,6 @@ struct REGDISPLAY
                           // their values, not their addresses
 
     inline PCODE GetIP() { return IP; }
-    inline PTR_PCODE GetAddrOfIP() { return pIP; }
     inline uintptr_t GetSP() { return SP; }
     inline uintptr_t GetFP() { return *pFP; }
 
@@ -154,7 +151,6 @@ struct REGDISPLAY
     PCODE        IP;
 
     inline PCODE GetIP() { return NULL; }
-    inline PTR_PCODE GetAddrOfIP() { return NULL; }
     inline uintptr_t GetSP() { return 0; }
     inline uintptr_t GetFP() { return 0; }
 
