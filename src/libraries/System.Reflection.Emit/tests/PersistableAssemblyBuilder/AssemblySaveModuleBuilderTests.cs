@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Runtime.InteropServices;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests

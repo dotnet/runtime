@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -683,6 +682,43 @@ namespace System.Reflection.Emit.Tests
                 Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
                 FieldInfo createdField = typeFromDisk.GetField("Greeting", BindingFlags.NonPublic | BindingFlags.Static);
                 Assert.Equal("hello", createdField.GetValue(null));
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public static void DefineUninitializedDataTest()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                FieldBuilder myFieldBuilder = tb.DefineUninitializedData("MyGreeting", 4, FieldAttributes.Public);
+                var loadAddressMethod = tb.DefineMethod("LoadAddress", MethodAttributes.Public | MethodAttributes.Static, typeof(IntPtr), null);
+                var methodIL = loadAddressMethod.GetILGenerator();
+                methodIL.Emit(OpCodes.Ldsflda, myFieldBuilder);
+                methodIL.Emit(OpCodes.Ret);
+
+                Type t = tb.CreateType();
+                saveMethod.Invoke(ab, [file.Path]);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                byte[] initBytes = [4, 3, 2, 1];
+                nint myIntPtr = Marshal.AllocHGlobal(4);
+                nint intptrTemp = Marshal.AllocHGlobal(4);
+                for (int j = 0; j < 4; j++)
+                {
+                    Marshal.WriteByte(myIntPtr + j, initBytes[j]);
+                }
+                object myObj = Marshal.PtrToStructure(myIntPtr, typeFromDisk.GetField("MyGreeting").FieldType);
+                Marshal.StructureToPtr(myObj, intptrTemp, false);
+                for (int j = 0; j < 4; j++)
+                {
+                    Assert.Equal(initBytes[j], Marshal.ReadByte(intptrTemp, j));
+                }
+                Marshal.FreeHGlobal(myIntPtr);
+                Marshal.FreeHGlobal(intptrTemp);
                 tlc.Unload();
             }
         }
