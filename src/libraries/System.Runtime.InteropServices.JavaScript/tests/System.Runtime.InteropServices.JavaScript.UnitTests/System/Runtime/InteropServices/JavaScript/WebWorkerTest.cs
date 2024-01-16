@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     // JS setTimeout till after JSWebWorker close
     // synchronous .Wait for JS setTimeout on the same thread -> deadlock problem **7)**
 
-    public class WebWorkerTest
+    public class WebWorkerTest : IAsyncLifetime
     {
         const int TimeoutMilliseconds = 300;
 
@@ -600,5 +600,96 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         #endregion
+
+        #region HTTP
+
+        [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task HttpClient_ContentInSameThread(Executor executor)
+        {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var uri = WebWorkerTestHelper.GetOriginUrl() + "/_framework/blazor.boot.json";
+
+            await executor.Execute(async () =>
+            {
+                using var client = new HttpClient();
+                using var response = await client.GetAsync(uri);
+                response.EnsureSuccessStatusCode();
+                var body = await response.Content.ReadAsStringAsync();
+                Assert.StartsWith("{", body);
+            }, cts.Token);
+        }
+
+        private static HttpRequestOptionsKey<bool> WebAssemblyEnableStreamingRequestKey = new("WebAssemblyEnableStreamingRequest");
+        private static HttpRequestOptionsKey<bool> WebAssemblyEnableStreamingResponseKey = new("WebAssemblyEnableStreamingResponse");
+        private static string HelloJson = "{'hello':'world'}".Replace('\'', '"');
+        private static string EchoStart = "{\"Method\":\"POST\",\"Url\":\"/Echo.ashx";
+
+        private Task HttpClient_ActionInDifferentThread(string url, Executor executor1, Executor executor2, Func<HttpResponseMessage, Task> e2Job)
+        {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+
+            var e1Job = async (Task e2done, TaskCompletionSource<HttpResponseMessage> e1State) =>
+            {
+                using var ms = new MemoryStream();
+                await ms.WriteAsync(Encoding.UTF8.GetBytes(HelloJson));
+
+                using var req = new HttpRequestMessage(HttpMethod.Post, url);
+                req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
+                req.Content = new StreamContent(ms);
+                using var client = new HttpClient();
+                var pr = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+                using var response = await pr;
+
+                // share the state with the E2 continuation
+                e1State.SetResult(response);
+
+                await e2done;
+            };
+            return ActionsInDifferentThreads<HttpResponseMessage>(executor1, executor2, e1Job, e2Job, cts);
+        }
+
+        [Theory, MemberData(nameof(GetTargetThreads2x))]
+        public async Task HttpClient_ContentInDifferentThread(Executor executor1, Executor executor2)
+        {
+            var url = WebWorkerTestHelper.LocalHttpEcho + "?guid=" + Guid.NewGuid();
+            await HttpClient_ActionInDifferentThread(url, executor1, executor2, async (HttpResponseMessage response) =>
+            {
+                response.EnsureSuccessStatusCode();
+                var body = await response.Content.ReadAsStringAsync();
+                Assert.StartsWith(EchoStart, body);
+            });
+        }
+
+        [Theory, MemberData(nameof(GetTargetThreads2x))]
+        public async Task HttpClient_CancelInDifferentThread(Executor executor1, Executor executor2)
+        {
+            var url = WebWorkerTestHelper.LocalHttpEcho + "?delay10sec=true&guid=" + Guid.NewGuid();
+            await HttpClient_ActionInDifferentThread(url, executor1, executor2, async (HttpResponseMessage response) =>
+            {
+                CancellationTokenSource cts = new CancellationTokenSource();
+                await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                {
+                    var promise = response.Content.ReadAsStringAsync(cts.Token);
+                    cts.Cancel();
+                    await promise;
+                });
+            });
+        }
+
+        #endregion
+
+        public static bool _isWarmupDone;
+
+        public async Task InitializeAsync()
+        {
+            if (_isWarmupDone)
+            {
+                return;
+            }
+            await Task.Delay(500);
+            _isWarmupDone = true;
+        }
+
+        public Task DisposeAsync() => Task.CompletedTask;
     }
 }
