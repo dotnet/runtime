@@ -1342,6 +1342,12 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             break;
 
+        case IF_SVE_DZ_1A: // ........xx...... .............DDD -- sve_int_pn_ptrue
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isHighPredicateRegister(id->idReg1()));                    // DDD
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            break;
+
         case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
                              // immediate)
         case IF_SVE_IH_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
@@ -5860,7 +5866,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
  *  Add an instruction referencing a single register.
  */
 
-void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
+void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt /* = INS_OPTS_NONE */)
 {
     insFormat  fmt = IF_NONE;
     instrDesc* id  = emitNewInstrSmall(attr);
@@ -5901,6 +5907,15 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
             id->idReg1(reg);
             assert(isPredicateRegister(reg)); // NNNN
             fmt = IF_SVE_DR_1A;
+            break;
+
+        case INS_sve_ptrue:
+            assert(insOptsScalable(opt));
+            assert(isHighPredicateRegister(reg));                  // DDD
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            id->idReg1(reg);
+            id->idInsOpt(opt);
+            fmt = IF_SVE_DZ_1A;
             break;
 
         default:
@@ -16522,6 +16537,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_DZ_1A: // ........xx...... .............DDD -- sve_int_pn_ptrue
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_2_to_0(id->idReg1());                  // DDD
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_DU_3A: // ........xx.mmmmm ......nnnnn.DDDD -- SVE pointer conflict compare
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1());                     // DDDD
@@ -19179,6 +19201,11 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg2(), id->idOpSize(), true);                           // nnnnn
             emitDispReg(id->idReg3(), id->idOpSize(), true);                           // mmmmm
             emitDispVectorLengthSpecifier(id);
+            break;
+
+        // PTRUE <PNd>.<T>
+        case IF_SVE_DZ_1A: // ........xx...... .............DDD -- sve_int_pn_ptrue
+            emitDispPredicateReg(id->idReg1(), PREDICATE_SIZED, id->idInsOpt(), false); // DDD
             break;
 
         // { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -21855,6 +21882,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_DU_3A: // ........xx.mmmmm ......nnnnn.DDDD -- SVE pointer conflict compare
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_3C;
+            break;
+
+        case IF_SVE_DZ_1A: // ........xx...... .............DDD -- sve_int_pn_ptrue
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
         case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
