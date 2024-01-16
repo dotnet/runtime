@@ -48,7 +48,11 @@ namespace System.Runtime.InteropServices.Marshalling
         ~ComObject()
         {
             CacheStrategy.Clear(IUnknownStrategy);
-            IUnknownStrategy.Release(_instancePointer);
+            if (_instancePointer != null)
+            {
+                IUnknownStrategy.Release(_instancePointer);
+                _instancePointer = null;
+            }
         }
 
         /// <summary>
@@ -77,10 +81,12 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </remarks>
         public void FinalRelease()
         {
-            if (UniqueInstance)
+            if (UniqueInstance && _instancePointer != null)
             {
                 CacheStrategy.Clear(IUnknownStrategy);
                 IUnknownStrategy.Release(_instancePointer);
+                _instancePointer = null;
+                GC.SuppressFinalize(this);
             }
         }
 
