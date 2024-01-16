@@ -495,7 +495,7 @@ void VTableCallHolder::Initialize(unsigned slot)
         uint indirectionsDataSize = (offsetOfIndirection > 2047 ? 4 : 0);
         uint dataOffset = 20 + indirectionsCodeSize + indirectionsDataSize;
 
-        // ldw t3,dataOffset(t1)
+        // lwu t3,dataOffset(t1)
         *(DWORD*)p = 0x00036e03 | ((UINT32)dataOffset << 20); p += 4;
         // add t4, t4, t3
         *(DWORD*)p = 0x01ce8eb3; p += 4;
