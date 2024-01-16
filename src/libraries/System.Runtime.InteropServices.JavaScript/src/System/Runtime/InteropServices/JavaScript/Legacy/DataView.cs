@@ -15,12 +15,12 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="buffer">ArrayBuffer to use as the storage backing the new DataView object.</param>
         public DataView(ArrayBuffer buffer)
-            : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer }))
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer }), JSProxyContext.MainThreadContext)
         {
 #if FEATURE_WASM_THREADS
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
-            LegacyHostImplementation.RegisterCSOwnedObject(this);
+            JSProxyContext.MainThreadContext.RegisterCSOwnedObject(this);
         }
 
         /// <summary>
@@ -29,12 +29,12 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="buffer">ArrayBuffer to use as the storage backing the new DataView object.</param>
         /// <param name="byteOffset">The offset, in bytes, to the first byte in the above buffer for the new view to reference. If unspecified, the buffer view starts with the first byte.</param>
         public DataView(ArrayBuffer buffer, int byteOffset)
-            : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer, byteOffset }))
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer, byteOffset }), JSProxyContext.MainThreadContext)
         {
 #if FEATURE_WASM_THREADS
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
-            LegacyHostImplementation.RegisterCSOwnedObject(this);
+            JSProxyContext.MainThreadContext.RegisterCSOwnedObject(this);
         }
 
         /// <summary>
@@ -44,19 +44,19 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="byteOffset">The offset, in bytes, to the first byte in the above buffer for the new view to reference. If unspecified, the buffer view starts with the first byte.</param>
         /// <param name="byteLength">The number of elements in the byte array. If unspecified, the view's length will match the buffer's length.</param>
         public DataView(ArrayBuffer buffer, int byteOffset, int byteLength)
-            : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer, byteOffset, byteLength }))
+            : base(JavaScriptImports.CreateCSOwnedObject(nameof(DataView), new object[] { buffer, byteOffset, byteLength }), JSProxyContext.MainThreadContext)
         {
 #if FEATURE_WASM_THREADS
             LegacyHostImplementation.ThrowIfLegacyWorkerThread();
 #endif
-            LegacyHostImplementation.RegisterCSOwnedObject(this);
+            JSProxyContext.MainThreadContext.RegisterCSOwnedObject(this);
         }
 
         /// <summary>
         /// Initializes a new instance of the DataView class.
         /// </summary>
         /// <param name="jsHandle">Js handle.</param>
-        internal DataView(IntPtr jsHandle) : base(jsHandle)
+        internal DataView(IntPtr jsHandle) : base(jsHandle, JSProxyContext.MainThreadContext)
         { }
 
         /// <summary>

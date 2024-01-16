@@ -82,7 +82,7 @@ inline BOOL MethodTable::IsClassPointerValid()
 inline PTR_Module MethodTable::GetLoaderModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pLoaderModule;
+    return GetAuxiliaryData()->GetLoaderModule();
 }
 
 inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
@@ -91,15 +91,8 @@ inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
     return GetLoaderModule()->GetLoaderAllocator();
 }
 
-
-
 #ifndef DACCESS_COMPILE
 //==========================================================================================
-inline void MethodTable::SetLoaderModule(Module* pModule)
-{
-    WRAPPER_NO_CONTRACT;
-    m_pLoaderModule = pModule;
-}
 
 inline void MethodTable::SetLoaderAllocator(LoaderAllocator* pAllocator)
 {
@@ -118,7 +111,7 @@ inline void MethodTable::SetLoaderAllocator(LoaderAllocator* pAllocator)
 inline WORD MethodTable::GetNumNonVirtualSlots()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return HasNonVirtualSlots() ? GetClass()->GetNumNonVirtualSlots() : 0;
+    return IsCanonicalMethodTable() ? GetClass()->GetNumNonVirtualSlots() : 0;
 }
 
 //==========================================================================================
@@ -1039,29 +1032,13 @@ inline PTR_InterfaceInfo MethodTable::GetInterfaceMap()
 }
 
 //==========================================================================================
-FORCEINLINE TADDR MethodTable::GetMultipurposeSlotPtr(WFLAGS2_ENUM flag, const BYTE * offsets)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE(GetFlag(flag));
-
-    DWORD offset = offsets[GetFlag((WFLAGS2_ENUM)(flag - 1))];
-
-    if (offset >= sizeof(MethodTable)) {
-        offset += GetNumVtableIndirections() * sizeof(VTableIndir_t);
-    }
-
-    return dac_cast<TADDR>(this) + offset;
-}
-
-//==========================================================================================
 // This method is dependent on the declared order of optional members
 // If you add or remove an optional member or reorder them please change this method
 FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DWORD offset = c_OptionalMembersStartOffsets[GetFlag(enum_flag_MultipurposeSlotsMask)];
+    DWORD offset = sizeof(MethodTable);
 
     offset += GetNumVtableIndirections() * sizeof(VTableIndir_t);
 
@@ -1082,19 +1059,13 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
 }
 
 //==========================================================================================
-inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeSlotsMask,
-                                                           BOOL needsGenericsStaticsInfo,
-                                                           BOOL needsTokenOverflow)
+inline DWORD MethodTable::GetOptionalMembersAllocationSize(bool hasInterfaceMap)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DWORD size = c_OptionalMembersStartOffsets[dwMultipurposeSlotsMask] - sizeof(MethodTable);
+    DWORD size = 0;
 
-    if (needsGenericsStaticsInfo)
-        size += sizeof(GenericsStaticsInfo);
-    if (dwMultipurposeSlotsMask & enum_flag_HasInterfaceMap)
-        size += sizeof(UINT_PTR);
-    if (needsTokenOverflow)
+    if (hasInterfaceMap)
         size += sizeof(UINT_PTR);
 
     return size;
@@ -1340,9 +1311,11 @@ FORCEINLINE PTR_Module MethodTable::GetGenericsStaticsModuleAndID(DWORD * pID)
 
     _ASSERTE(HasGenericsStaticsInfo());
 
-    _ASSERTE(FitsIn<DWORD>(GetGenericsStaticsInfo()->m_DynamicTypeID) || GetGenericsStaticsInfo()->m_DynamicTypeID == (SIZE_T)-1);
-    *pID = static_cast<DWORD>(GetGenericsStaticsInfo()->m_DynamicTypeID);
-    return GetLoaderModule();
+    PTR_MethodTableAuxiliaryData AuxiliaryData = GetAuxiliaryDataForWrite();
+    PTR_GenericsStaticsInfo staticsInfo = MethodTableAuxiliaryData::GetGenericStaticsInfo(AuxiliaryData);
+    _ASSERTE(FitsIn<DWORD>(staticsInfo->m_DynamicTypeID) || staticsInfo->m_DynamicTypeID == (SIZE_T)-1);
+    *pID = (DWORD)staticsInfo->m_DynamicTypeID;
+    return AuxiliaryData->GetLoaderModule();
 }
 
 //==========================================================================================
@@ -1358,7 +1331,7 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 
-    const RUNTIMETYPEHANDLE handle = GetWriteableData()->m_hExposedClassObject;
+    const RUNTIMETYPEHANDLE handle = GetAuxiliaryData()->m_hExposedClassObject;
 
     OBJECTREF retVal;
     if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&

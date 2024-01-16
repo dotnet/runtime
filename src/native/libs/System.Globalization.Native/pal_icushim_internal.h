@@ -21,6 +21,11 @@
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
+#if defined(__APPLE__) && (TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS)
+#include <unicode/uchar.h>
+#include <unicode/uidna.h>
+#include <unicode/utypes.h>
+#else
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>
@@ -41,6 +46,7 @@
 #include <unicode/urename.h>
 #include <unicode/ustring.h>
 
+#endif
 #endif
 
 #elif defined(TARGET_WINDOWS)

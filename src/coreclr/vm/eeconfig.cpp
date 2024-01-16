@@ -120,9 +120,10 @@ HRESULT EEConfig::Init()
 
     INDEBUG(fStressLog = true;)
 
+    fDebuggable = false;
+
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
-    fDebuggable = false;
     pPrestubHalt = 0;
     pPrestubGC = 0;
     pszBreakOnClassLoad = 0;
@@ -184,18 +185,9 @@ HRESULT EEConfig::Init()
     dwDisableStackwalkCache = 1;
 #endif // TARGET_X86
 
-    szZapBBInstr     = NULL;
-    szZapBBInstrDir  = NULL;
-
 #ifdef _DEBUG
     // interop logging
     m_TraceWrapper = 0;
-#endif
-
-#ifdef _DEBUG
-    dwNgenForceFailureMask  = 0;
-    dwNgenForceFailureCount = 0;
-    dwNgenForceFailureKind  = 0;
 #endif
 
 #ifdef _DEBUG
@@ -273,8 +265,6 @@ HRESULT EEConfig::Cleanup()
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
-
-    delete[] szZapBBInstr;
 
     if (pReadyToRunExcludeList)
         delete pReadyToRunExcludeList;
@@ -492,24 +482,6 @@ HRESULT EEConfig::sync()
     DoubleArrayToLargeObjectHeapThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
 #endif
 
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ZapBBInstr, (LPWSTR*)&szZapBBInstr));
-    if (szZapBBInstr)
-    {
-        szZapBBInstr = NarrowWideChar((LPWSTR)szZapBBInstr);
-
-        // If szZapBBInstr only contains white space, then there's nothing to instrument (this
-        // is the case with some test cases, and it's easier to fix all of them here).
-        LPWSTR pStr = (LPWSTR) szZapBBInstr;
-        while (*pStr == W(' ')) pStr++;
-        if (*pStr == 0)
-            szZapBBInstr = NULL;
-    }
-
-    if (szZapBBInstr != NULL)
-    {
-        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapBBInstrDir, &szZapBBInstrDir));
-    }
-
     dwDisableStackwalkCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
 
 
@@ -547,9 +519,9 @@ HRESULT EEConfig::sync()
 #endif
 
 
-#ifdef _DEBUG
-    fDebuggable         = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitDebuggable) != 0);
+    fDebuggable         = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitDebuggable) != 0);
 
+#ifdef _DEBUG
     LPWSTR wszPreStubStuff = NULL;
 
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PrestubHalt, &wszPreStubStuff));

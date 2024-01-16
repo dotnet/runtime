@@ -132,8 +132,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 slot.Type = MarshalerType.None;
                 return;
             }
+            var ctx = ToJSContext;
             slot.Type = MarshalerType.ArraySegment;
-            slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(value.Array, GCHandleType.Pinned);
+            slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(value.Array, GCHandleType.Pinned);
             var refPtr = (IntPtr)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(value.Array));
             slot.IntPtrValue = refPtr + (value.Offset * sizeof(int));
             slot.Length = value.Count;

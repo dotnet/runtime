@@ -391,6 +391,8 @@ GVAL_DECL(DWORD,            g_TlsIndex);
 
 #ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);
+GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
+GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
 GVAL_DECL(bool,             g_isNewExceptionHandlingEnabled);
 #endif
 
@@ -506,11 +508,6 @@ extern Volatile<BOOL> g_TriggerHeapDump;
 #endif // TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
-//
-// Allow use of native images?
-//
-extern bool g_fAllowNativeImages;
-
 //
 // Default install library
 //
