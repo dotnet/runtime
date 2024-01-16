@@ -53,9 +53,6 @@
 MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
-static GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
-
 
 #define IS_IMM32(val) ((((guint64)val) >> 32) == 0)
 
