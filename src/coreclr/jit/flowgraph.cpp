@@ -4025,10 +4025,11 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
 //
 void Compiler::fgInvalidateDfsTree()
 {
-    m_dfsTree  = nullptr;
-    m_loops    = nullptr;
-    m_domTree  = nullptr;
-    fgSsaValid = false;
+    m_dfsTree          = nullptr;
+    m_loops            = nullptr;
+    m_domTree          = nullptr;
+    m_reachabilitySets = nullptr;
+    fgSsaValid         = false;
 }
 
 //------------------------------------------------------------------------
@@ -5778,3 +5779,125 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
 
     return new (comp, CMK_Loops) BlockToNaturalLoopMap(loops, indices);
 }
+
+//------------------------------------------------------------------------
+// BlockReachabilitySets::Build: Build the reachability sets.
+//
+// Parameters:
+//   dfsTree - DFS tree
+//
+// Returns:
+//   The sets.
+//
+// Remarks:
+//   This algorithm consumes O(n^2) memory because we're using dense
+//   bitsets to represent reachability.
+//
+BlockReachabilitySets* BlockReachabilitySets::Build(FlowGraphDfsTree* dfsTree)
+{
+    Compiler*    comp            = dfsTree->GetCompiler();
+    BitVecTraits postOrderTraits = dfsTree->PostOrderTraits();
+    BitVec*      sets            = new (comp, CMK_Reachability) BitVec[dfsTree->GetPostOrderCount()];
+
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        sets[i] = BitVecOps::MakeSingleton(&postOrderTraits, i);
+    }
+
+    // Find the reachable blocks. Also, set BBF_GC_SAFE_POINT.
+    bool     change;
+    unsigned changedIterCount = 1;
+    do
+    {
+        change = false;
+
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+
+            for (BasicBlock* const predBlock : block->PredBlocks())
+            {
+                change |= BitVecOps::UnionDChanged(&postOrderTraits, sets[block->bbNewPostorderNum],
+                                                   sets[predBlock->bbNewPostorderNum]);
+            }
+        }
+
+        ++changedIterCount;
+    } while (change);
+
+#if COUNT_BASIC_BLOCKS
+    computeReachabilitySetsIterationTable.record(changedIterCount);
+#endif // COUNT_BASIC_BLOCKS
+
+    BlockReachabilitySets* reachabilitySets = new (comp, CMK_Reachability) BlockReachabilitySets(dfsTree, sets);
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("\nAfter computing reachability sets:\n");
+        reachabilitySets->Dump();
+    }
+#endif
+
+    return reachabilitySets;
+}
+
+//------------------------------------------------------------------------
+// BlockReachabilitySets::CanReach: Check if "from" can flow to "to" through
+// only regular control flow edges.
+//
+// Parameters:
+//   from - Start block
+//   to   - Candidate destination block
+//
+// Returns:
+//   True if so.
+//
+bool BlockReachabilitySets::CanReach(BasicBlock* from, BasicBlock* to)
+{
+    assert(m_dfsTree->Contains(from));
+
+    if (!m_dfsTree->Contains(to))
+    {
+        return false;
+    }
+
+    BitVecTraits poTraits = m_dfsTree->PostOrderTraits();
+    return BitVecOps::IsMember(&poTraits, m_reachabilitySets[to->bbNewPostorderNum], from->bbNewPostorderNum);
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// BlockReachabilitySets::Dump: Dump the reachability sets to stdout.
+//
+void BlockReachabilitySets::Dump()
+{
+    printf("------------------------------------------------\n");
+    printf("BBnum  Reachable by \n");
+    printf("------------------------------------------------\n");
+
+    Compiler*    comp            = m_dfsTree->GetCompiler();
+    BitVecTraits postOrderTraits = m_dfsTree->PostOrderTraits();
+
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        printf(FMT_BB " : ", block->bbNum);
+        if (m_dfsTree->Contains(block))
+        {
+            BitVecOps::Iter iter(&postOrderTraits, m_reachabilitySets[block->bbNewPostorderNum]);
+            unsigned        poNum = 0;
+            const char*     sep   = "";
+            while (iter.NextElem(&poNum))
+            {
+                printf("%s" FMT_BB, sep, m_dfsTree->GetPostOrder(poNum)->bbNum);
+                sep = " ";
+            }
+        }
+        else
+        {
+            printf("[unreachable]");
+        }
+        printf("\n");
+    }
+}
+#endif

@@ -361,6 +361,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 break;
             case GlobalizationMode.Hybrid:
                 expected.Add("icudt_hybrid.dat");
+                expected.Add("segmentation-rules.json");
                 break;
             case GlobalizationMode.PredefinedIcu:
                 if (string.IsNullOrEmpty(assertOptions.PredefinedIcudt))
@@ -380,6 +381,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
 
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
+        if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
+            actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules.json"));
         AssertFileNames(expected, actual);
         if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
         {

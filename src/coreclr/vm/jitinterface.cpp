@@ -5700,17 +5700,17 @@ unsigned CEEInfo::getClassDomainID (CORINFO_CLASS_HANDLE clsHnd,
 
 //---------------------------------------------------------------------------------------
 //
-// Used by the JIT to determine whether the profiler or IBC is tracking object
+// Used by the JIT to determine whether the profiler is tracking object
 // allocations
 //
 // Return Value:
-//    bool indicating whether the profiler or IBC is tracking object allocations
+//    bool indicating whether the profiler is tracking object allocations
 //
 // Notes:
 //    Normally, a profiler would just directly call the inline helper to determine
 //    whether the profiler set the relevant event flag (e.g.,
 //    CORProfilerTrackAllocationsEnabled). However, this wrapper also asks whether we're
-//    running for IBC instrumentation or enabling the object allocated ETW event. If so,
+//    enabling the object allocated ETW event. If so,
 //    we treat that the same as if the profiler requested allocation information, so that
 //    the JIT will still use the profiling-friendly object allocation jit helper, so the
 //    allocations can be tracked.

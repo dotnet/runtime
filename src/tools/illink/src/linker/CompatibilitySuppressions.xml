@@ -767,6 +767,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.AnnotationStore.IsRootAssembly(Mono.Cecil.AssemblyDefinition)</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.Mark(Mono.Cecil.CustomAttribute,Mono.Linker.DependencyInfo@)</Target>
   </Suppression>
   <Suppression>
@@ -828,6 +834,12 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetPublic(Mono.Cecil.IMetadataTokenProvider)</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.AnnotationStore.SetRootAssembly(Mono.Cecil.AssemblyDefinition)</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>

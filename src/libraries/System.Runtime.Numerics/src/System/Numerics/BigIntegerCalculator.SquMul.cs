@@ -12,9 +12,9 @@ namespace System.Numerics
     {
 #if DEBUG
         // Mutable for unit testing...
-        private static
+        internal static
 #else
-        private const
+        internal const
 #endif
         int SquareThreshold = 32;
 
@@ -160,7 +160,8 @@ namespace System.Numerics
         public static void Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
             Debug.Assert(left.Length >= right.Length);
-            Debug.Assert(bits.Length == left.Length + right.Length);
+            Debug.Assert(bits.Length >= left.Length + right.Length);
+            Debug.Assert(!bits.ContainsAnyExcept(0u));
 
             if (left.Length - right.Length < 3)
             {
@@ -175,7 +176,8 @@ namespace System.Numerics
         private static void MultiplyFarLength(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
             Debug.Assert(left.Length - right.Length >= 3);
-            Debug.Assert(bits.Length == left.Length + right.Length);
+            Debug.Assert(bits.Length >= left.Length + right.Length);
+            Debug.Assert(!bits.ContainsAnyExcept(0u));
 
             // Executes different algorithms for computing z = a * b
             // based on the actual length of b. If b is "small" enough
@@ -370,7 +372,8 @@ namespace System.Numerics
         private static void MultiplyNearLength(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
             Debug.Assert(left.Length - right.Length < 3);
-            Debug.Assert(bits.Length == left.Length + right.Length);
+            Debug.Assert(bits.Length >= left.Length + right.Length);
+            Debug.Assert(!bits.ContainsAnyExcept(0u));
 
             // Executes different algorithms for computing z = a * b
             // based on the actual length of b. If b is "small" enough
