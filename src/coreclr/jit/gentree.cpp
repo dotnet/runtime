@@ -18805,7 +18805,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
             JITDUMP("Runtime reports field is init-only and initialized and has class %s\n",
                     eeGetClassName(fieldClass));
         }
-        JITDUMP("Field's current class is not available\n");
+        else
+        {
+            JITDUMP("Field's current class is not available\n");
+        }
         return fieldClass;
     }
 
