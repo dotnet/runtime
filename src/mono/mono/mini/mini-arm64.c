@@ -2132,6 +2132,7 @@ mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 	}
 }
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 /**
  * Gets error context from `ccontext` registers by indirectly storing the value onto the stack.
  *
@@ -2154,6 +2155,7 @@ mono_arch_get_swift_error (CallContext *ccontext, MonoMethodSignature *sig, gpoi
 
 	return NULL;
 }
+#endif
 
 typedef struct {
 	MonoMethodSignature *sig;
