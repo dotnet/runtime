@@ -240,7 +240,6 @@
     <PlatformManifestFileEntry Include="icudt_optimal.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_hybrid.dat" IsNative="true" />
-    <PlatformManifestFileEntry Include="segmentation-rules.json" IsNative="true" />
     <PlatformManifestFileEntry Include="package.json" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />

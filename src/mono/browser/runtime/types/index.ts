@@ -300,10 +300,6 @@ export type AssetBehaviors = SingleAssetBehaviors |
      * The javascript module for threads.
      */
     | "symbols"
-    /**
-     * Load segmentation rules file for Hybrid Globalization.
-     */
-    | "segmentation-rules"
 
 export const enum GlobalizationMode {
     /**

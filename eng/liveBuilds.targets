@@ -208,8 +208,7 @@
         $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.native.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.native.js.symbols;
-        $(LibrariesNativeArtifactsPath)*.dat;
-        $(LibrariesNativeArtifactsPath)segmentation-rules.json;"
+        $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
       <!-- for threaded wasm -->
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and Exists('$(LibrariesNativeArtifactsPath)dotnet.native.worker.js')"
