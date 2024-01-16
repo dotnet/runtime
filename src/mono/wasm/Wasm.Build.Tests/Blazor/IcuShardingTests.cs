@@ -24,6 +24,7 @@ public class IcuShardingTests : BlazorWasmTestBase
     [InlineData("Release", "icudt.dat")]
     [InlineData("Debug", "icudt_CJK.dat")]
     [InlineData("Release", "icudt_CJK.dat")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task CustomIcuFileFromRuntimePack(string config, string fileName)
     {
         string id = $"blz_customFromRuntimePack_{config}_{GetRandomId()}";
@@ -90,6 +91,7 @@ public class IcuShardingTests : BlazorWasmTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task CustomFileNotFromRuntimePackAbsolutePath(string config)
     {
         string id = $"blz_invalidCustomIcu_{config}_{GetRandomId()}";
