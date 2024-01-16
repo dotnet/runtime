@@ -68,7 +68,16 @@ C_FUNC(\Name):
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
-        ldr \HelperReg, [pc, #C_FUNC(\Name)@GOTPCREL]
+        movw \HelperReg, #:lower16:C_FUNC(\Name) - (. + 12)
+        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 12)
+        add \HelperReg, pc
+.endm
+
+.macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
+        movw \HelperReg, #:lower16:C_FUNC(\Name) - (. + 12)
+        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 12)
+        add \HelperReg, pc
+        ldr \HelperReg, [\HelperReg]
 .endm
 
 .macro push_nonvol_reg Register
