@@ -570,6 +570,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             ((blkNode->GetLayout()->GetSize() % TARGET_POINTER_SIZE) == 0) && src->IsIntegralConst(0))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+#ifdef TARGET_ARM64
+            // On ARM64 we can just use REG_ZR instead of having to load
+            // the constant into a real register like on ARM32.
+            src->SetContained();
+#endif
             return;
         }
 #endif
