@@ -1570,10 +1570,8 @@ enum API_ICorJitInfo_Names
 
 enum class FlowGraphUpdates
 {
-    COMPUTE_BASICS  = 0,      // renumber blocks, reachability, etc
-    COMPUTE_DOMS    = 1 << 0, // recompute dominators
-    COMPUTE_RETURNS = 1 << 1, // recompute return blocks
-    COMPUTE_LOOPS   = 1 << 2, // recompute loop table
+    COMPUTE_BASICS = 0,      // renumber blocks, reachability, etc
+    COMPUTE_DOMS   = 1 << 0, // recompute dominators
 };
 
 inline constexpr FlowGraphUpdates operator|(FlowGraphUpdates a, FlowGraphUpdates b)
@@ -2089,7 +2087,8 @@ struct NaturalLoopIterInfo
 //   loop can reach every other block of the loop.
 //
 // * All loop blocks are dominated by the header block, i.e. the header block
-//   is guaranteed to be entered on every iteration.
+//   is guaranteed to be entered on every iteration. Note that in the prescence
+//   of exceptional flow the header might not fully execute on every iteration.
 //
 // * From the above it follows that the loop can only be entered at the header
 //   block. FlowGraphNaturalLoop::EntryEdges() gives a vector of these edges.
@@ -2389,6 +2388,30 @@ public:
     FlowGraphNaturalLoop* GetLoop(BasicBlock* block);
 
     static BlockToNaturalLoopMap* Build(FlowGraphNaturalLoops* loops);
+};
+
+// Represents a data structure that can answer A -> B reachability queries in
+// O(1) time. Only takes regular flow into account; if A -> B requires
+// exceptional flow, then CanReach returns false.
+class BlockReachabilitySets
+{
+    FlowGraphDfsTree* m_dfsTree;
+    BitVec* m_reachabilitySets;
+
+    BlockReachabilitySets(FlowGraphDfsTree* dfsTree, BitVec* reachabilitySets)
+        : m_dfsTree(dfsTree)
+        , m_reachabilitySets(reachabilitySets)
+    {
+    }
+
+public:
+    bool CanReach(BasicBlock* from, BasicBlock* to);
+
+#ifdef DEBUG
+    void Dump();
+#endif
+
+    static BlockReachabilitySets* Build(FlowGraphDfsTree* dfsTree);
 };
 
 enum class FieldKindForVN
@@ -4987,6 +5010,7 @@ public:
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
     FlowGraphDominatorTree* m_domTree;
+    BlockReachabilitySets* m_reachabilitySets;
 
     // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
     // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
@@ -5044,10 +5068,6 @@ public:
             roundUp(fgCurBBEpochSize, (unsigned)(sizeof(size_t) * 8)) / unsigned(sizeof(size_t) * 8);
 
 #ifdef DEBUG
-        // All BlockSet objects are now invalid!
-        fgReachabilitySetsValid = false; // the bbReach sets are now invalid!
-        fgEnterBlksSetValid     = false; // the fgEnterBlks set is now invalid!
-
         if (verbose)
         {
             unsigned epochArrSize = BasicBlockBitSetTraits::GetArrSize(this);
@@ -5126,14 +5146,6 @@ public:
     bool fgCanonicalizedFirstBB; // TODO-Quirk: did we end up canonicalizing first BB?
 
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
-
-    BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
-                          // begin blocks.
-
-#ifdef DEBUG
-    bool fgReachabilitySetsValid; // Are the bbReach sets valid?
-    bool fgEnterBlksSetValid;     // Is the fgEnterBlks set valid?
-#endif                            // DEBUG
 
     bool fgRemoveRestOfBlock; // true if we know that we will throw
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
@@ -5366,7 +5378,7 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block);
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
-    GenTree* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
+    GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
     bool fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
@@ -5781,8 +5793,6 @@ public:
     // Dominator computation member functions
     // Not exposed outside Compiler
 protected:
-    bool fgReachable(BasicBlock* b1, BasicBlock* b2); // Returns true if block b1 can reach block b2
-
     // Compute immediate dominators, the dominator tree and and its pre/post-order travsersal numbers.
     void fgComputeDoms();
 
@@ -5790,11 +5800,7 @@ protected:
     // Note: this is relatively slow compared to calling fgDominate(),
     // especially if dealing with a single block versus block check.
 
-    void fgComputeReachabilitySets(); // Compute bbReach sets. (Also sets BBF_GC_SAFE_POINT flag on blocks.)
-
     void fgComputeReturnBlocks(); // Initialize fgReturnBlocks to a list of BBJ_RETURN blocks.
-
-    void fgComputeEnterBlocksSet(); // Compute the set of entry blocks, 'fgEnterBlks'.
 
     // Remove blocks determined to be unreachable by the 'canRemoveBlock'.
     template <typename CanRemoveBlockBody>
@@ -6119,7 +6125,6 @@ public:
 #ifdef DEBUG
 
     void fgDispDoms();
-    void fgDispReach();
     void fgDispBBLiveness(BasicBlock* block);
     void fgDispBBLiveness();
     void fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth = 0);
@@ -12301,7 +12306,6 @@ extern Histogram bbCntTable;
 extern Histogram bbOneBBSizeTable;
 extern Histogram domsChangedIterationTable;
 extern Histogram computeReachabilitySetsIterationTable;
-extern Histogram computeReachabilityIterationTable;
 #endif
 
 /*****************************************************************************

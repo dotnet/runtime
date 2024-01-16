@@ -9,26 +9,6 @@ namespace System.DirectoryServices
 {
     internal static partial class SafeNativeMethods
     {
-        [LibraryImport(global::Interop.Libraries.OleAut32)]
-        public static partial void VariantInit(IntPtr pObject);
-
-        [LibraryImport(global::Interop.Libraries.Activeds)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool FreeADsMem(IntPtr pVoid);
-
-        public const int
-            FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200,
-            FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000,
-            FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000,
-            ERROR_MORE_DATA = 234,
-            ERROR_SUCCESS = 0;
-
-        [LibraryImport(global::Interop.Libraries.Activeds, StringMarshalling = StringMarshalling.Utf16)]
-        public static unsafe partial int ADsGetLastError(out int error, char* errorBuffer, int errorBufferLength, char* nameBuffer, int nameBufferLength);
-
-        [LibraryImport(global::Interop.Libraries.Activeds, StringMarshalling = StringMarshalling.Utf16)]
-        public static partial int ADsSetLastError(int error, string? errorString, string? provider);
-
         public sealed class EnumVariant
         {
             private static readonly object s_noMoreValues = new object();
@@ -85,7 +65,7 @@ namespace System.DirectoryServices
                 try
                 {
                     int[] numRead = new int[] { 0 };
-                    VariantInit(addr);
+                    global::Interop.OleAut32.VariantInit(addr);
                     _enumerator.Next(1, addr, numRead);
 
                     try

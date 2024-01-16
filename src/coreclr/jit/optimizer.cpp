@@ -75,7 +75,7 @@ PhaseStatus Compiler::optSetBlockWeights()
     for (BasicBlock* const block : Blocks())
     {
         /* Blocks that can't be reached via the first block are rarely executed */
-        if (!fgReachable(fgFirstBB, block) && !block->isRunRarely())
+        if (!m_reachabilitySets->CanReach(fgFirstBB, block) && !block->isRunRarely())
         {
             madeChanges = true;
             block->bbSetRunRarely();
@@ -155,7 +155,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 {
     noway_assert(begBlk->bbNum <= endBlk->bbNum);
     noway_assert(begBlk->isLoopHead());
-    noway_assert(fgReachable(begBlk, endBlk));
+    noway_assert(m_reachabilitySets->CanReach(begBlk, endBlk));
     noway_assert(!opts.MinOpts());
 
 #ifdef DEBUG
@@ -213,7 +213,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
         // (since this is a loop) begBlk must likewise be reachable from curBlk.
 
-        if (fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
+        if (m_reachabilitySets->CanReach(curBlk, begBlk) && m_reachabilitySets->CanReach(begBlk, curBlk))
         {
             // If `curBlk` reaches any of the back edge blocks we set `reachable`.
             // If `curBlk` dominates any of the back edge blocks we set `dominates`.
@@ -224,7 +224,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             {
                 BasicBlock* backedge = tmp->getSourceBlock();
 
-                reachable |= fgReachable(curBlk, backedge);
+                reachable |= m_reachabilitySets->CanReach(curBlk, backedge);
                 dominates |= fgDominate(curBlk, backedge);
 
                 if (dominates && reachable)
@@ -319,7 +319,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #endif
         return;
     }
-    noway_assert(fgReachable(begBlk, endBlk));
+    noway_assert(m_reachabilitySets->CanReach(begBlk, endBlk));
 
 #ifdef DEBUG
     if (verbose)
@@ -357,7 +357,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
         // (since this is a loop) begBlk must likewise be reachable from curBlk.
         //
-        if (fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
+        if (m_reachabilitySets->CanReach(curBlk, begBlk) && m_reachabilitySets->CanReach(begBlk, curBlk))
         {
             weight_t scale = 1.0 / BB_LOOP_WEIGHT_SCALE;
 
@@ -503,17 +503,18 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
     {
         // This block must reach conditionally or always
 
-        if (block->KindIs(BBJ_ALWAYS) &&                   // This block always reaches
-            block->GetTarget()->isLoopHead() &&            // to a loop head...
-            (block->GetTarget()->bbNum <= block->bbNum) && // This is a backedge...
-            fgReachable(block->GetTarget(), block))        // Block's back edge target can reach block...
+        if (block->KindIs(BBJ_ALWAYS) &&                             // This block always reaches
+            block->GetTarget()->isLoopHead() &&                      // to a loop head...
+            (block->GetTarget()->bbNum <= block->bbNum) &&           // This is a backedge...
+            m_reachabilitySets->CanReach(block->GetTarget(), block)) // Block's back edge target can reach block...
         {
             optUnmarkLoopBlocks(block->GetTarget(), block); // Unscale the blocks in such loop.
         }
-        else if (block->KindIs(BBJ_COND) &&                         // This block conditionally reaches
-                 block->GetTrueTarget()->isLoopHead() &&            // to a loop head...
-                 (block->GetTrueTarget()->bbNum <= block->bbNum) && // This is a backedge...
-                 fgReachable(block->GetTrueTarget(), block))        // Block's back edge target can reach block...
+        else if (block->KindIs(BBJ_COND) &&                                   // This block conditionally reaches
+                 block->GetTrueTarget()->isLoopHead() &&                      // to a loop head...
+                 (block->GetTrueTarget()->bbNum <= block->bbNum) &&           // This is a backedge...
+                 m_reachabilitySets->CanReach(block->GetTrueTarget(), block)) // Block's back edge target can reach
+                                                                              // block...
         {
             optUnmarkLoopBlocks(block->GetTrueTarget(), block); // Unscale the blocks in such loop.
         }
@@ -2546,6 +2547,7 @@ NO_MORE_LOOPS:
 
     if (mod)
     {
+        fgInvalidateDfsTree();
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
@@ -3430,12 +3432,6 @@ RETRY_UNROLL:
     // Visit loops in post order (inner loops before outer loops).
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
-        // TODO-Quirk: Remove
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
         if (BitVecOps::IsMember(&loopTraits, loopsWithUnrolledDescendant, loop->GetIndex()))
         {
             continue;
@@ -3943,6 +3939,7 @@ RETRY_UNROLL:
     {
         fgDomsComputed = false;
         fgRenumberBlocks(); // For proper lexical visit
+        fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         passes++;
@@ -4653,7 +4650,7 @@ void Compiler::optMarkLoopHeads()
         printf("*************** In optMarkLoopHeads()\n");
     }
 
-    assert(fgReachabilitySetsValid);
+    assert(m_reachabilitySets != nullptr);
     fgDebugCheckBBNumIncreasing();
 
     int loopHeadsMarked = 0;
@@ -4665,10 +4662,9 @@ void Compiler::optMarkLoopHeads()
     {
         // Set BBF_LOOP_HEAD if we have backwards branches to this block.
 
-        unsigned blockNum = block->bbNum;
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if (blockNum <= predBlock->bbNum)
+            if (block->bbNum <= predBlock->bbNum)
             {
                 if (predBlock->KindIs(BBJ_CALLFINALLY))
                 {
@@ -4677,7 +4673,7 @@ void Compiler::optMarkLoopHeads()
                 }
 
                 // If block can reach predBlock then we have a loop head
-                if (BlockSetOps::IsMember(this, predBlock->bbReach, blockNum))
+                if (m_reachabilitySets->CanReach(block, predBlock))
                 {
                     hasLoops = true;
                     block->SetFlags(BBF_LOOP_HEAD);
@@ -4746,6 +4742,12 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
     // This code depends on block number ordering.
     INDEBUG(fgDebugCheckBBNumIncreasing());
 
+    assert(m_dfsTree != nullptr);
+    if (m_reachabilitySets == nullptr)
+    {
+        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
+    }
+
     unsigned generalLoopCount = 0;
 
     // We will use the following terminology:
@@ -4780,7 +4782,7 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
             }
 
             /* the top block must be able to reach the bottom block */
-            if (!fgReachable(top, bottom))
+            if (!m_reachabilitySets->CanReach(top, bottom))
             {
                 continue;
             }
@@ -4891,6 +4893,7 @@ void Compiler::optFindNewLoops()
 
     if (optCanonicalizeLoops(m_loops))
     {
+        fgInvalidateDfsTree();
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
@@ -6136,11 +6139,6 @@ PhaseStatus Compiler::optHoistLoopCode()
     LoopHoistContext hoistCtxt(this);
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
 #if LOOP_HOIST_STATS
         // Record stats
         m_curLoopHasHoistedExpression = false;
@@ -6341,11 +6339,6 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
 
     for (FlowGraphNaturalLoop* childLoop = loop->GetChild(); childLoop != nullptr; childLoop = childLoop->GetSibling())
     {
-        if (!childLoop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
         assert(childLoop->EntryEdges().size() == 1);
         BasicBlock* childPreHead = childLoop->EntryEdge(0)->getSourceBlock();
         if (loop->ExitEdges().size() == 1)
@@ -6376,17 +6369,26 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
                 ", or pre-headers of nested loops, if any:\n",
                 exiting->bbNum);
 
-        // Push dominators, until we reach "entry" or exit the loop.
-
+        // Push dominators, until we reach the header or exit the loop.
+        //
+        // Note that there is a mismatch between the dominator tree dominance
+        // and loop header dominance; the dominator tree dominance relation
+        // guarantees that a block A that dominates B was exited before B is
+        // entered, meaning it could not possibly have thrown an exception. On
+        // the other hand loop finding guarantees only that the header was
+        // entered before other blocks in the loop. If the header is a
+        // try-begin then blocks inside the catch may not necessarily be fully
+        // dominated by the header, but may still be part of the loop.
+        //
         BasicBlock* cur = exiting;
-        while ((cur != nullptr) && (cur != loop->GetHeader()))
+        while ((cur != nullptr) && (cur != loop->GetHeader()) && loop->ContainsBlock(cur))
         {
             JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);
-            assert(loop->ContainsBlock(cur));
             defExec.Push(cur);
             cur = cur->bbIDom;
         }
-        noway_assert(cur == loop->GetHeader());
+
+        assert((cur == loop->GetHeader()) || bbIsTryBeg(loop->GetHeader()));
     }
     else // More than one exit
     {
