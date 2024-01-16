@@ -254,7 +254,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(TestDataForAppBundleDir))]
         public async Task RunWithDifferentAppBundleLocations(bool forConsole, bool runOutsideProjectDirectory, string extraProperties)
-            => await (forConsole, ConsoleRunWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory);
+            => await ConsoleRunWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory);
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
                     //: BrowserRunTwiceWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory));
 
