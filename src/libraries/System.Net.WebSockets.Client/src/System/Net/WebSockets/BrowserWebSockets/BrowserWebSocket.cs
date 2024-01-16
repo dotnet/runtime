@@ -542,18 +542,14 @@ namespace System.Net.WebSockets
 
         private async Task CancellationHelper(Task promise, CancellationToken cancellationToken, WebSocketState previousState, IDisposable? disposable = null)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                disposable?.Dispose();
-                cancellationToken.ThrowIfCancellationRequested();
-            }
-            if (promise.IsCompletedSuccessfully)
-            {
-                disposable?.Dispose();
-                return;
-            }
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (promise.IsCompletedSuccessfully)
+                {
+                    disposable?.Dispose();
+                    return;
+                }
                 if (promise.IsCompleted)
                 {
                     // don't have to register for cancelation
@@ -570,7 +566,7 @@ namespace System.Net.WebSockets
                     return;
                 }
             }
-            catch (JSException ex)
+            catch (Exception ex)
             {
                 lock (_lockObject)
                 {
@@ -580,7 +576,15 @@ namespace System.Net.WebSockets
                         ForceReadCloseStatusLocked();
                         throw new OperationCanceledException(nameof(WebSocketState.Aborted), ex);
                     }
-
+                    if (ex is OperationCanceledException)
+                    {
+                        if(state != WebSocketState.Closed)
+                        {
+                            FastState = WebSocketState.Aborted;
+                        }
+                        _cancelled = true;
+                        throw;
+                    }
                     if (state != WebSocketState.Closed && cancellationToken.IsCancellationRequested)
                     {
                         FastState = WebSocketState.Aborted;
