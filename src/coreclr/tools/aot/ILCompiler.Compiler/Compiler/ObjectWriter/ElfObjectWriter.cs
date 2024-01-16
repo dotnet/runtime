@@ -169,18 +169,13 @@ namespace ILCompiler.ObjectWriter
         {
             fixed (byte *pData = data)
             {
-                if (relocType is IMAGE_REL_BASED_REL32 && _machine is EM_386 or EM_X86_64)
+                addend -= relocType switch
                 {
-                    addend -= 4;
-                }
-                else if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24)
-                {
-                    addend -= 4;
-                }
-                else if (relocType is IMAGE_REL_BASED_THUMB_MOV32_PCREL)
-                {
-                    addend -= 12;
-                }
+                    IMAGE_REL_BASED_REL32 => 4,
+                    IMAGE_REL_BASED_THUMB_BRANCH24 => 4,
+                    IMAGE_REL_BASED_THUMB_MOV32_PCREL => 12,
+                    _ => 0
+                };
 
                 if (!_useInlineRelocationAddends)
                 {
@@ -219,11 +214,10 @@ namespace ILCompiler.ObjectWriter
                 var type =
                     (section.SectionHeader.Flags & SHF_TLS) == SHF_TLS ? STT_TLS :
                     definition.Size > 0 ? STT_FUNC : STT_NOTYPE;
-                ulong thumbBit = _machine == EM_ARM && type == STT_FUNC ? 1u : 0u;
                 sortedSymbols.Add(new ElfSymbol
                 {
                     Name = name,
-                    Value = (ulong)definition.Value | thumbBit,
+                    Value = (ulong)definition.Value,
                     Size = (ulong)definition.Size,
                     Section = _sections[definition.SectionIndex],
                     Info = (byte)(type | (STB_GLOBAL << 4)),
