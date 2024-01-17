@@ -220,11 +220,17 @@ AffinitySet g_processAffinitySet;
 extern "C" int g_highestNumaNode;
 extern "C" bool g_numaAvailable;
 
+#ifdef TARGET_APPLE
+static int *g_kern_memorystatus_level_mib = NULL;
+static size_t g_kern_memorystatus_level_mib_length = 0;
+#endif
+
 // Initialize the interface implementation
 // Return:
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::Initialize()
 {
+    bool success = true;
     int pageSize = sysconf( _SC_PAGE_SIZE );
 
     g_pageSizeUnixInl = uint32_t((pageSize > 0) ? pageSize : 0x1000);
@@ -317,7 +323,24 @@ bool GCToOSInterface::Initialize()
 
     NUMASupportInitialize();
 
-    return true;
+#ifdef TARGET_APPLE
+    const char* mem_free_name = "kern.memorystatus_level";
+    int rc = sysctlnametomib(mem_free_name, NULL, &g_kern_memorystatus_level_mib_length);
+    if (rc == 0)
+    {
+        g_kern_memorystatus_level_mib = (int*)malloc(g_kern_memorystatus_level_mib_length * sizeof(int));
+        rc = sysctlnametomib(mem_free_name, g_kern_memorystatus_level_mib, &g_kern_memorystatus_level_mib_length);
+        if (rc != 0)
+        {
+            free(g_kern_memorystatus_level_mib);
+            g_kern_memorystatus_level_mib = NULL;
+            g_kern_memorystatus_level_mib_length = 0;
+            success = false;
+        }
+    }
+#endif
+
+    return success;
 }
 
 // Shutdown the interface implementation
@@ -1248,20 +1271,23 @@ uint64_t GetAvailablePhysicalMemory()
 
     // Get the physical memory available.
 #if defined(__APPLE__)
-    vm_size_t page_size;
-    mach_port_t mach_port;
-    mach_msg_type_number_t count;
-    vm_statistics_data_t vm_stats;
-    mach_port = mach_host_self();
-    count = sizeof(vm_stats) / sizeof(natural_t);
-    if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
+    uint32_t mem_free = 0;
+    size_t mem_free_length = sizeof(uint32_t);
+    if (g_kern_memorystatus_level_mib != NULL)
     {
-        if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
+        int rc = sysctl(g_kern_memorystatus_level_mib, g_kern_memorystatus_level_mib_length, &mem_free, &mem_free_length, NULL, 0);
+        if (rc == 0)
         {
-            available = (int64_t)vm_stats.free_count * (int64_t)page_size;
+            int64_t mem_size = 0;
+            size_t mem_size_length = sizeof(int64_t);
+            int mib[] = { CTL_HW, HW_MEMSIZE };
+            rc = sysctl(mib, 2, &mem_size, &mem_size_length, NULL, 0);
+            if (rc == 0)
+            {
+                available = (int64_t)mem_free * mem_size / 100;
+            }
         }
     }
-    mach_port_deallocate(mach_task_self(), mach_port);
 #elif defined(__FreeBSD__)
     size_t inactive_count = 0, laundry_count = 0, free_count = 0;
     size_t sz = sizeof(inactive_count);
@@ -1279,7 +1305,7 @@ uint64_t GetAvailablePhysicalMemory()
 
     if (tryReadMemInfo)
     {
-        // Ensure that we don't try to read the /proc/meminfo in successive calls to the GlobalMemoryStatusEx
+        // Ensure that we don't try to read the /proc/meminfo in successive calls to the GetAvailablePhysicalMemory
         // if we have failed to access the file or the file didn't contain the MemAvailable value.
         tryReadMemInfo = ReadMemAvailable(&available);
     }
