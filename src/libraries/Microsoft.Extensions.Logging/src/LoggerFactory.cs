@@ -180,7 +180,8 @@ namespace Microsoft.Extensions.Logging
                 {
                     if (!_loggersOfT.TryGetValue(typeof(T), out logger))
                     {
-                        _loggersOfT[typeof(T)] = new Logger<T>(this);
+                        logger = new Logger<T>(this);
+                        _loggersOfT[typeof(T)] = logger;
                     }
                 }
             }
