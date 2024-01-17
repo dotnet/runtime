@@ -22,6 +22,9 @@ namespace System.Runtime.InteropServices.Marshalling
 
         private readonly object? _runtimeCallableWrapper;
 
+        // This is an int so we can use the Interlocked APIs to update it.
+        private volatile int _released;
+
         /// <summary>
         /// Initialize ComObject instance.
         /// </summary>
@@ -48,10 +51,9 @@ namespace System.Runtime.InteropServices.Marshalling
         ~ComObject()
         {
             CacheStrategy.Clear(IUnknownStrategy);
-            if (_instancePointer != null)
+            if (Interlocked.CompareExchange(ref _released, 1, 0) == 0)
             {
                 IUnknownStrategy.Release(_instancePointer);
-                _instancePointer = null;
             }
         }
 
@@ -81,7 +83,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </remarks>
         public void FinalRelease()
         {
-            if (UniqueInstance && _instancePointer != null)
+            if (UniqueInstance && Interlocked.CompareExchange(ref _released, 1, 0) == 0)
             {
                 CacheStrategy.Clear(IUnknownStrategy);
                 IUnknownStrategy.Release(_instancePointer);
@@ -116,6 +118,11 @@ namespace System.Runtime.InteropServices.Marshalling
 
         private bool LookUpVTableInfo(RuntimeTypeHandle handle, out IIUnknownCacheStrategy.TableInfo result, out int qiHResult)
         {
+            if (_released != 0)
+            {
+                throw new ObjectDisposedException();
+            }
+
             qiHResult = 0;
             if (!CacheStrategy.TryGetTableInfo(handle, out result))
             {
