@@ -38,6 +38,7 @@ namespace System.Diagnostics
     }
 }
 
+#if FEATURE_WASM_THREADS
 namespace System.Runtime.InteropServices.JavaScript
 {
     public class JSProxyContextBase {
@@ -45,3 +46,4 @@ namespace System.Runtime.InteropServices.JavaScript
         public static JSProxyContextBase? CurrentThreadContextBase;
     }
 }
+#endif
