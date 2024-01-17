@@ -500,6 +500,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
     ILStubHashBlob* pHashBlob,
     DWORD dwStubFlags,
     Module* pSigModule,
+    SigTypeContext* pTypeContext,
     PCCOR_SIGNATURE pSig,
     DWORD cbSig,
     AllocMemTracker* pamTracker,
@@ -551,6 +552,10 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         if (pTargetMD != NULL)
         {
             SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
+        }
+        else if (pTypeContext != NULL)
+        {
+            typeContext = *pTypeContext;
         }
 
         pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, &typeContext, pamTracker);

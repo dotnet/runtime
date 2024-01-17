@@ -55,6 +55,13 @@ public:
             m_pDebugClassName = NULL;
         }
     }
+
+    void InitTypeContext(TypeHandle* methInst, DWORD methInstCount)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_typeContext = SigTypeContext(Instantiation(), Instantiation(methInst, methInstCount));
+    }
 #endif // _DEBUG
 };
 

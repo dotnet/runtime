@@ -4696,7 +4696,7 @@ PTR_VOID ReflectionModule::GetRvaField(RVA field) // virtual
 //==========================================================================
 // Enregisters a VASig.
 //==========================================================================
-VASigCookie *Module::GetVASigCookie(Signature vaSignature)
+VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext)
 {
     CONTRACT(VASigCookie*)
     {
@@ -4734,13 +4734,7 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature)
 
         // Compute the size of args first, outside of the lock.
 
-        // @TODO GENERICS: We may be calling a varargs method from a
-        // generic type/method. Using an empty context will make such a
-        // case cause an unexpected exception. To make this work,
-        // we need to create a specialized signature for every instantiation
-        SigTypeContext typeContext;
-
-        MetaSig metasig(vaSignature, this, &typeContext);
+        MetaSig metasig(vaSignature, this, typeContext);
         ArgIterator argit(&metasig);
 
         // Upper estimate of the vararg size
@@ -4778,6 +4772,8 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature)
             pCookie->pNDirectILStub = NULL;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
+            pCookie->methInst = typeContext->m_methodInst.GetRawArgs();
+            pCookie->methInstCount = typeContext->m_methodInst.GetNumArgs();
 
             // Finally, now that it's safe for asynchronous readers to see it,
             // update the count.

@@ -339,6 +339,9 @@ struct VASigCookie
     Volatile<PCODE> pNDirectILStub;         // will be use if target is NDirect (tag == 0)
     PTR_Module      pModule;
     Signature       signature;
+    // classInst should always be NULL so we only need methInst here
+    TypeHandle*     methInst;
+    DWORD           methInstCount;
 };
 
 //
@@ -1361,7 +1364,7 @@ public:
     void NotifyEtwLoadFinished(HRESULT hr);
 
     // Enregisters a VASig.
-    VASigCookie *GetVASigCookie(Signature vaSignature);
+    VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
 
 public:
 #ifndef DACCESS_COMPILE
