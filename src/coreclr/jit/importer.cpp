@@ -5601,9 +5601,10 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
             }
         }
-        else
+        else if (!isCastClass && impIsCastHelperMayHaveProfileData(helper))
         {
             // Maybe the late-cast-expand phase will have a better luck expanding this cast.
+            // TODO: enable for cast-class as well.
             call->gtCallMoreFlags |= GTF_CALL_M_CAST_CAN_BE_EXPANDED;
             call->gtCastHelperILOffset = ilOffset;
         }
