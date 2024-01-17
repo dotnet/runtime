@@ -4227,6 +4227,7 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			res->llvm_symbol = mono_mempool_strdup_printf (acfg->mempool, "%s_%s_llvm", res->symbol, res->debug_sym);
 		else
 			res->llvm_symbol = mono_mempool_strdup_printf (acfg->mempool, "%s_llvm", res->symbol);
+
 		if (strstr (res->llvm_symbol, acfg->temp_prefix) == res->llvm_symbol)
 			res->llvm_symbol = res->llvm_symbol + strlen (acfg->temp_prefix);
 
@@ -14229,7 +14230,7 @@ static void
 acfg_free (MonoAotCompile *acfg)
 {
 #ifdef ENABLE_LLVM
-	if (acfg->aot_opts.llvm)
+	if (mono_use_llvm || acfg->aot_opts.llvm)
 		mono_llvm_free_aot_module ();
 #endif
 
