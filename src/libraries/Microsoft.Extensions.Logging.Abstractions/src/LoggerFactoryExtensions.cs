@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Logging
         {
             ThrowHelper.ThrowIfNull(factory);
 
-            return new Logger<T>(factory);
+            return factory.CreateLogger<T>();
         }
         /// <summary>
         /// Creates a new <see cref="ILogger"/> instance using the full name of the given <paramref name="type"/>.
