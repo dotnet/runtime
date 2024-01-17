@@ -415,12 +415,17 @@ namespace ILLink.Shared.TrimAnalysis
 								if (stringParam is KnownStringValue stringValue && !BindingFlagsAreUnsupported (bindingFlags) && !MemberTypesAreUnsupported (memberTypes)) {
 									// determine if we've got a prefix (for example, abc* searches for anything starting with abc)
 									var isPrefix = stringValue.Contents.EndsWith("*");
+									if (isPrefix)
+									{
+										// Mark based on bitfield requirements
+										_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
+										continue;
+									}
 									var name = stringValue.Contents;
-									if (isPrefix) name = name.Substring(0, name.Length - 1);
 
 									// we may not need to search for constructors depending on the value of 'name', since they're always named '.ctor' (II.10.5.1)
 									DynamicallyAccessedMemberTypes requiredMemberTypes2 = requiredMemberTypes;
-									if (isPrefix ? !".ctor".StartsWith(name) : name != ".ctor") {
+									if (name != ".ctor") {
 										requiredMemberTypes2 &= ~(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors);
 									}
 
@@ -431,22 +436,20 @@ namespace ILLink.Shared.TrimAnalysis
 										MarkConstructorsOnType (systemTypeValue.RepresentedType, bindingFlags, parameterCount: null);
 									}
 									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)) != 0) {
-										MarkEventsOnTypeHierarchyWithPrefix (systemTypeValue.RepresentedType, name, isPrefix, bindingFlags);
+										MarkEventsOnTypeHierarchy (systemTypeValue.RepresentedType, name, bindingFlags);
 									}
 									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)) != 0) {
-										MarkFieldsOnTypeHierarchyWithPrefix (systemTypeValue.RepresentedType, name, isPrefix, bindingFlags);
+										MarkFieldsOnTypeHierarchy (systemTypeValue.RepresentedType, name, bindingFlags);
 									}
 									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)) != 0) {
-										foreach (var methodValue in ProcessGetMethodByNameWithPrefix (systemTypeValue.RepresentedType, name, isPrefix, bindingFlags))
-											AddReturnValue (methodValue);
+										foreach (var methodValue in ProcessGetMethodByName (systemTypeValue.RepresentedType, name, bindingFlags)) /*mark method*/;
 									}
 									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)) != 0) {
-										MarkPropertiesOnTypeHierarchyWithPrefix (systemTypeValue.RepresentedType, name, isPrefix, bindingFlags);
+										MarkPropertiesOnTypeHierarchy (systemTypeValue.RepresentedType, name, bindingFlags);
 									}
 									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)) != 0) {
-										foreach (var nestedTypeValue in GetNestedTypesOnTypeWithPrefix (systemTypeValue.RepresentedType, name, isPrefix, bindingFlags)) {
+										foreach (var nestedTypeValue in GetNestedTypesOnType (systemTypeValue.RepresentedType, name, bindingFlags)) {
 											MarkType (nestedTypeValue.RepresentedType);
-											AddReturnValue (nestedTypeValue);
 										}
 									}
 								} else if (stringParam is NullValue) {
