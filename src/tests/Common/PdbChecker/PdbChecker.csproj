@@ -2,7 +2,10 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Platforms>x64;x86;arm64;arm</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RuntimeIdentifiers>win-x64;win-x86;win-arm;win-arm64</RuntimeIdentifiers>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
