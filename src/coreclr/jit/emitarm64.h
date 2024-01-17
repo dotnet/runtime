@@ -580,7 +580,7 @@ static bool isValidUimm5(ssize_t value)
     return (0 <= value) && (value <= 0x1FLL);
 };
 
-// Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for fMOV).
+// Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for FMOV).
 static bool isValidUimm8(ssize_t value)
 {
     return (0 <= value) && (value <= 0xFFLL);
@@ -1066,7 +1066,7 @@ void emitIns(instruction ins);
 
 void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
-void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
+void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_R_I(instruction ins,
                  emitAttr    attr,
@@ -1080,7 +1080,12 @@ void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, i
 void emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_R(instruction     ins,
+                 emitAttr        attr,
+                 regNumber       reg1,
+                 regNumber       reg2,
+                 insOpts         opt  = INS_OPTS_NONE,
+                 insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
 {
