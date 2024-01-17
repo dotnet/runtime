@@ -115,10 +115,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
         private bool LookUpVTableInfo(RuntimeTypeHandle handle, out IIUnknownCacheStrategy.TableInfo result, out int qiHResult)
         {
-            if (_released != 0)
-            {
-                throw new ObjectDisposedException(nameof(ComObject));
-            }
+            ObjectDisposedException.ThrowIf(_released != 0, this);
 
             qiHResult = 0;
             if (!CacheStrategy.TryGetTableInfo(handle, out result))
