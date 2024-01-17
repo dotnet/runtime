@@ -179,7 +179,7 @@ namespace __OptionValidationGeneratedAttributes
         public __SourceGen__RangeAttribute(global::System.Type type, string minimum, string maximum) : base()
         {
             OperandType = type;
-            NeedToConvertMinMax = true;
+            _needToConvertMinMax = true;
             Minimum = minimum;
             Maximum = maximum;
         }
@@ -192,9 +192,9 @@ namespace __OptionValidationGeneratedAttributes
         public bool ConvertValueInInvariantCulture { get; set; }
         public override string FormatErrorMessage(string name) =>
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
-        private bool NeedToConvertMinMax { get; }
+        private readonly bool _needToConvertMinMax;
         private volatile bool _initialized;
-        private const string c_minMaxError = "The minimum and maximum values must be set to valid values.";
+        private const string MinMaxError = "The minimum and maximum values must be set to valid values.";
 
         public override bool IsValid(object? value)
         {
@@ -206,13 +206,13 @@ namespace __OptionValidationGeneratedAttributes
                     {
                         if (Minimum is null || Maximum is null)
                         {
-                            throw new global::System.InvalidOperationException(c_minMaxError);
+                            throw new global::System.InvalidOperationException(MinMaxError);
                         }
-                        if (NeedToConvertMinMax)
+                        if (_needToConvertMinMax)
                         {
                             System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-                            Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                            Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                            Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
+                            Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
                         }
                         int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
                         if (cmp > 0)

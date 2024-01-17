@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -406,18 +407,15 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             OptionsWithTimeSpanRangeAttribute options = new OptionsWithTimeSpanRangeAttribute() { Name = "T1", Period = TimeSpan.FromHours(1) };
             TimeSpanRangeAttributeValidator validator = new TimeSpanRangeAttributeValidator();
 
-            Task[] tasks = new Task[8];
-            for (int i = 0; i < tasks.Length; i++)
-            {
-                tasks[i] = Task.Run(() =>
+            var barrier = new Barrier(8);
+            Task.WaitAll(
+                (from i in Enumerable.Range(0, barrier.ParticipantCount)
+                select Task.Factory.StartNew(() =>
                 {
-                    Task.Delay(10).Wait();
+                    barrier.SignalAndWait();
                     ValidateOptionsResult result = validator.Validate("T1", options);
                     Assert.True(result.Succeeded);
-                });
-            }
-
-            Task.WaitAll(tasks);
+                }, TaskCreationOptions.LongRunning)).ToArray());
         }
     }
 
