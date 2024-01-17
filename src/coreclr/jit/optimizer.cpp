@@ -4404,7 +4404,7 @@ void Compiler::optFindNewLoops()
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-        modified = true;
+        modified  = true;
     }
 
     if (optCanonicalizeLoops())
@@ -4412,7 +4412,7 @@ void Compiler::optFindNewLoops()
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-        modified = true;
+        modified  = true;
     }
 
     if (modified)
@@ -4476,7 +4476,7 @@ bool Compiler::optCompactLoops()
         changed |= optCompactLoop(loop);
     }
 
-    return true;
+    return changed;
 }
 
 //-----------------------------------------------------------------------------
