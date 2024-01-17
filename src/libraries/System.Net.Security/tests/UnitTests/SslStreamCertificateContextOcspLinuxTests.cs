@@ -15,17 +15,166 @@ using Xunit;
 
 namespace System.Net.Security.Tests;
 
-// [OuterLoop("Tests tests run long time")]
 public class SslStreamCertificateContextOcspLinuxTests
 {
     [Fact]
-    public async Task Runs()
+    public async Task OfflineContext_NoFetchOcspResponse()
     {
-        var pkiOptions = PkiOptions.None;
-        await SimpleTest(pkiOptions, async (root, intermediate, endEntity, ctxFactory, responder) =>
+        await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
         {
+            intermediate.RevocationExpiration = null;
+
+            var ctx = ctxFactory(true);
+            var ocsp = await ctx.GetOcspResponseAsync();
+            Assert.Null(ocsp);
+        });
+    }
+
+    [Fact]
+    public async Task FetchOcspResponse_NoExpiration_Success()
+    {
+        await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
+        {
+            intermediate.RevocationExpiration = null;
+
             var ctx = ctxFactory(false);
             var ocsp = await ctx.GetOcspResponseAsync();
+            Assert.NotNull(ocsp);
+        });
+    }
+
+    [Theory]
+    [InlineData(PkiOptions.OcspEverywhere)]
+    [InlineData(PkiOptions.OcspEverywhere | PkiOptions.IssuerAuthorityHasDesignatedOcspResponder)]
+    public async Task FetchOcspResponse_WithExpiration_Success(PkiOptions pkiOptions)
+    {
+        await SimpleTest(pkiOptions, async (root, intermediate, endEntity, ctxFactory, responder) =>
+        {
+            intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
+
+            var ctx = ctxFactory(false);
+            var ocsp = await ctx.GetOcspResponseAsync();
+            Assert.NotNull(ocsp);
+
+            // should cache and return the same
+            var ocsp2 = await ctx.GetOcspResponseAsync();
+            Assert.Equal(ocsp, ocsp2);
+        });
+    }
+
+    [Fact]
+    public async Task FetchOcspResponse_Expired_ReturnsNull()
+    {
+        await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
+        {
+            intermediate.RevocationExpiration = DateTimeOffset.UtcNow;
+
+            var ctx = ctxFactory(false);
+            var ocsp = await ctx.GetOcspResponseAsync();
+            Assert.Null(ocsp);
+        });
+    }
+
+    [Fact]
+    public async Task FetchOcspResponse_FirstInvalidThenValid()
+    {
+        await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
+        {
+            responder.RespondKind = RespondKind.Invalid;
+
+            var ctx = ctxFactory(false);
+            var ocsp = await ctx.GetOcspResponseAsync();
+            Assert.Null(ocsp);
+
+            responder.RespondKind = RespondKind.Normal;
+            ocsp = await ctx.GetOcspResponseAsync();
+            Assert.NotNull(ocsp);
+        });
+    }
+
+    [Fact]
+    public async Task RefreshOcspResponse_BeforeExpiration()
+    {
+        await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
+        {
+            // Set the expiration to be in the future, but close enough that a refresh gets triggered
+            intermediate.RevocationExpiration = DateTimeOffset.UtcNow.Add(SslStreamCertificateContext.MinRefreshBeforeExpirationInterval);
+
+            var ctx = ctxFactory(false);
+            var ocsp = await ctx.GetOcspResponseAsync();
+            Assert.NotNull(ocsp);
+
+            intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
+
+            // first call will dispatch a download and return the cached response, the first call after
+            // the pending download finishes will return the updated response
+            var ocsp2 = ctx.GetOcspResponseNoWaiting();
+            Assert.Equal(ocsp, ocsp2);
+
+            await RetryHelper.ExecuteAsync(async () =>
+            {
+                var ocsp3 = await ctx.GetOcspResponseAsync();
+                Assert.NotNull(ocsp3);
+                Assert.NotEqual(ocsp, ocsp3);
+            }, maxAttempts: 5, backoffFunc: i => (i + 1) * 200 /* ms */);
+        });
+    }
+
+    [Fact]
+    [OuterLoop("Takes about 3 seconds")]
+    public async Task RefreshOcspResponse_AfterExpiration()
+    {
+        await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
+        {
+            intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddSeconds(1);
+
+            var ctx = ctxFactory(false);
+
+            await Task.Delay(2000);
+
+            intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
+
+            // The cached OCSP is expired, so the first call will dispatch a download and return the cached response,
+            var ocsp = ctx.GetOcspResponseNoWaiting();
+            Assert.Null(ocsp);
+
+            // subsequent call will return the new response
+            var ocsp2 = await ctx.GetOcspResponseAsync();
+            Assert.NotNull(ocsp2);
+        });
+    }
+
+    [Fact]
+    [OuterLoop("Takes about 15 seconds")]
+    public async Task RefreshOcspResponse_FirstInvalidThenValid()
+    {
+        Assert.True(SslStreamCertificateContext.MinRefreshBeforeExpirationInterval > SslStreamCertificateContext.RefreshAfterFailureBackOffInterval * 4, "Backoff interval is too long");
+
+        await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
+        {
+            // Set the expiration to be in the future, but close enough that a refresh gets triggered
+            intermediate.RevocationExpiration = DateTimeOffset.UtcNow.Add(SslStreamCertificateContext.MinRefreshBeforeExpirationInterval);
+
+            var ctx = ctxFactory(false);
+            var ocsp = await ctx.GetOcspResponseAsync();
+            Assert.NotNull(ocsp);
+
+            responder.RespondKind = RespondKind.Invalid;
+            for (int i = 0; i < 3; i++)
+            {
+                await Task.Delay(SslStreamCertificateContext.RefreshAfterFailureBackOffInterval);
+                var ocsp2 = await ctx.GetOcspResponseAsync();
+                Assert.Equal(ocsp, ocsp2);
+            }
+
+            // after responder comes back online, the staple is eventually refreshed
+            responder.RespondKind = RespondKind.Normal;
+            await RetryHelper.ExecuteAsync(async () =>
+            {
+                var ocsp3 = await ctx.GetOcspResponseAsync();
+                Assert.NotNull(ocsp3);
+                Assert.NotEqual(ocsp, ocsp3);
+            }, maxAttempts: 5, backoffFunc: i => (i + 1) * 200 /* ms */);
         });
     }
 
@@ -90,10 +239,7 @@ public class SslStreamCertificateContextOcspLinuxTests
                 offline,
                 trust: null);
 
-            await RetryHelper.ExecuteAsync(() =>
-            {
-                return callback(root, intermediate, endEntity, factory, responder);
-            });
+            await callback(root, intermediate, endEntity, factory, responder);
         }
     }
 
