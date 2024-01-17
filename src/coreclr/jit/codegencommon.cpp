@@ -4467,22 +4467,18 @@ void CodeGen::genCheckUseBlockInit()
     // to be modified.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
-#if defined(TARGET_AMD64)
-
-    // We can clear using aligned SIMD so the threshold is lower,
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+    // For AMD64 we can clear using aligned SIMD so the threshold is lower,
     // and clears in order which is better for auto-prefetching
     genUseBlockInit = (genInitStkLclCnt > 4);
-
-#else // !defined(TARGET_AMD64)
-
+#elif defined(TARGET_XARCH) && !defined(FEATURE_SIMD)
+    // Block init algorithm needs SIMD instructions
+    genUseBlockInit = 0;
+#elif defined(TARGET_64BIT)
     genUseBlockInit = (genInitStkLclCnt > 8);
-#endif
-#else
-
+#else // !TARGET_64BIT && !TARGET_XARCH
     genUseBlockInit = (genInitStkLclCnt > 4);
-
-#endif // TARGET_64BIT
+#endif // !defined(TARGET_64BIT)
 
     if (genUseBlockInit)
     {
