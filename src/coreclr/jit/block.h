@@ -616,7 +616,7 @@ public:
 
     bool CanRemoveJumpToNext(Compiler* compiler) const;
 
-    bool CanRemoveJumpToFalseTarget(Compiler* compiler) const;
+    bool CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const;
 
     unsigned GetTargetOffs() const
     {
@@ -669,7 +669,6 @@ public:
     {
         assert(KindIs(BBJ_COND));
         assert(bbTrueTarget != nullptr);
-        assert(target != nullptr);
         return (bbTrueTarget == target);
     }
 
@@ -696,15 +695,16 @@ public:
     {
         assert(KindIs(BBJ_COND));
         assert(bbFalseTarget != nullptr);
-        assert(target != nullptr);
         return (bbFalseTarget == target);
     }
 
     void SetCond(BasicBlock* trueTarget, BasicBlock* falseTarget)
     {
+        // Switch lowering may temporarily set a block to a BBJ_COND
+        // with a null false target if it is the last block in the list.
+        // This invalid state is eventually fixed, so allow it in the below assert.
+        assert((falseTarget != nullptr) || (falseTarget == bbNext));
         assert(trueTarget != nullptr);
-        // TODO-NoFallThrough: Allow falseTarget to diverge from bbNext
-        assert(falseTarget == bbNext);
         bbKind        = BBJ_COND;
         bbTrueTarget  = trueTarget;
         bbFalseTarget = falseTarget;

@@ -397,7 +397,7 @@ void CodeGen::genMarkLabelsForCodegen()
                 block->GetTrueTarget()->SetFlags(BBF_HAS_LABEL);
 
                 // If we need a jump to the false target, give it a label
-                if (!block->CanRemoveJumpToFalseTarget(compiler))
+                if (!block->CanRemoveJumpToTarget(block->GetFalseTarget(), compiler))
                 {
                     JITDUMP("  " FMT_BB " : branch target\n", block->GetFalseTarget()->bbNum);
                     block->GetFalseTarget()->SetFlags(BBF_HAS_LABEL);
