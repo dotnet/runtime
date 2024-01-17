@@ -354,7 +354,11 @@ type AssetBehaviors = SingleAssetBehaviors |
 /**
  * The javascript module for threads.
  */
- | "symbols";
+ | "symbols"
+/**
+ * Load segmentation rules file for Hybrid Globalization.
+ */
+ | "segmentation-rules";
 declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.
