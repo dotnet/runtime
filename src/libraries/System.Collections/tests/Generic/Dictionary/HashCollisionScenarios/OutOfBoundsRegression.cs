@@ -336,22 +336,14 @@ namespace System.Collections.Tests
             {
                 publicComparer = EqualityComparer<string>.Default;
             }
-            //https://github.com/dotnet/runtime/issues/96400, "equal under linguistic comparer" fails
-            var testData = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-                new[] {("Hello", "Hello"), // exactly equal
-                    ("Hello", "Goodbye"), // not equal at all
-                    ("Hello", "hello"), // case-insensitive equal
-                    ("Hello", "HE\u200dLLO"), // equal under case-insensitive linguistic comparer
-                    ("\u0430\u0431\u0432\u0433\u0434\u0435\u0451\u0436\u0437\u0438\u0439\u043A\u043B\u043C\u043D\u043E\u043F\u0440\u0441\u0442\u0443\u0444\u0445\u0446\u0447\u0448\u0449\u044C\u044B\u044A\u044D\u044E\u044F", "\u0410\u0411\u0412\u0413\u0414\u0415\u0401\u0416\u0417\u0418\u0419\u041A\u041B\u041C\u041D\u041E\u041F\u0420\u0421\u0422\u0423\u0424\u0425\u0426\u0427\u0428\u0429\u042C\u042B\u042A\u042D\u042E\u042F") // Cyrillic, case-insensitive equal
-                } :
-                new[] {("Hello", "Hello"), // exactly equal
-                    ("Hello", "Goodbye"), // not equal at all
-                    ("Hello", "hello"), // case-insensitive equal
-                    ("Hello", "He\u200dllo"), // equal under linguistic comparer
-                    ("Hello", "HE\u200dLLO"), // equal under case-insensitive linguistic comparer
-                    ("\u0430\u0431\u0432\u0433\u0434\u0435\u0451\u0436\u0437\u0438\u0439\u043A\u043B\u043C\u043D\u043E\u043F\u0440\u0441\u0442\u0443\u0444\u0445\u0446\u0447\u0448\u0449\u044C\u044B\u044A\u044D\u044E\u044F", "\u0410\u0411\u0412\u0413\u0414\u0415\u0401\u0416\u0417\u0418\u0419\u041A\u041B\u041C\u041D\u041E\u041F\u0420\u0421\u0422\u0423\u0424\u0425\u0426\u0427\u0428\u0429\u042C\u042B\u042A\u042D\u042E\u042F") // Cyrillic, case-insensitive equal
-                };
-            foreach (var pair in testData)
+            foreach (var pair in new[] {
+                ("Hello", "Hello"), // exactly equal
+                ("Hello", "Goodbye"), // not equal at all
+                ("Hello", "hello"), // case-insensitive equal
+                ("Hello", "He\u200dllo"), // equal under linguistic comparer
+                ("Hello", "HE\u200dLLO"), // equal under case-insensitive linguistic comparer
+                ("\u0430\u0431\u0432\u0433\u0434\u0435\u0451\u0436\u0437\u0438\u0439\u043A\u043B\u043C\u043D\u043E\u043F\u0440\u0441\u0442\u0443\u0444\u0445\u0446\u0447\u0448\u0449\u044C\u044B\u044A\u044D\u044E\u044F", "\u0410\u0411\u0412\u0413\u0414\u0415\u0401\u0416\u0417\u0418\u0419\u041A\u041B\u041C\u041D\u041E\u041F\u0420\u0421\u0422\u0423\u0424\u0425\u0426\u0427\u0428\u0429\u042C\u042B\u042A\u042D\u042E\u042F"), // Cyrillic, case-insensitive equal
+            })
             {
                 bool arePairElementsExpectedEqual = publicComparer.Equals(pair.Item1, pair.Item2);
                 Assert.Equal(arePairElementsExpectedEqual, internalComparer.Equals(pair.Item1, pair.Item2));

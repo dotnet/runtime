@@ -119,6 +119,27 @@ namespace System.Globalization
             return idx;
         }
 
+        private char[] emptyCharsToRemove = {
+            '\u200d', '\u200b', '\u200c', '\uFEFF', '\u200E', '\u200F',
+            '\u2060', '\u2063', '\u2061', '\u2062', '\u2064', '\u180E',
+            '\u202A', '\u202B', '\u202D', '\u202E', '\u2066', '\u2067',
+            '\u2068', '\u2069', '\u202C'
+        };
+
+        private ReadOnlySpan<char> RemoveEmptyChars(ReadOnlySpan<char> source)
+        {
+            char[] result = new char[source.Length];
+            int resultIndex = 0;
+            foreach (char c in source)
+            {
+                if (Array.IndexOf(emptyCharsToRemove, c) == -1)
+                {
+                    result[resultIndex++] = c;
+                }
+            }
+            return result.AsSpan(0, resultIndex);
+        }
+
         private static bool IndexingOptionsNotSupported(CompareOptions options) =>
             (options & CompareOptions.IgnoreSymbols) == CompareOptions.IgnoreSymbols;
 

@@ -850,9 +850,14 @@ namespace System.Globalization
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
 #if TARGET_BROWSER
-            // JS cannot create locale-sensitive HashCode, use invaraint functions instead
             if (GlobalizationMode.Hybrid)
-                return InvariantGetHashCode(source, options);
+            {
+                // JS cannot create locale-sensitive HashCode, use invaraint functions instead
+                // empty chars influence invariant hashing algo but do not influence ICU hashing algo,
+                // Hybrid wants to behave like ICU
+                ReadOnlySpan<char> sanitizedSource = RemoveEmptyChars(source);
+                return InvariantGetHashCode(sanitizedSource, options);
+            }
 #endif
 
             // according to ICU User Guide the performance of ucol_getSortKey is worse when it is called with null output buffer
