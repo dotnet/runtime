@@ -19,6 +19,13 @@ namespace Microsoft.Extensions.Logging
         ILogger CreateLogger(string categoryName);
 
         /// <summary>
+        /// Creates a new <see cref="ILogger"/> instance using the full name of the given type.
+        /// </summary>
+        /// <typeparam name="T">The type.</typeparam>
+        /// <returns>The <see cref="ILogger"/> that was created.</returns>
+        ILogger<T> CreateLogger<T>() => new Logger<T>(this);
+        
+        /// <summary>
         /// Adds an <see cref="ILoggerProvider"/> to the logging system.
         /// </summary>
         /// <param name="provider">The <see cref="ILoggerProvider"/>.</param>
