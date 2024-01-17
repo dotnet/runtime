@@ -10771,6 +10771,8 @@ const char* GenTree::gtGetHandleKindString(GenTreeFlags flags)
             return "GTF_ICON_FIELD_SEQ";
         case GTF_ICON_STATIC_ADDR_PTR:
             return "GTF_ICON_STATIC_ADDR_PTR";
+        case GTF_ICON_SECREL_OFFSET:
+            return "GTF_ICON_SECREL_OFFSET";
         default:
             return "ILLEGAL!";
     }
@@ -11999,6 +12001,9 @@ void Compiler::gtDispConst(GenTree* tree)
                             break;
                         case GTF_ICON_STATIC_ADDR_PTR:
                             printf(" static base addr cell");
+                            break;
+                        case GTF_ICON_SECREL_OFFSET:
+                            printf(" relative offset in section");
                             break;
                         default:
                             printf(" UNKNOWN");
