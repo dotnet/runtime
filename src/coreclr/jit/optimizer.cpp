@@ -4397,21 +4397,27 @@ void Compiler::optFindNewLoops()
 {
     m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
+    bool modified = false;
+
     if (optCompactLoops())
     {
         fgInvalidateDfsTree();
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        modified = true;
     }
 
     if (optCanonicalizeLoops())
     {
         fgInvalidateDfsTree();
-        fgRenumberBlocks();
         m_dfsTree = fgComputeDfs();
-        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        modified = true;
+    }
+
+    if (modified)
+    {
+        fgRenumberBlocks();
     }
 
     // Starting now, we require all loops to have pre-headers.
