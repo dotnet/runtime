@@ -25,6 +25,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task BlazorBuildRunTest(string config)
     {
         string id = $"blazor_{config}_{GetRandomId()}";
@@ -39,6 +40,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
     [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
     [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task BlazorBuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
     {
         string id = $"{config}_{GetRandomId()}";
@@ -81,6 +83,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     [InlineData("Debug", true)]
     [InlineData("Release", false)]
     [InlineData("Release", true)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task BlazorPublishRunTest(string config, bool aot)
     {
         string id = $"blazor_{config}_{GetRandomId()}";

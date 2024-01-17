@@ -29,6 +29,11 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			public Test ()
 			{
+				// Clear out the default reference assemblies. We explicitly add references from the live ref pack,
+				// so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
+				ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
+				TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+
 				SolutionTransforms.Add ((solution, projectId) => {
 					var compilationOptions = solution.GetProject (projectId)!.CompilationOptions;
 					compilationOptions = compilationOptions!.WithSpecificDiagnosticOptions (

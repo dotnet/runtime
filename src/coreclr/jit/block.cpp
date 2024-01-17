@@ -1609,9 +1609,8 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
 
     block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
 
-    block->bbPreorderNum     = 0;
-    block->bbPostorderNum    = 0;
-    block->bbNewPostorderNum = 0;
+    block->bbPreorderNum  = 0;
+    block->bbPostorderNum = 0;
 
     return block;
 }
