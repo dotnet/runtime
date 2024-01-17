@@ -1664,11 +1664,9 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
 
     TypeCompareState castResult = info.compCompHnd->compareTypesForCast(likelyCls, expectedCls);
-    if (castResult != TypeCompareState::Must)
+    if (castResult == TypeCompareState::May)
     {
-        JITDUMP("Likely class can't be casted to the requested class.\n");
-        // TODO: support MustNot - if we know for sure that the likely class always fail the cast
-        // we can optimize it like "if (obj == null || obj->pMT == likelyCls) return null;"
+        JITDUMP("compareTypesForCast returned May for this candidate\n");
         return false;
     }
 
@@ -1810,6 +1808,48 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     assert(BasicBlock::sameEHRegion(prevBb, nullcheckBb));
     assert(BasicBlock::sameEHRegion(prevBb, fallbackBb));
     assert(BasicBlock::sameEHRegion(prevBb, typeCheckBb));
+
+    // Rare case: if profile points to a class that never passes the type check
+    // we can also optimize it like this:
+    //
+    // prevBb:                                      [weight: 1.0]
+    //     ...
+    //
+    // nullcheckBb (BBJ_COND):                      [weight: 1.0]
+    //     tmp = obj;
+    //     if (tmp == null) goto block;
+    //
+    // typeCheckBb (BBJ_COND):                      [weight: 0.5]
+    //     if (tmp->pMT == likelyClass) goto assignNullBb;
+    //
+    // fallbackBb (BBJ_ALWAYS):                     [weight: <profile>]
+    //     tmp = helper_call(cls, tmp);
+    //     goto block;
+    //
+    // assignNullBb (BBJ_ALWAYS):                   [weight: <profile>]
+    //     tmp = null;
+    //
+    // block (BBJ_any):                             [weight: 1.0]
+    //     use(tmp);
+    //
+
+    if (castResult == TypeCompareState::MustNot)
+    {
+        // Block 4: assignNullBb
+        //
+        // Let's do everything here instead of adding ifs in the previous blocks to make them simpler.
+        BasicBlock* assignNullBb =
+            fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, gtNewTempStore(tmpNum, gtNewNull()), debugInfo, block);
+
+        // typeCheckBb now jumps to assignNullBb on true
+        typeCheckBb->SetTrueTarget(assignNullBb);
+        // typeCheckBb is no longer a predecessor of block
+        fgRemoveRefPred(block, typeCheckBb);
+        fgAddRefPred(assignNullBb, typeCheckBb);
+        fgAddRefPred(block, assignNullBb);
+        assignNullBb->inheritWeightPercentage(typeCheckBb, likelyClass.likelihood);
+        assignNullBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+    }
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
     if (fgCanCompactBlocks(prevBb, nullcheckBb))
