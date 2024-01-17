@@ -52,10 +52,7 @@ namespace System.Runtime.InteropServices.Marshalling
         ~ComObject()
         {
             CacheStrategy.Clear(IUnknownStrategy);
-            if (Interlocked.CompareExchange(ref _released, 1, 0) == 0)
-            {
-                IUnknownStrategy.Release(_instancePointer);
-            }
+            IUnknownStrategy.Release(_instancePointer);
         }
 
         /// <summary>
