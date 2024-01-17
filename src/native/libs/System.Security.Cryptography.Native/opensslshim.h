@@ -296,8 +296,10 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(ERR_peek_error) \
     REQUIRED_FUNCTION(ERR_peek_error_line) \
     REQUIRED_FUNCTION(ERR_peek_last_error) \
+    REQUIRED_FUNCTION(ERR_pop_to_mark) \
     FALLBACK_FUNCTION(ERR_put_error) \
     REQUIRED_FUNCTION(ERR_reason_error_string) \
+    REQUIRED_FUNCTION(ERR_set_mark) \
     LIGHTUP_FUNCTION(ERR_set_debug) \
     LIGHTUP_FUNCTION(ERR_set_error) \
     REQUIRED_FUNCTION(EVP_aes_128_cbc) \
@@ -353,6 +355,7 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(EVP_PKCS82PKEY) \
     REQUIRED_FUNCTION(EVP_PKEY2PKCS8) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl) \
+    REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl_str) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_free) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_get0_pkey) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new) \
@@ -794,8 +797,10 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define ERR_peek_error_line ERR_peek_error_line_ptr
 #define ERR_peek_last_error ERR_peek_last_error_ptr
 #define ERR_put_error ERR_put_error_ptr
+#define ERR_pop_to_mark ERR_pop_to_mark_ptr
 #define ERR_reason_error_string ERR_reason_error_string_ptr
 #define ERR_set_debug ERR_set_debug_ptr
+#define ERR_set_mark ERR_set_mark_ptr
 #define ERR_set_error ERR_set_error_ptr
 #define EVP_aes_128_cbc EVP_aes_128_cbc_ptr
 #define EVP_aes_128_cfb8 EVP_aes_128_cfb8_ptr
@@ -850,6 +855,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKCS82PKEY EVP_PKCS82PKEY_ptr
 #define EVP_PKEY2PKCS8 EVP_PKEY2PKCS8_ptr
 #define EVP_PKEY_CTX_ctrl EVP_PKEY_CTX_ctrl_ptr
+#define EVP_PKEY_CTX_ctrl_str EVP_PKEY_CTX_ctrl_str_ptr
 #define EVP_PKEY_CTX_free EVP_PKEY_CTX_free_ptr
 #define EVP_PKEY_CTX_get0_pkey EVP_PKEY_CTX_get0_pkey_ptr
 #define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
