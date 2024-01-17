@@ -443,8 +443,6 @@ type WebSocketExtension = WebSocket & {
     [wasm_ws_pending_send_buffer_offset]: number
     [wasm_ws_pending_send_buffer_type]: number
     [wasm_ws_pending_send_buffer]: Uint8Array | null
-    ["close_status"]: number | undefined
-    ["close_status_description"]: string | undefined
     dispose(): void
 }
 
