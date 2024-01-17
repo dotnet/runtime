@@ -1581,7 +1581,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) == 0)
     {
-        // We either already expanded this cast helper or it's not eligible for expansion
+        // It's not eligible for expansion (already expanded in importer)
+        // To be removed once we move cast expansion here completely.
         return false;
     }
 
@@ -1694,9 +1695,6 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     clsArg          = call->gtArgs.GetUserArgByIndex(0)->GetNode();
     GenTree* objArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
-    // Make sure we don't try to expand this call again
-    call->gtCallMoreFlags &= ~GTF_CALL_M_CAST_CAN_BE_EXPANDED;
-
     // Grab a temp to store the result.
     const unsigned tmpNum   = lvaGrabTemp(true DEBUGARG("local for result"));
     lvaTable[tmpNum].lvType = call->TypeGet();
@@ -1789,9 +1787,10 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // We assume obj is 50%/50% null/not-null (TODO: use profile data)
     // and rely on profile for the slow path.
     //
+    assert(likelyClass.likelihood <= 100);
     nullcheckBb->inheritWeight(prevBb);
-    fallbackBb->inheritWeightPercentage(nullcheckBb, 50);
-    typeCheckBb->inheritWeightPercentage(fallbackBb, 100 - likelyClass.likelihood);
+    typeCheckBb->inheritWeightPercentage(nullcheckBb, 50);
+    fallbackBb->inheritWeightPercentage(typeCheckBb, 100 - likelyClass.likelihood);
     block->inheritWeight(prevBb);
 
     //
