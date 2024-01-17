@@ -4688,6 +4688,22 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Theory]
+        [MemberData(nameof(VectorTestMemberData.ExpDouble), MemberType = typeof(VectorTestMemberData))]
+        public void ExpDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector128<double> actualResult = Vector128.Exp(Vector128.Create(value));
+            AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.ExpSingle), MemberType = typeof(VectorTestMemberData))]
+        public void ExpSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector128<float> actualResult = Vector128.Exp(Vector128.Create(value));
+            AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
+        }
+
+        [Theory]
         [MemberData(nameof(VectorTestMemberData.LogDouble), MemberType = typeof(VectorTestMemberData))]
         public void LogDoubleTest(double value, double expectedResult, double variance)
         {

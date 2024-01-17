@@ -1426,6 +1426,50 @@ namespace System.Runtime.Intrinsics
                 || Vector64.EqualsAny(left._upper, right._upper);
         }
 
+        internal static Vector128<T> Exp<T>(Vector128<T> vector)
+            where T : IExponentialFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector128<T> result);
+
+            for (int index = 0; index < Vector128<T>.Count; index++)
+            {
+                T value = T.Exp(vector.GetElement(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the Exp of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its Exp computed.</param>
+        /// <returns>A vector whose elements are the Exp of the elements in <paramref name="vector" />.</returns>
+        public static Vector128<double> Exp(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the Exp of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its Exp computed.</param>
+        /// <returns>A vector whose elements are the Exp of the elements in <paramref name="vector" />.</returns>
+        public static Vector128<float> Exp(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpSingle<Vector128<float>, Vector128<uint>, Vector128<double>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<float>(vector);
+            }
+        }
+
         /// <summary>Extracts the most significant bit from each element in a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector whose elements should have their most significant bit extracted.</param>

@@ -1402,6 +1402,50 @@ namespace System.Runtime.Intrinsics
                 || Vector128.EqualsAny(left._upper, right._upper);
         }
 
+        internal static Vector256<T> Exp<T>(Vector256<T> vector)
+            where T : IExponentialFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector256<T> result);
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                T value = T.Exp(vector.GetElement(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the Exp of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its Exp computed.</param>
+        /// <returns>A vector whose elements are the Exp of the elements in <paramref name="vector" />.</returns>
+        public static Vector256<double> Exp(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpDouble<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the Exp of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its Exp computed.</param>
+        /// <returns>A vector whose elements are the Exp of the elements in <paramref name="vector" />.</returns>
+        public static Vector256<float> Exp(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpSingle<Vector256<float>, Vector256<uint>, Vector256<double>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<float>(vector);
+            }
+        }
+
         /// <summary>Extracts the most significant bit from each element in a vector.</summary>
         /// <param name="vector">The vector whose elements should have their most significant bit extracted.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
