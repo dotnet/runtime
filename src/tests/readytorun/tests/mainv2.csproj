@@ -5,6 +5,8 @@
     <CrossGenTest>false</CrossGenTest>
     <!-- https://github.com/dotnet/runtime/issues/73954 -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- This test launches crossgen2 with dotnet, so we would need a non-sanitzed jitinterface library. To simplify our infrastructure, we'll instead skip this test. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
