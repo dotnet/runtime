@@ -104,8 +104,9 @@
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <_HybridGlobalizationDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
+      <_HybridGlobalizationDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)segmentation-rules.json"/>
       <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*"  Exclude="@(_HybridGlobalizationDataFiles);$(_WasmIcuDataFileName)"/>
-      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
+      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' == 'true'" Include="@(_HybridGlobalizationDataFiles)"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>

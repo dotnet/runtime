@@ -345,13 +345,11 @@ FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalGetCurrentThread", GetThread)
-    FCFuncElement("SleepInternal", ThreadNative::Sleep)
     FCFuncElement("Initialize", ThreadNative::Initialize)
     FCFuncElement("GetCurrentThreadNative", ThreadNative::GetCurrentThread)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
     FCFuncElement("get_IsAlive", ThreadNative::IsAlive)
-    FCFuncElement("IsBackgroundNative", ThreadNative::IsBackground)
-    FCFuncElement("SetBackgroundNative", ThreadNative::SetBackground)
+    FCFuncElement("GetIsBackground", ThreadNative::GetIsBackground)
     FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
     FCFuncElement("set_IsThreadPoolThread", ThreadNative::SetIsThreadpoolThread)
     FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
@@ -361,10 +359,6 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("GetApartmentStateNative", ThreadNative::GetApartmentState)
     FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-#ifdef FEATURE_COMINTEROP
-    FCFuncElement("DisableComObjectEagerCleanup", ThreadNative::DisableComObjectEagerCleanup)
-#endif // FEATURE_COMINTEROP
-    FCFuncElement("Interrupt", ThreadNative::Interrupt)
     FCFuncElement("Join", ThreadNative::Join)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
@@ -383,12 +377,6 @@ FCFuncEnd()
 FCFuncStart(gVariantFuncs)
     FCFuncElement("SetFieldsObject", COMVariant::SetFieldsObject)
     FCFuncElement("BoxEnum", COMVariant::BoxEnum)
-FCFuncEnd()
-#endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMINTEROP
-FCFuncStart(gOAVariantFuncs)
-    FCFuncElement("ChangeTypeEx", COMOAVariant::ChangeTypeEx)
 FCFuncEnd()
 #endif // FEATURE_COMINTEROP
 
@@ -656,9 +644,6 @@ FCClassElement("MngdSafeArrayMarshaler", "System.StubHelpers", gMngdSafeArrayMar
 #endif // FEATURE_COMINTEROP
 FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
-#endif
 FCClassElement("Object", "System", gObjectFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)

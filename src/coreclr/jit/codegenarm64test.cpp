@@ -5390,6 +5390,110 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_fsqrt, EA_SCALABLE, REG_V6, REG_P6, REG_V6,
                               INS_OPTS_SCALABLE_S); // FSQRT   <Zd>.<T>, <Pg>/M, <Zn>.<T>
 
+    // IF_SVE_DT_3A
+    theEmitter->emitIns_R_R_R(INS_sve_whilege, EA_4BYTE, REG_P0, REG_R0, REG_R1,
+                              INS_OPTS_SCALABLE_B); // WHILEGE <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilege, EA_8BYTE, REG_P1, REG_R2, REG_R3,
+                              INS_OPTS_SCALABLE_B); // WHILEGE <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilegt, EA_4BYTE, REG_P2, REG_R4, REG_R5,
+                              INS_OPTS_SCALABLE_B); // WHILEGT <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilegt, EA_8BYTE, REG_P3, REG_R6, REG_R7,
+                              INS_OPTS_SCALABLE_B); // WHILEGT <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilehi, EA_4BYTE, REG_P4, REG_R8, REG_R9,
+                              INS_OPTS_SCALABLE_H); // WHILEHI <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilehi, EA_8BYTE, REG_P5, REG_R10, REG_R11,
+                              INS_OPTS_SCALABLE_H); // WHILEHI <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilehs, EA_4BYTE, REG_P6, REG_R12, REG_R13,
+                              INS_OPTS_SCALABLE_H); // WHILEHS <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilehs, EA_8BYTE, REG_P7, REG_R14, REG_R15,
+                              INS_OPTS_SCALABLE_H); // WHILEHS <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilele, EA_4BYTE, REG_P8, REG_R0, REG_R1,
+                              INS_OPTS_SCALABLE_S); // WHILELE <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilele, EA_8BYTE, REG_P9, REG_R2, REG_R3,
+                              INS_OPTS_SCALABLE_S); // WHILELE <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilelo, EA_4BYTE, REG_P10, REG_R4, REG_R5,
+                              INS_OPTS_SCALABLE_S); // WHILELO <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilelo, EA_8BYTE, REG_P11, REG_R6, REG_R7,
+                              INS_OPTS_SCALABLE_S); // WHILELO <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilels, EA_4BYTE, REG_P12, REG_R8, REG_R9,
+                              INS_OPTS_SCALABLE_D); // WHILELS <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilels, EA_8BYTE, REG_P13, REG_R10, REG_R11,
+                              INS_OPTS_SCALABLE_D); // WHILELS <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilelt, EA_4BYTE, REG_P14, REG_R12, REG_R13,
+                              INS_OPTS_SCALABLE_D); // WHILELT <Pd>.<T>, <R><n>, <R><m>
+    theEmitter->emitIns_R_R_R(INS_sve_whilelt, EA_8BYTE, REG_P15, REG_R14, REG_R15,
+                              INS_OPTS_SCALABLE_D); // WHILELT <Pd>.<T>, <R><n>, <R><m>
+
+    // IF_SVE_DU_3A
+    theEmitter->emitIns_R_R_R(INS_sve_whilerw, EA_8BYTE, REG_P0, REG_R0, REG_R1,
+                              INS_OPTS_SCALABLE_B); // WHILERW <Pd>.<T>, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilerw, EA_8BYTE, REG_P1, REG_R2, REG_R3,
+                              INS_OPTS_SCALABLE_H); // WHILERW <Pd>.<T>, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilerw, EA_8BYTE, REG_P2, REG_R4, REG_R5,
+                              INS_OPTS_SCALABLE_S); // WHILERW <Pd>.<T>, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilerw, EA_8BYTE, REG_P3, REG_R6, REG_R7,
+                              INS_OPTS_SCALABLE_D); // WHILERW <Pd>.<T>, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilewr, EA_8BYTE, REG_P4, REG_R8, REG_R9,
+                              INS_OPTS_SCALABLE_B); // WHILEWR <Pd>.<T>, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilewr, EA_8BYTE, REG_P5, REG_R10, REG_R11,
+                              INS_OPTS_SCALABLE_H); // WHILEWR <Pd>.<T>, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilewr, EA_8BYTE, REG_P6, REG_R12, REG_R13,
+                              INS_OPTS_SCALABLE_S); // WHILEWR <Pd>.<T>, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilewr, EA_8BYTE, REG_P7, REG_R14, REG_R15,
+                              INS_OPTS_SCALABLE_D); // WHILEWR <Pd>.<T>, <Xn>, <Xm>
+
+    // IF_SVE_DX_3A
+    theEmitter->emitIns_R_R_R(INS_sve_whilege, EA_8BYTE, REG_P0, REG_R0, REG_R1, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // WHILEGE {<Pd1>.<T>, <Pd2>.<T>}, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilegt, EA_8BYTE, REG_P1, REG_R2, REG_R3, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // WHILEGT {<Pd1>.<T>, <Pd2>.<T>}, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilehi, EA_8BYTE, REG_P2, REG_R4, REG_R5, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // WHILEHI {<Pd1>.<T>, <Pd2>.<T>}, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilehs, EA_8BYTE, REG_P3, REG_R6, REG_R7, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // WHILEHS {<Pd1>.<T>, <Pd2>.<T>}, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilele, EA_8BYTE, REG_P4, REG_R8, REG_R9, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // WHILELE {<Pd1>.<T>, <Pd2>.<T>}, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilelo, EA_8BYTE, REG_P5, REG_R10, REG_R11, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // WHILELO {<Pd1>.<T>, <Pd2>.<T>}, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilels, EA_8BYTE, REG_P6, REG_R12, REG_R13, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // WHILELS {<Pd1>.<T>, <Pd2>.<T>}, <Xn>, <Xm>
+    theEmitter->emitIns_R_R_R(INS_sve_whilelt, EA_8BYTE, REG_P7, REG_R14, REG_R15, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // WHILELT {<Pd1>.<T>, <Pd2>.<T>}, <Xn>, <Xm>
+
+    // IF_SVE_DY_3A
+    theEmitter->emitIns_R_R_R(INS_sve_whilege, EA_8BYTE, REG_P8, REG_R0, REG_R1, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_VL_2X); // WHILEGE <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilege, EA_8BYTE, REG_P9, REG_R2, REG_R3, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_VL_4X); // WHILEGE <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilegt, EA_8BYTE, REG_P10, REG_R4, REG_R5, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_VL_2X); // WHILEGT <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilegt, EA_8BYTE, REG_P11, REG_R6, REG_R7, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_VL_4X); // WHILEGT <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilehi, EA_8BYTE, REG_P12, REG_R8, REG_R9, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_VL_2X); // WHILEHI <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilehi, EA_8BYTE, REG_P13, REG_R10, REG_R11, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_VL_4X); // WHILEHI <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilehs, EA_8BYTE, REG_P14, REG_R12, REG_R13, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_VL_2X); // WHILEHS <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilehs, EA_8BYTE, REG_P15, REG_R14, REG_R15, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_VL_4X); // WHILEHS <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilele, EA_8BYTE, REG_P8, REG_R0, REG_R1, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_VL_2X); // WHILELE <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilele, EA_8BYTE, REG_P9, REG_R2, REG_R3, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_VL_4X); // WHILELE <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilelo, EA_8BYTE, REG_P10, REG_R4, REG_R5, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_VL_2X); // WHILELO <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilelo, EA_8BYTE, REG_P11, REG_R6, REG_R7, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_VL_4X); // WHILELO <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilels, EA_8BYTE, REG_P12, REG_R8, REG_R9, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_VL_2X); // WHILELS <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilels, EA_8BYTE, REG_P13, REG_R10, REG_R11, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_VL_4X); // WHILELS <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilelt, EA_8BYTE, REG_P14, REG_R12, REG_R13, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_VL_2X); // WHILELT <PNd>.<T>, <Xn>, <Xm>, <vl>
+    theEmitter->emitIns_R_R_R(INS_sve_whilelt, EA_8BYTE, REG_P15, REG_R14, REG_R15, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_VL_4X); // WHILELT <PNd>.<T>, <Xn>, <Xm>, <vl>
+
     // IF_SVE_IH_3A
     theEmitter->emitIns_R_R_R_I(INS_sve_ld1d, EA_SCALABLE, REG_V5, REG_P3, REG_R4, 0,
                                 INS_OPTS_SCALABLE_D); // LD1D    {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]

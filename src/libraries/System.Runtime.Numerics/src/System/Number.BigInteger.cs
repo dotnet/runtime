@@ -346,6 +346,11 @@ namespace System
             scoped Span<byte> buffer;
             byte[]? arrayFromPool = null;
 
+            if (value.Length == 0)
+            {
+                result = default;
+                return ParsingStatus.Failed;
+            }
             if (value.Length < 255)
             {
                 buffer = stackalloc byte[value.Length + 1 + 1];
