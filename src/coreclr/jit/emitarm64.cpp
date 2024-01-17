@@ -1244,7 +1244,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_DL_2A: // ........xx...... .....l.NNNNddddd -- SVE predicate count (predicate-as-counter)
             assert(id->idOpSize() == EA_8BYTE);
-            // assert(isValidVectorLength()); // l
 
             FALLTHROUGH;
         case IF_SVE_DO_2A: // ........xx...... .....X.MMMMddddd -- SVE saturating inc/dec register by predicate count
