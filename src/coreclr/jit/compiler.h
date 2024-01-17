@@ -3271,6 +3271,10 @@ public:
                                        GenTree*    op4,
                                        CorInfoType simdBaseJitType,
                                        unsigned    simdSize);
+    GenTree* gtNewSimdToScalarNode(var_types   type,
+                                       GenTree*    op1,
+                                       CorInfoType simdBaseJitType,
+                                       unsigned    simdSize);
 #endif // TARGET_XARCH
 
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
