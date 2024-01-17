@@ -767,9 +767,6 @@ if (MSVC)
   # Compile options for targeting windows
 
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/nologo>) # Suppress Startup Banner
-  # /W3 is added by default by CMake, so remove it
-  string(REPLACE "/W3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  string(REPLACE "/W3" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
   # [[! Microsoft.Security.SystemsADM.10086 !]] - SDL required warnings
   # set default warning level to 4 but allow targets to override it.
