@@ -85,7 +85,6 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 CacheStrategy.Clear(IUnknownStrategy);
                 IUnknownStrategy.Release(_instancePointer);
-                _instancePointer = null;
                 GC.SuppressFinalize(this);
             }
         }
