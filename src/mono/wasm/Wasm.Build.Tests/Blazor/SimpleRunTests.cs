@@ -25,6 +25,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task BlazorBuildRunTest(string config)
     {
         string id = $"blazor_{config}_{GetRandomId()}";
