@@ -54,7 +54,8 @@ namespace System.Net.Security
             SslStreamCertificateContext? certificateContext,
             SslProtocols protocols,
             EncryptionPolicy policy,
-            bool isServer)
+            bool isServer,
+            bool newCredentialsRequested = false)
         {
             return new SafeFreeSslCredentials(certificateContext, protocols, policy);
         }

@@ -87,6 +87,10 @@ internal static partial class Interop
                 throw new SslException();
         }
 
+        [DllImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamIsLocalCertificateUsed")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal static extern bool SSLStreamIsLocalCertificateUsed(SafeSslHandle sslHandle);
+
         [DllImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamRequestClientAuthentication")]
         internal static extern void SSLStreamRequestClientAuthentication(SafeSslHandle sslHandle);
 
