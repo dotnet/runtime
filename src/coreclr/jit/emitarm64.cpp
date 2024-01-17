@@ -1470,6 +1470,16 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 #endif // DEBUG
             break;
 
+        case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+            elemsize = id->idOpSize();
+            assert(insOptsScalableWords(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isGeneralRegister(id->idReg4()));   // mmmmm
+            assert(isScalableVectorSize(elemsize));    // x
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -10945,6 +10955,16 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
             fmt = IF_SVE_JD_4A;
             break;
 
+        case INS_sve_st1w:
+            assert(insOptsScalableWords(opt));
+            assert(isVectorRegister(reg1));     // ttttt
+            assert(isPredicateRegister(reg2));  // ggg
+            assert(isGeneralRegister(reg3));    // nnnnn
+            assert(isGeneralRegister(reg4));    // mmmmm
+            assert(isScalableVectorSize(size)); // x
+            fmt = IF_SVE_JD_4B;
+            break;
+
         default:
             unreached();
             break;
@@ -13794,6 +13814,28 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         case EA_8BYTE:
             return (1 << 22) | (1 << 21); // set the bit at location 22 and 21
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
+ *  This specifically encodes the field 'sz' at bit location '21'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_sz_21(emitAttr size)
+{
+    switch (size)
+    {
+        case EA_4BYTE:
+            return 0;
+
+        case EA_8BYTE:
+            return (1 << 21);
 
         default:
             assert(!"Invalid insOpt for vector register");
@@ -16760,6 +16802,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                           // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2());                         // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg3());                           // nnnnn
+            code |= insEncodeReg_R_20_to_16(id->idReg4());                         // mmmmm
+            code |= insEncodeSveElemsize_sz_21(optGetSveElemsize(id->idInsOpt())); // x
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         default:
             assert(!"Unexpected format");
             break;
@@ -19441,6 +19493,15 @@ void emitter::emitDispInsHelp(
                 emitDispReg(id->idReg4(), EA_8BYTE, false); // mmmmm
                 printf("]");
             }
+            break;
+
+        case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+            emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
+            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true);                      // ggg
+            printf("[");
+            emitDispReg(id->idReg3(), EA_8BYTE, true); // nnnnn
+            emitDispReg(id->idReg4(), EA_8BYTE, true); // mmmmm
+            printf("LSL #2]");       
             break;
 
         default:
@@ -22281,6 +22342,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
                 case INS_sve_st1h:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+            switch (ins)
+            {
+                case INS_sve_st1w:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
