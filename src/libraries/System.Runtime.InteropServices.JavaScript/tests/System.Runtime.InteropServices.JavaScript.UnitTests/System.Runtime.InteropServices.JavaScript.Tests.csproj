@@ -31,6 +31,7 @@
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" />
     <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" PrivateAssets="all" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
