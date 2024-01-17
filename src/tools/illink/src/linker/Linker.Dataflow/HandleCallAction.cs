@@ -128,26 +128,5 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		private partial string GetContainingSymbolDisplayName () => _callingMethodDefinition.GetDisplayName ();
-
-		private partial void MarkEventsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-			=> _reflectionMarker.MarkEventsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, nameIsPrefix ? (e => e.Name.StartsWith(name)) : (e => e.Name == name), bindingFlags);
-
-		private partial void MarkFieldsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-			=> _reflectionMarker.MarkFieldsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, nameIsPrefix ? (f => f.Name.StartsWith(name)) : (f => f.Name == name), bindingFlags);
-
-		private partial void MarkPropertiesOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-			=> _reflectionMarker.MarkPropertiesOnTypeHierarchy(_diagnosticContext.Origin, type.Type, nameIsPrefix ? (p => p.Name.StartsWith(name)) : (p => p.Name == name), bindingFlags);
-
-		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-		{
-			foreach (var method in type.Type.GetMethodsOnTypeHierarchy(_context, nameIsPrefix ? (m => m.Name.StartsWith(name)) : (m => m.Name == name), bindingFlags))
-				yield return new SystemReflectionMethodBaseValue(new MethodProxy(method));
-		}
-
-		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnTypeWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-		{
-			foreach (var nestedType in type.Type.GetNestedTypesOnType(nameIsPrefix ? (t => t.Name.StartsWith(name)) : (t => t.Name == name), bindingFlags))
-				yield return new SystemTypeValue(new TypeProxy(nestedType));
-		}
 	}
 }

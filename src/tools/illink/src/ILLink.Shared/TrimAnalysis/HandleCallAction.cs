@@ -400,7 +400,7 @@ namespace ILLink.Shared.TrimAnalysis
 					} else {
 						requiredMemberTypes = GetDynamicallyAccessedMemberTypesFromBindingFlagsForMembers (bindingFlags);
 					}
-					if (!MemberTypesAreUnsupported(memberTypes)) {
+					if (!MemberTypesAreUnsupported (memberTypes)) {
 						DynamicallyAccessedMemberTypes requiredMemberTypesMaskFromMemberTypes;
 						requiredMemberTypesMaskFromMemberTypes = GetDynamicallyAccessedMemberTypesFromMemberTypesForMembers (memberTypes);
 						requiredMemberTypes &= requiredMemberTypesMaskFromMemberTypes;
@@ -1278,23 +1278,6 @@ namespace ILLink.Shared.TrimAnalysis
 				yield return NullValue.Instance;
 		}
 
-		private IEnumerable<MultiValue> ProcessGetMethodByNameWithPrefix (TypeProxy type, string methodName, bool nameIsPrefix, BindingFlags? bindingFlags)
-		{
-			bool foundAny = false;
-			foreach (var method in GetMethodsOnTypeHierarchyWithPrefix (type, methodName, nameIsPrefix, bindingFlags)) {
-				MarkMethod (method.RepresentedMethod);
-				yield return method;
-				foundAny = true;
-			}
-
-			// If there were no methods found the API will return null at runtime, so we should
-			// track the null as a return value as well.
-			// This also prevents warnings in such case, since if we don't set the return value it will be
-			// "unknown" and consumers may warn.
-			if (!foundAny)
-				yield return NullValue.Instance;
-		}
-
 		private bool AnalyzeGenericInstantiationTypeArray (in MultiValue arrayParam, in MethodProxy calledMethod, ImmutableArray<GenericParameterValue> genericParameters)
 		{
 			bool hasRequirements = false;
@@ -1476,12 +1459,8 @@ namespace ILLink.Shared.TrimAnalysis
 				MemberTypes.TypeInfo |
 				MemberTypes.NestedType;
 
-			// Member types that don't affect binding outside InvokeMember (that we don't analyze).
-			const MemberTypes IgnorableMemberTypes =
-				MemberTypes.Custom;
-
 			MemberTypes flags = memberTypes.Value;
-			return (flags & ~(UnderstoodMemberTypes | IgnorableMemberTypes)) != 0;
+			return (flags & ~UnderstoodMemberTypes) != 0;
 		}
 
 		internal static bool HasBindingFlag (BindingFlags? bindingFlags, BindingFlags? search) => bindingFlags != null && (bindingFlags & search) == search;
@@ -1592,15 +1571,5 @@ namespace ILLink.Shared.TrimAnalysis
 
 		// Only used for internal diagnostic purposes (not even for warning messages)
 		private partial string GetContainingSymbolDisplayName ();
-
-		private partial void MarkEventsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags);
-
-		private partial void MarkFieldsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags);
-
-		private partial void MarkPropertiesOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags);
-
-		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchyWithPrefix (TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags);
-
-		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnTypeWithPrefix (TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags);
 	}
 }

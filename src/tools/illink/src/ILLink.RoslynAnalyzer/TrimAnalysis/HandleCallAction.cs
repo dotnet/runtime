@@ -114,26 +114,5 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		private partial string GetContainingSymbolDisplayName () => _operation.FindContainingSymbol (_owningSymbol).GetDisplayName ();
-
-		private partial void MarkEventsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForEventsOnTypeHierarchyWithPrefix (_diagnosticContext, type.Type, name, nameIsPrefix, bindingFlags);
-
-		private partial void MarkFieldsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForFieldsOnTypeHierarchyWithPrefix (_diagnosticContext, type.Type, name, nameIsPrefix, bindingFlags);
-
-		private partial void MarkPropertiesOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForPropertiesOnTypeHierarchyWithPrefix (_diagnosticContext, type.Type, name, nameIsPrefix, bindingFlags);
-
-		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchyWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-		{
-			foreach (var method in type.Type.GetMethodsOnTypeHierarchy(nameIsPrefix ? (m => m.Name.StartsWith(name)) : (m => m.Name == name), bindingFlags))
-				yield return new SystemReflectionMethodBaseValue(new MethodProxy(method));
-		}
-
-		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnTypeWithPrefix(TypeProxy type, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-		{
-			foreach (var nestedType in type.Type.GetNestedTypesOnType(nameIsPrefix ? (t => t.Name.StartsWith(name)) : (t => t.Name == name), bindingFlags))
-				yield return new SystemTypeValue(new TypeProxy(nestedType));
-		}
 	}
 }

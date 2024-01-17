@@ -60,24 +60,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				GetReflectionAccessDiagnosticsForProperty (diagnosticContext, prop);
 		}
 
-		internal void GetReflectionAccessDiagnosticsForEventsOnTypeHierarchyWithPrefix (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-		{
-			foreach (var @event in typeSymbol.GetEventsOnTypeHierarchy (nameIsPrefix ? (e => e.Name.StartsWith(name)) : (e => e.Name == name), bindingFlags))
-				GetDiagnosticsForEvent (diagnosticContext, @event);
-		}
-
-		internal void GetReflectionAccessDiagnosticsForFieldsOnTypeHierarchyWithPrefix (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-		{
-			foreach (var field in typeSymbol.GetFieldsOnTypeHierarchy (nameIsPrefix ? (f => f.Name.StartsWith(name)) : (f => f.Name == name), bindingFlags))
-				GetDiagnosticsForField (diagnosticContext, field);
-		}
-
-		internal void GetReflectionAccessDiagnosticsForPropertiesOnTypeHierarchyWithPrefix (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, string name, bool nameIsPrefix, BindingFlags? bindingFlags)
-		{
-			foreach (var prop in typeSymbol.GetPropertiesOnTypeHierarchy (nameIsPrefix ? (p => p.Name.StartsWith(name)) : (p => p.Name == name), bindingFlags))
-				GetReflectionAccessDiagnosticsForProperty (diagnosticContext, prop);
-		}
-
 		internal void GetReflectionAccessDiagnosticsForConstructorsOnType (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, BindingFlags? bindingFlags, int? parameterCount)
 		{
 			foreach (var c in typeSymbol.GetConstructorsOnType (filter: parameterCount.HasValue ? c => c.Parameters.Length == parameterCount.Value : null, bindingFlags: bindingFlags))
