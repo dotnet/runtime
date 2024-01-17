@@ -98,6 +98,8 @@
     <MicrosoftDotNetRemoteExecutorVersion>9.0.0-beta.24066.3</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>9.0.0-beta.24066.3</MicrosoftDotNetVersionToolsTasksVersion>
     <MicrosoftDotNetPackageTestingVersion>9.0.0-beta.24066.3</MicrosoftDotNetPackageTestingVersion>
+    <!-- TODO: Remove pinned xunit.analyzers version: https://github.com/dotnet/runtime/issues/97088 -->
+    <XUnitAnalyzersVersion>1.4.0</XUnitAnalyzersVersion>
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
