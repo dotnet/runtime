@@ -2926,7 +2926,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 // else, then will unassign it and then assign to the currentInterval
 //
 regNumber LinearScan::allocateRegMinimal(Interval*    currentInterval,
-                                            RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
+                                         RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     regNumber  foundReg;
     regMaskTP  foundRegBit;
@@ -5402,8 +5402,7 @@ void LinearScan::allocateRegistersMinimal()
                 {
                     unassignPhysReg(currentInterval->assignedReg, nullptr);
                 }
-                assignedRegister =
-                    allocateRegMinimal(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
+                assignedRegister = allocateRegMinimal(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
             }
 
             // If no register was found, this RefPosition must not require a register.

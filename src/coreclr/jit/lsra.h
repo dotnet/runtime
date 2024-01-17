@@ -1183,8 +1183,7 @@ private:
 #endif
     template <bool needsConsecutiveRegisters = false>
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
-    regNumber allocateRegMinimal(Interval*    current,
-                                    RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+    regNumber allocateRegMinimal(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     template <bool needsConsecutiveRegisters = false>
     regNumber assignCopyReg(RefPosition* refPosition);
     regNumber assignCopyRegMinimal(RefPosition* refPosition);
