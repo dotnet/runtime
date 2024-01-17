@@ -153,13 +153,3 @@ jobs:
       crossgen2: true
       displayNameArgs: R2R_CG2
       liveLibrariesBuildConfig: Release
-
-#
-# Formatting
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
-    platforms:
-    - Linux_x64
-    - windows_x64
