@@ -4465,6 +4465,7 @@ static bool AreGuaranteedToRepresentDifferentTypes(TypeHandle hnd1, TypeHandle h
     case ELEMENT_TYPE_ARRAY:
         if (hnd1.GetRank() != hnd2.GetRank())
             return true;
+        return AreGuaranteedToRepresentDifferentTypes(hnd1.GetTypeParam(), hnd2.GetTypeParam());
     case ELEMENT_TYPE_SZARRAY:
     case ELEMENT_TYPE_BYREF:
     case ELEMENT_TYPE_PTR:
@@ -4480,6 +4481,7 @@ static bool AreGuaranteedToRepresentDifferentTypes(TypeHandle hnd1, TypeHandle h
             {
                 Instantiation inst1 = hnd1.AsMethodTable()->GetInstantiation();
                 Instantiation inst2 = hnd2.AsMethodTable()->GetInstantiation();
+                _ASSERTE(inst1.GetNumArgs() == inst2.GetNumArgs());
 
                 for (DWORD i = 0; i < inst1.GetNumArgs(); i++)
                 {
