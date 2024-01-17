@@ -168,8 +168,24 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T">The type.</typeparam>
         /// <returns>The <see cref="ILogger"/> that was created.</returns>
         public ILogger<T> CreateLogger<T>()
-        {
-            return (ILogger<T>)_loggersOfT.GetOrAdd(typeof(T), _ => new Lazy<ILogger<T>>(() => new Logger<T>(this)).Value);
+        { 
+            if (CheckDisposed())
+            {
+                throw new ObjectDisposedException(nameof(LoggerFactory));
+            }
+
+            if (!_loggersOfT.TryGetValue(typeof(T), out ILogger? logger))
+            {
+                lock (_sync)
+                {
+                    if (!_loggersOfT.TryGetValue(typeof(T), out logger))
+                    {
+                        _loggersOfT[typeof(T)] = new Logger<T>(this);
+                    }
+                }
+            }
+
+            return (ILogger<T>)logger;
         }
 
         /// <summary>
