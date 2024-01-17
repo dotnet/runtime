@@ -50,16 +50,14 @@ public:
     static FCDECL0(void,            ClearLastError          );
     static FCDECL1(void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE);
 
-    static FCDECL2(void,            ThrowInteropParamException, UINT resID, UINT paramIdx);
+    static FCDECL2(FC_BOOL_RET,     TryGetStringTrailByte,  StringObject* thisRefUNSAFE, UINT8 *pbData);
+
     static FCDECL1(Object*,         GetHRExceptionObject,   HRESULT hr);
 
 #ifdef FEATURE_COMINTEROP
     static FCDECL3(Object*,         GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis);
 #endif // FEATURE_COMINTEROP
 
-    static FCDECL3(void,            FmtClassUpdateNativeInternal, Object* pObjUNSAFE, BYTE* pbNative, OBJECTREF *ppCleanupWorkListOnStack);
-    static FCDECL2(void,            FmtClassUpdateCLRInternal, Object* pObjUNSAFE, BYTE* pbNative);
-    static FCDECL2(void,            LayoutDestroyNativeInternal, Object* pObjUNSAFE, BYTE* pbNative);
     static FCDECL1(Object*,         AllocateInternal,       EnregisteredTypeHandle typeHnd);
     static FCDECL3(void,            MarshalToUnmanagedVaListInternal, va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator);
     static FCDECL2(void,            MarshalToManagedVaListInternal, va_list va, VARARGS* pArgIterator);
@@ -97,5 +95,8 @@ extern "C" void QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall:
 extern "C" IUnknown* QCALLTYPE InterfaceMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pObjUNSAFE, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags);
 extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags, QCall::ObjectHandleOnStack retObject);
 #endif
+
+extern "C" void QCALLTYPE StubHelpers_SetStringTrailByte(QCall::StringHandleOnStack str, UINT8 bData);
+extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx);
 
 #endif  // __STUBHELPERS_h__

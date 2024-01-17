@@ -132,7 +132,7 @@ void ProfileSynthesis::AssignLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:
@@ -152,6 +152,7 @@ void ProfileSynthesis::AssignLikelihoods()
                 break;
 
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLYRET:
             case BBJ_LEAVE:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
@@ -190,14 +191,14 @@ void ProfileSynthesis::AssignLikelihoodNext(BasicBlock* block)
 
 //------------------------------------------------------------------------
 // AssignLikelihoodJump: update edge likelihood for a block that always
-//   transfers control to bbJumpDest
+//   transfers control to bbTarget
 //
 // Arguments;
 //   block -- block in question
 //
 void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 {
-    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
+    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->GetTarget(), block);
     edge->setLikelihood(1.0);
 }
 
@@ -210,8 +211,8 @@ void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 //
 void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 {
-    BasicBlock* const jump = block->GetJumpDest();
-    BasicBlock* const next = block->Next();
+    BasicBlock* const jump = block->GetTrueTarget();
+    BasicBlock* const next = block->GetFalseTarget();
 
     // Watch for degenerate case
     //
@@ -334,9 +335,12 @@ void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
 {
     // Assume each switch case is equally probable
     //
+
     const unsigned n = block->NumSucc();
     assert(n != 0);
-    const weight_t p = 1 / (weight_t)n;
+
+    // Duplicate zero check to silence "divide by zero" compiler warning
+    const weight_t p = (n != 0) ? (1 / (weight_t)n) : 0;
 
     // Each unique edge gets some multiple of that basic probability
     //
@@ -393,7 +397,7 @@ void ProfileSynthesis::RepairLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:
@@ -410,6 +414,7 @@ void ProfileSynthesis::RepairLikelihoods()
                 break;
 
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLYRET:
             case BBJ_LEAVE:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
@@ -484,7 +489,7 @@ void ProfileSynthesis::BlendLikelihoods()
     {
         weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
 
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_THROW:
             case BBJ_RETURN:
@@ -501,6 +506,7 @@ void ProfileSynthesis::BlendLikelihoods()
                 break;
 
             case BBJ_ALWAYS:
+            case BBJ_CALLFINALLYRET:
             case BBJ_LEAVE:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
@@ -809,7 +815,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
     //
     if (capped && (loop->ExitEdges().size() > 0))
     {
-        // Figure out how much flow exits the loop with the capped probablility
+        // Figure out how much flow exits the loop with the capped probability
         // and current block frequencies and exit likelihoods.
         //
         weight_t cappedExitWeight = 0.0;
@@ -861,8 +867,8 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                             " to reflect capping; current likelihood is " FMT_WT "\n",
                             exitBlock->bbNum, exitEdge->getLikelihood());
 
-                    BasicBlock* const jump               = exitBlock->GetJumpDest();
-                    BasicBlock* const next               = exitBlock->Next();
+                    BasicBlock* const jump               = exitBlock->GetTrueTarget();
+                    BasicBlock* const next               = exitBlock->GetFalseTarget();
                     FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
                     FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);
                     weight_t const    exitLikelihood     = (missingExitWeight + currentExitWeight) / exitBlockWeight;
@@ -1002,7 +1008,7 @@ void ProfileSynthesis::ComputeBlockWeights()
 
     for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
     {
-        BasicBlock* block = m_dfsTree->GetPostOrder()[i - 1];
+        BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
         ComputeBlockWeight(block);
     }
 }

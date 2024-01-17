@@ -133,7 +133,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
             slot.Type = MarshalerType.ArraySegment;
-            slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(value.Array, GCHandleType.Pinned);
+            var ctx = ToJSContext;
+            slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(value.Array, GCHandleType.Pinned);
             var refPtr = (IntPtr)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(value.Array));
             slot.IntPtrValue = refPtr + value.Offset;
             slot.Length = value.Count;

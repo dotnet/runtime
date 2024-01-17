@@ -13,11 +13,6 @@ using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
-    using DynamicGenericsRegistrationData = TypeLoaderEnvironment.DynamicGenericsRegistrationData;
-    using GenericMethodEntry = TypeLoaderEnvironment.GenericMethodEntry;
-    using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
-    using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
-
     internal static class LowLevelListExtensions
     {
         public static void Expand<T>(this LowLevelList<T> list, int count)
@@ -83,7 +78,7 @@ namespace Internal.Runtime.TypeLoader
 
             IntPtr methodDictionary;
 
-            if (TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out methodDictionary))
+            if (TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionary(new TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup(method), out methodDictionary))
             {
                 TypeLoaderLogger.WriteLine("Found DICT = " + methodDictionary.LowLevelToString() + " for method " + method.ToString());
                 method.AssociateWithRuntimeMethodDictionary(methodDictionary);
@@ -385,7 +380,7 @@ namespace Internal.Runtime.TypeLoader
             NativeParser typeInfoParser = state.GetParserForNativeLayoutInfo();
             NativeLayoutInfoLoadContext context = state.NativeLayoutInfo.LoadContext;
 
-            NativeParser baseTypeParser = new NativeParser();
+            NativeParser baseTypeParser = default;
 
             BagElementKind kind;
             while ((kind = typeInfoParser.GetBagElementKind()) != BagElementKind.End)
@@ -479,7 +474,7 @@ namespace Internal.Runtime.TypeLoader
             private int _size;
             private bool _isReferenceTypeGCLayout;
 
-            public static GCLayout None { get { return new GCLayout(); } }
+            public static GCLayout None { get { return default(GCLayout); } }
             public static GCLayout SingleReference { get; } = new GCLayout(new LowLevelList<bool>(new bool[1] { true }), false);
 
             public bool IsNone { get { return _bitfield == null && _gcdesc == null; } }
@@ -853,7 +848,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private IEnumerable<GenericTypeEntry> TypesToRegister()
+        private IEnumerable<TypeLoaderEnvironment.GenericTypeEntry> TypesToRegister()
         {
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
@@ -861,7 +856,7 @@ namespace Internal.Runtime.TypeLoader
                 if (typeAsDefType == null)
                     continue;
 
-                yield return new GenericTypeEntry
+                yield return new TypeLoaderEnvironment.GenericTypeEntry
                 {
                     _genericTypeDefinitionHandle = GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()),
                     _genericTypeArgumentHandles = GetRuntimeTypeHandles(typeAsDefType.Instantiation),
@@ -870,12 +865,12 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private IEnumerable<GenericMethodEntry> MethodsToRegister()
+        private IEnumerable<TypeLoaderEnvironment.GenericMethodEntry> MethodsToRegister()
         {
             for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
             {
                 InstantiatedMethod method = _methodsThatNeedDictionaries[i];
-                yield return new GenericMethodEntry
+                yield return new TypeLoaderEnvironment.GenericMethodEntry
                 {
                     _declaringTypeHandle = GetRuntimeTypeHandle(method.OwningType),
                     _genericMethodArgumentHandles = GetRuntimeTypeHandles(method.Instantiation),
@@ -894,7 +889,7 @@ namespace Internal.Runtime.TypeLoader
                     typesToRegisterCount++;
             }
 
-            DynamicGenericsRegistrationData registrationData = new DynamicGenericsRegistrationData
+            var registrationData = new TypeLoaderEnvironment.DynamicGenericsRegistrationData
             {
                 TypesToRegisterCount = typesToRegisterCount,
                 TypesToRegister = (typesToRegisterCount != 0) ? TypesToRegister() : null,

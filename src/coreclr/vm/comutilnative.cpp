@@ -665,53 +665,41 @@ FCIMPL0(FC_BOOL_RET, GCInterface::CancelFullGCNotification)
 }
 FCIMPLEND
 
-FCIMPL1(int, GCInterface::WaitForFullGCApproach, int millisecondsTimeout)
+extern "C" int QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeout)
 {
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        DISABLED(GC_TRIGGERS);  // can't use this in an FCALL because we're in forbid gc mode until we setup a H_M_F.
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
     int result = 0;
 
-    //We don't need to check the top end because the GC will take care of that.
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     DWORD dwMilliseconds = ((millisecondsTimeout == -1) ? INFINITE : millisecondsTimeout);
     result = GCHeapUtilities::GetGCHeap()->WaitForFullGCApproach(dwMilliseconds);
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return result;
 }
-FCIMPLEND
 
-FCIMPL1(int, GCInterface::WaitForFullGCComplete, int millisecondsTimeout)
+extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeout)
 {
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        DISABLED(GC_TRIGGERS);  // can't use this in an FCALL because we're in forbid gc mode until we setup a H_M_F.
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
     int result = 0;
 
-    //We don't need to check the top end because the GC will take care of that.
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     DWORD dwMilliseconds = ((millisecondsTimeout == -1) ? INFINITE : millisecondsTimeout);
     result = GCHeapUtilities::GetGCHeap()->WaitForFullGCComplete(dwMilliseconds);
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return result;
 }
-FCIMPLEND
 
 /*================================GetGeneration=================================
 **Action: Returns the generation in which args->obj is found.
@@ -977,41 +965,44 @@ FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 len
 FCIMPLEND
 
 
-FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
+FCIMPL0(INT64, GCInterface::GetTotalAllocatedBytesApproximate)
 {
     FCALL_CONTRACT;
 
-    if (!precise)
-    {
 #ifdef TARGET_64BIT
-        uint64_t unused_bytes = Thread::dead_threads_non_alloc_bytes;
+    uint64_t unused_bytes = Thread::dead_threads_non_alloc_bytes;
 #else
-        // As it could be noticed we read 64bit values that may be concurrently updated.
-        // Such reads are not guaranteed to be atomic on 32bit so extra care should be taken.
-        uint64_t unused_bytes = InterlockedCompareExchange64((LONG64*)& Thread::dead_threads_non_alloc_bytes, 0, 0);
+    // As it could be noticed we read 64bit values that may be concurrently updated.
+    // Such reads are not guaranteed to be atomic on 32bit so extra care should be taken.
+    uint64_t unused_bytes = InterlockedCompareExchange64((LONG64*)& Thread::dead_threads_non_alloc_bytes, 0, 0);
 #endif
 
-        uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - unused_bytes;
+    uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - unused_bytes;
 
-        // highest reported allocated_bytes. We do not want to report a value less than that even if unused_bytes has increased.
-        static uint64_t high_watermark;
+    // highest reported allocated_bytes. We do not want to report a value less than that even if unused_bytes has increased.
+    static uint64_t high_watermark;
 
-        uint64_t current_high = high_watermark;
-        while (allocated_bytes > current_high)
-        {
-            uint64_t orig = InterlockedCompareExchange64((LONG64*)& high_watermark, allocated_bytes, current_high);
-            if (orig == current_high)
-                return allocated_bytes;
+    uint64_t current_high = high_watermark;
+    while (allocated_bytes > current_high)
+    {
+        uint64_t orig = InterlockedCompareExchange64((LONG64*)& high_watermark, allocated_bytes, current_high);
+        if (orig == current_high)
+            return allocated_bytes;
 
-            current_high = orig;
-        }
-
-        return current_high;
+        current_high = orig;
     }
 
+    return current_high;
+}
+FCIMPLEND;
+
+extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
+{
     INT64 allocated = 0;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     // We need to suspend/restart the EE to get each thread's
     // non-allocated memory from their allocation contexts
@@ -1028,11 +1019,10 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
 
     ThreadSuspend::RestartEE(FALSE, TRUE);
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return allocated;
 }
-FCIMPLEND;
 
 #ifdef FEATURE_BASICFREEZE
 
@@ -1500,13 +1490,9 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
 
 #include <optsmallperfcritical.h>
 
-FCIMPL2(INT32,COMInterlocked::Exchange, INT32 *location, INT32 value)
+FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     return InterlockedExchange((LONG *) location, value);
 }
@@ -1516,21 +1502,13 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
 {
     FCALL_CONTRACT;
 
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
     return InterlockedExchange64((INT64 *) location, value);
 }
 FCIMPLEND
 
-FCIMPL3(INT32, COMInterlocked::CompareExchange, INT32* location, INT32 value, INT32 comparand)
+FCIMPL3(INT32, COMInterlocked::CompareExchange32, INT32* location, INT32 value, INT32 comparand)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     return InterlockedCompareExchange((LONG*)location, value, comparand);
 }
@@ -1540,10 +1518,6 @@ FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 val
 {
     FCALL_CONTRACT;
 
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
     return InterlockedCompareExchange64((INT64*)location, value, comparand);
 }
 FCIMPLEND
@@ -1551,10 +1525,6 @@ FCIMPLEND
 FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     LPVOID ret = InterlockedExchangeT(location, value);
 #ifdef _DEBUG
@@ -1568,10 +1538,6 @@ FCIMPLEND
 FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID value, LPVOID comparand)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     // <TODO>@todo: only set ref if is updated</TODO>
     LPVOID ret = InterlockedCompareExchangeT(location, value, comparand);
@@ -1589,10 +1555,6 @@ FCIMPL2(INT32,COMInterlocked::ExchangeAdd32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
 
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
     return InterlockedExchangeAdd((LONG *) location, value);
 }
 FCIMPLEND
@@ -1600,10 +1562,6 @@ FCIMPLEND
 FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     return InterlockedExchangeAdd64((INT64 *) location, value);
 }

@@ -120,7 +120,6 @@ elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s39
   set_cache_value(PTHREAD_CREATE_MODIFIES_ERRNO_EXITCODE 1)
   set_cache_value(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1)
   set_cache_value(SEM_INIT_MODIFIES_ERRNO_EXITCODE 1)
-  set_cache_value(HAVE_TERMIOS2_EXITCODE 0)
 
 
   if(ALPINE_LINUX)
@@ -143,7 +142,6 @@ elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s39
     set_cache_value(UNGETC_NOT_RETURN_EOF 0)
     set_cache_value(HAVE_COMPATIBLE_ILOGBNAN 1)
     set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
-    set_cache_value(HAVE_TERMIOS2_EXITCODE 1)
   elseif(ILLUMOS)
     set_cache_value(HAVE_COMPATIBLE_ACOS_EXITCODE 1)
     set_cache_value(HAVE_COMPATIBLE_ASIN_EXITCODE 1)
@@ -160,7 +158,6 @@ elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s39
     set_cache_value(HAVE_SET_MAX_VARIABLE 1)
     set_cache_value(HAVE_FULLY_FEATURED_PTHREAD_MUTEXES 1)
     set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
-    set_cache_value(HAVE_TERMIOS2_EXITCODE 1)
   elseif (TIZEN)
     set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
   elseif(HAIKU)

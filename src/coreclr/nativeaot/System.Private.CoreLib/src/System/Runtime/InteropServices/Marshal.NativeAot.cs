@@ -184,7 +184,7 @@ namespace System.Runtime.InteropServices
         // This method is effectively a no-op for NativeAOT, everything pre-generated.
         static partial void PrelinkCore(MethodInfo m);
 
-        internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t)
+        internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, RuntimeType t)
         {
             return PInvokeMarshal.GetDelegateForFunctionPointer(ptr, t.TypeHandle);
         }

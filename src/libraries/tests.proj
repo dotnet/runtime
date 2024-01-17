@@ -71,6 +71,9 @@
 
   <!-- Wasm aot on all platforms -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/95791 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/66118 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\UnitTests\System.Text.RegularExpressions.Unit.Tests.csproj" />
     <!-- Normally run with HighAOT, but disabling there, and for AOT - https://github.com/dotnet/runtime/issues/71848 -->
@@ -78,10 +81,12 @@
 
     <!-- Normally run with HighAOT, but disabling there, and for AOT - https://github.com/dotnet/runtime/issues/86164 -->
     <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" /> -->
+  </ItemGroup>
 
-    <!-- https://github.com/dotnet/runtime/issues/94225 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Calendars.Tests\Hybrid\System.Globalization.Calendars.Hybrid.WASM.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Hybrid\System.Globalization.Hybrid.WASM.Tests.csproj" />
+  <!-- invariant project cannot be tested in hybrid mode; projects using functions that throw PNSE too often to block separate tests (HashCode, CompareOptions) -->
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(HybridGlobalization)' == 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.Common.Tests.csproj" />
   </ItemGroup>
 
   <!-- Projects that don't support code coverage measurement. -->
@@ -390,6 +395,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
     <!-- Issue: https://github.com/dotnet/runtime/issues/74413 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/95795 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Hybrid\System.Globalization.Hybrid.WASM.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Calendars.Tests\Hybrid\System.Globalization.Calendars.Hybrid.WASM.Tests.csproj" />
   </ItemGroup>
 
   <!-- Aggressive Trimming related failures -->
@@ -428,6 +436,10 @@
     <!-- Test needs to copy .so file: https://github.com/dotnet/runtime/issues/72987 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj"
                       Condition="'$(TargetOS)' != 'windows'" />
+
+    <!-- Getting OOM killed, needs investigation why it uses 10 GB of memory -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'linux'" />
 
     <!-- Not applicable to NativeAOT -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.HostFactoryResolver\tests\Microsoft.Extensions.HostFactoryResolver.Tests.csproj" />
@@ -569,7 +581,9 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Buffers.Tests\System.Buffers.Tests.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" />
+
+    <!-- Issue: oom on windows https://github.com/dotnet/runtime/issues/95365 -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" Condition="'$(OS)' != 'Windows_NT'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
@@ -592,9 +606,26 @@
     <SmokeTestProject Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
     -->
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/88084
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
     -->
+  </ItemGroup>
+
+  <!--
+      There is a decent number of hidden tests that fail with TestReadyToRun, and
+      it's proven to be a neverending task to flush all of them at once. So, we will
+      start by only enabling the tests we have confirmed work correctly, and we will
+      gradually enable the rest in subsequent PR's.
+
+      Tracking Issue for this work item: https://github.com/dotnet/runtime/issues/95928
+  -->
+  <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime/tests/System.Reflection.Tests/System.Reflection.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.TypeExtensions/tests/System.Reflection.TypeExtensions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/DefaultContext/System.Runtime.Loader.DefaultContext.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/FunctionalTests/System.Text.RegularExpressions.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -607,7 +638,11 @@
                       Include="@(GrpcTestProject)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(RunLimitedSetOfTests)' != 'true'">
+  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true'
+                        and '$(RunGrpcTestsOnly)' != 'true'
+                        and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true'
+                        and '$(RunLimitedSetOfTests)' != 'true'">
+
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true'"
@@ -626,21 +661,21 @@
     <ProjectReference Include="@(NativeAotTestAppProjects)" />
 
     <!-- wasm.build.tests are run on _WasmBuildTests job on CI, and with library tests locally. -->
-    <ProjectReference Include="$(RepoRoot)\src\mono\wasm\Wasm.Build.Tests\*.Tests.csproj"
+    <ProjectReference Include="$(WasmProjectRoot)Wasm.Build.Tests\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TargetOS)' == 'browser' and
                                     (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
                                      ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
                       BuildInParallel="false" />
 
-    <ProjectReference Include="$(RepoRoot)\src\mono\wasi\Wasi.Build.Tests\*.Tests.csproj"
+    <ProjectReference Include="$(WasiProjectRoot)\Wasi.Build.Tests\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TargetOS)' == 'wasi' and
                                     (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
                                      ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
                       BuildInParallel="false" />
 
-    <ProjectReference Include="$(RepoRoot)\src\mono\wasm\debugger\Wasm.Debugger.Tests\*.Tests.csproj"
+    <ProjectReference Include="$(BrowserProjectRoot)debugger\Wasm.Debugger.Tests\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TargetOS)' == 'browser' and
                                     (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmDebuggerTests)' == 'true') or

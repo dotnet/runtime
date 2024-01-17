@@ -80,7 +80,7 @@ namespace System.Globalization
         }
 
         private const CompareOptions SupportedCompareOptions = CompareOptions.None | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace |
-                                                               CompareOptions.IgnoreWidth | CompareOptions.StringSort;
+                                                               CompareOptions.IgnoreWidth | CompareOptions.StringSort | CompareOptions.IgnoreKanaType;
 
         private static string GetPNSE(CompareOptions options) =>
             SR.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options);

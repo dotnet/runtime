@@ -5,10 +5,11 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+namespace SizeParamIndex.PInvoke;
 /// <summary>
 ///  Pass Array Size by out keyword using SizeParamIndex Attributes
 /// </summary>
-public class ClientMarshalArrayAsSizeParamIndexByOutTest
+public class PassingByOutTest
 {
 
     #region ByOut
@@ -230,6 +231,8 @@ public class ClientMarshalArrayAsSizeParamIndexByOutTest
     }
 
     [Fact]
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         try{

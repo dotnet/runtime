@@ -77,7 +77,9 @@ struct InitVarDscInfo;       // defined in registerargconvention.h
 class FgStack;               // defined in fgbasic.cpp
 class Instrumentor;          // defined in fgprofile.cpp
 class SpanningTreeVisitor;   // defined in fgprofile.cpp
-class CSE_DataFlow;          // defined in OptCSE.cpp
+class CSE_DataFlow;          // defined in optcse.cpp
+struct CSEdsc;               // defined in optcse.h
+class CSE_HeuristicCommon;   // defined in optcse.h
 class OptBoolsDsc;           // defined in optimizer.cpp
 struct RelopImplicationInfo; // defined in redundantbranchopts.cpp
 struct JumpThreadInfo;       // defined in redundantbranchopts.cpp
@@ -574,7 +576,7 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
-    unsigned char lvVolatileHint : 1; // hint for AssertionProp
+    unsigned char lvHasExceptionalUsesHint : 1; // hint for CopyProp
 
 #ifndef TARGET_64BIT
     unsigned char lvStructDoubleAlign : 1; // Must we double align this struct?
@@ -1566,24 +1568,6 @@ enum API_ICorJitInfo_Names
     API_COUNT
 };
 
-enum class FlowGraphUpdates
-{
-    COMPUTE_BASICS  = 0,      // renumber blocks, reachability, etc
-    COMPUTE_DOMS    = 1 << 0, // recompute dominators
-    COMPUTE_RETURNS = 1 << 1, // recompute return blocks
-    COMPUTE_LOOPS   = 1 << 2, // recompute loop table
-};
-
-inline constexpr FlowGraphUpdates operator|(FlowGraphUpdates a, FlowGraphUpdates b)
-{
-    return (FlowGraphUpdates)((unsigned int)a | (unsigned int)b);
-}
-
-inline constexpr FlowGraphUpdates operator&(FlowGraphUpdates a, FlowGraphUpdates b)
-{
-    return (FlowGraphUpdates)((unsigned int)a & (unsigned int)b);
-}
-
 // Profile checking options
 //
 // clang-format off
@@ -1968,11 +1952,15 @@ class FlowGraphDfsTree
     BasicBlock** m_postOrder;
     unsigned m_postOrderCount;
 
+    // Whether the DFS that produced the tree found any backedges.
+    bool m_hasCycle;
+
 public:
-    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount)
+    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle)
         : m_comp(comp)
         , m_postOrder(postOrder)
         , m_postOrderCount(postOrderCount)
+        , m_hasCycle(hasCycle)
     {
     }
 
@@ -1991,9 +1979,20 @@ public:
         return m_postOrderCount;
     }
 
+    BasicBlock* GetPostOrder(unsigned index) const
+    {
+        assert(index < m_postOrderCount);
+        return m_postOrder[index];
+    }
+
     BitVecTraits PostOrderTraits() const
     {
         return BitVecTraits(m_postOrderCount, m_comp);
+    }
+
+    bool HasCycle() const
+    {
+        return m_hasCycle;
     }
 
     bool Contains(BasicBlock* block) const;
@@ -2012,11 +2011,14 @@ struct NaturalLoopIterInfo
     int ConstInitValue = 0;
 
     // Block outside the loop that initializes the induction variable. Only
-    // value if HasConstInit is true.
+    // valid if HasConstInit is true.
     BasicBlock* InitBlock = nullptr;
 
     // Tree that has the loop test for the induction variable.
     GenTree* TestTree = nullptr;
+
+    // Block that has the loop test.
+    BasicBlock* TestBlock = nullptr;
 
     // Tree that mutates the induction variable.
     GenTree* IterTree = nullptr;
@@ -2069,7 +2071,8 @@ struct NaturalLoopIterInfo
 //   loop can reach every other block of the loop.
 //
 // * All loop blocks are dominated by the header block, i.e. the header block
-//   is guaranteed to be entered on every iteration.
+//   is guaranteed to be entered on every iteration. Note that in the prescence
+//   of exceptional flow the header might not fully execute on every iteration.
 //
 // * From the above it follows that the loop can only be entered at the header
 //   block. FlowGraphNaturalLoop::EntryEdges() gives a vector of these edges.
@@ -2133,6 +2136,7 @@ class FlowGraphNaturalLoop
 
     void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
     bool MatchLimit(NaturalLoopIterInfo* info, GenTree* test);
+
 public:
     BasicBlock* GetHeader() const
     {
@@ -2197,6 +2201,8 @@ public:
         return m_exitEdges[index];
     }
 
+    unsigned GetDepth() const;
+
     bool ContainsBlock(BasicBlock* block);
     bool ContainsLoop(FlowGraphNaturalLoop* childLoop);
 
@@ -2220,6 +2226,10 @@ public:
     bool AnalyzeIteration(NaturalLoopIterInfo* info);
 
     bool HasDef(unsigned lclNum);
+
+#ifdef DEBUG
+    static void Dump(FlowGraphNaturalLoop* loop);
+#endif // DEBUG
 };
 
 // Represents a collection of the natural loops in the flow graph. See
@@ -2236,13 +2246,10 @@ class FlowGraphNaturalLoops
     // Collection of loops that were found.
     jitstd::vector<FlowGraphNaturalLoop*> m_loops;
 
-    // Whether or not we saw any non-natural loop cycles, also known as
-    // irreducible loops.
-    unsigned m_improperLoopHeaders = 0;
-
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
-    static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, jitstd::list<BasicBlock*>& worklist);
+    static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
+
 public:
     const FlowGraphDfsTree* GetDfsTree()
     {
@@ -2252,11 +2259,6 @@ public:
     size_t NumLoops()
     {
         return m_loops.size();
-    }
-
-    bool HaveNonNaturalLoopCycles()
-    {
-        return m_improperLoopHeaders > 0;
     }
 
     FlowGraphNaturalLoop* GetLoopByIndex(unsigned index);
@@ -2320,13 +2322,17 @@ public:
     }
 
     static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
+
+#ifdef DEBUG
+    static void Dump(FlowGraphNaturalLoops* loops);
+#endif // DEBUG
 };
 
 // Represents the dominator tree of the flow graph.
 class FlowGraphDominatorTree
 {
     template<typename TVisitor>
-    friend class NewDomTreeVisitor;
+    friend class DomTreeVisitor;
 
     const FlowGraphDfsTree* m_dfsTree;
     const DomTreeNode* m_domTree;
@@ -2345,6 +2351,10 @@ class FlowGraphDominatorTree
 public:
     BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
     bool Dominates(BasicBlock* dominator, BasicBlock* dominated);
+
+#ifdef DEBUG
+    void Dump();
+#endif
 
     static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfsTree);
 };
@@ -2366,6 +2376,30 @@ public:
     FlowGraphNaturalLoop* GetLoop(BasicBlock* block);
 
     static BlockToNaturalLoopMap* Build(FlowGraphNaturalLoops* loops);
+};
+
+// Represents a data structure that can answer A -> B reachability queries in
+// O(1) time. Only takes regular flow into account; if A -> B requires
+// exceptional flow, then CanReach returns false.
+class BlockReachabilitySets
+{
+    FlowGraphDfsTree* m_dfsTree;
+    BitVec* m_reachabilitySets;
+
+    BlockReachabilitySets(FlowGraphDfsTree* dfsTree, BitVec* reachabilitySets)
+        : m_dfsTree(dfsTree)
+        , m_reachabilitySets(reachabilitySets)
+    {
+    }
+
+public:
+    bool CanReach(BasicBlock* from, BasicBlock* to);
+
+#ifdef DEBUG
+    void Dump();
+#endif
+
+    static BlockReachabilitySets* Build(FlowGraphDfsTree* dfsTree);
 };
 
 enum class FieldKindForVN
@@ -2482,6 +2516,8 @@ class Compiler
     friend class Phase;
     friend class Lowering;
     friend class CSE_DataFlow;
+    friend class CSE_HeuristicCommon;
+    friend class CSE_HeuristicRandom;
     friend class CSE_Heuristic;
     friend class CodeGenInterface;
     friend class CodeGen;
@@ -2944,7 +2980,7 @@ public:
 
     GenTree* gtNewJmpTableNode();
 
-    GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t value, GenTreeFlags iconFlags, bool isInvariant);
+    GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags, bool isInvariant);
 
     GenTreeIntCon* gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields = nullptr);
 
@@ -4137,7 +4173,7 @@ public:
         assert(varDsc->lvType == TYP_SIMD12);
 
 #if defined(TARGET_64BIT)
-        assert(compMacOsArm64Abi() || varDsc->lvSize() == 16);
+        assert(compAppleArm64Abi() || varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
         // We make local variable SIMD12 types 16 bytes instead of just 12.
@@ -4200,7 +4236,7 @@ protected:
 
     void lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt, bool isRecompute);
     bool IsDominatedByExceptionalEntry(BasicBlock* block);
-    void SetVolatileHint(LclVarDsc* varDsc);
+    void SetHasExceptionalUsesHint(LclVarDsc* varDsc);
 
     // Keeps the mapping from SSA #'s to VN's for the implicit memory variables.
     SsaDefArray<SsaMemDef> lvMemoryPerSsaData;
@@ -4363,6 +4399,8 @@ protected:
 
     GenTree* impFixupStructReturnType(GenTree* op);
 
+    GenTree* impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOffset);
+
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
 #endif // DEBUG
@@ -4448,7 +4486,7 @@ protected:
                                 bool                  isMax,
                                 bool                  isMagnitude,
                                 bool                  isNumber);
-    NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+
     NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
@@ -4533,6 +4571,7 @@ public:
     static const unsigned CHECK_SPILL_ALL  = static_cast<unsigned>(-1);
     static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
+    NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -4940,6 +4979,11 @@ public:
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
+    // Used as a quick check for whether loop alignment should look for natural loops.
+    // If true: there may or may not be any natural loops in the flow graph, so try to find them
+    // If false: there's definitely not any natural loops in the flow graph
+    bool         fgMightHaveNaturalLoops;
+
     unsigned     fgBBNumMax;           // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
@@ -4949,23 +4993,12 @@ public:
     // optimization phases. They are invalidated once RBO runs and modifies the
     // flow graph.
     FlowGraphNaturalLoops* m_loops;
-    struct LoopDsc;
-    LoopDsc** m_newToOldLoop;
-    FlowGraphNaturalLoop** m_oldToNewLoop;
     LoopSideEffects* m_loopSideEffects;
     BlockToNaturalLoopMap* m_blockToLoop;
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
-    FlowGraphDominatorTree* fgSsaDomTree;
-
-    // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
-    // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
-    // postorder number, respectively. The arrays are indexed by basic block number. (Note that blocks are numbered
-    // starting from one. Thus, we always waste element zero. This makes debugging easier and makes the code less likely
-    // to suffer from bugs stemming from forgetting to add or subtract one from the block number to form an array
-    // index). The arrays are of size fgBBNumMax + 1.
-    unsigned* fgDomTreePreOrder;
-    unsigned* fgDomTreePostOrder;
+    FlowGraphDominatorTree* m_domTree;
+    BlockReachabilitySets* m_reachabilitySets;
 
     bool fgBBVarSetsInited;
 
@@ -5014,10 +5047,6 @@ public:
             roundUp(fgCurBBEpochSize, (unsigned)(sizeof(size_t) * 8)) / unsigned(sizeof(size_t) * 8);
 
 #ifdef DEBUG
-        // All BlockSet objects are now invalid!
-        fgReachabilitySetsValid = false; // the bbReach sets are now invalid!
-        fgEnterBlksSetValid     = false; // the fgEnterBlks set is now invalid!
-
         if (verbose)
         {
             unsigned epochArrSize = BasicBlockBitSetTraits::GetArrSize(this);
@@ -5050,13 +5079,13 @@ public:
     void fgExtendEHRegionBefore(BasicBlock* block);
     void fgExtendEHRegionAfter(BasicBlock* block);
 
-    BasicBlock* fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
+    BasicBlock* fgNewBBbefore(BBKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
+    BasicBlock* fgNewBBafter(BBKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, BasicBlock* jumpDest = nullptr, bool updateSideEffects = false);
+    BasicBlock* fgNewBBFromTreeAfter(BBKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, BasicBlock* jumpDest = nullptr, bool updateSideEffects = false);
 
-    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
+    BasicBlock* fgNewBBinRegion(BBKinds jumpKind,
                                 unsigned    tryIndex,
                                 unsigned    hndIndex,
                                 BasicBlock* nearBlk,
@@ -5065,15 +5094,15 @@ public:
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
-    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
+    BasicBlock* fgNewBBinRegion(BBKinds jumpKind,
                                 BasicBlock* srcBlk,
                                 BasicBlock* jumpDest    = nullptr,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
-    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
+    BasicBlock* fgNewBBinRegion(BBKinds jumpKind, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBinRegionWorker(BBjumpKinds jumpKind,
+    BasicBlock* fgNewBBinRegionWorker(BBKinds jumpKind,
                                       BasicBlock* afterBlk,
                                       unsigned    xcptnIndex,
                                       bool        putInTryRegion,
@@ -5090,18 +5119,11 @@ public:
 
     bool fgModified;             // True if the flow graph has been modified recently
     bool fgPredsComputed;        // Have we computed the bbPreds list
-    bool fgDomsComputed;         // Have we computed the dominator sets?
     bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
+    bool fgCanonicalizedFirstBB; // TODO-Quirk: did we end up canonicalizing first BB?
 
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
-
-    BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
-                          // begin blocks.
-#ifdef DEBUG
-    bool fgReachabilitySetsValid; // Are the bbReach sets valid?
-    bool fgEnterBlksSetValid;     // Is the fgEnterBlks set valid?
-#endif                            // DEBUG
 
     bool fgRemoveRestOfBlock; // true if we know that we will throw
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
@@ -5242,7 +5264,7 @@ public:
     FoldResult fgFoldConditional(BasicBlock* block);
 
     PhaseStatus fgMorphBlocks();
-    void fgMorphBlock(BasicBlock* block, unsigned highestReachablePostorder = 0);
+    void fgMorphBlock(BasicBlock* block);
     void fgMorphStmts(BasicBlock* block);
 
     void fgMergeBlockReturn(BasicBlock* block);
@@ -5334,7 +5356,7 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block);
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
-    GenTree* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
+    GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
     bool fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
@@ -5342,6 +5364,7 @@ public:
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
 
 #if FEATURE_LOOP_ALIGN
+    bool shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top);
     PhaseStatus placeLoopAlignInstructions();
 #endif
 
@@ -5648,9 +5671,10 @@ public:
     // memory yields an unknown value.
     ValueNum fgCurMemoryVN[MemoryKindCount];
 
-    // Return a "pseudo"-class handle for an array element type.  If "elemType" is TYP_STRUCT,
-    // requires "elemStructType" to be non-null (and to have a low-order zero).  Otherwise, low order bit
-    // is 1, and the rest is an encoding of "elemTyp".
+    // Return a "pseudo"-class handle for an array element type. If `elemType` is TYP_STRUCT,
+    // `elemStructType` is the struct handle (it must be non-null and have a low-order zero bit).
+    // Otherwise, `elemTyp` is encoded by left-shifting by 1 and setting the low-order bit to 1.
+    // Decode the result by calling `DecodeElemType`.
     static CORINFO_CLASS_HANDLE EncodeElemType(var_types elemTyp, CORINFO_CLASS_HANDLE elemStructType)
     {
         if (elemStructType != nullptr)
@@ -5667,9 +5691,10 @@ public:
             return CORINFO_CLASS_HANDLE(size_t(elemTyp) << 1 | 0x1);
         }
     }
-    // If "clsHnd" is the result of an "EncodePrim" call, returns true and sets "*pPrimType" to the
-    // var_types it represents.  Otherwise, returns TYP_STRUCT (on the assumption that "clsHnd" is
-    // the struct type of the element).
+
+    // Decodes a pseudo-class handle encoded by `EncodeElemType`. Returns TYP_STRUCT if `clsHnd` represents
+    // a struct (in which case `clsHnd` is the struct handle). Otherwise, returns the primitive var_types
+    // value it represents.
     static var_types DecodeElemType(CORINFO_CLASS_HANDLE clsHnd)
     {
         size_t clsHndVal = size_t(clsHnd);
@@ -5741,27 +5766,10 @@ public:
     void vnPrint(ValueNum vn, unsigned level);
 #endif
 
-    bool fgDominate(const BasicBlock* b1, const BasicBlock* b2); // Return true if b1 dominates b2
-
     // Dominator computation member functions
     // Not exposed outside Compiler
 protected:
-    bool fgReachable(BasicBlock* b1, BasicBlock* b2); // Returns true if block b1 can reach block b2
-
-    // Compute immediate dominators, the dominator tree and and its pre/post-order travsersal numbers.
-    void fgComputeDoms();
-
-    void fgCompDominatedByExceptionalEntryBlocks();
-
-    BlockSet_ValRet_T fgGetDominatorSet(BasicBlock* block); // Returns a set of blocks that dominate the given block.
-    // Note: this is relatively slow compared to calling fgDominate(),
-    // especially if dealing with a single block versus block check.
-
-    void fgComputeReachabilitySets(); // Compute bbReach sets. (Also sets BBF_GC_SAFE_POINT flag on blocks.)
-
     void fgComputeReturnBlocks(); // Initialize fgReturnBlocks to a list of BBJ_RETURN blocks.
-
-    void fgComputeEnterBlocksSet(); // Compute the set of entry blocks, 'fgEnterBlks'.
 
     // Remove blocks determined to be unreachable by the 'canRemoveBlock'.
     template <typename CanRemoveBlockBody>
@@ -5769,31 +5777,9 @@ protected:
 
     PhaseStatus fgComputeReachability(); // Perform flow graph node reachability analysis.
 
+    PhaseStatus fgComputeDominators(); // Compute dominators
+
     bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
-
-    BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
-
-    unsigned fgDfsReversePostorder();
-    void fgDfsReversePostorderHelper(BasicBlock* block,
-                                     BlockSet&   visited,
-                                     unsigned&   preorderIndex,
-                                     unsigned&   reversePostorderIndex);
-
-    INDEBUG(void fgDispDomTree(DomTreeNode* domTree);) // Helper that prints out the Dominator Tree in debug builds.
-
-    DomTreeNode* fgBuildDomTree(); // Once we compute all the immediate dominator sets for each node in the flow graph
-                                   // (performed by fgComputeDoms), this procedure builds the dominance tree represented
-                                   // adjacency lists.
-
-    // In order to speed up the queries of the form 'Does A dominates B', we can perform a DFS preorder and postorder
-    // traversal of the dominance tree and the dominance query will become A dominates B iif preOrder(A) <= preOrder(B)
-    // && postOrder(A) >= postOrder(B) making the computation O(1).
-    void fgNumberDomTree(DomTreeNode* domTree);
-
-    // When the flow graph changes, we need to update the block numbers, reachability sets,
-    // dominators, and possibly loops.
-    //
-    void fgUpdateChangedFlowGraph(FlowGraphUpdates updates);
 
 public:
     enum GCPollType
@@ -5821,6 +5807,7 @@ public:
 
     PhaseStatus fgExpandThreadLocalAccess();
     bool fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+    bool fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgExpandStaticInit();
     bool fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
@@ -5944,9 +5931,9 @@ public:
 
     bool fgCheckRemoveStmt(BasicBlock* block, Statement* stmt);
 
-    bool fgCreateLoopPreHeader(unsigned lnum);
+    PhaseStatus fgCanonicalizeFirstBB();
 
-    void fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top);
+    void fgSetEHRegionForNewPreheader(BasicBlock* preheader);
 
     void fgUnreachableBlock(BasicBlock* block);
 
@@ -5960,7 +5947,9 @@ public:
 
     void fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd);
 
-    void fgRemoveBlock(BasicBlock* block, bool unreachable);
+    BasicBlock* fgRemoveBlock(BasicBlock* block, bool unreachable);
+
+    void fgPrepareCallFinallyRetForRemoval(BasicBlock* block);
 
     bool fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext);
 
@@ -5968,7 +5957,7 @@ public:
 
     void fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext);
 
-    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst);
+    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, bool noFallThroughQuirk = false);
 
     bool fgRenumberBlocks();
 
@@ -6015,8 +6004,6 @@ public:
 
     bool fgOptimizeSwitchBranches(BasicBlock* block);
 
-    bool fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev);
-
     bool fgOptimizeSwitchJumps();
 #ifdef DEBUG
     void fgPrintEdgeWeights();
@@ -6034,10 +6021,12 @@ public:
 
     PhaseStatus fgDetermineFirstColdBlock();
 
-    bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc = nullptr);
+    bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc = nullptr);
 
     bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false);
     PhaseStatus fgUpdateFlowGraphPhase();
+
+    PhaseStatus fgDfsBlocksAndRemove();
 
     PhaseStatus fgFindOperOrder();
 
@@ -6047,7 +6036,11 @@ public:
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
 
+    template<typename VisitPreorder, typename VisitPostorder, typename VisitEdge>
+    unsigned fgRunDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge);
+
     FlowGraphDfsTree* fgComputeDfs();
+    void fgInvalidateDfsTree();
 
     void fgRemoveReturnBlock(BasicBlock* block);
 
@@ -6070,18 +6063,17 @@ public:
     static void fgDumpTree(FILE* fgxFile, GenTree* const tree);
     FILE* fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, const char* type);
     bool fgDumpFlowGraph(Phases phase, PhasePosition pos);
+    void fgDumpFlowGraphLoops(FILE* file);
 #endif // DUMP_FLOWGRAPHS
 
 #ifdef DEBUG
 
-    void fgDispDoms();
-    void fgDispReach();
     void fgDispBBLiveness(BasicBlock* block);
     void fgDispBBLiveness();
     void fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth = 0);
     void fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, bool dumpTrees);
     void fgDispBasicBlocks(bool dumpTrees = false);
-    void fgDumpStmtTree(Statement* stmt, unsigned bbNum);
+    void fgDumpStmtTree(const BasicBlock* block, Statement* stmt);
     void fgDumpBlock(BasicBlock* block);
     void fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock);
 
@@ -6112,6 +6104,8 @@ public:
     void fgDebugCheckProfileWeights(ProfileChecks checks);
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
+
+    void fgDebugCheckDfsTree();
 
 #endif // DEBUG
 
@@ -6222,6 +6216,7 @@ protected:
 
     Instrumentor* fgCountInstrumentor;
     Instrumentor* fgHistogramInstrumentor;
+    Instrumentor* fgValueInstrumentor;
 
     PhaseStatus fgPrepareToInstrumentMethod();
     PhaseStatus fgInstrumentMethod();
@@ -6360,7 +6355,7 @@ private:
     bool fgIsThrow(GenTree* tree);
 
 public:
-    bool fgInDifferentRegions(BasicBlock* blk1, BasicBlock* blk2);
+    bool fgInDifferentRegions(const BasicBlock* blk1, const BasicBlock* blk2) const;
 
 private:
     bool fgIsBlockCold(BasicBlock* block);
@@ -6756,10 +6751,6 @@ protected:
         }
     };
 
-    // Do hoisting of all loops nested within loop "lnum" (an index into the optLoopTable), followed
-    // by the loop "lnum" itself.
-    bool optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
-
     // Do hoisting for a particular loop
     bool optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt);
 
@@ -6780,10 +6771,6 @@ protected:
     //   Constants and init values are always loop invariant.
     //   VNPhi's connect VN's to the SSA definition, so we can know if the SSA def occurs in the loop.
     bool optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* recordedVNs);
-
-    // If "blk" is the entry block of a natural loop, returns true and sets "*pLnum" to the index of the loop
-    // in the loop table.
-    bool optBlockIsLoopEntry(BasicBlock* blk, unsigned* pLnum);
 
     // Records the set of "side effects" of all loops: fields (object instance and static)
     // written to, and SZ-array element type equivalence classes updated.
@@ -6823,11 +6810,14 @@ public:
 
     void optFindLoops();
     void optFindNewLoops();
-    void optCrossCheckIterInfo(const NaturalLoopIterInfo& iterInfo, const LoopDsc& dsc);
+    bool optCanonicalizeLoops(FlowGraphNaturalLoops* loops);
+    bool optCreatePreheader(FlowGraphNaturalLoop* loop);
+    void optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader);
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
+    bool optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR);
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
 
@@ -7063,7 +7053,6 @@ public:
     bool          optLoopTableValid;         // info in loop table should be valid
     bool          optLoopsRequirePreHeaders; // Do we require that all loops (in the loop table) have pre-headers?
     unsigned char optLoopCount;              // number of tracked loops
-    unsigned char loopAlignCandidates;       // number of loops identified for alignment
 
     // Every time we rebuild the loop table, we increase the global "loop epoch". Any loop indices or
     // loop table pointers from the previous epoch are invalid.
@@ -7077,7 +7066,8 @@ public:
     }
 
 #ifdef DEBUG
-    unsigned char loopsAligned; // number of loops actually aligned
+    unsigned loopAlignCandidates; // number of candidates identified by placeLoopAlignInstructions
+    unsigned loopsAligned;        // number of loops actually aligned
 #endif                          // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
@@ -7086,8 +7076,6 @@ public:
                        BasicBlock*   bottom,
                        BasicBlock*   exit,
                        unsigned char exitCnt);
-
-    PhaseStatus optClearLoopIterInfo();
 
 #ifdef DEBUG
     void optPrintLoopInfo(unsigned lnum, bool printVerbose = false);
@@ -7127,24 +7115,6 @@ protected:
 
     void optFindNaturalLoops();
 
-    void optIdentifyLoopsForAlignment();
-
-    // Ensures that all the loops in the loop nest rooted at "loopInd" (an index into the loop table) are 'canonical' --
-    // each loop has a unique "top."  Returns "true" iff the flowgraph has been modified.
-    bool optCanonicalizeLoopNest(unsigned char loopInd);
-
-    // Ensures that the loop "loopInd" (an index into the loop table) is 'canonical' -- it has a unique "top,"
-    // unshared with any other loop.  Returns "true" iff the flowgraph has been modified
-    bool optCanonicalizeLoop(unsigned char loopInd);
-
-    enum class LoopCanonicalizationOption
-    {
-        Outer,
-        Current
-    };
-
-    bool optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizationOption option);
-
     // Requires "l1" to be a valid loop table index, and not "BasicBlock::NOT_IN_LOOP".
     // Requires "l2" to be a valid loop table index, or else "BasicBlock::NOT_IN_LOOP".
     // Returns true iff "l2" is not NOT_IN_LOOP, and "l1" contains "l2".
@@ -7181,10 +7151,6 @@ protected:
 
     // Adds "elemType" to the set of modified array element types of "loop" and any parent loops.
     void AddModifiedElemTypeAllContainingLoops(FlowGraphNaturalLoop* loop, CORINFO_CLASS_HANDLE elemType);
-
-    // Requires that "from" and "to" have the same "bbJumpKind" (perhaps because "to" is a clone
-    // of "from".)  Copies the jump destination from "from" to "to".
-    void optCopyBlkDest(BasicBlock* from, BasicBlock* to);
 
     // Returns true if 'block' is an entry block for any loop in 'optLoopTable'
     bool optIsLoopEntry(BasicBlock* block) const;
@@ -7306,58 +7272,6 @@ protected:
 
     EXPSET_TP cseCallKillsMask; // Computed once - A mask that is used to kill available CSEs at callsites
 
-    /* Generic list of nodes - used by the CSE logic */
-
-    struct treeLst
-    {
-        treeLst* tlNext;
-        GenTree* tlTree;
-    };
-
-    struct treeStmtLst
-    {
-        treeStmtLst* tslNext;
-        GenTree*     tslTree;  // tree node
-        Statement*   tslStmt;  // statement containing the tree
-        BasicBlock*  tslBlock; // block containing the statement
-    };
-
-    // The following logic keeps track of expressions via a simple hash table.
-
-    struct CSEdsc
-    {
-        CSEdsc*  csdNextInBucket;  // used by the hash table
-        size_t   csdHashKey;       // the original hashkey
-        ssize_t  csdConstDefValue; // When we CSE similar constants, this is the value that we use as the def
-        ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
-                                   // assignment
-        unsigned csdIndex;         // 1..optCSECandidateCount
-        bool     csdIsSharedConst; // true if this CSE is a shared const
-        bool     csdLiveAcrossCall;
-
-        unsigned short csdDefCount; // definition   count
-        unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
-
-        weight_t csdDefWtCnt; // weighted def count
-        weight_t csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
-
-        GenTree*    csdTree;  // treenode containing the 1st occurrence
-        Statement*  csdStmt;  // stmt containing the 1st occurrence
-        BasicBlock* csdBlock; // block containing the 1st occurrence
-
-        treeStmtLst* csdTreeList; // list of matching tree nodes: head
-        treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
-
-        ValueNum defExcSetPromise; // The exception set that is now required for all defs of this CSE.
-                                   // This will be set to NoVN if we decide to abandon this CSE
-
-        ValueNum defExcSetCurrent; // The set of exceptions we currently can use for CSE uses.
-
-        ValueNum defConservNormVN; // if all def occurrences share the same conservative normal value
-                                   // number, this will reflect it; otherwise, NoVN.
-                                   // not used for shared const CSE's
-    };
-
     static const size_t s_optCSEhashSizeInitial;
     static const size_t s_optCSEhashGrowthFactor;
     static const size_t s_optCSEhashBucketSize;
@@ -7441,14 +7355,18 @@ protected:
 public:
     PhaseStatus optOptimizeValnumCSEs();
 
+    // some phases (eg hoisting) need to anticipate
+    // what CSE will do
+    CSE_HeuristicCommon* optGetCSEheuristic();
+
 protected:
     void     optValnumCSE_Init();
     unsigned optValnumCSE_Index(GenTree* tree, Statement* stmt);
-    bool optValnumCSE_Locate();
+    bool optValnumCSE_Locate(CSE_HeuristicCommon* heuristic);
     void optValnumCSE_InitDataFlow();
     void optValnumCSE_DataFlow();
     void optValnumCSE_Availability();
-    bool optValnumCSE_Heuristic();
+    void optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic);
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
@@ -7457,8 +7375,9 @@ protected:
     unsigned optCSEattempt;        // The number of CSEs attempted so far.
     unsigned optCSEcount;          // The total count of CSEs introduced.
     weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
+    CSE_HeuristicCommon* optCSEheuristic; // CSE Heuristic to use for this method
 
-    bool optIsCSEcandidate(GenTree* tree);
+    bool optIsCSEcandidate(GenTree* tree, bool isReturn = false);
 
     // lclNumIsTrueCSE returns true if the LclVar was introduced by the CSE phase of the compiler
     //
@@ -9526,7 +9445,9 @@ public:
     {
         Memset,
         Memcpy,
-        Memmove
+        Memmove,
+        ProfiledMemmove,
+        ProfiledMemcmp
     };
 
     //------------------------------------------------------------------------
@@ -9598,6 +9519,13 @@ public:
             // NOTE: Memmove's unrolling is currently limited with LSRA -
             // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
             threshold = maxRegSize * 4;
+        }
+
+        // For profiled memcmp/memmove we don't want to unroll too much as it's just a guess,
+        // and it works better for small sizes.
+        if ((type == UnrollKind::ProfiledMemcmp) || (type == UnrollKind::ProfiledMemmove))
+        {
+            threshold = maxRegSize * 2;
         }
 
         return threshold;
@@ -10062,6 +9990,11 @@ public:
             return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
         }
 
+        bool IsOptimizedWithProfile() const
+        {
+            return OptimizationEnabled() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+        }
+
         bool IsInstrumentedAndOptimized() const
         {
             return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
@@ -10184,7 +10117,7 @@ public:
 // based on experimenting with various benchmarks.
 
 // Default minimum loop block weight required to enable loop alignment.
-#define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 4
+#define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 3
 
 // By default a loop will be aligned at 32B address boundary to get better
 // performance as per architecture manuals.
@@ -10410,6 +10343,7 @@ public:
         STRESS_MODE(IF_CONVERSION_COST)                                                         \
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
+        STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
         STRESS_MODE(COUNT)
 
     enum                compStressArea
@@ -11087,8 +11021,8 @@ protected:
     // Clear annotations produced during optimizations; to be used between iterations when repeating opts.
     void ResetOptAnnotations();
 
-    // Regenerate loop descriptors; to be used between iterations when repeating opts.
-    void RecomputeLoopInfo();
+    // Regenerate flow graph annotations; to be used between iterations when repeating opts.
+    void RecomputeFlowGraphAnnotations();
 
 #ifdef PROFILING_SUPPORTED
     // Data required for generating profiler Enter/Leave/TailCall hooks
@@ -12020,93 +11954,12 @@ public:
 template <typename TVisitor>
 class DomTreeVisitor
 {
-protected:
-    Compiler* const    m_compiler;
-    DomTreeNode* const m_domTree;
-
-    DomTreeVisitor(Compiler* compiler, DomTreeNode* domTree) : m_compiler(compiler), m_domTree(domTree)
-    {
-    }
-
-    void Begin()
-    {
-    }
-
-    void PreOrderVisit(BasicBlock* block)
-    {
-    }
-
-    void PostOrderVisit(BasicBlock* block)
-    {
-    }
-
-    void End()
-    {
-    }
-
-public:
-    //------------------------------------------------------------------------
-    // WalkTree: Walk the dominator tree, starting from fgFirstBB.
-    //
-    // Parameter:
-    //    tree - Dominator tree nodes.
-    //
-    // Notes:
-    //    This performs a non-recursive, non-allocating walk of the tree by using
-    //    DomTreeNode's firstChild and nextSibling links to locate the children of
-    //    a node and BasicBlock's bbIDom parent link to go back up the tree when
-    //    no more children are left.
-    //
-    //    Forests are also supported, provided that all the roots are chained via
-    //    DomTreeNode::nextSibling to fgFirstBB.
-    //
-    void WalkTree()
-    {
-        static_cast<TVisitor*>(this)->Begin();
-
-        for (BasicBlock *next, *block = m_compiler->fgFirstBB; block != nullptr; block = next)
-        {
-            static_cast<TVisitor*>(this)->PreOrderVisit(block);
-
-            next = m_domTree[block->bbNum].firstChild;
-
-            if (next != nullptr)
-            {
-                assert(next->bbIDom == block);
-                continue;
-            }
-
-            do
-            {
-                static_cast<TVisitor*>(this)->PostOrderVisit(block);
-
-                next = m_domTree[block->bbNum].nextSibling;
-
-                if (next != nullptr)
-                {
-                    assert(next->bbIDom == block->bbIDom);
-                    break;
-                }
-
-                block = block->bbIDom;
-
-            } while (block != nullptr);
-        }
-
-        static_cast<TVisitor*>(this)->End();
-    }
-};
-
-// A dominator tree visitor implemented using the curiously-recurring-template pattern, similar to GenTreeVisitor.
-template <typename TVisitor>
-class NewDomTreeVisitor
-{
     friend class FlowGraphDominatorTree;
 
 protected:
     Compiler* m_compiler;
 
-    NewDomTreeVisitor(Compiler* compiler) : m_compiler(compiler)
+    DomTreeVisitor(Compiler* compiler) : m_compiler(compiler)
     {
     }
 
@@ -12135,7 +11988,7 @@ private:
         {
             static_cast<TVisitor*>(this)->PreOrderVisit(block);
 
-            next = tree[block->bbNewPostorderNum].firstChild;
+            next = tree[block->bbPostorderNum].firstChild;
 
             if (next != nullptr)
             {
@@ -12147,7 +12000,7 @@ private:
             {
                 static_cast<TVisitor*>(this)->PostOrderVisit(block);
 
-                next = tree[block->bbNewPostorderNum].nextSibling;
+                next = tree[block->bbPostorderNum].nextSibling;
 
                 if (next != nullptr)
                 {
@@ -12314,9 +12167,7 @@ extern size_t   gcPtrMapNSize;
 #if COUNT_BASIC_BLOCKS
 extern Histogram bbCntTable;
 extern Histogram bbOneBBSizeTable;
-extern Histogram domsChangedIterationTable;
 extern Histogram computeReachabilitySetsIterationTable;
-extern Histogram computeReachabilityIterationTable;
 #endif
 
 /*****************************************************************************

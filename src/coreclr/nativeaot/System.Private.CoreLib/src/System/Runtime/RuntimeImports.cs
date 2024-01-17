@@ -42,11 +42,11 @@ namespace System.Runtime
 
         [LibraryImport(RuntimeLibrary)]
         [SuppressGCTransition]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial ulong RhpGetTickCount64();
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial IntPtr RhpGetCurrentThread();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -166,15 +166,15 @@ namespace System.Runtime
         internal static extern long RhGetLastGCDuration(int generation);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial IntPtr RhRegisterFrozenSegment(void* pSegmentStart, nuint allocSize, nuint commitSize, nuint reservedSize);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhUpdateFrozenSegment(IntPtr seg, void* allocated, void* committed);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhUnregisterFrozenSegment(IntPtr pSegmentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -221,7 +221,7 @@ namespace System.Runtime
         }
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhEnumerateConfigurationValues(void* configurationContext, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
 
         internal struct GCHeapHardLimitInfo
@@ -237,19 +237,19 @@ namespace System.Runtime
         }
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial int RhRefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial int RhEnableNoGCRegionCallback(void* callback, long totalSize);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial long RhGetGenerationBudget(int generation);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial long RhGetTotalAllocatedBytesPrecise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -375,7 +375,7 @@ namespace System.Runtime
         internal static extern int RhpGetThunkBlockSize();
 
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhAllocateThunksMapping")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial IntPtr RhAllocateThunksMapping();
 
         //
@@ -448,22 +448,22 @@ namespace System.Runtime
         // Busy spin for the given number of iterations.
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
         [SuppressGCTransition]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhSpinWait(int iterations);
 
         // Call RhSpinWait with a GC transition
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhLongSpinWait(int iterations);
 
         // Yield the cpu to another thread ready to process, if one is available.
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static partial int _RhYield();
         internal static bool RhYield() { return (_RhYield() != 0); }
 
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers")]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhFlushProcessWriteBuffers();
 
 #if !TARGET_UNIX
@@ -679,7 +679,7 @@ namespace System.Runtime
         // EventPipeInternal helpers.
         //
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial ulong RhEventPipeInternal_Enable(
             char* outputFile,
             int format,
@@ -688,15 +688,15 @@ namespace System.Runtime
             uint numProviders);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhEventPipeInternal_Disable(ulong sessionID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial IntPtr RhEventPipeInternal_CreateProvider(char* providerName, IntPtr callbackFunc, IntPtr callbackContext);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial IntPtr RhEventPipeInternal_DefineEvent(
             IntPtr provHandle,
             uint eventID,
@@ -707,19 +707,19 @@ namespace System.Runtime
             uint metadataLength);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial IntPtr RhEventPipeInternal_GetProvider(char* providerName);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void RhEventPipeInternal_DeleteProvider(IntPtr provHandle);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial int RhEventPipeInternal_EventActivityIdControl(uint controlCode, Guid* activityId);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhEventPipeInternal_WriteEventData(
             IntPtr eventHandle,
             void* pEventData,
@@ -728,59 +728,59 @@ namespace System.Runtime
             Guid* relatedActivityId);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial uint RhEventPipeInternal_GetSessionInfo(ulong sessionID, void* pSessionInfo);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial uint RhEventPipeInternal_GetNextEvent(ulong sessionID, void* pInstance);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial uint RhEventPipeInternal_SignalSession(ulong sessionID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial uint RhEventPipeInternal_WaitForSessionSignal(ulong sessionID, int timeoutMs);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogContentionStart(byte ContentionFlags, ushort ClrInstanceID, nint LockID, nint AssociatedObjectID, ulong LockOwnerThreadID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogContentionStop(byte ContentionFlags, ushort ClrInstanceID, double DurationNs);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, uint Reason, ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats(
             double Duration,
             double Throughput,
@@ -795,7 +795,7 @@ namespace System.Runtime
             ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolIOEnqueue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
@@ -803,29 +803,40 @@ namespace System.Runtime
             ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolIODequeue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount(
             uint Count,
             ushort ClrInstanceID
         );
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void NativeRuntimeEventSource_LogThreadPoolIOPack(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID);
 
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void NativeRuntimeEventSource_LogExceptionThrown(char* exceptionTypeName, char* exceptionMessage, IntPtr faultingIP, long hresult);
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        internal static partial void NativeRuntimeEventSource_LogWaitHandleWaitStart(
+            byte WaitSource,
+            IntPtr AssociatedObjectID,
+            ushort ClrInstanceID);
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        internal static partial void NativeRuntimeEventSource_LogWaitHandleWaitStop(ushort ClrInstanceID);
 #endif // FEATURE_PERFTRACING
 
         //
@@ -1105,7 +1116,7 @@ namespace System.Runtime
 
 #if TARGET_X86 || TARGET_AMD64
         [LibraryImport(RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
 #endif
 

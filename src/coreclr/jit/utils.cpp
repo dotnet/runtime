@@ -1321,14 +1321,14 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
 
 void hexDump(FILE* dmpf, BYTE* addr, size_t size)
 {
-    if (!size)
+    if (size == 0)
     {
         return;
     }
 
-    assert(addr);
+    assert(addr != nullptr);
 
-    for (unsigned i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
         fprintf(dmpf, "%02X", *addr++);
     }
@@ -1557,6 +1557,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
 
                 // These do not invoke static class constructors
                 //

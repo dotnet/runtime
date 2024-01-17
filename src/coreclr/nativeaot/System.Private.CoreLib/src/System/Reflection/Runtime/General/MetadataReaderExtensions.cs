@@ -138,7 +138,7 @@ namespace System.Reflection.Runtime.General
             int contentType = ((int)assemblyFlags) & 0x00000E00;
             assemblyNameFlags |= (AssemblyNameFlags)contentType;
 
-            ArrayBuilder<byte> keyOrTokenArrayBuilder = new ArrayBuilder<byte>();
+            ArrayBuilder<byte> keyOrTokenArrayBuilder = default;
             foreach (byte b in publicKeyOrToken)
                 keyOrTokenArrayBuilder.Add(b);
 

@@ -178,7 +178,7 @@
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.NativeAot.cs" />
     <Compile Include="System\Diagnostics\Eventing\EventPipe.NativeAot.cs" />
-    <Compile Include="System\Diagnostics\Eventing\NativeRuntimeEventSource.Threading.NativeSinks.NativeAot.cs" />
+    <Compile Include="System\Diagnostics\Eventing\NativeRuntimeEventSource.Threading.NativeSinks.NativeAot.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="System\Enum.NativeAot.cs" />
     <Compile Include="System\Environment.NativeAot.cs" />
     <Compile Include="System\GC.NativeAot.cs" />
@@ -221,6 +221,7 @@
     <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\Array.NativeAot.cs" />
     <Compile Include="System\Delegate.cs" />
+    <Compile Include="System\StartupHookProvider.NativeAot.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\Exception.NativeAot.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
@@ -419,6 +420,7 @@
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
     <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
     <Compile Include="System\Reflection\Runtime\General\LegacyCustomAttributeApis.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ListBuilder.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />

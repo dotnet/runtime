@@ -18,9 +18,6 @@ PhaseStatus Compiler::fgSsaBuild()
         fgResetForSsa();
     }
 
-    // Reset BlockPredsWithEH cache.
-    m_blockToEHPreds = nullptr;
-
     SsaBuilder builder(this);
     builder.Build();
     fgSsaPassesCompleted++;
@@ -144,9 +141,19 @@ void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, Bl
         // Otherwise, there are > 1 preds.  Each is a candidate B2 in the definition --
         // *unless* it dominates "block"/B3.
 
+        FlowGraphDfsTree*       dfsTree = m_pCompiler->m_dfsTree;
+        FlowGraphDominatorTree* domTree = m_pCompiler->m_domTree;
+
         for (FlowEdge* pred = blockPreds; pred != nullptr; pred = pred->getNextPredEdge())
         {
-            DBG_SSA_JITDUMP("   Considering predecessor " FMT_BB ".\n", pred->getSourceBlock()->bbNum);
+            BasicBlock* predBlock = pred->getSourceBlock();
+            DBG_SSA_JITDUMP("   Considering predecessor " FMT_BB ".\n", predBlock->bbNum);
+
+            if (!dfsTree->Contains(predBlock))
+            {
+                DBG_SSA_JITDUMP("    Unreachable node\n");
+                continue;
+            }
 
             // If we've found a B2, then consider the possible B1's.  We start with
             // B2, since a block dominates itself, then traverse upwards in the dominator
@@ -156,7 +163,7 @@ void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, Bl
             // Along this way, make "block"/B3 part of the dom frontier of the B1.
             // When we reach this immediate dominator, the definition no longer applies, since this
             // potential B1 *does* dominate "block"/B3, so we stop.
-            for (BasicBlock* b1 = pred->getSourceBlock(); (b1 != nullptr) && (b1 != block->bbIDom); // !root && !loop
+            for (BasicBlock* b1 = predBlock; (b1 != nullptr) && (b1 != block->bbIDom); // !root && !loop
                  b1             = b1->bbIDom)
             {
                 DBG_SSA_JITDUMP("      Adding " FMT_BB " to dom frontier of pred dom " FMT_BB ".\n", block->bbNum,
@@ -224,7 +231,7 @@ void SsaBuilder::ComputeIteratedDominanceFrontier(BasicBlock* b, const BlkToBlkV
 
         for (BasicBlock* f : *bDF)
         {
-            BitVecOps::AddElemD(&m_visitedTraits, m_visited, f->bbNum);
+            BitVecOps::AddElemD(&m_visitedTraits, m_visited, f->bbPostorderNum);
             bIDF->push_back(f);
         }
 
@@ -242,7 +249,7 @@ void SsaBuilder::ComputeIteratedDominanceFrontier(BasicBlock* b, const BlkToBlkV
             {
                 for (BasicBlock* ff : *fDF)
                 {
-                    if (BitVecOps::TryAddElemD(&m_visitedTraits, m_visited, ff->bbNum))
+                    if (BitVecOps::TryAddElemD(&m_visitedTraits, m_visited, ff->bbPostorderNum))
                     {
                         bIDF->push_back(ff);
                     }
@@ -479,7 +486,7 @@ void SsaBuilder::InsertPhiFunctions()
         }
 
         // Now make a similar phi definition if the block defines memory.
-        if (block->bbMemoryDef != 0)
+        if (block->bbMemoryDef != emptyMemoryKindSet)
         {
             // For each block "bbInDomFront" that is in the dominance frontier of "block".
             for (BasicBlock* bbInDomFront : blockIDF)
@@ -784,8 +791,8 @@ void SsaBuilder::AddMemoryDefToEHSuccessorPhis(MemoryKind memoryKind, BasicBlock
 {
     assert(block->HasPotentialEHSuccs(m_pCompiler));
 
-    // Don't do anything for a compiler-inserted BBJ_ALWAYS that is a "leave helper".
-    if (block->HasFlag(BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
+    // Don't do anything for a compiler-inserted BBJ_CALLFINALLYRET that is a "leave helper".
+    if (block->isBBCallFinallyPairTail())
     {
         return;
     }
@@ -1216,7 +1223,7 @@ void SsaBuilder::RenameVariables()
     // memory ssa numbers to have some initial value.
     for (BasicBlock* const block : m_pCompiler->Blocks())
     {
-        if (block->bbIDom == nullptr)
+        if (!m_pCompiler->m_dfsTree->Contains(block))
         {
             for (MemoryKind memoryKind : allMemoryKinds())
             {
@@ -1226,14 +1233,14 @@ void SsaBuilder::RenameVariables()
         }
     }
 
-    class SsaRenameDomTreeVisitor : public NewDomTreeVisitor<SsaRenameDomTreeVisitor>
+    class SsaRenameDomTreeVisitor : public DomTreeVisitor<SsaRenameDomTreeVisitor>
     {
         SsaBuilder*     m_builder;
         SsaRenameState* m_renameStack;
 
     public:
         SsaRenameDomTreeVisitor(Compiler* compiler, SsaBuilder* builder, SsaRenameState* renameStack)
-            : NewDomTreeVisitor(compiler), m_builder(builder), m_renameStack(renameStack)
+            : DomTreeVisitor(compiler), m_builder(builder), m_renameStack(renameStack)
         {
         }
 
@@ -1251,7 +1258,7 @@ void SsaBuilder::RenameVariables()
     };
 
     SsaRenameDomTreeVisitor visitor(m_pCompiler, this, &m_renameStack);
-    visitor.WalkTree(m_pCompiler->fgSsaDomTree);
+    visitor.WalkTree(m_pCompiler->m_domTree);
 }
 
 //------------------------------------------------------------------------
@@ -1284,29 +1291,10 @@ void SsaBuilder::RenameVariables()
 //
 void SsaBuilder::Build()
 {
-#ifdef DEBUG
-    if (m_pCompiler->verbose)
-    {
-        printf("*************** In SsaBuilder::Build()\n");
-    }
-#endif
+    JITDUMP("*************** In SsaBuilder::Build()\n");
 
-    // Ensure that there's a first block outside a try, so that the dominator tree has a unique root.
-    SetupBBRoot();
-
-    // Just to keep block no. & index same add 1.
-    int blockCount = m_pCompiler->fgBBNumMax + 1;
-
-    JITDUMP("[SsaBuilder] Max block count is %d.\n", blockCount);
-
-    // Allocate the postOrder array for the graph.
-
-    m_visitedTraits = BitVecTraits(blockCount, m_pCompiler);
+    m_visitedTraits = m_pCompiler->m_dfsTree->PostOrderTraits();
     m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
-
-    m_pCompiler->m_dfsTree    = m_pCompiler->fgComputeDfs();
-    m_pCompiler->fgSsaDomTree = FlowGraphDominatorTree::Build(m_pCompiler->m_dfsTree);
-    EndPhase(PHASE_BUILD_SSA_DOMS);
 
     // Compute liveness on the graph.
     m_pCompiler->fgLocalVarLiveness();
@@ -1329,49 +1317,6 @@ void SsaBuilder::Build()
     EndPhase(PHASE_BUILD_SSA_RENAME);
 
     JITDUMPEXEC(m_pCompiler->DumpSsaSummary());
-}
-
-void SsaBuilder::SetupBBRoot()
-{
-    assert(m_pCompiler->fgPredsComputed);
-
-    // Allocate a bbroot, if necessary.
-    // We need a unique block to be the root of the dominator tree.
-    // This can be violated if the first block is in a try, or if it is the first block of
-    // a loop (which would necessarily be an infinite loop) -- i.e., it has a predecessor.
-
-    // If neither condition holds, no reason to make a new block.
-    if (!m_pCompiler->fgFirstBB->hasTryIndex() && m_pCompiler->fgFirstBB->bbPreds == nullptr)
-    {
-        return;
-    }
-
-    BasicBlock* bbRoot = BasicBlock::New(m_pCompiler, BBJ_ALWAYS, m_pCompiler->fgFirstBB);
-    bbRoot->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
-
-    // May need to fix up preds list, so remember the old first block.
-    BasicBlock* oldFirst = m_pCompiler->fgFirstBB;
-
-    // Copy the liveness information from the first basic block.
-    if (m_pCompiler->fgLocalVarLivenessDone)
-    {
-        VarSetOps::Assign(m_pCompiler, bbRoot->bbLiveIn, oldFirst->bbLiveIn);
-        VarSetOps::Assign(m_pCompiler, bbRoot->bbLiveOut, oldFirst->bbLiveIn);
-    }
-
-    // Copy the bbWeight.  (This is technically wrong, if the first block is a loop head, but
-    // it shouldn't matter...)
-    bbRoot->inheritWeight(oldFirst);
-
-    // There's an artificial incoming reference count for the first BB.  We're about to make it no longer
-    // the first BB, so decrement that.
-    assert(oldFirst->bbRefs > 0);
-    oldFirst->bbRefs--;
-
-    m_pCompiler->fgInsertBBbefore(m_pCompiler->fgFirstBB, bbRoot);
-
-    assert(m_pCompiler->fgFirstBB == bbRoot);
-    m_pCompiler->fgAddRefPred(oldFirst, bbRoot);
 }
 
 #ifdef DEBUG

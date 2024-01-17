@@ -659,7 +659,9 @@ void emitter::emitIns_R_R(
 void emitter::emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt /* = INS_OPTS_NONE */)
 {
-    code_t code = emitInsCode(ins);
+    code_t     code = emitInsCode(ins);
+    instrDesc* id   = emitNewInstr(attr);
+
     if ((INS_addi <= ins && INS_srai >= ins) || (INS_addiw <= ins && INS_sraiw >= ins) ||
         (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
         INS_flw == ins)
@@ -688,6 +690,8 @@ void emitter::emitIns_R_R_I(
         code |= ((imm >> 1) & 0xf) << 8;
         code |= ((imm >> 5) & 0x3f) << 25;
         code |= ((imm >> 12) & 0x1) << 31;
+        // TODO-RISCV64: Move jump logic to emitIns_J
+        id->idAddr()->iiaSetInstrCount(imm / sizeof(code_t));
     }
     else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
     {
@@ -702,7 +706,6 @@ void emitter::emitIns_R_R_I(
     {
         NYI_RISCV64("illegal ins within emitIns_R_R_I!");
     }
-    instrDesc* id = emitNewInstr(attr);
 
     id->idIns(ins);
     id->idReg1(reg1);
@@ -1936,11 +1939,8 @@ AGAIN:
             assert(jmpDist >= 0); // Forward jump
             assert(!(jmpDist & 0x3));
 
-            if (isLinkingEnd & 0x2)
-            {
-                jmp->idAddr()->iiaSetJmpOffset(jmpDist);
-            }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+            if (!(isLinkingEnd & 0x2) && (extra > 0) &&
+                (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
                 // transform forward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
@@ -2013,11 +2013,8 @@ AGAIN:
             assert(jmpDist >= 0); // Backward jump
             assert(!(jmpDist & 0x3));
 
-            if (isLinkingEnd & 0x2)
-            {
-                jmp->idAddr()->iiaSetJmpOffset(-jmpDist); // Backward jump is negative!
-            }
-            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
+            if (!(isLinkingEnd & 0x2) && (extra > 0) &&
+                (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
             {
                 // transform backward INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
                 instruction ins = jmp->idIns();
@@ -2118,17 +2115,75 @@ AGAIN:
  *  Emit a 32-bit RISCV64 instruction
  */
 
-/*static*/ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
+unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 {
     assert(sizeof(code_t) == 4);
-    BYTE* dstRW       = dst + writeableOffset;
-    *((code_t*)dstRW) = code;
-
+    memcpy(dst + writeableOffset, &code, sizeof(code_t));
     return sizeof(code_t);
 }
 
+void emitter::emitOutputInstrJumpDistanceHelper(const insGroup* ig,
+                                                instrDescJmp*   jmp,
+                                                UNATIVE_OFFSET& dstOffs,
+                                                const BYTE*&    dstAddr) const
+{
+    // TODO-RISCV64-BUG: Currently the iiaEncodedInstrCount is not set by the riscv impl making distinguishing the jump
+    // to label and an instruction-count based jumps impossible
+    if (jmp->idAddr()->iiaHasInstrCount())
+    {
+        assert(ig != nullptr);
+        int      instrCount = jmp->idAddr()->iiaGetInstrCount();
+        unsigned insNum     = emitFindInsNum(ig, jmp);
+        if (instrCount < 0)
+        {
+            // Backward branches using instruction count must be within the same instruction group.
+            assert(insNum + 1 >= static_cast<unsigned>(-instrCount));
+        }
+        dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
+        dstAddr = emitOffsetToPtr(dstOffs);
+        return;
+    }
+    dstOffs = jmp->idAddr()->iiaIGlabel->igOffs;
+    dstAddr = emitOffsetToPtr(dstOffs);
+}
+
+ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, const insGroup* ig, instrDescJmp* jmp)
+{
+    UNATIVE_OFFSET srcOffs = emitCurCodeOffs(src);
+    const BYTE*    srcAddr = emitOffsetToPtr(srcOffs);
+
+    assert(!jmp->idAddr()->iiaIsJitDataOffset()); // not used by riscv64 impl
+
+    UNATIVE_OFFSET dstOffs{};
+    const BYTE*    dstAddr = nullptr;
+    emitOutputInstrJumpDistanceHelper(ig, jmp, dstOffs, dstAddr);
+
+    ssize_t distVal = static_cast<ssize_t>(dstAddr - srcAddr);
+
+    if (dstOffs > srcOffs)
+    {
+        // This is a forward jump
+
+        emitFwdJumps = true;
+
+        // The target offset will be closer by at least 'emitOffsAdj', but only if this
+        // jump doesn't cross the hot-cold boundary.
+        if (!emitJumpCrossHotColdBoundary(srcOffs, dstOffs))
+        {
+            distVal -= emitOffsAdj;
+            dstOffs -= emitOffsAdj;
+        }
+        jmp->idjOffs = dstOffs;
+        if (jmp->idjOffs != dstOffs)
+        {
+            IMPL_LIMITATION("Method is too large");
+        }
+    }
+    return distVal;
+}
+
 /*****************************************************************************
-*
+ *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
  *  is the instruction group that contains the instruction. Updates '*dp' to
@@ -2138,19 +2193,14 @@ AGAIN:
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    BYTE*       dstRW  = *dp + writeableOffset;
-    BYTE*       dstRW2 = dstRW + 4; // addr for updating gc info if needed.
-    code_t      code   = 0;
-    instruction ins;
-    size_t      sz; // = emitSizeOfInsDsc(id);
-
-#ifdef DEBUG
-#if DUMP_GC_TABLES
-    bool dspOffs = emitComp->opts.dspGCtbls;
-#else
-    bool dspOffs = !emitComp->opts.disDiffable;
-#endif
-#endif // DEBUG
+    BYTE* const       dst    = *dp;
+    BYTE*             dstRW  = *dp + writeableOffset;
+    BYTE*             dstRW2 = dstRW + 4; // addr for updating gc info if needed.
+    const BYTE* const odstRW = dstRW;
+    const BYTE* const odst   = *dp;
+    code_t            code   = 0;
+    instruction       ins;
+    size_t            sz; // = emitSizeOfInsDsc(id);
 
     assert(REG_NA == (int)REG_NA);
 
@@ -2525,7 +2575,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             regNumber reg1 = id->idReg1();
             {
-                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset();
+                ssize_t imm = emitOutputInstrJumpDistance(dstRW, dst, ig, jmp);
                 imm -= 4;
 
                 assert((imm & 0x3) == 0);
@@ -2694,7 +2744,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         break;
         case INS_OPTS_J_cond:
         {
-            ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
+            ssize_t imm = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
             assert(isValidSimm13(imm));
             assert(!(imm & 1));
 
@@ -2715,7 +2765,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_J:
             // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
             {
-                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
+                ssize_t imm = emitOutputInstrJumpDistance(dstRW, dst, ig, static_cast<instrDescJmp*>(id));
                 assert((imm & 3) == 0);
 
                 ins  = id->idIns();
@@ -2879,12 +2929,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     if (emitComp->opts.disAsm || emitComp->verbose)
     {
-        code_t* cp = (code_t*)(*dp + writeableOffset);
-        while ((BYTE*)cp != dstRW)
-        {
-            emitDisInsName(*cp, (BYTE*)cp, id);
-            cp++;
-        }
+#if DUMP_GC_TABLES
+        bool dspOffs = emitComp->opts.dspGCtbls;
+#else  // !DUMP_GC_TABLES
+        bool dspOffs = !emitComp->opts.disDiffable;
+#endif // !DUMP_GC_TABLES
+        emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dstRW - odstRW), ig);
     }
 
     if (emitComp->compDebugBreak)
@@ -2896,7 +2946,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(!"JitBreakEmitOutputInstr reached");
         }
     }
-#endif
+#else  // !DEBUG
+    if (emitComp->opts.disAsm)
+    {
+        emitDispIns(id, false, false, true, emitCurCodeOffs(odst), *dp, (dstRW - odstRW), ig);
+    }
+#endif // !DEBUG
 
     /* All instructions are expected to generate code */
 
@@ -2907,10 +2962,99 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     return sz;
 }
 
-/*****************************************************************************/
-/*****************************************************************************/
+bool emitter::emitDispBranchInstrType(unsigned opcode2) const
+{
+    switch (opcode2)
+    {
+        case 0:
+            printf("beq ");
+            break;
+        case 1:
+            printf("bne ");
+            break;
+        case 4:
+            printf("blt ");
+            break;
+        case 5:
+            printf("bge ");
+            break;
+        case 6:
+            printf("bltu");
+            break;
+        case 7:
+            printf("bgeu");
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
 
-#ifdef DEBUG
+void emitter::emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const
+{
+    int instrCount = id->idAddr()->iiaGetInstrCount();
+    if (ig == nullptr)
+    {
+        printf("pc%+d instructions", instrCount);
+        return;
+    }
+    unsigned insNum = emitFindInsNum(ig, id);
+
+    if (ig->igInsCnt < insNum + 1 + instrCount)
+    {
+        // TODO-RISCV64-BUG: This should be a labeled offset but does not contain an iiaIGlabel
+        printf("pc%+d instructions", instrCount);
+        return;
+    }
+
+    UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
+    UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
+    ssize_t        relOffs = static_cast<ssize_t>(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
+    printf("pc%+d (%d instructions)", static_cast<int>(relOffs), instrCount);
+}
+
+void emitter::emitDispBranchLabel(const instrDesc* id) const
+{
+    if (id->idIsBound())
+    {
+        return emitPrintLabel(id->idAddr()->iiaIGlabel);
+    }
+    printf("L_M%03u_", FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
+}
+
+bool emitter::emitDispBranch(unsigned         opcode2,
+                             const char*      register1Name,
+                             const char*      register2Name,
+                             const instrDesc* id,
+                             const insGroup*  ig) const
+{
+    if (!emitDispBranchInstrType(opcode2))
+    {
+        return false;
+    }
+    printf("           %s, %s, ", register1Name, register2Name);
+    assert(id != nullptr);
+    if (id->idAddr()->iiaHasInstrCount())
+    {
+        // Branch is jumping to some non-labeled offset
+        emitDispBranchOffset(id, ig);
+    }
+    else
+    {
+        // Branch is jumping to the labeled offset
+        emitDispBranchLabel(id);
+    }
+    printf("\n");
+    return true;
+}
+
+void emitter::emitDispIllegalInstruction(code_t instructionCode)
+{
+    printf("RISCV64 illegal instruction: 0x%08X\n", instructionCode);
+}
+
+/*****************************************************************************/
+/*****************************************************************************/
 
 // clang-format off
 static const char* const RegNames[] =
@@ -2922,39 +3066,34 @@ static const char* const RegNames[] =
 
 //----------------------------------------------------------------------------------------
 // Disassemble the given instruction.
-// The `emitter::emitDisInsName` is focused on the most important for debugging.
+// The `emitter::emitDispInsName` is focused on the most important for debugging.
 // So it implemented as far as simply and independently which is very useful for
 // porting easily to the release mode.
 //
 // Arguments:
 //    code - The instruction's encoding.
 //    addr - The address of the code.
+//    doffs - Flag informing whether the instruction's offset should be displayed.
+//    insOffset - The instruction's offset.
 //    id   - The instrDesc of the code if needed.
+//    ig   - The insGroup of the code if needed
 //
 // Note:
 //    The length of the instruction's name include aligned space is 15.
 //
 
-void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
+void emitter::emitDispInsName(
+    code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig)
 {
     const BYTE* insAdr = addr - writeableOffset;
 
     unsigned int opcode = code & 0x7f;
     assert((opcode & 0x3) == 0x3);
 
-    bool disOpcode = !emitComp->opts.disDiffable;
-    bool disAddr   = emitComp->opts.disAddr;
-    if (disAddr)
-    {
-        printf("  0x%llx", insAdr);
-    }
+    emitDispInsAddr(insAdr);
+    emitDispInsOffs(insOffset, doffs);
 
-    printf("  ");
-
-    if (disOpcode)
-    {
-        printf("%08X  ", code);
-    }
+    printf("      ");
 
     switch (opcode)
     {
@@ -3259,47 +3398,16 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
             const char*  rs2     = RegNames[(code >> 20) & 0x1f];
-            int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
-                         (((code >> 8) & 0xf) << 1);
-            if (offset & 0x800)
+            // int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
+            //              (((code >> 8) & 0xf) << 1);
+            // if (offset & 0x800)
+            // {
+            //     offset |= 0xfffff000;
+            // }
+            if (!emitDispBranch(opcode2, rs1, rs2, id, ig))
             {
-                offset |= 0xfffff000;
+                emitDispIllegalInstruction(code);
             }
-            switch (opcode2)
-            {
-                case 0:
-                    printf("beq ");
-                    break;
-                case 1:
-                    printf("bne ");
-                    break;
-                case 4:
-                    printf("blt ");
-                    break;
-                case 5:
-                    printf("bge ");
-                    break;
-                case 6:
-                    printf("bltu");
-                    break;
-                case 7:
-                    printf("bgeu");
-                    break;
-                default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    return;
-            }
-            static const int MAX_LEN = 32;
-
-            int len = printf("           %s, %s, %d", rs1, rs2, offset);
-            if (len <= 0 || len > MAX_LEN)
-            {
-                printf("\n");
-                return;
-            }
-            if (!emitComp->opts.disDiffable)
-                printf("%*s;; offset=0x%04X", MAX_LEN - len, "", emitCurCodeOffs(insAdr) + offset);
-            printf("\n");
             return;
         }
         case 0x03:
@@ -3915,14 +4023,37 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
+void emitter::emitDispInsInstrNum(const instrDesc* id) const
+{
+#ifdef DEBUG
+    if (!emitComp->verbose)
+        return;
+
+    printf("IN%04x: ", id->idDebugOnlyInfo()->idNum);
+#endif // DEBUG
+}
+
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    // RISCV64 implements this similar by `emitter::emitDisInsName`.
-    // For RISCV64 maybe the `emitDispIns` is over complicate.
-    // The `emitter::emitDisInsName` is focused on the most important for debugging.
-    NYI_RISCV64("RISCV64 not used the emitter::emitDispIns");
+    if (pCode == nullptr)
+        return;
+
+    emitDispInsInstrNum(id);
+
+    const BYTE* instr = pCode + writeableOffset;
+    size_t      instrSize;
+    for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
+    {
+        // TODO-RISCV64: support different size instructions
+        instrSize = sizeof(code_t);
+        code_t instruction;
+        memcpy(&instruction, instr, instrSize);
+        emitDispInsName(instruction, instr, doffs, offset, id, ig);
+    }
 }
+
+#ifdef DEBUG
 
 /*****************************************************************************
  *

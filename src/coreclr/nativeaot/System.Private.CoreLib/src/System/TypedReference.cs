@@ -51,7 +51,7 @@ namespace System
         {
             RuntimeTypeHandle typeHandle = value._typeHandle;
             if (typeHandle.IsNull)
-                throw new ArgumentNullException(); // For compatibility.
+                ThrowHelper.ThrowArgumentException_ArgumentNull_TypedRefType();
 
             EETypePtr eeType = typeHandle.ToEETypePtr();
             if (eeType.IsValueType)

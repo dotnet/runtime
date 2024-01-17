@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
@@ -628,13 +629,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			case Code.Ldc_R4:
 				if (instr.Operand is float fvalue)
-					return $"{instr.OpCode.ToString ()} {fvalue.ToString ()}";
+					return $"{instr.OpCode.ToString ()} {fvalue.ToString (CultureInfo.InvariantCulture)}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
 			case Code.Ldc_R8:
 				if (instr.Operand is double dvalue)
-					return $"{instr.OpCode.ToString ()} {dvalue.ToString ()}";
+					return $"{instr.OpCode.ToString ()} {dvalue.ToString (CultureInfo.InvariantCulture)}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 

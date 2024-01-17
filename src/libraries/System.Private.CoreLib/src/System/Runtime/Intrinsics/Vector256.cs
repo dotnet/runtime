@@ -1755,6 +1755,70 @@ namespace System.Runtime.Intrinsics
         internal static Vector256<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
             LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
 
+        /// <inheritdoc cref="Vector128.Log(Vector128{double})" />
+        public static Vector256<double> Log(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogDouble<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log(vector._lower),
+                    Vector128.Log(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log(Vector128{float})" />
+        public static Vector256<float> Log(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogSingle<Vector256<float>, Vector256<int>, Vector256<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log(vector._lower),
+                    Vector128.Log(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log2(Vector128{double})" />
+        public static Vector256<double> Log2(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Double<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log2(vector._lower),
+                    Vector128.Log2(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log2(Vector128{float})" />
+        public static Vector256<float> Log2(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Single<Vector256<float>, Vector256<int>, Vector256<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log2(vector._lower),
+                    Vector128.Log2(vector._upper)
+                );
+            }
+        }
+
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>

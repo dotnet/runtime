@@ -57,7 +57,7 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 
 // clang-format off
 
-enum BBjumpKinds : BYTE
+enum BBKinds : BYTE
 {
     BBJ_EHFINALLYRET,// block ends with 'endfinally' (for finally)
     BBJ_EHFAULTRET,  // block ends with 'endfinally' (IL alias for 'endfault') (for fault)
@@ -68,6 +68,7 @@ enum BBjumpKinds : BYTE
     BBJ_ALWAYS,      // block always jumps to the target
     BBJ_LEAVE,       // block always jumps to the target, maybe out of guarded region. Only used until importing.
     BBJ_CALLFINALLY, // block always calls the target finally
+    BBJ_CALLFINALLYRET, // block targets the return from finally, aka "finally continuation". Always paired with BBJ_CALLFINALLY.
     BBJ_COND,        // block conditionally jumps to the target
     BBJ_SWITCH,      // block ends with a switch statement
 
@@ -75,7 +76,7 @@ enum BBjumpKinds : BYTE
 };
 
 #ifdef DEBUG
-const char* const BBjumpKindNames[] = {
+const char* const bbKindNames[] = {
     "BBJ_EHFINALLYRET",
     "BBJ_EHFAULTRET",
     "BBJ_EHFILTERRET",
@@ -85,6 +86,7 @@ const char* const BBjumpKindNames[] = {
     "BBJ_ALWAYS",
     "BBJ_LEAVE",
     "BBJ_CALLFINALLY",
+    "BBJ_CALLFINALLYRET",
     "BBJ_COND",
     "BBJ_SWITCH",
     "BBJ_COUNT"
@@ -396,24 +398,19 @@ enum BasicBlockFlags : unsigned __int64
     BBF_LOOP_ALIGN           = MAKE_BBFLAG(16), // Block is lexically the first block in a loop we intend to align.
     BBF_HAS_ALIGN            = MAKE_BBFLAG(17), // BB ends with 'align' instruction
     BBF_HAS_JMP              = MAKE_BBFLAG(18), // BB executes a JMP instruction (instead of return)
-    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(19), // BB has a GC safe point (a call).  More abstractly, BB does not require a
-                                                // (further) poll -- this may be because this BB has a call, or, in some
-                                                // cases, because the BB occurs in a loop, and we've determined that all
-                                                // paths in the loop body leading to BB include a call.
+    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(19), // BB has a GC safe point (e.g. a call)
     BBF_HAS_IDX_LEN          = MAKE_BBFLAG(20), // BB contains simple index or length expressions on an SD array local var.
     BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(21), // BB contains simple index, length, or lower bound expressions on an MD array local var.
     BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(22), // Block has a multi-dimensional array reference
     BBF_HAS_NEWOBJ           = MAKE_BBFLAG(23), // BB contains 'new' of an object type.
 
     BBF_RETLESS_CALL                   = MAKE_BBFLAG(24), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
-                                                          // BBJ_ALWAYS); see isBBCallAlwaysPair().
+                                                          // BBJ_CALLFINALLYRET); see isBBCallFinallyPair().
     BBF_LOOP_PREHEADER                 = MAKE_BBFLAG(25), // BB is a loop preheader block
     BBF_COLD                           = MAKE_BBFLAG(26), // BB is cold
     BBF_PROF_WEIGHT                    = MAKE_BBFLAG(27), // BB weight is computed from profile data
     BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(28), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
-                                                          // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
-                                                          // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
-                                                          // finally.
+                                                          // as BBJ_ALWAYS. Used on x86 for the final step block out of a finally.
     BBF_HAS_CALL                       = MAKE_BBFLAG(29), // BB contains a call
     BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(30), // Block is dominated by exceptional entry.
     BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(31), // BB is surrounded by a backward jump/switch arc
@@ -430,6 +427,8 @@ enum BasicBlockFlags : unsigned __int64
                                                           // and should be treated as if it falls through.
                                                           // This is just to reduce diffs from removing BBJ_NONE.
                                                           // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
+    BBF_OLD_LOOP_HEADER_QUIRK          = MAKE_BBFLAG(42), // Block was the header ('entry') of a loop recognized by old loop finding
+    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(43), // Block has a node that needs a value probing
 
     // The following are sets of flags.
 
@@ -440,7 +439,7 @@ enum BasicBlockFlags : unsigned __int64
     // Flags to update when two blocks are compacted
 
     BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_PREHEADER,
+                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_PREHEADER | BBF_OLD_LOOP_HEADER_QUIRK,
 
     // Flags a block should not have had before it is split.
 
@@ -459,7 +458,7 @@ enum BasicBlockFlags : unsigned __int64
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_NONE_QUIRK,
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL | BBF_NONE_QUIRK,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
     // limit processing of a block if the code in question doesn't exist. This is conservative; we might not
@@ -522,34 +521,39 @@ private:
     BasicBlock* bbNext; // next BB in ascending PC offset order
     BasicBlock* bbPrev;
 
-    BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
+    BBKinds bbKind; // jump (if any) at the end of this block
 
     /* The following union describes the jump target(s) of this block */
     union {
-        unsigned    bbJumpOffs; // PC offset (temporary only)
-        BasicBlock* bbJumpDest; // basic block
-        BBswtDesc*  bbJumpSwt;  // switch descriptor
-        BBehfDesc*  bbJumpEhf;  // BBJ_EHFINALLYRET descriptor
+        unsigned    bbTargetOffs; // PC offset (temporary only)
+        BasicBlock* bbTarget;     // basic block
+        BasicBlock* bbTrueTarget; // BBJ_COND jump target when its condition is true (alias for bbTarget)
+        BBswtDesc*  bbSwtTargets; // switch descriptor
+        BBehfDesc*  bbEhfTargets; // BBJ_EHFINALLYRET descriptor
     };
+
+    // Points to the successor of a BBJ_COND block if bbTrueTarget is not taken
+    BasicBlock* bbFalseTarget;
 
 public:
     static BasicBlock* New(Compiler* compiler);
-    static BasicBlock* New(Compiler* compiler, BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
-    static BasicBlock* New(Compiler* compiler, BBswtDesc* jumpSwt);
-    static BasicBlock* New(Compiler* compiler, BBjumpKinds jumpKind, unsigned jumpOffs);
+    static BasicBlock* New(Compiler* compiler, BBKinds kind, BasicBlock* target = nullptr);
+    static BasicBlock* New(Compiler* compiler, BBehfDesc* ehfTargets);
+    static BasicBlock* New(Compiler* compiler, BBswtDesc* swtTargets);
+    static BasicBlock* New(Compiler* compiler, BBKinds kind, unsigned targetOffs);
 
-    BBjumpKinds GetJumpKind() const
+    BBKinds GetKind() const
     {
-        return bbJumpKind;
+        return bbKind;
     }
 
-    void SetJumpKind(BBjumpKinds jumpKind)
+    void SetKind(BBKinds kind)
     {
         // If this block's jump kind requires a target, ensure it is already set
-        assert(!HasJumpDest() || HasInitializedJumpDest());
-        bbJumpKind = jumpKind;
+        assert(!HasTarget() || HasInitializedTarget());
+        bbKind = kind;
         // If new jump kind requires a target, ensure a target is already set
-        assert(!HasJumpDest() || HasInitializedJumpDest());
+        assert(!HasTarget() || HasInitializedTarget());
     }
 
     BasicBlock* Prev() const
@@ -559,11 +563,14 @@ public:
 
     void SetPrev(BasicBlock* prev)
     {
-        bbPrev = prev;
-        if (prev)
-        {
-            prev->bbNext = this;
-        }
+        assert(prev != nullptr);
+        bbPrev       = prev;
+        prev->bbNext = this;
+    }
+
+    void SetPrevToNull()
+    {
+        bbPrev = nullptr;
     }
 
     BasicBlock* Next() const
@@ -573,11 +580,14 @@ public:
 
     void SetNext(BasicBlock* next)
     {
-        bbNext = next;
-        if (next)
-        {
-            next->bbPrev = this;
-        }
+        assert(next != nullptr);
+        bbNext       = next;
+        next->bbPrev = this;
+    }
+
+    void SetNextToNull()
+    {
+        bbNext = nullptr;
     }
 
     bool IsFirst() const
@@ -604,100 +614,176 @@ public:
 
     bool IsFirstColdBlock(Compiler* compiler) const;
 
-    bool CanRemoveJumpToNext(Compiler* compiler);
+    bool CanRemoveJumpToNext(Compiler* compiler) const;
 
-    unsigned GetJumpOffs() const
+    bool CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const;
+
+    unsigned GetTargetOffs() const
     {
-        return bbJumpOffs;
+        return bbTargetOffs;
     }
 
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, unsigned jumpOffs)
+    void SetKindAndTarget(BBKinds kind, unsigned targetOffs)
     {
-        bbJumpKind = jumpKind;
-        bbJumpOffs = jumpOffs;
+        bbKind       = kind;
+        bbTargetOffs = targetOffs;
         assert(KindIs(BBJ_ALWAYS, BBJ_COND, BBJ_LEAVE));
     }
 
-    bool HasJumpDest() const
+    bool HasTarget() const
     {
-        // These block types should always have bbJumpDest set
-        return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_LEAVE);
+        // These block types should always have bbTarget set
+        return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_CALLFINALLYRET, BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_LEAVE);
     }
 
-    BasicBlock* GetJumpDest() const
+    BasicBlock* GetTarget() const
     {
-        // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
-        assert(!HasJumpDest() || HasInitializedJumpDest());
-        return bbJumpDest;
+        // Only block kinds that use `bbTarget` can access it, and it must be non-null.
+        assert(HasInitializedTarget());
+        return bbTarget;
     }
 
-    void SetJumpDest(BasicBlock* jumpDest)
+    void SetTarget(BasicBlock* target)
     {
-        // SetJumpKindAndTarget() nulls jumpDest for non-jump kinds,
-        // so don't use SetJumpDest() to null bbJumpDest without updating bbJumpKind.
-        bbJumpDest = jumpDest;
-        assert(!HasJumpDest() || HasInitializedJumpDest());
+        // SetKindAndTarget() nulls target for non-jump kinds,
+        // so don't use SetTarget() to null bbTarget without updating bbKind.
+        bbTarget = target;
+        assert(HasInitializedTarget());
     }
 
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr)
+    BasicBlock* GetTrueTarget() const
     {
-        bbJumpKind = jumpKind;
-        bbJumpDest = jumpDest;
-
-        // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
-        assert(!HasJumpDest() || HasInitializedJumpDest());
+        assert(KindIs(BBJ_COND));
+        assert(bbTrueTarget != nullptr);
+        return bbTrueTarget;
     }
 
-    bool HasInitializedJumpDest() const
+    void SetTrueTarget(BasicBlock* target)
     {
-        assert(HasJumpDest());
-        return (bbJumpDest != nullptr);
+        assert(KindIs(BBJ_COND));
+        assert(target != nullptr);
+        bbTrueTarget = target;
     }
 
-    bool HasJumpTo(const BasicBlock* jumpDest) const
+    bool TrueTargetIs(const BasicBlock* target) const
     {
-        assert(HasInitializedJumpDest());
-        return (bbJumpDest == jumpDest);
+        assert(KindIs(BBJ_COND));
+        assert(bbTrueTarget != nullptr);
+        return (bbTrueTarget == target);
+    }
+
+    BasicBlock* GetFalseTarget() const
+    {
+        assert(KindIs(BBJ_COND));
+
+        // So long as bbFalseTarget tracks bbNext in SetNext(), it is possible for bbFalseTarget to be null
+        // if this block is unlinked from the block list.
+        // So check bbNext before triggering the assert if bbFalseTarget is null.
+        // TODO-NoFallThrough: Remove IsLast() check once bbFalseTarget isn't hard-coded to bbNext
+        assert((bbFalseTarget != nullptr) || IsLast());
+        return bbFalseTarget;
+    }
+
+    void SetFalseTarget(BasicBlock* target)
+    {
+        assert(KindIs(BBJ_COND));
+        assert(target != nullptr);
+        bbFalseTarget = target;
+    }
+
+    bool FalseTargetIs(const BasicBlock* target) const
+    {
+        assert(KindIs(BBJ_COND));
+        assert(bbFalseTarget != nullptr);
+        return (bbFalseTarget == target);
+    }
+
+    void SetCond(BasicBlock* trueTarget, BasicBlock* falseTarget)
+    {
+        // Switch lowering may temporarily set a block to a BBJ_COND
+        // with a null false target if it is the last block in the list.
+        // This invalid state is eventually fixed, so allow it in the below assert.
+        assert((falseTarget != nullptr) || (falseTarget == bbNext));
+        assert(trueTarget != nullptr);
+        bbKind        = BBJ_COND;
+        bbTrueTarget  = trueTarget;
+        bbFalseTarget = falseTarget;
+    }
+
+    // Set both the block kind and target. This can clear `bbTarget` when setting
+    // block kinds that don't use `bbTarget`.
+    void SetKindAndTarget(BBKinds kind, BasicBlock* target = nullptr)
+    {
+        bbKind   = kind;
+        bbTarget = target;
+
+        // If bbKind indicates this block has a jump, bbTarget cannot be null.
+        // You shouldn't use this to set a BBJ_COND, BBJ_SWITCH, or BBJ_EHFINALLYRET.
+        assert(HasTarget() ? HasInitializedTarget() : (bbTarget == nullptr));
+    }
+
+    bool HasInitializedTarget() const
+    {
+        assert(HasTarget());
+        return (bbTarget != nullptr);
+    }
+
+    bool TargetIs(const BasicBlock* target) const
+    {
+        return (GetTarget() == target);
     }
 
     bool JumpsToNext() const
     {
-        assert(HasInitializedJumpDest());
-        return (bbJumpDest == bbNext);
+        return (GetTarget() == bbNext);
     }
 
-    BBswtDesc* GetJumpSwt() const
+    BBswtDesc* GetSwitchTargets() const
     {
         assert(KindIs(BBJ_SWITCH));
-        assert(bbJumpSwt != nullptr);
-        return bbJumpSwt;
+        assert(bbSwtTargets != nullptr);
+        return bbSwtTargets;
     }
 
-    void SetSwitchKindAndTarget(BBswtDesc* jumpSwt)
+    void SetSwitch(BBswtDesc* swtTarget)
     {
-        assert(jumpSwt != nullptr);
-        bbJumpKind = BBJ_SWITCH;
-        bbJumpSwt  = jumpSwt;
+        assert(swtTarget != nullptr);
+        bbKind       = BBJ_SWITCH;
+        bbSwtTargets = swtTarget;
     }
 
-    BBehfDesc* GetJumpEhf() const
-    {
-        assert(KindIs(BBJ_EHFINALLYRET));
-        return bbJumpEhf;
-    }
-
-    void SetJumpEhf(BBehfDesc* jumpEhf)
+    BBehfDesc* GetEhfTargets() const
     {
         assert(KindIs(BBJ_EHFINALLYRET));
-        bbJumpEhf = jumpEhf;
+        return bbEhfTargets;
     }
 
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BBehfDesc* jumpEhf)
+    void SetEhfTargets(BBehfDesc* ehfTarget)
     {
-        assert(jumpKind == BBJ_EHFINALLYRET);
-        assert(jumpEhf != nullptr);
-        bbJumpKind = jumpKind;
-        bbJumpEhf  = jumpEhf;
+        assert(KindIs(BBJ_EHFINALLYRET));
+        bbEhfTargets = ehfTarget;
+    }
+
+    void SetEhf(BBehfDesc* ehfTarget)
+    {
+        assert(ehfTarget != nullptr);
+        bbKind       = BBJ_EHFINALLYRET;
+        bbEhfTargets = ehfTarget;
+    }
+
+    // BBJ_CALLFINALLYRET uses the `bbTarget` field. However, also treat it specially:
+    // for callers that know they want a continuation, use this function instead of the
+    // general `GetTarget()` to allow asserting on the block kind.
+    BasicBlock* GetFinallyContinuation() const
+    {
+        assert(KindIs(BBJ_CALLFINALLYRET));
+        return bbTarget;
+    }
+
+    void SetFinallyContinuation(BasicBlock* finallyContinuation)
+    {
+        assert(KindIs(BBJ_CALLFINALLYRET));
+        bbTarget = finallyContinuation;
     }
 
 private:
@@ -794,24 +880,22 @@ public:
         return HasFlag(BBF_LOOP_ALIGN);
     }
 
-    void unmarkLoopAlign(Compiler* comp DEBUG_ARG(const char* reason));
-
     bool hasAlign() const
     {
         return HasFlag(BBF_HAS_ALIGN);
     }
 
 #ifdef DEBUG
-    void     dspFlags();               // Print the flags
-    unsigned dspPreds();               // Print the predecessors (bbPreds)
+    void     dspFlags() const;         // Print the flags
+    unsigned dspPreds() const;         // Print the predecessors (bbPreds)
     void dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
                                        // regions are printed: see NumSucc() for details.
-    void dspJumpKind();                // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
+    void dspKind() const;              // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
 
     // Print a simple basic block header for various output, including a list of predecessors and successors.
     void dspBlockHeader(Compiler* compiler, bool showKind = true, bool showFlags = false, bool showPreds = true);
 
-    const char* dspToString(int blockNumPadding = 0);
+    const char* dspToString(int blockNumPadding = 0) const;
 #endif // DEBUG
 
 #define BB_UNITY_WEIGHT 100.0        // how much a normal execute once block weighs
@@ -943,21 +1027,21 @@ public:
 
     bool isValid() const;
 
-    // Returns "true" iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
+    // Returns "true" iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair --
     // a block corresponding to an exit from the try of a try/finally.
-    bool isBBCallAlwaysPair() const;
+    bool isBBCallFinallyPair() const;
 
-    // Returns "true" iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
+    // Returns "true" iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair --
     // a block corresponding to an exit from the try of a try/finally.
-    bool isBBCallAlwaysPairTail() const;
+    bool isBBCallFinallyPairTail() const;
 
-    bool KindIs(BBjumpKinds kind) const
+    bool KindIs(BBKinds kind) const
     {
-        return bbJumpKind == kind;
+        return bbKind == kind;
     }
 
     template <typename... T>
-    bool KindIs(BBjumpKinds kind, T... rest) const
+    bool KindIs(BBKinds kind, T... rest) const
     {
         return KindIs(kind) || KindIs(rest...);
     }
@@ -996,8 +1080,8 @@ public:
     //
     BBSwitchTargetList SwitchTargets() const
     {
-        assert(bbJumpKind == BBJ_SWITCH);
-        return BBSwitchTargetList(bbJumpSwt);
+        assert(bbKind == BBJ_SWITCH);
+        return BBSwitchTargetList(bbSwtTargets);
     }
 
     // EHFinallyRetSuccs: convenience method for enabling range-based `for` iteration over BBJ_EHFINALLYRET block
@@ -1006,8 +1090,8 @@ public:
     //
     BBEhfSuccList EHFinallyRetSuccs() const
     {
-        assert(bbJumpKind == BBJ_EHFINALLYRET);
-        return BBEhfSuccList(bbJumpEhf);
+        assert(bbKind == BBJ_EHFINALLYRET);
+        return BBEhfSuccList(bbEhfTargets);
     }
 
     BasicBlock* GetUniquePred(Compiler* comp) const;
@@ -1209,8 +1293,6 @@ public:
     void ensurePredListOrder(Compiler* compiler);
     void reorderPredList(Compiler* compiler);
 
-    BlockSet bbReach; // Set of all blocks that can reach this one
-
     union {
         BasicBlock* bbIDom;          // Represent the closest dominator to this block (called the Immediate
                                      // Dominator) used to compute the dominance tree.
@@ -1220,9 +1302,8 @@ public:
 
     void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
 
-    unsigned bbPreorderNum;     // the block's  preorder number in the graph (1...fgMaxBBNum]
-    unsigned bbPostorderNum;    // the block's postorder number in the graph (1...fgMaxBBNum]
-    unsigned bbNewPostorderNum; // the block's postorder number in the graph [0...postOrderCount)
+    unsigned bbPreorderNum;  // the block's  preorder number in the graph [0...postOrderCount)
+    unsigned bbPostorderNum; // the block's postorder number in the graph [0...postOrderCount)
 
     IL_OFFSET bbCodeOffs;    // IL offset of the beginning of the block
     IL_OFFSET bbCodeOffsEnd; // IL offset past the end of the block. Thus, the [bbCodeOffs..bbCodeOffsEnd)
@@ -1574,11 +1655,16 @@ public:
         return BBCompilerSuccList(comp, this);
     }
 
-    // Try to clone block state and statements from `from` block to `to` block (which must be new/empty),
-    // optionally replacing uses of local `varNum` with IntCns `varVal`.  Return true if all statements
-    // in the block are cloned successfully, false (with partially-populated `to` block) if one fails.
-    static bool CloneBlockState(
+    // Clone block state and statements from `from` block to `to` block (which must be new/empty),
+    // optionally replacing uses of local `varNum` with IntCns `varVal`.
+    static void CloneBlockState(
         Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum = (unsigned)-1, int varVal = 0);
+
+    // Copy the block kind and targets. The `from` block is untouched.
+    void CopyTarget(Compiler* compiler, const BasicBlock* from);
+
+    // Copy the block kind and take memory ownership of the targets.
+    void TransferTarget(BasicBlock* from);
 
     void MakeLIR(GenTree* firstNode, GenTree* lastNode);
     bool IsLIR() const;
@@ -1828,7 +1914,7 @@ inline BBArrayIterator BBEhfSuccList::end() const
 inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
-    switch (block->bbJumpKind)
+    switch (block->bbKind)
     {
         case BBJ_THROW:
         case BBJ_RETURN:
@@ -1839,28 +1925,29 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             break;
 
         case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            m_succs[0] = block->bbJumpDest;
+            m_succs[0] = block->bbTarget;
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;
 
         case BBJ_COND:
-            m_succs[0] = block->bbNext;
+            m_succs[0] = block->bbFalseTarget;
             m_begin    = &m_succs[0];
 
             // If both fall-through and branch successors are identical, then only include
             // them once in the iteration (this is the same behavior as NumSucc()/GetSucc()).
-            if (block->JumpsToNext())
+            if (block->TrueTargetIs(block->GetFalseTarget()))
             {
                 m_end = &m_succs[1];
             }
             else
             {
-                m_succs[1] = block->bbJumpDest;
+                m_succs[1] = block->bbTrueTarget;
                 m_end      = &m_succs[2];
             }
             break;
@@ -1869,24 +1956,24 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             // We don't use the m_succs in-line data; use the existing successor table in the block.
             // We must tolerate iterating successors early in the system, before EH_FINALLYRET successors have
             // been computed.
-            if (block->GetJumpEhf() == nullptr)
+            if (block->GetEhfTargets() == nullptr)
             {
                 m_begin = nullptr;
                 m_end   = nullptr;
             }
             else
             {
-                m_begin = block->GetJumpEhf()->bbeSuccs;
-                m_end   = block->GetJumpEhf()->bbeSuccs + block->GetJumpEhf()->bbeCount;
+                m_begin = block->GetEhfTargets()->bbeSuccs;
+                m_end   = block->GetEhfTargets()->bbeSuccs + block->GetEhfTargets()->bbeCount;
             }
             break;
 
         case BBJ_SWITCH:
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
-            assert(block->bbJumpSwt != nullptr);
-            assert(block->bbJumpSwt->bbsDstTab != nullptr);
-            m_begin = block->bbJumpSwt->bbsDstTab;
-            m_end   = block->bbJumpSwt->bbsDstTab + block->bbJumpSwt->bbsCount;
+            assert(block->bbSwtTargets != nullptr);
+            assert(block->bbSwtTargets->bbsDstTab != nullptr);
+            m_begin = block->bbSwtTargets->bbsDstTab;
+            m_end   = block->bbSwtTargets->bbsDstTab + block->bbSwtTargets->bbsCount;
             break;
 
         default:
