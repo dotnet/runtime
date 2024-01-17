@@ -1553,3 +1553,263 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     JITDUMP("ReadUtf8: succesfully expanded!\n")
     return true;
 }
+
+PhaseStatus Compiler::fgLateCastExpansion()
+{
+    if (!opts.IsOptimizedWithProfile())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
+    if (preferSize)
+    {
+        // The optimization comes with a codegen size increase
+        JITDUMP("Optimized for size - bail out.\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+    return fgExpandHelper<&Compiler::fgLateCastExpansionForCall>(true);
+}
+
+bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
+{
+    if (!call->IsHelperCall() || !impIsCastHelperMayHaveProfileData(call->GetHelperNum()))
+    {
+        // Not a cast helper we're interested in
+        return false;
+    }
+
+    if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) == 0)
+    {
+        // We either already expanded this cast helper or it's not eligible for expansion
+        return false;
+    }
+
+    JITDUMP("Attempting to expand cast helper call [%06d] in " FMT_BB "...\n", dspTreeID(call), (*pBlock)->bbNum)
+
+    BasicBlock* block = *pBlock;
+
+    // Currently, we only expand "isinst" and only using profile data. The long-term plan is to
+    // move cast expansion logic here from the importer completely.
+    const int               maxLikelyClasses = 8;
+    LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
+    unsigned likelyClassCount = getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount,
+                                                 fgPgoData, (int)call->gtRawILOffset);
+
+    if (likelyClassCount == 0)
+    {
+        JITDUMP("No likely classes found - bail out.\n")
+        return false;
+    }
+
+#ifdef DEBUG
+    // Print all the candidates and their likelihoods to the log
+    for (UINT32 i = 0; i < likelyClassCount; i++)
+    {
+        const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
+        JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+                likelyClasses[i].likelihood);
+    }
+
+    // Optional stress mode to pick a random known class, rather than
+    // the most likely known class.
+    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+    {
+        // Reuse the random inliner's random state.
+        CLRRandom* const random =
+            impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+
+        unsigned index              = static_cast<unsigned>(random->Next(static_cast<int>(likelyClassCount)));
+        likelyClasses[0].handle     = likelyClasses[index].handle;
+        likelyClasses[0].likelihood = 100;
+        likelyClassCount            = 1;
+    }
+#endif
+
+    LikelyClassMethodRecord likelyClass = likelyClasses[0];
+    CORINFO_CLASS_HANDLE    likelyCls   = (CORINFO_CLASS_HANDLE)likelyClass.handle;
+
+    if (likelyCls == NO_CLASS_HANDLE)
+    {
+        // TODO: make null significant, so it could mean our object is likely just null
+        JITDUMP("Likely class is null - bail out.\n")
+        return false;
+    }
+
+    // if there is a dominating candidate with >= 40% likelihood, use it
+    const unsigned likelihoodMinThreshold = 40;
+    if (likelyClass.likelihood < likelihoodMinThreshold)
+    {
+        JITDUMP("Likely class likelihood is below %u%% - bail out.\n", likelihoodMinThreshold)
+        return false;
+    }
+
+    // E.g. "call CORINFO_HELP_ISINSTANCEOFCLASS(class, obj)"
+    GenTree*             clsArg      = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+    CORINFO_CLASS_HANDLE expectedCls = gtGetHelperArgClassHandle(clsArg);
+    if (expectedCls == NO_CLASS_HANDLE)
+    {
+        // clsArg doesn't represent a class handle - bail out
+        // TODO: use VN if it's available (depends on when this phase is executed)
+        JITDUMP("clsArg is not a constant handle - bail out.\n")
+        return false;
+    }
+
+    TypeCompareState castResult = info.compCompHnd->compareTypesForCast(likelyCls, expectedCls);
+    if (castResult != TypeCompareState::Must)
+    {
+        JITDUMP("Likely class can't be casted to the requested class.\n");
+        // TODO: support MustNot - if we know for sure that the likely class always fail the cast
+        // we can optimize it like "if (obj == null || obj->pMT == likelyCls) return null;"
+        return false;
+    }
+
+    if ((info.compCompHnd->getClassAttribs(likelyCls) & (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0)
+    {
+        // Possible scenario: someone changed Foo to be an interface,
+        // but static profile data still report it as a normal likely class.
+        JITDUMP("Likely class is abstract/interface - bail out (stale PGO data?).\n");
+        return false;
+    }
+
+    DebugInfo debugInfo = stmt->GetDebugInfo();
+
+    // Split block right before the call tree (this is a standard pattern we use in helperexpansion.cpp)
+    BasicBlock* prevBb       = block;
+    GenTree**   callUse      = nullptr;
+    Statement*  newFirstStmt = nullptr;
+    block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+    assert(prevBb != nullptr && block != nullptr);
+    *pBlock = block;
+    // Block ops inserted by the split need to be morphed here since we are after morph.
+    // We cannot morph stmt yet as we may modify it further below, and the morphing
+    // could invalidate callUse
+    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+    {
+        fgMorphStmtBlockOps(block, newFirstStmt);
+        newFirstStmt = newFirstStmt->GetNextStmt();
+    }
+
+    // Reload the arguments after the split
+    clsArg          = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+    GenTree* objArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+    // Make sure we don't try to expand this call again
+    call->gtCallMoreFlags &= ~GTF_CALL_M_CAST_CAN_BE_EXPANDED;
+
+    // Grab a temp to store the result.
+    const unsigned tmpNum   = lvaGrabTemp(true DEBUGARG("local for result"));
+    lvaTable[tmpNum].lvType = call->TypeGet();
+    lvaSetClass(tmpNum, expectedCls);
+
+    // Replace the original call with that temp
+    *callUse = gtNewLclvNode(tmpNum, call->TypeGet());
+
+    fgMorphStmtBlockOps(block, stmt);
+    gtUpdateStmtSideEffects(stmt);
+
+    // We're going to expand this "isinst" like this:
+    //
+    // prevBb:                                      [weight: 1.0]
+    //     ...
+    //
+    // nullcheckBb (BBJ_COND):                      [weight: 1.0]
+    //     tmp = obj;
+    //     if (tmp == null) goto block;
+    //
+    // typeCheckBb (BBJ_COND):                      [weight: 0.5]
+    //     if (tmp->pMT == likelyClass) goto block;
+    //
+    // fallbackBb (BBJ_ALWAYS):                     [weight: 0.25]
+    //     tmp = helper_call(cls, tmp);
+    //
+    // block (BBJ_any):                             [weight: 1.0]
+    //     use(tmp);
+    //
+
+    // Block 1: nullcheckBb
+    // TODO: assertionprop should leave us a mark that objArg is never null, so we can omit this check
+    // it's too late to rely on upstream phases to do this for us (unless we do optRepeat).
+    GenTree* objTmp      = gtNewLclVarNode(tmpNum);
+    GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, objTmp, gtNewNull());
+    nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
+    BasicBlock* nullcheckBb =
+        fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp), debugInfo, block, true);
+
+    // Insert statements to spill call's arguments (preserving the evaluation order)
+    const unsigned clsTmp   = lvaGrabTemp(true DEBUGARG("local for cls"));
+    lvaTable[clsTmp].lvType = clsArg->TypeGet();
+    Statement* storeObjStmt = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(tmpNum, objArg), debugInfo);
+    Statement* storeClsStmt = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(clsTmp, clsArg), debugInfo);
+    gtSetStmtInfo(storeObjStmt);
+    gtSetStmtInfo(storeClsStmt);
+    fgSetStmtSeq(storeObjStmt);
+    fgSetStmtSeq(storeClsStmt);
+    gtUpdateStmtSideEffects(storeObjStmt);
+    gtUpdateStmtSideEffects(storeClsStmt);
+
+    // if likelyCls == clsArg, we can just use clsArg that we've just spilled to a temp
+    // it's a sort of manual CSE.
+    GenTree* likelyClsNode = likelyCls == expectedCls ? gtNewLclVarNode(clsTmp) : gtNewIconEmbClsHndNode(likelyCls);
+
+    // Block 2: typeCheckBb
+    GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(objTmp)), likelyClsNode);
+    mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
+    GenTree*    jtrue       = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
+    BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, block, true);
+
+    // Block 3: fallbackBb
+    // NOTE: we spilled call's arguments above, we need to re-create it here (we can't just modify call's args)
+    GenTree* fallbackCall =
+        gtNewHelperCallNode(call->GetHelperNum(), TYP_REF, gtNewLclVarNode(clsTmp), gtNewLclVarNode(tmpNum));
+    fallbackCall = fgMorphCall(fallbackCall->AsCall());
+    gtSetEvalOrder(fallbackCall);
+    BasicBlock* fallbackBb =
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, gtNewTempStore(tmpNum, fallbackCall), debugInfo, block);
+
+    //
+    // Wire up the blocks
+    //
+    prevBb->SetTarget(nullcheckBb);
+    nullcheckBb->SetTrueTarget(fallbackBb);
+    nullcheckBb->SetFalseTarget(typeCheckBb);
+    typeCheckBb->SetTrueTarget(block);
+    typeCheckBb->SetFalseTarget(fallbackBb);
+    fallbackBb->SetTarget(block);
+    fgRemoveRefPred(block, prevBb);
+    fgAddRefPred(nullcheckBb, prevBb);
+    fgAddRefPred(typeCheckBb, nullcheckBb);
+    fgAddRefPred(fallbackBb, nullcheckBb);
+    fgAddRefPred(fallbackBb, typeCheckBb);
+    fgAddRefPred(block, typeCheckBb);
+    fgAddRefPred(block, fallbackBb);
+
+    //
+    // Re-distribute weights
+    // We assume obj is 50%/50% null/not-null, and if it's not null,
+    // it's 50%/50% of being of the expected type. TODO: rely on profile data
+    //
+    nullcheckBb->inheritWeight(prevBb);
+    fallbackBb->inheritWeightPercentage(nullcheckBb, 50);
+    typeCheckBb->inheritWeightPercentage(fallbackBb, 50);
+    block->inheritWeight(prevBb);
+
+    //
+    // Update bbNatLoopNum for all new blocks and validate EH regions
+    //
+    nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+    fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
+    typeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+    assert(BasicBlock::sameEHRegion(prevBb, block));
+    assert(BasicBlock::sameEHRegion(prevBb, nullcheckBb));
+    assert(BasicBlock::sameEHRegion(prevBb, fallbackBb));
+    assert(BasicBlock::sameEHRegion(prevBb, typeCheckBb));
+
+    // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
+    if (fgCanCompactBlocks(prevBb, nullcheckBb))
+    {
+        fgCompactBlocks(prevBb, nullcheckBb);
+    }
+
+    return true;
+}
