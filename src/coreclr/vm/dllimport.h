@@ -55,6 +55,7 @@ public:
             m_pDebugClassName = NULL;
         }
     }
+#endif // _DEBUG
 
     void InitTypeContext(TypeHandle* classInst, DWORD classInstCount, TypeHandle* methInst, DWORD methInstCount)
     {
@@ -62,7 +63,6 @@ public:
 
         m_typeContext = SigTypeContext(Instantiation(classInst, classInstCount), Instantiation(methInst, methInstCount));
     }
-#endif // _DEBUG
 };
 
 //=======================================================================
