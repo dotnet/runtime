@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T">The type.</typeparam>
         /// <returns>The <see cref="ILogger"/> that was created.</returns>
         ILogger<T> CreateLogger<T>() => new Logger<T>(this);
-        
+
         /// <summary>
         /// Adds an <see cref="ILoggerProvider"/> to the logging system.
         /// </summary>
