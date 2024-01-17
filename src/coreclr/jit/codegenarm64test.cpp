@@ -5518,6 +5518,15 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R(INS_sve_ptrue, EA_SCALABLE, REG_P10, INS_OPTS_SCALABLE_S); // PTRUE <PNd>.<T>
     theEmitter->emitIns_R(INS_sve_ptrue, EA_SCALABLE, REG_P11, INS_OPTS_SCALABLE_D); // PTRUE <PNd>.<T>
 
+    // IF_SVE_EA_1A
+    // Note: B is reserved
+    theEmitter->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, REG_V0, 2.0, INS_OPTS_SCALABLE_H);    // FDUP <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, REG_V1, 1.0, INS_OPTS_SCALABLE_S);    // FDUP <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, REG_V2, 2.0, INS_OPTS_SCALABLE_D);    // FDUP <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_F(INS_sve_fmov, EA_SCALABLE, REG_V3, -10.0, INS_OPTS_SCALABLE_H);  // FMOV <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_F(INS_sve_fmov, EA_SCALABLE, REG_V4, -0.125, INS_OPTS_SCALABLE_S); // FMOV <Zd>.<T>, #<const>
+    theEmitter->emitIns_R_F(INS_sve_fmov, EA_SCALABLE, REG_V5, 31.0, INS_OPTS_SCALABLE_D);   // FMOV <Zd>.<T>, #<const>
+
     // IF_SVE_IH_3A
     theEmitter->emitIns_R_R_R_I(INS_sve_ld1d, EA_SCALABLE, REG_V5, REG_P3, REG_R4, 0,
                                 INS_OPTS_SCALABLE_D); // LD1D    {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]

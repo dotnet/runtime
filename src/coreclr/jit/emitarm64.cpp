@@ -1343,9 +1343,16 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_DZ_1A: // ........xx...... .............DDD -- sve_int_pn_ptrue
-            assert(insOptsScalable(id->idInsOpt()));
+            assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isHighPredicateRegister(id->idReg1()));                    // DDD
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            break;
+
+        case IF_SVE_EA_1A: // ........xx...... ...iiiiiiiiddddd -- SVE broadcast floating-point immediate (unpredicated)
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            assert(isValidUimm8(emitGetInsSC(id)));                           // iiiiiiii
             break;
 
         case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
@@ -5910,7 +5917,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
             break;
 
         case INS_sve_ptrue:
-            assert(insOptsScalable(opt));
+            assert(insOptsScalableStandard(opt));
             assert(isHighPredicateRegister(reg));                  // DDD
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
             id->idReg1(reg);
@@ -6267,6 +6274,21 @@ void emitter::emitIns_R_F(
                     fmt = IF_DV_1A;
                 }
             }
+            break;
+
+        case INS_sve_fmov:
+        case INS_sve_fdup:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg));                         // ddddd
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+
+            fpi.immFPIVal = 0;
+            canEncode     = canEncodeFloatImm8(immDbl, &fpi);
+            imm           = fpi.immFPIVal;
+            fmt           = IF_SVE_EA_1A;
+
+            // FMOV is an alias for FDUP, and is always the preferred disassembly.
+            ins = INS_sve_fmov;
             break;
 
         default:
@@ -7113,7 +7135,7 @@ void emitter::emitIns_R_R(instruction     ins,
             break;
 
         case INS_sve_cntp:
-            assert(insOptsScalable(opt));
+            assert(insOptsScalableStandard(opt));
             assert(insScalableOptsWithVectorLength(sopt));         // l
             assert(isGeneralRegister(reg1));                       // ddddd
             assert(isPredicateRegister(reg2));                     // NNNN
@@ -16544,6 +16566,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_EA_1A: // ........xx...... ...iiiiiiiiddddd -- SVE broadcast floating-point immediate (unpredicated)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= ((code_t)emitGetInsSC(id) << 5);                      // iiiiiiii
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_DU_3A: // ........xx.mmmmm ......nnnnn.DDDD -- SVE pointer conflict compare
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1());                     // DDDD
@@ -19206,6 +19236,13 @@ void emitter::emitDispInsHelp(
         // PTRUE <PNd>.<T>
         case IF_SVE_DZ_1A: // ........xx...... .............DDD -- sve_int_pn_ptrue
             emitDispPredicateReg(id->idReg1(), PREDICATE_SIZED, id->idInsOpt(), false); // DDD
+            break;
+
+        // FDUP <Zd>.<T>, #<const>
+        // FMOV <Zd>.<T>, #<const>
+        case IF_SVE_EA_1A: // ........xx...... ...iiiiiiiiddddd -- SVE broadcast floating-point immediate (unpredicated)
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispFloatImm(emitGetInsSC(id));                 // iiiiiiii
             break;
 
         // { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -21885,6 +21922,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SVE_DZ_1A: // ........xx...... .............DDD -- sve_int_pn_ptrue
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_EA_1A: // ........xx...... ...iiiiiiiiddddd -- SVE broadcast floating-point immediate (unpredicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;

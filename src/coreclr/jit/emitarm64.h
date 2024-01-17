@@ -580,7 +580,7 @@ static bool isValidUimm5(ssize_t value)
     return (0 <= value) && (value <= 0x1FLL);
 };
 
-// Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for fMOV).
+// Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for FMOV).
 static bool isValidUimm8(ssize_t value)
 {
     return (0 <= value) && (value <= 0xFFLL);
