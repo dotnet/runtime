@@ -9707,12 +9707,11 @@ calli_end:
 			//   callvirt instance ISomeIface::Method()
 			// TO
 			//   call SomeStruct::Method()
-			guchar* callvirt_ip;
 			guint32 callvirt_proc_token;
 			if (!((cfg->compile_aot || cfg->compile_llvm) && !mono_class_is_def(klass)) && // we cannot devirtualize in AOT when using generics
 				next_ip < end &&
-				(callvirt_ip = il_read_callvirt (next_ip, end, &callvirt_proc_token)) && 
-				ip_in_bb (cfg, cfg->cbb, callvirt_ip) ) {
+				il_read_callvirt (next_ip, end, &callvirt_proc_token) &&
+				ip_in_bb (cfg, cfg->cbb, next_ip) ) {
 				MonoMethod* iface_method;
 				MonoMethodSignature* iface_method_sig;
 
