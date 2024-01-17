@@ -98,6 +98,10 @@
 
     <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
        <TrimmerRootDescriptor Include="$(ExtraFilesPath)**\*.xml" />
+
+       <!-- To recreate the state of feature flags (RuntimeHostConfigurationOption) during app build-time we need to discard the default setting, coming from SDK, and used the values passed in ProxyProjectForAOTOnHelix.props -->
+       <RuntimeHostConfigurationOption Remove="@(_AppleUsedRuntimeHostConfigurationOption)" />
+       <RuntimeHostConfigurationOption Include="@(_AppleUsedRuntimeHostConfigurationOption)" />
     </ItemGroup>
   </Target>
 
