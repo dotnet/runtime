@@ -4441,6 +4441,59 @@ TypeCompareState CEEInfo::compareTypesForCast(
     return result;
 }
 
+// Returns true if hnd1 and hnd2 are guaranteed to represent different types. Returns false if hnd1 and hnd2 may represent the same type.
+static bool AreGuaranteedToRepresentDifferentTypes(TypeHandle hnd1, TypeHandle hnd2)
+{
+    STANDARD_VM_CONTRACT;
+
+    CorElementType et1 = hnd1.GetSignatureCorElementType();
+    CorElementType et2 = hnd2.GetSignatureCorElementType();
+
+    TypeHandle canonHnd = TypeHandle(g_pCanonMethodTableClass);
+    if ((hnd1 == canonHnd) || (hnd2 == canonHnd))
+    {
+        return CorTypeInfo::IsObjRef(et1) != CorTypeInfo::IsObjRef(et2);
+    }
+
+    if (et1 != et2)
+    {
+        return true;
+    }
+
+    switch (et1)
+    {
+    case ELEMENT_TYPE_ARRAY:
+        if (hnd1.GetRank() != hnd2.GetRank())
+            return true;
+    case ELEMENT_TYPE_SZARRAY:
+    case ELEMENT_TYPE_BYREF:
+    case ELEMENT_TYPE_PTR:
+        return AreGuaranteedToRepresentDifferentTypes(hnd1.GetTypeParam(), hnd2.GetTypeParam());
+
+    default:
+        if (!hnd1.IsTypeDesc())
+        {
+            if (!hnd1.AsMethodTable()->HasSameTypeDefAs(hnd2.AsMethodTable()))
+                return true;
+
+            if (hnd1.AsMethodTable()->HasInstantiation())
+            {
+                Instantiation inst1 = hnd1.AsMethodTable()->GetInstantiation();
+                Instantiation inst2 = hnd2.AsMethodTable()->GetInstantiation();
+
+                for (DWORD i = 0; i < inst1.GetNumArgs(); i++)
+                {
+                    if (AreGuaranteedToRepresentDifferentTypes(inst1[i], inst2[i]))
+                        return true;
+                }
+            }
+        }
+        break;
+    }
+
+    return false;
+}
+
 /*********************************************************************/
 // See if types represented by cls1 and cls2 compare equal, not
 // equal, or the comparison needs to be resolved at runtime.
@@ -4466,30 +4519,12 @@ TypeCompareState CEEInfo::compareTypesForEquality(
     {
         result = (hnd1 == hnd2 ? TypeCompareState::Must : TypeCompareState::MustNot);
     }
-    // If either or both types are canonical subtypes, we can sometimes prove inequality.
     else
     {
-        // If either is a value type then the types cannot
-        // be equal unless the type defs are the same.
-        if (hnd1.IsValueType() || hnd2.IsValueType())
+        // If either or both types are canonical subtypes, we can sometimes prove inequality.
+        if (AreGuaranteedToRepresentDifferentTypes(hnd1, hnd2))
         {
-            if (!hnd1.GetMethodTable()->HasSameTypeDefAs(hnd2.GetMethodTable()))
-            {
-                result = TypeCompareState::MustNot;
-            }
-        }
-        // If we have two ref types that are not __Canon, then the
-        // types cannot be equal unless the type defs are the same.
-        else
-        {
-            TypeHandle canonHnd = TypeHandle(g_pCanonMethodTableClass);
-            if ((hnd1 != canonHnd) && (hnd2 != canonHnd))
-            {
-                if (!hnd1.GetMethodTable()->HasSameTypeDefAs(hnd2.GetMethodTable()))
-                {
-                    result = TypeCompareState::MustNot;
-                }
-            }
+            result = TypeCompareState::MustNot;
         }
     }
 
