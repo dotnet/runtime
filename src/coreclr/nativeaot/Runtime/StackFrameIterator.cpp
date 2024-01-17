@@ -605,6 +605,19 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pR10 = (PTR_UIntNative)PTR_TO_REG(pCtx, R10);
     m_RegDisplay.pR11 = (PTR_UIntNative)PTR_TO_REG(pCtx, R11);
 #endif // TARGET_AMD64
+#elif defined(TARGET_ARM)
+
+    m_RegDisplay.pR0 = (PTR_UIntNative)PTR_TO_REG(pCtx, R0);
+    m_RegDisplay.pR1 = (PTR_UIntNative)PTR_TO_REG(pCtx, R1);
+    m_RegDisplay.pR4 = (PTR_UIntNative)PTR_TO_REG(pCtx, R4);
+    m_RegDisplay.pR5 = (PTR_UIntNative)PTR_TO_REG(pCtx, R5);
+    m_RegDisplay.pR6 = (PTR_UIntNative)PTR_TO_REG(pCtx, R6);
+    m_RegDisplay.pR7 = (PTR_UIntNative)PTR_TO_REG(pCtx, R7);
+    m_RegDisplay.pR8 = (PTR_UIntNative)PTR_TO_REG(pCtx, R8);
+    m_RegDisplay.pR9 = (PTR_UIntNative)PTR_TO_REG(pCtx, R9);
+    m_RegDisplay.pR10 = (PTR_UIntNative)PTR_TO_REG(pCtx, R10);
+    m_RegDisplay.pR11 = (PTR_UIntNative)PTR_TO_REG(pCtx, R11);
+    m_RegDisplay.pLR = (PTR_UIntNative)PTR_TO_REG(pCtx, Lr);
 #else
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
 #endif // TARGET_ARM
