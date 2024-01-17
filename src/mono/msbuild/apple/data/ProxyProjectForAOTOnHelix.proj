@@ -29,7 +29,7 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(_UseNativeAOTLibraryModeBundling)' != 'true'">
+  <PropertyGroup Condition="'$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(UseNativeAOTRuntime)' == 'true'">
     <!-- TODO: we probably want to recreate everything in the intermediate directory instead (see library mode bellow) -->
     <IntermediateOutputPath>$(OriginalPublishDir)</IntermediateOutputPath>
     <NativeLib>static</NativeLib>
