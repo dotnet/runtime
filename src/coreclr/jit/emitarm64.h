@@ -56,6 +56,8 @@ void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elem
 void emitDispSveConsecutiveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
 void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
+void emitDispLowPredicateRegPair(regNumber reg, insOpts opt);
+void emitDispVectorLengthSpecifier(instrDesc* id);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -418,6 +420,9 @@ static code_t insEncodeDatasizeBF(code_t code, emitAttr size);
 // Returns the encoding to select the vectorsize for SIMD Arm64 instructions
 static code_t insEncodeVectorsize(emitAttr size);
 
+// Returns the encoding to set the vector length specifier (vl) for an Arm64 SVE instruction
+static code_t insEncodeVectorLengthSpecifier(instrDesc* id);
+
 // Returns the encoding to select 'index' for an Arm64 vector elem instruction
 static code_t insEncodeVectorIndex(emitAttr elemsize, ssize_t index);
 
@@ -587,7 +592,7 @@ static bool isValidUimm7(ssize_t value)
     return (0 <= value) && (value <= 0x7FLL);
 };
 
-// Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for fMOV).
+// Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for FMOV).
 static bool isValidUimm8(ssize_t value)
 {
     return (0 <= value) && (value <= 0xFFLL);
@@ -877,12 +882,17 @@ inline static bool isFloatReg(regNumber reg)
 
 inline static bool isPredicateRegister(regNumber reg)
 {
-    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LAST);
+    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LAST);
 }
 
 inline static bool isLowPredicateRegister(regNumber reg)
 {
-    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LOW_LAST);
+    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LOW_LAST);
+}
+
+inline static bool isHighPredicateRegister(regNumber reg)
+{
+    return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
 }
 
 inline static bool insOptsNone(insOpts opt)
@@ -1033,7 +1043,20 @@ inline static bool insOptsScalableWide(insOpts opt)
 
 inline static bool insScalableOptsNone(insScalableOpts sopt)
 {
+    // `sopt` is used for instructions with no extra encoding variants.
     return sopt == INS_SCALABLE_OPTS_NONE;
+}
+
+inline static bool insScalableOptsWithPredicatePair(insScalableOpts sopt)
+{
+    // `sopt` denotes the instruction's predicate register should be encoded as a {<Pd1>.<T>, <Pd2>.<T>} pair.
+    return sopt == INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR;
+}
+
+inline static bool insScalableOptsWithVectorLength(insScalableOpts sopt)
+{
+    // `sopt` is any of the scalable types that are valid for use with instructions with a vector length specifier (vl).
+    return ((sopt == INS_SCALABLE_OPTS_VL_2X) || (sopt == INS_SCALABLE_OPTS_VL_4X));
 }
 
 static bool isValidImmCond(ssize_t imm);
@@ -1061,7 +1084,7 @@ void emitIns(instruction ins);
 
 void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
-void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
+void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_R_I(instruction ins,
                  emitAttr    attr,
@@ -1075,7 +1098,12 @@ void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, i
 void emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_R(instruction     ins,
+                 emitAttr        attr,
+                 regNumber       reg1,
+                 regNumber       reg2,
+                 insOpts         opt  = INS_OPTS_NONE,
+                 insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
 {

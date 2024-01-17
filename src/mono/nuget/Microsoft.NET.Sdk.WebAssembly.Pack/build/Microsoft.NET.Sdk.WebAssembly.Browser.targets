@@ -45,7 +45,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <PropertyGroup>
     <!-- Paths to tools, tasks, and extensions are calculated relative to the WebAssemblySdkDirectoryRoot. This can be modified to test a local build. -->
     <WebAssemblySdkDirectoryRoot Condition="'$(WebAssemblySdkDirectoryRoot)'==''">$(MSBuildThisFileDirectory)..\</WebAssemblySdkDirectoryRoot>
-    <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net8.0</_WebAssemblySdkTasksTFM>
+    <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net9.0</_WebAssemblySdkTasksTFM>
     <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' != 'Core'">net472</_WebAssemblySdkTasksTFM>
     <_WebAssemblySdkTasksAssembly>$(WebAssemblySdkDirectoryRoot)tools\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
 
