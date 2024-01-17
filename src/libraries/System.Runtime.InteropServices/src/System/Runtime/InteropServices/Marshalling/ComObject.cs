@@ -117,7 +117,7 @@ namespace System.Runtime.InteropServices.Marshalling
         {
             if (_released != 0)
             {
-                throw new ObjectDisposedException();
+                throw new ObjectDisposedException(nameof(ComObject));
             }
 
             qiHResult = 0;
