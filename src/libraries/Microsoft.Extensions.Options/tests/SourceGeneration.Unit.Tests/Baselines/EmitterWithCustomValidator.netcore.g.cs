@@ -99,13 +99,14 @@ namespace __OptionValidationGeneratedAttributes
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
         private readonly bool _needToConvertMinMax;
         private volatile bool _initialized;
+        private readonly object _lock = new();
         private const string MinMaxError = "The minimum and maximum values must be set to valid values.";
 
         public override bool IsValid(object? value)
         {
             if (!_initialized)
             {
-                lock (this)
+                lock (_lock)
                 {
                     if (!_initialized)
                     {
