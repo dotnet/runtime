@@ -404,7 +404,6 @@ FCFuncStart(gGCFrameRegistration)
 FCFuncEnd()
 
 FCFuncStart(gGCInterfaceFuncs)
-    FCFuncElement("GetGenerationWR", GCInterface::GetGenerationWR)
     FCFuncElement("_RegisterForFullGCNotification", GCInterface::RegisterForFullGCNotification)
     FCFuncElement("_CancelFullGCNotification", GCInterface::CancelFullGCNotification)
     FCFuncElement("_CollectionCount", GCInterface::CollectionCount)

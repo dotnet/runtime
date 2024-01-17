@@ -106,9 +106,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, GC_ALLOC_FLAGS flags);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetGenerationWR(IntPtr handle);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static partial long GetTotalMemory();
 
@@ -294,6 +291,9 @@ namespace System
             KeepAlive(wo);
             return result;
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetGenerationWR")]
+        private static partial int GetGenerationWR(IntPtr handle);
 
         // Returns the maximum GC generation.  Currently assumes only 1 heap.
         //

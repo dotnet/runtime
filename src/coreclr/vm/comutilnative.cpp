@@ -801,26 +801,31 @@ extern "C" int QCALLTYPE GCInterface_EndNoGCRegion()
 **Arguments: args->handle -- the OBJECTHANDLE to the object which we're locating.
 **Exceptions: ArgumentException if handle points to an object which is not accessible.
 ==============================================================================*/
-FCIMPL1(int, GCInterface::GetGenerationWR, LPVOID handle)
+extern "C" int QCALLTYPE GCInterface_GetGenerationWR(LPVOID handle)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    int iRetVal = 0;
+    int retVal = 0;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    BEGIN_QCALL;
 
-    OBJECTREF temp;
+    GCX_COOP();
+
+    OBJECTREF temp = NULL;
+    GCPROTECT_BEGIN(temp);
+
     temp = ObjectFromHandle((OBJECTHANDLE) handle);
     if (temp == NULL)
         COMPlusThrowArgumentNull(W("wo"));
 
-    iRetVal = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(OBJECTREFToObject(temp));
+    retVal = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(OBJECTREFToObject(temp));
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
 
-    return iRetVal;
+    END_QCALL;
+
+    return retVal;
 }
-FCIMPLEND
 
 FCIMPL0(int, GCInterface::GetLastGCPercentTimeInGC)
 {
