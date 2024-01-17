@@ -1143,6 +1143,11 @@ namespace System.Text.RegularExpressions.Generator
                             (true, true) => $"{span}.IndexOfAnyExcept({Literal(primarySet.Range.Value.LowInclusive)})",
                         };
                     }
+                    else if (RegexCharClass.IsUnicodeCategoryOfSmallCharCount(primarySet.Set, out char[]? setChars, out bool negated))
+                    {
+                        // We have a known set of characters, and we can use the supplied IndexOfAny{Except}(...).
+                        indexOf = $"{span}.{(negated ? "IndexOfAnyExcept" : "IndexOfAny")}({EmitSearchValues(setChars, requiredHelpers)})";
+                    }
                     else
                     {
                         // We have an arbitrary set of characters that's really large or otherwise not enumerable.
