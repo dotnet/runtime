@@ -32,13 +32,17 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static Task<T> RunAsync<T>(Func<Task<T>> body, CancellationToken cancellationToken)
         {
-            var instance = new JSWebWorkerInstance<T>(body, null, cancellationToken);
+            var instance = new JSWebWorkerInstance<T>(body, cancellationToken);
             return instance.Start();
         }
 
         public static Task RunAsync(Func<Task> body, CancellationToken cancellationToken)
         {
-            var instance = new JSWebWorkerInstance<int>(null, body, cancellationToken);
+            var instance = new JSWebWorkerInstance<int>(async () =>
+            {
+                await body().ConfigureAwait(false);
+                return 0;
+            }, cancellationToken);
             return instance.Start();
         }
 
@@ -49,20 +53,18 @@ namespace System.Runtime.InteropServices.JavaScript
             private Thread _thread;
             private CancellationToken _cancellationToken;
             private CancellationTokenRegistration? _cancellationRegistration;
-            private Func<Task<T>>? _bodyRes;
-            private Func<Task>? _bodyVoid;
-            private Task? _resultTask;
+            private Func<Task<T>> _body;
+            private Task<T>? _resultTask;
             private bool _isDisposed;
 
-            public JSWebWorkerInstance(Func<Task<T>>? bodyRes, Func<Task>? bodyVoid, CancellationToken cancellationToken)
+            public JSWebWorkerInstance(Func<Task<T>> bodyRes, CancellationToken cancellationToken)
             {
                 _taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
                 _thread = new Thread(ThreadMain);
                 _resultTask = null;
                 _cancellationToken = cancellationToken;
                 _cancellationRegistration = null;
-                _bodyRes = bodyRes;
-                _bodyVoid = bodyVoid;
+                _body = bodyRes;
                 JSHostImplementation.SetHasExternalEventLoop(_thread);
             }
 
@@ -80,7 +82,7 @@ namespace System.Runtime.InteropServices.JavaScript
                             _thread.Start();
                         }
                         return t;
-                    }, _cancellationToken, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Current);
+                    }, _cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.FromCurrentSynchronizationContext());
                 }
                 else
                 {
@@ -110,17 +112,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     _jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(false, _cancellationToken);
 
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
-                    if (_bodyRes != null)
-                    {
-                        _resultTask = _bodyRes();
-                    }
-                    else
-                    {
-                        _resultTask = _bodyVoid!();
-                    }
+
                     // This code is exiting thread ThreadMain() before all promises are resolved.
                     // the continuation is executed by setTimeout() callback of the WebWorker thread.
-                    _resultTask.ContinueWith(PropagateCompletionAndDispose, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, childScheduler);
+                    _body().ContinueWith(PropagateCompletionAndDispose, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, childScheduler);
                 }
                 catch (Exception ex)
                 {
@@ -129,7 +124,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             // run actions on correct thread
-            private void PropagateCompletionAndDispose(Task result)
+            private void PropagateCompletionAndDispose(Task<T> result)
             {
                 _resultTask = result;
 
@@ -189,14 +184,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    if (_bodyRes != null)
-                    {
-                        _taskCompletionSource.TrySetResult(((Task<T>)_resultTask).Result);
-                    }
-                    else
-                    {
-                        _taskCompletionSource.TrySetResult(default!);
-                    }
+                    _taskCompletionSource.TrySetResult(_resultTask.Result);
                 }
             }
 
