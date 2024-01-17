@@ -1594,7 +1594,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     const int               maxLikelyClasses = 8;
     LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
     unsigned likelyClassCount = getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount,
-                                                 fgPgoData, (int)call->gtRawILOffset);
+                                                 fgPgoData, call->gtCastHelperILOffset);
 
     if (likelyClassCount == 0)
     {
@@ -1720,7 +1720,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // typeCheckBb (BBJ_COND):                      [weight: 0.5]
     //     if (tmp->pMT == likelyClass) goto block;
     //
-    // fallbackBb (BBJ_ALWAYS):                     [weight: 0.25]
+    // fallbackBb (BBJ_ALWAYS):                     [weight: <profile>]
     //     tmp = helper_call(cls, tmp);
     //
     // block (BBJ_any):                             [weight: 1.0]
@@ -1786,12 +1786,12 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     //
     // Re-distribute weights
-    // We assume obj is 50%/50% null/not-null, and if it's not null,
-    // it's 50%/50% of being of the expected type. TODO: rely on profile data
+    // We assume obj is 50%/50% null/not-null (TODO: use profile data)
+    // and rely on profile for the slow path.
     //
     nullcheckBb->inheritWeight(prevBb);
     fallbackBb->inheritWeightPercentage(nullcheckBb, 50);
-    typeCheckBb->inheritWeightPercentage(fallbackBb, 50);
+    typeCheckBb->inheritWeightPercentage(fallbackBb, 100 - likelyClass.likelihood);
     block->inheritWeight(prevBb);
 
     //

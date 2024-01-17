@@ -5603,9 +5603,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         }
         else
         {
-            // Maybe the late-cast-expand phase can have a better luck expanding this cast.
+            // Maybe the late-cast-expand phase will have a better luck expanding this cast.
             call->gtCallMoreFlags |= GTF_CALL_M_CAST_CAN_BE_EXPANDED;
-            call->gtRawILOffset = ilOffset;
+            call->gtCastHelperILOffset = ilOffset;
         }
         return call;
     }

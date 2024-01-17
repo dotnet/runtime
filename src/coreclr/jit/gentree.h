@@ -5588,8 +5588,9 @@ struct GenTreeCall final : public GenTree
 
     CORINFO_CLASS_HANDLE gtRetClsHnd; // The return type handle of the call if it is a struct; always available
     union {
-        void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
-        CORINFO_CLASS_HANDLE gtInitClsHnd;       // Used by static init helpers, represents a class they init
+        void*                gtStubCallStubAddr;   // GTF_CALL_VIRT_STUB - these are never inlined
+        CORINFO_CLASS_HANDLE gtInitClsHnd;         // Used by static init helpers, represents a class they init
+        IL_OFFSET            gtCastHelperILOffset; // Used by cast helpers to save corresponding IL offset
     };
 
     union {
