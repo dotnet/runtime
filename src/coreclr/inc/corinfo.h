@@ -1749,6 +1749,7 @@ struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
     CORINFO_CONST_LOOKUP tlsRootObject;
     CORINFO_CONST_LOOKUP tlsIndexObject;
     CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+    CORINFO_CONST_LOOKUP tlsGetAddrFtnPtr;
 };
 
 //----------------------------------------------------------------------------

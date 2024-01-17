@@ -571,7 +571,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         newFirstStmt = newFirstStmt->GetNextStmt();
     }
 
-    if (TargetOS::IsWindows)
+    //if (TargetOS::IsWindows)
     {
 #ifdef TARGET_64BIT
         // prevBb (BBJ_NONE):                                               [weight: 1.0]
@@ -593,30 +593,62 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         //      use(tlsRoot);
         // ...
 
-        // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
-        GenTree* tlsValue = gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
-        tlsValue          = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        GenTree* tlsRootAddr = nullptr; 
+        if (TargetOS::IsWindows)
+        {
+            // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
+            GenTree* tlsValue =
+                gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+            tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-        CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
+            CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
 
-        GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_OBJ_HDL);
-        dllRef          = gtNewIndir(TYP_INT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-        dllRef          = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
+            GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_OBJ_HDL);
+            dllRef          = gtNewIndir(TYP_INT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            dllRef          = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
 
-        // Add the dllRef to produce thread local storage reference for coreclr
-        tlsValue = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
+            // Add the dllRef to produce thread local storage reference for coreclr
+            tlsValue = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
 
-        // Base of coreclr's thread local storage
-        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            // Base of coreclr's thread local storage
+            tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-        CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
+            CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
 
-        // This resolves to an offset which is TYP_INT
-        GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject.handle, TYP_INT);
-        tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET;
+            // This resolves to an offset which is TYP_INT
+            GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject.handle, TYP_INT);
+            tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET;
 
-        // Add the tlsValue and tlsRootOffset to produce tlsRootAddr.
-        GenTree* tlsRootAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, tlsRootOffset);
+            // Add the tlsValue and tlsRootOffset to produce tlsRootAddr.
+            tlsRootAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, tlsRootOffset);
+        }
+        else if (TargetOS::IsUnix)
+        {
+            // Code sequence to access thread local variable on linux/x64:
+            //
+            //      mov      rdi, 0x7FE5C418CD28  ; tlsIndexObject
+            //      mov      rax, 0x7FE5C47AFDB0  ; _tls_get_addr
+            //      call     rax
+            //
+            GenTree* tls_get_addr_val =
+                gtNewIconHandleNode((size_t)threadStaticInfo.tlsGetAddrFtnPtr.handle, GTF_ICON_FTN_ADDR);
+            GenTreeCall* tlsRefCall = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+
+            // This is an indirect call which takes an argument.
+            // Populate and set the ABI appropriately.
+            assert(threadStaticInfo.tlsIndexObject.handle != 0);
+            GenTree* tlsArg = gtNewIconNode((size_t)threadStaticInfo.tlsIndexObject.handle, TYP_I_IMPL);
+            tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
+
+            fgMorphArgs(tlsRefCall);
+
+            tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
+            tlsRootAddr = tlsRefCall;
+        }
+        else
+        {
+            unreached();
+        }
 
         // Cache the TlsRootAddr value
         unsigned tlsRootAddrLclNum         = lvaGrabTemp(true DEBUGARG("TlsRootAddr access"));
@@ -698,10 +730,10 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
         return true;
     }
-    else
-    {
-        unreached();
-    }
+    //else
+    //{
+    //    unreached();
+    //}
     return false;
 }
 
