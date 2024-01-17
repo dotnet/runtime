@@ -962,7 +962,11 @@ namespace System.Text.RegularExpressions
         /// Gets whether the specified set is a named set with a reasonably small count
         /// of Unicode characters.
         /// </summary>
-        public static bool IsUnicodeCategoryOfSmallCharCount(string set, [NotNullWhen(true)] out char[]? chars, out bool negated)
+        /// <param name="set">The set description.</param>
+        /// <param name="chars">The chars that make up the known set.</param>
+        /// <param name="negated">Whether the <paramref name="chars"/> need to be negated.</param>
+        /// <param name="description">A description suitable for use in C# code as a variable name.</param>
+        public static bool IsUnicodeCategoryOfSmallCharCount(string set, [NotNullWhen(true)] out char[]? chars, out bool negated, [NotNullWhen(true)] out string? description)
         {
             switch (set)
             {
@@ -970,11 +974,13 @@ namespace System.Text.RegularExpressions
                 case NotSpaceClass:
                     chars = s_whitespaceChars;
                     negated = set == NotSpaceClass;
+                    description = "whitespace";
                     return true;
             }
 
             chars = default;
             negated = false;
+            description = null;
             return false;
         }
 

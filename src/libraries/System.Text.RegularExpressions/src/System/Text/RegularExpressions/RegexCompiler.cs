@@ -953,7 +953,7 @@ namespace System.Text.RegularExpressions
                             Call(primarySet.Negated ? s_spanIndexOfAnyExceptInRange : s_spanIndexOfAnyInRange);
                         }
                     }
-                    else if (RegexCharClass.IsUnicodeCategoryOfSmallCharCount(primarySet.Set, out char[]? setChars, out bool negated))
+                    else if (RegexCharClass.IsUnicodeCategoryOfSmallCharCount(primarySet.Set, out char[]? setChars, out bool negated, out _))
                     {
                         // We have a known set of small number of characters; we can use IndexOfAny{Except}(searchValues).
 
