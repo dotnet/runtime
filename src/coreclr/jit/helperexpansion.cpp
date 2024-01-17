@@ -593,7 +593,9 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         //      use(tlsRoot);
         // ...
 
-        GenTree* tlsRootAddr = nullptr; 
+        GenTree* tlsRootAddr = nullptr;
+        CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
+
         if (TargetOS::IsWindows)
         {
             // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
@@ -613,8 +615,6 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
             // Base of coreclr's thread local storage
             tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-            CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
-
             // This resolves to an offset which is TYP_INT
             GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject.handle, TYP_INT);
             tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET;
@@ -626,7 +626,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         {
             // Code sequence to access thread local variable on linux/x64:
             //
-            //      mov      rdi, 0x7FE5C418CD28  ; tlsIndexObject
+            //      mov      rdi, 0x7FE5C418CD28  ; tlsRootObject
             //      mov      rax, 0x7FE5C47AFDB0  ; _tls_get_addr
             //      call     rax
             //
@@ -636,8 +636,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
             // This is an indirect call which takes an argument.
             // Populate and set the ABI appropriately.
-            assert(threadStaticInfo.tlsIndexObject.handle != 0);
-            GenTree* tlsArg = gtNewIconNode((size_t)threadStaticInfo.tlsIndexObject.handle, TYP_I_IMPL);
+            assert(tlsRootObject.handle != 0);
+            GenTree* tlsArg = gtNewIconNode((size_t)tlsRootObject.handle, TYP_I_IMPL);
             tlsArg->gtFlags |= GTF_ICON_TLSGD_OFFSET;
             tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
 
