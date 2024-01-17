@@ -20,6 +20,7 @@ namespace Microsoft.Extensions.Logging
     public class LoggerFactory : ILoggerFactory
     {
         private readonly ConcurrentDictionary<string, Logger> _loggers = new ConcurrentDictionary<string, Logger>(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<Type, ILogger> _loggersOfT = new ConcurrentDictionary<Type, ILogger>();
         private readonly List<ProviderRegistration> _providerRegistrations = new List<ProviderRegistration>();
         private readonly object _sync = new object();
         private volatile bool _disposed;
@@ -159,6 +160,16 @@ namespace Microsoft.Extensions.Logging
             }
 
             return logger;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="ILogger"/> instance using the full name of the given type.
+        /// </summary>
+        /// <typeparam name="T">The type.</typeparam>
+        /// <returns>The <see cref="ILogger"/> that was created.</returns>
+        public ILogger<T> CreateLogger<T>()
+        {
+            return (ILogger<T>)_loggersOfT.GetOrAdd(typeof(T), _ => new Lazy<ILogger<T>>(() => new Logger<T>(this)).Value);
         }
 
         /// <summary>
