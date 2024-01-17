@@ -11806,22 +11806,17 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE
 
     CORINFO_CLASS_HANDLE result = NULL;
 
-    if (pIsSpeculative != NULL)
-    {
-        *pIsSpeculative = true;
-    }
+    _ASSERT(pIsSpeculative == nullptr); // to be deleted
 
     JIT_TO_EE_TRANSITION();
 
     FieldDesc* field = (FieldDesc*) fieldHnd;
-    bool isClassInitialized = false;
 
     // We're only interested in ref class typed static fields
     // where the field handle specifies a unique location.
     if (field->IsStatic() && field->IsObjRef() && !field->IsThreadStatic())
     {
         MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
-
         if (!pEnclosingMT->IsSharedByGenericInstantiations())
         {
             // Allocate space for the local class if necessary, but don't trigger
@@ -11834,37 +11829,9 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE
             OBJECTREF fieldObj = field->GetStaticOBJECTREF();
             VALIDATEOBJECTREF(fieldObj);
 
-            // Check for initialization before looking at the value
-            isClassInitialized = !!pEnclosingMT->IsClassInited();
-
-            if (fieldObj != NULL)
+            if (fieldObj != NULL && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
             {
-                MethodTable *pObjMT = fieldObj->GetMethodTable();
-
-                // TODO: Check if the jit is allowed to embed this handle in jitted code.
-                // Note for the initonly cases it probably won't embed.
-                result = (CORINFO_CLASS_HANDLE) pObjMT;
-            }
-        }
-    }
-
-    // Did we find a class?
-    if (result != NULL)
-    {
-        // Figure out what to report back.
-        bool isResultImmutable = isClassInitialized && IsFdInitOnly(field->GetAttributes());
-
-        if (pIsSpeculative != NULL)
-        {
-            // Caller is ok with potentially mutable results.
-            *pIsSpeculative = !isResultImmutable;
-        }
-        else
-        {
-            // Caller only wants to see immutable results.
-            if (!isResultImmutable)
-            {
-                result = NULL;
+                result = (CORINFO_CLASS_HANDLE)fieldObj->GetMethodTable();
             }
         }
     }

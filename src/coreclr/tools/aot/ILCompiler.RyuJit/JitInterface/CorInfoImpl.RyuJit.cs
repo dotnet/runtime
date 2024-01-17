@@ -2395,5 +2395,36 @@ namespace Internal.JitInterface
         {
             return true;
         }
+
+        private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
+        {
+            Debug.Assert(pIsSpeculative == null); // To be deleted
+
+            FieldDesc fieldDesc = HandleToObject(field);
+
+            if (fieldDesc.IsStatic && !fieldDesc.IsThreadStatic && fieldDesc.OwningType is MetadataType owningType &&
+                !owningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // Generally, this API is only used for reference types to provide better information
+                // to the JIT for possible devirtualizations. Value types are typically handled
+                // separately and folded to constants via getStaticFieldContent. However, some
+                // fields aren't foldable (e.g. ExternSymbolMappedField), so let's tell the JIT
+                // it can rely on them being invariant too.
+                if (fieldDesc.HasRva)
+                {
+                    // Read-only RVA fields need no "is class initialized" check.
+                    Debug.Assert(fieldDesc.FieldType.IsValueType);
+                    return ObjectToHandle(fieldDesc.FieldType);
+                }
+
+                PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
+                if (!fieldDesc.FieldType.IsValueType && preinitManager.IsPreinitialized(owningType) &&
+                    preinitManager.GetPreinitializationInfo(owningType).GetFieldValue(fieldDesc) != null)
+                {
+                    return ObjectToHandle(fieldDesc.FieldType);
+                }
+            }
+            return null;
+        }
     }
 }

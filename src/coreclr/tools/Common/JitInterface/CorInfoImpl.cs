@@ -3526,15 +3526,6 @@ namespace Internal.JitInterface
 
         private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
         { throw new NotImplementedException("getClassDomainID"); }
-
-        private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
-        {
-            if (pIsSpeculative != null)
-                *pIsSpeculative = 1;
-
-            return null;
-        }
-
         private IntPtr getVarArgsHandle(CORINFO_SIG_INFO* pSig, ref void* ppIndirection)
         { throw new NotImplementedException("getVarArgsHandle"); }
         private bool canGetVarArgsHandle(CORINFO_SIG_INFO* pSig)

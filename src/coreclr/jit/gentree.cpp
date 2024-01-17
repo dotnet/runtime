@@ -18789,49 +18789,27 @@ CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
 
 CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull)
 {
-    CORINFO_CLASS_HANDLE fieldClass   = nullptr;
-    CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
-
-    if (fieldCorType == CORINFO_TYPE_CLASS)
+    CORINFO_CLASS_HANDLE fieldClass = nullptr;
+    if (info.compCompHnd->getFieldType(fieldHnd, &fieldClass) == CORINFO_TYPE_CLASS)
     {
-        // Optionally, look at the actual type of the field's value
-        bool queryForCurrentClass = true;
-        INDEBUG(queryForCurrentClass = (JitConfig.JitQueryCurrentStaticFieldClass() > 0););
+        JITDUMP("Querying runtime about current class of field %s (declared as %s)\n", eeGetFieldName(fieldHnd, true),
+                eeGetClassName(fieldClass));
 
-        if (queryForCurrentClass)
+        // Is this a fully initialized init-only static field?
+        CORINFO_CLASS_HANDLE currentClass = info.compCompHnd->getStaticFieldCurrentClass(fieldHnd);
+        if (currentClass != NO_CLASS_HANDLE)
         {
-#if DEBUG
-            char fieldNameBuffer[128];
-            char classNameBuffer[128];
-            JITDUMP("Querying runtime about current class of field %s (declared as %s)\n",
-                    eeGetFieldName(fieldHnd, true, fieldNameBuffer, sizeof(fieldNameBuffer)),
-                    eeGetClassName(fieldClass, classNameBuffer, sizeof(classNameBuffer)));
-#endif // DEBUG
-
-            // Is this a fully initialized init-only static field?
-            //
-            // Note we're not asking for speculative results here, yet.
-            CORINFO_CLASS_HANDLE currentClass = info.compCompHnd->getStaticFieldCurrentClass(fieldHnd);
-
-            if (currentClass != NO_CLASS_HANDLE)
-            {
-                // Yes! We know the class exactly and can rely on this to always be true.
-                fieldClass  = currentClass;
-                *pIsExact   = true;
-                *pIsNonNull = true;
-#ifdef DEBUG
-                char buffer[128];
-                JITDUMP("Runtime reports field is init-only and initialized and has class %s\n",
-                        eeGetClassName(fieldClass, buffer, sizeof(buffer)));
-#endif
-            }
-            else
-            {
-                JITDUMP("Field's current class not available\n");
-            }
-
-            return fieldClass;
+            fieldClass  = currentClass;
+            *pIsExact   = true;
+            *pIsNonNull = true;
+            JITDUMP("Runtime reports field is init-only and initialized and has class %s\n",
+                    eeGetClassName(fieldClass));
         }
+        else
+        {
+            JITDUMP("Field's current class is not available\n");
+        }
+        return fieldClass;
     }
 
     return NO_CLASS_HANDLE;
