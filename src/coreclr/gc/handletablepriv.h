@@ -942,3 +942,7 @@ void CALLBACK BlockVerifyAgeMapForBlocks(PTR_TableSegment pSegment, uint32_t uBl
 PTR_TableSegment CALLBACK xxxAsyncSegmentIterator(PTR_HandleTable pTable, TableSegment *pPrevSegment, CrstHolderWithState *pCrstHolder);
 
 /*--------------------------------------------------------------------------*/
+
+#ifndef DACCESS_COMPILE
+int WhichGeneration(_UNCHECKED_OBJECTREF obj);
+#endif //DACCESS_COMPILE
