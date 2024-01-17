@@ -57,7 +57,6 @@ public class EmitterTests
         _ = Assert.Single(generatedSources);
 
 #if NETCOREAPP
-        File.WriteAllText(@"D:\oss\runtime\src\libraries\Microsoft.Extensions.Options\tests\SourceGeneration.Unit.Tests\Baselines\EmitterWithCustomValidator.netcore.g.cs", generatedSources[0].SourceText.ToString());
         string generatedSource = File.ReadAllText(@"Baselines/EmitterWithCustomValidator.netcore.g.cs");
 #else
         string generatedSource = File.ReadAllText(@"Baselines/EmitterWithCustomValidator.netfx.g.cs");
