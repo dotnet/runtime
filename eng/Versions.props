@@ -25,6 +25,8 @@
     <UsingToolXliff>false</UsingToolXliff>
     <!-- Use SDK compilers in full source-build. -->
     <UsingToolMicrosoftNetCompilers Condition="'$(DotNetBuildFromSourceFlavor)' != 'Product'">true</UsingToolMicrosoftNetCompilers>
+    <!-- TODO: remove this once we're back on a recent arcade -->
+    <XHarnessTargetFramework>net8.0</XHarnessTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <WorkloadSdkBandVersions Include="$(SdkBandVersion)" SupportsMachineArch="true" />
