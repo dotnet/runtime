@@ -198,4 +198,15 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="IncludeSymbolFilesInNativeAOTPackage"
+          Condition="'$(BuildNativeAOTRuntimePack)' == 'true'"
+          AfterTargets="GetFilesToPackage">
+    <ItemGroup>
+      <!-- ILC needs the symbols next to the binaries -->
+      <FilesToPackage Update="@(FilesToPackage->WithMetadataValue('IsSymbolFile', 'true'))">
+        <IncludeAlways>true</IncludeAlways>
+      </FilesToPackage>
+    </ItemGroup>
+  </Target>
+
 </Project>
