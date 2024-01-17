@@ -801,7 +801,9 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
             }
 
             Assert.True(threwException);
-            Assert.Equal(new int?[] { null, null, null }, result);
+            // Assert.Equal doesn't allow to build collections with nulls in anymore.
+            // The official recommendation is to bypass the compiler check.
+            Assert.Equal(new int?[] { null, null, null }!, result!);
             Assert.Equal(1, MemberClass<int>.t_status);
         }
     }
