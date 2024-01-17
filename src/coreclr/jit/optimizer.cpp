@@ -65,16 +65,41 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
-    assert(fgDomsComputed);
+    assert(m_domTree != nullptr);
     assert(fgReturnBlocksComputed);
 
     bool       madeChanges                = false;
     bool       firstBBDominatesAllReturns = true;
     const bool usingProfileWeights        = fgIsUsingProfileWeights();
 
+    // TODO-Quirk: Previously, this code ran on a dominator tree based only on
+    // regular flow. This meant that all handlers were not considered to be
+    // dominated by fgFirstBB. When those handlers could reach a return
+    // block that return was also not considered to be dominated by fgFirstBB.
+    // In practice the code below would then not make any changes for those
+    // functions. We emulate that behavior here.
+    for (EHblkDsc* eh : EHClauses(this))
+    {
+        BasicBlock* flowBlock = eh->ExFlowBlock();
+
+        for (BasicBlockList* retBlocks = fgReturnBlocks; retBlocks != nullptr; retBlocks = retBlocks->next)
+        {
+            if (m_dfsTree->Contains(flowBlock) && m_reachabilitySets->CanReach(flowBlock, retBlocks->block))
+            {
+                firstBBDominatesAllReturns = false;
+                break;
+            }
+        }
+
+        if (!firstBBDominatesAllReturns)
+        {
+            break;
+        }
+    }
+
     for (BasicBlock* const block : Blocks())
     {
-        /* Blocks that can't be reached via the first block are rarely executed */
+        // Blocks that can't be reached via the first block are rarely executed
         if (!m_reachabilitySets->CanReach(fgFirstBB, block) && !block->isRunRarely())
         {
             madeChanges = true;
@@ -95,7 +120,8 @@ PhaseStatus Compiler::optSetBlockWeights()
 
                 for (BasicBlockList* retBlocks = fgReturnBlocks; retBlocks != nullptr; retBlocks = retBlocks->next)
                 {
-                    if (!fgDominate(block, retBlocks->block))
+                    // TODO-Quirk: Returns that are unreachable can just be ignored.
+                    if (!m_dfsTree->Contains(retBlocks->block) || !m_domTree->Dominates(block, retBlocks->block))
                     {
                         blockDominatesAllReturns = false;
                         break;
@@ -225,7 +251,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
                 BasicBlock* backedge = tmp->getSourceBlock();
 
                 reachable |= m_reachabilitySets->CanReach(curBlk, backedge);
-                dominates |= fgDominate(curBlk, backedge);
+                dominates |= m_domTree->Dominates(curBlk, backedge);
 
                 if (dominates && reachable)
                 {
@@ -361,7 +387,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         {
             weight_t scale = 1.0 / BB_LOOP_WEIGHT_SCALE;
 
-            if (!fgDominate(curBlk, endBlk))
+            if (!m_domTree->Dominates(curBlk, endBlk))
             {
                 scale *= 2;
             }
@@ -498,7 +524,7 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
     if (!skipUnmarkLoop &&                      // If we want to unmark this loop...
         (fgCurBBEpochSize == fgBBNumMax + 1) && // We didn't add new blocks since last renumber...
-        fgDomsComputed &&                       // Given the doms are computed and valid...
+        (m_reachabilitySets != nullptr) &&      // Given the reachability sets are computed and valid...
         (fgCurBBEpochSize == fgDomBBcount + 1))
     {
         // This block must reach conditionally or always
@@ -1820,7 +1846,7 @@ private:
                 // and when we process its unique predecessor we'll abort if ENTRY
                 // doesn't dominate that.
             }
-            else if (!comp->fgDominate(entry, block))
+            else if (!comp->m_domTree->Dominates(entry, block))
             {
                 JITDUMP("   (find cycle) entry:" FMT_BB " does not dominate " FMT_BB "\n", entry->bbNum, block->bbNum);
                 return false;
@@ -1847,7 +1873,7 @@ private:
                         // of an outer loop.  For the dominance test, if `predBlock` is a new block, use
                         // its unique predecessor since the dominator tree has info for that.
                         BasicBlock* effectivePred = (predBlock->bbNum > oldBlockMaxNum ? predBlock->Prev() : predBlock);
-                        if (comp->fgDominate(entry, effectivePred))
+                        if (comp->m_domTree->Dominates(entry, effectivePred))
                         {
                             // Outer loop back-edge
                             continue;
@@ -2454,7 +2480,6 @@ void Compiler::optFindNaturalLoops()
     }
 #endif // DEBUG
 
-    noway_assert(fgDomsComputed);
     assert(fgHasLoops);
 
 #if COUNT_LOOPS
@@ -2548,7 +2573,9 @@ NO_MORE_LOOPS:
     if (mod)
     {
         fgInvalidateDfsTree();
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
+        fgRenumberBlocks();
+        m_dfsTree = fgComputeDfs();
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
     }
 
     // Now the loop indices are stable. We can figure out parent/child relationships
@@ -3937,7 +3964,6 @@ RETRY_UNROLL:
 
     if (change && !BitVecOps::IsEmpty(&loopTraits, loopsWithUnrolledDescendant) && (passes < 10))
     {
-        fgDomsComputed = false;
         fgRenumberBlocks(); // For proper lexical visit
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
@@ -3963,7 +3989,6 @@ RETRY_UNROLL:
         fgDfsBlocksAndRemove();
         m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
-        fgDomsComputed = false;
         fgRenumberBlocks();
 
         DBEXEC(verbose, fgDispBasicBlocks());
@@ -4747,6 +4772,10 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
     {
         m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
     }
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
 
     unsigned generalLoopCount = 0;
 
@@ -4844,7 +4873,6 @@ void Compiler::optFindLoops()
 #endif
 
     noway_assert(opts.OptimizationEnabled());
-    assert(fgDomsComputed);
 
     optMarkLoopHeads();
 
@@ -4878,9 +4906,6 @@ PhaseStatus Compiler::optFindLoopsPhase()
     optLoopTable      = nullptr;
     optLoopCount      = 0;
 
-    // Old dominators and reachability sets are no longer valid.
-    fgDomsComputed = false;
-
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -4894,8 +4919,9 @@ void Compiler::optFindNewLoops()
     if (optCanonicalizeLoops(m_loops))
     {
         fgInvalidateDfsTree();
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
+        fgRenumberBlocks();
         m_dfsTree = fgComputeDfs();
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }
 
