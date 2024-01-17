@@ -5758,10 +5758,22 @@ void emitter::emitIns_R_I(instruction ins,
             break;
     }
 
-    if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_SEC_RELOC(attr))
+    if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
-        id                      = emitNewInstrCns(attr, val);
-        id->idAddr()->iiaSecRel = true;
+        if (EA_IS_CNS_SEC_RELOC(attr))
+        {
+            id                      = emitNewInstrCns(attr, val);
+            id->idAddr()->iiaSecRel = true;
+        }
+        else if (EA_IS_CNS_TLSGD_RELOC(attr))
+        {
+            id                      = emitNewInstrCns(attr, val);
+            id->idAddr()->iiaTlsGD = true;
+        }
+        else
+        {
+            id = emitNewInstrSC(attr, val);
+        }
     }
     else
     {
@@ -15190,10 +15202,18 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         if (id->idIsCnsReloc())
         {
-            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idAddr()->iiaSecRel)
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
             {
-                // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
-                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
+                if (id->idAddr()->iiaSecRel)
+                {
+                    // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
+                    emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
+                }
+                else if (id->idAddr()->iiaTlsGD)
+                {
+                    // For TLS GD, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
+                    emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_TLSGD);
+                }
             }
             else
             {

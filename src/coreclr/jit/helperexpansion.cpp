@@ -638,6 +638,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
             // Populate and set the ABI appropriately.
             assert(threadStaticInfo.tlsIndexObject.handle != 0);
             GenTree* tlsArg = gtNewIconNode((size_t)threadStaticInfo.tlsIndexObject.handle, TYP_I_IMPL);
+            tlsArg->gtFlags |= GTF_ICON_TLSGD_OFFSET;
             tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
 
             fgMorphArgs(tlsRefCall);

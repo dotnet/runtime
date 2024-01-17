@@ -1047,6 +1047,9 @@ protected:
             // Used for instrDesc that has relocatable immediate offset
             bool iiaSecRel;
 
+            // Used for instrDesc that has TLSGD address to be passed to tls_get_addr
+            bool iiaTlsGD;
+
         } _idAddrUnion;
 
         /* Trivial wrappers to return properly typed enums */

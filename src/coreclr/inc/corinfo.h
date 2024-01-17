@@ -3384,6 +3384,7 @@ public:
 #define IMAGE_REL_BASED_REL32           0x10
 #define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
 #define IMAGE_REL_SECREL                0x104
+#define IMAGE_REL_TLSGD                 0x105
 
 // The identifier for ARM32-specific PC-relative address
 // computation corresponds to the following instruction
