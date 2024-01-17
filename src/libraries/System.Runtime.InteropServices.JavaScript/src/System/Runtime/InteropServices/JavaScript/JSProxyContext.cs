@@ -8,7 +8,11 @@ using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    internal sealed class JSProxyContext : JSProxyContextBase, IDisposable
+    internal sealed class JSProxyContext :
+#if FEATURE_WASM_THREADS
+      JSProxyContextBase,
+#endif
+      IDisposable
     {
         private bool _isDisposed;
 
