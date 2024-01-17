@@ -1556,8 +1556,15 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
 PhaseStatus Compiler::fgLateCastExpansion()
 {
+    if (!doesMethodHaveExpandableCasts())
+    {
+        // Nothing to expand in the current method
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     if (!opts.IsOptimizedWithProfile())
     {
+        // Currently, we're only interested in expanding cast helpers using profile data
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
