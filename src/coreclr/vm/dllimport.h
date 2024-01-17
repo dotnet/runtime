@@ -56,13 +56,15 @@ public:
         }
     }
 #endif // _DEBUG
-
+    
+#ifndef DACCESS_COMPILE
     void InitTypeContext(TypeHandle* classInst, DWORD classInstCount, TypeHandle* methInst, DWORD methInstCount)
     {
         LIMITED_METHOD_CONTRACT;
 
         m_typeContext = SigTypeContext(Instantiation(classInst, classInstCount), Instantiation(methInst, methInstCount));
     }
+#endif
 };
 
 //=======================================================================
