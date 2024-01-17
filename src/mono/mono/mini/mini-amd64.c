@@ -7610,14 +7610,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VECTOR_IABS:
 			switch (ins->inst_c1) {
 			case MONO_TYPE_I1:
-				amd64_sse_pabsb_reg_reg(code, ins->dreg, ins->sreg1);
+				amd64_ssse3_pabsb_reg_reg(code, ins->dreg, ins->sreg1);
 				break;
 			case MONO_TYPE_I2:
-				amd64_sse_pabsw_reg_reg(code, ins->dreg, ins->sreg1);
+				amd64_ssse3_pabsw_reg_reg(code, ins->dreg, ins->sreg1);
 				break;
 			case MONO_TYPE_I4:
+#if TARGET_SIZEOF_VOID_P == 4
 			case MONO_TYPE_I:
-				amd64_sse_pabsd_reg_reg(code, ins->dreg, ins->sreg1);
+#endif
+				amd64_ssse3_pabsd_reg_reg(code, ins->dreg, ins->sreg1);
 				break;
 			default:
 				g_assert_not_reached ();
