@@ -65,17 +65,42 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
-    assert(fgDomsComputed);
+    assert(m_domTree != nullptr);
     assert(fgReturnBlocksComputed);
 
     bool       madeChanges                = false;
     bool       firstBBDominatesAllReturns = true;
     const bool usingProfileWeights        = fgIsUsingProfileWeights();
 
+    // TODO-Quirk: Previously, this code ran on a dominator tree based only on
+    // regular flow. This meant that all handlers were not considered to be
+    // dominated by fgFirstBB. When those handlers could reach a return
+    // block that return was also not considered to be dominated by fgFirstBB.
+    // In practice the code below would then not make any changes for those
+    // functions. We emulate that behavior here.
+    for (EHblkDsc* eh : EHClauses(this))
+    {
+        BasicBlock* flowBlock = eh->ExFlowBlock();
+
+        for (BasicBlockList* retBlocks = fgReturnBlocks; retBlocks != nullptr; retBlocks = retBlocks->next)
+        {
+            if (m_dfsTree->Contains(flowBlock) && m_reachabilitySets->CanReach(flowBlock, retBlocks->block))
+            {
+                firstBBDominatesAllReturns = false;
+                break;
+            }
+        }
+
+        if (!firstBBDominatesAllReturns)
+        {
+            break;
+        }
+    }
+
     for (BasicBlock* const block : Blocks())
     {
-        /* Blocks that can't be reached via the first block are rarely executed */
-        if (!fgReachable(fgFirstBB, block) && !block->isRunRarely())
+        // Blocks that can't be reached via the first block are rarely executed
+        if (!m_reachabilitySets->CanReach(fgFirstBB, block) && !block->isRunRarely())
         {
             madeChanges = true;
             block->bbSetRunRarely();
@@ -95,7 +120,8 @@ PhaseStatus Compiler::optSetBlockWeights()
 
                 for (BasicBlockList* retBlocks = fgReturnBlocks; retBlocks != nullptr; retBlocks = retBlocks->next)
                 {
-                    if (!fgDominate(block, retBlocks->block))
+                    // TODO-Quirk: Returns that are unreachable can just be ignored.
+                    if (!m_dfsTree->Contains(retBlocks->block) || !m_domTree->Dominates(block, retBlocks->block))
                     {
                         blockDominatesAllReturns = false;
                         break;
@@ -155,7 +181,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 {
     noway_assert(begBlk->bbNum <= endBlk->bbNum);
     noway_assert(begBlk->isLoopHead());
-    noway_assert(fgReachable(begBlk, endBlk));
+    noway_assert(m_reachabilitySets->CanReach(begBlk, endBlk));
     noway_assert(!opts.MinOpts());
 
 #ifdef DEBUG
@@ -213,7 +239,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
         // (since this is a loop) begBlk must likewise be reachable from curBlk.
 
-        if (fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
+        if (m_reachabilitySets->CanReach(curBlk, begBlk) && m_reachabilitySets->CanReach(begBlk, curBlk))
         {
             // If `curBlk` reaches any of the back edge blocks we set `reachable`.
             // If `curBlk` dominates any of the back edge blocks we set `dominates`.
@@ -224,8 +250,8 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             {
                 BasicBlock* backedge = tmp->getSourceBlock();
 
-                reachable |= fgReachable(curBlk, backedge);
-                dominates |= fgDominate(curBlk, backedge);
+                reachable |= m_reachabilitySets->CanReach(curBlk, backedge);
+                dominates |= m_domTree->Dominates(curBlk, backedge);
 
                 if (dominates && reachable)
                 {
@@ -319,7 +345,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #endif
         return;
     }
-    noway_assert(fgReachable(begBlk, endBlk));
+    noway_assert(m_reachabilitySets->CanReach(begBlk, endBlk));
 
 #ifdef DEBUG
     if (verbose)
@@ -357,11 +383,11 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
         // (since this is a loop) begBlk must likewise be reachable from curBlk.
         //
-        if (fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
+        if (m_reachabilitySets->CanReach(curBlk, begBlk) && m_reachabilitySets->CanReach(begBlk, curBlk))
         {
             weight_t scale = 1.0 / BB_LOOP_WEIGHT_SCALE;
 
-            if (!fgDominate(curBlk, endBlk))
+            if (!m_domTree->Dominates(curBlk, endBlk))
             {
                 scale *= 2;
             }
@@ -498,22 +524,23 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
     if (!skipUnmarkLoop &&                      // If we want to unmark this loop...
         (fgCurBBEpochSize == fgBBNumMax + 1) && // We didn't add new blocks since last renumber...
-        fgDomsComputed &&                       // Given the doms are computed and valid...
+        (m_reachabilitySets != nullptr) &&      // Given the reachability sets are computed and valid...
         (fgCurBBEpochSize == fgDomBBcount + 1))
     {
         // This block must reach conditionally or always
 
-        if (block->KindIs(BBJ_ALWAYS) &&                   // This block always reaches
-            block->GetTarget()->isLoopHead() &&            // to a loop head...
-            (block->GetTarget()->bbNum <= block->bbNum) && // This is a backedge...
-            fgReachable(block->GetTarget(), block))        // Block's back edge target can reach block...
+        if (block->KindIs(BBJ_ALWAYS) &&                             // This block always reaches
+            block->GetTarget()->isLoopHead() &&                      // to a loop head...
+            (block->GetTarget()->bbNum <= block->bbNum) &&           // This is a backedge...
+            m_reachabilitySets->CanReach(block->GetTarget(), block)) // Block's back edge target can reach block...
         {
             optUnmarkLoopBlocks(block->GetTarget(), block); // Unscale the blocks in such loop.
         }
-        else if (block->KindIs(BBJ_COND) &&                         // This block conditionally reaches
-                 block->GetTrueTarget()->isLoopHead() &&            // to a loop head...
-                 (block->GetTrueTarget()->bbNum <= block->bbNum) && // This is a backedge...
-                 fgReachable(block->GetTrueTarget(), block))        // Block's back edge target can reach block...
+        else if (block->KindIs(BBJ_COND) &&                                   // This block conditionally reaches
+                 block->GetTrueTarget()->isLoopHead() &&                      // to a loop head...
+                 (block->GetTrueTarget()->bbNum <= block->bbNum) &&           // This is a backedge...
+                 m_reachabilitySets->CanReach(block->GetTrueTarget(), block)) // Block's back edge target can reach
+                                                                              // block...
         {
             optUnmarkLoopBlocks(block->GetTrueTarget(), block); // Unscale the blocks in such loop.
         }
@@ -1819,7 +1846,7 @@ private:
                 // and when we process its unique predecessor we'll abort if ENTRY
                 // doesn't dominate that.
             }
-            else if (!comp->fgDominate(entry, block))
+            else if (!comp->m_domTree->Dominates(entry, block))
             {
                 JITDUMP("   (find cycle) entry:" FMT_BB " does not dominate " FMT_BB "\n", entry->bbNum, block->bbNum);
                 return false;
@@ -1846,7 +1873,7 @@ private:
                         // of an outer loop.  For the dominance test, if `predBlock` is a new block, use
                         // its unique predecessor since the dominator tree has info for that.
                         BasicBlock* effectivePred = (predBlock->bbNum > oldBlockMaxNum ? predBlock->Prev() : predBlock);
-                        if (comp->fgDominate(entry, effectivePred))
+                        if (comp->m_domTree->Dominates(entry, effectivePred))
                         {
                             // Outer loop back-edge
                             continue;
@@ -2453,7 +2480,6 @@ void Compiler::optFindNaturalLoops()
     }
 #endif // DEBUG
 
-    noway_assert(fgDomsComputed);
     assert(fgHasLoops);
 
 #if COUNT_LOOPS
@@ -2546,7 +2572,10 @@ NO_MORE_LOOPS:
 
     if (mod)
     {
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
+        fgInvalidateDfsTree();
+        fgRenumberBlocks();
+        m_dfsTree = fgComputeDfs();
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
     }
 
     // Now the loop indices are stable. We can figure out parent/child relationships
@@ -3935,8 +3964,8 @@ RETRY_UNROLL:
 
     if (change && !BitVecOps::IsEmpty(&loopTraits, loopsWithUnrolledDescendant) && (passes < 10))
     {
-        fgDomsComputed = false;
         fgRenumberBlocks(); // For proper lexical visit
+        fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         passes++;
@@ -3960,7 +3989,6 @@ RETRY_UNROLL:
         fgDfsBlocksAndRemove();
         m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
-        fgDomsComputed = false;
         fgRenumberBlocks();
 
         DBEXEC(verbose, fgDispBasicBlocks());
@@ -4647,7 +4675,7 @@ void Compiler::optMarkLoopHeads()
         printf("*************** In optMarkLoopHeads()\n");
     }
 
-    assert(fgReachabilitySetsValid);
+    assert(m_reachabilitySets != nullptr);
     fgDebugCheckBBNumIncreasing();
 
     int loopHeadsMarked = 0;
@@ -4659,10 +4687,9 @@ void Compiler::optMarkLoopHeads()
     {
         // Set BBF_LOOP_HEAD if we have backwards branches to this block.
 
-        unsigned blockNum = block->bbNum;
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if (blockNum <= predBlock->bbNum)
+            if (block->bbNum <= predBlock->bbNum)
             {
                 if (predBlock->KindIs(BBJ_CALLFINALLY))
                 {
@@ -4671,7 +4698,7 @@ void Compiler::optMarkLoopHeads()
                 }
 
                 // If block can reach predBlock then we have a loop head
-                if (BlockSetOps::IsMember(this, predBlock->bbReach, blockNum))
+                if (m_reachabilitySets->CanReach(block, predBlock))
                 {
                     hasLoops = true;
                     block->SetFlags(BBF_LOOP_HEAD);
@@ -4740,6 +4767,16 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
     // This code depends on block number ordering.
     INDEBUG(fgDebugCheckBBNumIncreasing());
 
+    assert(m_dfsTree != nullptr);
+    if (m_reachabilitySets == nullptr)
+    {
+        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
+    }
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
+
     unsigned generalLoopCount = 0;
 
     // We will use the following terminology:
@@ -4774,7 +4811,7 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
             }
 
             /* the top block must be able to reach the bottom block */
-            if (!fgReachable(top, bottom))
+            if (!m_reachabilitySets->CanReach(top, bottom))
             {
                 continue;
             }
@@ -4836,7 +4873,6 @@ void Compiler::optFindLoops()
 #endif
 
     noway_assert(opts.OptimizationEnabled());
-    assert(fgDomsComputed);
 
     optMarkLoopHeads();
 
@@ -4870,9 +4906,6 @@ PhaseStatus Compiler::optFindLoopsPhase()
     optLoopTable      = nullptr;
     optLoopCount      = 0;
 
-    // Old dominators and reachability sets are no longer valid.
-    fgDomsComputed = false;
-
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -4885,8 +4918,10 @@ void Compiler::optFindNewLoops()
 
     if (optCanonicalizeLoops(m_loops))
     {
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
+        fgInvalidateDfsTree();
+        fgRenumberBlocks();
         m_dfsTree = fgComputeDfs();
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }
 

@@ -346,6 +346,11 @@ namespace System
             scoped Span<byte> buffer;
             byte[]? arrayFromPool = null;
 
+            if (value.Length == 0)
+            {
+                result = default;
+                return ParsingStatus.Failed;
+            }
             if (value.Length < 255)
             {
                 buffer = stackalloc byte[value.Length + 1 + 1];
@@ -659,9 +664,9 @@ namespace System
         //
 #if DEBUG
         // Mutable for unit testing...
-        private static
+        internal static
 #else
-        private const
+        internal const
 #endif
         int s_naiveThreshold = 20000;
         private static ParsingStatus NumberToBigInteger(ref NumberBuffer number, out BigInteger result)

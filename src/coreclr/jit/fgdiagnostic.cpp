@@ -1815,7 +1815,7 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
             fprintf(m_file, "%*s", m_indent, "");
 
             loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* block) {
-                if (BitVecOps::IsMember(&m_traits, m_outputBlocks, block->bbNewPostorderNum))
+                if (BitVecOps::IsMember(&m_traits, m_outputBlocks, block->bbPostorderNum))
                 {
                     return BasicBlockVisit::Continue;
                 }
@@ -1833,7 +1833,7 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
                 }
 
                 fprintf(m_file, FMT_BB ";", block->bbNum);
-                BitVecOps::AddElemD(&m_traits, m_outputBlocks, block->bbNewPostorderNum);
+                BitVecOps::AddElemD(&m_traits, m_outputBlocks, block->bbPostorderNum);
 
                 return BasicBlockVisit::Continue;
             });
@@ -1859,52 +1859,6 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
 
 /*****************************************************************************/
 #ifdef DEBUG
-
-void Compiler::fgDispReach()
-{
-    printf("------------------------------------------------\n");
-    printf("BBnum  Reachable by \n");
-    printf("------------------------------------------------\n");
-
-    for (BasicBlock* const block : Blocks())
-    {
-        printf(FMT_BB " : ", block->bbNum);
-        BlockSetOps::Iter iter(this, block->bbReach);
-        unsigned          bbNum = 0;
-        while (iter.NextElem(&bbNum))
-        {
-            printf(FMT_BB " ", bbNum);
-        }
-        printf("\n");
-    }
-}
-
-void Compiler::fgDispDoms()
-{
-    // Don't bother printing this when we have a large number of BasicBlocks in the method
-    if (fgBBcount > 256)
-    {
-        return;
-    }
-
-    printf("------------------------------------------------\n");
-    printf("BBnum  Dominated by\n");
-    printf("------------------------------------------------\n");
-
-    for (unsigned i = 1; i <= fgBBNumMax; ++i)
-    {
-        BasicBlock* current = fgBBReversePostorder[i];
-        printf(FMT_BB ":  ", current->bbNum);
-        while (current != current->bbIDom)
-        {
-            printf(FMT_BB " ", current->bbNum);
-            current = current->bbIDom;
-        }
-        printf("\n");
-    }
-}
-
-/*****************************************************************************/
 
 void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 */)
 {
@@ -5096,22 +5050,22 @@ void Compiler::fgDebugCheckLoopTable()
         // 1. The pre-header dominates the entry (if pre-headers are required).
         // 2. The entry dominates the exit.
         // 3. The IDom tree from the exit reaches the entry.
-        if (fgDomsComputed)
+        if (m_domTree != nullptr)
         {
             if (optLoopsRequirePreHeaders)
             {
-                assert(fgDominate(loop.lpHead, loop.lpEntry));
+                assert(m_domTree->Dominates(loop.lpHead, loop.lpEntry));
             }
 
             if (loop.lpExitCnt == 1)
             {
                 assert(loop.lpExit != nullptr);
-                assert(fgDominate(loop.lpEntry, loop.lpExit));
+                assert(m_domTree->Dominates(loop.lpEntry, loop.lpExit));
 
                 BasicBlock* cur = loop.lpExit;
                 while ((cur != nullptr) && (cur != loop.lpEntry))
                 {
-                    assert(fgDominate(cur, loop.lpExit));
+                    assert(m_domTree->Dominates(cur, loop.lpExit));
                     cur = cur->bbIDom;
                 }
                 assert(cur == loop.lpEntry); // We must be able to reach the entry from the exit via the IDom tree.
@@ -5192,7 +5146,7 @@ void Compiler::fgDebugCheckDfsTree()
     unsigned count =
         fgRunDfs([](BasicBlock* block, unsigned preorderNum) { assert(block->bbPreorderNum == preorderNum); },
                  [=](BasicBlock* block, unsigned postorderNum) {
-                     assert(block->bbNewPostorderNum == postorderNum);
+                     assert(block->bbPostorderNum == postorderNum);
                      assert(m_dfsTree->GetPostOrder(postorderNum) == block);
                  },
                  [](BasicBlock* block, BasicBlock* succ) {});

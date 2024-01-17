@@ -526,11 +526,17 @@ void BasicBlock::dspFlags() const
         {BBF_OLD_LOOP_HEADER_QUIRK, "loopheader"},
     };
 
+    bool first = true;
     for (unsigned i = 0; i < ArrLen(bbFlagDisplay); i++)
     {
         if (HasFlag(bbFlagDisplay[i].flag))
         {
-            printf("%s ", bbFlagDisplay[i].displayString);
+            if (!first)
+            {
+                printf(" ");
+            }
+            printf("%s", bbFlagDisplay[i].displayString);
+            first = false;
         }
     }
 }
@@ -1605,9 +1611,8 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
 
     block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
 
-    block->bbPreorderNum     = 0;
-    block->bbPostorderNum    = 0;
-    block->bbNewPostorderNum = 0;
+    block->bbPreorderNum  = 0;
+    block->bbPostorderNum = 0;
 
     return block;
 }
