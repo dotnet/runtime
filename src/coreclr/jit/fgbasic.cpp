@@ -30,8 +30,6 @@ void Compiler::fgInit()
     fgRangeUsedInEdgeWeights = true;
     fgCalledCount            = BB_ZERO_WEIGHT;
 
-    /* We haven't yet computed the dominator sets */
-    fgDomsComputed         = false;
     fgReturnBlocksComputed = false;
 
     /* Initialize the basic block list */
@@ -5607,12 +5605,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 bool Compiler::fgRenumberBlocks()
 {
     assert(fgPredsComputed);
-
-    // If we renumber the blocks the dominator information will be out-of-date
-    if (fgDomsComputed)
-    {
-        noway_assert(!"Can't call Compiler::fgRenumberBlocks() when fgDomsComputed==true");
-    }
 
     JITDUMP("\n*************** Before renumbering the basic blocks\n");
     JITDUMPEXEC(fgDispBasicBlocks());

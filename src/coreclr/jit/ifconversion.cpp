@@ -775,7 +775,7 @@ PhaseStatus Compiler::optIfConversion()
     bool madeChanges = false;
 
     // This phase does not respect SSA: assignments are deleted/moved.
-    assert(!fgDomsComputed);
+    assert(!fgSsaValid);
     optReachableBitVecTraits = nullptr;
 
 #if defined(TARGET_ARM64) || defined(TARGET_XARCH)

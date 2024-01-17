@@ -867,7 +867,7 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
 
     if ((result == PhaseStatus::MODIFIED_EVERYTHING) && opts.OptimizationEnabled())
     {
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+        fgRenumberBlocks();
     }
 
     return result;
