@@ -407,10 +407,8 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             TimeSpanRangeAttributeValidator validator = new TimeSpanRangeAttributeValidator();
 
             Task[] tasks = new Task[8];
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < tasks.Length; i++)
             {
-                int taskNumber = i;
-
                 tasks[i] = Task.Run(() =>
                 {
                     Task.Delay(10).Wait();

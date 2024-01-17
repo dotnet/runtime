@@ -484,16 +484,16 @@ namespace Microsoft.Extensions.Options.Generators
         public override string FormatErrorMessage(string name) =>
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
         private bool NeedToConvertMinMax { get; }
-        private bool Initialized { get; set; }
+        private volatile bool _initialized;
         private const string c_minMaxError = "The minimum and maximum values must be set to valid values.";
 
         public override bool IsValid(object? value)
         {
-            if (!Initialized)
+            if (!_initialized)
             {
                 lock (this)
                 {
-                    if (!Initialized)
+                    if (!_initialized)
                     {
                         if (Minimum is null || Maximum is null)
                         {
@@ -513,7 +513,7 @@ namespace Microsoft.Extensions.Options.Generators
                         {
                             throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
                         }
-                        Initialized = true;
+                        _initialized = true;
                     }
                 }
             }
