@@ -201,17 +201,17 @@ namespace System.Numerics
             }
             else
             {
-                // Concatenate rotation is actually q2 * q1 instead of q1 * q2.
-                // So that's why value2 goes q1 and value1 goes q2.
-                float q1x = value2.X;
-                float q1y = value2.Y;
-                float q1z = value2.Z;
-                float q1w = value2.W;
+                Quaternion ans;
 
-                float q2x = value1.X;
-                float q2y = value1.Y;
-                float q2z = value1.Z;
-                float q2w = value1.W;
+                float q1x = value1.X;
+                float q1y = value1.Y;
+                float q1z = value1.Z;
+                float q1w = value1.W;
+
+                float q2x = value2.X;
+                float q2y = value2.Y;
+                float q2z = value2.Z;
+                float q2w = value2.W;
 
                 // cross(av, bv)
                 float cx = q1y * q2z - q1z * q2y;
@@ -220,11 +220,11 @@ namespace System.Numerics
 
                 float dot = q1x * q2x + q1y * q2y + q1z * q2z;
 
-                Quaternion ans;
                 ans.X = q1x * q2w + q2x * q1w + cx;
                 ans.Y = q1y * q2w + q2y * q1w + cy;
                 ans.Z = q1z * q2w + q2z * q1w + cz;
                 ans.W = q1w * q2w - dot;
+
                 return ans;
             }
         }
