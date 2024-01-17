@@ -17,10 +17,10 @@ namespace System.Globalization.Tests
             private readonly CompareInfo _compareInfo;
             private readonly CompareOptions _compareOptions;
 
-            public CustomComparer(CompareInfo cmpInfo)
+            public CustomComparer(CompareInfo cmpInfo, CompareOptions cmpOptions)
             {
                 _compareInfo = cmpInfo;
-                _compareOptions = CompareOptions.IgnoreCase;
+                _compareOptions = cmpOptions;
             }
 
             public override int Compare(string x, string y) =>
@@ -29,11 +29,14 @@ namespace System.Globalization.Tests
             public override bool Equals(string x, string y) =>
                 _compareInfo.Compare(x, y, _compareOptions) == 0;
 
-            public override int GetHashCode(string obj) =>
-                _compareInfo.GetHashCode(obj, _compareOptions);
+            public override int GetHashCode(string obj)
+            {
+                return _compareInfo.GetHashCode(obj, _compareOptions);
+
+            }
         }
 
-        public static IEnumerable<object[]> HashCodeLocalized_TestData(bool testCollection)
+        public static IEnumerable<object[]> HashCodeLocalized_TestData()
         {
             yield return new object[] { s_invariantCompare, "foo", "Foo", CompareOptions.IgnoreCase };
             yield return new object[] { s_invariantCompare, "igloo", "İGLOO", CompareOptions.IgnoreCase };
@@ -44,25 +47,17 @@ namespace System.Globalization.Tests
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 // ActiveIssue: https://github.com/dotnet/runtime/issues/96400
+                yield return new object[] { new CultureInfo("en-GB").CompareInfo, "100", "100!", CompareOptions.IgnoreSymbols }; // HG: equal: True, hashCodesEqual: False
+                yield return new object[] { new CultureInfo("ja-JP").CompareInfo, "\u30A2", "\u3042", CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
                 yield return new object[] { new CultureInfo("en-GB").CompareInfo, "café", "cafe\u0301", CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
                 yield return new object[] { new CultureInfo("en-GB").CompareInfo, "café", "cafe\u0301", CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
                 yield return new object[] { new CultureInfo("tr-TR").CompareInfo, "igloo", "İGLOO", CompareOptions.IgnoreCase }; // HG: equal: True, hashCodesEqual: False
                 yield return new object[] { new CultureInfo("tr-TR").CompareInfo, "igloo", "IGLOO", CompareOptions.IgnoreCase }; // HG: equal: False, hashCodesEqual: True
             }
-
-            if (!testCollection)
-            // in ICU: IgnoreKanaType and IgnoreSymbols are not respected 
-            // when using custom comparer. For equal hashes, ContainsKey returns false
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
-            {
-                // ActiveIssue: https://github.com/dotnet/runtime/issues/96400
-                yield return new object[] { new CultureInfo("en-GB").CompareInfo, "100", "100!", CompareOptions.IgnoreSymbols }; // HG: equal: True, hashCodesEqual: False
-                yield return new object[] { new CultureInfo("ja-JP").CompareInfo, "\u30A2", "\u3042", CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
-            }
         }
 
         [Theory]
-        [MemberData(nameof(HashCodeLocalized_TestData), parameters: false)]
+        [MemberData(nameof(HashCodeLocalized_TestData))]
         public void HashCodeLocalized(CompareInfo cmpInfo, string str1, string str2, CompareOptions options)
         {
             bool areEqual = cmpInfo.Compare(str1, str2, options) == 0;
@@ -77,17 +72,9 @@ namespace System.Globalization.Tests
             {
                 Assert.False(areHashCodesEqual);
             }
-        }
 
-        [Theory]
-        [MemberData(nameof(HashCodeLocalized_TestData), parameters: true)]
-        public void CollectionWithCustomComparer(CompareInfo cmpInfo, string str1, string str2, CompareOptions options)
-        {
-            var hashCode1 = cmpInfo.GetHashCode(str1, options);
-            var hashCode2 = cmpInfo.GetHashCode(str2, options);
-            bool areHashCodesEqual = hashCode1 == hashCode2;
-
-            Dictionary<string, int> customDictionary = new Dictionary<string, int>(new CustomComparer(cmpInfo));
+            // implication of the above behavior:
+            Dictionary<string, int> customDictionary = new Dictionary<string, int>(new CustomComparer(cmpInfo, options));
             customDictionary.Add(str1, 0);
             if (customDictionary.ContainsKey(str2))
             {
