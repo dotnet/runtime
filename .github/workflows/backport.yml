@@ -38,11 +38,11 @@ jobs:
 
         ## Testing
 
-        [How was the fix verified? How was the issue missed previously?]
+        [How was the fix verified? How was the issue missed previously? What tests were added?]
 
         ## Risk
 
-        [High/Medium/Low. Justify the indication by mentioning how risks were measured and minimized.]
+        [High/Medium/Low. Justify the indication by mentioning how risks were measured and addressed.]
 
         **IMPORTANT**: If this backport is for a servicing release, please verify that:
 
