@@ -1486,10 +1486,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			MonoInst *zero = emit_xzero (cfg, klass);
 			MonoInst *neg = emit_simd_ins (cfg, klass, OP_XBINOP, zero->dreg, args [0]->dreg);
 			neg->inst_c0 = OP_ISUB;
-			neg->inst_c1 = MONO_TYPE_I8;
+			neg->inst_c1 = arg0_type;
+			
 			MonoInst *ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, neg->dreg);
 			ins->inst_c0 = OP_IMAX;
-			ins->inst_c1 = MONO_TYPE_I8;
+			ins->inst_c1 = arg0_type;
 			return ins;
 		}
 #elif defined(TARGET_WASM)
