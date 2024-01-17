@@ -56,11 +56,11 @@ public:
         }
     }
 
-    void InitTypeContext(TypeHandle* methInst, DWORD methInstCount)
+    void InitTypeContext(TypeHandle* classInst, DWORD classInstCount, TypeHandle* methInst, DWORD methInstCount)
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_typeContext = SigTypeContext(Instantiation(), Instantiation(methInst, methInstCount));
+        m_typeContext = SigTypeContext(Instantiation(classInst, classInstCount), Instantiation(methInst, methInstCount));
     }
 #endif // _DEBUG
 };

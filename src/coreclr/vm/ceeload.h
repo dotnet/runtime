@@ -339,7 +339,8 @@ struct VASigCookie
     Volatile<PCODE> pNDirectILStub;         // will be use if target is NDirect (tag == 0)
     PTR_Module      pModule;
     Signature       signature;
-    // classInst should always be NULL so we only need methInst here
+    TypeHandle*     classInst;
+    DWORD           classInstCount;
     TypeHandle*     methInst;
     DWORD           methInstCount;
 };

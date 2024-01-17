@@ -4772,6 +4772,8 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
             pCookie->pNDirectILStub = NULL;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
+            pCookie->classInst = typeContext->m_classInst.GetRawArgs();
+            pCookie->classInstCount = typeContext->m_classInst.GetNumArgs();
             pCookie->methInst = typeContext->m_methodInst.GetRawArgs();
             pCookie->methInstCount = typeContext->m_methodInst.GetNumArgs();
 
