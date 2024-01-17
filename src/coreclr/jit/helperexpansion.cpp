@@ -1554,6 +1554,25 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     return true;
 }
 
+//------------------------------------------------------------------------------
+// fgLateCastExpansion: Partially inline various cast helpers, e.g.:
+//
+//    tmp = CORINFO_HELP_ISINSTANCEOFINTERFACE(clsHandle, obj);
+//
+// into:
+//
+//    tmp = obj;
+//    if ((obj != null) && (obj->pMT != likelyClassHandle))
+//    {
+//        tmp = CORINFO_HELP_ISINSTANCEOFINTERFACE(clsHandle, obj);
+//    }
+//
+// The goal is to move cast expansion logic from the importer to this phase, for now,
+// this phase only supports "isinst" and for profiled casts only.
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
 PhaseStatus Compiler::fgLateCastExpansion()
 {
     if (!doesMethodHaveExpandableCasts())
@@ -1578,6 +1597,18 @@ PhaseStatus Compiler::fgLateCastExpansion()
     return fgExpandHelper<&Compiler::fgLateCastExpansionForCall>(true);
 }
 
+//------------------------------------------------------------------------------
+// fgLateCastExpansionForCall : Expand specific cast helper, see
+//    fgLateCastExpansion's comments.
+//
+// Arguments:
+//    block - Block containing the cast helper to expand
+//    stmt  - Statement containing the cast helper
+//    call  - The cast helper
+//
+// Returns:
+//    True if expanded, false otherwise.
+//
 bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
     if (!call->IsHelperCall() || !impIsCastHelperMayHaveProfileData(call->GetHelperNum()))
@@ -1774,7 +1805,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // Wire up the blocks
     //
     prevBb->SetTarget(nullcheckBb);
-    nullcheckBb->SetTrueTarget(fallbackBb);
+    nullcheckBb->SetTrueTarget(block);
     nullcheckBb->SetFalseTarget(typeCheckBb);
     typeCheckBb->SetTrueTarget(block);
     typeCheckBb->SetFalseTarget(fallbackBb);
@@ -1782,7 +1813,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     fgRemoveRefPred(block, prevBb);
     fgAddRefPred(nullcheckBb, prevBb);
     fgAddRefPred(typeCheckBb, nullcheckBb);
-    fgAddRefPred(fallbackBb, nullcheckBb);
+    fgAddRefPred(block, nullcheckBb);
     fgAddRefPred(fallbackBb, typeCheckBb);
     fgAddRefPred(block, typeCheckBb);
     fgAddRefPred(block, fallbackBb);
