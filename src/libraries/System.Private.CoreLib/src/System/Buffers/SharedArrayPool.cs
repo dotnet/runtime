@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Buffers
@@ -411,7 +412,7 @@ namespace System.Buffers
                         _millisecondsTimestamp = 0;
                     }
 
-                    arrays[count] = array;
+                    Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(arrays), count) = array; // arrays[count] = array, but avoiding stelemref
                     _count = count + 1;
                     enqueued = true;
                 }
