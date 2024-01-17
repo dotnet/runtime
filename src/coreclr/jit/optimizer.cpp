@@ -4397,14 +4397,11 @@ void Compiler::optFindNewLoops()
 {
     m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
-    bool modified = false;
-
     if (optCompactLoops())
     {
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-        modified  = true;
     }
 
     if (optCanonicalizeLoops())
@@ -4412,13 +4409,9 @@ void Compiler::optFindNewLoops()
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-        modified  = true;
     }
 
-    if (modified)
-    {
-        fgRenumberBlocks();
-    }
+    fgRenumberBlocks();
 
     // Starting now, we require all loops to have pre-headers.
     optLoopsRequirePreHeaders = true;
@@ -4461,7 +4454,7 @@ bool Compiler::optCanonicalizeLoops()
 // optCompactLoops: Compact loops to make their loop blocks lexical if possible.
 //
 // Returns:
-//   True if any new blocks were added.
+//   True if the flow graph was changed.
 //
 bool Compiler::optCompactLoops()
 {
@@ -4486,7 +4479,7 @@ bool Compiler::optCompactLoops()
 //   loop - The loop
 //
 // Returns:
-//   True if any new blocks were added.
+//   True if the flow graph was changed.
 //
 bool Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
 {
@@ -4495,8 +4488,8 @@ bool Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
     BasicBlock* top           = loop->GetLexicallyTopMostBlock();
     unsigned    numLoopBlocks = loop->NumLoopBlocks();
 
-    BasicBlock* cur         = top;
-    bool        addedBlocks = false;
+    BasicBlock* cur              = top;
+    bool        changedFlowGraph = false;
     while (numLoopBlocks > 0)
     {
         if (loop->ContainsBlock(cur))
@@ -4542,10 +4535,10 @@ bool Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
         ehUpdateLastBlocks(insertionPoint, lastNonLoopBlock);
 
         // Apply any adjustments needed for fallthrough at the boundaries of the moved region.
-        addedBlocks |= optLoopCompactionFixupFallThrough(insertionPoint, moveBefore, cur) != nullptr;
-        addedBlocks |= optLoopCompactionFixupFallThrough(lastNonLoopBlock, nextLoopBlock, moveBefore) != nullptr;
+        changedFlowGraph |= optLoopCompactionFixupFallThrough(insertionPoint, moveBefore, cur);
+        changedFlowGraph |= optLoopCompactionFixupFallThrough(lastNonLoopBlock, nextLoopBlock, moveBefore);
         // Also apply any adjustments needed where the blocks were snipped out of the loop.
-        addedBlocks |= optLoopCompactionFixupFallThrough(previous, cur, nextLoopBlock) != nullptr;
+        changedFlowGraph |= optLoopCompactionFixupFallThrough(previous, cur, nextLoopBlock);
 
         // Update insertionPoint for the next insertion.
         insertionPoint = lastNonLoopBlock;
@@ -4553,7 +4546,7 @@ bool Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
         cur = nextLoopBlock;
     }
 
-    return addedBlocks;
+    return changedFlowGraph;
 }
 
 //-----------------------------------------------------------------------------
@@ -4665,12 +4658,11 @@ BasicBlock* Compiler::optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNatural
 //   newNext - The new block that was the fallthrough block
 //
 // Returns:
-//   New insertion point.
+//   True if the flow graph was changed by this function.
 //
-BasicBlock* Compiler::optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext)
+bool Compiler::optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext)
 {
-    // If we create a new block, that will be our return value.
-    BasicBlock* newBlock = nullptr;
+    bool changed = false;
 
     if (block->bbFallsThrough())
     {
@@ -4700,8 +4692,10 @@ BasicBlock* Compiler::optLoopCompactionFixupFallThrough(BasicBlock* block, Basic
         else
         {
             // Insert an unconditional jump to `oldNext` just after `block`.
-            newBlock = fgConnectFallThrough(block, oldNext);
+            fgConnectFallThrough(block, oldNext);
         }
+
+        changed = true;
     }
     else if (block->KindIs(BBJ_ALWAYS) && block->TargetIs(newNext))
     {
@@ -4751,7 +4745,7 @@ BasicBlock* Compiler::optLoopCompactionFixupFallThrough(BasicBlock* block, Basic
         }
     }
 
-    return newBlock;
+    return changed;
 }
 
 //-----------------------------------------------------------------------------
