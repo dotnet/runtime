@@ -147,9 +147,12 @@ namespace Mono.Linker
 					// we shouldn't need to run the below logic. This results in ILLink potentially
 					// keeping more methods than needed.
 
+					// Static methods on interfaces must be implemented only via explicit method-impl record
+					// not by a signature match. So there's no point in running the logic below for static methods.
+
 					if (!resolvedInterfaceMethod.IsVirtual
 						|| resolvedInterfaceMethod.IsFinal
-						|| !resolvedInterfaceMethod.IsNewSlot)
+						|| resolvedInterfaceMethod.IsStatic)
 						continue;
 
 					// Try to find an implementation with a name/sig match on the current type
