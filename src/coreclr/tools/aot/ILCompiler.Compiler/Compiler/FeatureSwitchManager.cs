@@ -592,7 +592,8 @@ namespace ILCompiler
                             return true;
                         }
                         else if (method.IsIntrinsic && method.Name is "get_IsValueType"
-                            && method.OwningType is MetadataType { Name: "Type", Namespace: "System" }
+                            && method.OwningType is MetadataType mdt
+                            && mdt.Name == "Type" && mdt.Namespace == "System" && mdt.Module == mdt.Context.SystemModule
                             && TryExpandTypeIsValueType(methodIL, body, flags, currentOffset, out constant))
                         {
                             return true;
