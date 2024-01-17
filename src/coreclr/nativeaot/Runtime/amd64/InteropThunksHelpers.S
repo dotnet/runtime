@@ -14,7 +14,11 @@ LEAF_ENTRY RhCommonStub, _TEXT
     alloc_stack    SIZEOF_FP_REGS
     SAVE_FLOAT_ARGUMENT_REGISTERS 0
 
+#ifdef FEATURE_EMULATED_TLS
+    call    C_FUNC(RhpGetThunkData)
+#else
     INLINE_GET_TLS_VAR  tls_thunkData
+#endif
 
     RESTORE_FLOAT_ARGUMENT_REGISTERS 0
     free_stack    SIZEOF_FP_REGS
@@ -36,6 +40,7 @@ LEAF_ENTRY RhGetCommonStubAddress, _TEXT
 LEAF_END RhGetCommonStubAddress, _TEXT
 
 
+#ifndef FEATURE_EMULATED_TLS
 LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
 
     INLINE_GET_TLS_VAR  tls_thunkData
@@ -43,3 +48,4 @@ LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
     mov    rax, qword ptr [rax]
     ret
 LEAF_END RhGetCurrentThunkContext, _TEXT
+#endif //FEATURE_EMULATED_TLS

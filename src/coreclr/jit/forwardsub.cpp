@@ -521,7 +521,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Bail if sub node has mismatched types.
     // Might be able to tolerate these by retyping.
     //
-    if (defNode->TypeGet() != fwdSubNode->TypeGet())
+    if (genActualType(defNode->TypeGet()) != genActualType(fwdSubNode->TypeGet()))
     {
         JITDUMP(" mismatched types (store)\n");
         return false;

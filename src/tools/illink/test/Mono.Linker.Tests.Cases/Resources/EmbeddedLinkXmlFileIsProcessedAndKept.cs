@@ -7,7 +7,6 @@ namespace Mono.Linker.Tests.Cases.Resources
 	[StripDescriptors (false)]
 
 	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsProcessedAndKept.xml", "ILLink.Descriptors.xml")]
-	[SkipPeVerify]
 	[KeptResource ("ILLink.Descriptors.xml")]
 	public class EmbeddedLinkXmlFileIsProcessedAndKept
 	{

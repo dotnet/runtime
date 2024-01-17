@@ -27,23 +27,23 @@ namespace System.Reflection
 
             internal TypeSignature(RuntimeType signatureHolderType, int parameterIndex)
             {
-               SignatureHolderType = signatureHolderType;
-               SignatureHolderInfo = null;
-               ParameterIndex = parameterIndex;
+                SignatureHolderType = signatureHolderType;
+                SignatureHolderInfo = null;
+                ParameterIndex = parameterIndex;
             }
 
             internal TypeSignature(object signatureHolderInfo, int parameterIndex)
             {
-               SignatureHolderType = null;
-               SignatureHolderInfo = signatureHolderInfo;
-               ParameterIndex = parameterIndex;
+                SignatureHolderType = null;
+                SignatureHolderInfo = signatureHolderInfo;
+                ParameterIndex = parameterIndex;
             }
 
             internal TypeSignature(RuntimeType signatureHolderType, object signatureHolderInfo, int parameterIndex)
             {
-               SignatureHolderType = signatureHolderType;
-               SignatureHolderInfo = signatureHolderInfo;
-               ParameterIndex = parameterIndex;
+                SignatureHolderType = signatureHolderType;
+                SignatureHolderInfo = signatureHolderInfo;
+                ParameterIndex = parameterIndex;
             }
 
             internal bool TryGetCustomModifiersFromSignatureHolderInfo(bool required, out Type[] modifiers)

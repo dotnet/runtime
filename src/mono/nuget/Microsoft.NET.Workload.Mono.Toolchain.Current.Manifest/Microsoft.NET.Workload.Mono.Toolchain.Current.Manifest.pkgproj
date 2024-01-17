@@ -18,6 +18,7 @@
       <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
       <WorkloadManifestTargetsPath>$(IntermediateOutputPath)WorkloadManifest.targets</WorkloadManifestTargetsPath>
       <WorkloadManifestWasiTargetsPath>$(IntermediateOutputPath)WorkloadManifest.Wasi.targets</WorkloadManifestWasiTargetsPath>
+      <WorkloadManifestWasmFeaturesPath>$(MSBuildThisFileDirectory)WasmFeatures.props</WorkloadManifestWasmFeaturesPath>
       <WorkloadManifestTelemetryTargetsPath>$(MSBuildThisFileDirectory)WorkloadTelemetry.targets</WorkloadManifestTelemetryTargetsPath>
     </PropertyGroup>
 
@@ -25,6 +26,7 @@
       <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestTargetsPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestWasiTargetsPath)" TargetPath="data" />
+      <PackageFile Include="$(WorkloadManifestWasmFeaturesPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestTelemetryTargetsPath)" TargetPath="data" />
     </ItemGroup>
 
@@ -44,26 +46,27 @@
     <ItemGroup>
       <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
       <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
+      <_WorkloadManifestValues Include="PackageVersionNet8" Value="$(PackageVersionNet8)" Condition="'$(PackageVersionNet8)' != ''" />
+      <_WorkloadManifestValues Include="PackageVersionNet8" Value="$(PackageVersion)" Condition="'$(PackageVersionNet8)' == ''" />
+      <_WorkloadManifestValues Include="PackageVersionNet7" Value="$(PackageVersionNet7)" />
       <_WorkloadManifestValues Include="PackageVersionNet6" Value="$(PackageVersionNet6)" />
-      <_WorkloadManifestValues Include="PackageVersionNet7" Value="$(PackageVersionNet7)" Condition="'$(PackageVersionNet7)' != ''" />
-      <_WorkloadManifestValues Include="PackageVersionNet7" Value="$(PackageVersion)" Condition="'$(PackageVersionNet7)' == ''" />
       <_WorkloadManifestValues Include="NetCoreAppCurrent" Value="$(NetCoreAppCurrent)" />
       <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
     </ItemGroup>
 
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.json.in"
-      Properties="@(_WorkloadManifestValues)"
+      Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
       OutputPath="$(WorkloadManifestPath)" />
 
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.targets.in"
-      Properties="@(_WorkloadManifestValues)"
+      Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
       OutputPath="$(WorkloadManifestTargetsPath)" />
 
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.Wasi.targets.in"
-      Properties="@(_WorkloadManifestValues)"
+      Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
       OutputPath="$(WorkloadManifestWasiTargetsPath)" />
   </Target>
 

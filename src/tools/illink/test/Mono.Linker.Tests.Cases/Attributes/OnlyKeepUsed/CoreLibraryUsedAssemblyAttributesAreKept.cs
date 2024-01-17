@@ -13,7 +13,6 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 #if !NETCOREAPP
 	[KeptAttributeInAssembly ("System.dll", typeof (AssemblyDescriptionAttribute))]
 #endif
-	[SkipPeVerify]
 	public class CoreLibraryUsedAssemblyAttributesAreKept
 	{
 		public static void Main ()

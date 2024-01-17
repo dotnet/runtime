@@ -122,6 +122,16 @@
         <target state="translated">Określono typ modułu sprawdzania poprawności o wartości null dla atrybutu „ValidateObjectMembersAttribute” lub „ValidateEnumeratedItemsAttribute”.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
+        <source>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">Generator źródła sprawdzania poprawności opcji nie jest dostępny w języku C# {0}. Użyj wersji językowej {1} lub nowszej.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Wersja języka C# nie jest obsługiwana przez generator źródła.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
         <target state="translated">Typ {0} ma adnotacje walidacji, ale element członkowski {1} nie określa atrybutu [ValidateEnumeratedItems], co może być przeoczeniem.</target>
@@ -140,6 +150,16 @@
       <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
         <source>Member potentially missing transitive validation.</source>
         <target state="translated">W przypadku elementu członkowskiego może potencjalnie brakować weryfikacji przechodniej.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeMessage">
+        <source>The validation attribute {0} should only be applied to properties of type string, array, or ICollection. Using it with the type {1} could lead to runtime failures.</source>
+        <target state="translated">Atrybut sprawdzania poprawności {0} powinien być stosowany tylko do właściwości typu ciąg, tablica lub ICollection. Użycie go z typem {1} może prowadzić do błędów środowiska uruchomieniowego.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeTitle">
+        <source>The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types.</source>
+        <target state="translated">Atrybut sprawdzania poprawności ma zastosowanie tylko do właściwości typu ciąg, tablica lub ICollection; nie można go używać z innymi typami.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorMessage">

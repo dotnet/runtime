@@ -156,7 +156,7 @@ namespace System.Text.RegularExpressions
             // As a backup, see if we can find a literal after a leading atomic loop.  That might be better than whatever sets we find, so
             // we want to know whether we have one in our pocket before deciding whether to use a leading set (we'll prefer a leading
             // set if it's something for which we can search efficiently).
-            (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? literalAfterLoop = RegexPrefixAnalyzer.FindLiteralFollowingLeadingLoop(root);
+            (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal)? literalAfterLoop = RegexPrefixAnalyzer.FindLiteralFollowingLeadingLoop(root);
 
             // If we got such sets, we'll likely use them.  However, if the best of them is something that doesn't support an efficient
             // search and we did successfully find a literal after an atomic loop we could search instead, we prefer the efficient search.
@@ -252,29 +252,23 @@ namespace System.Text.RegularExpressions
         public List<FixedDistanceSet>? FixedDistanceSets { get; }
 
         /// <summary>Data about a character class at a fixed offset from the start of any match to a pattern.</summary>
-        public struct FixedDistanceSet
+        public struct FixedDistanceSet(char[]? chars, string set, int distance)
         {
-            public FixedDistanceSet(char[]? chars, string set, int distance)
-            {
-                Chars = chars;
-                Set = set;
-                Distance = distance;
-            }
 
             /// <summary>The character class description.</summary>
-            public string Set;
+            public string Set = set;
             /// <summary>Whether the <see cref="Set"/> is negated.</summary>
             public bool Negated;
             /// <summary>Small list of all of the characters that make up the set, if known; otherwise, null.</summary>
-            public char[]? Chars;
+            public char[]? Chars = chars;
             /// <summary>The distance of the set from the beginning of the match.</summary>
-            public int Distance;
+            public int Distance = distance;
             /// <summary>As an alternative to <see cref="Chars"/>, a description of the single range the set represents, if it does.</summary>
             public (char LowInclusive, char HighInclusive)? Range;
         }
 
         /// <summary>When in literal after set loop node, gets the literal to search for and the RegexNode representing the leading loop.</summary>
-        public (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? LiteralAfterLoop { get; }
+        public (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal)? LiteralAfterLoop { get; }
 
         /// <summary>Analyzes a list of fixed-distance sets to extract a case-sensitive string at a fixed distance.</summary>
         private static (string String, int Distance)? FindFixedDistanceString(List<FixedDistanceSet> fixedDistanceSets)
@@ -731,7 +725,7 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight:
                     {
                         Debug.Assert(LiteralAfterLoop is not null);
-                        (RegexNode loopNode, (char Char, string? String, char[]? Chars) literal) = LiteralAfterLoop.GetValueOrDefault();
+                        (RegexNode loopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) literal) = LiteralAfterLoop.GetValueOrDefault();
 
                         Debug.Assert(loopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                         Debug.Assert(loopNode.N == int.MaxValue);
@@ -742,7 +736,7 @@ namespace System.Text.RegularExpressions
                             ReadOnlySpan<char> slice = textSpan.Slice(startingPos);
 
                             // Find the literal.  If we can't find it, we're done searching.
-                            int i = literal.String is not null ? slice.IndexOf(literal.String.AsSpan()) :
+                            int i = literal.String is not null ? slice.IndexOf(literal.String.AsSpan(), literal.StringComparison) :
                                     literal.Chars is not null ? slice.IndexOfAny(literal.Chars.AsSpan()) :
                                     slice.IndexOf(literal.Char);
                             if (i < 0)

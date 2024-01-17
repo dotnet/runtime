@@ -6,6 +6,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 [StructLayout(LayoutKind.Sequential, Pack = 8, Size = 8)]
 struct MyVector64<T> where T : struct { }
@@ -99,12 +100,15 @@ struct AutoLayoutMaxPacking<T> : ITestStructure
     public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
 }
 
-unsafe class Program
+public unsafe partial class Program
 {
     const int Pass = 100;
     const int Fail = 0;
 
-    static int Main()
+    [Fact]
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/181", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static int TestEntryPoint()
     {
         bool succeeded = true;
 

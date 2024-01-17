@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -172,6 +174,9 @@ namespace System.Net.Security
 
         private int _nestedWrite;
         private int _nestedRead;
+
+        private PoolingPointerMemoryManager? _readPointerMemoryManager;
+        private PoolingPointerMemoryManager? _writePointerMemoryManager;
 
         public SslStream(Stream innerStream)
                 : this(innerStream, false, null, null)
@@ -441,11 +446,11 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
-            byte[]? message = CreateShutdownToken();
+            ProtocolToken token = CreateShutdownToken();
             _shutdown = true;
-            if (message != null)
+            if (token.Size > 0 && token.Payload != null)
             {
-                return InnerStream.WriteAsync(message, default).AsTask();
+                return InnerStream.WriteAsync(new ReadOnlyMemory<byte>(token.Payload, 0, token.Size), default).AsTask();
             }
 
             return Task.CompletedTask;
@@ -712,6 +717,21 @@ namespace System.Net.Security
             }
         }
 
+        private static unsafe PoolingPointerMemoryManager RentPointerMemoryManager(ref PoolingPointerMemoryManager? field, byte* pointer, int length)
+        {
+            // we get null when called for the first-time, or concurrent read or write operation
+            var manager = Interlocked.Exchange(ref field, null) ?? new PoolingPointerMemoryManager();
+
+            manager.Reset(pointer, length);
+            return manager;
+        }
+
+        private static unsafe void ReturnPointerMemoryManager(ref PoolingPointerMemoryManager? field, PoolingPointerMemoryManager manager)
+        {
+            manager.Reset(null, 0);
+            field = manager;
+        }
+
         public override int ReadByte()
         {
             ThrowIfExceptionalOrNotAuthenticated();
@@ -742,10 +762,31 @@ namespace System.Net.Security
             // Otherwise, fall back to reading a byte via Read, the same way Stream.ReadByte does.
             // This allocation is unfortunate but should be relatively rare, as it'll only occur once
             // per buffer fill internally by Read.
-            byte[] oneByte = new byte[1];
-            int bytesRead = Read(oneByte, 0, 1);
+            byte oneByte = default;
+            int bytesRead = Read(new Span<byte>(ref oneByte));
             Debug.Assert(bytesRead == 0 || bytesRead == 1);
-            return bytesRead == 1 ? oneByte[0] : -1;
+            return bytesRead == 1 ? oneByte : -1;
+        }
+
+        public override unsafe int Read(Span<byte> buffer)
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+
+            fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
+            {
+                PoolingPointerMemoryManager memoryManager = RentPointerMemoryManager(ref _readPointerMemoryManager, ptr, buffer.Length);
+
+                try
+                {
+                    ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
+                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                    return vt.GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    ReturnPointerMemoryManager(ref _readPointerMemoryManager, memoryManager);
+                }
+            }
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -755,6 +796,29 @@ namespace System.Net.Security
             ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), default(CancellationToken));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             return vt.GetAwaiter().GetResult();
+        }
+
+        public override void WriteByte(byte value) => Write(new ReadOnlySpan<byte>(ref value));
+
+        public override unsafe void Write(ReadOnlySpan<byte> buffer)
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+
+            fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
+            {
+                PoolingPointerMemoryManager memoryManager = RentPointerMemoryManager(ref _writePointerMemoryManager, ptr, buffer.Length);
+
+                try
+                {
+                    ValueTask vt = WriteAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
+                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                    vt.GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    ReturnPointerMemoryManager(ref _writePointerMemoryManager, memoryManager);
+                }
+            }
         }
 
         public void Write(byte[] buffer) => Write(buffer, 0, buffer.Length);
@@ -887,6 +951,41 @@ namespace System.Net.Security
         private static void ThrowNotAuthenticated()
         {
             throw new InvalidOperationException(SR.net_auth_noauth);
+        }
+
+        // (non-generic) copy of the PointerMemoryManager<T> which supports resetting the stored
+        // pointer to allow pooling its instances instead of allocating a new one per Read/Write call.
+        // The memory ponted to by the intenal poiner is assumed to be externally pinned (or naive memory).
+        internal sealed unsafe class PoolingPointerMemoryManager : MemoryManager<byte>
+        {
+            private byte* _pointer;
+            private int _length;
+
+            protected override void Dispose(bool disposing)
+            {
+            }
+
+            public void Reset(byte* pointer, int length)
+            {
+                _pointer = pointer;
+                _length = length;
+            }
+
+            public override Span<byte> GetSpan()
+            {
+                return new Span<byte>(_pointer, _length);
+            }
+
+            public override MemoryHandle Pin(int elementIndex = 0)
+            {
+                // memory assumed to be pinned already
+                return new MemoryHandle(_pointer + elementIndex, default, null);
+            }
+
+            public override void Unpin()
+            {
+                // nop
+            }
         }
     }
 }

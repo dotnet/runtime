@@ -13,7 +13,7 @@ public class X
     static ushort us_973 = 973;
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         short sh3 = (short)(sh_8712 * sh_m973);
         ushort us3 = (ushort)(us_8712 * us_973);
@@ -27,6 +27,5 @@ public class X
         Console.WriteLine(us_8712);
         Console.WriteLine(us_973);
         Console.WriteLine(us3);
-        return 100;
     }
 }

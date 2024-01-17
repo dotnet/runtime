@@ -21,10 +21,9 @@ public class Bug
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         (new Bug()).run();
         Console.WriteLine("Passed");
-        return 100;
     }
 }

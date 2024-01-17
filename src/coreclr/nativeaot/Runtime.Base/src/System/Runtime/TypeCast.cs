@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+
 using Internal.Runtime;
 
 namespace System.Runtime
@@ -180,7 +181,7 @@ namespace System.Runtime
         public static unsafe object? IsInstanceOfClass(MethodTable* pTargetType, object? obj)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "IsInstanceOfClass called with parameterized MethodTable");
-            Debug.Assert(!pTargetType->IsFunctionPointerType, "IsInstanceOfClass called with function pointer MethodTable");
+            Debug.Assert(!pTargetType->IsFunctionPointer, "IsInstanceOfClass called with function pointer MethodTable");
             Debug.Assert(!pTargetType->IsInterface, "IsInstanceOfClass called with interface MethodTable");
             Debug.Assert(!pTargetType->HasGenericVariance, "IsInstanceOfClass with variant MethodTable");
 
@@ -243,7 +244,29 @@ namespace System.Runtime
         [RuntimeExport("RhTypeCast_IsInstanceOfException")]
         public static unsafe bool IsInstanceOfException(MethodTable* pTargetType, object? obj)
         {
-            return IsInstanceOfClass(pTargetType, obj) != null;
+            // Based on IsInstanceOfClass
+
+            if (obj == null)
+                return false;
+
+            MethodTable* pObjType = obj.GetMethodTable();
+
+            if (pObjType == pTargetType)
+                return true;
+
+            // arrays can be cast to System.Object and System.Array
+            if (pObjType->IsArray)
+                return WellKnownEETypes.IsValidArrayBaseType(pTargetType);
+
+            while (true)
+            {
+                pObjType = pObjType->NonArrayBaseType;
+                if (pObjType == null)
+                    return false;
+
+                if (pObjType == pTargetType)
+                    return true;
+            }
         }
 
         // ChkCast test used for unusual cases (naked type parameters, variant generic types)
@@ -271,7 +294,7 @@ namespace System.Runtime
 
         slowPath:
             // fall through to the slow helper
-            object objRet = ChekCastAny_NoCacheLookup(pTargetType, obj);
+            object objRet = CheckCastAny_NoCacheLookup(pTargetType, obj);
             // Make sure that the fast helper have not lied
             Debug.Assert(result != CastResult.CannotCast);
             return objRet;
@@ -367,7 +390,7 @@ namespace System.Runtime
         public static unsafe object CheckCastClass(MethodTable* pTargetType, object obj)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "CheckCastClass called with parameterized MethodTable");
-            Debug.Assert(!pTargetType->IsFunctionPointerType, "CheckCastClass called with function pointer MethodTable");
+            Debug.Assert(!pTargetType->IsFunctionPointer, "CheckCastClass called with function pointer MethodTable");
             Debug.Assert(!pTargetType->IsInterface, "CheckCastClass called with interface MethodTable");
             Debug.Assert(!pTargetType->HasGenericVariance, "CheckCastClass with variant MethodTable");
 
@@ -385,7 +408,7 @@ namespace System.Runtime
         private static unsafe object CheckCastClassSpecial(MethodTable* pTargetType, object obj)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "CheckCastClass called with parameterized MethodTable");
-            Debug.Assert(!pTargetType->IsFunctionPointerType, "CheckCastClass called with function pointer MethodTable");
+            Debug.Assert(!pTargetType->IsFunctionPointer, "CheckCastClass called with function pointer MethodTable");
             Debug.Assert(!pTargetType->IsInterface, "CheckCastClass called with interface MethodTable");
             Debug.Assert(!pTargetType->HasGenericVariance, "CheckCastClass with variant MethodTable");
 
@@ -456,11 +479,11 @@ namespace System.Runtime
         {
             Debug.Assert(!pDerivedType->IsArray, "did not expect array type");
             Debug.Assert(!pDerivedType->IsParameterizedType, "did not expect parameterType");
-            Debug.Assert(!pDerivedType->IsFunctionPointerType, "did not expect function pointer");
+            Debug.Assert(!pDerivedType->IsFunctionPointer, "did not expect function pointer");
             Debug.Assert(!pBaseType->IsArray, "did not expect array type");
             Debug.Assert(!pBaseType->IsInterface, "did not expect interface type");
             Debug.Assert(!pBaseType->IsParameterizedType, "did not expect parameterType");
-            Debug.Assert(!pBaseType->IsFunctionPointerType, "did not expect function pointer");
+            Debug.Assert(!pBaseType->IsFunctionPointer, "did not expect function pointer");
             Debug.Assert(pBaseType->IsCanonical || pBaseType->IsGenericTypeDefinition, "unexpected MethodTable");
             Debug.Assert(pDerivedType->IsCanonical || pDerivedType->IsGenericTypeDefinition, "unexpected MethodTable");
 
@@ -482,7 +505,7 @@ namespace System.Runtime
         private static unsafe bool ImplementsInterface(MethodTable* pObjType, MethodTable* pTargetType, EETypePairList* pVisited)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "did not expect parameterized type");
-            Debug.Assert(!pTargetType->IsFunctionPointerType, "did not expect function pointer type");
+            Debug.Assert(!pTargetType->IsFunctionPointer, "did not expect function pointer type");
             Debug.Assert(pTargetType->IsInterface, "IsInstanceOfInterface called with non-interface MethodTable");
 
             int numInterfaces = pObjType->NumInterfaces;
@@ -1084,7 +1107,7 @@ namespace System.Runtime
                 {
                     MethodTable* pSourceRelatedParameterType = pSourceType->RelatedParameterType;
                     // Source type is also a parameterized type. Are the parameter types compatible?
-                    if (pSourceRelatedParameterType->IsPointerType)
+                    if (pSourceRelatedParameterType->IsPointer)
                     {
                         // If the parameter types are pointers, then only exact matches are correct.
                         // As we've already compared equality at the start of this function,
@@ -1092,14 +1115,14 @@ namespace System.Runtime
                         // int** is not compatible with uint**, nor is int*[] oompatible with uint*[].
                         return false;
                     }
-                    else if (pSourceRelatedParameterType->IsByRefType)
+                    else if (pSourceRelatedParameterType->IsByRef)
                     {
                         // Only allow exact matches for ByRef types - same as pointers above. This should
                         // be unreachable and it's only a defense in depth. ByRefs can't be parameters
                         // of any parameterized type.
                         return false;
                     }
-                    else if (pSourceRelatedParameterType->IsFunctionPointerType)
+                    else if (pSourceRelatedParameterType->IsFunctionPointer)
                     {
                         // If the parameter types are function pointers, then only exact matches are correct.
                         // As we've already compared equality at the start of this function,
@@ -1120,7 +1143,7 @@ namespace System.Runtime
                 return false;
             }
 
-            if (pTargetType->IsFunctionPointerType)
+            if (pTargetType->IsFunctionPointer)
             {
                 // Function pointers only cast if source and target are equivalent types.
                 return false;
@@ -1135,7 +1158,7 @@ namespace System.Runtime
             {
                 return false;
             }
-            else if (pSourceType->IsFunctionPointerType)
+            else if (pSourceType->IsFunctionPointer)
             {
                 return false;
             }
@@ -1206,7 +1229,7 @@ namespace System.Runtime
             {
                 retObj = IsInstanceOfInterface(pTargetType, obj);
             }
-            else if (pTargetType->IsParameterizedType || pTargetType->IsFunctionPointerType)
+            else if (pTargetType->IsParameterizedType || pTargetType->IsFunctionPointer)
             {
                 // We handled arrays above so this is for pointers and byrefs only.
                 retObj = null;
@@ -1232,7 +1255,7 @@ namespace System.Runtime
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe object ChekCastAny_NoCacheLookup(MethodTable* pTargetType, object obj)
+        private static unsafe object CheckCastAny_NoCacheLookup(MethodTable* pTargetType, object obj)
         {
             MethodTable* pSourceType = obj.GetMethodTable();
             if (pTargetType->IsArray)
@@ -1247,7 +1270,7 @@ namespace System.Runtime
             {
                 obj = CheckCastInterface(pTargetType, obj);
             }
-            else if (pTargetType->IsParameterizedType || pTargetType->IsFunctionPointerType)
+            else if (pTargetType->IsParameterizedType || pTargetType->IsFunctionPointer)
             {
                 // We handled arrays above so this is for pointers and byrefs only.
                 // Nothing can be a boxed instance of these.

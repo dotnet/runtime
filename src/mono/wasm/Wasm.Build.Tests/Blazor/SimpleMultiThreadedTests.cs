@@ -21,7 +21,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     }
 
     // dotnet-run needed for running with *build* so wwwroot has the index.html etc
-    // [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+    // [Theory]
     // [InlineData("Debug")]
     // [InlineData("Release")]
     // public async Task BlazorBuildRunTest(string config)
@@ -42,6 +42,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     // [InlineData("Debug", true)]
     [InlineData("Release", false)]
     // [InlineData("Release", true)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task BlazorPublishRunTest(string config, bool aot)
     {
         string id = $"blazor_mt_{config}_{GetRandomId()}";

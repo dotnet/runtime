@@ -144,7 +144,7 @@ public class Test_struct2_5_2
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         T t = new T(0);
         S sM = new S("test");
@@ -152,6 +152,5 @@ public class Test_struct2_5_2
 
         c(sM, sM2);
         d(t, t);
-        return 100;
     }
 }

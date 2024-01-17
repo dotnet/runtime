@@ -147,6 +147,16 @@
         <target state="translated">A hospedagem .NET COM com 'EnableComHosting' não dá suporte a interfaces com 'GeneratedComInterfaceAttribute'</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
+        <target state="translated">O uso de 'GeneratedComInterfaceAttribute' não segue as recomendações. {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
+        <target state="translated">O uso de 'GeneratedComInterfaceAttribute' não segue as recomendações.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
         <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
         <target state="translated">O valor de retorno na definição gerenciada será convertido em um parâmetro 'out' ao chamar o método COM não gerenciado. Se o valor de retorno for o código HRESULT retornado pelo método COM não gerenciado, use '[PreserveSig]' no método.</target>
@@ -439,12 +449,17 @@
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
         <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
-        <target state="new">The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</target>
+        <target state="translated">O tipo '{0}' será tratado como uma estrutura na assinatura nativa, não como um HRESULT nativo. Para tratar isso como um HRESULT, adicione '[return:MarshalAs(UnmanagedType.Error)]' ao método.</target>
         <note />
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
         <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
-        <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
+        <target state="translated">Este tipo será tratado como uma estrutura na assinatura nativa, não como um HRESULT nativo</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
+        <target state="translated">O '[In]' atributo só tem suporte nos parâmetros de matriz. Parâmetros por valor são considerados somente leitura por padrão.</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
@@ -467,9 +482,19 @@
         <target state="translated">Os atributos '[In]' e '[Out]' neste parâmetro não têm suporte neste parâmetro.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
+        <target state="translated">Os atributos '[In]' e '[Out]' só têm suporte nos parâmetros de matriz. Considere usar a palavra-chave 'ref' para tornar o parâmetro mutável.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">Atributos [In] e [Out]</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InVariantShouldBeRef">
+        <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
+        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -702,6 +727,16 @@
         <target state="translated">Uso de 'VirtualMethodIndexAttribute' inválido</target>
         <note />
       </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
+        <target state="translated">O uso de 'LibraryImportAttribute' não segue as recomendações. {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
+        <target state="translated">O uso de 'LibraryImportAttribute' não segue as recomendações.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
         <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
         <target state="translated">O tipo de elemento de 'ReadOnlySpan' retornado por 'GetManagedValuesSource' deve ser igual ao tipo de elemento retornado por 'GetManagedValuesDestination'.</target>
@@ -903,8 +938,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="new">The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
+        <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="translated">O atributo "[Out]" só tem suporte nos parâmetros de matriz. Considere usar palavras-chave "out" ou "ref" para tornar o parâmetro mutável.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -915,6 +950,11 @@
       <trans-unit id="OutRequiresToManagedMessage">
         <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
         <target state="translated">O tipo '{0}' especifica que ele dá suporte a marshalling na direção 'Out', mas não fornece um método 'ToManaged' que retorna o tipo gerenciado</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PreferExplicitInOutAttributesOnArrays">
+        <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
+        <target state="translated">É recomendável usar atributos '[In]' e '[Out]' explícitos nos parâmetros de matriz.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -985,11 +1025,6 @@
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">O marshalling de tempo de execução deve ser desabilitado neste projeto aplicando o 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' ao assembly para habilitar o marshalling desse tipo.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">Um tipo abstrato derivado de 'SafeHandle' não pode ser marshalled por referência. O tipo fornecido deve ser concreto.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">

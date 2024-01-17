@@ -3,8 +3,6 @@
 
 using System;
 using System.IO;
-using BundleTests.Helpers;
-using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.AppHost;
@@ -13,7 +11,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundledAppWithSubDirs : BundleTestBase, IClassFixture<BundledAppWithSubDirs.SharedTestState>
+    public class BundledAppWithSubDirs : IClassFixture<BundledAppWithSubDirs.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -22,59 +20,55 @@ namespace AppHost.Bundle.Tests
             sharedTestState = fixture;
         }
 
-        private void RunTheApp(string path, TestProjectFixture fixture)
+        private void RunTheApp(string path, bool selfContained)
         {
-            RunTheApp(path, fixture.BuiltDotnet)
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
+            RunTheApp(path, selfContained ? null : TestContext.BuiltDotNet.BinPath)
+                .Should().Pass()
+                .And.HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
-        private CommandResult RunTheApp(string path, DotNetCli dotnet)
+        private CommandResult RunTheApp(string path, string dotnetRoot)
         {
             return Command.Create(path)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(dotnet.BinPath)
+                .DotNetRoot(dotnetRoot)
                 .MultilevelLookup(false)
                 .Execute();
         }
 
         [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
-        public void Bundled_Framework_dependent_App_Run_Succeeds(BundleOptions options)
+        public void FrameworkDependent(BundleOptions options)
         {
-            var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
-            UseFrameworkDependentHost(fixture);
-            var singleFile = BundleHelper.BundleApp(fixture, options);
+            var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options);
 
-            // Run the bundled app (extract files)
-            RunTheApp(singleFile, fixture);
+            // Run the bundled app
+            RunTheApp(singleFile, selfContained: false);
 
-            // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, fixture);
+            if (options.HasFlag(BundleOptions.BundleAllContent))
+            {
+                // Run the bundled app again (reuse extracted files)
+                RunTheApp(singleFile, selfContained: false);
+            }
         }
 
         [Fact]
-        public void Bundle_Framework_dependent_NoBundleEntryPoint()
+        public void FrameworkDependent_NoBundleEntryPoint()
         {
-            var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
-            UseFrameworkDependentHost(fixture);
-            var singleFile = BundleHelper.BundleApp(fixture, BundleOptions.None);
+            var singleFile = sharedTestState.FrameworkDependentApp.Bundle(BundleOptions.None);
 
             string dotnetWithMockHostFxr = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
             using (new TestArtifact(dotnetWithMockHostFxr))
             {
                 Directory.CreateDirectory(dotnetWithMockHostFxr);
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "mockhostfxrFrameworkMissingFailure")
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrFrameworkMissingFailure")
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(2, 2, 0));
                 var dotnet = dotnetBuilder.Build();
 
                 // Run the bundled app (extract files)
-                RunTheApp(singleFile, dotnet)
+                RunTheApp(singleFile, dotnet.BinPath)
                     .Should()
                     .Fail()
                     .And.HaveStdErrContaining("You must install or update .NET to run this application.")
@@ -84,15 +78,12 @@ namespace AppHost.Bundle.Tests
         }
 
         [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
-        public void Bundled_Framework_dependent_App_GUI_DownlevelHostFxr_ErrorDialog(BundleOptions options)
+        public void FrameworkDependent_GUI_DownlevelHostFxr_ErrorDialog(BundleOptions options)
         {
-            var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
-            UseFrameworkDependentHost(fixture);
-            var singleFile = BundleHelper.BundleApp(fixture, options);
+            var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options);
             PEUtils.SetWindowsGraphicalUserInterfaceBit(singleFile);
 
             string dotnetWithMockHostFxr = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "bundleErrors"));
@@ -101,14 +92,14 @@ namespace AppHost.Bundle.Tests
                 Directory.CreateDirectory(dotnetWithMockHostFxr);
                 string expectedErrorCode = Constants.ErrorCode.BundleExtractionFailure.ToString("x");
 
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "mockhostfxrBundleVersionFailure")
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrBundleVersionFailure")
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(5, 0, 0));
                 var dotnet = dotnetBuilder.Build();
 
                 Command command = Command.Create(singleFile)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(dotnet.BinPath, sharedTestState.RepoDirectories.BuildArchitecture)
+                    .DotNetRoot(dotnet.BinPath, TestContext.BuildArchitecture)
                     .MultilevelLookup(false)
                     .Start();
 
@@ -125,158 +116,107 @@ namespace AppHost.Bundle.Tests
         }
 
         [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
+        [InlineData(BundleOptions.EnableCompression)]
+        [InlineData(BundleOptions.BundleAllContent | BundleOptions.EnableCompression)]
         [Theory]
-        public void Bundled_Self_Contained_App_Run_Succeeds(BundleOptions options)
+        public void SelfContained(BundleOptions options)
         {
-            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
-            var singleFile = BundleSelfContainedApp(fixture, options);
+            var singleFile = sharedTestState.SelfContainedApp.Bundle(options);
 
-            // Run the bundled app (extract files)
-            RunTheApp(singleFile, fixture);
+            // Run the bundled app
+            RunTheApp(singleFile, selfContained: true);
 
-            // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, fixture);
+            if (options.HasFlag(BundleOptions.BundleAllContent))
+            {
+                // Run the bundled app again (reuse extracted files)
+                RunTheApp(singleFile, selfContained: true);
+            }
         }
 
         [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
-        public void Bundled_Self_Contained_NoCompression_App_Run_Succeeds(BundleOptions options)
+        public void SelfContained_Targeting50(BundleOptions options)
         {
-            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
-            var singleFile = BundleSelfContainedApp(fixture, options, disableCompression: true);
+            var singleFile = sharedTestState.SelfContainedApp.Bundle(options, new Version(5, 0));
 
-            // Run the bundled app (extract files)
-            RunTheApp(singleFile, fixture);
+            // Run the bundled app
+            RunTheApp(singleFile, selfContained: true);
 
-            // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, fixture);
-        }
-
-        [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleNativeBinaries)]
-        [InlineData(BundleOptions.BundleAllContent)]
-        [Theory]
-        public void Bundled_Self_Contained_Targeting50_App_Run_Succeeds(BundleOptions options)
-        {
-            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
-            var singleFile = BundleSelfContainedApp(fixture, options, new Version(5, 0));
-
-            // Run the bundled app (extract files)
-            RunTheApp(singleFile, fixture);
-
-            // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, fixture);
+            if (options.HasFlag(BundleOptions.BundleAllContent))
+            {
+                // Run the bundled app again (reuse extracted files)
+                RunTheApp(singleFile, selfContained: true);
+            }
         }
 
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
-        public void Bundled_Framework_dependent_Targeting50_App_Run_Succeeds(BundleOptions options)
+        public void FrameworkDependent_Targeting50(BundleOptions options)
         {
-            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
-            UseFrameworkDependentHost(fixture);
-            var singleFile = BundleHelper.BundleApp(fixture, options, new Version(5, 0));
+            var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options, new Version(5, 0));
 
-            // Run the bundled app (extract files)
-            RunTheApp(singleFile, fixture);
+            // Run the bundled app
+            RunTheApp(singleFile, selfContained: false);
 
-            // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, fixture);
-        }
-
-        [Fact]
-        public void Bundled_Self_Contained_Targeting50_WithCompression_Throws()
-        {
-            var fixture = sharedTestState.TestSelfContainedFixture.Copy();
-            UseSingleFileSelfContainedHost(fixture);
-            // compression must be off when targeting 5.0
-            var options = BundleOptions.EnableCompression;
-
-            Assert.Throws<ArgumentException>(()=>BundleHelper.BundleApp(fixture, options, new Version(5, 0)));
+            if (options.HasFlag(BundleOptions.BundleAllContent))
+            {
+                // Run the bundled app again (reuse extracted files)
+                RunTheApp(singleFile, selfContained: false);
+            }
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54234")]
         // NOTE: when enabling this test take a look at commented code marked by "ACTIVE ISSUE:" in SharedTestState
-        public void Bundled_Self_Contained_Composite_App_Run_Succeeds()
+        public void SelfContained_R2R_Composite()
         {
-            var fixture = sharedTestState.TestSelfContainedFixtureComposite.Copy();
-            var singleFile = BundleSelfContainedApp(fixture, BundleOptions.None, disableCompression: true);
+            var singleFile = sharedTestState.SelfContainedCompositeApp.Bundle(BundleOptions.None);
 
             // Run the app
-            RunTheApp(singleFile, fixture);
+            RunTheApp(singleFile, selfContained: true);
         }
 
-        [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleNativeBinaries)]
-        [InlineData(BundleOptions.BundleAllContent)]
-        [Theory]
-        public void Bundled_With_Empty_File_Succeeds(BundleOptions options)
+        public class SharedTestState : IDisposable
         {
-            var fixture = sharedTestState.TestAppWithEmptyFileFixture.Copy();
-            var singleFile = BundleSelfContainedApp(fixture, options);
-
-            // Run the app
-            RunTheApp(singleFile, fixture);
-        }
-
-        public class SharedTestState : SharedTestStateBase, IDisposable
-        {
-            public TestProjectFixture TestFrameworkDependentFixture { get; set; }
-            public TestProjectFixture TestSelfContainedFixture { get; set; }
-            public TestProjectFixture TestAppWithEmptyFileFixture { get; set; }
-            public TestProjectFixture TestSelfContainedFixtureComposite { get; set; }
+            public SingleFileTestApp FrameworkDependentApp { get; }
+            public SingleFileTestApp SelfContainedApp { get; }
+            public SingleFileTestApp SelfContainedCompositeApp { get; }
 
             public SharedTestState()
             {
-                TestFrameworkDependentFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                BundleHelper.AddLongNameContentToAppWithSubDirs(TestFrameworkDependentFixture);
-                TestFrameworkDependentFixture
-                    .EnsureRestoredForRid(TestFrameworkDependentFixture.CurrentRid)
-                    .PublishProject(runtime: TestFrameworkDependentFixture.CurrentRid,
-                                    selfContained: false,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestFrameworkDependentFixture));
+                FrameworkDependentApp = SingleFileTestApp.CreateFrameworkDependent("AppWithSubDirs");
+                AddLongNameContent(FrameworkDependentApp.NonBundledLocation);
 
-                TestSelfContainedFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixture);
-                TestSelfContainedFixture
-                    .EnsureRestoredForRid(TestSelfContainedFixture.CurrentRid)
-                    .PublishProject(runtime: TestSelfContainedFixture.CurrentRid,
-                                    selfContained: true,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixture));
+                SelfContainedApp = SingleFileTestApp.CreateSelfContained("AppWithSubDirs");
+                AddLongNameContent(SelfContainedApp.NonBundledLocation);
 
-                TestAppWithEmptyFileFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                BundleHelper.AddLongNameContentToAppWithSubDirs(TestAppWithEmptyFileFixture);
-                BundleHelper.AddEmptyContentToApp(TestAppWithEmptyFileFixture);
-                TestAppWithEmptyFileFixture
-                    .EnsureRestoredForRid(TestAppWithEmptyFileFixture.CurrentRid)
-                    .PublishProject(runtime: TestAppWithEmptyFileFixture.CurrentRid,
-                                    selfContained: true,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestAppWithEmptyFileFixture));
-
-                TestSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
-                BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixtureComposite);
-                TestSelfContainedFixtureComposite
-                    .EnsureRestoredForRid(TestSelfContainedFixtureComposite.CurrentRid)
-                    .PublishProject(runtime: TestSelfContainedFixtureComposite.CurrentRid,
-                                    // ACTIVE ISSUE: https://github.com/dotnet/runtime/issues/54234
-                                    //               uncomment extraArgs when fixed.
-                                    selfContained: true,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixtureComposite) /*,
-                                    extraArgs: new string[] {
-                                       "/p:PublishReadyToRun=true",
-                                       "/p:PublishReadyToRunComposite=true" } */);
+                // ACTIVE ISSUE: https://github.com/dotnet/runtime/issues/54234
+                //               This should be an app built with the equivalent of PublishReadyToRun=true and PublishReadyToRunComposite=true
+                SelfContainedCompositeApp = SingleFileTestApp.CreateSelfContained("AppWithSubDirs");
+                AddLongNameContent(SelfContainedCompositeApp.NonBundledLocation);
             }
 
             public void Dispose()
             {
-                TestFrameworkDependentFixture.Dispose();
-                TestSelfContainedFixture.Dispose();
-                TestAppWithEmptyFileFixture.Dispose();
-                TestSelfContainedFixtureComposite.Dispose();
+                FrameworkDependentApp.Dispose();
+                SelfContainedApp.Dispose();
+                SelfContainedCompositeApp.Dispose();
+            }
+
+            public static void AddLongNameContent(string directory)
+            {
+                // For tests using the AppWithSubDirs, One of the sub-directories with a really long name
+                // is generated during test-runs rather than being checked in as a test asset.
+                // This prevents git-clone of the repo from failing if long-file-name support is not enabled on windows.
+                var longDirName = "This is a really, really, really, really, really, really, really, really, really, really, really, really, really, really long file name for punctuation";
+                var longDirPath = Path.Combine(directory, "Sentence", longDirName);
+                Directory.CreateDirectory(longDirPath);
+                using (var writer = File.CreateText(Path.Combine(longDirPath, "word")))
+                {
+                    writer.Write(".");
+                }
             }
         }
     }

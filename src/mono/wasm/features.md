@@ -15,7 +15,7 @@ The WebAssembly version of .NET exposes a number of MSBuild properties that can 
 
 For a support matrix of WebAssembly features see [https://webassembly.org/roadmap/](https://webassembly.org/roadmap/). †
 
-For the full set of MSBuild properties that configure a client application's use of these features, see the top of [WasmApp.targets](./build/WasmApp.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
+For the full set of MSBuild properties that configure a client application's use of these features, see the top of [BrowserWasmApp.targets](../browser/build/BrowserWasmApp.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
 
 Some of these properties require a unique build of the runtime, which means that changing them will produce a different set of `.wasm` and `.js` files for your application. Some of these properties also require you to install the [wasm-tools workload](#wasm-tools-workload).
 
@@ -31,7 +31,7 @@ For more information, see [SharedArrayBuffer security requirements](https://deve
 
 JavaScript interop with managed code via `[JSExport]`/`[JSImport]` is currently limited to the main thread even if multi-threading support is enabled.
 
-Blocking on the main thread with operations like `Task.Wait` or `Monitor.Enter` is not supported by browsers and very dangerous. The work on the proper design for this still in progress.
+Blocking on the main thread with operations like `Task.Wait` or `Monitor.Enter` are not supported by browsers and are very dangerous. The work on the proper design for this is still in progress.
 
 ### SIMD - Single instruction, multiple data
 WebAssembly SIMD provides significant performance improvements for operations on spans, strings, vectors and arrays. This feature requires a somewhat recent browser and may also not be supported by older hardware. It is currently enabled by default.
@@ -111,7 +111,7 @@ To add custom C source files into the runtime at compilation time, include nativ
 This requires that you have the [wasm-tools workload](#wasm-tools-workload) installed.
 
 ## JavaScript host API
-When the .NET runtime is hosted inside of a browser or other JavaScript environment, we expose a JavaScript API that can be used to configure and communicate with the runtime. It is documented in [dotnet.d.ts](https://github.com/dotnet/runtime/blob/main/src/mono/wasm/runtime/dotnet.d.ts) and you can see some examples of its use in our [samples](../sample/wasm/).
+When the .NET runtime is hosted inside of a browser or other JavaScript environment, we expose a JavaScript API that can be used to configure and communicate with the runtime. It is documented in [dotnet.d.ts](../browser/runtime/dotnet.d.ts) and you can see some examples of its use in our [samples](../sample/wasm/).
 
 ### Browser application template
 You can create a simple WebAssembly application by running `dotnet new wasmbrowser`. Then to run it, use `dotnet run` and open the URL which it wrote to the console inside your browser of choice. For example `http://localhost:5292/index.html`
@@ -157,6 +157,8 @@ The following shows the structure for a Release build, but except the name in th
 
 Note: You can flatten the `_framework` folder away by putting `<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>` in a property group in the project file.
 
+Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../my-frontend/wwwroot</WasmAppDir>` in a property group in the project file.
+
 #### `_framework` folder structure
 - `dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
 - `dotnet.native.js` - is posix emulation layer provided by the [Emscripten](https://github.com/emscripten-core/emscripten) project
@@ -193,12 +195,13 @@ See also [fetch integrity on MDN](https://developer.mozilla.org/en-US/docs/Web/A
 
 ### Pre-fetching
 In order to start downloading application resources as soon as possible you can add HTML elements to `<head>` of your page similar to:
+Adding too many files into prefetch could be counterproductive.
+Please benchmark your startup performance on real target devices and with realistic network conditions.
 
 ```html
 <link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="use-credentials">
 <link rel="prefetch" href="./_framework/dotnet.native.js" as="fetch" crossorigin="anonymous">
 <link rel="prefetch" href="./_framework/dotnet.runtime.js" as="fetch" crossorigin="anonymous">
-<link rel="prefetch" href="./_framework/dotnet.native.wasm" as="fetch" crossorigin="anonymous">
 ```
 
 See also [link rel prefetch on MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/prefetch)
@@ -291,6 +294,24 @@ A WebAssembly application that works well on desktop PCs browser may take minute
 ### Shell environments - NodeJS & V8
 While our primary target is web browsers, we have partial support for Node.JS v14 sufficient to pass most of our automated tests. We also have partial support for the D8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
 
+#### NodeJS < 20
+Until node version 20, you may need to pass these arguments when running the application `--experimental-wasm-simd --experimental-wasm-eh`. When you run the application using `dotnet run`, you can add these to the runtimeconfig template
+
+```json
+"wasmHostProperties": {
+    "perHostConfig": [
+        {
+            "name": "node",
+            ...
+            "host-args": [
+                "--experimental-wasm-simd", // 👈 Enable SIMD support
+                "--experimental-wasm-eh" // 👈 Enable exception handling support
+            ]
+        }
+    ]
+}
+```
+
 ## Choosing the right platform target
 Every end user has different needs, so the right platform for every application may differ.
 
@@ -348,7 +369,7 @@ You can add following elements in your .csproj
 ```
 
 See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
-For more details see also [debugger.md](debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
+For more details see also [debugger.md](../browser/debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
 
 ### Runtime logging and tracing
 
@@ -403,4 +424,4 @@ We have initial implementation of diagnostic server and [event pipe](https://lea
 
 At the moment it requires multi-threaded build of the runtime.
 
-For more details see [diagnostic-server.md](runtime\diagnostics\diagnostic-server.md)
+For more details see [diagnostic-server.md](../browser/runtime/diagnostics/diagnostic-server.md)

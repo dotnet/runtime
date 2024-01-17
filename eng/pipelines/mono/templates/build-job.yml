@@ -15,7 +15,6 @@ parameters:
   dependsOn: []
   monoCrossAOTTargetOS: []
   dependOnEvaluatePaths: false
-  pgoType: ''
 
 ### Product build
 jobs:
@@ -171,30 +170,15 @@ jobs:
       - script: build$(scriptExt) -subset mono+clr.hosts -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
         displayName: Build nupkg
 
-    # Publish official build
-    - ${{ if eq(parameters.publishToBlobFeed, 'true') }}:
-      - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:Configuration=$(_BuildConfig) /p:TargetArchitecture=$(archType) /p:TargetOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)/artifacts/log/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
-          displayName: Publish packages to blob feed
-          env:
-            # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
-            NUGET_PACKAGES: $(Build.SourcesDirectory)/.packages
-            ${{ if eq(parameters.osGroup, 'freebsd') }}:
-              # Arcade uses this SDK instead of trying to restore one.
-              DotNetCoreSdkDir: /usr/local/dotnet
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
-        # TODO: pass publish feed url and access token in from the internal pipeline
-        - powershell: eng\common\build.ps1 -ci -restore -publish -configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:Configuration=$(_BuildConfig) /p:TargetArchitecture=$(archType) /p:TargetOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)\artifacts\log\publish-pkgs.binlog" -projects $(Build.SourcesDirectory)\eng\empty.csproj
-          displayName: Publish packages to blob feed
-          env:
-            # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
-            NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages
-
+    - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
+      - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
+        displayName: Collect vslogs on exit
+        condition: always()
     # Publish Logs
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_Mono_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: 'BuildLogs_Attempt$(System.JobAttempt)_Mono_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

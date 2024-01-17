@@ -31,7 +31,7 @@ namespace Internal.Runtime.CompilerHelpers
             return returnValue;
         }
 
-        private static unsafe Type GetRuntimeType(MethodTable* pMT)
+        private static unsafe RuntimeType GetRuntimeType(MethodTable* pMT)
         {
             return Type.GetTypeFromMethodTable(pMT);
         }

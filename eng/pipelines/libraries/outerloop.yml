@@ -45,11 +45,12 @@ extends:
               timeoutInMinutes: 180
               includeAllPlatforms: ${{ variables['isRollingBuild'] }}
               # extra steps, run tests
-              extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-              extraStepsParameters:
-                testScope: outerloop
-                creator: dotnet-bot
-                testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+              postBuildSteps:
+                - template: /eng/pipelines/libraries/helix.yml
+                  parameters:
+                    testScope: outerloop
+                    creator: dotnet-bot
+                    testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
 
         - ${{ if eq(variables['isRollingBuild'], false) }}:
           - template: /eng/pipelines/common/platform-matrix.yml
@@ -73,11 +74,12 @@ extends:
                 timeoutInMinutes: 180
                 includeAllPlatforms: ${{ variables['isRollingBuild'] }}
                 # extra steps, run tests
-                extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-                extraStepsParameters:
-                  testScope: outerloop
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                postBuildSteps:
+                  - template: /eng/pipelines/libraries/helix.yml
+                    parameters:
+                      testScope: outerloop
+                      creator: dotnet-bot
+                      testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
 
         - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
           - template: /eng/pipelines/common/platform-matrix.yml
@@ -97,8 +99,9 @@ extends:
                 timeoutInMinutes: 180
                 includeAllPlatforms: ${{ variables['isRollingBuild'] }}
                 # extra steps, run tests
-                extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-                extraStepsParameters:
-                  testScope: outerloop
-                  creator: dotnet-bot
-                  extraHelixArguments: /p:BuildTargetFramework=net48
+                postBuildSteps:
+                  - template: /eng/pipelines/libraries/helix.yml
+                    parameters:
+                      testScope: outerloop
+                      creator: dotnet-bot
+                      extraHelixArguments: /p:BuildTargetFramework=net48

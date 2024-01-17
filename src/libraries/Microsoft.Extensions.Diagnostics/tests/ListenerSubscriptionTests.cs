@@ -214,13 +214,20 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         [InlineData("", "", "")]
         [InlineData("*", "", "")]
         [InlineData("lonG", "", "")]
+        [InlineData("lonG.", "", "")]
         [InlineData("lonG*", "", "")]
         [InlineData("lonG.*", "", "")]
+        [InlineData("lonG.sil", "", "")]
+        [InlineData("lonG.sil*", "", "")]
         [InlineData("lonG.sillY.meteR", "", "")]
         [InlineData("lonG.sillY.meteR*", "", "")]
         [InlineData("lonG.sillY.meteR.*", "", "")]
+        [InlineData("*namE", "", "")]
+        [InlineData("*.namE", "", "")]
+        [InlineData("*.sillY.meteR.Name", "", "")]
+        [InlineData("long*Name", "", "")]
+        [InlineData("lonG.sillY.meter*MeteR.namE", "", "")] // Shouldn't match, but does, left for compatibility with Logging.
         [InlineData("lonG.sillY.meteR.namE", "", "")]
-        [InlineData("lonG.sillY.meteR.namE.*", "", "")]
         [InlineData("", "instrumenTnamE", "")]
         [InlineData("lonG.sillY.meteR.namE", "instrumenTnamE", "")]
         [InlineData("", "", "listeneRnamE")]
@@ -237,15 +244,13 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("*.*", "", "")]
         [InlineData("", "*", "")]
         [InlineData("", "", "*")]
-        [InlineData("lonG.", "", "")]
-        [InlineData("lonG.sil", "", "")]
-        [InlineData("lonG.sil*", "", "")]
         [InlineData("sillY.meteR.namE", "", "")]
+        [InlineData(".*", "", "")]
+        [InlineData("*.", "", "")]
+        [InlineData("lonG.sillY.meteR.namE.*", "", "")]
         [InlineData("namE", "", "")]
-        [InlineData("*.namE", "", "")]
         [InlineData("wrongMeter", "", "")]
         [InlineData("wrongMeter", "InstrumentName", "")]
         [InlineData("wrongMeter", "", "ListenerName")]
@@ -259,6 +264,17 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 var instrument = meter.CreateCounter<int>("InstrumentName");
                 Assert.False(ListenerSubscription.RuleMatches(rule, instrument, "ListenerName", new FakeMeterFactory()));
             }, meterName, instrumentName, listenerName).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void MultipleWildcardsThrows()
+        {
+            RemoteExecutor.Invoke(() => {
+                var rule = new InstrumentRule("*.*", null, null, MeterScope.Global, enable: true);
+                var meter = new Meter("Long.Silly.Meter.Name");
+                var instrument = meter.CreateCounter<int>("InstrumentName");
+                Assert.Throws< InvalidOperationException>(() => ListenerSubscription.RuleMatches(rule, instrument, "ListenerName", new FakeMeterFactory()));
+            }).Dispose();
         }
 
         [Theory]
@@ -387,4 +403,9 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             public void Dispose() => throw new NotImplementedException();
         }
     }
+}
+
+internal class SR
+{
+    public static string MoreThanOneWildcard => "More than one wildcard is not allowed in a rule.";
 }

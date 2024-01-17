@@ -101,6 +101,25 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 #endif // TARGET_X86
 
+// thread local struct to store the "thread static blocks"
+struct ThreadStaticBlockInfo
+{
+    uint32_t NonGCMaxThreadStaticBlocks;
+    void** NonGCThreadStaticBlocks;
+
+    uint32_t GCMaxThreadStaticBlocks;
+    void** GCThreadStaticBlocks;
+};
+
+#ifdef _MSC_VER
+EXTERN_C __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
+EXTERN_C __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
+EXTERN_C __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
+#else
+EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
+EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
+EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
+#endif // _MSC_VER
 
 //
 // JIT HELPER ALIASING FOR PORTABILITY.
@@ -430,7 +449,7 @@ public:
     static unsigned getClassGClayoutStatic(TypeHandle th, BYTE* gcPtrs);
     static CorInfoHelpFunc getNewHelperStatic(MethodTable * pMT, bool * pHasSideEffects);
     static CorInfoHelpFunc getNewArrHelperStatic(TypeHandle clsHnd);
-    static CorInfoHelpFunc getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing, bool * pfClassMustBeRestored);
+    static CorInfoHelpFunc getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing);
 
     // Returns that compilation flags that are shared between JIT and NGen
     static CORJIT_FLAGS GetBaseCompileFlags(MethodDesc * ftn);

@@ -50,11 +50,10 @@ struct S2
 public class Program
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         S2 vr0 = new S2(new S1(new C0(), new S0(0)));
         M17(ref vr0.F0.F2.F4.F1);
-        return 100;
     }
 
     static void M17(ref uint arg2)

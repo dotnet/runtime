@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// So it doesn't produce any of these warnings - which is also correct, because the code at runtime would never get there
 	// it would fail to JIT/run anyway.
 
-	[SkipPeVerify]
+	[SkipILVerify]
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[SetupCompileBefore ("UnresolvedLibrary.dll", new[] { "Dependencies/UnresolvedLibrary.cs" }, removeFromLinkerInput: true)]
 	[ExpectedNoWarnings]

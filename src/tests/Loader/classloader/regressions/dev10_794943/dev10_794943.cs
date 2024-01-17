@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 struct A<T> { }
 struct B<T> { }
@@ -24,14 +25,12 @@ class Problem : Base<object>, Interface<object>
     public override B<object> Func() { return new B<object>(); }
 }
 
-class Test_dev10_794943
+public class Test_dev10_794943
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         C<Problem, object>.CallFunc(new Problem());
         C<Problem, object>.CallInterfaceFunc(new Problem());
-		
-		Console.WriteLine("Pass");
-		return 100;
     }
 }

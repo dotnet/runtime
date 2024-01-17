@@ -41,12 +41,9 @@ namespace Microsoft.Interop.Analyzers
                     return;
                 }
 
-                TargetFrameworkSettings targetFramework = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.GetTargetFrameworkSettings();
                 var env = new StubEnvironment(
                     context.Compilation,
-                    targetFramework.TargetFramework,
-                    targetFramework.Version,
-                    context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
+                    context.Compilation.GetEnvironmentFlags());
 
                 context.RegisterSymbolAction(context =>
                 {
@@ -81,20 +78,21 @@ namespace Microsoft.Interop.Analyzers
                             method,
                             CreateComImportMarshallingInfoParser(env, diagnostics, method, comImportAttribute),
                             env,
+                            new CodeEmitOptions(SkipInit: true),
                             typeof(ConvertComImportToGeneratedComInterfaceAnalyzer).Assembly);
 
-                        var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.ManagedToUnmanaged);
-                        var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.UnmanagedToManaged);
+                        var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorResolver(env.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged);
+                        var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorResolver(env.EnvironmentFlags, MarshalDirection.UnmanagedToManaged);
 
                         mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
                         bool anyExplicitlyUnsupportedInfo = false;
 
-                        var managedToNativeStubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
-                        var nativeToManagedStubCodeContext = new NativeToManagedStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
+                        var managedToNativeStubCodeContext = new ManagedToNativeStubCodeContext("return", "nativeReturn");
+                        var nativeToManagedStubCodeContext = new NativeToManagedStubCodeContext("return", "nativeReturn");
 
                         var forwarder = new Forwarder();
                         // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
-                        BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorFactory((info, context) =>
+                        BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorResolver((info, context) =>
                         {
                             if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                             {
@@ -120,8 +118,8 @@ namespace Microsoft.Interop.Analyzers
                                 info = info with { MarshallingAttributeInfo = inner };
                             }
                             // Run both factories and collect any binding failures.
-                            ResolvedGenerator unmanagedToManagedGenerator = unmanagedToManagedFactory.GeneratorFactory.Create(info, nativeToManagedStubCodeContext);
-                            ResolvedGenerator managedToUnmanagedGenerator = managedToUnmanagedFactory.GeneratorFactory.Create(info, managedToNativeStubCodeContext);
+                            ResolvedGenerator unmanagedToManagedGenerator = unmanagedToManagedFactory.Create(info, nativeToManagedStubCodeContext);
+                            ResolvedGenerator managedToUnmanagedGenerator = managedToUnmanagedFactory.Create(info, managedToNativeStubCodeContext);
                             return managedToUnmanagedGenerator with
                             {
                                 Diagnostics = managedToUnmanagedGenerator.Diagnostics.AddRange(unmanagedToManagedGenerator.Diagnostics)
@@ -153,7 +151,7 @@ namespace Microsoft.Interop.Analyzers
             var defaultInfo = new DefaultMarshallingInfo(CharEncoding.Utf16, null);
 
             var useSiteAttributeParsers = ImmutableArray.Create<IUseSiteAttributeParser>(
-                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
+                    new MarshalAsAttributeParser(diagnostics, defaultInfo),
                     new MarshalUsingAttributeParser(env.Compilation, diagnostics));
 
             return new MarshallingInfoParser(
@@ -161,7 +159,7 @@ namespace Microsoft.Interop.Analyzers
                 new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers),
                 useSiteAttributeParsers,
                 ImmutableArray.Create<IMarshallingInfoAttributeParser>(
-                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
+                    new MarshalAsWithCustomMarshallersParser(env.Compilation, diagnostics, new MarshalAsAttributeParser(diagnostics, defaultInfo)),
                     new MarshalUsingAttributeParser(env.Compilation, diagnostics),
                     new NativeMarshallingAttributeParser(env.Compilation, diagnostics),
                     new ComInterfaceMarshallingInfoProvider(env.Compilation)),
@@ -188,11 +186,11 @@ namespace Microsoft.Interop.Analyzers
                 || unmanagedType == UnmanagedType.SafeArray;
         }
 
-        private sealed class CallbackGeneratorFactory : IMarshallingGeneratorFactory
+        private sealed class CallbackGeneratorResolver : IMarshallingGeneratorResolver
         {
             private readonly Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> _func;
 
-            public CallbackGeneratorFactory(Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> func)
+            public CallbackGeneratorResolver(Func<TypePositionInfo, StubCodeContext, ResolvedGenerator> func)
             {
                 _func = func;
             }

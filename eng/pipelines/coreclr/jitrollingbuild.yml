@@ -13,6 +13,9 @@ trigger:
 # and should not be triggerable from a PR.
 pr: none
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:

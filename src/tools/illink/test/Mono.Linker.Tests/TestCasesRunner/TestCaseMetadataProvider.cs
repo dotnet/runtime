@@ -86,7 +86,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return tclo;
 		}
 
-		public virtual void CustomizeLinker (LinkerDriver linker, LinkerCustomizations customizations)
+		public virtual void CustomizeTrimming (TrimmingDriver linker, TrimmingCustomizations customizations)
 		{
 			if (!_testCaseTypeDefinition.CustomAttributes.Any (a => a.AttributeType.IsTypeOf<SkipKeptItemsValidationAttribute> ())
 				|| _testCaseTypeDefinition.CustomAttributes.Any (attr =>
@@ -152,6 +152,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (GetSourceAndRelativeDestinationValue);
 		}
 
+		public IEnumerable<string> GetDeleteBefore ()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.Where (attr => attr.AttributeType.Name == nameof (DeleteBeforeAttribute))
+				.Select (attr => (string)attr.ConstructorArguments[0].Value);
+		}
+
 		public virtual IEnumerable<NPath> GetExtraLinkerReferences ()
 		{
 			var netcoreappDir = Path.GetDirectoryName (typeof (object).Assembly.Location);
@@ -172,6 +179,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			return _testCaseTypeDefinition.CustomAttributes
 				.FirstOrDefault (attr => attr.AttributeType.Name == nameof (SetupLinkerLinkPublicAndFamilyAttribute)) != null;
+		}
+
+		public virtual bool LinkAll ()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.FirstOrDefault (attr => attr.AttributeType.Name == nameof (SetupLinkerLinkAllAttribute)) != null;
 		}
 	}
 }

@@ -4,11 +4,12 @@ parameters:
   packageStepDescription: null
   packagingArgs: ''
   subsetArg: ''
+  condition: succeeded()
 
 steps:
 ## Run NuGet Authentication for each of the side containers
 - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-  - task: NuGetAuthenticate@0
+  - task: NuGetAuthenticate@1
     target: ${{ parameters.target }}
 - script: |
     $(Build.SourcesDirectory)/build.sh \
@@ -20,6 +21,7 @@ steps:
       /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.packageType }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.packageType }}
   target: ${{ parameters.target }}
+  condition: ${{ parameters.condition }}
 # Broken symbolic links break the SBOM processing
 # We make some symlinks during the installer generation process,
 # but they aren't always valid on disk afterwards. Some of our tooling,

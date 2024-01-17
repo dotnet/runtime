@@ -6,8 +6,8 @@
 //
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 
@@ -30,8 +30,8 @@ namespace System.Runtime
                 !pEEType->IsInterface &&
                 !pEEType->IsArray &&
                 !pEEType->IsString &&
-                !pEEType->IsPointerType &&
-                !pEEType->IsFunctionPointerType &&
+                !pEEType->IsPointer &&
+                !pEEType->IsFunctionPointer &&
                 !pEEType->IsByRefLike;
             if (!isValid)
                 Debug.Assert(false);
@@ -253,7 +253,7 @@ namespace System.Runtime
             Debug.Assert((pUnboxToEEType == null) || UnboxAnyTypeCompare(pEEType, pUnboxToEEType) || pUnboxToEEType->IsNullable);
             if (pUnboxToEEType != null && pUnboxToEEType->IsNullable)
             {
-                Debug.Assert(pUnboxToEEType->NullableType->IsEquivalentTo(pEEType));
+                Debug.Assert(pUnboxToEEType->NullableType == pEEType);
 
                 // Set the first field of the Nullable to true to indicate the value is present.
                 Unsafe.As<byte, bool>(ref data) = true;
@@ -288,7 +288,7 @@ namespace System.Runtime
 
 #pragma warning disable SYSLIB1054 // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib.
         [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern unsafe int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
 #pragma warning restore SYSLIB1054
 
@@ -332,42 +332,6 @@ namespace System.Runtime
             return success ? (int)nFrames : -(int)nFrames;
         }
 
-        [RuntimeExport("RhCreateThunksHeap")]
-        public static object RhCreateThunksHeap(IntPtr commonStubAddress)
-        {
-            return ThunksHeap.CreateThunksHeap(commonStubAddress);
-        }
-
-        [RuntimeExport("RhAllocateThunk")]
-        public static IntPtr RhAllocateThunk(object thunksHeap)
-        {
-            return ((ThunksHeap)thunksHeap).AllocateThunk();
-        }
-
-        [RuntimeExport("RhFreeThunk")]
-        public static void RhFreeThunk(object thunksHeap, IntPtr thunkAddress)
-        {
-            ((ThunksHeap)thunksHeap).FreeThunk(thunkAddress);
-        }
-
-        [RuntimeExport("RhSetThunkData")]
-        public static void RhSetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target)
-        {
-            ((ThunksHeap)thunksHeap).SetThunkData(thunkAddress, context, target);
-        }
-
-        [RuntimeExport("RhTryGetThunkData")]
-        public static bool RhTryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target)
-        {
-            return ((ThunksHeap)thunksHeap).TryGetThunkData(thunkAddress, out context, out target);
-        }
-
-        [RuntimeExport("RhGetThunkSize")]
-        public static int RhGetThunkSize()
-        {
-            return InternalCalls.RhpGetThunkSize();
-        }
-
         [RuntimeExport("RhGetRuntimeHelperForType")]
         internal static unsafe IntPtr RhGetRuntimeHelperForType(MethodTable* pEEType, RuntimeHelperKind kind)
         {
@@ -392,7 +356,7 @@ namespace System.Runtime
                         return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFast;
 
                 case RuntimeHelperKind.IsInst:
-                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
+                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointer)
                         return (IntPtr)(delegate*<MethodTable*, object, object?>)&TypeCast.IsInstanceOfAny;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfInterface;
@@ -400,7 +364,7 @@ namespace System.Runtime
                         return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfClass;
 
                 case RuntimeHelperKind.CastClass:
-                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
+                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointer)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastAny;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastInterface;

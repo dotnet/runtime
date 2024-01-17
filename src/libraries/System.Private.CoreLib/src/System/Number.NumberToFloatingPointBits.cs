@@ -10,7 +10,8 @@ namespace System
 {
     internal unsafe partial class Number
     {
-        private static ReadOnlySpan<double> Pow10DoubleTable => new double[] {
+        private static ReadOnlySpan<double> Pow10DoubleTable =>
+        [
             1e0,    // 10^0
             1e1,    // 10^1
             1e2,    // 10^2
@@ -34,13 +35,14 @@ namespace System
             1e20,   // 10^20
             1e21,   // 10^21
             1e22,   // 10^22
-        };
+        ];
 
         /// <summary>
         /// Normalized 128 bits values for powers of 5^q for q in range [-342, 308]
         /// stored as 2 64-bits integers for convenience
         /// </summary>
-        private static ReadOnlySpan<ulong> Pow5128Table => new ulong[] {
+        private static ReadOnlySpan<ulong> Pow5128Table =>
+        [
             0xeef453d6923bd65a, 0x113faa2906a13b3f,
             0x9558b4661b6565f8, 0x4ac7ca59a424c507,
             0xbaaee17fa23ebf76, 0x5d79bcf00d2df649,
@@ -692,7 +694,7 @@ namespace System
             0xb6472e511c81471d, 0xe0133fe4adf8e952,
             0xe3d8f9e563a198e5, 0x58180fddd97723a6,
             0x8e679c2f5e44ff8f, 0x570f09eaa7ea7648
-        };
+        ];
 
         private static void AccumulateDecimalDigitsIntoBigInteger(scoped ref NumberBuffer number, uint firstIndex, uint lastIndex, out BigInteger result)
         {

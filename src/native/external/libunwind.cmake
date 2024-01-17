@@ -1,3 +1,5 @@
+# IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects
+
 include_directories(${CMAKE_CURRENT_LIST_DIR}/libunwind/include/tdep)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/libunwind/include)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/libunwind/src)
@@ -491,8 +493,6 @@ else(CLR_CMAKE_HOST_UNIX)
         set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
     endif()
 
-    set_source_files_properties(${CLR_DIR}/pal/src/exception/remote-unwind.cpp PROPERTIES COMPILE_FLAGS /TP INCLUDE_DIRECTORIES ${CLR_DIR}/inc)
-
     set(LIBUNWIND_SOURCES_BASE
       remote/win/missing-functions.c
       # ${libunwind_la_SOURCES}  Local...
@@ -505,9 +505,5 @@ else(CLR_CMAKE_HOST_UNIX)
       ${libunwind_elf_la_SOURCES}
     )
 endif(CLR_CMAKE_HOST_UNIX)
-
-if(CMAKE_C_COMPILER_ID MATCHES "Clang")
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-int-conversion>)
-endif()
 
 addprefix(LIBUNWIND_SOURCES "${CMAKE_CURRENT_LIST_DIR}/libunwind/src" "${LIBUNWIND_SOURCES_BASE}")

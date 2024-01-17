@@ -7,76 +7,13 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
     public static class MarshallerHelpers
     {
         public static readonly TypeSyntax SystemIntPtrType = TypeSyntaxes.System_IntPtr;
-
-        public static ForStatementSyntax GetForLoop(ExpressionSyntax lengthExpression, string indexerIdentifier)
-        {
-            // for(int <indexerIdentifier> = 0; <indexerIdentifier> < <lengthIdentifier>; ++<indexerIdentifier>)
-            //      ;
-            return ForStatement(EmptyStatement())
-            .WithDeclaration(
-                VariableDeclaration(
-                    PredefinedType(
-                        Token(SyntaxKind.IntKeyword)))
-                .WithVariables(
-                    SingletonSeparatedList(
-                        VariableDeclarator(
-                            Identifier(indexerIdentifier))
-                        .WithInitializer(
-                            EqualsValueClause(
-                                LiteralExpression(
-                                    SyntaxKind.NumericLiteralExpression,
-                                    Literal(0)))))))
-            .WithCondition(
-                BinaryExpression(
-                    SyntaxKind.LessThanExpression,
-                    IdentifierName(indexerIdentifier),
-                    lengthExpression))
-            .WithIncrementors(
-                SingletonSeparatedList<ExpressionSyntax>(
-                    PrefixUnaryExpression(
-                        SyntaxKind.PreIncrementExpression,
-                        IdentifierName(indexerIdentifier))));
-        }
-
-        /// <summary>
-        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/> = default;</code>
-        /// or
-        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/>;</code>
-        /// </summary>
-        public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, bool initializeToDefault)
-        {
-            return Declare(typeSyntax, identifier, initializeToDefault ? LiteralExpression(SyntaxKind.DefaultLiteralExpression) : null);
-        }
-
-        /// <summary>
-        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/> = <paramref name="identifier"/>;</code>
-        /// or
-        /// <code><paramref name="typeSyntax"/> <paramref name="identifier"/>;</code>
-        /// </summary>
-        public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, ExpressionSyntax? initializer)
-        {
-            VariableDeclaratorSyntax decl = VariableDeclarator(identifier);
-            if (initializer is not null)
-            {
-                decl = decl.WithInitializer(
-                    EqualsValueClause(
-                        initializer));
-            }
-
-            // <type> <identifier>;
-            // or
-            // <type> <identifier> = <initializer>;
-            return LocalDeclarationStatement(
-                VariableDeclaration(
-                    typeSyntax,
-                    SingletonSeparatedList(decl)));
-        }
 
         public static RefKind GetRefKindForByValueContentsKind(this ByValueContentsMarshalKind byValue)
         {
@@ -102,39 +39,27 @@ namespace Microsoft.Interop
         }
 
 
-        // Marshal.SetLastSystemError(<errorCode>);
+        /// <summary>
+        /// <c>Marshal.SetLastSystemError(<paramref name="errorCode"/>);</c>
+        /// </summary>
         public static StatementSyntax CreateClearLastSystemErrorStatement(int errorCode) =>
-            ExpressionStatement(
-                InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        TypeSyntaxes.System_Runtime_InteropServices_Marshal,
-                        IdentifierName("SetLastSystemError")),
-                    ArgumentList(SingletonSeparatedList(
-                        Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(errorCode)))))));
+            MethodInvocationStatement(
+                TypeSyntaxes.System_Runtime_InteropServices_Marshal,
+                IdentifierName("SetLastSystemError"),
+                Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(errorCode))));
 
-        // <lastError> = Marshal.GetLastSystemError();
+        /// <summary>
+        /// <code><paramref name="lastErrorIdentifier"/> = Marshal.GetLastSystemError();</code>
+        /// </summary>
         public static StatementSyntax CreateGetLastSystemErrorStatement(string lastErrorIdentifier) =>
-            ExpressionStatement(
-                AssignmentExpression(
-                    SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(lastErrorIdentifier),
-                    InvocationExpression(
-                        MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        TypeSyntaxes.System_Runtime_InteropServices_Marshal,
-                        IdentifierName("GetLastSystemError")))));
+            AssignmentStatement(IdentifierName(lastErrorIdentifier), MethodInvocation(TypeSyntaxes.System_Runtime_InteropServices_Marshal, IdentifierName("GetLastSystemError")));
 
-        // Marshal.SetLastPInvokeError(<lastError>);
+        //
+        /// <summary>
+        /// <code>Marshal.SetLastPInvokeError(<paramref name="lastErrorIdentifier"/>);</code>
+        /// </summary>
         public static StatementSyntax CreateSetLastPInvokeErrorStatement(string lastErrorIdentifier) =>
-            ExpressionStatement(
-                InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        TypeSyntaxes.System_Runtime_InteropServices_Marshal,
-                        IdentifierName("SetLastPInvokeError")),
-                    ArgumentList(SingletonSeparatedList(
-                        Argument(IdentifierName(lastErrorIdentifier))))));
+            MethodInvocationStatement(TypeSyntaxes.System_Runtime_InteropServices_Marshal, IdentifierName("SetLastPInvokeError"), Argument(IdentifierName(lastErrorIdentifier)));
 
         public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
         {
@@ -315,35 +240,26 @@ namespace Microsoft.Interop
             }
         }
 
+        // private static readonly InvocationExpressionSyntax SkipInitInvocation =
         public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubCodeContext context)
         {
-            (TargetFramework fmk, _) = context.GetTargetFramework();
             if (info.ManagedType is not PointerTypeInfo
                 && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
-                && fmk is TargetFramework.Net)
+                && context.CodeEmitOptions.SkipInit)
             {
                 // Use the Unsafe.SkipInit<T> API when available and
                 // managed type is usable as a generic parameter.
                 return ExpressionStatement(
-                    InvocationExpression(
-                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            TypeSyntaxes.System_Runtime_CompilerServices_Unsafe,
-                            IdentifierName("SkipInit")))
-                    .WithArgumentList(
-                        ArgumentList(SingletonSeparatedList(
-                            Argument(IdentifierName(info.InstanceIdentifier))
-                            .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))))));
+                    MethodInvocation(TypeSyntaxes.System_Runtime_CompilerServices_Unsafe, IdentifierName("SkipInit"),
+                                Argument(IdentifierName(info.InstanceIdentifier))
+                                .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))));
             }
             else
             {
                 // Assign out params to default
-                return ExpressionStatement(
-                    AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(info.InstanceIdentifier),
-                        LiteralExpression(
-                            SyntaxKind.DefaultLiteralExpression,
-                            Token(SyntaxKind.DefaultKeyword))));
+                return AssignmentStatement(
+                    IdentifierName(info.InstanceIdentifier),
+                    LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword)));
             }
         }
 

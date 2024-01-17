@@ -16,6 +16,7 @@
 
 #define PTFF_SAVE_ALL_PRESERVED 0x0000007F  // NOTE: R11 is not included in this set!
 #define PTFF_SAVE_SP 0x00000100
+#define PTFF_SAVE_R0 0x00000200
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
 // These must match the TrapThreadsFlags enum
@@ -29,9 +30,6 @@
 
 // GC minimal sized object. We use this to switch between 4 and 8 byte alignment in the GC heap (see AllocFast.asm).
 #define SIZEOF__MinObject 12
-
-// Maximum subsection number in .text section
-#define MAX_NUMBER_SUBSECTION_TEXT 0x2000
 
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
@@ -52,6 +50,7 @@ C_FUNC(\Name):
 
 .macro ALTERNATE_ENTRY Name
         .global C_FUNC(\Name)
+        .type \Name, %function
 C_FUNC(\Name):
 .endm
 
@@ -260,13 +259,18 @@ C_FUNC(\Name):
         ldr     r0, 2f
 1:
         add     r0, pc, r0
-        bl      __tls_get_addr(PLT)
-        // push data at the end of text section
-        .pushsection .text, MAX_NUMBER_SUBSECTION_TEXT, "aM", %progbits, 4
-        .balign 4
+        bl      __tls_get_addr
+        b       3f
+
+        // Inline data
+        // LLVM assembler has no concept of subsections and this is not expressible as
+        // cross-section relocation.
+        .p2align 2
 2:
-        .4byte  \Var(TLSGD) + (. - 1b - 4)
-        .popsection
+        .extern \Var
+        .type \Var, tls_object
+        .long  \Var(TLSGD) + (2b - 1b - 4)
+3:
 .endm
 
 .macro INLINE_GETTHREAD

@@ -195,7 +195,6 @@
       <AppDir>$(BuildDir)\apk</AppDir>
       <FinalApkPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).apk</FinalApkPath>
       <StripDebugSymbols>False</StripDebugSymbols>
-      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
@@ -206,6 +205,11 @@
       <MonoInterp>false</MonoInterp>
       <MonoInterp Condition="'$(RuntimeVariant)' == 'monointerpreter'">true</MonoInterp>
     </PropertyGroup>
+
+    <ItemGroup>
+      <RuntimeComponents Include="diagnostics_tracing" />
+      <RuntimeComponents Include="marshal-ilgen" />
+    </ItemGroup>
 
     <RemoveDir Directories="$(AppDir)" />
     <MakeDir Directories="$(BuildDir)"/>
@@ -247,7 +251,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         OutputDir="$(AppDir)"
         ProjectName="$(Category)"
-        RuntimeComponents="$(RuntimeComponents)"
+        RuntimeComponents="@(RuntimeComponents)"
         RuntimeIdentifier="$(RuntimeIdentifier)"
         StripDebugSymbols="$(StripDebugSymbols)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
@@ -305,7 +309,7 @@
       <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
-      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib;$(MicrosoftNetCoreAppRuntimePackDir)/native/icudt.dat" />
+      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib;" />
       <EntryPoints Include="testdir-%(TestDlls.Filename)/%(TestDlls.Filename).dll" />
       <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
         <TestDllFilename>@(TestDlls->'%(Filename)')</TestDllFilename>
@@ -431,10 +435,6 @@
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
-      <GlobalizationNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat;
-                                        $(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicudata.a;
-                                        $(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicuuc.a;
-                                        $(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicui18n.a" />
     </ItemGroup>
 
     <RemoveDir Directories="$(AppleBuildDir)" />
@@ -490,7 +490,7 @@
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
       <MergedAssemblyFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyMarkerPaths.Identity)'))" />
       <MergedAssemblyParentFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyFolders.Identity)'))" />
-      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != ''" />
+      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != '' and '$(TargetsAppleMobile)' != 'true'" />
       <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(MergedAssemblyMarkerPaths)' != ''" />
       <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
       <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(OutOfProcessTestMarkerPaths)' != ''" />
@@ -503,6 +503,7 @@
     </PropertyGroup>
     <ItemGroup>
       <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths);@(OutOfProcessTestPaths);$(MergedRunnableTestAppBundleScriptPathsPattern)" />
+      <LegacyRunnableTestPaths Condition="'$(TargetsAppleMobile)' == 'true'" Include="@(MergedRunnableTestPaths)" />
     </ItemGroup>
   </Target>
 
@@ -537,7 +538,7 @@
   <Target Name="RestorePackage">
     <PropertyGroup>
       <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration) /p:CrossBuild=$(CrossBuild)</_ConfigurationProperties>
-      <DotnetRestoreCommand>"$(DotNetTool)" restore -r $(PackageRID) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
+      <DotnetRestoreCommand>"$(DotNetTool)" restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
     <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>
@@ -588,12 +589,15 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__TestGroupToBuild=$(__TestGroupToBuild)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__SkipRestorePackages=1"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>
-      <GroupBuildCmd>$(GroupBuildCmd) /maxcpucount</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TargetOS)' != 'browser' or '$(ContinuousIntegrationBuild)' != 'true'">$(GroupBuildCmd) /maxcpucount</GroupBuildCmd>
+      <!-- https://github.com/dotnet/runtime/issues/93134 -->
+      <GroupBuildCmd Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true'">$(GroupBuildCmd) /m:1</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">$(GroupBuildCmd) "/p:DevTeamProvisioning=-"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot'">$(GroupBuildCmd) "/p:DefaultBuildAllTarget=BuildNativeAot"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(IlcUseServerGc)' == 'false'">$(GroupBuildCmd) "/p:IlcUseServerGc=false"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
     </PropertyGroup>
 
@@ -631,8 +635,7 @@
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and !$(MonoAot) and !$(MonoFullAot)" >
 
     <PropertyGroup>
-      <CrossgenDir>$(__BinDir)</CrossgenDir>
-      <CrossgenDir Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)'">$(CrossgenDir)\$(BuildArchitecture)</CrossgenDir>
+      <CrossgenDir>$(__BinDir)\$(BuildArchitecture)</CrossgenDir>
 
       <CrossgenOutputDir>$(__TestIntermediatesDir)\crossgen.out</CrossgenOutputDir>
 
@@ -653,7 +656,7 @@
       <CrossgenCmd Condition="'$(__CompositeBuildMode)' == ''">$(CrossgenCmd) --crossgen2-parallelism 1</CrossgenCmd>
 
       <CrossgenCmd>$(CrossgenCmd) --verify-type-and-field-layout</CrossgenCmd>
-      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(CrossgenDir)\crossgen2\crossgen2.dll"</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(CrossgenDir)\crossgen2\tools\crossgen2.dll"</CrossgenCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Compiling framework using Crossgen2: $(CrossgenCmd)" />

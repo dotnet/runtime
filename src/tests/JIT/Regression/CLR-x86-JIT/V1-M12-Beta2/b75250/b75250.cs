@@ -40,7 +40,7 @@ public class testout1
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         VT vt = new VT();
         vt.a1 = 5;
@@ -52,7 +52,6 @@ public class testout1
         vt.a7 = 6L;
         CL cl = new CL();
         long val = Func(cl, vt);
-        return 100;
     }
 
 }

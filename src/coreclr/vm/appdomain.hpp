@@ -901,7 +901,6 @@ class BaseDomain
     friend class Assembly;
     friend class AssemblySpec;
     friend class AppDomain;
-    friend class AppDomainNative;
 
     VPTR_BASE_VTABLE_CLASS(BaseDomain)
     VPTR_UNIQUE(VPTR_UNIQUE_BaseDomain)
@@ -1065,12 +1064,6 @@ public:
         return ::CreateRefcountedHandle(m_handleStore, object);
     }
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-
-    OBJECTHANDLE CreateVariableHandle(OBJECTREF object, UINT type)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateVariableHandle(m_handleStore, object, type);
-    }
 
     OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
     {
@@ -1502,7 +1495,6 @@ const DWORD DefaultADID = 1;
 class AppDomain : public BaseDomain
 {
     friend class SystemDomain;
-    friend class AppDomainNative;
     friend class AssemblyNative;
     friend class AssemblySpec;
     friend class ClassLoader;
@@ -2336,7 +2328,6 @@ typedef VPTR(class SystemDomain) PTR_SystemDomain;
 
 class SystemDomain : public BaseDomain
 {
-    friend class AppDomainNative;
     friend class ClrDataAccess;
 
     VPTR_VTABLE_CLASS(SystemDomain, BaseDomain)
@@ -2451,12 +2442,24 @@ public:
     }
     static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
     {
-        WRAPPER_NO_CONTRACT;
-        if (m_FrozenObjectHeapManager == NULL)
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        if (VolatileLoad(&m_FrozenObjectHeapManager) == nullptr)
         {
             LazyInitFrozenObjectsHeap();
         }
-        return m_FrozenObjectHeapManager;
+        return VolatileLoad(&m_FrozenObjectHeapManager);
+    }
+    static FrozenObjectHeapManager* GetFrozenObjectHeapManagerNoThrow()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return VolatileLoad(&m_FrozenObjectHeapManager);
     }
 #endif // DACCESS_COMPILE
 

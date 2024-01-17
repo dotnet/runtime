@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using BundleTests.Helpers;
+using System.Linq;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundleProbe : BundleTestBase, IClassFixture<BundleProbe.SharedTestState>
+    public class BundleProbe : IClassFixture<BundleProbe.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -19,49 +19,45 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
-        private void Bundle_Probe_Not_Passed_For_Non_Single_File_App()
+        private void SingleFileApp_ProbeFiles()
         {
-            var fixture = sharedTestState.TestFixture.Copy();
-            string appExe = BundleHelper.GetHostPath(fixture);
+            SingleFileTestApp app = sharedTestState.App;
+            string singleFile = app.Bundle();
 
-            Command.Create(appExe)
+            (string Path, bool ShouldBeFound)[] itemsToProbe = new[]
+            {
+                ($"{app.AppName}.dll", true),
+                ($"{app.AppName}.runtimeconfig.json", true),
+                ("System.Private.CoreLib.dll", true),
+                ("hostpolicy.dll", false),
+                ("--", false),
+                (string.Empty, false),
+            };
+
+            var result = Command.Create(singleFile, $"host_runtime_contract.bundle_probe {string.Join(" ", itemsToProbe.Select(i => i.Path))}")
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("No BUNDLE_PROBE");
+                .Execute();
+
+            result.Should().Pass();
+            foreach (var item in itemsToProbe)
+            {
+                result.Should().HaveStdOutContaining($"{item.Path} - found = {item.ShouldBeFound}");
+            }
         }
 
-        [Fact]
-        private void Bundle_Probe_Passed_For_Single_File_App()
+        public class SharedTestState : IDisposable
         {
-            var fixture = sharedTestState.TestFixture.Copy();
-            string singleFile = BundleSelfContainedApp(fixture);
-
-            Command.Create(singleFile, "SingleFile")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("BUNDLE_PROBE OK");
-        }
-
-        public class SharedTestState : SharedTestStateBase, IDisposable
-        {
-            public TestProjectFixture TestFixture { get; set; }
+            public SingleFileTestApp App { get; set; }
 
             public SharedTestState()
             {
-                TestFixture = PreparePublishedSelfContainedTestProject("BundleProbeTester");
+                App = SingleFileTestApp.CreateSelfContained("HostApiInvokerApp");
             }
 
             public void Dispose()
             {
-                TestFixture.Dispose();
+                App?.Dispose();
             }
         }
     }

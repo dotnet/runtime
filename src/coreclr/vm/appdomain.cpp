@@ -1118,9 +1118,6 @@ void SystemDomain::Init()
     // to allow stub caches to use the memory pool. Do not
     // initialize it here!
 
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapDisable) != 0)
-        g_fAllowNativeImages = false;
-
     m_pSystemPEAssembly = NULL;
     m_pSystemAssembly = NULL;
 
@@ -1139,7 +1136,7 @@ void SystemDomain::Init()
 
     // At this point m_SystemDirectory should already be canonicalized
     m_BaseLibrary.Append(m_SystemDirectory);
-    if (!m_BaseLibrary.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
+    if (!m_BaseLibrary.EndsWith(SString{ DIRECTORY_SEPARATOR_CHAR_W }))
     {
         m_BaseLibrary.Append(DIRECTORY_SEPARATOR_CHAR_W);
     }
@@ -1380,6 +1377,8 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pWeakReferenceClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCE);
         g_pWeakReferenceOfTClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCEGENERIC);
 
+        g_pCastHelpers = CoreLibBinder::GetClass(CLASS__CASTHELPERS);
+
     #ifdef FEATURE_COMINTEROP
         if (g_pConfig->IsBuiltInCOMSupported())
         {
@@ -1396,6 +1395,12 @@ void SystemDomain::LoadBaseSystemClasses()
     #ifdef FEATURE_ICASTABLE
         g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);
     #endif // FEATURE_ICASTABLE
+
+#ifdef FEATURE_EH_FUNCLETS
+        g_pEHClass = CoreLibBinder::GetClass(CLASS__EH);
+        g_pExceptionServicesInternalCallsClass = CoreLibBinder::GetClass(CLASS__EXCEPTIONSERVICES_INTERNALCALLS);
+        g_pStackFrameIteratorClass = CoreLibBinder::GetClass(CLASS__STACKFRAMEITERATOR);
+#endif
 
         // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
         // For more details, see comment in code:JITutil_MonEnterWorker around "__me = GetEEFuncEntryPointMacro(JIT_MonEnter)".

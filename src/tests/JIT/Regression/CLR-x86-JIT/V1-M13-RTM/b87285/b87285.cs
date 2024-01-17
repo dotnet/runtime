@@ -38,11 +38,10 @@ public unsafe class test1
         return retval;
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         double* a3 = stackalloc double[1];
         *a3 = 2.0000000018626451;
         double val = Func(a3);
-        return 100;
     }
 }

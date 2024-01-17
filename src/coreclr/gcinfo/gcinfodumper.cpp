@@ -226,7 +226,7 @@ BOOL GcInfoDumper::ReportPointerRecord (
 #undef REG
 #elif defined(TARGET_RISCV64)
 #undef REG
-#define REG(reg, field) { offsetof(Riscv64VolatileContextPointer, field) }
+#define REG(reg, field) { offsetof(RiscV64VolatileContextPointer, field) }
         REG(zero, R0),
         REG(a0, A0),
         REG(a1, A1),
@@ -288,14 +288,18 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
     assert(!"unimplemented on LOONGARCH yet");
     iSPRegister = 0;
 #elif defined(TARGET_RISCV64)
-    assert(!"unimplemented on RISCV64 yet");
-    iSPRegister = 0;
+    iSPRegister = (offsetof(T_CONTEXT, Sp) - offsetof(T_CONTEXT, R0)) / sizeof(ULONGLONG);
 #endif
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     BYTE* pContext = (BYTE*)&(pRD->volatileCurrContextPointers);
 #elif defined(TARGET_LOONGARCH64)
     assert(!"unimplemented on LOONGARCH yet");
+    BYTE* pContext = (BYTE*)pRD->pCurrentContext;
+#elif defined(TARGET_RISCV64)
+    assert(!"unimplemented on RISCV64 yet");
+    // TODO implement risc-v code, that should care about volatile registers (same as arm/arm64 architectures)
+    //      instead of default code.
     BYTE* pContext = (BYTE*)pRD->pCurrentContext;
 #else
     BYTE* pContext = (BYTE*)pRD->pCurrentContext;
@@ -365,6 +369,8 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
             }
 #elif defined(TARGET_LOONGARCH64)
     assert(!"unimplemented on LOONGARCH yet");
+#elif defined(TARGET_RISCV64)
+    assert(!"unimplemented on RISCV64 yet");
 #endif
             {
                 _ASSERTE(iReg < nCONTEXTRegisters);
@@ -391,6 +397,11 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
                 }
 #elif defined(TARGET_LOONGARCH64)
     assert(!"unimplemented on LOONGARCH yet");
+                pReg = (SIZE_T*)(pContext + rgRegisters[iReg].cbContextOffset);
+#elif defined(TARGET_RISCV64)
+                assert(!"unimplemented on RISCV64 yet");
+                // TODO implement risc-v code, that should care about volatile registers (same as arm/arm64 architectures)
+                //      instead of default code.
                 pReg = (SIZE_T*)(pContext + rgRegisters[iReg].cbContextOffset);
 #else
                 pReg = (SIZE_T*)(pContext + rgRegisters[iReg].cbContextOffset);
@@ -465,6 +476,14 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
                     assert(!"unimplemented on LOONGARCH yet");
                     //TODO: should confirm ?
                     base = GC_SP_REL;
+#elif defined(TARGET_RISCV64)
+                    assert(!"unimplemented on RISCV64 yet");
+                    // TODO implement risc-v code, that should care about volatile registers (same as arm/arm64 architectures)
+                    //      instead of default code.
+                    if (0 == ctx)
+                        base = GC_SP_REL;
+                    else
+                        base = GC_CALLER_SP_REL;
 #else
                     if (0 == ctx)
                         base = GC_SP_REL;
@@ -496,6 +515,11 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
         pContext = (BYTE*)pRD->pCurrentContextPointers;
 #elif defined(TARGET_LOONGARCH64)
     assert(!"unimplemented on LOONGARCH yet");
+#elif defined(TARGET_RISCV64)
+        assert(!"unimplemented on RISCV64 yet");
+        // TODO implement risc-v code, that should care about volatile registers (same as arm/arm64 architectures)
+        //      instead of default code.
+        pContext = (BYTE*)pRD->pCallerContext;
 #else
         pContext = (BYTE*)pRD->pCallerContext;
 #endif
@@ -703,8 +727,57 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
 #pragma message("Unimplemented for LOONGARCH64 yet.")
     assert(!"unimplemented on LOONGARCH yet");
 #elif defined(TARGET_RISCV64)
-#pragma message("Unimplemented for RISCV64 yet.")
-    assert(!"unimplemented on RISCV64 yet");
+    FILL_REGS(pCurrentContext->R0, 33);
+    FILL_REGS(pCallerContext->R0, 33);
+
+    regdisp.pCurrentContextPointers = &regdisp.ctxPtrsOne;
+    regdisp.pCallerContextPointers = &regdisp.ctxPtrsTwo;
+
+    // Set S1
+    regdisp.pCurrentContextPointers->S1 = &regdisp.pCurrentContext->S1;
+    regdisp.pCallerContextPointers ->S1 = &regdisp.pCallerContext ->S1;
+
+    ULONG64 **ppCurrentReg = &regdisp.pCurrentContextPointers->S2;
+    ULONG64 **ppCallerReg  = &regdisp.pCallerContextPointers ->S2;
+    // Set  S2-S11
+    for (iReg = 0; iReg < 10; iReg++)
+    {
+        *(ppCurrentReg + iReg) = &regdisp.pCurrentContext->S2 + iReg;
+        *(ppCallerReg  + iReg) = &regdisp.pCallerContext ->S2 + iReg;
+    }
+
+    // Set Fp
+    regdisp.pCurrentContextPointers->Fp = &regdisp.pCurrentContext->Fp;
+    regdisp.pCallerContextPointers ->Fp = &regdisp.pCallerContext ->Fp;
+
+    // Set Gp
+    regdisp.pCurrentContextPointers->Gp = &regdisp.pCurrentContext->Gp;
+    regdisp.pCallerContextPointers ->Gp = &regdisp.pCallerContext ->Gp;
+
+    // Set Tp
+    regdisp.pCurrentContextPointers->Tp = &regdisp.pCurrentContext->Tp;
+    regdisp.pCallerContextPointers ->Tp = &regdisp.pCallerContext ->Tp;
+
+    // Set Ra
+    regdisp.pCurrentContextPointers->Ra = &regdisp.pCurrentContext->Ra;
+    regdisp.pCallerContextPointers ->Ra = &regdisp.pCallerContext ->Ra;
+
+    regdisp.volatileCurrContextPointers.R0 = &regdisp.pCurrentContext->R0;
+    regdisp.volatileCurrContextPointers.A0 = &regdisp.pCurrentContext->A0;
+    regdisp.volatileCurrContextPointers.A1 = &regdisp.pCurrentContext->A1;
+    regdisp.volatileCurrContextPointers.A2 = &regdisp.pCurrentContext->A2;
+    regdisp.volatileCurrContextPointers.A3 = &regdisp.pCurrentContext->A3;
+    regdisp.volatileCurrContextPointers.A4 = &regdisp.pCurrentContext->A4;
+    regdisp.volatileCurrContextPointers.A5 = &regdisp.pCurrentContext->A5;
+    regdisp.volatileCurrContextPointers.A6 = &regdisp.pCurrentContext->A6;
+    regdisp.volatileCurrContextPointers.A7 = &regdisp.pCurrentContext->A7;
+    regdisp.volatileCurrContextPointers.T0 = &regdisp.pCurrentContext->T0;
+    regdisp.volatileCurrContextPointers.T1 = &regdisp.pCurrentContext->T1;
+    regdisp.volatileCurrContextPointers.T2 = &regdisp.pCurrentContext->T2;
+    regdisp.volatileCurrContextPointers.T3 = &regdisp.pCurrentContext->T3;
+    regdisp.volatileCurrContextPointers.T4 = &regdisp.pCurrentContext->T4;
+    regdisp.volatileCurrContextPointers.T5 = &regdisp.pCurrentContext->T5;
+    regdisp.volatileCurrContextPointers.T6 = &regdisp.pCurrentContext->T6;
 #else
 PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on this platform.");
 #endif
@@ -752,9 +825,9 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
                                (GcInfoDecoderFlags)(  DECODE_SECURITY_OBJECT
                                                     | DECODE_CODE_LENGTH
                                                     | DECODE_VARARG
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                                                     | DECODE_HAS_TAILCALLS
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
                                                     | DECODE_INTERRUPTIBILITY),
                                offset);
@@ -778,6 +851,9 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
 #elif defined(TARGET_LOONGARCH64)
 #pragma message("Unimplemented for LOONGARCH64 yet.")
     assert(!"unimplemented on LOONGARCH yet");
+#elif defined(TARGET_RISCV64)
+#pragma message("Unimplemented for RISCV64 yet.")
+    assert(!"unimplemented on RISCV64 yet");
 #endif
         if(safePointDecoder.IsSafePoint(safePointOffset))
         {

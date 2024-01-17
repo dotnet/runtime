@@ -236,21 +236,44 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its ceiling computed.</param>
         /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> Ceiling<T>(Vector64<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Vector64<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Ceiling(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <summary>Computes the ceiling of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its ceiling computed.</param>
+        /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
         /// <seealso cref="MathF.Ceiling(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<float> Ceiling(Vector64<float> vector)
-        {
-            Unsafe.SkipInit(out Vector64<float> result);
-
-            for (int index = 0; index < Vector64<float>.Count; index++)
-            {
-                float value = Scalar<float>.Ceiling(vector.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
+        public static Vector64<float> Ceiling(Vector64<float> vector) => Ceiling<float>(vector);
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its ceiling computed.</param>
@@ -258,18 +281,7 @@ namespace System.Runtime.Intrinsics
         /// <seealso cref="Math.Ceiling(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<double> Ceiling(Vector64<double> vector)
-        {
-            Unsafe.SkipInit(out Vector64<double> result);
-
-            for (int index = 0; index < Vector64<double>.Count; index++)
-            {
-                double value = Scalar<double>.Ceiling(vector.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
+        public static Vector64<double> Ceiling(Vector64<double> vector) => Ceiling<double>(vector);
 
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1168,21 +1180,44 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its floor computed.</param>
         /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> Floor<T>(Vector64<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Vector64<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Floor(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <summary>Computes the floor of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its floor computed.</param>
+        /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
         /// <seealso cref="MathF.Floor(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<float> Floor(Vector64<float> vector)
-        {
-            Unsafe.SkipInit(out Vector64<float> result);
-
-            for (int index = 0; index < Vector64<float>.Count; index++)
-            {
-                float value = Scalar<float>.Floor(vector.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
+        public static Vector64<float> Floor(Vector64<float> vector) => Floor<float>(vector);
 
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its floor computed.</param>
@@ -1190,18 +1225,7 @@ namespace System.Runtime.Intrinsics
         /// <seealso cref="Math.Floor(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<double> Floor(Vector64<double> vector)
-        {
-            Unsafe.SkipInit(out Vector64<double> result);
-
-            for (int index = 0; index < Vector64<double>.Count; index++)
-            {
-                double value = Scalar<double>.Floor(vector.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
+        public static Vector64<double> Floor(Vector64<double> vector) => Floor<double>(vector);
 
         /// <summary>Gets the element at the specified index.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1547,6 +1571,94 @@ namespace System.Runtime.Intrinsics
             return Unsafe.ReadUnaligned<Vector64<T>>(in address);
         }
 
+        internal static Vector64<T> Log<T>(Vector64<T> vector)
+            where T : ILogarithmicFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Log(vector.GetElement(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the log of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its log computed.</param>
+        /// <returns>A vector whose elements are the log of the elements in <paramref name="vector" />.</returns>
+        public static Vector64<double> Log(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogDouble<Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Log<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the log of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its log computed.</param>
+        /// <returns>A vector whose elements are the log of the elements in <paramref name="vector" />.</returns>
+        public static Vector64<float> Log(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogSingle<Vector64<float>, Vector64<int>, Vector64<uint>>(vector);
+            }
+            else
+            {
+                return Log<float>(vector);
+            }
+        }
+
+        internal static Vector64<T> Log2<T>(Vector64<T> vector)
+            where T : ILogarithmicFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Log2(vector.GetElement(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the log2 of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its log2 computed.</param>
+        /// <returns>A vector whose elements are the log2 of the elements in <paramref name="vector" />.</returns>
+        public static Vector64<double> Log2(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Double<Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Log2<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the log2 of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its log2 computed.</param>
+        /// <returns>A vector whose elements are the log2 of the elements in <paramref name="vector" />.</returns>
+        public static Vector64<float> Log2(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Single<Vector64<float>, Vector64<int>, Vector64<uint>>(vector);
+            }
+            else
+            {
+                return Log2<float>(vector);
+            }
+        }
+
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -1822,6 +1934,14 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> ShiftLeft<T>(Vector64<T> vector, int shiftCount) => vector << shiftCount;
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<byte> ShiftLeft(Vector64<byte> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1907,6 +2027,14 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> ShiftRightArithmetic<T>(Vector64<T> vector, int shiftCount) => vector >> shiftCount;
+
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<short> ShiftRightArithmetic(Vector64<short> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
@@ -1941,6 +2069,14 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<sbyte> ShiftRightArithmetic(Vector64<sbyte> vector, int shiftCount) => vector >> shiftCount;
+
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> ShiftRightLogical<T>(Vector64<T> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>

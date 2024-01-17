@@ -854,7 +854,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Converts the numeric value of this instance to its equivalent string representation using the specified culture-specific format information.</summary>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <returns>The string representation of the value of this instance as specified by <paramref name="provider" />.</returns>
-        public string ToString(IFormatProvider? provider)=> _value.ToString(provider);
+        public string ToString(IFormatProvider? provider) => _value.ToString(provider);
 
         /// <summary>Converts the numeric value of this instance to its equivalent string representation using the specified format and culture-specific format information.</summary>
         /// <param name="format">A numeric format string.</param>

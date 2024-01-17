@@ -99,10 +99,6 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     pMethodInfo->unwind_info = procInfo.unwind_info;
 
     uintptr_t lsda = procInfo.lsda;
-#if defined(HOST_ARM)
-    // libunwind fills by reference not by value for ARM
-    lsda = *((uintptr_t *)ldsa);
-#endif
 
     PTR_UInt8 p = dac_cast<PTR_UInt8>(lsda);
 

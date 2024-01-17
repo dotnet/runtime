@@ -2,13 +2,13 @@
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
-    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipBuild>
     <PlatformPackageType>AppHostPack</PlatformPackageType>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ArchiveName>dotnet-apphost-pack</ArchiveName>
     <InstallerName>dotnet-apphost-pack</InstallerName>
     <VSInsertionShortComponentName>NetCore.AppHostPack</VSInsertionShortComponentName>
-    <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</OverridePackageId>
+    <IsPackable Condition="'$(PgoInstrument)' != ''">false</IsPackable>
   </PropertyGroup>
 
   <!--
@@ -53,7 +53,17 @@
                     IsSymbolFile="true"
                     IsNative="true" />
     <_SymbolFiles Condition="'$(TargetOS)' != 'windows'"
-                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)%(Filename)%(Extension)%(SymbolsSuffix)')"
+                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)%(Filename)%(Extension)$(SymbolsSuffix)')"
+                    IsSymbolFile="true"
+                    IsNative="true" />
+
+    <!-- dotnet doesn't have its own package, so it uses this one as a means to publish to symbol servers -->
+    <_SymbolFiles Condition="'$(TargetOS)' == 'windows'"
+                    Include="$(DotNetHostBinDir)PDB/dotnet.pdb"
+                    IsSymbolFile="true"
+                    IsNative="true" />
+    <_SymbolFiles Condition="'$(TargetOS)' != 'windows'"
+                    Include="$(DotNetHostBinDir)dotnet$(ExeSuffix)$(SymbolsSuffix)"
                     IsSymbolFile="true"
                     IsNative="true" />
 

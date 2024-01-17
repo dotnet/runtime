@@ -62,5 +62,18 @@ namespace Microsoft.Interop
                     UnnecessaryDataDetails ?? "");
             }
         }
+
+        public sealed record NotRecommended(TypePositionInfo TypePositionInfo, StubCodeContext StubCodeContext) : GeneratorDiagnostic(TypePositionInfo, StubCodeContext, isFatal: false)
+        {
+            public string? Details { get; init; }
+
+            public override DiagnosticInfo ToDiagnosticInfo(DiagnosticDescriptor descriptor, Location location, string elementName)
+            {
+                return DiagnosticInfo.Create(
+                    descriptor,
+                    location,
+                    Details);
+            }
+        }
     }
 }

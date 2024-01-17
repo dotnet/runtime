@@ -105,7 +105,7 @@ ep_rt_mono_file_open_write (const ep_char8_t *path)
 	if (!path)
 		return INVALID_HANDLE_VALUE;
 
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path);
 
 	if (!path_utf16)
 		return INVALID_HANDLE_VALUE;
@@ -394,7 +394,6 @@ ep_rt_mono_system_timestamp_get (void)
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <utime.h>
 #include <time.h>
 
 #if HAVE_SYS_TIME_H
@@ -600,7 +599,7 @@ ep_rt_mono_os_environment_get_utf16 (dn_vector_ptr_t *os_env)
 #else
 	gchar **next = NULL;
 	for (next = environ; *next != NULL; ++next)
-		dn_vector_ptr_push_back (os_env, ep_rt_utf8_to_utf16le_string (*next, -1));
+		dn_vector_ptr_push_back (os_env, ep_rt_utf8_to_utf16le_string (*next));
 #endif
 }
 

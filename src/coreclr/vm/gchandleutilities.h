@@ -197,19 +197,6 @@ inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
     return CreateGlobalHandleCommon(object, HNDTYPE_REFCOUNTED);
 }
 
-// Creates a variable-strength handle
-inline OBJECTHANDLE CreateVariableHandle(IGCHandleStore* store, OBJECTREF object, uint32_t type)
-{
-    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_VARIABLE, (void*)((uintptr_t)type));
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    DiagHandleCreated(hnd, object);
-    return hnd;
-}
-
 // Handle object manipulation convenience functions
 
 inline void StoreObjectInHandle(OBJECTHANDLE handle, OBJECTREF object)
@@ -297,11 +284,6 @@ inline void DestroyRefcountedHandle(OBJECTHANDLE handle)
 inline void DestroyDependentHandle(OBJECTHANDLE handle)
 {
     DestroyHandleCommon(handle, HNDTYPE_DEPENDENT);
-}
-
-inline void  DestroyVariableHandle(OBJECTHANDLE handle)
-{
-    DestroyHandleCommon(handle, HNDTYPE_VARIABLE);
 }
 
 inline void DestroyGlobalHandle(OBJECTHANDLE handle)

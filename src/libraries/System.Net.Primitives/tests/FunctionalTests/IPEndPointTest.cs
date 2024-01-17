@@ -143,6 +143,19 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal(expected, endPoint.ToString());
         }
 
+        [Fact]
+        public static void Create_DifferentAF_Success()
+        {
+            SocketAddress sa = new SocketAddress(AddressFamily.InterNetwork, SocketAddress.GetMaximumAddressSize(AddressFamily.InterNetworkV6));
+            var ep = new IPEndPoint(IPAddress.IPv6Any, 0);
+            Assert.NotNull(ep.Create(sa));
+
+            sa = new SocketAddress(AddressFamily.InterNetworkV6);
+            ep = new IPEndPoint(IPAddress.Any, 0);
+
+            Assert.NotNull(ep.Create(sa));
+        }
+
         public static IEnumerable<object[]> Serialize_TestData()
         {
             yield return new object[] { new IPAddress(2), 16 };
@@ -195,8 +208,7 @@ namespace System.Net.Primitives.Functional.Tests
 
         public static IEnumerable<object[]> Create_InvalidAddressFamily_TestData()
         {
-            yield return new object[] { new IPEndPoint(2, 500), new SocketAddress(Sockets.AddressFamily.InterNetworkV6) };
-            yield return new object[] { new IPEndPoint(IPAddress.Parse("192.169.0.9"), 500), new SocketAddress(Sockets.AddressFamily.InterNetworkV6) };
+            yield return new object[] { new IPEndPoint(2, 500), new SocketAddress(Sockets.AddressFamily.Unknown) };
             yield return new object[] { new IPEndPoint(IPAddress.Parse("0:0:0:0:0:0:0:1"), 500), new SocketAddress(Sockets.AddressFamily.InterNetwork) };
         }
 

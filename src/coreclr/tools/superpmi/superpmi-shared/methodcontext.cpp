@@ -769,6 +769,28 @@ bool MethodContext::repIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return value != 0;
 }
 
+void MethodContext::recNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn, bool result)
+{
+    if (NotifyMethodInfoUsage == nullptr)
+        NotifyMethodInfoUsage = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(ftn);
+    DWORD value = result ? 1 : 0;
+    NotifyMethodInfoUsage->Add(key, value);
+    DEBUG_REC(dmpNotifyMethodInfoUsage(key, value));
+}
+void MethodContext::dmpNotifyMethodInfoUsage(DWORDLONG key, DWORD value)
+{
+    printf("NotifyMethodInfoUsage key ftn-%016" PRIX64 ", value res-%u", key, value);
+}
+bool MethodContext::repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
+{
+    DWORDLONG key = CastHandle(ftn);
+    DWORD value = LookupByKeyOrMiss(NotifyMethodInfoUsage, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpNotifyMethodInfoUsage(key, value));
+    return value != 0;
+}
+
 void MethodContext::recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs)
 {
     if (GetMethodAttribs == nullptr)
@@ -1569,7 +1591,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
         if (pResult->kind == CORINFO_VIRTUALCALL_STUB)
         {
-            cr->CallTargetTypes->Add(CastPointer(pResult->codePointerLookup.constLookup.addr),
+            cr->CallTargetTypes->Add(CastPointer(pResult->stubLookup.constLookup.addr),
                 (DWORD)CORINFO_VIRTUALCALL_STUB);
         }
         pResult->instParamLookup.accessType = (InfoAccessType)value.instParamLookup.accessType;
@@ -2360,15 +2382,6 @@ void MethodContext::recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection
     value.A = CastPointer(*ppIndirection);
     value.B = CastPointer(result);
 
-    if (GetHelperFtn->GetIndex(key) != -1)
-    {
-        DLDL oldValue = GetHelperFtn->Get(key);
-
-        AssertCodeMsg(oldValue.A == value.A && oldValue.B == oldValue.B, EXCEPTIONCODE_MC,
-                      "collision! old: %016" PRIX64 " %016" PRIX64 ", new: %016" PRIX64 " %016" PRIX64 " \n", oldValue.A, oldValue.B, value.A,
-                      value.B);
-    }
-
     GetHelperFtn->Add(key, value);
     DEBUG_REC(dmpGetHelperFtn(key, value));
 }
@@ -2379,19 +2392,7 @@ void MethodContext::dmpGetHelperFtn(DWORD key, DLDL value)
 void* MethodContext::repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection)
 {
     DWORD key = (DWORD)ftnNum;
-
-    if ((GetHelperFtn == nullptr) || (GetHelperFtn->GetIndex(key) == -1))
-    {
-#ifdef sparseMC
-        LogDebug("Sparse - repGetHelperFtn returning nullptr and 0XCAFE0003");
-        *ppIndirection = nullptr;
-        return (void*)(size_t)0xCAFE0003;
-#else
-        LogException(EXCEPTIONCODE_MC, "Encountered an empty LWM while looking for %08X", (DWORD)ftnNum);
-#endif
-    }
-
-    DLDL value = GetHelperFtn->Get(key);
+    DLDL value = LookupByKeyOrMiss(GetHelperFtn, key, ": key %u", key);
     DEBUG_REP(dmpGetHelperFtn(key, value));
 
     *ppIndirection = (void*)value.A;
@@ -2768,24 +2769,31 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
 void MethodContext::recGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet, int result)
 {
     if (GetExactClasses == nullptr)
-        GetExactClasses = new LightWeightMap<DLD, DLD>();
+        GetExactClasses = new LightWeightMap<DLD, Agnostic_GetExactClassesResult>();
 
     DLD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(baseType);
     key.B = maxExactClasses;
 
-    DLD value;
-    ZeroMemory(&value, sizeof(value));
-    value.A = CastHandle(*exactClsRet);
-    value.B = result;
+    Assert(result >= 0);
+
+    DWORDLONG* exactClassesAgnostic = new DWORDLONG[result];
+    for (int i = 0; i < result; i++)
+        exactClassesAgnostic[i] = CastHandle(exactClsRet[i]);
+
+    Agnostic_GetExactClassesResult value;
+    value.numClasses = result;
+    value.classes = GetExactClasses->AddBuffer((unsigned char*)exactClassesAgnostic, (unsigned int)(result * sizeof(DWORDLONG)));
+
+    delete[] exactClassesAgnostic;
 
     GetExactClasses->Add(key, value);
 }
-void MethodContext::dmpGetExactClasses(DLD key, DLD value)
+void MethodContext::dmpGetExactClasses(DLD key, const Agnostic_GetExactClassesResult& value)
 {
-    printf("GetExactClasses key baseType-%016" PRIX64 ", key maxExactCls %u, value exactCls %016" PRIX64 ", value exactClsCount %u",
-        key.A, key.B, value.A, value.B);
+    printf("GetExactClasses key baseType-%016" PRIX64 ", maxExactCls-%u, value numClasses-%d",
+        key.A, key.B, value.numClasses);
 }
 int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet)
 {
@@ -2794,10 +2802,19 @@ int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExac
     key.A = CastHandle(baseType);
     key.B = maxExactClasses;
 
-    DLD value = LookupByKeyOrMiss(GetExactClasses, key, ": key %016" PRIX64 " %08X", key.A, key.B);
+    Agnostic_GetExactClassesResult value = LookupByKeyOrMiss(GetExactClasses, key, ": key %016" PRIX64 " %08X", key.A, key.B);
 
-    *exactClsRet = (CORINFO_CLASS_HANDLE)value.A;
-    return value.B;
+    Assert(maxExactClasses >= value.numClasses);
+
+    unsigned char* buffer = GetExactClasses->GetBuffer(value.classes);
+    for (int i = 0; i < value.numClasses; i++)
+    {
+        DWORDLONG handle;
+        memcpy(&handle, &buffer[i * sizeof(DWORDLONG)], sizeof(handle));
+        exactClsRet[i] = (CORINFO_CLASS_HANDLE)handle;
+    }
+
+    return value.numClasses;
 }
 
 void MethodContext::recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result)
@@ -4315,7 +4332,7 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
         pEEInfoOut->targetAbi                                  = CORINFO_CORECLR_ABI;
 #ifdef TARGET_OSX
-        pEEInfoOut->osType                                     = CORINFO_MACOS;
+        pEEInfoOut->osType                                     = CORINFO_APPLE;
 #elif defined(TARGET_UNIX)
         pEEInfoOut->osType                                     = CORINFO_UNIX;
 #else
@@ -5762,6 +5779,18 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                         printf("[%u] %016" PRIX64 " ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
                     }
                     break;
+                case ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount:
+                    printf("V %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount:
+                    printf("V %" PRIu64 "", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
+                    break;
+                case ICorJitInfo::PgoInstrumentationKind::ValueHistogram:
+                    for (unsigned int j = 0; j < pBuf[i].Count; j++)
+                    {
+                        printf("[%u] %016" PRIX64 " ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
+                    }
+                    break;
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod:
                     {
@@ -6227,7 +6256,7 @@ WORD MethodContext::repGetRelocTypeHint(void* target)
 {
     DWORDLONG key = CastPointer(target);
 
-    if (GetRelocTypeHint == nullptr)
+    if ((GetRelocTypeHint == nullptr) || (GetRelocTypeHint->GetIndex(key) == -1))
     {
 #ifdef sparseMC
         LogDebug("Sparse - repGetRelocTypeHint yielding fake answer...");
@@ -6236,42 +6265,17 @@ WORD MethodContext::repGetRelocTypeHint(void* target)
         LogException(EXCEPTIONCODE_MC, "Didn't find %016" PRIX64 "", key);
 #endif
     }
-    if (GetRelocTypeHint->GetIndex(key) == -1)
-    {
-        void* origAddr = cr->repAddressMap((void*)target);
-        if (origAddr != (void*)-1 && origAddr != nullptr)
-        {
-            if (GetRelocTypeHint->GetIndex(CastPointer(origAddr)) == -1)
-                target = origAddr;
-        }
-        else
-        {
-#ifdef sparseMC
-            LogDebug("Sparse - repGetRelocTypeHint yielding fake answer...");
-            return 65535;
-#else
-            LogException(EXCEPTIONCODE_MC, "Didn't find %016" PRIX64 "", key);
-#endif
-        }
-    }
 
     int  index  = GetRelocTypeHint->GetIndex(key);
     WORD retVal = 0;
     if (index == -1)
     {
-        void* subtarget = cr->searchAddressMap(target);
-
-        int index2 = GetRelocTypeHint->GetIndex(CastPointer(subtarget));
-        if (index2 == -1)
-        {
-            // __debugbreak(); // seems like a source of pain
-            retVal = IMAGE_REL_BASED_REL32;
-        }
-        else
-            retVal = (WORD)GetRelocTypeHint->Get(CastPointer(subtarget));
+        retVal = IMAGE_REL_BASED_REL32;
     }
     else
+    {
         retVal = (WORD)GetRelocTypeHint->Get(key);
+    }
 
     DEBUG_REP(dmpGetRelocTypeHint(key, (DWORD)retVal));
     return retVal;
@@ -6921,8 +6925,14 @@ int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
     key.nameIndex    = (DWORD)nameIndex;
     key.defaultValue = defaultValue;
 
-    DWORD value = LookupByKeyOrMissNoMessage(GetIntConfigValue, key);
+    int index = GetIntConfigValue->GetIndex(key);
+    if (index == -1)
+    {
+        // default value has changed
+        return defaultValue;
+    }
 
+    DWORD value = GetIntConfigValue->GetItem(index);
     DEBUG_REP(dmpGetIntConfigValue(key, value));
     return (int)value;
 }

@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
-using Internal.Runtime.Augments;
+using Internal.Reflection.Augments;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -31,7 +30,7 @@ namespace Internal.Runtime.CompilerHelpers
         // This supports Assembly.GetExecutingAssembly() intrinsic expansion in the compiler
         public static Assembly GetExecutingAssembly(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeAugments.Callbacks.GetAssemblyForHandle(typeHandle);
+            return ReflectionAugments.ReflectionCoreCallbacks.GetAssemblyForHandle(typeHandle);
         }
 
         // This supports MethodBase.GetCurrentMethod() intrinsic expansion in the compiler

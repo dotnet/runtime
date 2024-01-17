@@ -1124,6 +1124,7 @@ public:
     bool IsJitOptimizationDisabled();
     bool IsJitOptimizationDisabledForAllMethodsInChunk();
     bool IsJitOptimizationDisabledForSpecificMethod();
+    bool IsJitOptimizationLevelRequested();
 
 private:
     // This function is not intended to be called in most places, and is named as such to discourage calling it accidentally
@@ -1373,11 +1374,11 @@ public:
     }
 
     // Perf warning: takes the CodeVersionManagerLock on every call
-    BOOL HasNativeCodeReJITAware()
+    BOOL HasNativeCodeAnyVersion()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return GetNativeCodeReJITAware() != NULL;
+        return GetNativeCodeAnyVersion() != NULL;
     }
 
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
@@ -1437,9 +1438,9 @@ public:
     PCODE GetNativeCode();
 
     // Returns GetNativeCode() if it exists, but also checks to see if there
-    // is a non-default IL code version and returns that.
+    // is a non-default code version that is populated with a code body and returns that.
     // Perf warning: takes the CodeVersionManagerLock on every call
-    PCODE GetNativeCodeReJITAware();
+    PCODE GetNativeCodeAnyVersion();
 
 #if defined(FEATURE_JIT_PITCHING)
     bool IsPitchable();
@@ -1682,7 +1683,7 @@ public:
         m_wFlags |= mdcHasNativeCodeSlot;
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     inline BOOL IsEnCAddedMethod()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1700,7 +1701,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return FALSE;
     }
-#endif // !EnC_SUPPORTED
+#endif // !FEATURE_METADATA_UPDATER
 
     inline BOOL IsIntrinsic()
     {
@@ -1819,7 +1820,7 @@ private:
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
     PCODE JitCompileCode(PrepareCodeConfig* pConfig);
     PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
-    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
+    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
 
 public:
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
@@ -2695,22 +2696,6 @@ public:
 typedef DPTR(NDirectImportThunkGlue)      PTR_NDirectImportThunkGlue;
 
 
-//
-// This struct consolidates the writeable parts of the NDirectMethodDesc
-// so that we can eventually layout a read-only NDirectMethodDesc with a pointer
-// to the writeable parts in an ngen image
-//
-class NDirectWriteableData
-{
-public:
-    // The JIT generates an indirect call through this location in some cases.
-    // Initialized to NDirectImportThunkGlue. Patched to the true target or
-    // host interceptor stub or alignment thunk after linking.
-    LPVOID      m_pNDirectTarget;
-};
-
-typedef DPTR(NDirectWriteableData)      PTR_NDirectWriteableData;
-
 //-----------------------------------------------------------------------
 // Operations specific to NDirect methods. We use a derived class to get
 // the compiler involved in enforcing proper method type usage.
@@ -2730,8 +2715,10 @@ public:
             DWORD       m_dwECallID;    // ECallID for QCalls
         };
 
-        // The writeable part of the methoddesc.
-        PTR_NDirectWriteableData    m_pWriteableData;
+        // The JIT generates an indirect call through this location in some cases.
+        // Initialized to NDirectImportThunkGlue. Patched to the true target or
+        // host interceptor stub or alignment thunk after linking.
+        LPVOID      m_pNDirectTarget;
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
         PTR_NDirectImportThunkGlue  m_pImportThunkGlue;
@@ -2928,13 +2915,6 @@ public:
         return (ndirect.m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
     }
 
-    PTR_NDirectWriteableData GetWriteableData() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return ndirect.m_pWriteableData;
-    }
-
     PTR_NDirectImportThunkGlue GetNDirectImportThunkGlue()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2947,7 +2927,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(IsNDirect());
-        return GetWriteableData()->m_pNDirectTarget;
+        return ndirect.m_pNDirectTarget;
     }
 
     VOID SetNDirectTarget(LPVOID pTarget);

@@ -224,13 +224,12 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 
 // g_coreclr_embedded indicates that coreclr is linked directly into the program
 // g_hostpolicy_embedded indicates that the hostpolicy library is linked directly into the executable
-// Note: that it can happen that the hostpolicy is embedded but coreclr isn't (on Windows singlefilehost is built that way)
 #ifdef CORECLR_EMBEDDED
 bool g_coreclr_embedded = true;
 bool g_hostpolicy_embedded = true; // We always embed hostpolicy if coreclr is also embedded
 #else
 bool g_coreclr_embedded = false;
-bool g_hostpolicy_embedded = false; // In this case the value may come from a runtime property and may change
+bool g_hostpolicy_embedded = false;
 #endif
 
 // Remember how the last startup of EE went.
@@ -1754,6 +1753,7 @@ struct TlsDestructionMonitor
                 thread->DetachThread(TRUE);
             }
 
+            DeleteThreadLocalMemory();
             ThreadDetaching();
         }
     }
@@ -1766,6 +1766,30 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 void EnsureTlsDestructionMonitor()
 {
     tls_destructionMonitor.Activate();
+}
+
+#ifdef _MSC_VER
+__declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
+#else
+__thread ThreadStaticBlockInfo t_ThreadStatics;
+#endif // _MSC_VER
+
+// Delete the thread local memory only if we the current thread
+// is the one executing this code. If we do not guard it, it will
+// end up deleting the thread local memory of the calling thread.
+void DeleteThreadLocalMemory()
+{
+    t_NonGCThreadStaticBlocksSize = 0;
+    t_GCThreadStaticBlocksSize = 0;
+
+    t_ThreadStatics.NonGCMaxThreadStaticBlocks = 0;
+    t_ThreadStatics.GCMaxThreadStaticBlocks = 0;
+
+    delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
+    t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
+
+    delete[] t_ThreadStatics.GCThreadStaticBlocks;
+    t_ThreadStatics.GCThreadStaticBlocks = nullptr;
 }
 
 #ifdef DEBUGGING_SUPPORTED
@@ -1986,12 +2010,10 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
             sParentCulture = sCulture;
 #endif // !TARGET_UNIX
         }
-        // (LPCWSTR) to restrict the size to null terminated size
-        pCultureNames->AppendIfNotThere((LPCWSTR)sCulture);
-        // Disabling for Dev10 for consistency with managed resource lookup (see AppCompat bug notes in ResourceFallbackManager.cs)
-        // Also, this is in the wrong order - put after the parent culture chain.
-        //AddThreadPreferredUILanguages(pCultureNames);
-        pCultureNames->AppendIfNotThere((LPCWSTR)sParentCulture);
+        sCulture.Normalize();
+        sParentCulture.Normalize();
+        pCultureNames->AppendIfNotThere(sCulture);
+        pCultureNames->AppendIfNotThere(sParentCulture);
         pCultureNames->Append(SString::Empty());
     }
     EX_CATCH

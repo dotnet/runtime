@@ -97,7 +97,7 @@ public class Test_structret5_2
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         S sM = new S("test");
         S sM2 = new S("test2");
@@ -105,6 +105,5 @@ public class Test_structret5_2
         S sM4 = new S("test4");
 
         Console.WriteLine(c(sM, sM2, sM3, sM4));
-        return 100;
     }
 }

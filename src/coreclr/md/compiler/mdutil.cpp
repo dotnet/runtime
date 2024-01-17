@@ -265,11 +265,7 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
             {
                 // If the name matches...
                 LPCWSTR pszName = pRegMeta->GetNameOfDBFile();
-    #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-                if (u16_strcmp(szName, pszName) == 0)
-    #else
                 if (SString::_wcsicmp(szName, pszName) == 0)
-    #endif
                 {
                     ULONG cRefs;
 
@@ -299,11 +295,7 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
             {
                 // If the name matches...
                 LPCWSTR pszName = pRegMeta->GetNameOfDBFile();
-    #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-                if (u16_strcmp(szName, pszName) == 0)
-    #else
                 if (SString::_wcsicmp(szName, pszName) == 0)
-    #endif
                 {
                     ULONG cRefs;
 

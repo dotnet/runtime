@@ -15,17 +15,20 @@
   <Import Project="$(RepositoryEngineeringDir)generatorProjects.targets" Condition="'$(IsGeneratorProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'" />
+  <Import Project="$(RepositoryEngineeringDir)slngen.targets" Condition="'$(IsSlnGen)' == 'true'" />
 
   <!--
   When .NET gets built from source, make the SDK aware there are bootstrap packages
   for Microsoft.NETCore.App.Runtime.<rid> and Microsoft.NETCore.App.Crossgen2.<rid>.
   -->
   <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
-    <KnownFrameworkReference Update="@(KnownFrameworkReference->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))">
-      <RuntimePackRuntimeIdentifiers>$(PackageRID)</RuntimePackRuntimeIdentifiers>
+    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+      <RuntimePackRuntimeIdentifiers
+        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'">%(RuntimePackRuntimeIdentifiers);$(PackageRID)</RuntimePackRuntimeIdentifiers>
     </KnownFrameworkReference>
-    <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack->WithMetadataValue('Identity', 'Microsoft.NETCore.App.Crossgen2')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))">
-      <Crossgen2RuntimeIdentifiers>$(PackageRID)</Crossgen2RuntimeIdentifiers>
+    <KnownCrossgen2Pack Update="Microsoft.NETCore.App.Crossgen2">
+      <Crossgen2RuntimeIdentifiers
+        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'" >%(Crossgen2RuntimeIdentifiers);$(PackageRID)</Crossgen2RuntimeIdentifiers>
     </KnownCrossgen2Pack>
     <!-- Avoid references to Microsoft.AspNetCore.App.Runtime.<rid> -->
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
@@ -78,6 +81,8 @@
     <PackageDescription Condition="'$(PackageDescription)' == '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer)</PackageDescription>
     <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
     <Description>$(PackageDescription)</Description>
+    <!-- Until we update the TFM to match the Major version, we need to patch in support for RequiresPreviewFeatures -->
+    <GenerateRequiresPreviewFeaturesAttribute Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">true</GenerateRequiresPreviewFeaturesAttribute>
   </PropertyGroup>
 
   <Target Name="ValidateTargetOSLowercase"
@@ -121,7 +126,7 @@
           AfterTargets="ResolveProjectReferences"
           BeforeTargets="FindReferenceAssembliesForReferences"
           Condition="'@(ProjectReference)' != '' and '@(_ResolvedProjectReferencePaths)' != ''">
-    <!-- If we have a ProjectReference to CoreLib, we need to compile against implementation assemblies, 
+    <!-- If we have a ProjectReference to CoreLib, we need to compile against implementation assemblies,
          and ignore architecture mismatches in those implementation assemblies. -->
     <PropertyGroup Condition="@(_ResolvedProjectReferencePaths->AnyHaveMetadataValue('MSBuildSourceProjectFile', '$(CoreLibProject)'))">
       <CompileUsingReferenceAssemblies Condition="'$(CompileUsingReferenceAssemblies)' == ''">false</CompileUsingReferenceAssemblies>
@@ -212,19 +217,7 @@
       <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
       <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
       <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
-
-      <!--
-        By default, we are always building the nuget packages for HostPolicy, HostFXR and
-        Dotnet/AppHost. Thus, the properties (below) are always set to $(ProductVersion).
-        However, there are scenarios when only some of these components will change (e.g. during
-        servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
-        pass the appropriate version value(s) as argument to the build command in order to override;
-        e.g. 'build -p:HostPolicyVersion=x.y.z ...'
-      -->
-      <HostVersion Condition="'$(HostVersion)' == ''">$(ProductVersion)</HostVersion>
-      <AppHostVersion Condition="'$(AppHostVersion)' == ''">$(ProductVersion)</AppHostVersion>
-      <HostResolverVersion Condition="'$(HostResolverVersion)' == ''">$(ProductVersion)</HostResolverVersion>
-      <HostPolicyVersion Condition="'$(HostPolicyVersion)' == ''">$(ProductVersion)</HostPolicyVersion>
     </PropertyGroup>
   </Target>
+
 </Project>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
@@ -42,6 +43,14 @@ namespace Microsoft.Interop
 
     public static class TypeSyntaxes
     {
+        public static TypeSyntax Void { get; } = PredefinedType(Token(SyntaxKind.VoidKeyword));
+
+        public static TypeSyntax VoidStar { get; } = PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)));
+
+        public static TypeSyntax VoidStarStar { get; } = PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))));
+
+        public static TypeSyntax Nint { get; } = ParseTypeName(TypeNames.Nint);
+
         private static TypeSyntax? _StringMarshalling;
         public static TypeSyntax StringMarshalling => _StringMarshalling ??= ParseTypeName(TypeNames.GlobalAlias + TypeNames.StringMarshalling);
 
@@ -134,6 +143,7 @@ namespace Microsoft.Interop
             };
         }
     }
+
     public static class TypeNames
     {
         public const string GlobalAlias = "global::";
@@ -300,5 +310,7 @@ namespace Microsoft.Interop
         public const string CallConvThiscallName = "System.Runtime.CompilerServices.CallConvThiscall";
         public const string CallConvSuppressGCTransitionName = "System.Runtime.CompilerServices.CallConvSuppressGCTransition";
         public const string CallConvMemberFunctionName = "System.Runtime.CompilerServices.CallConvMemberFunction";
+        public const string Nint = "nint";
+        public const string ComVariantMarshaller = "System.Runtime.InteropServices.Marshalling.ComVariantMarshaller";
     }
 }

@@ -12,12 +12,12 @@
 **
 ===========================================================*/
 
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System
 {
@@ -376,8 +376,13 @@ namespace System
         /// Get a count of the bytes allocated over the lifetime of the process.
         /// </summary>
         /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
+        public static long GetTotalAllocatedBytes(bool precise = false) => precise ? GetTotalAllocatedBytesPrecise() : GetTotalAllocatedBytesApproximate();
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern long GetTotalAllocatedBytes(bool precise = false);
+        private static extern long GetTotalAllocatedBytesApproximate();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalAllocatedBytesPrecise")]
+        private static partial long GetTotalAllocatedBytesPrecise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _RegisterForFullGCNotification(int maxGenerationPercentage, int largeObjectHeapPercentage);
@@ -385,11 +390,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _CancelFullGCNotification();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCApproach(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCApproach")]
+        private static partial int _WaitForFullGCApproach(int millisecondsTimeout);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCComplete(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCComplete")]
+        private static partial int _WaitForFullGCComplete(int millisecondsTimeout);
 
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold)
         {
@@ -899,13 +904,10 @@ namespace System
         ///
         /// This API will only handle configs that could be handled when the runtime is loaded, for example, for configs that don't have any effects on 32-bit systems (like the GCHeapHardLimit* ones), this API will not handle it.
         ///
-        /// As of now, this API is feature preview only and subject to changes as necessary.
-        ///
         /// <exception cref="InvalidOperationException">If the hard limit is too low. This can happen if the heap hard limit that the refresh will set, either because of new AppData settings or implied by the container memory limit changes, is lower than what is already committed.</exception>
         /// <exception cref="InvalidOperationException">If the hard limit is invalid. This can happen, for example, with negative heap hard limit percentages.</exception>
         ///
         /// </summary>
-        [RequiresPreviewFeatures("RefreshMemoryLimit is in preview.")]
         public static void RefreshMemoryLimit()
         {
             ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;

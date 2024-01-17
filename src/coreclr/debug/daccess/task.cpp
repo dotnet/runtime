@@ -732,8 +732,7 @@ ClrDataAppDomain::GetName(
             }
             else
             {
-                status = StringCchCopy(name, bufLen, (PCWSTR)rawName) == S_OK ?
-                    S_OK : S_FALSE;
+                status = u16_strcpy_s(name, bufLen, (PCWSTR)rawName) != NULL ? S_OK : S_FALSE;
                 if (nameLen)
                 {
                     size_t cchName = u16_strlen((PCWSTR)rawName) + 1;
@@ -4768,7 +4767,7 @@ ClrDataExceptionState::GetString(
                                                  message->GetStringLength(),
                                                  true);
 
-            status = StringCchCopy(str, bufLen, msgStr) == S_OK ? S_OK : S_FALSE;
+            status = u16_strcpy_s(str, bufLen, msgStr) != NULL ? S_OK : S_FALSE;
             if (strLen != NULL)
             {
                 size_t cchName = u16_strlen(msgStr) + 1;
@@ -5225,7 +5224,7 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
         }
     }
 
-    if (!m_methodIter.Current()->HasNativeCodeReJITAware())
+    if (!m_methodIter.Current()->HasNativeCodeAnyVersion())
     {
         goto NextMethod;
     }
@@ -5243,7 +5242,7 @@ EnumMethodInstances::CdStart(MethodDesc* methodDesc,
                              CLRDATA_ENUM* handle)
 {
     if (!methodDesc->HasClassOrMethodInstantiation() &&
-        !methodDesc->HasNativeCodeReJITAware())
+        !(methodDesc->HasNativeCodeAnyVersion()))
     {
         *handle = 0;
         return S_FALSE;

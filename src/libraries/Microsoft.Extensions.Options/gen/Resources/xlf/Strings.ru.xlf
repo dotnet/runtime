@@ -122,6 +122,16 @@
         <target state="translated">Для атрибутов ValidateObjectMembersAttribute или ValidateEnumeratedItemsAttribute указан тип проверяющего элемента управления NULL.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
+        <source>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">Генератор исходного кода проверки параметров недоступен в C# {0}. Используйте языковую версию {1} или более позднюю.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Версия языка C# не поддерживается генератором исходного кода.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
         <target state="translated">Тип {0} содержит примечания проверки, но элемент {1} не указывает [ValidateEnumeratedItems], который может быть задан.</target>
@@ -140,6 +150,16 @@
       <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
         <source>Member potentially missing transitive validation.</source>
         <target state="translated">Возможно, в элементе отсутствует транзитивная проверка.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeMessage">
+        <source>The validation attribute {0} should only be applied to properties of type string, array, or ICollection. Using it with the type {1} could lead to runtime failures.</source>
+        <target state="translated">Атрибут проверки {0} следует применять только к свойствам строки типа, массива или ICollection. Использование его с типом {1} может привести к сбоям во время выполнения.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeTitle">
+        <source>The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types.</source>
+        <target state="translated">Атрибут проверки применим только к свойствам строки типа, массива или ICollection; его нельзя использовать с другими типами.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorMessage">

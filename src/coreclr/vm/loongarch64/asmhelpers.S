@@ -269,8 +269,8 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     ld.b  $t0, $t4, 0
     bne  $t0, $zero, 1f //LOCAL_LABEL(CheckCardTable)
 
-    ori  $t4, $zero, 0xFF
-    st.b  $t4, $t4, 0
+    ori  $t0, $zero, 0xFF
+    st.b  $t0, $t4, 0
 1:
 //LOCAL_LABEL(CheckCardTable):
 #endif
@@ -630,6 +630,46 @@ LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
     // Tail call JIT_GetSharedGCStaticBase_Helper
     bl  JIT_GetSharedGCStaticBase_Helper
 LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
+
+// Make sure the `FaultingExceptionFrame_StackAlloc` is 16-byte aligned.
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame + 0x8)
+#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+
+.macro GenerateRedirectedStubWithFrame stub, target
+
+    //
+    // This is the primary function to which execution will be redirected to.
+    //
+    NESTED_ENTRY \stub, _TEXT, NoHandler
+
+        //
+        // IN: ra: original IP before redirect
+        //
+
+        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 16
+
+        // alloc stack for FaultingExceptionFrame.
+        addi.d  $sp, $sp, -FaultingExceptionFrame_StackAlloc
+
+        // stack must be 16 bytes aligned
+        CHECK_STACK_ALIGNMENT
+
+        // Save pointer to FEF for GetFrameFromRedirectedStubStackFrame
+        addi.d  $a0, $sp, FaultingExceptionFrame_FrameOffset
+
+        // Prepare to initialize to NULL
+        st.d    $r0, $a0, 0  // Initialize vtbl (it is not strictly necessary)
+        st.d    $r0, $a0, FaultingExceptionFrame__m_fFilterExecuted  // Initialize BOOL for personality routine
+
+        bl   C_FUNC(\target)
+        // Target should not return.
+        EMIT_BREAKPOINT
+
+    NESTED_END \stub, _TEXT
+
+.endm
+
+GenerateRedirectedStubWithFrame RedirectForThreadAbort, ThrowControlForThread
 
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
@@ -1027,12 +1067,6 @@ LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
 // ------------------------------------------------------------------
-#define PROFILE_ENTER    1
-#define PROFILE_LEAVE    2
-#define PROFILE_TAILCALL 4
-#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 272
-
-// ------------------------------------------------------------------
 .macro GenerateProfileHelper helper, flags
 NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // On entry:
@@ -1044,27 +1078,27 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     //   Values of $a0-$a7, $fa0-$fa7, $fp are preserved.
     //   Values of other volatile registers are not preserved.
 
-    //                           $fp,$ra
+    //                          $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Allocate space and save Fp, Pc.
-    SAVE_ARGUMENT_REGISTERS $sp, 16          // Save $t0 and argument registers ($a0-$a7).
-    st.d     $zero, $sp, 88                   // Clear functionId.
-    SAVE_FLOAT_ARGUMENT_REGISTERS $sp, 96    // Save floating-point/SIMD registers ($fa0-$fa7).
-    addi.d     $t3, $fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
-    st.d     $t3, $sp, 224             // Save probeSp.
-    st.d     $t2, $sp, 232             // Save profiledSp.
 
-    st.d    $zero, $sp, 240            // Clear hiddenArg.
-    addi.d  $t3, $zero, \flags
-    st.w    $t3, $sp, 248              // Save flags.
-    st.d    $zero, $sp, 256            // clear unused field.
+    SAVE_ARGUMENT_REGISTERS       $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
+    SAVE_FLOAT_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
+    st.d    $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__functionId
+    addi.d  $t3, $sp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
+    st.d    $t3, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp
+    st.d    $t2, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp
 
-    ori     $a1, $t1, 0
-    ori     $a2, $sp, 0
+    st.d    $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg
+    addi.w  $t3, $zero, \flags
+    st.w    $t3, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__flags
+
+    ori     $a0, $t1, 0
+    ori     $a1, $sp, 0
     bl      C_FUNC(\helper)
 
-    RESTORE_ARGUMENT_REGISTERS $sp, 16       // Restore $t0 and argument registers.
-    RESTORE_FLOAT_ARGUMENT_REGISTERS $sp, 96 // Restore floating-point/SIMD registers.
-    //                              $fp, $ra
+    RESTORE_ARGUMENT_REGISTERS       $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
+    RESTORE_FLOAT_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
+    //                             $fp, $ra
     EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA
     EPILOG_RETURN
 

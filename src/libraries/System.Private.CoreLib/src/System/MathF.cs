@@ -9,8 +9,8 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -28,9 +28,10 @@ namespace System
         private const int maxRoundingDigits = 6;
 
         // This table is required for the Round function which can specify the number of digits to round to
-        private static ReadOnlySpan<float> RoundPower10Single => new float[] {
+        private static ReadOnlySpan<float> RoundPower10Single =>
+        [
             1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f
-        };
+        ];
 
         private const float singleRoundLimit = 1e8f;
 
@@ -104,9 +105,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float CopySign(float x, float y)
         {
-            if (Sse.IsSupported || AdvSimd.IsSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
-                return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0f), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
+                return Vector128.ConditionalSelect(Vector128.CreateScalarUnsafe(-0.0f), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
             }
             else
             {
@@ -285,7 +286,7 @@ namespace System
             //
             // It propagates NaN inputs back to the caller and
             // otherwise returns the input with a lesser magnitude.
-            // It treats +0 as lesser than -0 as per the specification.
+            // It treats +0 as greater than -0 as per the specification.
 
             float ax = Abs(x);
             float ay = Abs(y);

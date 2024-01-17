@@ -108,17 +108,21 @@ namespace ILCompiler.DependencyAnalysis
 
             _sealedVTableEntries = new List<SealedVTableEntry>();
 
-            // Interfaces don't have any virtual slots with the exception of interfaces that provide
+            // Interfaces don't have any instance virtual slots with the exception of interfaces that provide
             // IDynamicInterfaceCastable implementation.
             // Normal interface don't need one because the dispatch is done at the class level.
             // For IDynamicInterfaceCastable, we don't have an implementing class.
-            if (_type.IsInterface && !((MetadataType)_type).IsDynamicInterfaceCastableImplementation())
-                return true;
+            bool isInterface = declType.IsInterface;
+            bool needsEntriesForInstanceInterfaceMethodImpls = !isInterface
+                    || ((MetadataType)declType).IsDynamicInterfaceCastableImplementation();
 
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
 
             for (int i = 0; i < virtualSlots.Count; i++)
             {
+                if (!virtualSlots[i].Signature.IsStatic && !needsEntriesForInstanceInterfaceMethodImpls)
+                    continue;
+
                 MethodDesc implMethod = declType.FindVirtualFunctionTargetMethodOnObjectType(virtualSlots[i]);
 
                 if (implMethod.CanMethodBeInSealedVTable())
@@ -136,15 +140,19 @@ namespace ILCompiler.DependencyAnalysis
             for (int interfaceIndex = 0; interfaceIndex < declTypeRuntimeInterfaces.Length; interfaceIndex++)
             {
                 var interfaceType = declTypeRuntimeInterfaces[interfaceIndex];
-                var interfaceDefinitionType = declTypeDefinitionRuntimeInterfaces[interfaceIndex];
+                var definitionInterfaceType = declTypeDefinitionRuntimeInterfaces[interfaceIndex];
 
                 virtualSlots = factory.VTable(interfaceType).Slots;
 
                 for (int interfaceMethodSlot = 0; interfaceMethodSlot < virtualSlots.Count; interfaceMethodSlot++)
                 {
                     MethodDesc declMethod = virtualSlots[interfaceMethodSlot];
+
+                    if (!declMethod.Signature.IsStatic && !needsEntriesForInstanceInterfaceMethodImpls)
+                        continue;
+
                     if  (!interfaceType.IsTypeDefinition)
-                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceDefinitionType);
+                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)definitionInterfaceType);
 
                     var implMethod = declMethod.Signature.IsStatic ?
                         declTypeDefinition.ResolveInterfaceMethodToStaticVirtualMethodOnType(declMethod) :
@@ -208,9 +216,11 @@ namespace ILCompiler.DependencyAnalysis
 
             if (BuildSealedVTableSlots(factory, relocsOnly))
             {
+                DefType defType = _type.GetClosestDefType();
+
                 for (int i = 0; i < _sealedVTableEntries.Count; i++)
                 {
-                    IMethodNode relocTarget = _sealedVTableEntries[i].GetTarget(factory, _type);
+                    IMethodNode relocTarget = _sealedVTableEntries[i].GetTarget(factory, defType);
 
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(relocTarget, RelocType.IMAGE_REL_BASED_RELPTR32);

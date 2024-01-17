@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using System.Linq;
@@ -57,9 +58,36 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         return res;
     }
 
+
+    public void AssertBundle(BuildArgs buildArgs, BuildProjectOptions buildProjectOptions)
+    {
+        AssertBundle(new(
+            Config: buildArgs.Config,
+            IsPublish: buildProjectOptions.Publish,
+            TargetFramework: buildProjectOptions.TargetFramework,
+            BinFrameworkDir: buildProjectOptions.BinFrameworkDir ?? FindBinFrameworkDir(buildArgs.Config, buildProjectOptions.Publish, buildProjectOptions.TargetFramework),
+            PredefinedIcudt: buildProjectOptions.PredefinedIcudt,
+            GlobalizationMode: buildProjectOptions.GlobalizationMode,
+            AssertSymbolsFile: false,
+            ExpectedFileType: buildProjectOptions.Publish && buildArgs.Config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack
+        ));
+    }
+
     public void AssertBundle(AssertWasmSdkBundleOptions assertOptions)
     {
         IReadOnlyDictionary<string, DotNetFileName> actualDotnetFiles = AssertBasicBundle(assertOptions);
+
+        if (assertOptions.IsPublish)
+        {
+            string publishPath = Path.GetFullPath(Path.Combine(assertOptions.BinFrameworkDir, "..", ".."));
+            Assert.Equal("publish", Path.GetFileName(publishPath));
+
+            var dlls = Directory.EnumerateFiles(publishPath, "*.dll");
+            Assert.False(dlls.Any(), $"Did not expect to find any .dll in {publishPath} but found {string.Join(",", dlls)}");
+
+            var wasmAssemblies = Directory.EnumerateFiles(publishPath, "*.wasm");
+            Assert.False(wasmAssemblies.Any(), $"Did not expect to find any .wasm files in {publishPath} but found {string.Join(",", wasmAssemblies)}");
+        }
 
         if (!BuildTestBase.IsUsingWorkloads)
             return;

@@ -67,7 +67,7 @@ namespace JitTest_han3_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int NUM = 17;
             Column c1 = new Column();
@@ -76,7 +76,6 @@ namespace JitTest_han3_cs
             c1.Init(NUM, NUM);
             c2.Init(NUM, 0);
             c3.Init(NUM, 0);
-            return 100;
         }
     }
 }

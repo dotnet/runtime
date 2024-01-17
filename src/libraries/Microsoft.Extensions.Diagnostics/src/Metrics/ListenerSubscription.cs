@@ -16,6 +16,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         private readonly Dictionary<Instrument, object?> _instruments = new();
         private IList<InstrumentRule> _rules = Array.Empty<InstrumentRule>();
         private bool _disposed;
+        private bool _disposing;
 
         internal ListenerSubscription(IMetricsListener metricsListener, IMeterFactory meterFactory)
         {
@@ -65,7 +66,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         {
             lock (_instruments)
             {
-                if (_disposed)
+                if (_disposed && !_disposing)
                 {
                     return;
                 }
@@ -165,36 +166,39 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
             // Meter
 
-            var ruleMeterName = rule.MeterName.AsSpan();
-            // Don't allow "*" anywhere except at the end.
-            var starIndex = ruleMeterName.IndexOf('*');
-            if (starIndex != -1 && starIndex != ruleMeterName.Length - 1)
+            // The same logic as Microsoft.Extensions.Logging.LoggerRuleSelector.IsBetter for category names
+            var meterName = rule.MeterName;
+            if (meterName != null)
             {
-                return false;
-            }
-            // Rule "System.Net.*" matches meter "System.Net" and "System.Net.Http"
-            if (ruleMeterName.EndsWith(".*".AsSpan(), StringComparison.Ordinal))
-            {
-                ruleMeterName = ruleMeterName.Slice(0, ruleMeterName.Length - 2);
-            }
-            // System.Net* matches System.Net and System.Net.Http
-            else if (starIndex != -1)
-            {
-                ruleMeterName = ruleMeterName.Slice(0, ruleMeterName.Length - 1);
+                const char WildcardChar = '*';
+
+                int wildcardIndex = meterName.IndexOf(WildcardChar);
+                if (wildcardIndex >= 0 &&
+                    meterName.IndexOf(WildcardChar, wildcardIndex + 1) >= 0)
+                {
+                    throw new InvalidOperationException(SR.MoreThanOneWildcard);
+                }
+
+                ReadOnlySpan<char> prefix, suffix;
+                if (wildcardIndex < 0)
+                {
+                    prefix = meterName.AsSpan();
+                    suffix = default;
+                }
+                else
+                {
+                    prefix = meterName.AsSpan(0, wildcardIndex);
+                    suffix = meterName.AsSpan(wildcardIndex + 1);
+                }
+
+                if (!instrument.Meter.Name.AsSpan().StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+                    !instrument.Meter.Name.AsSpan().EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
             }
 
-            // Rule "" matches everything
-            if (ruleMeterName.IsEmpty)
-            {
-                return true;
-            }
-
-            // "System.Net" matches "System.Net" and "System.Net.Http"
-            return instrument.Meter.Name.AsSpan().StartsWith(ruleMeterName, StringComparison.OrdinalIgnoreCase)
-                // Exact match +/- ".*"
-                && (ruleMeterName.Length == instrument.Meter.Name.Length
-                    // Only allow StartsWith on segment boundaries
-                    || instrument.Meter.Name[ruleMeterName.Length] == '.');
+            return true;
         }
 
         // Everything must already match the Instrument and listener, or be blank.
@@ -282,8 +286,10 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
         public void Dispose()
         {
+            _disposing = true;
             _disposed = true;
             _meterListener.Dispose();
+            _disposing = false;
         }
     }
 }

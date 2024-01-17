@@ -83,7 +83,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Gets the culture to use based on the specified options.</summary>
         internal static CultureInfo GetTargetCulture(RegexOptions options) =>
+#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
             (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+#pragma warning restore RS1035
 
         public static RegexOptions ParseOptionsInPattern(string pattern, RegexOptions options)
         {
@@ -134,7 +136,9 @@ namespace System.Text.RegularExpressions
         /// <summary>This static call constructs a flat concatenation node given a replacement pattern.</summary>
         public static RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
         {
+#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+#pragma warning restore RS1035
             using var parser = new RegexParser(pattern, options, culture, caps, capsize, capnames, stackalloc int[OptionStackDefaultSize]);
 
             RegexNode root = parser.ScanReplacement();
@@ -909,14 +913,9 @@ namespace System.Text.RegularExpressions
                                     {
                                         string uncapname = ScanCapname();
 
-                                        if (_capnames?[uncapname] is int tmpCapnum)
-                                        {
-                                            uncapnum = tmpCapnum;
-                                        }
-                                        else
-                                        {
+                                        uncapnum = _capnames?[uncapname] is int tmpCapnum ?
+                                            tmpCapnum :
                                             throw MakeException(RegexParseError.UndefinedNamedReference, SR.Format(SR.UndefinedNamedReference, uncapname));
-                                        }
 
                                         // check if we have bogus character after the name
                                         if (_pos < _pattern.Length && _pattern[_pos] != close)
@@ -950,7 +949,7 @@ namespace System.Text.RegularExpressions
                             ch = _pattern[_pos];
 
                             // check if the alternation condition is a backref
-                            if (ch >= '0' && ch <= '9')
+                            if (ch is >= '0' and <= '9')
                             {
                                 int capnum = ScanDecimal();
                                 if (_pos < _pattern.Length && _pattern[_pos++] == ')')
@@ -1310,7 +1309,7 @@ namespace System.Text.RegularExpressions
 
             // Try to parse backreference: \1 or \{1} or \{cap}
 
-            if (ch >= '0' && ch <= '9')
+            if (ch is >= '0' and <= '9')
             {
                 if (!angled && (_options & RegexOptions.ECMAScript) != 0)
                 {
@@ -1576,7 +1575,7 @@ namespace System.Text.RegularExpressions
         {
             char ch = _pattern[_pos++];
 
-            if (ch >= '0' && ch <= '7')
+            if (ch is >= '0' and <= '7')
             {
                 --_pos;
                 return ScanOctal();
@@ -1927,7 +1926,8 @@ namespace System.Text.RegularExpressions
         private const byte W = 1;    // whitespace          \t \n \f \r ' '
 
         /// <summary>For categorizing ASCII characters.</summary>
-        private static ReadOnlySpan<byte> Category => new byte[] {
+        private static ReadOnlySpan<byte> Category =>
+        [
             // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
                0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, 0, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             //    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /  0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
@@ -1935,7 +1935,8 @@ namespace System.Text.RegularExpressions
             // @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z  [  \  ]  ^  _
                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, S, S, 0, S, 0,
             // '  a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z  {  |  }  ~
-               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Q, S, 0, 0, 0};
+               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Q, S, 0, 0, 0
+        ];
 
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_metachars =

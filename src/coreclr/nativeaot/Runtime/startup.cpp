@@ -8,7 +8,6 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -49,8 +48,6 @@ static bool DetectCPUFeatures();
 
 extern RhConfig * g_pRhConfig;
 
-CrstStatic g_ThunkPoolLock;
-
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
 // This field is inspected from the generated code to determine what intrinsics are available.
 EXTERN_C int g_cpuFeatures;
@@ -87,6 +84,11 @@ extern "C" volatile GSCookie __security_cookie = 0;
 #endif // FEATURE_READONLY_GS_COOKIE
 
 #endif // TARGET_UNIX
+
+static RhConfig g_sRhConfig;
+RhConfig* g_pRhConfig = &g_sRhConfig;
+
+bool InitializeGC();
 
 static bool InitDLL(HANDLE hPalInstance)
 {
@@ -148,7 +150,7 @@ static bool InitDLL(HANDLE hPalInstance)
 
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
 
-    if (!RedhawkGCInterface::InitializeSubsystems())
+    if (!InitializeGC())
         return false;
 
     STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
@@ -169,9 +171,6 @@ static bool InitDLL(HANDLE hPalInstance)
     if (!InitGSCookie())
         return false;
 #endif
-
-    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstThunkPool))
-        return false;
 
     return true;
 }
@@ -297,6 +296,10 @@ static void UninitDLL()
 Thread* g_threadPerformingShutdown = NULL;
 #endif
 
+#if defined(_WIN32) && defined(FEATURE_PERFTRACING)
+bool g_safeToShutdownTracing;
+#endif
+
 static void __cdecl OnProcessExit()
 {
 #ifdef _WIN32
@@ -309,8 +312,16 @@ static void __cdecl OnProcessExit()
 #endif
 
 #ifdef FEATURE_PERFTRACING
-    EventPipe_Shutdown();
-    DiagnosticServer_Shutdown();
+#ifdef _WIN32
+    // We forgo shutting down event pipe if it wouldn't be safe and could lead to a hang.
+    // If there was an active trace session, the trace will likely be corrupted without
+    // orderly shutdown. See https://github.com/dotnet/runtime/issues/89346.
+    if (g_safeToShutdownTracing)
+#endif
+    {
+        EventPipe_Shutdown();
+        DiagnosticServer_Shutdown();
+    }
 #endif
 }
 
@@ -348,13 +359,17 @@ void RuntimeThreadShutdown(void* thread)
 #endif
 }
 
-extern "C" bool RhInitialize()
+extern "C" bool RhInitialize(bool isDll)
 {
     if (!PalInit())
         return false;
 
 #if defined(_WIN32) || defined(FEATURE_PERFTRACING)
     atexit(&OnProcessExit);
+#endif
+
+#if defined(_WIN32) && defined(FEATURE_PERFTRACING)
+    g_safeToShutdownTracing = !isDll;
 #endif
 
     if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))

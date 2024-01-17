@@ -39,7 +39,8 @@ DumpWriter::WriteDiagInfo(size_t size)
     SpecialDiagInfoHeader header = {
         {SPECIAL_DIAGINFO_SIGNATURE},
         SPECIAL_DIAGINFO_VERSION,
-        m_crashInfo.ExceptionRecord()
+        m_crashInfo.ExceptionRecord(),
+        m_crashInfo.RuntimeBaseAddress()
     };
     if (!WriteData(&header, sizeof(header))) {
         return false;

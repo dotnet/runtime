@@ -394,9 +394,6 @@ End
 Crst RCWCleanupList
 End
 
-Crst ExternalObjectContextCache
-End
-
 Crst Reflection
     AcquiredBefore LoaderHeap UnresolvedClassLock
 End

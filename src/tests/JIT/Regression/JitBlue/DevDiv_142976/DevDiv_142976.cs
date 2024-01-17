@@ -41,7 +41,7 @@ public class DevDiv_142976
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
@@ -52,6 +52,5 @@ public class DevDiv_142976
         }
       
         Console.WriteLine("Pass");
-        return 100;
     }
 }

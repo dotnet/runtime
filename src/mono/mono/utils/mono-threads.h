@@ -168,6 +168,7 @@ enum {
 	ASYNC_SUSPEND_STATE_INDEX = 1,
 };
 
+MONO_DISABLE_WARNING(4201) // nonstandard extension used: nameless struct/union
 typedef union {
 	int32_t raw;
 	struct {
@@ -176,6 +177,7 @@ typedef union {
 		int32_t suspend_count : 8;
 	};
 } MonoThreadStateMachine;
+MONO_RESTORE_WARNING
 
 /*
  * These flags control how the rest of the runtime will see and interact with
@@ -846,7 +848,9 @@ void mono_threads_join_unlock (void);
 
 #ifdef HOST_WASM
 typedef void (*background_job_cb)(void);
+#ifdef DISABLE_THREADS
 void mono_main_thread_schedule_background_job (background_job_cb cb);
+#endif // DISABLE_THREADS
 void mono_current_thread_schedule_background_job (background_job_cb cb);
 void mono_target_thread_schedule_background_job (MonoNativeThreadId target_thread, background_job_cb cb);
 #endif

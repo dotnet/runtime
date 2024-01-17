@@ -11,8 +11,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
 /**
  * Is this code unit a lead surrogate (U+d800..U+dbff)?
  * @param c 16-bit code unit
@@ -52,37 +51,6 @@
         if ((i) != (length) && IS_TRAIL(__c2 = (s)[(i)])) { \
             ++(i); \
         } \
-    } \
-}
-
-/**
- * Append a code point to a string, overwriting 1 or 2 code units.
- * The offset points to the current end of the string contents
- * and is advanced (post-increment).
- * "Safe" macro, checks for a valid code point.
- * Converts code points outside of Basic Multilingual Plane into
- * corresponding surrogate pairs if sufficient space in the string.
- * High surrogate range: 0xD800 - 0xDBFF 
- * Low surrogate range: 0xDC00 - 0xDFFF
- * If the code point is not valid or a trail surrogate does not fit,
- * then isError is set to true.
- *
- * @param buffer const uint16_t * string buffer
- * @param offset string offset, must be offset<capacity
- * @param capacity size of the string buffer
- * @param codePoint code point to append
- * @param isError output bool set to true if an error occurs, otherwise not modified
- */
-#define Append(buffer, offset, capacity, codePoint, isError) { \
-    if ((offset) >= (capacity)) /* insufficiently sized destination buffer */ { \
-        (isError) = InsufficientBuffer; \
-    } else if ((uint32_t)(codePoint) > 0x10ffff) /* invalid code point */  { \
-        (isError) = InvalidCodePoint; \
-    } else if ((uint32_t)(codePoint) <= 0xffff) { \
-        (buffer)[(offset)++] = (uint16_t)(codePoint); \
-    } else { \
-        (buffer)[(offset)++] = (uint16_t)(((codePoint) >> 10) + 0xd7c0); \
-        (buffer)[(offset)++] = (uint16_t)(((codePoint)&0x3ff) | 0xdc00); \
     } \
 }
 
@@ -179,5 +147,4 @@ int32_t GlobalizationNative_ChangeCaseInvariantNative(const uint16_t* lpSrc, int
         return Success;
     }
 }
-
 #endif

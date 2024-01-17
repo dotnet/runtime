@@ -10,7 +10,6 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -19,12 +18,12 @@
 #include "rhbinder.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 #include "RuntimeInstance.h"
 #include "TargetPtrs.h"
 #include "yieldprocessornormalized.h"
 
 #include "slist.inl"
-#include "GCMemoryHelpers.h"
 
 EXTERN_C volatile uint32_t RhpTrapThreads;
 volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;

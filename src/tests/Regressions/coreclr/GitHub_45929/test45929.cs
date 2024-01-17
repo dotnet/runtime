@@ -7,12 +7,14 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace test45929
 {
     public class Program
     {
-        static int Main(string[] _)
+        [Fact]
+        public static void TestEntryPoint()
         {
             Console.WriteLine("The test started.");
             Console.WriteLine("Progress:");
@@ -23,8 +25,6 @@ namespace test45929
             Test.Run();
 
             Console.WriteLine("Finished successfully");
-
-            return 100;
         }
 
         class Test

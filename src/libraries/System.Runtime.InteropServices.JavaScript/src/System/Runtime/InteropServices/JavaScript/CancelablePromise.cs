@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -9,7 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript
     public static partial class CancelablePromise
     {
         [JSImport("INTERNAL.mono_wasm_cancel_promise")]
-        private static partial void _CancelPromise(IntPtr promiseGCHandle);
+        private static partial void _CancelPromise(IntPtr gcHandle);
 
         public static void CancelPromise(Task promise)
         {
@@ -18,39 +19,64 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 return;
             }
-            JSHostImplementation.TaskCallback? holder = promise.AsyncState as JSHostImplementation.TaskCallback;
+            JSHostImplementation.PromiseHolder? holder = promise.AsyncState as JSHostImplementation.PromiseHolder;
             if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
 
-
-#if FEATURE_WASM_THREADS
-            holder.SynchronizationContext!.Send(static (JSHostImplementation.TaskCallback holder) =>
+#if !FEATURE_WASM_THREADS
+            if (holder.IsDisposed)
             {
-#endif
+                return;
+            }
             _CancelPromise(holder.GCHandle);
-#if FEATURE_WASM_THREADS
+#else
+            // this need to be manually dispatched via holder.ProxyContext, because we don't pass JSObject with affinity
+            holder.ProxyContext.SynchronizationContext.Post(static (object? h) =>
+            {
+                var holder = (JSHostImplementation.PromiseHolder)h!;
+                lock (holder.ProxyContext)
+                {
+                    if (holder.IsDisposed)
+                    {
+                        return;
+                    }
+                }
+                _CancelPromise(holder.GCHandle);
             }, holder);
 #endif
         }
 
-        public static void CancelPromise<T1, T2>(Task promise, Action<T1, T2> callback, T1 state1, T2 state2)
+        public static void CancelPromise<T>(Task promise, Action<T> callback, T state)
         {
             // this check makes sure that promiseGCHandle is still valid handle
             if (promise.IsCompleted)
             {
                 return;
             }
-            JSHostImplementation.TaskCallback? holder = promise.AsyncState as JSHostImplementation.TaskCallback;
+            JSHostImplementation.PromiseHolder? holder = promise.AsyncState as JSHostImplementation.PromiseHolder;
             if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
 
-
-#if FEATURE_WASM_THREADS
-            holder.SynchronizationContext!.Send((JSHostImplementation.TaskCallback holder) =>
+#if !FEATURE_WASM_THREADS
+            if (holder.IsDisposed)
             {
-#endif
+                return;
+            }
+            _CancelPromise(holder.GCHandle);
+            callback.Invoke(state);
+#else
+            // this need to be manually dispatched via holder.ProxyContext, because we don't pass JSObject with affinity
+            holder.ProxyContext.SynchronizationContext.Post(_ =>
+            {
+                lock (holder.ProxyContext)
+                {
+                    if (holder.IsDisposed)
+                    {
+                        return;
+                    }
+                }
+
                 _CancelPromise(holder.GCHandle);
-                callback.Invoke(state1, state2);
-#if FEATURE_WASM_THREADS
-            }, holder);
+                callback.Invoke(state);
+            }, null);
 #endif
         }
     }

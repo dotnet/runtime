@@ -356,9 +356,10 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 		/* Similar to mini_emit_ldelema_1_ins () */
 		int size = mono_class_array_element_size (param_class);
 
-		int index_reg = mini_emit_sext_index_reg (cfg, args [1]);
+		gboolean need_sext;
+		int index_reg = mini_emit_sext_index_reg (cfg, args [1], &need_sext);
 
-		mini_emit_bounds_check_offset (cfg, span_reg, length_field->offset - MONO_ABI_SIZEOF (MonoObject), index_reg, NULL);
+		mini_emit_bounds_check_offset (cfg, span_reg, length_field->offset - MONO_ABI_SIZEOF (MonoObject), index_reg, NULL, need_sext);
 
 		// FIXME: Sign extend index ?
 
@@ -849,7 +850,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #else
 			index_reg = args [1]->dreg;
 #endif
-			MONO_EMIT_BOUNDS_CHECK (cfg, args [0]->dreg, MonoString, length, index_reg);
+			MONO_EMIT_BOUNDS_CHECK (cfg, args [0]->dreg, MonoString, length, index_reg, FALSE);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 			EMIT_NEW_X86_LEA (cfg, ins, args [0]->dreg, index_reg, 1, MONO_STRUCT_OFFSET (MonoString, chars));
@@ -906,7 +907,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			int sizes_reg = alloc_ireg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vt_reg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, class_reg, vt_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, sizes_reg, class_reg, m_class_offsetof_sizes ());
+			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, sizes_reg, class_reg, GINTPTR_TO_TMREG (m_class_offsetof_sizes ()));
 			return ins;
 		}
 
@@ -934,10 +935,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else
 			return NULL;
 	} else if (cmethod->klass == runtime_helpers_class) {
-		if (strcmp (cmethod->name, "get_OffsetToStringData") == 0 && fsig->param_count == 0) {
-			EMIT_NEW_ICONST (cfg, ins, MONO_STRUCT_OFFSET (MonoString, chars));
-			return ins;
-		} else if (!strcmp (cmethod->name, "GetRawData")) {
+		if (!strcmp (cmethod->name, "GetRawData")) {
 			int dreg = alloc_preg (cfg);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_ABI_SIZEOF (MonoObject));
 			return ins;
@@ -1044,7 +1042,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			MonoInst* ptr_inst;
 			if (cfg->compile_aot) {
-				NEW_RVACONST (cfg, ptr_inst, mono_class_get_image (mono_field_get_parent (field)), args [0]->inst_c0);
+				NEW_RVACONST (cfg, ptr_inst, mono_class_get_image (mono_field_get_parent (field)), GTMREG_TO_UINT32 (args [0]->inst_c0));
 				MONO_ADD_INS (cfg->cbb, ptr_inst);
 			} else {
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
@@ -2079,7 +2077,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoType *t = method_context->method_inst->type_argv [0];
 			MonoClass *arg0 = mono_class_from_mono_type_internal (t);
 			if (m_class_is_valuetype (arg0) && !mono_class_has_default_constructor (arg0, FALSE)) {
-				if (m_class_is_primitive (arg0)) {
+				if (m_class_is_primitive (arg0) || m_class_is_enumtype (arg0)) {
+					if (m_class_is_enumtype (arg0))
+						t = mono_class_enum_basetype_internal (arg0);
 					int dreg = alloc_dreg (cfg, mini_type_to_stack_type (cfg, t));
 					mini_emit_init_rvar (cfg, dreg, t);
 					ins = cfg->cbb->last_ins;

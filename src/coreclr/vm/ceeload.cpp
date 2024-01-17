@@ -183,7 +183,7 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
     }
 }
 
-#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
 void Module::UpdateNewlyAddedTypes()
 {
     CONTRACTL
@@ -241,7 +241,7 @@ void Module::UpdateNewlyAddedTypes()
     m_dwExportedTypeCount = countExportedTypesAfterProfilerUpdate;
     m_dwCustomAttributeCount = countCustomAttributeCount;
 }
-#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
 #if PROFILING_SUPPORTED
 void Module::NotifyProfilerLoadFinished(HRESULT hr)
@@ -460,7 +460,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     {
         m_pAvailableClasses = EEClassHashTable::Create(this,
             GetAssembly()->IsCollectible() ? AVAILABLE_CLASSES_HASH_BUCKETS_COLLECTIBLE : AVAILABLE_CLASSES_HASH_BUCKETS,
-                                                        FALSE /* bCaseInsensitive */, pamTracker);
+                                                        NULL, pamTracker);
     }
 
     if (m_pAvailableParamTypes == NULL)
@@ -578,7 +578,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
 
     // Create the module
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (::IsEditAndContinueCapable(pAssembly, pPEAssembly))
     {
         // if file is EnCCapable, always create an EnC-module, but EnC won't necessarily be enabled.
@@ -588,7 +588,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
         pModule = new (pMemory) EditAndContinueModule(pAssembly, pPEAssembly);
     }
     else
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
     {
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(Module))));
         pModule = new (pMemory) Module(pAssembly, pPEAssembly);
@@ -616,9 +616,9 @@ void Module::ApplyMetaData()
     HRESULT hr = S_OK;
     ULONG ulCount;
 
-#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
     UpdateNewlyAddedTypes();
-#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
     // Ensure for TypeRef
     ulCount = GetMDImport()->GetCountWithTokenKind(mdtTypeRef) + 1;
@@ -1453,7 +1453,7 @@ BOOL Module::IsRuntimeWrapExceptions()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         if (IsRuntimeWrapExceptionsStatusComputed()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
     }
@@ -1550,29 +1550,25 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
     }
     CONTRACTL_END;
 
-    DWORD newId = InterlockedExchangeAdd((LONG*)&m_cDynamicEntries, 1);
+    CrstHolder ch(&m_Crst);
+    DWORD newId = (LONG)m_cDynamicEntries++;
 
-    if (newId >= VolatileLoad(&m_maxDynamicEntries))
+    if (newId >= m_maxDynamicEntries)
     {
-        CrstHolder ch(&m_Crst);
-
-        if (newId >= m_maxDynamicEntries)
+        SIZE_T maxDynamicEntries = max(16, m_maxDynamicEntries);
+        while (maxDynamicEntries <= newId)
         {
-            SIZE_T maxDynamicEntries = max(16, m_maxDynamicEntries);
-            while (maxDynamicEntries <= newId)
-            {
-                maxDynamicEntries *= 2;
-            }
-
-            DynamicStaticsInfo* pNewDynamicStaticsInfo = (DynamicStaticsInfo*)
-                (void*)GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicStaticsInfo)) * S_SIZE_T(maxDynamicEntries));
-
-            if (m_pDynamicStaticsInfo)
-                memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
-
-            m_pDynamicStaticsInfo = pNewDynamicStaticsInfo;
-            VolatileStore(&m_maxDynamicEntries, maxDynamicEntries);
+            maxDynamicEntries *= 2;
         }
+
+        DynamicStaticsInfo* pNewDynamicStaticsInfo = (DynamicStaticsInfo*)
+            (void*)GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicStaticsInfo)) * S_SIZE_T(maxDynamicEntries));
+
+        if (m_pDynamicStaticsInfo)
+            memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
+
+        m_pDynamicStaticsInfo = pNewDynamicStaticsInfo;
+        m_maxDynamicEntries = maxDynamicEntries;
     }
 
     m_pDynamicStaticsInfo[newId].pEnclosingMT = pMT;
@@ -1836,9 +1832,7 @@ void Module::AllocateMaps()
         m_MethodDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_FieldDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_GenericParamToDescMap.dwCount = GENERICPARAM_MAP_INITIAL_SIZE;
-        m_GenericTypeDefToCanonMethodTableMap.dwCount = TYPEDEF_MAP_INITIAL_SIZE;
         m_ManifestModuleReferencesMap.dwCount = ASSEMBLYREFERENCES_MAP_INITIAL_SIZE;
-        m_MethodDefToPropertyInfoMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
     }
     else
     {
@@ -1864,9 +1858,6 @@ void Module::AllocateMaps()
 
         // Get the number of AssemblyReferences in the map
         m_ManifestModuleReferencesMap.dwCount = pImport->GetCountWithTokenKind(mdtAssemblyRef)+1;
-
-        m_GenericTypeDefToCanonMethodTableMap.dwCount = 0;
-        m_MethodDefToPropertyInfoMap.dwCount = 0;
     }
 
     S_SIZE_T nTotal;
@@ -1877,9 +1868,7 @@ void Module::AllocateMaps()
     nTotal += m_MethodDefToDescMap.dwCount;
     nTotal += m_FieldDefToDescMap.dwCount;
     nTotal += m_GenericParamToDescMap.dwCount;
-    nTotal += m_GenericTypeDefToCanonMethodTableMap.dwCount;
     nTotal += m_ManifestModuleReferencesMap.dwCount;
-    nTotal += m_MethodDefToPropertyInfoMap.dwCount;
 
     _ASSERTE (m_pAssembly && m_pAssembly->GetLowFrequencyHeap());
     pTable = (PTR_TADDR)(void*)m_pAssembly->GetLowFrequencyHeap()->AllocMem(nTotal * S_SIZE_T(sizeof(TADDR)));
@@ -1911,17 +1900,9 @@ void Module::AllocateMaps()
     m_GenericParamToDescMap.supportedFlags = GENERIC_PARAM_MAP_ALL_FLAGS;
     m_GenericParamToDescMap.pTable = &m_FieldDefToDescMap.pTable[m_FieldDefToDescMap.dwCount];
 
-    m_GenericTypeDefToCanonMethodTableMap.pNext  = NULL;
-    m_GenericTypeDefToCanonMethodTableMap.supportedFlags = GENERIC_TYPE_DEF_MAP_ALL_FLAGS;
-    m_GenericTypeDefToCanonMethodTableMap.pTable = &m_GenericParamToDescMap.pTable[m_GenericParamToDescMap.dwCount];
-
     m_ManifestModuleReferencesMap.pNext  = NULL;
     m_ManifestModuleReferencesMap.supportedFlags = MANIFEST_MODULE_MAP_ALL_FLAGS;
-    m_ManifestModuleReferencesMap.pTable = &m_GenericTypeDefToCanonMethodTableMap.pTable[m_GenericTypeDefToCanonMethodTableMap.dwCount];
-
-    m_MethodDefToPropertyInfoMap.pNext = NULL;
-    m_MethodDefToPropertyInfoMap.supportedFlags = PROPERTY_INFO_MAP_ALL_FLAGS;
-    m_MethodDefToPropertyInfoMap.pTable = &m_ManifestModuleReferencesMap.pTable[m_ManifestModuleReferencesMap.dwCount];
+    m_ManifestModuleReferencesMap.pTable = &m_GenericParamToDescMap.pTable[m_GenericParamToDescMap.dwCount];
 }
 
 
@@ -2187,6 +2168,16 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
 
     RETURN (ret);
 }
+
+#if defined(HOST_AMD64)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.amd64.dll")
+#elif defined(HOST_X86)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.x86.dll")
+#elif defined(HOST_ARM)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
+#elif defined(HOST_ARM64)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
+#endif
 
 ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 {
@@ -2482,7 +2473,7 @@ ILStubCache* Module::GetILStubCache()
 
     if (m_pILStubCache == NULL)
     {
-        ILStubCache *pILStubCache = new ILStubCache(GetLoaderAllocator()->GetHighFrequencyHeap());
+        ILStubCache *pILStubCache = new ILStubCache(GetLoaderAllocator());
 
         if (InterlockedCompareExchangeT(&m_pILStubCache, pILStubCache, NULL) != NULL)
         {
@@ -3342,9 +3333,7 @@ void Module::DebugLogRidMapOccupancy()
     COMPUTE_RID_MAP_OCCUPANCY(3, m_MethodDefToDescMap);
     COMPUTE_RID_MAP_OCCUPANCY(4, m_FieldDefToDescMap);
     COMPUTE_RID_MAP_OCCUPANCY(5, m_GenericParamToDescMap);
-    COMPUTE_RID_MAP_OCCUPANCY(6, m_GenericTypeDefToCanonMethodTableMap);
-    COMPUTE_RID_MAP_OCCUPANCY(7, m_ManifestModuleReferencesMap);
-    COMPUTE_RID_MAP_OCCUPANCY(8, m_MethodDefToPropertyInfoMap);
+    COMPUTE_RID_MAP_OCCUPANCY(6, m_ManifestModuleReferencesMap);
 
     LOG((
         LF_EEMEM,
@@ -3355,18 +3344,14 @@ void Module::DebugLogRidMapOccupancy()
         "      MethodDefToDesc map:  %4d/%4d (%2d %%)\n"
         "      FieldDefToDesc map:  %4d/%4d (%2d %%)\n"
         "      GenericParamToDesc map:  %4d/%4d (%2d %%)\n"
-        "      GenericTypeDefToCanonMethodTable map:  %4d/%4d (%2d %%)\n"
         "      AssemblyReferences map:  %4d/%4d (%2d %%)\n"
-        "      MethodDefToPropInfo map: %4d/%4d (%2d %%)\n"
         ,
         dwOccupied1, dwSize1, dwPercent1,
         dwOccupied2, dwSize2, dwPercent2,
         dwOccupied3, dwSize3, dwPercent3,
         dwOccupied4, dwSize4, dwPercent4,
         dwOccupied5, dwSize5, dwPercent5,
-        dwOccupied6, dwSize6, dwPercent6,
-        dwOccupied7, dwSize7, dwPercent7,
-        dwOccupied8, dwSize8, dwPercent8
+        dwOccupied6, dwSize6, dwPercent6
     ));
 
 #undef COMPUTE_RID_MAP_OCCUPANCY
@@ -3432,8 +3417,7 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
 }
 
 //
-// GetPropertyInfoForMethodDef wraps the metadata function of the same name,
-// first trying to use the information stored in m_MethodDefToPropertyInfoMap.
+// GetPropertyInfoForMethodDef wraps the metadata function of the same name.
 //
 
 HRESULT Module::GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic)
@@ -3446,56 +3430,6 @@ HRESULT Module::GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPC
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    HRESULT hr;
-
-    if ((m_dwPersistedFlags & COMPUTED_METHODDEF_TO_PROPERTYINFO_MAP) != 0)
-    {
-        SIZE_T value = m_MethodDefToPropertyInfoMap.GetElement(RidFromToken(md));
-        if (value == 0)
-        {
-            _ASSERTE(GetMDImport()->GetPropertyInfoForMethodDef(md, ppd, pName, pSemantic) == S_FALSE);
-            return S_FALSE;
-        }
-        else
-        {
-            // Decode the value into semantic and mdProperty as described in PopulatePropertyInfoMap
-            ULONG semantic = (value & 0xFF000000) >> 24;
-            mdProperty prop = TokenFromRid(value & 0x00FFFFFF, mdtProperty);
-
-#ifdef _DEBUG
-            mdProperty dbgPd;
-            LPCSTR dbgName;
-            ULONG dbgSemantic;
-            _ASSERTE(GetMDImport()->GetPropertyInfoForMethodDef(md, &dbgPd, &dbgName, &dbgSemantic) == S_OK);
-#endif
-
-            if (ppd != NULL)
-            {
-                *ppd = prop;
-                _ASSERTE(*ppd == dbgPd);
-            }
-
-            if (pSemantic != NULL)
-            {
-                *pSemantic = semantic;
-                _ASSERTE(*pSemantic == dbgSemantic);
-            }
-
-            if (pName != NULL)
-            {
-                IfFailRet(GetMDImport()->GetPropertyProps(prop, pName, NULL, NULL, NULL));
-
-#ifdef _DEBUG
-                HRESULT hr = GetMDImport()->GetPropertyProps(prop, pName, NULL, NULL, NULL);
-                _ASSERTE(hr == S_OK);
-                _ASSERTE(strcmp(*pName, dbgName) == 0);
-#endif
-            }
-
-            return S_OK;
-        }
-    }
 
     return GetMDImport()->GetPropertyInfoForMethodDef(md, ppd, pName, pSemantic);
 }
@@ -5050,9 +4984,7 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         m_FieldDefToDescMap.ListEnumMemoryRegions(flags);
         m_MemberRefMap.ListEnumMemoryRegions(flags);
         m_GenericParamToDescMap.ListEnumMemoryRegions(flags);
-        m_GenericTypeDefToCanonMethodTableMap.ListEnumMemoryRegions(flags);
         m_ManifestModuleReferencesMap.ListEnumMemoryRegions(flags);
-        m_MethodDefToPropertyInfoMap.ListEnumMemoryRegions(flags);
 
         LookupMap<PTR_MethodTable>::Iterator typeDefIter(&m_TypeDefToMethodTableMap);
         while (typeDefIter.Next())
@@ -5100,15 +5032,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
             }
         }
 
-        LookupMap<PTR_MethodTable>::Iterator genericTypeDefIter(&m_GenericTypeDefToCanonMethodTableMap);
-        while (genericTypeDefIter.Next())
-        {
-            if (genericTypeDefIter.GetElement())
-            {
-                genericTypeDefIter.GetElement()->EnumMemoryRegions(flags);
-            }
-        }
-
     }   // !CLRDATA_ENUM_MEM_MINI && !CLRDATA_ENUM_MEM_TRIAGE && !CLRDATA_ENUM_MEM_HEAP2
 
     LookupMap<PTR_Module>::Iterator asmRefIter(&m_ManifestModuleReferencesMap);
@@ -5122,7 +5045,7 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 
     ECall::EnumFCallMethods();
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     m_ClassList.EnumMemoryRegions();
 
     DPTR(PTR_EnCEEClassData) classData = m_ClassList.Table();
@@ -5137,7 +5060,7 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 
         classData++;
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 }
 
 FieldDesc *Module::LookupFieldDef(mdFieldDef token)
@@ -5410,60 +5333,6 @@ bool Module::HasReferenceByName(LPCUTF8 pModuleName)
     return false;
 }
 #endif
-
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-NOINLINE void NgenForceFailure_AV()
-{
-    LIMITED_METHOD_CONTRACT;
-    static int* alwaysNull = 0;
-    *alwaysNull = 0;
-}
-
-NOINLINE void NgenForceFailure_TypeLoadException()
-{
-    WRAPPER_NO_CONTRACT;
-    ::ThrowTypeLoadException("ForceIBC", "Failure", W("Assembly"), NULL, IDS_CLASSLOAD_BADFORMAT);
-}
-
-void EEConfig::DebugCheckAndForceIBCFailure(BitForMask bitForMask)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    static DWORD s_ibcCheckCount = 0;
-
-    // Both of these must be set to non-zero values for us to force a failure
-    //
-    if ((NgenForceFailureCount() == 0) || (NgenForceFailureKind() == 0))
-        return;
-
-    // The bitForMask value must also beset in the FailureMask
-    //
-    if ((((DWORD) bitForMask) & NgenForceFailureMask()) == 0)
-        return;
-
-    s_ibcCheckCount++;
-    if (s_ibcCheckCount < NgenForceFailureCount())
-        return;
-
-    // We force one failure every NgenForceFailureCount()
-    //
-    s_ibcCheckCount = 0;
-    switch (NgenForceFailureKind())
-    {
-    case 1:
-        NgenForceFailure_TypeLoadException();
-        break;
-    case 2:
-        NgenForceFailure_AV();
-        break;
-    }
-}
-#endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
 
 #ifdef DACCESS_COMPILE
 void DECLSPEC_NORETURN ModuleBase::ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,

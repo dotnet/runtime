@@ -91,7 +91,7 @@ namespace SourceGenerators.Tests
             }
         }
 
-        private static Project WithDocuments(this Project project, IEnumerable<string> sources, IEnumerable<string>? sourceNames = null)
+        public static Project WithDocuments(this Project project, IEnumerable<string> sources, IEnumerable<string>? sourceNames = null)
         {
             int count = 0;
             Project result = project;

@@ -453,12 +453,15 @@ typedef struct {
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
 #define MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE 1
+#define MONO_ARCH_HAVE_PATCH_JUMP_TRAMPOLINE 1
 #define MONO_ARCH_FLOAT32_SUPPORTED 1
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-i64:64-i128:128-n8:16:32:64-S128"
 
 #define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 #define MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE 1
 #define MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED 1
+// FIXME: Doesn't work on windows
+//#define MONO_ARCH_HAVE_INIT_MRGCTX 1
 
 #if defined(TARGET_OSX) || defined(__linux__)
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
@@ -479,16 +482,6 @@ typedef struct {
 
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)
-
-#define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg, ex_name) do { \
-            MonoInst *inst; \
-            MONO_INST_NEW ((cfg), inst, OP_AMD64_ICOMPARE_MEMBASE_REG); \
-            inst->inst_basereg = array_reg; \
-            inst->inst_offset = offset; \
-            inst->sreg2 = index_reg; \
-            MONO_ADD_INS ((cfg)->cbb, inst); \
-            MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, ex_name); \
-       } while (0)
 
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?

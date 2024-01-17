@@ -29,6 +29,9 @@ schedules:
       - main
     always: false # run only if there were changes since the last successful scheduled run.
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
@@ -165,3 +168,24 @@ extends:
           platforms:
           - linux_x64
           - windows_x64
+
+      #
+      # PAL Tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Debug
+          platforms:
+          - linux_x64
+          - linux_musl_x64
+          - linux_arm64
+          - linux_musl_arm64
+          - osx_x64
+          - osx_arm64
+          jobParameters:
+            buildArgs: -s clr.paltests+clr.paltestlist
+            nameSuffix: PALTests
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/run-paltests-step.yml

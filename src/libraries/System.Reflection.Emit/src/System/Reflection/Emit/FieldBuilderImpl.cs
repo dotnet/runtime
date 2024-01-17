@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Reflection.Emit
 {
@@ -23,6 +21,7 @@ namespace System.Reflection.Emit
         internal int _offset;
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal object? _defaultValue = DBNull.Value;
+        internal FieldDefinitionHandle _handle;
 
         internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes)
         {
@@ -35,56 +34,69 @@ namespace System.Reflection.Emit
 
         protected override void SetConstantCore(object? defaultValue)
         {
+            _typeBuilder.ThrowIfCreated();
+            ValidateDefaultValueType(defaultValue, _fieldType);
+            _defaultValue = defaultValue;
+        }
+
+        internal static void ValidateDefaultValueType(object? defaultValue, Type destinationType)
+        {
             if (defaultValue == null)
             {
                 // nullable value types can hold null value.
-                if (_fieldType.IsValueType && !(_fieldType.IsGenericType && _fieldType.GetGenericTypeDefinition() == typeof(Nullable<>)))
+                if (destinationType.IsValueType && !(destinationType.IsGenericType && destinationType.GetGenericTypeDefinition() == typeof(Nullable<>)))
+                {
                     throw new ArgumentException(SR.Argument_ConstantNull);
+                }
             }
             else
             {
-                Type type = defaultValue.GetType();
-                Type destType = _fieldType;
-
+                Type sourceType = defaultValue.GetType();
                 // We should allow setting a constant value on a ByRef parameter
-                if (destType.IsByRef)
-                    destType = destType.GetElementType()!;
+                if (destinationType.IsByRef)
+                {
+                    destinationType = destinationType.GetElementType()!;
+                }
 
                 // Convert nullable types to their underlying type.
-                destType = Nullable.GetUnderlyingType(destType) ?? destType;
+                destinationType = Nullable.GetUnderlyingType(destinationType) ?? destinationType;
 
-                if (destType.IsEnum)
+                if (destinationType.IsEnum)
                 {
                     Type underlyingType;
-                    if (destType is EnumBuilderImpl enumBldr)
+                    if (destinationType is EnumBuilderImpl enumBldr)
                     {
                         underlyingType = enumBldr.GetEnumUnderlyingType();
 
-                        if (type != enumBldr._typeBuilder.UnderlyingSystemType && type != underlyingType)
+                        if (sourceType != enumBldr._typeBuilder.UnderlyingSystemType && sourceType != underlyingType)
                             throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
                     }
-                    else if (destType is TypeBuilderImpl typeBldr)
+                    else if (destinationType is TypeBuilderImpl typeBldr)
                     {
                         underlyingType = typeBldr.UnderlyingSystemType;
 
-                        if (underlyingType == null || (type != typeBldr.UnderlyingSystemType && type != underlyingType))
+                        if (underlyingType == null || (sourceType != typeBldr.UnderlyingSystemType && sourceType != underlyingType))
+                        {
                             throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
+                        }
                     }
                     else
                     {
-                        underlyingType = Enum.GetUnderlyingType(destType);
+                        underlyingType = Enum.GetUnderlyingType(destinationType);
 
-                        if (type != destType && type != underlyingType)
+                        if (sourceType != destinationType && sourceType != underlyingType)
+                        {
                             throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
+                        }
                     }
                 }
                 else
                 {
-                    if (!destType.IsAssignableFrom(type))
+                    if (!destinationType.IsAssignableFrom(sourceType))
+                    {
                         throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
+                    }
                 }
-
-                _defaultValue = defaultValue;
             }
         }
 
@@ -107,7 +119,7 @@ namespace System.Reflection.Emit
                     return;
                 case "System.Runtime.InteropServices.MarshalAsAttribute":
                     _attributes |= FieldAttributes.HasFieldMarshal;
-                    _marshallingData = MarshallingData.CreateMarshallingData(con, binaryAttribute, isField : true);
+                    _marshallingData = MarshallingData.CreateMarshallingData(con, binaryAttribute, isField: true);
                     return;
             }
 
@@ -124,7 +136,7 @@ namespace System.Reflection.Emit
 
         #region MemberInfo Overrides
 
-        public override int MetadataToken => throw new NotImplementedException();
+        public override int MetadataToken => _handle == default ? 0 : MetadataTokens.GetToken(_handle);
 
         public override Module Module => _typeBuilder.Module;
 

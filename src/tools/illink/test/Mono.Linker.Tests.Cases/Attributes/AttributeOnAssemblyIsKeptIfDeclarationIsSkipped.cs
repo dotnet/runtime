@@ -8,7 +8,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes
 {
-	[SkipPeVerify]
 	[Define ("REFERENCE_INCLUDED")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/AttributeDefinedInReference.cs" })]
 	[SetupLinkerAction ("skip", "library")]

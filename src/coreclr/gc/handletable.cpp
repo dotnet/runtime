@@ -407,12 +407,12 @@ void HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle)
     // sanity check handle we are being asked to free
     _ASSERTE(handle);
 
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
     // If we're being asked to destroy a native COM weak handle, that will cause a leak
     // of the IWeakReference* that it holds in its extra data. Instead of using this
     // API use DestroyNativeComWeakHandle instead.
     _ASSERTE(HandleFetchType(handle) != HNDTYPE_WEAK_NATIVE_COM);
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_WEAK_NATIVE_COM_HANDLES
 
     // fetch the type and then free normally
     HndDestroyHandle(hTable, HandleFetchType(handle), handle);
@@ -905,9 +905,6 @@ void HndNotifyGcCycleComplete(HHANDLETABLE hTable, uint32_t condemned, uint32_t 
     UNREFERENCED_PARAMETER(maxgen);
 #endif
 }
-
-extern int getNumberOfSlots();
-
 
 /*
  * HndCountHandles

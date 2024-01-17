@@ -373,7 +373,7 @@ dfs1 (HashEntry *obj_entry)
 
 			if (!obj_entry->v.dfs1.is_visited) {
 				int num_links = 0;
-				mword desc = sgen_obj_get_descriptor_safe (obj);
+				SgenDescriptor desc = sgen_obj_get_descriptor_safe (obj);
 
 				obj_entry->v.dfs1.is_visited = 1;
 

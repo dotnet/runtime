@@ -48,6 +48,11 @@ namespace Internal.Pgo
         EdgeLongCount = (DescriptorMin * 6) | EightByte, // edge counter using unsigned 8 byte int
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
         GetLikelyMethod = (DescriptorMin * 7) | MethodHandle, // Compressed get likely method data
+
+        // Same as type/method histograms, but for generic integer values
+        ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
+        ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
+        ValueHistogram = (DescriptorMin * 9) | EightByte,
     }
 
     public interface IPgoSchemaDataLoader<TType, TMethod>
@@ -591,6 +596,8 @@ namespace Internal.Pgo
                         case PgoInstrumentationKind.EdgeLongCount:
                         case PgoInstrumentationKind.HandleHistogramIntCount:
                         case PgoInstrumentationKind.HandleHistogramLongCount:
+                        case PgoInstrumentationKind.ValueHistogramIntCount:
+                        case PgoInstrumentationKind.ValueHistogramLongCount:
                             if ((existingSchemaItem.Count != 1) || (schema.Count != 1))
                             {
                                 throw new Exception("Unable to merge pgo data. Invalid format");
@@ -612,6 +619,25 @@ namespace Internal.Pgo
                                 {
                                     newMergedTypeArray[i++] = type;
                                 }
+                                break;
+                            }
+
+                        case PgoInstrumentationKind.ValueHistogram:
+                            {
+                                if (mergedElem.DataObject.GetType() != schema.DataObject.GetType())
+                                {
+                                    throw new Exception($"Unable to merge ValueHistogram {mergedElem.DataObject} " +
+                                        $"with {schema.DataObject}. Are you merging 32bit MIBC with 64bit MIBC?");
+                                }
+
+                                mergedElem.Count = existingSchemaItem.Count + schema.Count;
+                                mergedElem.DataObject = mergedElem.DataObject switch
+                                    {
+                                        // Concat two int[] or long[] arrays
+                                        int[] mergedIntHistogram => (int[])[.. mergedIntHistogram, .. (int[])schema.DataObject],
+                                        long[] mergedLongHistogram => (long[])[.. mergedLongHistogram, .. (long[])schema.DataObject],
+                                        _ => throw new Exception("ValueHistogram is expected to be either int[] or long[]")
+                                    };
                                 break;
                             }
 

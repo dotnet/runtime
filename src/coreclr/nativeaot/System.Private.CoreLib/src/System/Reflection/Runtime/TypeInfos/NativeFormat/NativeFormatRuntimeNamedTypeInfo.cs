@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
-using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.General;
+using System.Text;
 
 using Internal.Metadata.NativeFormat;
 
@@ -50,7 +50,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // Otherwise fall back to attributes
                 foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
                 {
-                    if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.CompilerServices", "IsByRefLikeAttribute"))
+                    if (cah.IsCustomAttributeOfType(_reader, ["System", "Runtime", "CompilerServices"], "IsByRefLikeAttribute"))
                         return true;
                 }
                 return false;
@@ -68,7 +68,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // Following age-old CLR tradition, we search for the custom attribute using a name-based search. Since this makes it harder
                 // to be sure we won't run into custom attribute constructors that comply with the GuidAttribute(String) signature,
                 // we'll check that it does and silently skip the CA if it doesn't match the expected pattern.
-                if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.InteropServices", "GuidAttribute"))
+                if (cah.IsCustomAttributeOfType(_reader, ["System", "Runtime", "InteropServices"], "GuidAttribute"))
                 {
                     CustomAttribute ca = cah.GetCustomAttribute(_reader);
                     HandleCollection.Enumerator fahEnumerator = ca.FixedArguments.GetEnumerator();
@@ -77,12 +77,11 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                     Handle guidStringArgumentHandle = fahEnumerator.Current;
                     if (fahEnumerator.MoveNext())
                         continue;
-                    if (!(guidStringArgumentHandle.ParseConstantValue(_reader) is string guidString))
+                    if (guidStringArgumentHandle.HandleType != HandleType.ConstantStringValue)
                         continue;
-                    return new Guid(guidString);
+                    return new Guid(guidStringArgumentHandle.ToConstantStringValueHandle(_reader).GetString(_reader));
                 }
             }
-
             return null;
         }
 
@@ -111,7 +110,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         public sealed override Type GetGenericTypeDefinition()
         {
             if (_typeDefinition.GenericParameters.GetEnumerator().MoveNext())
-                return this;
+                return this.ToType();
             return base.GetGenericTypeDefinition();
         }
 
@@ -152,18 +151,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        protected sealed override TypeAttributes GetAttributeFlagsImpl()
-        {
-            TypeAttributes attr = _typeDefinition.Flags;
-            return attr;
-        }
+        public sealed override TypeAttributes Attributes => _typeDefinition.Flags;
 
-        protected sealed override int InternalGetHashCode()
+        public sealed override int GetHashCode()
         {
             return _typeDefinitionHandle.GetHashCode();
         }
 
-        internal sealed override Type InternalDeclaringType
+        internal sealed override RuntimeTypeInfo InternalDeclaringType
         {
             get
             {

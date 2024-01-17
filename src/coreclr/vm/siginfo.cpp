@@ -4962,11 +4962,6 @@ void PromoteCarefully(promote_func   fn,
 
 #if !defined(DACCESS_COMPILE)
 
-    //
-    // Sanity check the stack scan limit
-    //
-    assert(sc->stack_limit != 0);
-
     // Note that the base is at a higher address than the limit, since the stack
     // grows downwards.
     // To check whether the object is in the stack or not, we also need to check the sc->stack_limit.

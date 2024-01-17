@@ -48,6 +48,10 @@ check_include_files(semaphore.h HAVE_SEMAPHORE_H)
 check_include_files(sys/prctl.h HAVE_PRCTL_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_include_files("sys/ptrace.h" HAVE_SYS_PTRACE_H)
+check_include_files("sys/ucontext.h" HAVE_SYS_UCONTEXT_H)
+check_include_files("sys/user.h" HAVE_SYS_USER_H)
+check_include_files("sys/mount.h" HAVE_SYS_MOUNT_H)
+check_include_files(ucontext.h HAVE_UCONTEXT_H)
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
@@ -79,7 +83,12 @@ set(CMAKE_REQUIRED_LIBRARIES)
 check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
 
-check_function_exists(kqueue HAVE_KQUEUE)
+if(CLR_CMAKE_TARGET_HAIKU)
+  # kqueue is broken on Haiku and does not provide the required information in the data field.
+  set(HAVE_KQUEUE 0)
+else()
+  check_function_exists(kqueue HAVE_KQUEUE)
+endif()
 
 check_library_exists(c sched_getaffinity "" HAVE_SCHED_GETAFFINITY)
 check_library_exists(c sched_setaffinity "" HAVE_SCHED_SETAFFINITY)
@@ -117,7 +126,6 @@ if(CLR_CMAKE_TARGET_LINUX)
 else()
   check_function_exists(sysctl HAVE_SYSCTL)
 endif()
-check_function_exists(sysinfo HAVE_SYSINFO)
 check_function_exists(sysconf HAVE_SYSCONF)
 check_function_exists(gmtime_r HAVE_GMTIME_R)
 check_function_exists(timegm HAVE_TIMEGM)
@@ -134,6 +142,7 @@ check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
 check_function_exists(pipe2 HAVE_PIPE2)
+check_function_exists(strerrorname_np HAVE_STRERRORNAME_NP)
 
 check_cxx_source_compiles("
 #include <pthread_np.h>
@@ -150,8 +159,6 @@ check_struct_has_member ("struct tm" tm_gmtoff time.h HAVE_TM_GMTOFF)
 check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.__gregs[0] ucontext.h HAVE___GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.fpregs->__glibc_reserved1[0] ucontext.h HAVE_FPSTATE_GLIBC_RESERVED1)
-check_struct_has_member ("struct sysinfo" mem_unit "sys/sysinfo.h" HAVE_SYSINFO_WITH_MEM_UNIT)
-check_struct_has_member ("struct dirent" d_type dirent.h HAVE_DIRENT_D_TYPE)
 check_struct_has_member ("struct _fpchip_state" cw sys/ucontext.h HAVE_FPREGS_WITH_CW)
 
 set(CMAKE_EXTRA_INCLUDE_FILES machine/reg.h)
@@ -160,9 +167,11 @@ set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES asm/ptrace.h)
 check_type_size("struct pt_regs" PT_REGS)
 set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES signal.h)
-set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES ucontext.h)
+if(HAVE_UCONTEXT_H)
+  set(CMAKE_EXTRA_INCLUDE_FILES ucontext.h)
+else()
+  set(CMAKE_EXTRA_INCLUDE_FILES signal.h)
+endif()
 check_type_size(ucontext_t UCONTEXT_T)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES pthread.h)
@@ -179,7 +188,6 @@ check_cxx_symbol_exists(CHAR_BIT limits.h HAVE_CHAR_BIT)
 check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
 check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
-check_cxx_symbol_exists(swapctl sys/swap.h HAVE_SWAPCTL)
 
 check_cxx_source_runs("
 #include <sys/param.h>
@@ -956,29 +964,6 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 endif()
 
 check_cxx_source_compiles("
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#include <vm/vm_param.h>
-
-int main(int argc, char **argv)
-{
-    struct xswdev xsw;
-
-    return 0;
-}" HAVE_XSWDEV)
-
-check_cxx_source_compiles("
-#include <sys/param.h>
-#include <sys/sysctl.h>
-
-int main(int argc, char **argv)
-{
-    struct xsw_usage xsu;
-
-    return 0;
-}" HAVE_XSW_USAGE)
-
-check_cxx_source_compiles("
 #include <signal.h>
 
 int main(int argc, char **argv)
@@ -1271,6 +1256,11 @@ elseif(CLR_CMAKE_TARGET_SUNOS)
   set(PAL_PT_READ_D PT_READ_D)
   set(PAL_PT_WRITE_D PT_WRITE_D)
   set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
+elseif(CLR_CMAKE_TARGET_HAIKU)
+  # Haiku does not have ptrace.
+  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
+  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
+  set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 else() # Anything else is Linux
   if(NOT HAVE_LTTNG_TRACEPOINT_H AND FEATURE_EVENT_TRACE)
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)

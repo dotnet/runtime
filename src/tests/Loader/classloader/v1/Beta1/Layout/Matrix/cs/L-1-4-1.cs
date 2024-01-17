@@ -12,10 +12,12 @@
 //
 
 using System;
+using Xunit;
 
-class Test_L_1_4_1
+public class Test_L_1_4_1
 {
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		int mi_RetCode;
 		A a = new A();

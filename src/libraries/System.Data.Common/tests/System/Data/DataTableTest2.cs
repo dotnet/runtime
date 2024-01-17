@@ -2042,7 +2042,7 @@ namespace System.Data.Tests
             table3 = table1.Clone ();
             try {
                 table3.Merge(table2);
-Assert.False(true);
+Assert.Fail();
             } catch (DataException e) {}
             */
 

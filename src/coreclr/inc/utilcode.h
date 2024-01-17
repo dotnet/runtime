@@ -801,7 +801,6 @@ public:
     static bool GetCPUGroupInfo(PUSHORT total_groups, DWORD* max_procs_per_group);
     //static void PopulateCPUUsageArray(void * infoBuffer, ULONG infoSize);
 
-#if !defined(FEATURE_NATIVEAOT)
 public:
     static BOOL GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP relationship,
 		   SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *slpiex, PDWORD count);
@@ -812,7 +811,6 @@ public:
     static void ChooseCPUGroupAffinity(GROUP_AFFINITY *gf);
     static void ClearCPUGroupAffinity(GROUP_AFFINITY *gf);
     static BOOL GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* group_size);
-#endif
 };
 
 DWORD_PTR GetCurrentProcessCpuMask();
@@ -2837,27 +2835,6 @@ private:
 
 
 //*****************************************************************************
-//
-//********** String helper functions.
-//
-//*****************************************************************************
-
-//*****************************************************************************
-// Checks if string length exceeds the specified limit
-//*****************************************************************************
-inline BOOL IsStrLongerThan(_In_ _In_z_ char* pstr, unsigned N)
-{
-    LIMITED_METHOD_CONTRACT;
-    unsigned i = 0;
-    if(pstr)
-    {
-        for(i=0; (i < N)&&(pstr[i]); i++);
-    }
-    return (i >= N);
-}
-
-
-//*****************************************************************************
 // Class to parse a list of simple assembly names and then find a match
 //*****************************************************************************
 
@@ -3280,49 +3257,6 @@ HRESULT Utf2Quick(
     int         iCurLen = 0);           // Initial characters in the array to leave (default 0).
 
 //*****************************************************************************
-//  Extract the movl 64-bit unsigned immediate from an IA64 bundle
-//  (Format X2)
-//*****************************************************************************
-UINT64 GetIA64Imm64(UINT64 * pBundle);
-UINT64 GetIA64Imm64(UINT64 qword0, UINT64 qword1);
-
-//*****************************************************************************
-//  Deposit the movl 64-bit unsigned immediate into an IA64 bundle
-//  (Format X2)
-//*****************************************************************************
-void PutIA64Imm64(UINT64 * pBundle, UINT64 imm64);
-
-//*****************************************************************************
-//  Extract the IP-Relative signed 25-bit immediate from an IA64 bundle
-//  (Formats B1, B2 or B3)
-//  Note that due to branch target alignment requirements
-//       the lowest four bits in the result will always be zero.
-//*****************************************************************************
-INT32 GetIA64Rel25(UINT64 * pBundle, UINT32 slot);
-INT32 GetIA64Rel25(UINT64 qword0, UINT64 qword1, UINT32 slot);
-
-//*****************************************************************************
-//  Deposit the IP-Relative signed 25-bit immediate into an IA64 bundle
-//  (Formats B1, B2 or B3)
-//  Note that due to branch target alignment requirements
-//       the lowest four bits are required to be zero.
-//*****************************************************************************
-void PutIA64Rel25(UINT64 * pBundle, UINT32 slot, INT32 imm25);
-
-//*****************************************************************************
-//  Extract the IP-Relative signed 64-bit immediate from an IA64 bundle
-//  (Formats X3 or X4)
-//*****************************************************************************
-INT64 GetIA64Rel64(UINT64 * pBundle);
-INT64 GetIA64Rel64(UINT64 qword0, UINT64 qword1);
-
-//*****************************************************************************
-//  Deposit the IP-Relative signed 64-bit immediate into a IA64 bundle
-//  (Formats X3 or X4)
-//*****************************************************************************
-void PutIA64Rel64(UINT64 * pBundle, INT64 imm64);
-
-//*****************************************************************************
 //  Extract the 32-bit immediate from movw/movt Thumb2 sequence
 //*****************************************************************************
 UINT32 GetThumb2Mov32(UINT16 * p);
@@ -3453,19 +3387,19 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // stackbase is the unique fiber identifier
-        return NtCurrentTeb()->NtTib.StackBase;
+        return ((NT_TIB*)NtCurrentTeb())->StackBase;
     }
 
     static void* GetStackBase()
     {
         LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->NtTib.StackBase;
+        return ((NT_TIB*)NtCurrentTeb())->StackBase;
     }
 
     static void* GetStackLimit()
     {
         LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->NtTib.StackLimit;
+        return ((NT_TIB*)NtCurrentTeb())->StackLimit;
     }
 
     static void* GetOleReservedPtr()

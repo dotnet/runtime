@@ -8,8 +8,9 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using Xunit;
 
-class Program
+public class Program
 {
     class TestALC : AssemblyLoadContext
     {
@@ -25,11 +26,12 @@ class Program
         }
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var currentALC = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
         var alc = new TestALC(currentALC);
-        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Unloaded.dll"));
+        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "StaticsUnloaded.dll"));
 
         var accessor = (IStaticTest)Activator.CreateInstance(a.GetType("StaticTest"));
         accessor.SetStatic(12759, 548739, 5468, 8518, 9995);

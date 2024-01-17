@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-android</TargetFrameworks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
@@ -18,8 +17,6 @@
              Link="ProductionCode\Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="ProductionCode\Common\System\CharArrayHelpers.cs" />
-    <Compile Include="$(CommonPath)System\StringExtensions.cs"
-             Link="ProductionCode\Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
              Link="ProductionCode\Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"

@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameObjectCollectionBaseRemoveAtTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void RemoveAt()
         {
             MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(10);
@@ -59,7 +59,7 @@ namespace System.Collections.Specialized.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [InlineData(0)]
         [InlineData(10)]
         public void RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException(int count)
@@ -69,7 +69,7 @@ namespace System.Collections.Specialized.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => nameObjectCollection.RemoveAt(count));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void RemoveAt_ReadOnly_ThrowsNotSupportedException()
         {
             MyNameObjectCollection nameObjectCollection = Helpers.CreateNameObjectCollection(1);

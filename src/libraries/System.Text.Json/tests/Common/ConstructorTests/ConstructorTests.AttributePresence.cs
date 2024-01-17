@@ -39,6 +39,24 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [Theory]
+        [InlineData(typeof(PrivateParameterlessCtor_WithAttribute), false)]
+        [InlineData(typeof(InternalParameterlessCtor_WithAttribute), true)]
+        [InlineData(typeof(ProtectedParameterlessCtor_WithAttribute), false)]
+        public async Task NonPublicParameterlessCtors_WithJsonConstructorAttribute_WorksAsExpected(Type type, bool isAccessibleBySourceGen)
+        {
+            if (!Serializer.IsSourceGeneratedSerializer || isAccessibleBySourceGen)
+            {
+                object? result = await Serializer.DeserializeWrapper("{}", type);
+                Assert.IsType(type, result);
+            }
+            else
+            {
+                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
+                Assert.Contains("JsonConstructorAttribute", ex.ToString());
+            }
+        }
+
         [Fact]
         public async Task SinglePublicParameterizedCtor_SingleParameterlessCtor_NoAttribute_Supported_UseParameterlessCtor()
         {

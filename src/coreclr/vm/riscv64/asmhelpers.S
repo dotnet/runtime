@@ -539,6 +539,46 @@ LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper):
     call  JIT_GetSharedGCStaticBase_Helper
 LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
 
+// Make sure the `FaultingExceptionFrame_StackAlloc` is 16-byte aligned.
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame + 0x8)
+#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+
+.macro GenerateRedirectedStubWithFrame stub, target
+
+    //
+    // This is the primary function to which execution will be redirected to.
+    //
+    NESTED_ENTRY \stub, _TEXT, NoHandler
+
+        //
+        // IN: ra: original IP before redirect
+        //
+
+        PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 16
+
+        // alloc stack for FaultingExceptionFrame.
+        addi  sp, sp, -FaultingExceptionFrame_StackAlloc
+
+        // stack must be 16 bytes aligned
+        CHECK_STACK_ALIGNMENT
+
+        // Save pointer to FEF for GetFrameFromRedirectedStubStackFrame
+        addi  a0, sp, FaultingExceptionFrame_FrameOffset
+
+        // Prepare to initialize to NULL
+        sd    zero, 0(a0)  // Initialize vtbl (it is not strictly necessary)
+        sd    zero, FaultingExceptionFrame__m_fFilterExecuted(a0)  // Initialize BOOL for personality routine
+
+        call   C_FUNC(\target)
+        // Target should not return.
+        EMIT_BREAKPOINT
+
+    NESTED_END \stub, _TEXT
+
+.endm
+
+GenerateRedirectedStubWithFrame RedirectForThreadAbort, ThrowControlForThread
+
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
 //
@@ -647,7 +687,7 @@ LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
 NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0x88
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0x90
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   s1, s2, 16
@@ -684,7 +724,7 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR   s7, s8, 64
     EPILOG_RESTORE_REG_PAIR   s9, s10, 80
     EPILOG_RESTORE_REG  s11, 96 
-    EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x88
+    EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x90
     EPILOG_RETURN
 NESTED_END OnHijackTripThread, _TEXT
 
@@ -716,7 +756,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
 
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 120, 0
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 128, 0
 
     // Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   s1, s2, 16
@@ -756,7 +796,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR   s11, gp, 96
     EPILOG_RESTORE_REG tp, 112
 
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 120 
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 128
     EPILOG_RETURN
 NESTED_END CallEHFunclet, _TEXT
 
@@ -895,42 +935,35 @@ LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
 // ------------------------------------------------------------------
-#define PROFILE_ENTER    1
-#define PROFILE_LEAVE    2
-#define PROFILE_TAILCALL 4
-#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 272
-
-// ------------------------------------------------------------------
 .macro GenerateProfileHelper helper, flags
 NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // On entry:
-    //   t1 = functionIDOrClientID
-    //   t2 = profiledSp
+    //   t0 = functionIDOrClientID
+    //   t1 = profiledSp
     //   t6 = throwable
     //
     // On exit:
     //   Values of a0-a7, fa0-fa7, fp are preserved.
     //   Values of other volatile registers are not preserved.
 
+    // Fill in PROFILE_PLATFORM_SPECIFIC_DATA struct
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Allocate space and save Fp, Pc.
-    SAVE_ARGUMENT_REGISTERS sp, 16          // Save t0 and argument registers (a0-a7).
-    sd     zero, 88(sp)                     // Clear functionId.
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96    // Save floating-point/SIMD registers (fa0-fa7).
-    addi     t6, fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
-    sd  t6, 224(sp)            // Save probeSp.
-    sd  t2, 232(sp)            // Save profiledSp.
-
-    sd    zero, 240(sp)        // Clear hiddenArg.
+    SAVE_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
+    sd     zero, PROFILE_PLATFORM_SPECIFIC_DATA__functionId(sp)
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
+    addi     t6, sp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
+    sd  t6, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp(sp)
+    sd  t1, PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp(sp)
+    sd  zero, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg(sp)
     addi  t6, zero, \flags
-    sw  t6, 248(sp)            // Save flags.
-    sw  zero, 252(sp)          // clear unused field.
+    sd  t6, PROFILE_PLATFORM_SPECIFIC_DATA__flags(sp)
 
-    addi  a1, t1, 0
-    addi  a2, sp, 0
+    addi  a0, t0, 0
+    addi  a1, sp, 0
     call  C_FUNC(\helper)
 
-    RESTORE_ARGUMENT_REGISTERS sp, 16       // Restore t0 and argument registers.
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 96 // Restore floating-point/SIMD registers.
+    RESTORE_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA
     EPILOG_RETURN
 

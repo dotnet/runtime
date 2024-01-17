@@ -28,6 +28,8 @@
 
 #include <mono/metadata/components.h>
 
+#define JUMP_TRAMP_PATCH_OFFSET (7 * 4)
+
 void
 mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 {
@@ -69,6 +71,15 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 
 	g_assert (*(guint64*)slot_addr);
 	*(gpointer*)slot_addr = addr;
+}
+
+void
+mono_arch_patch_jump_trampoline (guint8 *jump_tramp, guint8 *addr)
+{
+	MINI_BEGIN_CODEGEN ();
+	guint8 *patch_addr = jump_tramp + JUMP_TRAMP_PATCH_OFFSET;
+	*(gpointer*)patch_addr = addr;
+	MINI_END_CODEGEN (patch_addr, 8, -1, NULL);
 }
 
 guint8*
@@ -139,7 +150,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Setup stack frame */
 	imm = frame_size;
 	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, ARMREG_SP, 0);
-	while (imm > 256) {
+	while (imm > 256) { // TODO: can this be changed to ARM_MAX_ARITH_IMM?
 		arm_subx_imm (code, ARMREG_SP, ARMREG_SP, 256);
 		imm -= 256;
 		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, frame_size - imm);
@@ -159,8 +170,15 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	gregs_regset = ~((1 << ARMREG_FP) | (1 << ARMREG_SP));
 	code = mono_arm_emit_store_regarray (code, gregs_regset, ARMREG_FP, gregs_offset);
 	/* Save fregs */
-	for (i = 0; i < num_fregs; ++i)
-		arm_strfpq (code, i, ARMREG_FP, fregs_offset + (i * 16));
+	for (i = 0; i < num_fregs; ++i) {
+		int offs = fregs_offset + (i * 16);
+		if (i+1 < num_fregs && arm_is_imm7_scaled (offs, 16)) {
+			arm_neon_stp_16b (code, i, i+1, ARMREG_FP, offs);
+			i++;
+		} else {
+			arm_strfpq (code, i, ARMREG_FP, offs);
+		}
+	}
 	/* Save trampoline arg */
 	arm_strx (code, ARMREG_IP1, ARMREG_FP, arg_offset);
 
@@ -173,9 +191,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Save caller sp */
 	arm_movx (code, ARMREG_IP1, ARMREG_FP);
 	imm = frame_size;
-	while (imm > 256) {
-		arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, 256);
-		imm -= 256;
+	while (imm > ARM_MAX_ARITH_IMM) {
+		arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, ARM_MAX_ARITH_IMM);
+		imm -= ARM_MAX_ARITH_IMM;
 	}
 	arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, imm);
 	arm_strx (code, ARMREG_IP1, ARMREG_IP0, MONO_STRUCT_OFFSET (MonoLMF, gregs) + (MONO_ARCH_LMF_REG_SP * 8));
@@ -264,8 +282,15 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Only have to load the argument regs (r0..r8) and the rgctx reg */
 	code = mono_arm_emit_load_regarray (code, 0x1ff | (1 << ARMREG_LR) | (1 << MONO_ARCH_RGCTX_REG), ARMREG_FP, gregs_offset);
 	/* Restore fregs */
-	for (i = 0; i < num_fregs; ++i)
-		arm_ldrfpq (code, i, ARMREG_FP, fregs_offset + (i * 16));
+	for (i = 0; i < num_fregs; ++i) {
+		int offs = fregs_offset + (i * 16);
+		if (i+1 < num_fregs && arm_is_imm7_scaled (offs, 16)) {
+			arm_neon_ldp_16b (code, i, i+1, ARMREG_FP, offs);
+			i++;
+		} else {
+			arm_ldrfpq (code, i, ARMREG_FP, offs);
+		}
+	}
 
 	/* Load the result */
 	arm_ldrx (code, ARMREG_IP1, ARMREG_FP, res_offset);
@@ -308,11 +333,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	g_assert ((code - buf) < buf_len);
 
-	MINI_END_CODEGEN (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
+	MINI_END_CODEGEN (buf, GPTRDIFF_TO_INT (code - buf), MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 
 	if (info) {
 		tramp_name = mono_get_generic_trampoline_name (tramp_type);
-		*info = mono_tramp_info_create (tramp_name, buf, code - buf, ji, unwind_ops);
+		*info = mono_tramp_info_create (tramp_name, buf, GPTRDIFF_TO_UINT32 (code - buf), ji, unwind_ops);
 	}
 
 	return (guchar*)MINI_ADDR_TO_FTNPTR (buf);
@@ -334,17 +359,32 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	MINI_BEGIN_CODEGEN ();
 
-	code = mono_arm_emit_imm64 (code, ARMREG_IP1, (guint64)arg1);
-	code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)tramp);
+	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
+		/* Create a patchable trampoline by emitting the address at the end */
 
-	code = mono_arm_emit_brx (code, ARMREG_IP0);
+		guint64 imm = (guint64)arg1;
+		arm_movzx (code, ARMREG_IP1, imm & 0xffff, 0);
+		arm_movkx (code, ARMREG_IP1, (imm >> 16) & 0xffff, 16);
+		arm_movkx (code, ARMREG_IP1, (imm >> 32) & 0xffff, 32);
+		arm_movkx (code, ARMREG_IP1, (imm >> 48) & 0xffff, 48);
+
+		arm_adrx (code, ARMREG_IP0, code + (3 * 4));
+		arm_ldrx (code, ARMREG_IP0, ARMREG_IP0, 0);
+		code = mono_arm_emit_brx (code, ARMREG_IP0);
+		g_assert (code - buf == JUMP_TRAMP_PATCH_OFFSET);
+		*(guint64*)code = (guint64)(gsize)tramp;
+	} else {
+		code = mono_arm_emit_imm64 (code, ARMREG_IP1, (guint64)arg1);
+		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)tramp);
+		code = mono_arm_emit_brx (code, ARMREG_IP0);
+	}
 
 	g_assert ((code - buf) < buf_len);
 
-	MINI_END_CODEGEN (buf, code - buf, MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE, mono_get_generic_trampoline_simple_name (tramp_type));
+	MINI_END_CODEGEN (buf, GPTRDIFF_TO_INT (code - buf), MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE, mono_get_generic_trampoline_simple_name (tramp_type));
 
 	if (code_len)
-		*code_len = code - buf;
+		*code_len = GPTRDIFF_TO_UINT32 (code - buf);
 
 	return (gpointer)MINI_ADDR_TO_FTNPTR (buf);
 }
@@ -368,7 +408,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 	g_assert ((code - start) <= size);
 
-	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, m);
+	MINI_END_CODEGEN (start, GPTRDIFF_TO_INT (code - start), MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, m);
 
 	return (gpointer)MINI_ADDR_TO_FTNPTR (start);
 }
@@ -387,7 +427,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 	code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)addr);
 	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
-	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
+	MINI_END_CODEGEN (start, GPTRDIFF_TO_INT (code - start), MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
 
 	g_assert ((code - start) <= buf_len);
 
@@ -486,11 +526,11 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 
 	g_assert (code - buf <= buf_size);
 
-	MINI_END_CODEGEN (buf, code - buf, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
+	MINI_END_CODEGEN (buf, GPTRDIFF_TO_INT (code - buf), MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
 
 	if (info) {
 		char *name = mono_get_rgctx_fetch_trampoline_name (slot);
-		*info = mono_tramp_info_create (name, buf, code - buf, ji, unwind_ops);
+		*info = mono_tramp_info_create (name, buf, GPTRDIFF_TO_UINT32 (code - buf), ji, unwind_ops);
 		g_free (name);
 	}
 
@@ -524,10 +564,10 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 
 	g_assert (code - buf <= tramp_size);
 
-	MINI_END_CODEGEN (buf, code - buf, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
+	MINI_END_CODEGEN (buf, GPTRDIFF_TO_INT (code - buf), MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
 
 	if (info)
-		*info = mono_tramp_info_create ("rgctx_fetch_trampoline_general", buf, code - buf, ji, unwind_ops);
+		*info = mono_tramp_info_create ("rgctx_fetch_trampoline_general", buf, GPTRDIFF_TO_UINT32 (code - buf), ji, unwind_ops);
 
 	return (gpointer)MINI_ADDR_TO_FTNPTR (buf);
 }
@@ -567,9 +607,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 
 	/* Setup stack frame */
 	imm = frame_size;
-	while (imm > 256) {
-		arm_subx_imm (code, ARMREG_SP, ARMREG_SP, 256);
-		imm -= 256;
+	while (imm > ARM_MAX_ARITH_IMM) {
+		arm_subx_imm (code, ARMREG_SP, ARMREG_SP, ARM_MAX_ARITH_IMM);
+		imm -= ARM_MAX_ARITH_IMM;
 	}
 	arm_subx_imm (code, ARMREG_SP, ARMREG_SP, imm);
 	arm_stpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);
@@ -585,9 +625,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	/* Save caller sp */
 	arm_movx (code, ARMREG_IP1, ARMREG_FP);
 	imm = frame_size;
-	while (imm > 256) {
-		arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, 256);
-		imm -= 256;
+	while (imm > ARM_MAX_ARITH_IMM) {
+		arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, ARM_MAX_ARITH_IMM);
+		imm -= ARM_MAX_ARITH_IMM;
 	}
 	arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, imm);
 	arm_strx (code, ARMREG_IP1, ARMREG_FP, ctx_offset + G_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_SP * 8));
@@ -625,10 +665,10 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 
 	g_assert (code - buf <= tramp_size);
 
-	MINI_END_CODEGEN (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
+	MINI_END_CODEGEN (buf, GPTRDIFF_TO_INT (code - buf), MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 
 	const char *tramp_name = single_step ? "sdb_single_step_trampoline" : "sdb_breakpoint_trampoline";
-	*info = mono_tramp_info_create (tramp_name, buf, code - buf, ji, unwind_ops);
+	*info = mono_tramp_info_create (tramp_name, buf, GPTRDIFF_TO_UINT32 (code - buf), ji, unwind_ops);
 
 	return (guint8*)MINI_ADDR_TO_FTNPTR (buf);
 }
@@ -732,10 +772,10 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 
 	g_assert (code - start < buf_len);
 
-	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
+	MINI_END_CODEGEN (start, GPTRDIFF_TO_INT (code - start), MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 
 	if (info)
-		*info = mono_tramp_info_create ("interp_to_native_trampoline", start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("interp_to_native_trampoline", start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 
 	return (guint8*)MINI_ADDR_TO_FTNPTR (start);
 #else
@@ -809,10 +849,10 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 
 	g_assert (code - start < buf_len);
 
-	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
+	MINI_END_CODEGEN (start, GPTRDIFF_TO_INT (code - start), MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
 
 	if (info)
-		*info = mono_tramp_info_create ("native_to_interp_trampoline", start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("native_to_interp_trampoline", start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 
 	return (guint8*)MINI_ADDR_TO_FTNPTR (start);
 #else

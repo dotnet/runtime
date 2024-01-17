@@ -85,6 +85,21 @@
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 
+      <!-- Used for NativeAOT tests -->
+      <RunTimeArtifactsIncludeFolders Include="ilc-published/" TargetDir="ilc-published/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
+      <!-- Used for NativeAOT tests -->
+      <RunTimeArtifactsIncludeFolders Include="aotsdk/" TargetDir="aotsdk/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
+      <!-- Used for NativeAOT tests -->
+      <RunTimeArtifactsIncludeFolders Include="build/" TargetDir="build/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
       <!-- Used for capturing symbolic stack traces using Watson -->
       <RunTimeArtifactsIncludeFolders Include="PDB/" TargetDir="PDB/" />
 
@@ -95,6 +110,11 @@
 
       <!-- Used by disasm output verification tests -->
       <RunTimeArtifactsIncludeFolders Include="SuperFileCheck/" TargetDir="SuperFileCheck/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
+      <!-- Used to determine if a file is a managed assembly or a managed assembly built with DEBUG -->
+      <RunTimeArtifactsIncludeFolders Include="AssemblyChecker/" TargetDir="AssemblyChecker/">
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 
@@ -176,6 +196,9 @@
 
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
+          TargetDir="build/"/>
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\browser\build\*"
           TargetDir="build/"/>
     </ItemGroup>
 

@@ -14,10 +14,9 @@ namespace Test
             param3 = (double)param4;
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Method2(1.0d, 1, __arglist());
-            return 100;
         }
     }
 }

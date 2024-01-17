@@ -1,8 +1,4 @@
-if(MSVC)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>) # conversion from 'type1' to 'type2', possible loss of data
-else(CMAKE_C_COMPILER_ID MATCHES "Clang")
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-int-conversion>)
-endif()
+# IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects
 
 set(ZLIB_SOURCES_BASE
     adler32.c
@@ -23,7 +19,11 @@ set(ZLIB_SOURCES_BASE
     ../../libs/System.IO.Compression.Native/zlib_allocator_win.c
 )
 
-# enable custom zlib allocator
-add_definitions(-DMY_ZCALLOC)
-
 addprefix(ZLIB_SOURCES "${CMAKE_CURRENT_LIST_DIR}/zlib-intel"  "${ZLIB_SOURCES_BASE}")
+
+# enable custom zlib allocator
+set(ZLIB_COMPILE_DEFINITIONS "MY_ZCALLOC")
+
+if(HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
+    set(ZLIB_COMPILE_OPTIONS "/wd4127;/wd4131")
+endif()

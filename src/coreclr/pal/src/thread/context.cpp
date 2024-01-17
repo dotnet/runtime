@@ -735,13 +735,31 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         memcpy(fp->fprs, lpContext->Fpr, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
         struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
-        // TODO-LoongArch: supports SIMD128 and SIMD256.
-        _ASSERTE(FPU_CTX_MAGIC == info->magic);
-
-        struct fpu_context* fpr = (struct fpu_context*) ++info;
-        fpr->fcsr = lpContext->Fcsr;
-        fpr->fcc  = lpContext->Fcc;
-        memcpy(fpr->regs, lpContext->F, sizeof(lpContext->F));
+        if (FPU_CTX_MAGIC == info->magic)
+        {
+            struct fpu_context* fpr = (struct fpu_context*)(info + 1);
+            fpr->fcsr = lpContext->Fcsr;
+            fpr->fcc  = lpContext->Fcc;
+            memcpy(fpr->regs, lpContext->F, sizeof(fpr->regs));
+        }
+        else if (LSX_CTX_MAGIC == info->magic)
+        {
+            struct lsx_context* fpr = (struct lsx_context*)(info + 1);
+            fpr->fcsr = lpContext->Fcsr;
+            fpr->fcc  = lpContext->Fcc;
+            memcpy(fpr->regs, lpContext->F, sizeof(fpr->regs));
+        }
+        else if (LASX_CTX_MAGIC == info->magic)
+        {
+            struct lasx_context* fpr = (struct lasx_context*)(info + 1);
+            fpr->fcsr = lpContext->Fcsr;
+            fpr->fcc  = lpContext->Fcc;
+            memcpy(fpr->regs, lpContext->F, sizeof(fpr->regs));
+        }
+        else
+        {
+            _ASSERTE(LBT_CTX_MAGIC == info->magic);
+        }
 #elif defined(HOST_RISCV64)
         native->uc_mcontext.__fpregs.__d.__fcsr = lpContext->Fcsr;
         for (int i = 0; i < 32; i++)
@@ -932,13 +950,32 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         memcpy(lpContext->Fpr, fp->fprs, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
         struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
-        // TODO-LoongArch: supports SIMD128 and SIMD256.
-        _ASSERTE(FPU_CTX_MAGIC == info->magic);
+        if (FPU_CTX_MAGIC == info->magic)
+        {
+            struct fpu_context* fpr = (struct fpu_context*)(info + 1);
+            lpContext->Fcsr = fpr->fcsr;
+            lpContext->Fcc  = fpr->fcc;
+            memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
+        }
+        else if (LSX_CTX_MAGIC == info->magic)
+        {
+            struct lsx_context* fpr = (struct lsx_context*)(info + 1);
+            lpContext->Fcsr = fpr->fcsr;
+            lpContext->Fcc  = fpr->fcc;
+            memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
+        }
+        else if (LASX_CTX_MAGIC == info->magic)
+        {
+            struct lasx_context* fpr = (struct lasx_context*)(info + 1);
+            lpContext->Fcsr = fpr->fcsr;
+            lpContext->Fcc  = fpr->fcc;
+            memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
+        }
+        else
+        {
+            _ASSERTE(LBT_CTX_MAGIC == info->magic);
+        }
 
-        struct fpu_context* fpr = (struct fpu_context*) ++info;
-        lpContext->Fcsr = fpr->fcsr;
-        lpContext->Fcc  = fpr->fcc;
-        memcpy(lpContext->F, fpr->regs, sizeof(lpContext->F));
 #elif defined(HOST_RISCV64)
         lpContext->Fcsr = native->uc_mcontext.__fpregs.__d.__fcsr;
         for (int i = 0; i < 32; i++)

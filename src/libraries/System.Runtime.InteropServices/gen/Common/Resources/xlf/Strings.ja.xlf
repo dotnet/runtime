@@ -147,6 +147,16 @@
         <target state="translated">'EnableComHosting' を使用した .NET COM ホスティングでは、'GeneratedComInterfaceAttribute' のインターフェイスはサポートされていません</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' の使用は推奨事項に従っていません。{0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' の使用は推奨事項に従っていません。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
         <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
         <target state="translated">マネージド定義の戻り値は、アンマネージド COM メソッドを呼び出すときに 'out' パラメーターに変換されます。戻り値を、アンマネージド COM メソッドによって返される HRESULT コードにする場合は、メソッドで '[PreserveSig]' を使用してください。</target>
@@ -439,12 +449,17 @@
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
         <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
-        <target state="new">The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</target>
+        <target state="translated">型 '{0}' は、ネイティブ HRESULT としてではなく、ネイティブ シグネチャ内の構造体として扱われます。これを HRESULT として扱うには、'[return:MarshalAs(UnmanagedType.Error)]' をメソッドに追加します。</target>
         <note />
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
         <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
-        <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
+        <target state="translated">この型はネイティブの HRESULT ではなく、ネイティブ シグネチャの構造体として扱われます</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
+        <target state="translated">'[In]' 属性は配列パラメーターでのみサポートされています。既定では、値によるパラメーターは読み取り専用と見なされます。</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
@@ -467,9 +482,19 @@
         <target state="translated">このパラメーターに指定された '[In]' 属性と '[Out]' 属性は、このパラメーターではサポートされていません。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
+        <target state="translated">'[In]' および '[Out]' 属性は、配列パラメーターでのみサポートされます。パラメーターを変更可能にするには、'ref' キーワードを使用することを検討してください。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">属性の[In]と[Out]</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InVariantShouldBeRef">
+        <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
+        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -702,6 +727,16 @@
         <target state="translated">'VirtualMethodIndexAttribute' の使用法が無効です</target>
         <note />
       </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
+        <target state="translated">'LibraryImportAttribute' の使用は推奨事項に従っていません。{0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
+        <target state="translated">'LibraryImportAttribute' の使用は推奨事項に従っていません。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
         <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
         <target state="translated">'GetManagedValuesSource' によって返される 'ReadOnlySpan' の要素型は、'GetManagedValuesDestination' によって返される要素型と同じである必要があります。</target>
@@ -903,8 +938,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="new">The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
+        <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="translated">'[Out]' 属性は、配列パラメーターでのみサポートされます。パラメーターを変更可能にするには、'out' または 'ref' キーワードを使用することを検討してください。</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -915,6 +950,11 @@
       <trans-unit id="OutRequiresToManagedMessage">
         <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
         <target state="translated">型 '{0}' は、'Out' 方向のマーシャリングをサポートしますが、マネージド型を返す 'ToManaged' メソッドは指定されません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PreferExplicitInOutAttributesOnArrays">
+        <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
+        <target state="translated">配列パラメーターに明示的な '[In]' および '[Out]' 属性を使用することをお勧めします。</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -985,11 +1025,6 @@
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">このプロジェクトでは、アセンブリに 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' を適用してランタイム マーシャリングを無効にし、この型のマーシャリングを有効にする必要があります。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">'SafeHandle' から派生した抽象型は、参照でマーシャリングできません。指定される型は具象型である必要があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">

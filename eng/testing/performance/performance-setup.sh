@@ -35,15 +35,18 @@ using_wasm=false
 use_latest_dotnet=false
 logical_machine=
 javascript_engine="v8"
+javascript_engine_path=""
 iosmono=false
 iosnativeaot=false
 runtimetype=""
 iosllvmbuild=""
 iosstripsymbols=""
+hybridglobalization=""
 maui_version=""
 use_local_commit_time=false
 only_sanity=false
 dotnet_versions=""
+v8_version=""
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -94,6 +97,10 @@ while (($# > 0)); do
       ;;
     --javascriptengine)
       javascript_engine=$2
+      shift 2
+      ;;
+    --javascriptenginepath)
+      javascript_engine_path=$2
       shift 2
       ;;
     --kind)
@@ -150,6 +157,14 @@ while (($# > 0)); do
       physicalpromotion=true
       shift 1
       ;;
+    --nor2r)
+      nor2r=true
+      shift 1
+      ;;
+    --experimentname)
+      experimentname=$2
+      shift 2
+      ;;
     --compare)
       compare=true
       shift 1
@@ -180,6 +195,10 @@ while (($# > 0)); do
       ;;
     --iosstripsymbols)
       iosstripsymbols=$2
+      shift 2
+      ;;
+    --hybridglobalization)
+      hybridglobalization=$2
       shift 2
       ;;
     --mauiversion)
@@ -228,14 +247,18 @@ while (($# > 0)); do
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
       echo "  --dotnetversions               Passed as '--dotnet-versions <value>' to the setup script"
       echo "  --alpine                       Set for runs on Alpine"
+      echo "  --llvm                         Set LLVM for Mono runs"
       echo "  --iosmono                      Set for ios Mono/Maui runs"
       echo "  --iosnativeaot                 Set for ios Native AOT runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --iosstripsymbols              Set STRIP_DEBUG_SYMBOLS for iOS Mono/Maui runs"
+      echo "  --hybridglobalization          Set hybrid globalization for iOS Mono/Maui/Wasm runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
       echo "  --nodynamicpgo                 Set for No dynamic PGO runs"
       echo "  --physicalpromotion            Set for runs with physical promotion"
+      echo "  --nor2r                        Set for No R2R runs"
+      echo "  --experimentname <value>       Set Experiment Name"
       echo ""
       exit 1
       ;;
@@ -264,7 +287,7 @@ benchmark_directory=$payload_directory/BenchmarkDotNet
 workitem_directory=$source_directory/workitem
 extra_benchmark_dotnet_arguments="--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --stopOnFirstError true"
 perflab_arguments=
-queue=Ubuntu.1804.Amd64.Open
+queue=Ubuntu.2204.Amd64.Open
 creator=$BUILD_DEFINITIONNAME
 helix_source_prefix="pr"
 
@@ -275,16 +298,16 @@ if [[ "$internal" == true ]]; then
     extra_benchmark_dotnet_arguments=
 
     if [[ "$logical_machine" == "perfiphone12mini" ]]; then
-        queue=OSX.1015.Amd64.Iphone.Perf
+        queue=OSX.13.Amd64.Iphone.Perf
     elif [[ "$logical_machine" == "perfampere" ]]; then
-        queue=Ubuntu.2004.Arm64.Perf
+        queue=Ubuntu.2204.Arm64.Perf
     elif [[ "$logical_machine" == "cloudvm" ]]; then
-        queue=Ubuntu.1804.Amd64
+        queue=Ubuntu.2204.Amd64
     elif [[ "$architecture" == "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
         if [[ "$logical_machine" == "perfowl" ]]; then
-            queue=Ubuntu.1804.Amd64.Owl.Perf
+            queue=Ubuntu.2204.Amd64.Owl.Perf
         elif [[ "$logical_machine" == "perftiger_crossgen" ]]; then
             queue=Ubuntu.1804.Amd64.Tiger.Perf
         else
@@ -299,7 +322,7 @@ else
     if [[ "$architecture" == "arm64" ]]; then
         queue=ubuntu.1804.armarch.open
     else
-        queue=Ubuntu.1804.Amd64.Open
+        queue=Ubuntu.2204.Amd64.Open
     fi
 
     if [[ "$alpine" == "true" ]]; then
@@ -358,6 +381,21 @@ if [[ "$physicalpromotion" == "true" ]]; then
     configurations="$configurations PhysicalPromotionType=physicalpromotion"
 fi
 
+if [[ "$nor2r" == "true" ]]; then
+    configurations="$configurations R2RType=nor2r"
+fi
+
+if [[ ! -z "$experimentname" ]]; then
+    configurations="$configurations ExperimentName=$experimentname"
+    if [[ "$experimentname" == "memoryRandomization" ]]; then
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --memoryRandomization true"
+    fi
+fi
+
+if [[ "$(echo "$hybridglobalization" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then # convert to lowercase to test
+    configurations="$configurations HybridGlobalization=True" # Force True for consistency
+fi
+
 
 
 cleaned_branch_name="main"
@@ -404,15 +442,27 @@ if [[ -n "$wasm_bundle_directory" ]]; then
     using_wasm=true
     wasm_bundle_directory_path=$payload_directory
     mv $wasm_bundle_directory/* $wasm_bundle_directory_path
-    find $wasm_bundle_directory_path -type d
-    wasm_args="--experimental-wasm-eh --expose_wasm"
+    wasm_args="--expose_wasm"
     if [ "$javascript_engine" == "v8" ]; then
         # for es6 module support
         wasm_args="$wasm_args --module"
+
+        # get required version
+        if [[ -z "$v8_version" ]]; then
+            v8_version=`grep linux_V8Version $source_directory/eng/testing/ChromeVersions.props | sed -e 's,.*>\([^\<]*\)<.*,\1,g' | cut -d. -f 1-3`
+            echo "V8 version: $v8_version"
+        fi
+        if [[ -z "$javascript_engine_path" ]]; then
+            javascript_engine_path="/home/helixbot/.jsvu/bin/v8-${v8_version}"
+        fi
+    fi
+
+    if [[ -z "$javascript_engine_path" ]]; then
+        javascript_engine_path="/home/helixbot/.jsvu/bin/$javascript_engine"
     fi
 
     # Workaround: escaping the quotes around `--wasmArgs=..` so they get retained for the actual command line
-    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/bin/$javascript_engine --wasmArgs \\\"$wasm_args\\\" --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine $javascript_engine_path \\\"--wasmArgs=$wasm_args\\\" --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
     if [[ "$wasmaot" == "true" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --aotcompilermode wasm --buildTimeout 3600"
     fi
@@ -435,6 +485,14 @@ fi
 
 if [[ "$physicalpromotion" == "true" ]]; then
     setup_arguments="$setup_arguments --physical-promotion"
+fi
+
+if [[ "$nor2r" == "true" ]]; then
+    setup_arguments="$setup_arguments --no-r2r"
+fi
+
+if [[ ! -z "$experimentname" ]]; then
+    setup_arguments="$setup_arguments --experiment-name '$experimentname'"
 fi
 
 if [[ "$monoaot" == "true" ]]; then
@@ -491,11 +549,14 @@ Write-PipelineSetVariable -name "Kind" -value "$kind" -is_multi_job_variable fal
 Write-PipelineSetVariable -name "_BuildConfig" -value "$_BuildConfig" -is_multi_job_variable false
 Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variable false
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
+Write-PipelineSetVariable -name "MonoAOT" -value "$monoaot" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iosstripsymbols" -is_multi_job_variable false
+Write-PipelineSetVariable -Name 'hybridGlobalization' -Value "$hybridglobalization" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'RuntimeType' -Value "$runtimetype" -is_multi_job_variable false
 Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false
+Write-PipelineSetVariable -name "V8Version" -value "$v8_version" -is_multi_job_variable false
 
 # Put it back to what was set on top of this script
 set -x

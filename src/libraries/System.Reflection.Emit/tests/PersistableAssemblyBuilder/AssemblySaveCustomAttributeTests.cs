@@ -140,6 +140,7 @@ namespace System.Reflection.Emit.Tests
 
                 DefineMethodsAndSetAttributes(methodAttributes, tb, type.IsInterface ? type.GetMethods() : type.GetMethods(BindingFlags.DeclaredOnly), methodAttributes);
                 DefineFieldsAndSetAttributes(fieldAttributes, type.GetFields(), tb);
+                tb.CreateType();
             }
         }
 
@@ -196,6 +197,7 @@ namespace System.Reflection.Emit.Tests
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes, type.BaseType);
                 DefineFieldsAndSetAttributes(fieldAttributes.ToList(), type.GetFields(), tb);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -284,6 +286,7 @@ namespace System.Reflection.Emit.Tests
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
                 DefineMethodsAndSetAttributes(methodAttributes, tb, type.GetMethods(), parameterAttributes);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -435,6 +438,7 @@ namespace System.Reflection.Emit.Tests
                 FieldInfo stringField = type.GetFields()[1];
                 FieldBuilder fb = tb.DefineField(stringField.Name, stringField.FieldType, stringField.Attributes);
                 fb.SetCustomAttribute(attribute);
+                tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
@@ -472,6 +476,7 @@ namespace System.Reflection.Emit.Tests
                 CustomAttributeBuilder attributeBuilder = new CustomAttributeBuilder(attributeConstructor, new object[] { true });
                 enumBuilder.SetCustomAttribute(attributeBuilder);
                 enumBuilder.SetCustomAttribute(new CustomAttributeBuilder(s_guidPair.con, s_guidPair.args));
+                enumBuilder.CreateTypeInfo();
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Type testEnum = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetType("TestEnum");

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -90,7 +91,7 @@ namespace Microsoft.Extensions.Http
             _cleanupTimerLock = new object();
             _cleanupActiveLock = new object();
 
-            // We want to prevent a circular depencency between ILoggerFactory and IHttpClientFactory, in case
+            // We want to prevent a circular dependency between ILoggerFactory and IHttpClientFactory, in case
             // any of ILoggerProvider instances use IHttpClientFactory to send logs to an external server.
             // Logger will be created during the first ExpiryTimer_Tick execution. Lazy guarantees thread safety
             // to prevent creation of unnecessary ILogger objects in case several handlers expired at the same time.
@@ -208,7 +209,7 @@ namespace Microsoft.Extensions.Http
             var expired = new ExpiredHandlerTrackingEntry(active);
             _expiredHandlers.Enqueue(expired);
 
-            Log.HandlerExpired(_logger.Value, active.Name, active.Lifetime);
+            Log.HandlerExpired(_logger, active.Name, active.Lifetime);
 
             StartCleanupTimer();
         }
@@ -266,7 +267,7 @@ namespace Microsoft.Extensions.Http
             try
             {
                 int initialCount = _expiredHandlers.Count;
-                Log.CleanupCycleStart(_logger.Value, initialCount);
+                Log.CleanupCycleStart(_logger, initialCount);
 
                 var stopwatch = ValueStopwatch.StartNew();
 
@@ -287,7 +288,7 @@ namespace Microsoft.Extensions.Http
                         }
                         catch (Exception ex)
                         {
-                            Log.CleanupItemFailed(_logger.Value, entry.Name, ex);
+                            Log.CleanupItemFailed(_logger, entry.Name, ex);
                         }
                     }
                     else
@@ -298,7 +299,7 @@ namespace Microsoft.Extensions.Http
                     }
                 }
 
-                Log.CleanupCycleEnd(_logger.Value, stopwatch.GetElapsedTime(), disposedCount, _expiredHandlers.Count);
+                Log.CleanupCycleEnd(_logger, stopwatch.GetElapsedTime(), disposedCount, _expiredHandlers.Count);
             }
             finally
             {
@@ -343,24 +344,48 @@ namespace Microsoft.Extensions.Http
                 "HttpMessageHandler expired after {HandlerLifetime}ms for client '{ClientName}'");
 
 
-            public static void CleanupCycleStart(ILogger logger, int initialCount)
+            public static void CleanupCycleStart(Lazy<ILogger> loggerLazy, int initialCount)
             {
-                _cleanupCycleStart(logger, initialCount, null);
+                if (TryGetLogger(loggerLazy, out ILogger? logger))
+                {
+                    _cleanupCycleStart(logger, initialCount, null);
+                }
             }
 
-            public static void CleanupCycleEnd(ILogger logger, TimeSpan duration, int disposedCount, int finalCount)
+            public static void CleanupCycleEnd(Lazy<ILogger> loggerLazy, TimeSpan duration, int disposedCount, int finalCount)
             {
-                _cleanupCycleEnd(logger, duration.TotalMilliseconds, disposedCount, finalCount, null);
+                if (TryGetLogger(loggerLazy, out ILogger? logger))
+                {
+                    _cleanupCycleEnd(logger, duration.TotalMilliseconds, disposedCount, finalCount, null);
+                }
             }
 
-            public static void CleanupItemFailed(ILogger logger, string clientName, Exception exception)
+            public static void CleanupItemFailed(Lazy<ILogger> loggerLazy, string clientName, Exception exception)
             {
-                _cleanupItemFailed(logger, clientName, exception);
+                if (TryGetLogger(loggerLazy, out ILogger? logger))
+                {
+                    _cleanupItemFailed(logger, clientName, exception);
+                }
             }
 
-            public static void HandlerExpired(ILogger logger, string clientName, TimeSpan lifetime)
+            public static void HandlerExpired(Lazy<ILogger> loggerLazy, string clientName, TimeSpan lifetime)
             {
-                _handlerExpired(logger, lifetime.TotalMilliseconds, clientName, null);
+                if (TryGetLogger(loggerLazy, out ILogger? logger))
+                {
+                    _handlerExpired(logger, lifetime.TotalMilliseconds, clientName, null);
+                }
+            }
+
+            private static bool TryGetLogger(Lazy<ILogger> loggerLazy, [NotNullWhen(true)] out ILogger? logger)
+            {
+                logger = null;
+                try
+                {
+                    logger = loggerLazy.Value;
+                }
+                catch { } // not throwing in logs
+
+                return logger is not null;
             }
         }
     }

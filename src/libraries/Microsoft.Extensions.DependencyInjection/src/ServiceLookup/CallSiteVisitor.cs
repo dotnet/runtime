@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 case CallSiteKind.Factory:
                     return VisitFactory((FactoryCallSite)callSite, argument);
-                case  CallSiteKind.IEnumerable:
+                case CallSiteKind.IEnumerable:
                     return VisitIEnumerable((IEnumerableCallSite)callSite, argument);
                 case CallSiteKind.Constructor:
                     return VisitConstructor((ConstructorCallSite)callSite, argument);

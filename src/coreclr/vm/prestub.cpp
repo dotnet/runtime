@@ -709,6 +709,53 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
     }
 }
 
+namespace
+{
+    COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(MethodDesc* pMD, PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pDecoderMemory)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(pMD != NULL);
+        _ASSERTE(!pMD->IsNoMetadata());
+        _ASSERTE(pConfig != NULL);
+        _ASSERTE(pDecoderMemory != NULL);
+
+        COR_ILMETHOD_DECODER* pHeader = NULL;
+        COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
+        if (ilHeader == NULL)
+            return NULL;
+
+        COR_ILMETHOD_DECODER::DecoderStatus status = COR_ILMETHOD_DECODER::FORMAT_ERROR;
+        {
+            // Decoder ctor can AV on a malformed method header
+            AVInRuntimeImplOkayHolder AVOkay;
+            pHeader = new (pDecoderMemory) COR_ILMETHOD_DECODER(ilHeader, pMD->GetMDImport(), &status);
+        }
+
+        if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
+
+        return pHeader;
+    }
+
+    COR_ILMETHOD_DECODER* GetAndVerifyILHeader(MethodDesc* pMD, PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(pMD != NULL);
+        if (pMD->IsIL())
+        {
+            return GetAndVerifyMetadataILHeader(pMD, pConfig, pIlDecoderMemory);
+        }
+        else if (pMD->IsILStub())
+        {
+            ILStubResolver* pResolver = pMD->AsDynamicMethodDesc()->GetILStubResolver();
+            return pResolver->GetILHeader();
+        }
+
+        _ASSERTE(pMD->IsNoMetadata());
+        return NULL;
+    }
+}
+
 PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry)
 {
     STANDARD_VM_CONTRACT;
@@ -759,11 +806,18 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
 #endif // PROFILING_SUPPORTED
 
+    // The profiler may have changed the code on the callback.  Need to
+    // pick up the new code.
+    //
+    // (don't want this for OSR, need to see how it works)
+    COR_ILMETHOD_DECODER ilDecoderTemp;
+    COR_ILMETHOD_DECODER* pilHeader = GetAndVerifyILHeader(this, pConfig, &ilDecoderTemp);
+
     if (!ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
         TRACE_LEVEL_VERBOSE,
         CLR_JIT_KEYWORD))
     {
-        pCode = JitCompileCodeLocked(pConfig, pEntry, &sizeOfCode);
+        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
     }
     else
     {
@@ -778,12 +832,13 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         // a small stub of native code but no native-IL mapping.
 #ifndef FEATURE_INTERPRETER
         ETW::MethodLog::MethodJitting(this,
+            pilHeader,
             &namespaceOrClassName,
             &methodName,
             &methodSignature);
 #endif
 
-        pCode = JitCompileCodeLocked(pConfig, pEntry, &sizeOfCode);
+        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
 
         // Interpretted methods skip this notification
 #ifdef FEATURE_INTERPRETER
@@ -869,66 +924,11 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     return pCode;
 }
 
-namespace
-{
-    COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(MethodDesc* pMD, PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pDecoderMemory)
-    {
-        STANDARD_VM_CONTRACT;
-        _ASSERTE(pMD != NULL);
-        _ASSERTE(!pMD->IsNoMetadata());
-        _ASSERTE(pConfig != NULL);
-        _ASSERTE(pDecoderMemory != NULL);
-
-        COR_ILMETHOD_DECODER* pHeader = NULL;
-        COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
-        if (ilHeader == NULL)
-            return NULL;
-
-        COR_ILMETHOD_DECODER::DecoderStatus status = COR_ILMETHOD_DECODER::FORMAT_ERROR;
-        {
-            // Decoder ctor can AV on a malformed method header
-            AVInRuntimeImplOkayHolder AVOkay;
-            pHeader = new (pDecoderMemory) COR_ILMETHOD_DECODER(ilHeader, pMD->GetMDImport(), &status);
-        }
-
-        if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
-
-        return pHeader;
-    }
-
-    COR_ILMETHOD_DECODER* GetAndVerifyILHeader(MethodDesc* pMD, PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory)
-    {
-        STANDARD_VM_CONTRACT;
-        _ASSERTE(pMD != NULL);
-        if (pMD->IsIL())
-        {
-            return GetAndVerifyMetadataILHeader(pMD, pConfig, pIlDecoderMemory);
-        }
-        else if (pMD->IsILStub())
-        {
-            ILStubResolver* pResolver = pMD->AsDynamicMethodDesc()->GetILStubResolver();
-            return pResolver->GetILHeader();
-        }
-
-        _ASSERTE(pMD->IsNoMetadata());
-        return NULL;
-    }
-}
-
-PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry, ULONG* pSizeOfCode)
+PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pEntry, ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
 
     PCODE pCode = NULL;
-
-    // The profiler may have changed the code on the callback.  Need to
-    // pick up the new code.
-    //
-    // (don't want this for OSR, need to see how it works)
-    COR_ILMETHOD_DECODER ilDecoderTemp;
-    COR_ILMETHOD_DECODER* pilHeader = GetAndVerifyILHeader(this, pConfig, &ilDecoderTemp);
-
     CORJIT_FLAGS jitFlags;
     PCODE pOtherCode = NULL;
 
@@ -3561,8 +3561,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             case ENCODE_ISINSTANCEOF_HELPER:
             case ENCODE_CHKCAST_HELPER:
                 {
-                    bool fClassMustBeRestored;
-                    CorInfoHelpFunc helpFunc = CEEInfo::getCastingHelperStatic(th, /* throwing */ (kind == ENCODE_CHKCAST_HELPER), &fClassMustBeRestored);
+                    CorInfoHelpFunc helpFunc = CEEInfo::getCastingHelperStatic(th, /* throwing */ (kind == ENCODE_CHKCAST_HELPER));
                     pHelper = DynamicHelpers::CreateHelperArgMove(pModule->GetLoaderAllocator(), th.AsTAddr(), CEEJitInfo::getHelperFtnStatic(helpFunc));
                 }
                 break;

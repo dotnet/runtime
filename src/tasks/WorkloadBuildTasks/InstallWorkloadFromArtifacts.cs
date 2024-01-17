@@ -42,19 +42,25 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
+        public string?        IntermediateOutputPath { get; set; }
         public bool           OnlyUpdateManifests{ get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
         private string _tempDir = string.Empty;
         private string _nugetCachePath = string.Empty;
+        private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip
+        };
 
         [GeneratedRegex(@"^\d+\.\d+\.\d+(-[A-z]*\.*\d*)?")]
         private static partial Regex bandVersionRegex();
 
         public override bool Execute()
         {
-            _tempDir = Path.Combine(Path.GetTempPath(), $"workload-{Path.GetRandomFileName()}");
+            _tempDir = Path.Combine(IntermediateOutputPath ?? Path.GetTempPath(), $"workload-{Path.GetRandomFileName()}");
             if (Directory.Exists(_tempDir))
                 Directory.Delete(_tempDir, recursive: true);
             Directory.CreateDirectory(_tempDir);
@@ -153,8 +159,6 @@ namespace Microsoft.Workload.Build.Tasks
             if (!InstallPacks(req, nugetConfigContents))
                 return false;
 
-            UpdateAppRef(req.TargetPath, req.Version);
-
             return !Log.HasLoggedErrors;
         }
 
@@ -221,6 +225,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                         ["NUGET_PACKAGES"] = _nugetCachePath
                                                     },
                                                     logStdErrAsMessage: req.IgnoreErrors,
+                                                    silent: false,
                                                     debugMessageImportance: MessageImportance.Normal);
             if (exitCode != 0)
             {
@@ -244,31 +249,6 @@ namespace Microsoft.Workload.Build.Tasks
             }
 
             return !Log.HasLoggedErrors;
-        }
-
-        private void UpdateAppRef(string sdkPath, string version)
-        {
-            Log.LogMessage(MessageImportance.Normal, $"    - Updating Targeting pack");
-
-            string pkgPath = Path.Combine(LocalNuGetsPath, $"Microsoft.NETCore.App.Ref.{version}.nupkg");
-            if (!File.Exists(pkgPath))
-                throw new LogAsErrorException($"Could not find {pkgPath} needed to update the targeting pack to the newly built one." +
-                                                " Make sure to build the subset `packs`, like `./build.sh -os browser -s mono+libs+packs`.");
-
-            string packDir = Path.Combine(sdkPath, "packs", "Microsoft.NETCore.App.Ref");
-            string[] dirs = Directory.EnumerateDirectories(packDir).ToArray();
-            if (dirs.Length != 1)
-                throw new LogAsErrorException($"Expected to find exactly one versioned directory under {packDir}, but got " +
-                                                string.Join(',', dirs));
-
-            string dstDir = dirs[0];
-
-            Directory.Delete(dstDir, recursive: true);
-            Log.LogMessage($"Deleting {dstDir}");
-
-            Directory.CreateDirectory(dstDir);
-            ZipFile.ExtractToDirectory(pkgPath, dstDir);
-            Log.LogMessage($"Extracting {pkgPath} to {dstDir}");
         }
 
         private string GetNuGetConfig()
@@ -325,11 +305,7 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 manifest = JsonSerializer.Deserialize<ManifestInformation>(
                                                     File.ReadAllBytes(jsonPath),
-                                                    new JsonSerializerOptions(JsonSerializerDefaults.Web)
-                                                    {
-                                                        AllowTrailingCommas = true,
-                                                        ReadCommentHandling = JsonCommentHandling.Skip
-                                                    });
+                                                    s_jsonOptions);
 
                 if (manifest == null)
                 {

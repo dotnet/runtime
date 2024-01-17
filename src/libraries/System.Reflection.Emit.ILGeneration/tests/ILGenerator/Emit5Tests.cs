@@ -229,7 +229,7 @@ namespace System.Reflection.Emit.Tests
             try
             {
                 meth.Invoke(null, new object[] { false });
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (TargetInvocationException ex)
             {

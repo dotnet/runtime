@@ -1,0 +1,57 @@
+From 86d96652ddd60f61dc7b0c94b601f6d156d34632 Mon Sep 17 00:00:00 2001
+From: Levi Broderick <levib@microsoft.com>
+Date: Mon, 28 Aug 2023 15:26:38 -0700
+Subject: [PATCH] Make zlib compile clean against C4244 clang equivalent is
+ "implicit-int-conversion" warning
+
+The change to deflate.c is legal because 'len' has an upper bound of
+MAX_STORED, which means it fits cleanly into a 16-bit integer. So
+writing out 2x 8-bit values will not result in data loss.
+
+The change to trees.c is legal because within this loop, 'count' is
+intended to have an upper bound of 138, with the target assignment
+only executing if 'count' is bounded by 4. Neither the 'count' local
+in isolation nor the addition that's part of the target line is
+expected to result in integer overflow. But even if it did, that's a
+matter for a different warning code and doesn't impact the correctness
+of the narrowing cast being considered here.
+---
+ src/native/external/zlib/deflate.c | 8 ++++----
+ src/native/external/zlib/trees.c   | 2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/native/external/zlib/deflate.c b/src/native/external/zlib/deflate.c
+index d2e1106ef5d..b7636639754 100644
+--- a/src/native/external/zlib/deflate.c
++++ b/src/native/external/zlib/deflate.c
+@@ -1738,10 +1738,10 @@ local block_state deflate_stored(s, flush)
+         _tr_stored_block(s, (char *)0, 0L, last);
+ 
+         /* Replace the lengths in the dummy stored block with len. */
+-        s->pending_buf[s->pending - 4] = len;
+-        s->pending_buf[s->pending - 3] = len >> 8;
+-        s->pending_buf[s->pending - 2] = ~len;
+-        s->pending_buf[s->pending - 1] = ~len >> 8;
++        s->pending_buf[s->pending - 4] = (Bytef)len;
++        s->pending_buf[s->pending - 3] = (Bytef)(len >> 8);
++        s->pending_buf[s->pending - 2] = (Bytef)~len;
++        s->pending_buf[s->pending - 1] = (Bytef)(~len >> 8);
+ 
+         /* Write the stored block header bytes. */
+         flush_pending(s->strm);
+diff --git a/src/native/external/zlib/trees.c b/src/native/external/zlib/trees.c
+index 5f305c47221..8a3eec559e5 100644
+--- a/src/native/external/zlib/trees.c
++++ b/src/native/external/zlib/trees.c
+@@ -721,7 +721,7 @@ local void scan_tree(s, tree, max_code)
+         if (++count < max_count && curlen == nextlen) {
+             continue;
+         } else if (count < min_count) {
+-            s->bl_tree[curlen].Freq += count;
++            s->bl_tree[curlen].Freq += (ush)count;
+         } else if (curlen != 0) {
+             if (curlen != prevlen) s->bl_tree[curlen].Freq++;
+             s->bl_tree[REP_3_6].Freq++;
+-- 
+2.42.0.windows.1
+

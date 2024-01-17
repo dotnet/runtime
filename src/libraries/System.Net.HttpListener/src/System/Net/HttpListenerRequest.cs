@@ -202,7 +202,7 @@ namespace System.Net
 
         private string RequestScheme => IsSecureConnection ? UriScheme.Https : UriScheme.Http;
 
-        public string UserAgent => Headers[HttpKnownHeaderNames.UserAgent]!;
+        public string? UserAgent => Headers[HttpKnownHeaderNames.UserAgent];
 
         public string UserHostAddress => LocalEndPoint!.ToString();
 

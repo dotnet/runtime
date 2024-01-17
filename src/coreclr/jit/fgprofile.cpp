@@ -381,7 +381,7 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -467,13 +467,13 @@ void BlockCountInstrumentor::RelocateProbes()
             continue;
         }
 
-        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
+        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
 
         JITDUMP("Return " FMT_BB " is successor of possible tail call\n", block->bbNum);
-        assert(block->bbJumpKind == BBJ_RETURN);
+        assert(block->KindIs(BBJ_RETURN));
 
         // Scan for critical preds, and add relocated probes to non-critical preds.
         //
@@ -488,7 +488,7 @@ void BlockCountInstrumentor::RelocateProbes()
 
             BasicBlock* const succ = pred->GetUniqueSucc();
 
-            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            if ((succ == nullptr) || pred->isBBCallFinallyPairTail())
             {
                 // Route pred through the intermediary.
                 //
@@ -497,14 +497,7 @@ void BlockCountInstrumentor::RelocateProbes()
             }
             else
             {
-                // Ensure this pred is not a fall through.
-                //
-                if (pred->bbJumpKind == BBJ_NONE)
-                {
-                    pred->bbJumpKind = BBJ_ALWAYS;
-                    pred->bbJumpDest = block;
-                }
-                assert(pred->bbJumpKind == BBJ_ALWAYS);
+                assert(pred->KindIs(BBJ_ALWAYS));
             }
         }
 
@@ -514,8 +507,9 @@ void BlockCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->bbFlags |= BBF_IMPORTED | BBF_MARKED;
+            BasicBlock* const intermediary =
+                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             SetModifiedFlow();
@@ -530,14 +524,10 @@ void BlockCountInstrumentor::RelocateProbes()
 
                 // Handle case where we had a fall through critical edge
                 //
-                if (pred->bbNext == intermediary)
+                if (pred->NextIs(intermediary))
                 {
                     m_comp->fgRemoveRefPred(pred, block);
                     m_comp->fgAddRefPred(intermediary, block);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-                    m_comp->fgFixFinallyTargetFlags(pred, block, intermediary);
-#endif
                 }
             }
         }
@@ -561,6 +551,10 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     if ((JitConfig.JitScalableProfiling() > 0) && (JitConfig.JitInterlockedProfiling() > 0))
     {
         numCountersPerProbe = 2;
+    }
+    else if (JitConfig.JitCounterPadding() > 0)
+    {
+        numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
     }
 
     // Remember the schema index for this block.
@@ -639,14 +633,14 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 
     GenTree* incCount = CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
 
-    if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
+    if (block->HasFlag(BBF_TAILCALL_SUCCESSOR))
     {
         // This block probe needs to be relocated; instrument each predecessor.
         //
         bool first = true;
         for (BasicBlock* pred : block->PredBlocks())
         {
-            const bool isLivePred = ShouldProcess(pred) || ((pred->bbFlags & BBF_MARKED) == BBF_MARKED);
+            const bool isLivePred = ShouldProcess(pred) || pred->HasFlag(BBF_MARKED);
             if (!isLivePred)
             {
                 continue;
@@ -658,7 +652,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
                 incCount = m_comp->gtCloneExpr(incCount);
             }
             m_comp->fgNewStmtAtBeg(pred, incCount);
-            pred->bbFlags &= ~BBF_MARKED;
+            pred->RemoveFlags(BBF_MARKED);
             first = false;
         }
     }
@@ -779,7 +773,7 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
             GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
 
             // Interlocked increment
-            result = comp->gtNewOperNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
+            result = comp->gtNewAtomicNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
         }
 
         if (scalable)
@@ -941,7 +935,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
         visitor->VisitBlock(block);
         nBlocks++;
 
-        switch (block->bbJumpKind)
+        switch (block->GetKind())
         {
             case BBJ_CALLFINALLY:
             {
@@ -955,11 +949,11 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 // some new keying scheme. For now we just
                 // ignore this (rare) case.
                 //
-                if (block->isBBCallAlwaysPair())
+                if (block->isBBCallFinallyPair())
                 {
                     // This block should be the only pred of the continuation.
                     //
-                    BasicBlock* const target = block->bbNext;
+                    BasicBlock* const target = block->Next();
                     assert(!BlockSetOps::IsMember(this, marked, target->bbNum));
                     visitor->VisitTreeEdge(block, target);
                     stack.Push(target);
@@ -1014,7 +1008,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // We're leaving a try or catch, not a handler.
                     // Treat this as a normal edge.
                     //
-                    BasicBlock* const target = block->bbJumpDest;
+                    BasicBlock* const target = block->GetTarget();
 
                     // In some bad IL cases we may not have a target.
                     // In others we may see something other than LEAVE be most-nested in a try.
@@ -1024,7 +1018,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         JITDUMP("No jump dest for " FMT_BB ", suspect bad code\n", block->bbNum);
                         visitor->Badcode();
                     }
-                    else if (block->bbJumpKind != BBJ_LEAVE)
+                    else if (!block->KindIs(BBJ_LEAVE))
                     {
                         JITDUMP("EH RET in " FMT_BB " most-nested in try, suspect bad code\n", block->bbNum);
                         visitor->Badcode();
@@ -1082,11 +1076,11 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     BasicBlock* const target = block->GetSucc(0, this);
                     if (BlockSetOps::IsMember(this, marked, target->bbNum))
                     {
-                        // We can't instrument in the call always pair tail block
+                        // We can't instrument in the call finally pair tail block
                         // so treat this as a critical edge.
                         //
                         visitor->VisitNonTreeEdge(block, target,
-                                                  block->isBBCallAlwaysPairTail()
+                                                  block->isBBCallFinallyPairTail()
                                                       ? SpanningTreeVisitor::EdgeKind::CriticalEdge
                                                       : SpanningTreeVisitor::EdgeKind::PostdominatesSource);
                     }
@@ -1232,13 +1226,13 @@ static int32_t EfficientEdgeCountBlockToKey(BasicBlock* block)
 {
     static const int IS_INTERNAL_BLOCK = (int32_t)0x80000000;
     int32_t          key               = (int32_t)block->bbCodeOffs;
-    // We may see empty BBJ_NONE BBF_INTERNAL blocks that were added
+    // We may see empty BBJ_ALWAYS BBF_INTERNAL blocks that were added
     // by fgNormalizeEH.
     //
     // We'll use their bbNum in place of IL offset, and set
     // a high bit as a "flag"
     //
-    if ((block->bbFlags & BBF_INTERNAL) == BBF_INTERNAL)
+    if (block->HasFlag(BBF_INTERNAL))
     {
         key = block->bbNum | IS_INTERNAL_BLOCK;
     }
@@ -1372,7 +1366,7 @@ public:
     void Prepare(bool isPreImport) override;
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & BBF_IMPORTED) == BBF_IMPORTED);
+        return block->HasFlag(BBF_IMPORTED);
     }
     bool ShouldInstrument(BasicBlock* block) override
     {
@@ -1545,17 +1539,8 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
 
                     if (found)
                     {
-                        // Importer folding may have changed the block jump kind
-                        // to BBJ_NONE. If so, warp it back to BBJ_ALWAYS.
-                        //
-                        if (block->bbJumpKind == BBJ_NONE)
-                        {
-                            block->bbJumpKind = BBJ_ALWAYS;
-                            block->bbJumpDest = target;
-                        }
-
                         instrumentedBlock = m_comp->fgSplitEdge(block, target);
-                        instrumentedBlock->bbFlags |= BBF_IMPORTED;
+                        instrumentedBlock->SetFlags(BBF_IMPORTED);
                         edgesSplit++;
 
                         // Add in the relocated probe
@@ -1647,13 +1632,13 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 
         // Nothing to do unless the block is a tail call successor.
         //
-        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
+        if (!block->HasFlag(BBF_TAILCALL_SUCCESSOR))
         {
             continue;
         }
 
         JITDUMP("Return " FMT_BB " is successor of possible tail call\n", block->bbNum);
-        assert(block->bbJumpKind == BBJ_RETURN);
+        assert(block->KindIs(BBJ_RETURN));
 
         // This block should have just one probe, which we no longer need.
         //
@@ -1676,7 +1661,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
             //
             BasicBlock* const succ = pred->GetUniqueSucc();
 
-            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            if ((succ == nullptr) || pred->isBBCallFinallyPairTail())
             {
                 // Route pred through the intermediary.
                 //
@@ -1689,14 +1674,10 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 //
                 NewRelocatedProbe(pred, probe->source, probe->target, &leader);
 
-                // Ensure this pred is not a fall through.
+                // Ensure this pred always jumps to block
                 //
-                if (pred->bbJumpKind == BBJ_NONE)
-                {
-                    pred->bbJumpKind = BBJ_ALWAYS;
-                    pred->bbJumpDest = block;
-                }
-                assert(pred->bbJumpKind == BBJ_ALWAYS);
+                assert(pred->KindIs(BBJ_ALWAYS));
+                assert(pred->TargetIs(block));
             }
         }
 
@@ -1705,8 +1686,9 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-            intermediary->bbFlags |= BBF_IMPORTED;
+            BasicBlock* intermediary =
+                m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
+            intermediary->SetFlags(BBF_IMPORTED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
             m_comp->fgAddRefPred(block, intermediary);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
@@ -1742,6 +1724,10 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
     if ((JitConfig.JitScalableProfiling() > 0) && (JitConfig.JitInterlockedProfiling() > 0))
     {
         numCountersPerProbe = 2;
+    }
+    else if (JitConfig.JitCounterPadding() > 0)
+    {
+        numCountersPerProbe = (unsigned)JitConfig.JitCounterPadding();
     }
 
     // Walk the bbSparseProbeList, emitting one schema element per...
@@ -1942,6 +1928,41 @@ public:
 };
 
 //------------------------------------------------------------------------
+// ValueHistogramProbeVisitor: invoke functor on each node requiring a generic value probe
+//
+template <class TFunctor>
+class ValueHistogramProbeVisitor final : public GenTreeVisitor<ValueHistogramProbeVisitor<TFunctor>>
+{
+public:
+    enum
+    {
+        DoPreOrder = true
+    };
+
+    TFunctor& m_functor;
+    Compiler* m_compiler;
+
+    ValueHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
+        : GenTreeVisitor<ValueHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+    {
+    }
+
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* const node = *use;
+        if (node->IsCall() && node->AsCall()->IsSpecialIntrinsic())
+        {
+            const NamedIntrinsic ni = m_compiler->lookupNamedIntrinsic(node->AsCall()->gtCallMethHnd);
+            if ((ni == NI_System_Buffer_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
+            {
+                m_functor(m_compiler, node);
+            }
+        }
+        return Compiler::WALK_CONTINUE;
+    }
+};
+
+//------------------------------------------------------------------------
 // BuildHandleHistogramProbeSchemaGen: functor that creates class probe schema elements
 //
 class BuildHandleHistogramProbeSchemaGen
@@ -2003,6 +2024,35 @@ public:
         schemaElem.Count = ICorJitInfo::HandleHistogram32::SIZE;
         m_schema.push_back(schemaElem);
 
+        m_schemaCount++;
+    }
+};
+
+class BuildValueHistogramProbeSchemaGen
+{
+    Schema&   m_schema;
+    unsigned& m_schemaCount;
+
+public:
+    BuildValueHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
+        : m_schema(schema), m_schemaCount(schemaCount)
+    {
+    }
+
+    void operator()(Compiler* compiler, GenTree* call)
+    {
+        ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
+        schemaElem.Count                                 = 1;
+        schemaElem.InstrumentationKind                   = compiler->opts.compCollect64BitCounts
+                                             ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
+        schemaElem.ILOffset = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+        m_schema.push_back(schemaElem);
+        m_schemaCount++;
+
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::ValueHistogram;
+        schemaElem.Count               = ICorJitInfo::HandleHistogram32::SIZE;
+        m_schema.push_back(schemaElem);
         m_schemaCount++;
     }
 };
@@ -2205,6 +2255,85 @@ private:
 };
 
 //------------------------------------------------------------------------
+// ValueHistogramProbeInserter: functor that adds generic probes
+//
+class ValueHistogramProbeInserter
+{
+    Schema&   m_schema;
+    uint8_t*  m_profileMemory;
+    int*      m_currentSchemaIndex;
+    unsigned& m_instrCount;
+
+public:
+    ValueHistogramProbeInserter(Schema& schema, uint8_t* profileMemory, int* pCurrentSchemaIndex, unsigned& instrCount)
+        : m_schema(schema)
+        , m_profileMemory(profileMemory)
+        , m_currentSchemaIndex(pCurrentSchemaIndex)
+        , m_instrCount(instrCount)
+    {
+    }
+
+    void operator()(Compiler* compiler, GenTree* node)
+    {
+        if (*m_currentSchemaIndex >= (int)m_schema.size())
+        {
+            return;
+        }
+
+        assert(node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_Buffer_Memmove) ||
+               node->AsCall()->IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual));
+
+        const ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
+        if (countEntry.ILOffset !=
+            static_cast<int32_t>(node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset))
+        {
+            return;
+        }
+
+        bool is32 = countEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
+        bool is64 = countEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount;
+        if (!is32 && !is64)
+        {
+            return;
+        }
+
+        assert(*m_currentSchemaIndex + 2 <= (int)m_schema.size());
+        const ICorJitInfo::PgoInstrumentationSchema& tableEntry = m_schema[*m_currentSchemaIndex + 1];
+        assert((tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogram));
+        uint8_t* hist = &m_profileMemory[countEntry.Offset];
+        assert(hist != nullptr);
+
+        *m_currentSchemaIndex += 2;
+
+        GenTree** lenArgRef = &node->AsCall()->gtArgs.GetUserArgByIndex(2)->EarlyNodeRef();
+
+        // We have Memmove(dst, src, len) and we want to insert a call to CORINFO_HELP_VALUEPROFILE for the len:
+        //
+        //  \--*  COMMA     long
+        //     +--*  CALL help void   CORINFO_HELP_VALUEPROFILE
+        //     |  +--*  COMMA     long
+        //     |  |  +--*  STORE_LCL_VAR long  tmp
+        //     |  |  |  \--*  (node to poll)
+        //     |  |  \--*  LCL_VAR   long   tmp
+        //     |  \--*  CNS_INT   long   <hist>
+        //     \--*  LCL_VAR   long   tmp
+        //
+
+        const unsigned lenTmpNum      = compiler->lvaGrabTemp(true DEBUGARG("length histogram profile tmp"));
+        GenTree*       storeLenToTemp = compiler->gtNewTempStore(lenTmpNum, *lenArgRef);
+        GenTree*       lengthLocal    = compiler->gtNewLclvNode(lenTmpNum, genActualType(*lenArgRef));
+        GenTreeOp* lengthNode = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), storeLenToTemp, lengthLocal);
+        GenTree*   histNode   = compiler->gtNewIconNode(reinterpret_cast<ssize_t>(hist), TYP_I_IMPL);
+        unsigned   helper     = is32 ? CORINFO_HELP_VALUEPROFILE32 : CORINFO_HELP_VALUEPROFILE64;
+        GenTreeCall* helperCallNode = compiler->gtNewHelperCallNode(helper, TYP_VOID, lengthNode, histNode);
+
+        *lenArgRef = compiler->gtNewOperNode(GT_COMMA, lengthLocal->TypeGet(), helperCallNode,
+                                             compiler->gtCloneExpr(lengthLocal));
+        m_instrCount++;
+    }
+};
+
+//------------------------------------------------------------------------
 // HandleHistogramProbeInstrumentor: instrumentor that adds a class probe to each
 //   virtual call in the basic block
 //
@@ -2216,7 +2345,25 @@ public:
     }
     bool ShouldProcess(BasicBlock* block) override
     {
-        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
+    }
+    void Prepare(bool isPreImport) override;
+    void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
+    void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
+};
+
+//------------------------------------------------------------------------
+// ValueInstrumentor: instrumentor that adds a generic probe for integer values
+//
+class ValueInstrumentor : public Instrumentor
+{
+public:
+    ValueInstrumentor(Compiler* comp) : Instrumentor(comp)
+    {
+    }
+    bool ShouldProcess(BasicBlock* block) override
+    {
+        return block->HasFlag(BBF_IMPORTED) && !block->HasFlag(BBF_INTERNAL);
     }
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -2256,7 +2403,7 @@ void HandleHistogramProbeInstrumentor::Prepare(bool isPreImport)
 //
 void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    if ((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0)
+    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -2285,7 +2432,7 @@ void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Sc
 //
 void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
-    if ((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0)
+    if (!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE))
     {
         return;
     }
@@ -2302,6 +2449,58 @@ void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& sch
 
     HandleHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
     HandleHistogramProbeVisitor<HandleHistogramProbeInserter> visitor(m_comp, insertProbes);
+    for (Statement* const stmt : block->Statements())
+    {
+        visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    }
+}
+
+void ValueInstrumentor::Prepare(bool isPreImport)
+{
+    if (isPreImport)
+    {
+        return;
+    }
+
+#ifdef DEBUG
+    // Set schema index to invalid value
+    //
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        block->bbCountSchemaIndex = -1;
+    }
+#endif
+}
+
+void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
+{
+    if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
+    {
+        return;
+    }
+
+    block->bbHistogramSchemaIndex = (int)schema.size();
+
+    BuildValueHistogramProbeSchemaGen                             schemaGen(schema, m_schemaCount);
+    ValueHistogramProbeVisitor<BuildValueHistogramProbeSchemaGen> visitor(m_comp, schemaGen);
+    for (Statement* const stmt : block->Statements())
+    {
+        visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    }
+}
+
+void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
+{
+    if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
+    {
+        return;
+    }
+
+    int histogramSchemaIndex = block->bbHistogramSchemaIndex;
+    assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
+
+    ValueHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
+    ValueHistogramProbeVisitor<ValueHistogramProbeInserter> visitor(m_comp, insertProbes);
     for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -2370,6 +2569,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         {
             fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
             fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+            fgValueInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
             return PhaseStatus::MODIFIED_NOTHING;
         }
     }
@@ -2407,11 +2607,22 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
+    if (!prejit && JitConfig.JitProfileValues())
+    {
+        fgValueInstrumentor = new (this, CMK_Pgo) ValueInstrumentor(this);
+    }
+    else
+    {
+        JITDUMP("Not doing generic profiling, because %s\n", prejit ? "prejit" : "DOTNET_JitProfileValues=0")
+        fgValueInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+    }
+
     // Make pre-import preparations.
     //
     const bool isPreImport = true;
     fgCountInstrumentor->Prepare(isPreImport);
     fgHistogramInstrumentor->Prepare(isPreImport);
+    fgValueInstrumentor->Prepare(isPreImport);
 
     return PhaseStatus::MODIFIED_NOTHING;
 }
@@ -2441,6 +2652,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     const bool isPreImport = false;
     fgCountInstrumentor->Prepare(isPreImport);
     fgHistogramInstrumentor->Prepare(isPreImport);
+    fgValueInstrumentor->Prepare(isPreImport);
 
     // Walk the flow graph to build up the instrumentation schema.
     //
@@ -2456,15 +2668,21 @@ PhaseStatus Compiler::fgInstrumentMethod()
         {
             fgHistogramInstrumentor->BuildSchemaElements(block, schema);
         }
+
+        if (fgValueInstrumentor->ShouldProcess(block))
+        {
+            fgValueInstrumentor->BuildSchemaElements(block, schema);
+        }
     }
 
     // Even though we haven't yet instrumented, we may have made changes in anticipation...
     //
-    const bool madeAnticipatoryChanges = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
+    const bool madeAnticipatoryChanges = fgCountInstrumentor->ModifiedFlow() ||
+                                         fgHistogramInstrumentor->ModifiedFlow() || fgValueInstrumentor->ModifiedFlow();
     const PhaseStatus earlyExitPhaseStatus =
         madeAnticipatoryChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 
-    // Optionally, when jitting, if there were no class probes and only one count probe,
+    // Optionally, when jitting, if there were no class probes, no value probes and only one count probe,
     // suppress instrumentation.
     //
     // We leave instrumentation in place when prejitting as the sample hits in the method
@@ -2483,10 +2701,11 @@ PhaseStatus Compiler::fgInstrumentMethod()
         minimalProbeMode = (JitConfig.JitMinimalJitProfiling() > 0);
     }
 
-    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) && (fgHistogramInstrumentor->SchemaCount() == 0))
+    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) &&
+        (fgHistogramInstrumentor->SchemaCount() == 0) && (fgValueInstrumentor->SchemaCount() == 0))
     {
-        JITDUMP(
-            "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
+        JITDUMP("Not instrumenting method: minimal probing enabled, and method has only one counter and no class and "
+                "no value probes\n");
 
         return earlyExitPhaseStatus;
     }
@@ -2497,8 +2716,9 @@ PhaseStatus Compiler::fgInstrumentMethod()
         return earlyExitPhaseStatus;
     }
 
-    JITDUMP("Instrumenting method: %d count probes and %d class probes\n", fgCountInstrumentor->SchemaCount(),
-            fgHistogramInstrumentor->SchemaCount());
+    JITDUMP("Instrumenting method: %d count probes, %d class probes and %d value probes\n",
+            fgCountInstrumentor->SchemaCount(), fgHistogramInstrumentor->SchemaCount(),
+            fgValueInstrumentor->SchemaCount())
 
     assert(schema.size() > 0);
 
@@ -2545,6 +2765,11 @@ PhaseStatus Compiler::fgInstrumentMethod()
         {
             fgHistogramInstrumentor->Instrument(block, schema, profileMemory);
         }
+
+        if (fgValueInstrumentor->ShouldInstrument(block))
+        {
+            fgValueInstrumentor->Instrument(block, schema, profileMemory);
+        }
     }
 
     // Verify we instrumented everything we created schemas for.
@@ -2560,6 +2785,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     fgCountInstrumentor->InstrumentMethodEntry(schema, profileMemory);
     fgHistogramInstrumentor->InstrumentMethodEntry(schema, profileMemory);
+    fgValueInstrumentor->InstrumentMethodEntry(schema, profileMemory);
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -3158,7 +3384,7 @@ void EfficientEdgeCountReconstructor::Prepare()
         m_unknownBlocks++;
 
 #ifdef DEBUG
-        if (block->bbJumpKind == BBJ_RETURN)
+        if (block->KindIs(BBJ_RETURN))
         {
             nReturns++;
         }
@@ -3225,7 +3451,7 @@ void EfficientEdgeCountReconstructor::Prepare()
                     CLRRandom* const random =
                         m_comp->impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomEdgeCounts());
 
-                    const bool isReturn = sourceBlock->bbJumpKind == BBJ_RETURN;
+                    const bool isReturn = sourceBlock->KindIs(BBJ_RETURN);
 
                     // We simulate the distribution of counts seen in StdOptimizationData.Mibc.
                     //
@@ -3355,7 +3581,7 @@ void EfficientEdgeCountReconstructor::Solve()
         // The ideal solver order is likely reverse postorder over the depth-first spanning tree.
         // We approximate it here by running from last node to first.
         //
-        for (BasicBlock* block = m_comp->fgLastBB; (block != nullptr); block = block->bbPrev)
+        for (BasicBlock* block = m_comp->fgLastBB; (block != nullptr); block = block->Prev())
         {
             BlockInfo* const info = BlockToInfo(block);
 
@@ -3795,8 +4021,8 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     {
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
-        assert(block->bbJumpDest != nullptr);
-        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->bbJumpDest, block);
+        assert(block->HasInitializedTarget());
+        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetTarget(), block);
         assert(flowEdge != nullptr);
         flowEdge->setLikelihood(1.0);
         return;
@@ -3806,7 +4032,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     //
     // This can happen because bome BBJ_LEAVE blocks may have been missed during
     // our spanning tree walk since we don't know where all the finallies can return
-    // to just yet (specially, in WalkSpanningTree, we may not add the bbJumpDest of
+    // to just yet (specially, in WalkSpanningTree, we may not add the bbTarget of
     // a BBJ_LEAVE to the worklist).
     //
     // Worst case those missed blocks dominate other blocks so we can't limit
@@ -3914,7 +4140,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 //
 void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, BlockInfo* info)
 {
-    switch (block->bbJumpKind)
+    switch (block->GetKind())
     {
         case BBJ_SWITCH:
             MarkInterestingSwitches(block, info);
@@ -3941,7 +4167,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, B
 //
 void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block, BlockInfo* info)
 {
-    assert(block->bbJumpKind == BBJ_SWITCH);
+    assert(block->KindIs(BBJ_SWITCH));
 
     // Thresholds for detecting a dominant switch case.
     //
@@ -4008,8 +4234,8 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // If it turns out often we fail at this stage, we might consider building a histogram of switch case
     // values at runtime, similar to what we do for classes at virtual call sites.
     //
-    const unsigned     caseCount    = block->bbJumpSwt->bbsCount;
-    BasicBlock** const jumpTab      = block->bbJumpSwt->bbsDstTab;
+    const unsigned     caseCount    = block->GetSwitchTargets()->bbsCount;
+    BasicBlock** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
     unsigned           dominantCase = caseCount;
 
     for (unsigned i = 0; i < caseCount; i++)
@@ -4035,7 +4261,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
         return;
     }
 
-    if (block->bbJumpSwt->bbsHasDefault && (dominantCase == caseCount - 1))
+    if (block->GetSwitchTargets()->bbsHasDefault && (dominantCase == caseCount - 1))
     {
         // Dominant case is the default case.
         // This effectively gets peeled already, so defer.
@@ -4049,9 +4275,9 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
             "; marking for peeling\n",
             dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
 
-    block->bbJumpSwt->bbsHasDominantCase  = true;
-    block->bbJumpSwt->bbsDominantCase     = dominantCase;
-    block->bbJumpSwt->bbsDominantFraction = fraction;
+    block->GetSwitchTargets()->bbsHasDominantCase  = true;
+    block->GetSwitchTargets()->bbsDominantCase     = dominantCase;
+    block->GetSwitchTargets()->bbsDominantFraction = fraction;
 }
 
 //------------------------------------------------------------------------
@@ -4405,7 +4631,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
         weight  = 0;
         iterations++;
 
-        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
+        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
         {
             if (!bDst->hasProfileWeight() && (bDst->bbPreds != nullptr))
             {
@@ -4421,13 +4647,9 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bSrc = bDst->bbPreds->getSourceBlock();
 
                     // Does this block flow into only one other block
-                    if (bSrc->bbJumpKind == BBJ_NONE)
+                    if (bSrc->KindIs(BBJ_ALWAYS))
                     {
-                        bOnlyNext = bSrc->bbNext;
-                    }
-                    else if (bSrc->bbJumpKind == BBJ_ALWAYS)
-                    {
-                        bOnlyNext = bSrc->bbJumpDest;
+                        bOnlyNext = bSrc->GetTarget();
                     }
                     else
                     {
@@ -4442,13 +4664,13 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 }
 
                 // Does this block flow into only one other block
-                if (bDst->bbJumpKind == BBJ_NONE)
+                if (bDst->KindIs(BBJ_ALWAYS))
                 {
-                    bOnlyNext = bDst->bbNext;
+                    bOnlyNext = bDst->GetTarget();
                 }
-                else if (bDst->bbJumpKind == BBJ_ALWAYS)
+                else if (bDst->KindIs(BBJ_CALLFINALLYRET)) // TODO-Quirk: remove (was added to reduce asmdiffs)
                 {
-                    bOnlyNext = bDst->bbJumpDest;
+                    bOnlyNext = bDst->GetFinallyContinuation();
                 }
                 else
                 {
@@ -4477,7 +4699,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     // To minimize asmdiffs for now, modify weights only if splitting.
                     if (fgFirstColdBlock != nullptr)
                     {
-                        if (bSrc->bbJumpKind == BBJ_CALLFINALLY)
+                        if (bSrc->KindIs(BBJ_CALLFINALLY))
                         {
                             newWeight = bSrc->bbWeight;
                         }
@@ -4495,11 +4717,11 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bDst->bbWeight = newWeight;
                     if (newWeight == BB_ZERO_WEIGHT)
                     {
-                        bDst->bbFlags |= BBF_RUN_RARELY;
+                        bDst->SetFlags(BBF_RUN_RARELY);
                     }
                     else
                     {
-                        bDst->bbFlags &= ~BBF_RUN_RARELY;
+                        bDst->RemoveFlags(BBF_RUN_RARELY);
                     }
                 }
             }
@@ -4572,9 +4794,9 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
     {
         // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
         //
-        while (firstILBlock->bbFlags & BBF_INTERNAL)
+        while (firstILBlock->HasFlag(BBF_INTERNAL))
         {
-            firstILBlock = firstILBlock->bbNext;
+            firstILBlock = firstILBlock->Next();
         }
     }
 
@@ -4647,7 +4869,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
     JITDUMP("Initial weight assignments\n\n");
 
     // Now we will compute the initial m_edgeWeightMin and m_edgeWeightMax values
-    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
+    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
     {
         weight_t bDstWeight = bDst->bbWeight;
 
@@ -4679,12 +4901,12 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
             }
 
             slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-            switch (bSrc->bbJumpKind)
+            switch (bSrc->GetKind())
             {
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
-                case BBJ_NONE:
                 case BBJ_CALLFINALLY:
+                case BBJ_CALLFINALLYRET:
                     // We know the exact edge weight
                     assignOK &= edge->setEdgeWeightMinChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
                     assignOK &= edge->setEdgeWeightMaxChecked(bSrc->bbWeight, bDst, slop, &usedSlop);
@@ -4704,7 +4926,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
 
                 default:
                     // We should never have an edge that starts from one of these jump kinds
-                    noway_assert(!"Unexpected bbJumpKind");
+                    noway_assert(!"Unexpected bbKind");
                     break;
             }
 
@@ -4738,7 +4960,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
         hasIncompleteEdgeWeights = false;
 
         JITDUMP("\n -- step 1 --\n");
-        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
+        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
         {
             for (FlowEdge* const edge : bDst->PredEdges())
             {
@@ -4748,18 +4970,18 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                 bSrc = edge->getSourceBlock();
 
                 slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-                if (bSrc->bbJumpKind == BBJ_COND)
+                if (bSrc->KindIs(BBJ_COND))
                 {
                     weight_t    diff;
                     FlowEdge*   otherEdge;
                     BasicBlock* otherDst;
-                    if (bSrc->bbNext == bDst)
+                    if (bSrc->FalseTargetIs(bDst))
                     {
-                        otherDst = bSrc->bbJumpDest;
+                        otherDst = bSrc->GetTrueTarget();
                     }
                     else
                     {
-                        otherDst = bSrc->bbNext;
+                        otherDst = bSrc->GetFalseTarget();
                     }
                     otherEdge = fgGetPredForBlock(otherDst, bSrc);
 
@@ -4834,7 +5056,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
 
         JITDUMP("\n -- step 2 --\n");
 
-        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
+        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
         {
             weight_t bDstWeight = bDst->bbWeight;
 

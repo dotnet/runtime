@@ -9,7 +9,7 @@ namespace Test
     public class AA
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool[] cond = new bool[40];
             while (cond[0])
@@ -36,7 +36,6 @@ namespace Test
             }
             while (cond[15]) ;
             while (cond[16]) ;
-            return 100;
         }
     }
 }

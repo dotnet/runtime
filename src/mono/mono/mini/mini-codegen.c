@@ -548,6 +548,9 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_VCALL:
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
+	case OP_XCALL:
+	case OP_XCALL_REG:
+	case OP_XCALL_MEMBASE:
 	case OP_VCALL2:
 	case OP_VCALL2_REG:
 	case OP_VCALL2_MEMBASE:
@@ -2165,8 +2168,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 MONO_RESTORE_WARNING
 
+/* Returns -1 if opcode is not a conditional */
 CompRelation
-mono_opcode_to_cond (int opcode)
+mono_opcode_to_cond_unchecked (int opcode)
 {
 	switch (opcode) {
 	case OP_CEQ:
@@ -2286,10 +2290,21 @@ mono_opcode_to_cond (int opcode)
 	case OP_CMOV_LGT_UN:
 		return CMP_GT_UN;
 	default:
+		return (CompRelation)-1;
+	}
+}
+
+CompRelation
+mono_opcode_to_cond (int opcode)
+{
+	CompRelation rel = mono_opcode_to_cond_unchecked (opcode);
+
+	if (rel == (CompRelation)-1) {
 		printf ("%s\n", mono_inst_name (opcode));
 		g_assert_not_reached ();
 		return (CompRelation)0;
 	}
+	return rel;
 }
 
 CompRelation

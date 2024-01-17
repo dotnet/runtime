@@ -12,8 +12,6 @@ namespace System.Net.Http.Json
 {
     internal static class JsonHelpers
     {
-        internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         internal static JsonTypeInfo GetJsonTypeInfo(Type type, JsonSerializerOptions? options)
@@ -22,7 +20,7 @@ namespace System.Net.Http.Json
 
             // Resolves JsonTypeInfo metadata using the appropriate JsonSerializerOptions configuration,
             // following the semantics of the JsonSerializer reflection methods.
-            options ??= s_defaultSerializerOptions;
+            options ??= JsonSerializerOptions.Web;
             options.MakeReadOnly(populateMissingResolver: true);
             return options.GetTypeInfo(type);
         }

@@ -25,7 +25,7 @@ class ClassB : ClassA
 public class Program
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {
@@ -33,7 +33,6 @@ public class Program
             Test(new ClassB(), new ClassA(), new Base(), true);
             Thread.Sleep(15);
         }
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

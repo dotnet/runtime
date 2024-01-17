@@ -199,11 +199,30 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
         }
         else
         {
-            printRegMaskInt(_rsMaskVars);
+            printRegMask(_rsMaskVars);
             m_rsCompiler->GetEmitter()->emitDispRegSet(_rsMaskVars);
+
+            // deadSet = old - new
+            regMaskTP deadSet = _rsMaskVars & ~newMaskVars;
+
+            // bornSet = new - old
+            regMaskTP bornSet = newMaskVars & ~_rsMaskVars;
+
+            if (deadSet != RBM_NONE)
+            {
+                printf(" -");
+                m_rsCompiler->GetEmitter()->emitDispRegSet(deadSet);
+            }
+
+            if (bornSet != RBM_NONE)
+            {
+                printf(" +");
+                m_rsCompiler->GetEmitter()->emitDispRegSet(bornSet);
+            }
+
             printf(" => ");
         }
-        printRegMaskInt(newMaskVars);
+        printRegMask(newMaskVars);
         m_rsCompiler->GetEmitter()->emitDispRegSet(newMaskVars);
         printf("\n");
     }
@@ -490,7 +509,7 @@ TempDsc* RegSet::rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regI
     // Get the tree's SpillDsc
     SpillDsc* prevDsc;
     SpillDsc* spillDsc = rsGetSpillInfo(tree, oldReg, &prevDsc);
-    PREFIX_ASSUME(spillDsc != nullptr);
+    assert(spillDsc != nullptr);
 
     // Get the temp
     TempDsc* temp = rsGetSpillTempWord(oldReg, spillDsc, prevDsc);

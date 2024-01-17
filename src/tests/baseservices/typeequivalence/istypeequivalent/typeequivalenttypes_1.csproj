@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <CLRTestKind>SharedLibrary</CLRTestKind>
     <DefineConstants>$(DefineConstants);TYPEEQUIVALENCEASSEMBLY_1</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

@@ -26,7 +26,9 @@
 
 #include <winwrap.h>
 
+#ifdef HOST_WINDOWS
 #include <dbghelp.h>
+#endif
 
 #include <wchar.h>
 #include <stdio.h>
@@ -47,11 +49,6 @@
 #include <xcordebug.h>
 #include "dacimpl.h"
 
-
-#define STRSAFE_NO_DEPRECATE
-#include <strsafe.h>
-#undef _ftcscat
-#undef _ftcscpy
 
 // from ntstatus.h
 #define STATUS_STOWED_EXCEPTION          ((NTSTATUS)0xC000027BL)

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>library</OutputType>
     <IlasmFlags>$(IlasmFlags) -DEBUG=IMPL</IlasmFlags>
-    <CLRTestKind>BuildOnly</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="attribute.csproj" />

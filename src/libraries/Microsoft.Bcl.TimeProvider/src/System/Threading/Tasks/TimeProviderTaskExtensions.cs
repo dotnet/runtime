@@ -15,7 +15,7 @@ namespace System.Threading.Tasks
 #if !NET8_0_OR_GREATER
         private sealed class DelayState : TaskCompletionSource<bool>
         {
-            public DelayState(CancellationToken cancellationToken) : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            public DelayState(CancellationToken cancellationToken)
             {
                 CancellationToken = cancellationToken;
             }
@@ -89,7 +89,15 @@ namespace System.Threading.Tasks
             state.Registration = cancellationToken.Register(static delayState =>
             {
                 DelayState s = (DelayState)delayState!;
-                s.TrySetCanceled(s.CancellationToken);
+
+                // When cancellation is requested, we need to force the task continuation to run asynchronously
+                // to avoid doing arbitrary amounts of work as part of a call to CancellationTokenSource.Cancel.
+                ThreadPool.UnsafeQueueUserWorkItem(static state =>
+                {
+                    DelayState theState = (DelayState)state;
+                    theState.TrySetCanceled(theState.CancellationToken);
+                }, s);
+
                 s.Registration.Dispose();
                 s.Timer?.Dispose();
             }, state);
@@ -155,7 +163,7 @@ namespace System.Threading.Tasks
 
             if (timeout == TimeSpan.Zero)
             {
-                Task.FromException(new TimeoutException());
+                return Task.FromException(new TimeoutException());
             }
 
             if (cancellationToken.IsCancellationRequested)

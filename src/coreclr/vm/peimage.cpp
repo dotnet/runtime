@@ -141,11 +141,11 @@ ULONG PEImage::Release()
         result=InterlockedDecrement(&m_refCount);
         if (result == 0 )
         {
-            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %s\n", m_path.GetUTF8()));
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing %p\n", this));
             if(m_bInHashMap)
             {
                 PEImageLocator locator(this);
-                PEImage* deleted = (PEImage *)s_Images->DeleteValue(GetPathHash(), &locator);
+                PEImage* deleted = (PEImage *)s_Images->DeleteValue(m_pathHash, &locator);
                 _ASSERTE(deleted == this);
             }
         }
@@ -186,7 +186,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         {
             // Drive path
             i++;
-            SString sDrivePath(SString::Literal, ":\\");
+            SString sDrivePath(SString::Literal, W(":\\"));
             CCHECK(path.Skip(i, sDrivePath));
         }
         else
@@ -249,12 +249,7 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     EX_TRY
     {
         SString path(SString::Literal, pLocator->m_pPath);
-
-#ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-        if (pImage->GetPath().Equals(path))
-#else
         if (pImage->GetPath().EqualsCaseInsensitive(path))
-#endif
         {
             ret = TRUE;
         }
@@ -623,6 +618,7 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 PEImage::PEImage():
     m_path(),
+    m_pathHash(0),
     m_refCount(1),
     m_bInHashMap(FALSE),
     m_bundleFileLocation(),

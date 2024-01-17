@@ -22,17 +22,17 @@ namespace System.Security.Cryptography.Pkcs
             lookup.Add(Oids.ECDsaWithSha3_384, new ECDsaCmsSignature(Oids.ECDsaWithSha3_384, HashAlgorithmName.SHA3_384));
             lookup.Add(Oids.ECDsaWithSha3_512, new ECDsaCmsSignature(Oids.ECDsaWithSha3_512, HashAlgorithmName.SHA3_512));
 #endif
-            lookup.Add(Oids.EcPublicKey, new ECDsaCmsSignature(null, default));
+            lookup.Add(Oids.EcPublicKey, new ECDsaCmsSignature(null, null));
         }
 
         private sealed partial class ECDsaCmsSignature : CmsSignature
         {
-            private readonly HashAlgorithmName _expectedDigest;
+            private readonly HashAlgorithmName? _expectedDigest;
             private readonly string? _signatureAlgorithm;
 
             internal override RSASignaturePadding? SignaturePadding => null;
 
-            internal ECDsaCmsSignature(string? signatureAlgorithm, HashAlgorithmName expectedDigest)
+            internal ECDsaCmsSignature(string? signatureAlgorithm, HashAlgorithmName? expectedDigest)
             {
                 _signatureAlgorithm = signatureAlgorithm;
                 _expectedDigest = expectedDigest;
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Pkcs
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
             {
-                if (_expectedDigest != digestAlgorithmName)
+                if (_expectedDigest != null && _expectedDigest != digestAlgorithmName)
                 {
                     throw new CryptographicException(
                         SR.Format(

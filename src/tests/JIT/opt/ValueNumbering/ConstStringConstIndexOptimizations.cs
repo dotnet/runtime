@@ -103,7 +103,7 @@ public static class ConstStringConstIndexOptimizations
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {
@@ -116,6 +116,5 @@ public static class ConstStringConstIndexOptimizations
             ThrowIOORE(() => ReadonlyFieldCase2());
             Thread.Sleep(15);
         }
-        return 100;
     }
 }

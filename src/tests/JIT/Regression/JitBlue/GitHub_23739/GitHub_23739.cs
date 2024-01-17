@@ -188,7 +188,7 @@ public class GitHub_23739
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Cls1f cls1f = new Cls1f();
         Test1f(cls1f);
@@ -207,7 +207,5 @@ public class GitHub_23739
 
         Cls6f cls6f = new Cls6f();
         Test6f(cls6f);
-
-        return 100;
     }
 }

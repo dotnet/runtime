@@ -567,6 +567,12 @@ struct Agnostic_GetArgType_Value
     DWORD     exceptionCode;
 };
 
+struct Agnostic_GetExactClassesResult
+{
+    int numClasses;
+    DWORD classes;
+};
+
 // Agnostic_ConfigIntInfo combines as a single key the name
 // and defaultValue of a integer config query.
 // Note: nameIndex is treated as a DWORD index to the name string.
@@ -696,12 +702,6 @@ struct allocGCInfoDetails
 {
     size_t size;
     void*  retval;
-};
-
-struct Agnostic_AddressMap
-{
-    DWORDLONG Address;
-    DWORD     size;
 };
 
 struct Agnostic_AllocGCInfo

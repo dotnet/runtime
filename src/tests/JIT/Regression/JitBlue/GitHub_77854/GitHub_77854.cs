@@ -9,10 +9,9 @@ using Xunit;
 public class Program
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new Program().TestFunction();
-        return 100;
     }
 
     private TestStruct CreateStruct(FourKStruct s, int i)

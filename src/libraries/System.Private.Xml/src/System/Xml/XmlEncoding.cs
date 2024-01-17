@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
-using System.Text;
 using System.Diagnostics;
+using System.Text;
 
 namespace System.Xml
 {
@@ -322,20 +322,11 @@ namespace System.Xml
             ucs4Decoder = new Ucs4Decoder1234();
         }
 
-        public override string EncodingName
-        {
-            get
-            {
-                return "ucs-4 (Bigendian)";
-            }
-        }
+        public override string EncodingName => "ucs-4 (Bigendian)";
 
-        public override byte[] GetPreamble()
-        {
-            return new byte[4] { 0x00, 0x00, 0xfe, 0xff };
-        }
+        public override byte[] GetPreamble() => [0x00, 0x00, 0xfe, 0xff];
 
-        public override ReadOnlySpan<byte> Preamble => new byte[4] { 0x00, 0x00, 0xfe, 0xff }; // rely on C# compiler optimization to eliminate allocation
+        public override ReadOnlySpan<byte> Preamble => [0x00, 0x00, 0xfe, 0xff];
     }
 
     internal sealed class Ucs4Encoding4321 : Ucs4Encoding
@@ -345,20 +336,11 @@ namespace System.Xml
             ucs4Decoder = new Ucs4Decoder4321();
         }
 
-        public override string EncodingName
-        {
-            get
-            {
-                return "ucs-4";
-            }
-        }
+        public override string EncodingName => "ucs-4";
 
-        public override byte[] GetPreamble()
-        {
-            return new byte[4] { 0xff, 0xfe, 0x00, 0x00 };
-        }
+        public override byte[] GetPreamble() => [0xff, 0xfe, 0x00, 0x00];
 
-        public override ReadOnlySpan<byte> Preamble => new byte[4] { 0xff, 0xfe, 0x00, 0x00 };
+        public override ReadOnlySpan<byte> Preamble => [0xff, 0xfe, 0x00, 0x00];
     }
 
     internal sealed class Ucs4Encoding2143 : Ucs4Encoding
@@ -368,20 +350,11 @@ namespace System.Xml
             ucs4Decoder = new Ucs4Decoder2143();
         }
 
-        public override string EncodingName
-        {
-            get
-            {
-                return "ucs-4 (order 2143)";
-            }
-        }
+        public override string EncodingName => "ucs-4 (order 2143)";
 
-        public override byte[] GetPreamble()
-        {
-            return new byte[4] { 0x00, 0x00, 0xff, 0xfe };
-        }
+        public override byte[] GetPreamble() => [0x00, 0x00, 0xff, 0xfe];
 
-        public override ReadOnlySpan<byte> Preamble => new byte[4] { 0x00, 0x00, 0xff, 0xfe };
+        public override ReadOnlySpan<byte> Preamble => [0x00, 0x00, 0xff, 0xfe];
     }
 
     internal sealed class Ucs4Encoding3412 : Ucs4Encoding
@@ -391,20 +364,11 @@ namespace System.Xml
             ucs4Decoder = new Ucs4Decoder3412();
         }
 
-        public override string EncodingName
-        {
-            get
-            {
-                return "ucs-4 (order 3412)";
-            }
-        }
+        public override string EncodingName => "ucs-4 (order 3412)";
 
-        public override byte[] GetPreamble()
-        {
-            return new byte[4] { 0xfe, 0xff, 0x00, 0x00 };
-        }
+        public override byte[] GetPreamble() => [0xfe, 0xff, 0x00, 0x00];
 
-        public override ReadOnlySpan<byte> Preamble => new byte[4] { 0xfe, 0xff, 0x00, 0x00 };
+        public override ReadOnlySpan<byte> Preamble => [0xfe, 0xff, 0x00, 0x00];
     }
 
     internal abstract class Ucs4Decoder : Decoder

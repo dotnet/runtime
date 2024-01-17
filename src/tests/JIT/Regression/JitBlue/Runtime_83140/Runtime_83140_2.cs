@@ -22,14 +22,12 @@ public class Runtime_83140_2
 {
     public static C0 s_3 = new C0();
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         // A case where produced incorrectly typed IR when optimizing NE(relop, 0) into relop
         if ((s_3.F0 < s_3.F2) & ((s_3.F1 / 13548999118840769392UL) <= 0))
         {
             bool vr1 = 0 != s_3.F0++;
         }
-        
-        return 100;
     }
 }

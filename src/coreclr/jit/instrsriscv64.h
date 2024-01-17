@@ -9,7 +9,7 @@
  *          ld/st/cmp   -- load/store/compare instruction
  *          encode      -- encoding 1
  *
-******************************************************************************/
+ ******************************************************************************/
 
 #if !defined(TARGET_RISCV64)
 #error Unexpected target type
@@ -31,7 +31,7 @@
 // clang-format off
 
 // RV32I & RV64I
-INST(invalid,       "INVALID",        0,    0x00000000)
+INST(invalid,       "INVALID",        0,    BAD_CODE)
 INST(nop,           "nop",            0,    0x00000013)
 
 //// R_R
@@ -241,6 +241,29 @@ INST(fcvt_d_l,      "fcvt.d.l",       0,   0xd2200053)
 INST(fcvt_d_lu,     "fcvt.d.lu",      0,   0xd2300053)
 INST(fmv_d_x,       "fmv.d.x",        0,   0xf2000053)
 
+// RV32A + RV64A (R-type, R_R_R)
+INST(lr_w,          "lr.w",           0,   0x1000202f) // funct5:00010
+INST(lr_d,          "lr.d",           0,   0x1000302f) // funct5:00010
+INST(sc_w,          "sc.w",           0,   0x1800202f) // funct5:00011
+INST(sc_d,          "sc.d",           0,   0x1800302f) // funct5:00011
+INST(amoswap_w,     "amoswap.w",      0,   0x0800202f) // funct5:00001
+INST(amoswap_d,     "amoswap.d",      0,   0x0800302f) // funct5:00001
+INST(amoadd_w,      "amoadd.w",       0,   0x0000202f) // funct5:00000
+INST(amoadd_d,      "amoadd.d",       0,   0x0000302f) // funct5:00000
+INST(amoxor_w,      "amoxor.w",       0,   0x2000202f) // funct5:00100
+INST(amoxor_d,      "amoxor.d",       0,   0x2000302f) // funct5:00100
+INST(amoand_w,      "amoand.w",       0,   0x6000202f) // funct5:01100
+INST(amoand_d,      "amoand.d",       0,   0x6000302f) // funct5:01100
+INST(amoor_w,       "amoor.w",        0,   0x4000202f) // funct5:01000
+INST(amoor_d,       "amoor.d",        0,   0x4000302f) // funct5:01000
+INST(amomin_w,      "amomin.w",       0,   0x8000202f) // funct5:10000
+INST(amomin_d,      "amomin.d",       0,   0x8000302f) // funct5:10000
+INST(amomax_w,      "amomax.w",       0,   0xa000202f) // funct5:10100
+INST(amomax_d,      "amomax.d",       0,   0xa000302f) // funct5:10100
+INST(amominu_w,     "amominu.w",      0,   0xc000202f) // funct5:11000
+INST(amominu_d,     "amominu.d",      0,   0xc000302f) // funct5:11000
+INST(amomaxu_w,     "amomaxu.w",      0,   0xe000202f) // funct5:11100
+INST(amomaxu_d,     "amomaxu.d",      0,   0xe000302f) // funct5:11100
 // clang-format on
 /*****************************************************************************/
 #undef INST

@@ -116,7 +116,7 @@ struct RCW;
     (((size) + PTRALIGNCONST) & (~PTRALIGNCONST))
 #endif //!PtrAlign
 
-// code:Object is the respesentation of an managed object on the GC heap.
+// code:Object is the representation of an managed object on the GC heap.
 //
 // See  code:#ObjectModel for some important subclasses of code:Object
 //
@@ -1168,10 +1168,7 @@ class ReflectModuleBaseObject : public Object
     //  classlib class definition of this object.
     OBJECTREF          m_runtimeType;
     OBJECTREF          m_runtimeAssembly;
-    void*              m_ReflectClass;  // Pointer to the ReflectClass structure
     Module*            m_pData;         // Pointer to the Module
-    void*              m_pGlobals;      // Global values....
-    void*              m_pGlobalsFlds;  // Global Fields....
 
   protected:
     ReflectModuleBaseObject() {LIMITED_METHOD_CONTRACT;}
@@ -1342,12 +1339,6 @@ public:
 
     void SetInternal(Thread *it);
     void ClearInternal();
-
-    INT32 GetManagedThreadId()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ManagedThreadId;
-    }
 
     void SetManagedThreadId(INT32 id)
     {

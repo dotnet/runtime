@@ -156,12 +156,16 @@ namespace System.Reflection.Runtime.Assemblies
         ///
         /// Returns null if the type does not exist. Throws for all other error cases.
         /// </summary>
-        internal RuntimeTypeInfo GetTypeCore(string fullName, bool throwOnError, bool ignoreCase)
+        internal Type GetTypeCore(string fullName, bool throwOnError, bool ignoreCase)
         {
-            RuntimeTypeInfo type = ignoreCase ? GetTypeCoreCaseInsensitive(fullName) : GetTypeCoreCaseSensitive(fullName);
-            if (type == null && throwOnError)
-                throw Helpers.CreateTypeLoadException(fullName, this.FullName);
-            return type;
+            RuntimeTypeInfo? type = ignoreCase ? GetTypeCoreCaseInsensitive(fullName) : GetTypeCoreCaseSensitive(fullName);
+            if (type == null)
+            {
+                if (throwOnError)
+                    throw Helpers.CreateTypeLoadException(fullName, this.FullName);
+                return null;
+            }
+            return type.ToType();
         }
 
         // Types that derive from RuntimeAssembly must implement the following public surface area members
@@ -183,12 +187,6 @@ namespace System.Reflection.Runtime.Assemblies
         public abstract override string ImageRuntimeVersion { get; }
         public abstract override bool Equals(object obj);
         public abstract override int GetHashCode();
-
-        /// <summary>
-        /// Ensures a module is loaded and that its module constructor is executed. If the module is fully
-        /// loaded and its constructor already ran, we do not run it again.
-        /// </summary>
-        internal abstract void RunModuleConstructor();
 
         /// <summary>
         /// Perform a lookup for a type based on a name. Overriders are expected to
@@ -272,7 +270,7 @@ namespace System.Reflection.Runtime.Assemblies
             // Important: The result of this method is the return value of the AppDomain.GetAssemblies() api so
             // so it must return a freshly allocated array on each call.
 
-            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
             IList<AssemblyBindResult> bindResults = binder.GetLoadedAssemblies();
             Assembly[] results = new Assembly[bindResults.Count];
             for (int i = 0; i < bindResults.Count; i++)

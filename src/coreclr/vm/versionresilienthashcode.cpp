@@ -286,7 +286,7 @@ bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHa
             hash->Add(varValue);
             break;
         }
-        
+
         case InlineVar: // 2 byte value which is token change resilient
         {
             uint16_t varValue;
@@ -387,6 +387,12 @@ bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned*
         localSig = pResolver->GetLocalSig();
 
         initLocals = (options & CORINFO_OPT_INIT_LOCALS) == CORINFO_OPT_INIT_LOCALS;
+    }
+    else if (!pMD->HasILHeader())
+    {
+        // Dynamically generated IL methods like UnsafeAccessors may not have
+        // an IL header.
+        return false;
     }
     else
     {

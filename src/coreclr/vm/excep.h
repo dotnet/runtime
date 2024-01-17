@@ -46,6 +46,13 @@ enum LFH {
 
 #include "runtimeexceptionkind.h"
 
+#ifndef TARGET_UNIX
+// Windows uses 64kB as the null-reference area
+#define NULL_AREA_SIZE   (64 * 1024)
+#else // !TARGET_UNIX
+#define NULL_AREA_SIZE   GetOsPageSize()
+#endif // !TARGET_UNIX
+
 class IJitManager;
 
 //
@@ -249,6 +256,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 //==========================================================================
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable);
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj);
 
 //==========================================================================
 // Throw an undecorated runtime exception.
@@ -579,6 +587,7 @@ UINT GetResourceIDForFileLoadExceptionHR(HRESULT hr);
 #define EXCEPTION_NESTED_CALL 0x10      // Nested exception handler call
 #define EXCEPTION_TARGET_UNWIND 0x20    // Target unwind in progress
 #define EXCEPTION_COLLIDED_UNWIND 0x40  // Collided exception handler call
+#define EXCEPTION_SOFTWARE_ORIGINATE 0x80 // Exception originated in software
 
 #define EXCEPTION_UNWIND (EXCEPTION_UNWINDING | EXCEPTION_EXIT_UNWIND | \
                           EXCEPTION_TARGET_UNWIND | EXCEPTION_COLLIDED_UNWIND)
@@ -747,6 +756,9 @@ LONG WatsonLastChance(
 
 bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord);
 
+#ifndef FEATURE_EH_FUNCLETS
+#define g_isNewExceptionHandlingEnabled false
+#endif
 
 inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 {
@@ -756,6 +768,12 @@ inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 #endif // TARGET_AMD64
 
     memcpyNoGCRefs(pDest, pSrc, sizeof(T_CONTEXT) - cbReadOnlyPost);
+#ifdef TARGET_AMD64
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        pDest->ContextFlags = (pDest->ContextFlags & ~(CONTEXT_XSTATE | CONTEXT_FLOATING_POINT)) | CONTEXT_AMD64;
+    }
+#endif // TARGET_AMD64
 }
 
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);

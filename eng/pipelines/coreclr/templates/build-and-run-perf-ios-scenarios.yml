@@ -1,0 +1,159 @@
+parameters:
+  hybridGlobalization: True
+
+jobs:
+  # build mono iOS scenarios HybridGlobalization
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - ios_arm64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: iOSMono
+        isOfficialBuild: false
+        postBuildSteps:
+          - template: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+            parameters:
+              rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+              includeRootFolder: true
+              displayName: iOS Mono Artifacts
+              artifactName: iOSMonoarm64
+              archiveExtension: '.tar.gz'
+              archiveType: tar
+              tarCompression: gz
+              hybridGlobalization: ${{ parameters.hybridGlobalization }}
+
+  # build NativeAOT iOS scenarios HybridGlobalization
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - ios_arm64
+      jobParameters:
+        buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
+        nameSuffix: iOSNativeAOT
+        isOfficialBuild: false
+        postBuildSteps:
+          - template: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+            parameters:
+              rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+              includeRootFolder: true
+              displayName: iOS NativeAOT Artifacts
+              artifactName: iOSNativeAOTarm64
+              archiveExtension: '.tar.gz'
+              archiveType: tar
+              tarCompression: gz
+              hybridGlobalization: ${{ parameters.hybridGlobalization }}
+
+  # run mono iOS scenarios scenarios HybridGlobalization
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - osx_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfiphone12mini'
+        iOSLlvmBuild: False
+        iOSStripSymbols: False
+        hybridGlobalization: ${{ parameters.hybridGlobalization }}
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - osx_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfiphone12mini'
+        iOSLlvmBuild: False
+        iOSStripSymbols: True
+        hybridGlobalization: ${{ parameters.hybridGlobalization }}
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - osx_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfiphone12mini'
+        iOSLlvmBuild: True
+        iOSStripSymbols: False
+        hybridGlobalization: ${{ parameters.hybridGlobalization }}
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - osx_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfiphone12mini'
+        iOSLlvmBuild: True
+        iOSStripSymbols: True
+        hybridGlobalization: ${{ parameters.hybridGlobalization }}
+
+  # run NativeAOT iOS scenarios HybridGlobalization
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+        - osx_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSNativeAOT
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfiphone12mini'
+        iOSStripSymbols: False
+        hybridGlobalization: ${{ parameters.hybridGlobalization }}
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+        - osx_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSNativeAOT
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfiphone12mini'
+        iOSStripSymbols: True
+        hybridGlobalization: ${{ parameters.hybridGlobalization }}

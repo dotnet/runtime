@@ -16,6 +16,22 @@ or for just native rebuild
 ```.sh
 ./build.sh -bl -os wasi -subset mono.runtime+libs.native+mono.wasiruntime -c Debug
 ```
+You can enable full assertion messages for local release builds using
+`-p:MonoEnableAssertMessages=true`
+
+And you can use that runtime pack when building outside of the `dotnet/runtime` tree by overriding the runtime pack via
+
+
+```xml
+    <PropertyGroup>
+        <DotnetRuntimeRepoRoot>../path/to/dotnet/runtime</DotnetRuntimeRepoRoot>
+    </PropertyGroup>
+	<ItemGroup>
+		<!-- update runtime pack to local build -->
+		<ResolvedRuntimePack PackageDirectory="$(DotnetRuntimeRepoRoot)/artifacts/bin/microsoft.netcore.app.runtime.wasi-wasm/Release"
+			Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
+	</ItemGroup>
+```
 
 ### 3. Run it
 

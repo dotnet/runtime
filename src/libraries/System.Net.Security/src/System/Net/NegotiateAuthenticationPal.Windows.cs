@@ -7,11 +7,11 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Principal;
 using System.Security.Authentication.ExtendedProtection;
-using System.Net.Security;
+using System.Security.Principal;
 
 namespace System.Net
 {
@@ -421,28 +421,32 @@ namespace System.Net
                 Debug.Assert(success);
 
                 // alloc new output buffer if not supplied or too small
-                int resultSize = input.Length + sizes.cbMaxSignature;
+                int resultSize = input.Length + sizes.cbSecurityTrailer + sizes.cbBlockSize;
                 Span<byte> outputBuffer = outputWriter.GetSpan(resultSize);
 
                 // make a copy of user data for in-place encryption
-                input.CopyTo(outputBuffer.Slice(sizes.cbMaxSignature, input.Length));
+                input.CopyTo(outputBuffer.Slice(sizes.cbSecurityTrailer, input.Length));
 
                 isEncrypted = requestEncryption;
 
                 fixed (byte* outputPtr = outputBuffer)
                 {
                     // Prepare buffers TOKEN(signature), DATA and Padding.
-                    Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[2];
+                    Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[3];
                     Interop.SspiCli.SecBuffer* tokenBuffer = &unmanagedBuffer[0];
                     Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
+                    Interop.SspiCli.SecBuffer* paddingBuffer = &unmanagedBuffer[2];
                     tokenBuffer->BufferType = SecurityBufferType.SECBUFFER_TOKEN;
                     tokenBuffer->pvBuffer = (IntPtr)(outputPtr);
-                    tokenBuffer->cbBuffer = sizes.cbMaxSignature;
+                    tokenBuffer->cbBuffer = sizes.cbSecurityTrailer;
                     dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
-                    dataBuffer->pvBuffer = (IntPtr)(outputPtr + sizes.cbMaxSignature);
+                    dataBuffer->pvBuffer = (IntPtr)(outputPtr + sizes.cbSecurityTrailer);
                     dataBuffer->cbBuffer = input.Length;
+                    paddingBuffer->BufferType = SecurityBufferType.SECBUFFER_PADDING;
+                    paddingBuffer->pvBuffer = (IntPtr)(outputPtr + sizes.cbSecurityTrailer + input.Length);
+                    paddingBuffer->cbBuffer = sizes.cbBlockSize;
 
-                    Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(2)
+                    Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(3)
                     {
                         pBuffers = unmanagedBuffer
                     };
@@ -460,7 +464,20 @@ namespace System.Net
                         };
                     }
 
-                    outputWriter.Advance(tokenBuffer->cbBuffer + dataBuffer->cbBuffer);
+                    // Compact the result
+                    if (tokenBuffer->cbBuffer != sizes.cbSecurityTrailer)
+                    {
+                        outputBuffer.Slice(sizes.cbSecurityTrailer, dataBuffer->cbBuffer).CopyTo(
+                            outputBuffer.Slice(tokenBuffer->cbBuffer, dataBuffer->cbBuffer));
+                    }
+                    if (tokenBuffer->cbBuffer != sizes.cbSecurityTrailer ||
+                        paddingBuffer->cbBuffer != sizes.cbBlockSize)
+                    {
+                        outputBuffer.Slice(sizes.cbSecurityTrailer + input.Length, paddingBuffer->cbBuffer).CopyTo(
+                            outputBuffer.Slice(tokenBuffer->cbBuffer + dataBuffer->cbBuffer, paddingBuffer->cbBuffer));
+                    }
+
+                    outputWriter.Advance(tokenBuffer->cbBuffer + dataBuffer->cbBuffer + paddingBuffer->cbBuffer);
                     return NegotiateAuthenticationStatusCode.Completed;
                 }
             }
@@ -549,7 +566,7 @@ namespace System.Net
                     bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, _securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);
                     Debug.Assert(success);
 
-                    Span<byte> signatureBuffer = signature.GetSpan(sizes.cbSecurityTrailer);
+                    Span<byte> signatureBuffer = signature.GetSpan(sizes.cbMaxSignature);
 
                     fixed (byte* messagePtr = message)
                     fixed (byte* signaturePtr = signatureBuffer)
@@ -560,7 +577,7 @@ namespace System.Net
                         Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
                         tokenBuffer->BufferType = SecurityBufferType.SECBUFFER_TOKEN;
                         tokenBuffer->pvBuffer = (IntPtr)signaturePtr;
-                        tokenBuffer->cbBuffer = sizes.cbSecurityTrailer;
+                        tokenBuffer->cbBuffer = sizes.cbMaxSignature;
                         dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
                         dataBuffer->pvBuffer = (IntPtr)messagePtr;
                         dataBuffer->cbBuffer = message.Length;
@@ -580,7 +597,7 @@ namespace System.Net
                             throw new Win32Exception(errorCode);
                         }
 
-                        signature.Advance(signatureBuffer.Length);
+                        signature.Advance(tokenBuffer->cbBuffer);
                     }
                 }
                 finally
@@ -703,7 +720,12 @@ namespace System.Net
                     inputBuffers.SetNextBuffer(new InputSecurityBuffer(channelBinding));
                 }
 
-                var outSecurityBuffer = new SecurityBuffer(resultBlob, SecurityBufferType.SECBUFFER_TOKEN);
+                ProtocolToken token = default;
+                if (resultBlob != null)
+                {
+                    token.Payload = resultBlob;
+                    token.Size = resultBlob.Length;
+                }
 
                 contextFlags = Interop.SspiCli.ContextFlags.Zero;
                 // There is only one SafeDeleteContext type on Windows which is SafeDeleteSslContext so this cast is safe.
@@ -716,12 +738,12 @@ namespace System.Net
                     requestedContextFlags,
                     Interop.SspiCli.Endianness.SECURITY_NETWORK_DREP,
                     inputBuffers,
-                    ref outSecurityBuffer,
+                    ref token,
                     ref contextFlags);
                 securityContext = sslContext;
-                Debug.Assert(outSecurityBuffer.offset == 0);
-                resultBlob = outSecurityBuffer.token;
-                resultBlobLength = outSecurityBuffer.size;
+                resultBlob = token.Payload;
+                resultBlobLength = token.Size;
+
                 return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(winStatus);
             }
 
@@ -761,7 +783,12 @@ namespace System.Net
                     inputBuffers.SetNextBuffer(new InputSecurityBuffer(channelBinding));
                 }
 
-                var outSecurityBuffer = new SecurityBuffer(resultBlob, SecurityBufferType.SECBUFFER_TOKEN);
+                ProtocolToken token = default;
+                if (resultBlob != null)
+                {
+                    token.Payload = resultBlob;
+                    token.Size = resultBlob.Length;
+                }
 
                 contextFlags = Interop.SspiCli.ContextFlags.Zero;
                 // There is only one SafeDeleteContext type on Windows which is SafeDeleteSslContext so this cast is safe.
@@ -773,7 +800,7 @@ namespace System.Net
                     requestedContextFlags,
                     Interop.SspiCli.Endianness.SECURITY_NETWORK_DREP,
                     inputBuffers,
-                    ref outSecurityBuffer,
+                    ref token,
                     ref contextFlags);
 
                 // SSPI Workaround
@@ -784,9 +811,9 @@ namespace System.Net
                     winStatus = Interop.SECURITY_STATUS.InvalidToken;
                 }
 
-                Debug.Assert(outSecurityBuffer.offset == 0);
-                resultBlob = outSecurityBuffer.token;
-                resultBlobLength = outSecurityBuffer.size;
+                resultBlob = token.Payload;
+                resultBlobLength = token.Size;
+
                 securityContext = sslContext;
                 return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(winStatus);
             }

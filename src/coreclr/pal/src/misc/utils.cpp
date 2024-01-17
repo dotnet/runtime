@@ -366,3 +366,61 @@ BOOL IsRunningOnMojaveHardenedRuntime()
 }
 
 #endif // __APPLE__
+
+const char *GetFriendlyErrorCodeString(int errorCode)
+{
+#if HAVE_STRERRORNAME_NP
+    const char *error = strerrorname_np(errorCode);
+    if (error != nullptr)
+    {
+        return error;
+    }
+#else // !HAVE_STRERRORNAME_NP
+    switch (errorCode)
+    {
+        case EACCES: return "EACCES";
+    #if EAGAIN == EWOULDBLOCK
+        case EAGAIN: return "EAGAIN/EWOULDBLOCK";
+    #else
+        case EAGAIN: return "EAGAIN";
+        case EWOULDBLOCK: return "EWOULDBLOCK";
+    #endif
+        case EBADF: return "EBADF";
+        case EBUSY: return "EBUSY";
+        case EDQUOT: return "EDQUOT";
+        case EEXIST: return "EEXIST";
+        case EFAULT: return "EFAULT";
+        case EFBIG: return "EFBIG";
+        case EINVAL: return "EINVAL";
+        case EINTR: return "EINTR";
+        case EIO: return "EIO";
+        case EISDIR: return "EISDIR";
+        case ELOOP: return "ELOOP";
+        case EMFILE: return "EMFILE";
+        case EMLINK: return "EMLINK";
+        case ENAMETOOLONG: return "ENAMETOOLONG";
+        case ENFILE: return "ENFILE";
+        case ENODEV: return "ENODEV";
+        case ENOENT: return "ENOENT";
+        case ENOLCK: return "ENOLCK";
+        case ENOMEM: return "ENOMEM";
+        case ENOSPC: return "ENOSPC";
+    #if ENOTSUP == EOPNOTSUPP
+        case ENOTSUP: return "ENOTSUP/EOPNOTSUPP";
+    #else
+        case ENOTSUP: return "ENOTSUP";
+        case EOPNOTSUPP: return "EOPNOTSUPP";
+    #endif
+        case ENOTDIR: return "ENOTDIR";
+        case ENOTEMPTY: return "ENOTEMPTY";
+        case ENXIO: return "ENXIO";
+        case EOVERFLOW: return "EOVERFLOW";
+        case EPERM: return "EPERM";
+        case EROFS: return "EROFS";
+        case ETXTBSY: return "ETXTBSY";
+        case EXDEV: return "EXDEV";
+    }
+#endif // HAVE_STRERRORNAME_NP
+
+    return strerror(errorCode);
+}

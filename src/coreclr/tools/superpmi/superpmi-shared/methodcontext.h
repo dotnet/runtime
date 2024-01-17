@@ -122,6 +122,10 @@ public:
     void dmpIsIntrinsic(DWORDLONG key, DWORD value);
     bool repIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
+    void recNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn, bool result);
+    void dmpNotifyMethodInfoUsage(DWORDLONG key, DWORD value);
+    bool repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn);
+
     void recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWORD attribs);
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
     DWORD repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle);
@@ -378,7 +382,7 @@ public:
                             int                   maxExactClasses,
                             CORINFO_CLASS_HANDLE* exactClsRet,
                             int                   result);
-    void dmpGetExactClasses(DLD key, DLD value);
+    void dmpGetExactClasses(DLD key, const Agnostic_GetExactClassesResult& value);
     int repGetExactClasses(CORINFO_CLASS_HANDLE  baseType,
                            int                   maxExactClasses,
                            CORINFO_CLASS_HANDLE* exactClsRet);
@@ -1038,7 +1042,7 @@ enum mcPackets
     //Packet_SatisfiesClassConstraints = 110,
     Packet_SatisfiesMethodConstraints = 111,
     Packet_DoesFieldBelongToClass = 112,
-    PacketCR_AddressMap = 113,
+    //PacketCR_AddressMap = 113,
     PacketCR_AllocGCInfo = 114,
     PacketCR_AllocMem = 115,
     PacketCR_CallLog = 116,
@@ -1138,6 +1142,7 @@ enum mcPackets
     Packet_GetObjectContent = 210,
     Packet_GetTypeLayout = 211,
     Packet_HaveSameMethodDefinition = 212,
+    Packet_NotifyMethodInfoUsage = 213,
 };
 
 void SetDebugDumpVariables();

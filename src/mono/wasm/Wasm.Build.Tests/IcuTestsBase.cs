@@ -28,7 +28,7 @@ public abstract class IcuTestsBase : TestMainJsTestBase
     }
 
     // custom file contains only locales "cy-GB", "is-IS", "bs-BA", "lb-LU" and fallback locale: "en-US":
-    protected static string s_customIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
+    public static string CustomIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
 
     protected static readonly string s_customIcuTestedLocales = $@"new Locale[] {{
         new Locale(""cy-GB"",  ""Dydd Sul""), new Locale(""is-IS"",  ""sunnudagur""), new Locale(""bs-BA"",  ""nedjelja""), new Locale(""lb-LU"",  ""Sonndeg""),
@@ -108,9 +108,10 @@ public abstract class IcuTestsBase : TestMainJsTestBase
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName };
-        string extraProperties = onlyPredefinedCultures ?
-            $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName><PredefinedCulturesOnly>true</PredefinedCulturesOnly>" :
-            $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName>";
+        // by default, we remove resource strings from an app. ICU tests are checking exception messages contents -> resource string keys are not enough
+        string extraProperties = $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName><UseSystemResourceKeys>false</UseSystemResourceKeys>";
+        if (onlyPredefinedCultures)
+            extraProperties = $"{extraProperties}<PredefinedCulturesOnly>true</PredefinedCulturesOnly>";
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: extraProperties);
 
         string programText = GetProgramText(testedLocales, onlyPredefinedCultures);

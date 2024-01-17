@@ -54,6 +54,15 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint() { try { Static2(null); } catch (NullReferenceException) { } return 100; }
+        public static void TestEntryPoint()
+        {
+            try
+            {
+                Static2(null);
+            }
+            catch (NullReferenceException)
+            {
+            }
+        }
     }
 }

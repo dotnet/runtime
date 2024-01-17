@@ -2,15 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
 using static System.Reflection.MethodInvokerCommon;
 
 namespace System.Reflection
 {
+    /// <summary>
+    /// Invokes the method reflected by the provided <see cref="ConstructorInfo"/>.
+    /// </summary>
+    /// <remarks>
+    /// Used for better performance than <seealso cref="ConstructorInfo.Invoke"/> when compatibility with that method
+    /// is not necessary and when the caller can cache the ConstructorInvoker instance for additional invoke calls.<br/>
+    /// Unlike <see cref="ConstructorInfo.Invoke"/>, the invoke methods do not look up default values for arguments when
+    /// <see cref="Type.Missing"/> is specified. In addition, the target constructor may be inlined for performance and not
+    /// appear in stack traces.
+    /// </remarks>
+    /// <seealso cref="MethodInvoker"/>
     public sealed partial class ConstructorInvoker
     {
         private InvokeFunc_ObjSpanArgs? _invokeFunc_ObjSpanArgs;
@@ -24,6 +35,17 @@ namespace System.Reflection
         private readonly RuntimeConstructorInfo _method;
         private readonly bool _needsByRefStrategy;
 
+        /// <summary>
+        /// Creates a new instance of ConstructorInvoker.
+        /// </summary>
+        /// <remarks>
+        /// For performance, the resulting instance should be cached for additional calls.
+        /// </remarks>
+        /// <param name="constructor">The constructor that will be invoked.</param>
+        /// <returns>An instance of a ConstructorInvoker.</returns>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="constructor"/> is not a runtime-based method.
+        /// </exception>
         public static ConstructorInvoker Create(ConstructorInfo constructor)
         {
             ArgumentNullException.ThrowIfNull(constructor, nameof(constructor));
@@ -46,6 +68,21 @@ namespace System.Reflection
             Initialize(argumentTypes, out _strategy, out _invokerArgFlags, out _needsByRefStrategy);
         }
 
+        /// <summary>
+        /// Invokes the constructor.
+        /// </summary>
+        /// <returns>
+        /// An instance of the class associated with the constructor.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// The type that declares the method is an open generic type.
+        /// </exception>
+        /// <exception cref="TargetParameterCountException">
+        /// The correct number of arguments were not provided.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// The calling convention or signature is not supported.
+        /// </exception>
         public object Invoke()
         {
             if (_argCount != 0)
@@ -56,6 +93,14 @@ namespace System.Reflection
             return InvokeImpl(null, null, null, null);
         }
 
+        /// <summary>
+        /// Invokes the constructor using the specified parameters.
+        /// </summary>
+        /// <inheritdoc cref="Invoke()"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <exception cref="ArgumentException">
+        /// The arguments do not match the signature of the invoked constructor.
+        /// </exception>
         public object Invoke(object? arg1)
         {
             if (_argCount != 1)
@@ -66,6 +111,9 @@ namespace System.Reflection
             return InvokeImpl(arg1, null, null, null);
         }
 
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <param name="arg2">The second argument for the invoked method.</param>
         public object Invoke(object? arg1, object? arg2)
         {
             if (_argCount != 2)
@@ -76,9 +124,13 @@ namespace System.Reflection
             return InvokeImpl(arg1, arg2, null, null);
         }
 
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <param name="arg2">The second argument for the invoked method.</param>
+        /// <param name="arg3">The third argument for the invoked method.</param>
         public object Invoke(object? arg1, object? arg2, object? arg3)
         {
-            if (_argCount !=3)
+            if (_argCount != 3)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -86,6 +138,11 @@ namespace System.Reflection
             return InvokeImpl(arg1, arg2, arg3, null);
         }
 
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <param name="arg2">The second argument for the invoked method.</param>
+        /// <param name="arg3">The third argument for the invoked method.</param>
+        /// <param name="arg4">The fourth argument for the invoked method.</param>
         public object Invoke(object? arg1, object? arg2, object? arg3, object? arg4)
         {
             if (_argCount != 4)
@@ -98,7 +155,7 @@ namespace System.Reflection
 
         private object InvokeImpl(object? arg1, object? arg2, object? arg3, object? arg4)
         {
-            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
+            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0)
             {
                 _method.ThrowNoInvokeException();
             }
@@ -137,6 +194,11 @@ namespace System.Reflection
             return InvokeDirectByRef(arg1, arg2, arg3, arg4);
         }
 
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="arguments">The arguments for the invoked constructor.</param>
+        /// <exception cref="ArgumentException">
+        /// The arguments do not match the signature of the invoked constructor.
+        /// </exception>
         public object Invoke(Span<object?> arguments)
         {
             int argLen = arguments.Length;
@@ -196,7 +258,7 @@ namespace System.Reflection
             // Check fast path first.
             if (_invokeFunc_ObjSpanArgs is not null)
             {
-                return _invokeFunc_ObjSpanArgs(obj : null, copyOfArgs)!;
+                return _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs)!;
                 // No need to call CopyBack here since there are no ref values.
             }
 

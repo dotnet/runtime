@@ -6,23 +6,22 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Reflection.Runtime.General;
 using System.Runtime.CompilerServices;
 
-using System.Reflection.Runtime.General;
-
+using Internal.Metadata.NativeFormat;
+using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem.NoMetadata;
-using Internal.Metadata.NativeFormat;
-using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
 {
     public abstract partial class TypeSystemContext
     {
-        internal static TemplateLocator TemplateLookup => new TemplateLocator();
+        internal static TemplateLocator TemplateLookup => default;
 
         internal class RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable : LockFreeReaderHashtableOfPointers<RuntimeTypeHandle, RuntimeTypeHandle>
         {

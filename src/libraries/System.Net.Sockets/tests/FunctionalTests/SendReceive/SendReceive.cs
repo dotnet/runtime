@@ -60,14 +60,14 @@ namespace System.Net.Sockets.Tests
 
                 Task serverProcessingTask = Task.Run(async () =>
                 {
-                    using (Socket remote = await AcceptAsync(server))
+                    using (Socket remote = await AcceptAsync(server).WaitAsync(TestSettings.PassingTestTimeout))
                     {
                         if (!useMultipleBuffers)
                         {
                             var recvBuffer = new byte[256];
                             while (true)
                             {
-                                int received = await ReceiveAsync(remote, new ArraySegment<byte>(recvBuffer));
+                                int received = await ReceiveAsync(remote, new ArraySegment<byte>(recvBuffer)).WaitAsync(TestSettings.PassingTestTimeout);
                                 if (received == 0)
                                 {
                                     break;
@@ -86,7 +86,7 @@ namespace System.Net.Sockets.Tests
                                 new ArraySegment<byte>(new byte[64], 9, 33)};
                             while (true)
                             {
-                                int received = await ReceiveAsync(remote, recvBuffers);
+                                int received = await ReceiveAsync(remote, recvBuffers).WaitAsync(TestSettings.PassingTestTimeout);
                                 if (received == 0)
                                 {
                                     break;
@@ -109,7 +109,9 @@ namespace System.Net.Sockets.Tests
                 EndPoint clientEndpoint = server.LocalEndPoint;
                 using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    await ConnectAsync(client, clientEndpoint);
+                    await ConnectAsync(client, clientEndpoint)
+                        .WaitAsync(TestSettings.PassingTestTimeout)
+                        .ConfigureAwait(false);
 
                     var random = new Random();
                     if (!useMultipleBuffers)
@@ -118,7 +120,9 @@ namespace System.Net.Sockets.Tests
                         for (int sent = 0, remaining = BytesToSend; remaining > 0; remaining -= sent)
                         {
                             random.NextBytes(sendBuffer);
-                            sent = await SendAsync(client, new ArraySegment<byte>(sendBuffer, 0, Math.Min(sendBuffer.Length, remaining)));
+                            sent = await SendAsync(client, new ArraySegment<byte>(sendBuffer, 0, Math.Min(sendBuffer.Length, remaining)))
+                                .WaitAsync(TestSettings.PassingTestTimeout)
+                                .ConfigureAwait(false);
                             bytesSent += sent;
                             sentChecksum.Add(sendBuffer, 0, sent);
                         }
@@ -137,7 +141,9 @@ namespace System.Net.Sockets.Tests
                                 random.NextBytes(sendBuffers[i].Array);
                             }
 
-                            sent = await SendAsync(client, sendBuffers);
+                            sent = await SendAsync(client, sendBuffers)
+                                .WaitAsync(TestSettings.PassingTestTimeout)
+                                .ConfigureAwait(false);
 
                             bytesSent += sent;
                             for (int i = 0, remaining = sent; i < sendBuffers.Count && remaining > 0; i++)
@@ -152,7 +158,7 @@ namespace System.Net.Sockets.Tests
 
                     client.LingerState = new LingerOption(true, LingerTime);
                     client.Shutdown(SocketShutdown.Send);
-                    await serverProcessingTask;
+                    await serverProcessingTask.WaitAsync(TestSettings.PassingTestTimeout).ConfigureAwait(false);
                 }
 
                 Assert.Equal(bytesSent, bytesReceived);
@@ -231,7 +237,7 @@ namespace System.Net.Sockets.Tests
 
                 Task serverProcessingTask = Task.Run(async () =>
                 {
-                    using (Socket remote = await AcceptAsync(server))
+                    using (Socket remote = await AcceptAsync(server).WaitAsync(TestSettings.PassingTestTimeout))
                     {
                         byte[] recvBuffer1 = new byte[256], recvBuffer2 = new byte[256];
                         long iter = 0;
@@ -269,7 +275,7 @@ namespace System.Net.Sockets.Tests
                 EndPoint clientEndpoint = server.LocalEndPoint;
                 using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    await ConnectAsync(client, clientEndpoint);
+                    await ConnectAsync(client, clientEndpoint).WaitAsync(TestSettings.PassingTestTimeout);
 
                     var random = new Random();
                     byte[] sendBuffer1 = new byte[512], sendBuffer2 = new byte[512];
@@ -308,7 +314,7 @@ namespace System.Net.Sockets.Tests
                     }
 
                     client.Shutdown(SocketShutdown.Send);
-                    await serverProcessingTask;
+                    await serverProcessingTask.WaitAsync(TestSettings.PassingTestTimeout);
                 }
 
                 Assert.Equal(bytesSent, bytesReceived);
@@ -330,7 +336,7 @@ namespace System.Net.Sockets.Tests
                 using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                 {
                     Task clientConnect = ConnectAsync(client, clientEndpoint);
-                    using (Socket remote = await AcceptAsync(server))
+                    using (Socket remote = await AcceptAsync(server).WaitAsync(TestSettings.PassingTestTimeout))
                     {
                         await clientConnect.WaitAsync(TestSettings.PassingTestTimeout);
 
@@ -440,9 +446,9 @@ namespace System.Net.Sockets.Tests
                 using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                 {
                     Task clientConnect = ConnectAsync(client, clientEndpoint);
-                    using (Socket remote = await AcceptAsync(server))
+                    using (Socket remote = await AcceptAsync(server).WaitAsync(TestSettings.PassingTestTimeout))
                     {
-                        await clientConnect;
+                        await clientConnect.WaitAsync(TestSettings.PassingTestTimeout);
 
                         Task<int> send1, send2, send3;
                         if (useMultipleBuffers)
@@ -503,7 +509,7 @@ namespace System.Net.Sockets.Tests
                 _output?.WriteLine($"{DateTime.Now} Starting listener at {listener.LocalEndpoint}");
                 Task serverTask = Task.Run(async () =>
                 {
-                    using (Socket remote = await listener.AcceptSocketAsync())
+                    using (Socket remote = await listener.AcceptSocketAsync().WaitAsync(TestSettings.PassingTestTimeout))
                     {
                         var recvBuffer = new byte[256];
                         int count = 0;
@@ -537,7 +543,7 @@ namespace System.Net.Sockets.Tests
 
                     using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                     {
-                        await ConnectAsync(client, clientEndpoint);
+                        await ConnectAsync(client, clientEndpoint).WaitAsync(TestSettings.PassingTestTimeout);
 
                         if (pollBeforeOperation)
                         {
@@ -592,7 +598,8 @@ namespace System.Net.Sockets.Tests
                 Task<Socket> acceptTask = AcceptAsync(listener);
                 await Task.WhenAll(
                     acceptTask,
-                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)))
+                    .WaitAsync(TestSettings.PassingTestTimeout);
 
                 using (Socket server = await acceptTask)
                 {
@@ -625,7 +632,8 @@ namespace System.Net.Sockets.Tests
                 Task<Socket> acceptTask = AcceptAsync(listener);
                 await Task.WhenAll(
                     acceptTask,
-                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)))
+                    .WaitAsync(TestSettings.PassingTestTimeout);
 
                 using (Socket server = await acceptTask)
                 {
@@ -682,7 +690,7 @@ namespace System.Net.Sockets.Tests
                     Assert.Equal(client.LocalEndPoint, result.RemoteEndPoint);
 
                     // Read real packet.
-                    result = await ReceiveFromAsync(server, buffer, new IPEndPoint(IPAddress.Any, 0));
+                    result = await ReceiveFromAsync(server, buffer, new IPEndPoint(IPAddress.Any, 0)).WaitAsync(TestSettings.PassingTestTimeout);
 
                     Assert.Equal(1, result.ReceivedBytes);
                     Assert.Equal(client.LocalEndPoint, result.RemoteEndPoint);
@@ -703,7 +711,8 @@ namespace System.Net.Sockets.Tests
                 Task<Socket> acceptTask = AcceptAsync(listener);
                 await Task.WhenAll(
                     acceptTask,
-                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)))
+                    .WaitAsync(TestSettings.PassingTestTimeout);
 
                 using (Socket server = await acceptTask)
                 {
@@ -743,7 +752,8 @@ namespace System.Net.Sockets.Tests
                 Task<Socket> acceptTask = AcceptAsync(listener);
                 await Task.WhenAll(
                     acceptTask,
-                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)))
+                    .WaitAsync(TestSettings.PassingTestTimeout);
 
                 using (Socket server = await acceptTask)
                 {
@@ -773,7 +783,8 @@ namespace System.Net.Sockets.Tests
                 Task<Socket> acceptTask = AcceptAsync(listener);
                 await Task.WhenAll(
                     acceptTask,
-                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)))
+                    .WaitAsync(TestSettings.PassingTestTimeout);
 
                 using (Socket server = await acceptTask)
                 {
@@ -812,7 +823,8 @@ namespace System.Net.Sockets.Tests
                 Task<Socket> acceptTask = AcceptAsync(listener);
                 await Task.WhenAll(
                     acceptTask,
-                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)))
+                    .WaitAsync(TestSettings.PassingTestTimeout);
 
                 using (Socket server = await acceptTask)
                 {
@@ -1019,11 +1031,15 @@ namespace System.Net.Sockets.Tests
                 return;
             }
 
-            // RHEL7 kernel has a bug preventing close(AF_UNKNOWN) to succeed with IPv6 sockets.
-            // In this case Dispose will trigger a graceful shutdown, which means that receive will succeed on socket2.
-            // This bug is fixed in kernel 3.10.0-1160.25+.
-            // TODO: Remove this, once CI machines are updated to a newer kernel.
-            bool mayShutdownGraceful = UsesSync && PlatformDetection.IsRedHatFamily7 && receiveOrSend && (ipv6Server || dualModeClient);
+            // .NET uses connect(AF_UNSPEC) to abort on-going operations on Linux.
+            // Linux 6.4+ introduced a change (4faeee0cf8a5d88d63cdbc3bab124fb0e6aed08c) which disallows
+            // this operation while operations are on-going.
+            // Some distros backported the change to earlier kernel versions.
+            // When the connect fails, .NET falls back to use shutdown(SHUT_RDWR).
+            // This causes the receive on socket2 to succeed instead of failing with ConnectionReset.
+            // The original behavior was restored in Linux 6.6 (419ce133ab928ab5efd7b50b2ef36ddfd4eadbd2).
+            bool mayShutdownGraceful = UsesSync && receiveOrSend &&
+                                       PlatformDetection.IsLinux && Environment.OSVersion.Version < new Version(6, 6);
 
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
@@ -1093,7 +1109,7 @@ namespace System.Net.Sockets.Tests
 
                     // On OSX, we're unable to unblock the on-going socket operations and
                     // perform an abortive close.
-                    if (!(UsesSync && PlatformDetection.IsOSXLike))
+                    if (!(UsesSync && PlatformDetection.IsApplePlatform))
                     {
                         SocketError? peerSocketError = null;
                         var receiveBuffer = new ArraySegment<byte>(new byte[4096]);

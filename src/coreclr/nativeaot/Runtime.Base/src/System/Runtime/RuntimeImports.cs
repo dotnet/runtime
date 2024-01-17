@@ -13,14 +13,6 @@ namespace System.Runtime
     {
         private const string RuntimeLibrary = "*";
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpRegisterFrozenSegment")]
-        internal static extern IntPtr RhpRegisterFrozenSegment(IntPtr pSegmentStart, IntPtr length);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpUnregisterFrozenSegment")]
-        internal static extern void RhpUnregisterFrozenSegment(IntPtr pSegmentHandle);
-
         [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr RhGetModuleSection(ref TypeManagerHandle module, ReadyToRunSectionType section, out int length);

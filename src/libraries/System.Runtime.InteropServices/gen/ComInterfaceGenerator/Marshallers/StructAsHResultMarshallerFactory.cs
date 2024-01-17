@@ -4,23 +4,15 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
-    internal sealed class StructAsHResultMarshallerFactory : IMarshallingGeneratorFactory
+    internal sealed class StructAsHResultMarshallerFactory : IMarshallingGeneratorResolver
     {
         private static readonly Marshaller s_marshaller = new();
-
-        private readonly IMarshallingGeneratorFactory _inner;
-
-        public StructAsHResultMarshallerFactory(IMarshallingGeneratorFactory inner)
-        {
-            _inner = inner;
-        }
 
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
@@ -30,7 +22,7 @@ namespace Microsoft.Interop
                 return ResolvedGenerator.Resolved(s_marshaller);
             }
 
-            return _inner.Create(info, context);
+            return ResolvedGenerator.UnresolvedGenerator;
         }
 
         private sealed class Marshaller : IMarshallingGenerator
@@ -47,42 +39,36 @@ namespace Microsoft.Interop
                         if (MarshallerHelpers.GetMarshalDirection(info, context) is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                         {
                             // unmanaged = Unsafe.BitCast<managedType, int>(managed);
-                            yield return ExpressionStatement(
-                            AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(unmanaged),
-                            InvocationExpression(
-                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            yield return AssignmentStatement(
+                                IdentifierName(unmanaged),
+                                MethodInvocation(
                                     ParseTypeName(TypeNames.System_Runtime_CompilerServices_Unsafe),
                                     GenericName(Identifier("BitCast"),
                                         TypeArgumentList(
-                                            SeparatedList(
-                                                new[]
+                                            SeparatedList(new[]
                                                 {
-                                                info.ManagedType.Syntax,
-                                                AsNativeType(info).Syntax
-                                                })))),
-                                ArgumentList(SingletonSeparatedList(Argument(IdentifierName(managed)))))));
+                                                    info.ManagedType.Syntax,
+                                                    AsNativeType(info).Syntax
+                                                }))),
+                                    Argument(IdentifierName(managed))));
                         }
                         break;
                     case StubCodeContext.Stage.Unmarshal:
                         if (MarshallerHelpers.GetMarshalDirection(info, context) is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                         {
                             // managed = Unsafe.BitCast<int, managedType>(unmanaged);
-                            yield return ExpressionStatement(
-                            AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                            yield return AssignmentStatement(
                             IdentifierName(managed),
-                            InvocationExpression(
-                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseTypeName(TypeNames.System_Runtime_CompilerServices_Unsafe),
-                                    GenericName(Identifier("BitCast"),
-                                        TypeArgumentList(
-                                            SeparatedList(
-                                                new[]
-                                                {
+                            MethodInvocation(
+                                ParseTypeName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                                GenericName(Identifier("BitCast"),
+                                    TypeArgumentList(
+                                        SeparatedList(new[]
+                                            {
                                                 AsNativeType(info).Syntax,
                                                 info.ManagedType.Syntax
-                                                })))),
-                                ArgumentList(SingletonSeparatedList(Argument(IdentifierName(unmanaged)))))));
+                                            }))),
+                                Argument(IdentifierName(unmanaged))));
                         }
                         break;
                     default:
@@ -104,8 +90,6 @@ namespace Microsoft.Interop
 
                 return ValueBoundaryBehavior.NativeIdentifier;
             }
-
-            public bool IsSupported(TargetFramework target, Version version) => target == TargetFramework.Net && version.Major >= 8;
 
             public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
                 => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);

@@ -13,7 +13,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace Microsoft.Extensions.Options.Generators
 {
     [Generator]
-    public class Generator : IIncrementalGenerator
+    public class OptionsValidatorGenerator : IIncrementalGenerator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -32,18 +32,25 @@ namespace Microsoft.Extensions.Options.Generators
 
         private static void HandleAnnotatedTypes(Compilation compilation, ImmutableArray<(TypeDeclarationSyntax? TypeSyntax, SemanticModel SemanticModel)> types, SourceProductionContext context)
         {
+            if (types.Length == 0)
+            {
+                return;
+            }
+
             if (!SymbolLoader.TryLoad(compilation, out var symbolHolder))
             {
                 // Not eligible compilation
                 return;
             }
 
-            var parser = new Parser(compilation, context.ReportDiagnostic, symbolHolder!, context.CancellationToken);
+            OptionsSourceGenContext optionsSourceGenContext = new(compilation);
+
+            var parser = new Parser(compilation, context.ReportDiagnostic, symbolHolder!, optionsSourceGenContext, context.CancellationToken);
 
             var validatorTypes = parser.GetValidatorTypes(types);
             if (validatorTypes.Count > 0)
             {
-                var emitter = new Emitter(compilation);
+                var emitter = new Emitter(compilation, symbolHolder!, optionsSourceGenContext);
                 var result = emitter.Emit(validatorTypes, context.CancellationToken);
 
                 context.AddSource("Validators.g.cs", SourceText.From(result, Encoding.UTF8));

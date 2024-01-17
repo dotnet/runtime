@@ -10,6 +10,7 @@
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-session-provider.h>
+#include <eventpipe/ep-string.h>
 
 #include <glib.h>
 #include <mono/utils/checked-build.h>
@@ -1294,22 +1295,6 @@ ep_rt_utf8_string_compare_ignore_case (
 
 static
 inline
-bool
-ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str)
-{
-	if (str == NULL)
-		return true;
-
-	while (*str) {
-		if (!isspace(*str))
-			return false;
-		str++;
-	}
-	return true;
-}
-
-static
-inline
 ep_char8_t *
 ep_rt_utf8_string_dup (const ep_char8_t *str)
 {
@@ -1384,16 +1369,6 @@ ep_rt_utf8_string_replace (
 static
 inline
 ep_char16_t *
-ep_rt_utf8_to_utf16le_string (
-	const ep_char8_t *str,
-	size_t len)
-{
-	return (ep_char16_t *)(g_utf8_to_utf16le ((const gchar *)str, (glong)len, NULL, NULL, NULL));
-}
-
-static
-inline
-ep_char16_t *
 ep_rt_utf16_string_dup (const ep_char16_t *str)
 {
 	size_t str_size = (ep_rt_utf16_string_len (str) + 1) * sizeof (ep_char16_t);
@@ -1401,6 +1376,13 @@ ep_rt_utf16_string_dup (const ep_char16_t *str)
 	if (str_dup)
 		memcpy (str_dup, str, str_size);
 	return str_dup;
+}
+
+static
+ep_char8_t *
+ep_rt_utf8_string_alloc (size_t len)
+{
+	return g_new(ep_char8_t, len);
 }
 
 static
@@ -1420,23 +1402,10 @@ ep_rt_utf16_string_len (const ep_char16_t *str)
 }
 
 static
-inline
-ep_char8_t *
-ep_rt_utf16_to_utf8_string (
-	const ep_char16_t *str,
-	size_t len)
+ep_char16_t *
+ep_rt_utf16_string_alloc (size_t len)
 {
-	return g_utf16_to_utf8 ((const gunichar2 *)str, (glong)len, NULL, NULL, NULL);
-}
-
-static
-inline
-ep_char8_t *
-ep_rt_utf16le_to_utf8_string (
-	const ep_char16_t *str,
-	size_t len)
-{
-	return g_utf16le_to_utf8 ((const gunichar2 *)str, (glong)len, NULL, NULL, NULL);
+	return g_new(ep_char16_t, len);
 }
 
 static
@@ -1914,6 +1883,16 @@ ep_rt_write_event_contention_stop (
 	uint8_t contention_flags,
 	uint16_t clr_instance_id,
 	double duration_ns);
+
+bool
+ep_rt_write_event_wait_handle_wait_start (
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_wait_handle_wait_stop (
+	uint16_t clr_instance_id);
 
 /*
 * EventPipe provider callbacks.

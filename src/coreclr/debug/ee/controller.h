@@ -1099,9 +1099,9 @@ class DebuggerController
     // Check whether there are any pathces in the patch table for the specified module.
     static bool ModuleHasPatches( Module* pModule );
 
-#if EnC_SUPPORTED
+#if FEATURE_METADATA_UPDATER
     static DebuggerControllerPatch *GetEnCPatch(const BYTE *address);
-#endif //EnC_SUPPORTED
+#endif //FEATURE_METADATA_UPDATER
 
     static DPOSS_ACTION ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                                 Thread *thread,
@@ -1915,7 +1915,7 @@ private:
 };
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 //---------------------------------------------------------------------------------------
 //
 // DebuggerEnCBreakpoint - used by edit and continue to support remapping
@@ -1963,7 +1963,7 @@ private:
     DebuggerJitInfo *m_jitInfo;
     TriggerType m_fTriggerType;
 };
-#endif //EnC_SUPPORTED
+#endif //FEATURE_METADATA_UPDATER
 
 /* ========================================================================= */
 
