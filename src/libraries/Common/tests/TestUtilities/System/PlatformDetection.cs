@@ -280,6 +280,7 @@ namespace System
         // Changed to `true` when trimming
         public static bool IsBuiltWithAggressiveTrimming => IsNativeAot;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
+        public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
@@ -386,7 +387,10 @@ namespace System
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsNotHybridGlobalization => !IsHybridGlobalization;
         public static bool IsNotHybridGlobalizationOnOSX => !IsHybridGlobalizationOnOSX;
-        public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
+
+        // HG on apple platforms implies ICU 
+        public static bool IsIcuGlobalization => !IsInvariantGlobalization && (IsHybridGlobalizationOnOSX || ICUVersion > new Version(0, 0, 0, 0));
+
         public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
         public static bool IsIcuGlobalizationAndNotHybrid => IsIcuGlobalization && IsNotHybridGlobalization;
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization && !IsHybridGlobalization;
@@ -416,22 +420,26 @@ namespace System
         private static Version GetICUVersion()
         {
             int version = 0;
-            try
+            // When HG on Apple platforms, our ICU lib is not loaded
+            if (IsNotHybridGlobalizationOnOSX)
             {
-                Type interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
-                if (interopGlobalization != null)
+                try
                 {
-                    MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
-                    if (methodInfo != null)
+                    Type interopGlobalization = Type.GetType("Interop+Globalization, System.Private.CoreLib");
+                    if (interopGlobalization != null)
                     {
-                        // Ensure that ICU has been loaded
-                        GC.KeepAlive(System.Globalization.CultureInfo.InstalledUICulture);
+                        MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
+                        if (methodInfo != null)
+                        {
+                            // Ensure that ICU has been loaded
+                            GC.KeepAlive(System.Globalization.CultureInfo.InstalledUICulture);
 
-                        version = (int)methodInfo.Invoke(null, null);
+                            version = (int)methodInfo.Invoke(null, null);
+                        }
                     }
                 }
+                catch { }
             }
-            catch { }
 
             return new Version(version >> 24,
                               (version >> 16) & 0xFF,

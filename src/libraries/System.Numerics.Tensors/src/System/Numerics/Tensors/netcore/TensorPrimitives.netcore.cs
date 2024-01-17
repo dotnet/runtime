@@ -11471,6 +11471,397 @@ namespace System.Numerics.Tensors
         internal readonly struct LogOperator<T> : IUnaryOperator<T>
             where T : ILogarithmicFunctions<T>
         {
+            public static bool Vectorizable => (typeof(T) == typeof(double))
+                                            || (typeof(T) == typeof(float));
+
+            public static T Invoke(T x) => T.Log(x);
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Log(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Log(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return LogOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return LogOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Log(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Log(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return LogOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return LogOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Log(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Log(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return LogOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return LogOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+        }
+
+#if !NET9_0_OR_GREATER
+        /// <summary>double.Log(x)</summary>
+        internal readonly struct LogOperatorDouble : IUnaryOperator<double>
+        {
+            // This code is based on `vrd2_log` from amd/aocl-libm-ose
+            // Copyright (C) 2018-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Reduce x into the form:
+            //        x = (-1)^s*2^n*m
+            // s will be always zero, as log is defined for positive numbers
+            // n is an integer known as the exponent
+            // m is mantissa
+            //
+            // x is reduced such that the mantissa, m lies in [2/3,4/3]
+            //      x = 2^n*m where m is in [2/3,4/3]
+            //      log(x) = log(2^n*m)                 We have log(a*b) = log(a)+log(b)
+            //             = log(2^n) + log(m)          We have log(a^n) = n*log(a)
+            //             = n*log(2) + log(m)
+            //             = n*log(2) + log(1+(m-1))
+            //             = n*log(2) + log(1+f)        Where f = m-1
+            //             = n*log(2) + log1p(f)        f lies in [-1/3,+1/3]
+            //
+            // Thus we have :
+            // log(x) = n*log(2) + log1p(f)
+            // In the above, the first term n*log(2), n can be calculated by using right shift operator and the value of log(2)
+            // is known and is stored as a constant
+            // The second term log1p(F) is approximated by using a polynomial
+
+            private const ulong V_MIN = 0x00100000_00000000;    // SmallestNormal
+            private const ulong V_MAX = 0x7FF00000_00000000;    // +Infinity
+            private const ulong V_MSK = 0x000FFFFF_FFFFFFFF;    // (1 << 52) - 1
+            private const ulong V_OFF = 0x3FE55555_55555555;    // 2.0 / 3.0
+
+            private const double LN2_HEAD = 0.693359375;
+            private const double LN2_TAIL = -0.00021219444005469057;
+
+            private const double C02 = -0.499999999999999560;
+            private const double C03 = +0.333333333333414750;
+            private const double C04 = -0.250000000000297430;
+            private const double C05 = +0.199999999975985220;
+            private const double C06 = -0.166666666608919500;
+            private const double C07 = +0.142857145600277100;
+            private const double C08 = -0.125000005127831270;
+            private const double C09 = +0.111110952357159440;
+            private const double C10 = -0.099999750495501240;
+            private const double C11 = +0.090914349823462390;
+            private const double C12 = -0.083340600527551860;
+            private const double C13 = +0.076817603328311300;
+            private const double C14 = -0.071296718946287310;
+            private const double C15 = +0.067963465211535730;
+            private const double C16 = -0.063995035098960040;
+            private const double C17 = +0.049370587082412105;
+            private const double C18 = -0.045370170994891980;
+            private const double C19 = +0.088970636003577750;
+            private const double C20 = -0.086906174116908760;
+
+            public static bool Vectorizable => true;
+
+            public static double Invoke(double x) => double.Log(x);
+
+            public static Vector128<double> Invoke(Vector128<double> x)
+            {
+                Vector128<double> specialResult = x;
+
+                // x is zero, subnormal, infinity, or NaN
+                Vector128<ulong> specialMask = Vector128.GreaterThanOrEqual(x.AsUInt64() - Vector128.Create(V_MIN), Vector128.Create(V_MAX - V_MIN));
+
+                if (specialMask != Vector128<ulong>.Zero)
+                {
+                    Vector128<long> xBits = x.AsInt64();
+
+                    // (x < 0) ? float.NaN : x
+                    Vector128<double> lessThanZeroMask = Vector128.LessThan(xBits, Vector128<long>.Zero).AsDouble();
+
+                    specialResult = Vector128.ConditionalSelect(
+                        lessThanZeroMask,
+                        Vector128.Create(double.NaN),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) ? double.NegativeInfinity : x
+                    Vector128<double> zeroMask = Vector128.Equals(xBits << 1, Vector128<long>.Zero).AsDouble();
+
+                    specialResult = Vector128.ConditionalSelect(
+                        zeroMask,
+                        Vector128.Create(double.NegativeInfinity),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
+                    Vector128<double> temp = zeroMask
+                                           | lessThanZeroMask
+                                           | Vector128.GreaterThanOrEqual(xBits, Vector128.Create(double.PositiveInfinity).AsInt64()).AsDouble();
+
+                    // subnormal
+                    Vector128<double> subnormalMask = Vector128.AndNot(specialMask.AsDouble(), temp);
+
+                    // multiply by 2^52, then normalize
+                    x = Vector128.ConditionalSelect(
+                        subnormalMask,
+                        ((x * 4503599627370496.0).AsUInt64() - Vector128.Create(52ul << 52)).AsDouble(),
+                        x
+                    );
+
+                    specialMask = temp.AsUInt64();
+                }
+
+                // Reduce the mantissa to [+2/3, +4/3]
+                Vector128<ulong> vx = x.AsUInt64() - Vector128.Create(V_OFF);
+                Vector128<double> n = Vector128.ConvertToDouble(vx.AsInt64() >> 52);
+                vx = (vx & Vector128.Create(V_MSK)) + Vector128.Create(V_OFF);
+
+                // Adjust the mantissa to [-1/3, +1/3]
+                Vector128<double> r = vx.AsDouble() - Vector128<double>.One;
+
+                Vector128<double> r02 = r * r;
+                Vector128<double> r04 = r02 * r02;
+                Vector128<double> r08 = r04 * r04;
+                Vector128<double> r16 = r08 * r08;
+
+                // Compute log(x + 1) using Polynomial approximation
+                //      C0 + (r * C1) + (r^2 * C2) + ... + (r^20 * C20)
+
+                Vector128<double> poly = (((r04 * C20)
+                                        + ((((r * C19) + Vector128.Create(C18)) * r02)
+                                          + ((r * C17) + Vector128.Create(C16)))) * r16)
+                                     + (((((((r * C15) + Vector128.Create(C14)) * r02)
+                                          + ((r * C13) + Vector128.Create(C12))) * r04)
+                                        + ((((r * C11) + Vector128.Create(C10)) * r02)
+                                          + ((r * C09) + Vector128.Create(C08)))) * r08)
+                                       + (((((r * C07) + Vector128.Create(C06)) * r02)
+                                          + ((r * C05) + Vector128.Create(C04))) * r04)
+                                        + ((((r * C03) + Vector128.Create(C02)) * r02) + r);
+
+                return Vector128.ConditionalSelect(
+                    specialMask.AsDouble(),
+                    specialResult,
+                    (n * LN2_HEAD) + ((n * LN2_TAIL) + poly)
+                );
+            }
+
+            public static Vector256<double> Invoke(Vector256<double> x)
+            {
+                Vector256<double> specialResult = x;
+
+                // x is zero, subnormal, infinity, or NaN
+                Vector256<ulong> specialMask = Vector256.GreaterThanOrEqual(x.AsUInt64() - Vector256.Create(V_MIN), Vector256.Create(V_MAX - V_MIN));
+
+                if (specialMask != Vector256<ulong>.Zero)
+                {
+                    Vector256<long> xBits = x.AsInt64();
+
+                    // (x < 0) ? float.NaN : x
+                    Vector256<double> lessThanZeroMask = Vector256.LessThan(xBits, Vector256<long>.Zero).AsDouble();
+
+                    specialResult = Vector256.ConditionalSelect(
+                        lessThanZeroMask,
+                        Vector256.Create(double.NaN),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) ? double.NegativeInfinity : x
+                    Vector256<double> zeroMask = Vector256.Equals(xBits << 1, Vector256<long>.Zero).AsDouble();
+
+                    specialResult = Vector256.ConditionalSelect(
+                        zeroMask,
+                        Vector256.Create(double.NegativeInfinity),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
+                    Vector256<double> temp = zeroMask
+                                           | lessThanZeroMask
+                                           | Vector256.GreaterThanOrEqual(xBits, Vector256.Create(double.PositiveInfinity).AsInt64()).AsDouble();
+
+                    // subnormal
+                    Vector256<double> subnormalMask = Vector256.AndNot(specialMask.AsDouble(), temp);
+
+                    // multiply by 2^52, then normalize
+                    x = Vector256.ConditionalSelect(
+                        subnormalMask,
+                        ((x * 4503599627370496.0).AsUInt64() - Vector256.Create(52ul << 52)).AsDouble(),
+                        x
+                    );
+
+                    specialMask = temp.AsUInt64();
+                }
+
+                // Reduce the mantissa to [+2/3, +4/3]
+                Vector256<ulong> vx = x.AsUInt64() - Vector256.Create(V_OFF);
+                Vector256<double> n = Vector256.ConvertToDouble(vx.AsInt64() >> 52);
+                vx = (vx & Vector256.Create(V_MSK)) + Vector256.Create(V_OFF);
+
+                // Adjust the mantissa to [-1/3, +1/3]
+                Vector256<double> r = vx.AsDouble() - Vector256<double>.One;
+
+                Vector256<double> r02 = r * r;
+                Vector256<double> r04 = r02 * r02;
+                Vector256<double> r08 = r04 * r04;
+                Vector256<double> r16 = r08 * r08;
+
+                // Compute log(x + 1) using Polynomial approximation
+                //      C0 + (r * C1) + (r^2 * C2) + ... + (r^20 * C20)
+
+                Vector256<double> poly = (((r04 * C20)
+                                        + ((((r * C19) + Vector256.Create(C18)) * r02)
+                                          + ((r * C17) + Vector256.Create(C16)))) * r16)
+                                     + (((((((r * C15) + Vector256.Create(C14)) * r02)
+                                          + ((r * C13) + Vector256.Create(C12))) * r04)
+                                        + ((((r * C11) + Vector256.Create(C10)) * r02)
+                                          + ((r * C09) + Vector256.Create(C08)))) * r08)
+                                       + (((((r * C07) + Vector256.Create(C06)) * r02)
+                                          + ((r * C05) + Vector256.Create(C04))) * r04)
+                                        + ((((r * C03) + Vector256.Create(C02)) * r02) + r);
+
+                return Vector256.ConditionalSelect(
+                    specialMask.AsDouble(),
+                    specialResult,
+                    (n * LN2_HEAD) + ((n * LN2_TAIL) + poly)
+                );
+            }
+
+            public static Vector512<double> Invoke(Vector512<double> x)
+            {
+                Vector512<double> specialResult = x;
+
+                // x is zero, subnormal, infinity, or NaN
+                Vector512<ulong> specialMask = Vector512.GreaterThanOrEqual(x.AsUInt64() - Vector512.Create(V_MIN), Vector512.Create(V_MAX - V_MIN));
+
+                if (specialMask != Vector512<ulong>.Zero)
+                {
+                    Vector512<long> xBits = x.AsInt64();
+
+                    // (x < 0) ? float.NaN : x
+                    Vector512<double> lessThanZeroMask = Vector512.LessThan(xBits, Vector512<long>.Zero).AsDouble();
+
+                    specialResult = Vector512.ConditionalSelect(
+                        lessThanZeroMask,
+                        Vector512.Create(double.NaN),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) ? double.NegativeInfinity : x
+                    Vector512<double> zeroMask = Vector512.Equals(xBits << 1, Vector512<long>.Zero).AsDouble();
+
+                    specialResult = Vector512.ConditionalSelect(
+                        zeroMask,
+                        Vector512.Create(double.NegativeInfinity),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
+                    Vector512<double> temp = zeroMask
+                                           | lessThanZeroMask
+                                           | Vector512.GreaterThanOrEqual(xBits, Vector512.Create(double.PositiveInfinity).AsInt64()).AsDouble();
+
+                    // subnormal
+                    Vector512<double> subnormalMask = Vector512.AndNot(specialMask.AsDouble(), temp);
+
+                    // multiply by 2^52, then normalize
+                    x = Vector512.ConditionalSelect(
+                        subnormalMask,
+                        ((x * 4503599627370496.0).AsUInt64() - Vector512.Create(52ul << 52)).AsDouble(),
+                        x
+                    );
+
+                    specialMask = temp.AsUInt64();
+                }
+
+                // Reduce the mantissa to [+2/3, +4/3]
+                Vector512<ulong> vx = x.AsUInt64() - Vector512.Create(V_OFF);
+                Vector512<double> n = Vector512.ConvertToDouble(vx.AsInt64() >> 52);
+                vx = (vx & Vector512.Create(V_MSK)) + Vector512.Create(V_OFF);
+
+                // Adjust the mantissa to [-1/3, +1/3]
+                Vector512<double> r = vx.AsDouble() - Vector512<double>.One;
+
+                Vector512<double> r02 = r * r;
+                Vector512<double> r04 = r02 * r02;
+                Vector512<double> r08 = r04 * r04;
+                Vector512<double> r16 = r08 * r08;
+
+                // Compute log(x + 1) using Polynomial approximation
+                //      C0 + (r * C1) + (r^2 * C2) + ... + (r^20 * C20)
+
+                Vector512<double> poly = (((r04 * C20)
+                                        + ((((r * C19) + Vector512.Create(C18)) * r02)
+                                          + ((r * C17) + Vector512.Create(C16)))) * r16)
+                                     + (((((((r * C15) + Vector512.Create(C14)) * r02)
+                                          + ((r * C13) + Vector512.Create(C12))) * r04)
+                                        + ((((r * C11) + Vector512.Create(C10)) * r02)
+                                          + ((r * C09) + Vector512.Create(C08)))) * r08)
+                                       + (((((r * C07) + Vector512.Create(C06)) * r02)
+                                          + ((r * C05) + Vector512.Create(C04))) * r04)
+                                        + ((((r * C03) + Vector512.Create(C02)) * r02) + r);
+
+                return Vector512.ConditionalSelect(
+                    specialMask.AsDouble(),
+                    specialResult,
+                    (n * LN2_HEAD) + ((n * LN2_TAIL) + poly)
+                );
+            }
+        }
+
+        /// <summary>float.Log(x)</summary>
+        internal readonly struct LogOperatorSingle : IUnaryOperator<float>
+        {
             // This code is based on `vrs4_logf` from amd/aocl-libm-ose
             // Copyright (C) 2018-2019 Advanced Micro Devices, Inc. All rights reserved.
             //
@@ -11542,15 +11933,12 @@ namespace System.Numerics.Tensors
             private const float C9 = 0.14401625f;
             private const float C10 = -0.13657966f;
 
-            public static bool Vectorizable => typeof(T) == typeof(float);
+            public static bool Vectorizable => true;
 
-            public static T Invoke(T x) => T.Log(x);
+            public static float Invoke(float x) => float.Log(x);
 
-            public static Vector128<T> Invoke(Vector128<T> t)
+            public static Vector128<float> Invoke(Vector128<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector128<float> x = t.AsSingle();
-
                 Vector128<float> specialResult = x;
 
                 // x is subnormal or infinity or NaN
@@ -11615,14 +12003,11 @@ namespace System.Numerics.Tensors
                     specialMask.AsSingle(),
                     specialResult,
                     n * Vector128.Create(V_LN2) + q
-                ).As<float, T>();
+                );
             }
 
-            public static Vector256<T> Invoke(Vector256<T> t)
+            public static Vector256<float> Invoke(Vector256<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector256<float> x = t.AsSingle();
-
                 Vector256<float> specialResult = x;
 
                 // x is subnormal or infinity or NaN
@@ -11687,14 +12072,11 @@ namespace System.Numerics.Tensors
                     specialMask.AsSingle(),
                     specialResult,
                     n * Vector256.Create(V_LN2) + q
-                ).As<float, T>();
+                );
             }
 
-            public static Vector512<T> Invoke(Vector512<T> t)
+            public static Vector512<float> Invoke(Vector512<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector512<float> x = t.AsSingle();
-
                 Vector512<float> specialResult = x;
 
                 // x is subnormal or infinity or NaN
@@ -11759,13 +12141,403 @@ namespace System.Numerics.Tensors
                     specialMask.AsSingle(),
                     specialResult,
                     n * Vector512.Create(V_LN2) + q
-                ).As<float, T>();
+                );
             }
         }
+#endif
 
         /// <summary>T.Log2(x)</summary>
         internal readonly struct Log2Operator<T> : IUnaryOperator<T>
             where T : ILogarithmicFunctions<T>
+        {
+            public static bool Vectorizable => (typeof(T) == typeof(double))
+                                            || (typeof(T) == typeof(float));
+
+            public static T Invoke(T x) => T.Log2(x);
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Log2(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Log2(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return Log2OperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Log2OperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Log2(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Log2(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return Log2OperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Log2OperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Log2(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Log2(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return Log2OperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Log2OperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+        }
+
+#if !NET9_0_OR_GREATER
+        /// <summary>double.Log2(x)</summary>
+        internal readonly struct Log2OperatorDouble : IUnaryOperator<double>
+        {
+            // This code is based on `vrd2_log2` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Reduce x into the form:
+            //        x = (-1)^s*2^n*m
+            // s will be always zero, as log is defined for positive numbers
+            // n is an integer known as the exponent
+            // m is mantissa
+            //
+            // x is reduced such that the mantissa, m lies in [2/3,4/3]
+            //      x = 2^n*m where m is in [2/3,4/3]
+            //      log2(x) = log2(2^n*m)              We have log(a*b) = log(a)+log(b)
+            //             = log2(2^n) + log2(m)       We have log(a^n) = n*log(a)
+            //             = n + log2(m)
+            //             = n + log2(1+(m-1))
+            //             = n + ln(1+f) * log2(e)          Where f = m-1
+            //             = n + log1p(f) * log2(e)         f lies in [-1/3,+1/3]
+            //
+            // Thus we have :
+            // log(x) = n + log1p(f) * log2(e)
+            // The second term log1p(F) is approximated by using a polynomial
+
+            private const ulong V_MIN = 0x00100000_00000000;    // SmallestNormal
+            private const ulong V_MAX = 0x7FF00000_00000000;    // +Infinity
+            private const ulong V_MSK = 0x000FFFFF_FFFFFFFF;    // (1 << 52) - 1
+            private const ulong V_OFF = 0x3FE55555_55555555;    // 2.0 / 3.0
+
+            private const double LN2_HEAD = 1.44269180297851562500E+00;
+            private const double LN2_TAIL = 3.23791044778235969970E-06;
+
+            private const double C02 = -0.499999999999999560;
+            private const double C03 = +0.333333333333414750;
+            private const double C04 = -0.250000000000297430;
+            private const double C05 = +0.199999999975985220;
+            private const double C06 = -0.166666666608919500;
+            private const double C07 = +0.142857145600277100;
+            private const double C08 = -0.125000005127831270;
+            private const double C09 = +0.111110952357159440;
+            private const double C10 = -0.099999750495501240;
+            private const double C11 = +0.090914349823462390;
+            private const double C12 = -0.083340600527551860;
+            private const double C13 = +0.076817603328311300;
+            private const double C14 = -0.071296718946287310;
+            private const double C15 = +0.067963465211535730;
+            private const double C16 = -0.063995035098960040;
+            private const double C17 = +0.049370587082412105;
+            private const double C18 = -0.045370170994891980;
+            private const double C19 = +0.088970636003577750;
+            private const double C20 = -0.086906174116908760;
+
+            public static bool Vectorizable => true;
+
+            public static double Invoke(double x) => double.Log2(x);
+
+            public static Vector128<double> Invoke(Vector128<double> x)
+            {
+                Vector128<double> specialResult = x;
+
+                // x is zero, subnormal, infinity, or NaN
+                Vector128<ulong> specialMask = Vector128.GreaterThanOrEqual(x.AsUInt64() - Vector128.Create(V_MIN), Vector128.Create(V_MAX - V_MIN));
+
+                if (specialMask != Vector128<ulong>.Zero)
+                {
+                    Vector128<long> xBits = x.AsInt64();
+
+                    // (x < 0) ? float.NaN : x
+                    Vector128<double> lessThanZeroMask = Vector128.LessThan(xBits, Vector128<long>.Zero).AsDouble();
+
+                    specialResult = Vector128.ConditionalSelect(
+                        lessThanZeroMask,
+                        Vector128.Create(double.NaN),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) ? double.NegativeInfinity : x
+                    Vector128<double> zeroMask = Vector128.Equals(xBits << 1, Vector128<long>.Zero).AsDouble();
+
+                    specialResult = Vector128.ConditionalSelect(
+                        zeroMask,
+                        Vector128.Create(double.NegativeInfinity),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
+                    Vector128<double> temp = zeroMask
+                                           | lessThanZeroMask
+                                           | Vector128.GreaterThanOrEqual(xBits, Vector128.Create(double.PositiveInfinity).AsInt64()).AsDouble();
+
+                    // subnormal
+                    Vector128<double> subnormalMask = Vector128.AndNot(specialMask.AsDouble(), temp);
+
+                    // multiply by 2^52, then normalize
+                    x = Vector128.ConditionalSelect(
+                        subnormalMask,
+                        ((x * 4503599627370496.0).AsUInt64() - Vector128.Create(52ul << 52)).AsDouble(),
+                        x
+                    );
+
+                    specialMask = Unsafe.BitCast<Vector128<double>, Vector128<ulong>>(temp);
+                }
+
+                // Reduce the mantissa to [+2/3, +4/3]
+                Vector128<ulong> vx = x.AsUInt64() - Vector128.Create(V_OFF);
+                Vector128<double> n = Vector128.ConvertToDouble(vx.AsInt64() >> 52);
+                vx = (vx & Vector128.Create(V_MSK)) + Vector128.Create(V_OFF);
+
+                // Adjust the mantissa to [-1/3, +1/3]
+                Vector128<double> r = vx.AsDouble() - Vector128<double>.One;
+
+                Vector128<double> r02 = r * r;
+                Vector128<double> r04 = r02 * r02;
+                Vector128<double> r08 = r04 * r04;
+                Vector128<double> r16 = r08 * r08;
+
+                // Compute log(x + 1) using polynomial approximation
+                //      C0 + (r * C1) + (r^2 * C2) + ... + (r^20 * C20)
+
+                Vector128<double> poly = (((r04 * C20)
+                                        + ((((r * C19) + Vector128.Create(C18)) * r02)
+                                          + ((r * C17) + Vector128.Create(C16)))) * r16)
+                                     + (((((((r * C15) + Vector128.Create(C14)) * r02)
+                                          + ((r * C13) + Vector128.Create(C12))) * r04)
+                                        + ((((r * C11) + Vector128.Create(C10)) * r02)
+                                          + ((r * C09) + Vector128.Create(C08)))) * r08)
+                                       + (((((r * C07) + Vector128.Create(C06)) * r02)
+                                          + ((r * C05) + Vector128.Create(C04))) * r04)
+                                        + ((((r * C03) + Vector128.Create(C02)) * r02) + r);
+
+                return Vector128.ConditionalSelect(
+                    specialMask.AsDouble(),
+                    specialResult,
+                    (poly * LN2_HEAD) + ((poly * LN2_TAIL) + n)
+                );
+            }
+
+            public static Vector256<double> Invoke(Vector256<double> x)
+            {
+                Vector256<double> specialResult = x;
+
+                // x is zero, subnormal, infinity, or NaN
+                Vector256<ulong> specialMask = Vector256.GreaterThanOrEqual(x.AsUInt64() - Vector256.Create(V_MIN), Vector256.Create(V_MAX - V_MIN));
+
+                if (specialMask != Vector256<ulong>.Zero)
+                {
+                    Vector256<long> xBits = x.AsInt64();
+
+                    // (x < 0) ? float.NaN : x
+                    Vector256<double> lessThanZeroMask = Vector256.LessThan(xBits, Vector256<long>.Zero).AsDouble();
+
+                    specialResult = Vector256.ConditionalSelect(
+                        lessThanZeroMask,
+                        Vector256.Create(double.NaN),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) ? double.NegativeInfinity : x
+                    Vector256<double> zeroMask = Vector256.Equals(xBits << 1, Vector256<long>.Zero).AsDouble();
+
+                    specialResult = Vector256.ConditionalSelect(
+                        zeroMask,
+                        Vector256.Create(double.NegativeInfinity),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
+                    Vector256<double> temp = zeroMask
+                                           | lessThanZeroMask
+                                           | Vector256.GreaterThanOrEqual(xBits, Vector256.Create(double.PositiveInfinity).AsInt64()).AsDouble();
+
+                    // subnormal
+                    Vector256<double> subnormalMask = Vector256.AndNot(specialMask.AsDouble(), temp);
+
+                    // multiply by 2^52, then normalize
+                    x = Vector256.ConditionalSelect(
+                        subnormalMask,
+                        ((x * 4503599627370496.0).AsUInt64() - Vector256.Create(52ul << 52)).AsDouble(),
+                        x
+                    );
+
+                    specialMask = Unsafe.BitCast<Vector256<double>, Vector256<ulong>>(temp);
+                }
+
+                // Reduce the mantissa to [+2/3, +4/3]
+                Vector256<ulong> vx = x.AsUInt64() - Vector256.Create(V_OFF);
+                Vector256<double> n = Vector256.ConvertToDouble(vx.AsInt64() >> 52);
+                vx = (vx & Vector256.Create(V_MSK)) + Vector256.Create(V_OFF);
+
+                // Adjust the mantissa to [-1/3, +1/3]
+                Vector256<double> r = vx.AsDouble() - Vector256<double>.One;
+
+                Vector256<double> r02 = r * r;
+                Vector256<double> r04 = r02 * r02;
+                Vector256<double> r08 = r04 * r04;
+                Vector256<double> r16 = r08 * r08;
+
+                // Compute log(x + 1) using polynomial approximation
+                //      C0 + (r * C1) + (r^2 * C2) + ... + (r^20 * C20)
+
+                Vector256<double> poly = (((r04 * C20)
+                                        + ((((r * C19) + Vector256.Create(C18)) * r02)
+                                          + ((r * C17) + Vector256.Create(C16)))) * r16)
+                                     + (((((((r * C15) + Vector256.Create(C14)) * r02)
+                                          + ((r * C13) + Vector256.Create(C12))) * r04)
+                                        + ((((r * C11) + Vector256.Create(C10)) * r02)
+                                          + ((r * C09) + Vector256.Create(C08)))) * r08)
+                                       + (((((r * C07) + Vector256.Create(C06)) * r02)
+                                          + ((r * C05) + Vector256.Create(C04))) * r04)
+                                        + ((((r * C03) + Vector256.Create(C02)) * r02) + r);
+
+                return Vector256.ConditionalSelect(
+                    specialMask.AsDouble(),
+                    specialResult,
+                    (poly * LN2_HEAD) + ((poly * LN2_TAIL) + n)
+                );
+            }
+
+            public static Vector512<double> Invoke(Vector512<double> x)
+            {
+                Vector512<double> specialResult = x;
+
+                // x is zero, subnormal, infinity, or NaN
+                Vector512<ulong> specialMask = Vector512.GreaterThanOrEqual(x.AsUInt64() - Vector512.Create(V_MIN), Vector512.Create(V_MAX - V_MIN));
+
+                if (specialMask != Vector512<ulong>.Zero)
+                {
+                    Vector512<long> xBits = x.AsInt64();
+
+                    // (x < 0) ? float.NaN : x
+                    Vector512<double> lessThanZeroMask = Vector512.LessThan(xBits, Vector512<long>.Zero).AsDouble();
+
+                    specialResult = Vector512.ConditionalSelect(
+                        lessThanZeroMask,
+                        Vector512.Create(double.NaN),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) ? double.NegativeInfinity : x
+                    Vector512<double> zeroMask = Vector512.Equals(xBits << 1, Vector512<long>.Zero).AsDouble();
+
+                    specialResult = Vector512.ConditionalSelect(
+                        zeroMask,
+                        Vector512.Create(double.NegativeInfinity),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
+                    Vector512<double> temp = zeroMask
+                                           | lessThanZeroMask
+                                           | Vector512.GreaterThanOrEqual(xBits, Vector512.Create(double.PositiveInfinity).AsInt64()).AsDouble();
+
+                    // subnormal
+                    Vector512<double> subnormalMask = Vector512.AndNot(specialMask.AsDouble(), temp);
+
+                    // multiply by 2^52, then normalize
+                    x = Vector512.ConditionalSelect(
+                        subnormalMask,
+                        ((x * 4503599627370496.0).AsUInt64() - Vector512.Create(52ul << 52)).AsDouble(),
+                        x
+                    );
+
+                    specialMask = Unsafe.BitCast<Vector512<double>, Vector512<ulong>>(temp);
+                }
+
+                // Reduce the mantissa to [+2/3, +4/3]
+                Vector512<ulong> vx = x.AsUInt64() - Vector512.Create(V_OFF);
+                Vector512<double> n = Vector512.ConvertToDouble(vx.AsInt64() >> 52);
+                vx = (vx & Vector512.Create(V_MSK)) + Vector512.Create(V_OFF);
+
+                // Adjust the mantissa to [-1/3, +1/3]
+                Vector512<double> r = vx.AsDouble() - Vector512<double>.One;
+
+                Vector512<double> r02 = r * r;
+                Vector512<double> r04 = r02 * r02;
+                Vector512<double> r08 = r04 * r04;
+                Vector512<double> r16 = r08 * r08;
+
+                // Compute log(x + 1) using polynomial approximation
+                //      C0 + (r * C1) + (r^2 * C2) + ... + (r^20 * C20)
+
+                Vector512<double> poly = (((r04 * C20)
+                                        + ((((r * C19) + Vector512.Create(C18)) * r02)
+                                          + ((r * C17) + Vector512.Create(C16)))) * r16)
+                                     + (((((((r * C15) + Vector512.Create(C14)) * r02)
+                                          + ((r * C13) + Vector512.Create(C12))) * r04)
+                                        + ((((r * C11) + Vector512.Create(C10)) * r02)
+                                          + ((r * C09) + Vector512.Create(C08)))) * r08)
+                                       + (((((r * C07) + Vector512.Create(C06)) * r02)
+                                          + ((r * C05) + Vector512.Create(C04))) * r04)
+                                        + ((((r * C03) + Vector512.Create(C02)) * r02) + r);
+
+                return Vector512.ConditionalSelect(
+                    specialMask.AsDouble(),
+                    specialResult,
+                    (poly * LN2_HEAD) + ((poly * LN2_TAIL) + n)
+                );
+            }
+        }
+
+        /// <summary>float.Log2(x)</summary>
+        internal readonly struct Log2OperatorSingle : IUnaryOperator<float>
         {
             // This code is based on `vrs4_log2f` from amd/aocl-libm-ose
             // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
@@ -11833,15 +12605,12 @@ namespace System.Numerics.Tensors
             private const float C8 = -0.22616665f;
             private const float C9 = 0.21228963f;
 
-            public static bool Vectorizable => typeof(T) == typeof(float);
+            public static bool Vectorizable => true;
 
-            public static T Invoke(T x) => T.Log2(x);
+            public static float Invoke(float x) => float.Log2(x);
 
-            public static Vector128<T> Invoke(Vector128<T> t)
+            public static Vector128<float> Invoke(Vector128<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector128<float> x = t.AsSingle();
-
                 Vector128<float> specialResult = x;
 
                 // x is subnormal or infinity or NaN
@@ -11906,14 +12675,11 @@ namespace System.Numerics.Tensors
                     specialMask.AsSingle(),
                     specialResult,
                     n + poly
-                ).As<float, T>();
+                );
             }
 
-            public static Vector256<T> Invoke(Vector256<T> t)
+            public static Vector256<float> Invoke(Vector256<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector256<float> x = t.AsSingle();
-
                 Vector256<float> specialResult = x;
 
                 // x is subnormal or infinity or NaN
@@ -11978,14 +12744,11 @@ namespace System.Numerics.Tensors
                     specialMask.AsSingle(),
                     specialResult,
                     n + poly
-                ).As<float, T>();
+                );
             }
 
-            public static Vector512<T> Invoke(Vector512<T> t)
+            public static Vector512<float> Invoke(Vector512<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector512<float> x = t.AsSingle();
-
                 Vector512<float> specialResult = x;
 
                 // x is subnormal or infinity or NaN
@@ -12050,9 +12813,10 @@ namespace System.Numerics.Tensors
                     specialMask.AsSingle(),
                     specialResult,
                     n + poly
-                ).As<float, T>();
+                );
             }
         }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<T> ElementWiseSelect<T>(Vector128<T> mask, Vector128<T> left, Vector128<T> right)

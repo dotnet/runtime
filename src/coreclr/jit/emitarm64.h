@@ -53,9 +53,11 @@ void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
-void emitDispSveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
+void emitDispSveConsecutiveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
 void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
+void emitDispLowPredicateRegPair(regNumber reg, insOpts opt);
+void emitDispVectorLengthSpecifier(instrDesc* id);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -418,6 +420,9 @@ static code_t insEncodeDatasizeBF(code_t code, emitAttr size);
 // Returns the encoding to select the vectorsize for SIMD Arm64 instructions
 static code_t insEncodeVectorsize(emitAttr size);
 
+// Returns the encoding to set the vector length specifier (vl) for an Arm64 SVE instruction
+static code_t insEncodeVectorLengthSpecifier(instrDesc* id);
+
 // Returns the encoding to select 'index' for an Arm64 vector elem instruction
 static code_t insEncodeVectorIndex(emitAttr elemsize, ssize_t index);
 
@@ -482,6 +487,37 @@ static code_t insEncodeSveElemsize(emitAttr size);
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
+// Returns the first register list size for the given SVE instruction.
+static int insGetSveReg1ListSize(instruction ins);
+
+// Returns the predicate type for the given SVE format.
+static PredicateType insGetPredicateType(insFormat fmt);
+
+// Returns true if the specified instruction can encode the 'dtype' field.
+static bool canEncodeSveElemsize_dtype(instruction ins);
+
+// Returns the encoding to select the 1/2/4/8/16 byte elemsize for an Arm64 Sve vector instruction
+// for the 'dtype' field.
+static code_t insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t code);
+
+// Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
+static code_t insEncodeSimm4_19_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 2 as 4-bits at bit locations '19-16'.
+static code_t insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 3 as 4-bits at bit locations '19-16'.
+static code_t insEncodeSimm4_MultipleOf3_19_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 4 as 4-bits at bit locations '19-16'.
+static code_t insEncodeSimm4_MultipleOf4_19_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 16 as 4-bits at bit locations '19-16'.
+static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
+static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
+
 // Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
 // This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
 static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift, size_t imm);
@@ -502,13 +538,49 @@ static bool isStackRegister(regNumber reg)
     return (reg == REG_ZR) || (reg == REG_FP);
 } // ZR (R31) encodes the SP register
 
+// Returns true if 'value' is a legal signed immediate 4 bit encoding (such as for LDNF1SW).
+static bool isValidSimm4(ssize_t value)
+{
+    return (-8 <= value) && (value <= 7);
+};
+
+// Returns true if 'value' is a legal signed multiple of 2 immediate 4 bit encoding (such as for LD2Q).
+static bool isValidSimm4_MultipleOf2(ssize_t value)
+{
+    return (-16 <= value) && (value <= 14) && (value % 2 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 3 immediate 4 bit encoding (such as for LD3Q).
+static bool isValidSimm4_MultipleOf3(ssize_t value)
+{
+    return (-24 <= value) && (value <= 21) && (value % 3 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 4 immediate 4 bit encoding (such as for LD4Q).
+static bool isValidSimm4_MultipleOf4(ssize_t value)
+{
+    return (-32 <= value) && (value <= 28) && (value % 4 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 16 immediate 4 bit encoding (such as for LD1RQB).
+static bool isValidSimm4_MultipleOf16(ssize_t value)
+{
+    return (-128 <= value) && (value <= 112) && (value % 16 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 32 immediate 4 bit encoding (such as for LD1ROB).
+static bool isValidSimm4_MultipleOf32(ssize_t value)
+{
+    return (-256 <= value) && (value <= 224) && (value % 32 == 0);
+};
+
 // Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
 static bool isValidUimm5(ssize_t value)
 {
     return (0 <= value) && (value <= 0x1FLL);
 };
 
-// Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for fMOV).
+// Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for FMOV).
 static bool isValidUimm8(ssize_t value)
 {
     return (0 <= value) && (value <= 0xFFLL);
@@ -598,6 +670,9 @@ static insOpts optWidenElemsizeArrangement(insOpts arrangement);
 //  For the given SVE 'arrangement' returns the one with the element width that is double that of the 'arrangement'
 //  element.
 static insOpts optWidenSveElemsizeArrangement(insOpts arrangement);
+
+//  For the given SVE 'arrangement', return the one when reduced to a quadword vector.
+static insOpts optSveToQuadwordElemsizeArrangement(insOpts arrangement);
 
 //  For the given 'datasize' returns the one that is double that of the 'datasize'.
 static emitAttr widenDatasize(emitAttr datasize);
@@ -789,12 +864,17 @@ inline static bool isFloatReg(regNumber reg)
 
 inline static bool isPredicateRegister(regNumber reg)
 {
-    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LAST);
+    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LAST);
 }
 
 inline static bool isLowPredicateRegister(regNumber reg)
 {
-    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LOW_LAST);
+    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LOW_LAST);
+}
+
+inline static bool isHighPredicateRegister(regNumber reg)
+{
+    return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
 }
 
 inline static bool insOptsNone(insOpts opt)
@@ -895,84 +975,70 @@ inline static bool insOptsConvertIntToFloat(insOpts opt)
 
 inline static bool insOptsScalable(insOpts opt)
 {
-    // Opt is any of the scalable types.
-    return ((insOptsScalableSimple(opt)) || (insOptsScalableWide(opt)) || (insOptsScalableWithSimdScalar(opt)) ||
-            (insOptsScalableWithScalar(opt)) || (insOptsScalableWithSimdVector(opt)) ||
-            insOptsScalableWithPredicateMerge(opt));
+    // `opt` is any of the scalable types.
+    return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) ||
+            (opt == INS_OPTS_SCALABLE_D) || (opt == INS_OPTS_SCALABLE_Q));
 }
 
-inline static bool insOptsScalableSimple(insOpts opt)
+inline static bool insOptsScalableStandard(insOpts opt)
 {
-    // `opt` is any of the standard scalable types.
+    // `opt` is any of the scalable types, except Quadword.
     return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) ||
             (opt == INS_OPTS_SCALABLE_D));
 }
 
 inline static bool insOptsScalableWords(insOpts opt)
 {
-    // `opt` is any of the standard word and above scalable types.
+    // `opt` is any of the word and above scalable types.
     return ((opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableWordsOrQuadwords(insOpts opt)
+{
+    // `opt` is any of the word, quadword and above scalable types.
+    return (insOptsScalableWords(opt) || (opt == INS_OPTS_SCALABLE_Q));
 }
 
 inline static bool insOptsScalableAtLeastHalf(insOpts opt)
 {
-    // `opt` is any of the standard half and above scalable types.
+    // `opt` is any of the half and above scalable types.
     return ((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
+}
+
+inline static bool insOptsScalableAtMaxHalf(insOpts opt)
+{
+    // `opt` is any of the standard half and below scalable types.
+    return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H));
 }
 
 inline static bool insOptsScalableFloat(insOpts opt)
 {
-    // `opt` is any of the standard scalable types that are valid for FP.
+    // `opt` is any of the scalable types that are valid for FP.
     return ((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D));
 }
 
 inline static bool insOptsScalableWide(insOpts opt)
 {
     // `opt` is any of the scalable types that are valid for widening to size D.
-    return ((opt == INS_OPTS_SCALABLE_WIDE_B) || (opt == INS_OPTS_SCALABLE_WIDE_H) ||
-            (opt == INS_OPTS_SCALABLE_WIDE_S));
+    return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S));
 }
 
-inline static bool insOptsScalableWithSimdVector(insOpts opt)
+inline static bool insScalableOptsNone(insScalableOpts sopt)
 {
-    // `opt` is any of the scalable types that are valid for conversion to an Advsimd SIMD Vector.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_VECTOR) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_VECTOR) || (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_VECTOR));
+    // `sopt` is used for instructions with no extra encoding variants.
+    return sopt == INS_SCALABLE_OPTS_NONE;
 }
 
-inline static bool insOptsScalableWithSimdScalar(insOpts opt)
+inline static bool insScalableOptsWithPredicatePair(insScalableOpts sopt)
 {
-    // `opt` is any of the scalable types that are valid for conversion to/from a scalar in a SIMD register.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR));
+    // `sopt` denotes the instruction's predicate register should be encoded as a {<Pd1>.<T>, <Pd2>.<T>} pair.
+    return sopt == INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR;
 }
 
-inline static bool insOptsScalableWithSimdFPScalar(insOpts opt)
+inline static bool insScalableOptsWithVectorLength(insScalableOpts sopt)
 {
-    // `opt` is any of the scalable types that are valid for conversion to/from a FP scalar in a SIMD register.
-    return ((opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_D_WITH_SIMD_SCALAR));
-}
-
-inline static bool insOptsScalableWideningToSimdScalar(insOpts opt)
-{
-    // `opt` is any of the scalable types that are valid for widening then conversion to a scalar in a SIMD register.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_SIMD_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SIMD_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_SIMD_SCALAR));
-}
-
-inline static bool insOptsScalableWithScalar(insOpts opt)
-{
-    // `opt` is any of the SIMD scalable types that are valid for conversion to/from a scalar.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_H_WITH_SCALAR) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_SCALAR) || (opt == INS_OPTS_SCALABLE_D_WITH_SCALAR));
-}
-
-inline static bool insOptsScalableWithPredicateMerge(insOpts opt)
-{
-    // `opt` is any of the SIMD scalable types that are valid for use with a merge predicate.
-    return ((opt == INS_OPTS_SCALABLE_B_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_H_WITH_PREDICATE_MERGE) ||
-            (opt == INS_OPTS_SCALABLE_S_WITH_PREDICATE_MERGE) || (opt == INS_OPTS_SCALABLE_D_WITH_PREDICATE_MERGE));
+    // `sopt` is any of the scalable types that are valid for use with instructions with a vector length specifier (vl).
+    return ((sopt == INS_SCALABLE_OPTS_VL_2X) || (sopt == INS_SCALABLE_OPTS_VL_4X));
 }
 
 static bool isValidImmCond(ssize_t imm);
@@ -1000,7 +1066,7 @@ void emitIns(instruction ins);
 
 void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
-void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
+void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_R_I(instruction ins,
                  emitAttr    attr,
@@ -1014,7 +1080,12 @@ void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, i
 void emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_R(instruction     ins,
+                 emitAttr        attr,
+                 regNumber       reg1,
+                 regNumber       reg2,
+                 insOpts         opt  = INS_OPTS_NONE,
+                 insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
 {
@@ -1035,8 +1106,13 @@ void emitIns_R_R_I(
 // Checks for a large immediate that needs a second instruction
 void emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm);
 
-void emitIns_R_R_R(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_R_R(instruction     ins,
+                   emitAttr        attr,
+                   regNumber       reg1,
+                   regNumber       reg2,
+                   regNumber       reg3,
+                   insOpts         opt  = INS_OPTS_NONE,
+                   insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R_R_I(instruction ins,
                      emitAttr    attr,
@@ -1058,13 +1134,14 @@ void emitIns_R_R_R_Ext(instruction ins,
 void emitIns_R_R_I_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_R_R_R(instruction ins,
-                     emitAttr    attr,
-                     regNumber   reg1,
-                     regNumber   reg2,
-                     regNumber   reg3,
-                     regNumber   reg4,
-                     insOpts     opt = INS_OPTS_NONE);
+void emitIns_R_R_R_R(instruction     ins,
+                     emitAttr        attr,
+                     regNumber       reg1,
+                     regNumber       reg2,
+                     regNumber       reg3,
+                     regNumber       reg4,
+                     insOpts         opt  = INS_OPTS_NONE,
+                     insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 

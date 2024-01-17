@@ -46,7 +46,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			IEnumerable<MetadataReference>? additionalReferences = null,
 			params DiagnosticResult[] expected)
 		{
-			var (comp, _, exceptionDiagnostics) = await TestCaseCompilation.CreateCompilation (src, consoleApplication, analyzerOptions, additionalReferences);
+			var (comp, _, exceptionDiagnostics) = TestCaseCompilation.CreateCompilation (src, consoleApplication, analyzerOptions, additionalReferences);
 			var diags = (await comp.GetAllDiagnosticsAsync ()).AddRange (exceptionDiagnostics);
 			var analyzers = ImmutableArray.Create<DiagnosticAnalyzer> (new TAnalyzer ());
 			VerifyDiagnosticResults (diags, analyzers, expected, DefaultVerifier);
