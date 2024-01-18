@@ -4977,8 +4977,9 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
         dfsFrom(fgEntryBB);
     }
 
-    if ((genReturnBB != nullptr) && !BitVecOps::IsMember(&traits, visited, genReturnBB->bbNum) && !fgGlobalMorphDone)
+    if ((genReturnBB != nullptr) && !BitVecOps::IsMember(&traits, visited, genReturnBB->bbNum))
     {
+        assert(!fgGlobalMorphDone);
         // We introduce the merged return BB before morph and will redirect
         // other returns to it as part of morph; keep it reachable.
         dfsFrom(genReturnBB);

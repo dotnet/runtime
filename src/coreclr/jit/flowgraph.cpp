@@ -1868,7 +1868,7 @@ public:
                 return;
             }
 
-            // We'e reached our threshold
+            // We've reached our threshold
             mergingReturns = true;
 
             // Merge any returns we've already identified
