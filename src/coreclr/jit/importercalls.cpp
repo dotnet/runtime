@@ -3165,6 +3165,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_get_IsByRefLike:
             case NI_System_Type_IsAssignableFrom:
             case NI_System_Type_IsAssignableTo:
+            case NI_System_Type_get_IsGenericType:
 
             // Lightweight intrinsics
             case NI_System_String_get_Chars:
@@ -3785,6 +3786,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_get_IsValueType:
             case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsByRefLike:
+            case NI_System_Type_get_IsGenericType:
             {
                 // Optimize
                 //
@@ -3823,6 +3825,20 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             // because enums are not primitive types.
                             if ((info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::MustNot) &&
                                 info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_UNDEF)
+                            {
+                                retNode = gtNewTrue();
+                            }
+                            else
+                            {
+                                retNode = gtNewFalse();
+                            }
+                            break;
+                        case NI_System_Type_get_IsGenericType:
+                            // a type is a generic type if there is at least one type argument that is
+                            // some valid type, so we can always just check the one at index 0 for this.
+                            // This will work on open generic types as well, and the returned type handle
+                            // will be some handle that represents the (non constructed) type parameter.
+                            if (info.compCompHnd->getTypeInstantiationArgument(hClass, 0) != NO_CLASS_HANDLE)
                             {
                                 retNode = gtNewTrue();
                             }
@@ -10014,6 +10030,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_IsPrimitive") == 0)
                         {
                             result = NI_System_Type_get_IsPrimitive;
+                        }
+                        else if (strcmp(methodName, "get_IsGenericType") == 0)
+                        {
+                            result = NI_System_Type_get_IsGenericType;
                         }
                         else if (strcmp(methodName, "get_IsByRefLike") == 0)
                         {
