@@ -447,14 +447,24 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
             orArray = (ArrayBase*)Alloc(totalSize + MIN_OBJECT_SIZE, flags);
 
             Object* orDummyObject;
-            if ((size_t)orArray % sizeof(double))
+            if (((size_t)orArray % sizeof(double)) != 0)
             {
                 orDummyObject = orArray;
                 orArray = (ArrayBase*)((size_t)orArray + MIN_OBJECT_SIZE);
+                if (flags & GC_ALLOC_ZEROING_OPTIONAL)
+                {
+                    // clean the syncblock of the aligned object.
+                    *(((void**)orArray)-1) = 0;
+                }
             }
             else
             {
                 orDummyObject = (Object*)((size_t)orArray + totalSize);
+                if (flags & GC_ALLOC_ZEROING_OPTIONAL)
+                {
+                    // clean the syncblock of the dummy object.
+                    *(((void**)orDummyObject)-1) = 0;
+                }
             }
             _ASSERTE(((size_t)orArray % sizeof(double)) == 0);
             orDummyObject->SetMethodTable(g_pObjectClass);
