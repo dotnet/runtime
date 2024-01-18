@@ -12541,6 +12541,13 @@ void LinearScan::RegisterSelection::try_FREE()
 void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 {
     assert(!found);
+#ifdef DEBUG
+    // See comments in try_FREE
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
+#endif
 
     if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
     {
@@ -12580,6 +12587,14 @@ void LinearScan::RegisterSelection::try_THIS_ASSIGNED()
 void LinearScan::RegisterSelection::try_COVERS()
 {
     assert(!found);
+
+#ifdef DEBUG
+    // See comments in try_FREE
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
+#endif
 
     calculateCoversSets();
 
@@ -12632,6 +12647,7 @@ void LinearScan::RegisterSelection::try_COVERS_RELATED()
 void LinearScan::RegisterSelection::try_RELATED_PREFERENCE()
 {
     assert(!found);
+
 #ifdef DEBUG
     // See comments in try_FREE
     if (freeCandidates == RBM_NONE)
@@ -12649,6 +12665,7 @@ void LinearScan::RegisterSelection::try_RELATED_PREFERENCE()
 void LinearScan::RegisterSelection::try_CALLER_CALLEE()
 {
     assert(!found);
+
 #ifdef DEBUG
     // See comments in try_FREE
     if (freeCandidates == RBM_NONE)
@@ -12668,6 +12685,11 @@ void LinearScan::RegisterSelection::try_UNASSIGNED()
     assert(!found);
 
 #ifdef DEBUG
+    // See comments in try_FREE
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
     calculateCoversSets();
 #endif
 
@@ -12705,6 +12727,14 @@ void LinearScan::RegisterSelection::try_COVERS_FULL()
 void LinearScan::RegisterSelection::try_BEST_FIT()
 {
     assert(!found);
+
+#ifdef DEBUG
+    // See comments in try_FREE
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
+#endif
 
     regMaskTP bestFitSet = RBM_NONE;
     // If the best score includes COVERS_FULL, pick the one that's killed soonest.
@@ -12776,6 +12806,13 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
 //
 void LinearScan::RegisterSelection::try_IS_PREV_REG()
 {
+#ifdef DEBUG
+    // See comments in try_FREE
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
+#endif
     // TODO: We do not check found here.
     if ((currentInterval->assignedReg != nullptr) && coversFullApplied)
     {
@@ -12789,6 +12826,14 @@ void LinearScan::RegisterSelection::try_IS_PREV_REG()
 void LinearScan::RegisterSelection::try_REG_ORDER()
 {
     assert(!found);
+
+#ifdef DEBUG
+    // See comments in try_FREE
+    if (freeCandidates == RBM_NONE)
+    {
+        return;
+    }
+#endif
 
     // This will always result in a single candidate. That is, it is the tie-breaker
     // for free candidates, and doesn't make sense as anything other than the last
