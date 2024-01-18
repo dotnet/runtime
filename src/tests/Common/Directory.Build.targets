@@ -41,7 +41,6 @@
       <RunTimeDependencyCopyLocal Include="@(NativeCopyLocalItems)" />
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
       <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/xunit.*" TargetDir="xunit/" />
-      <RunTimeDependencyCopyLocal Include="$(XUnitTestBinBase)/Common/PdbChecker/PdbChecker/*.*" TargetDir="PdbChecker/" />
     </ItemGroup>
 
     <ItemGroup>
@@ -106,6 +105,11 @@
 
       <!-- Used by the coreroot_determinism test -->
       <RunTimeArtifactsIncludeFolders Include="R2RTest/" TargetDir="R2RTest/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
+      <!-- Used by tests checking PDB validity -->
+      <RunTimeArtifactsIncludeFolders Include="PdbChecker/" TargetDir="PdbChecker/">
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 

@@ -1,18 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <AssemblyName>PdbChecker</AssemblyName>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <Platforms>x64;x86;arm64;arm</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <RuntimeIdentifiers>win-x64;win-x86;win-arm;win-arm64</RuntimeIdentifiers>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <Nullable>enable</Nullable>
+    <OutputPath>$(RuntimeBinDir)\PdbChecker</OutputPath>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="*.cs" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
   </ItemGroup>
 
