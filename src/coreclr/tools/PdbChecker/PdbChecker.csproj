@@ -17,4 +17,12 @@
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
   </ItemGroup>
 
+  <Target Name="CopyMsdiaForTargetArchitecture" AfterTargets="AfterBuild">
+    <PropertyGroup>
+      <ArchitectureFolder>$(TargetArchitecture)</ArchitectureFolder>
+      <ArchitectureFolder Condition="'$(TargetArchitecture)' == 'x64'">amd64</ArchitectureFolder>
+    </PropertyGroup>
+  
+    <Copy SourceFiles="$(OutputPath)\$(ArchitectureFolder)\msdia140.dll" DestinationFolder="$(OutputPath)" />
+  </Target>
 </Project>
