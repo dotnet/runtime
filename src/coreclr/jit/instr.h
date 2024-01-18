@@ -316,6 +316,9 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR, // Variants with {<Pd1>.<T>, <Pd2>.<T>} predicate pair (eg whilege)
     INS_SCALABLE_OPTS_VL_2X,               // Variants with a vector length specifier of 2x (eg whilege)
     INS_SCALABLE_OPTS_VL_4X,               // Variants with a vector length specifier of 4x (eg whilege)
+
+    INS_SCALABLE_OPTS_MOD,
+    INS_SCALABLE_OPTS_MOD_N,
 };
 
 enum insCond : unsigned
