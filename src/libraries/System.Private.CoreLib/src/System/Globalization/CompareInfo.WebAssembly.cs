@@ -150,9 +150,9 @@ namespace System.Globalization
             }
             if ((options & CompareOptions.IgnoreCase) != 0)
             {
-                string resultStr = new string(result, 0, resultIndex);
+                string? resultStr = new string(result, 0, resultIndex);
                 // JS-based ToLower, to keep cases like Turkish I working
-                resultStr = _thisTextInfo.ToLower(resultStr);
+                resultStr = _thisTextInfo?.ToLower(resultStr);
                 return resultStr.AsSpan();
             }
             return result.AsSpan(0, resultIndex);

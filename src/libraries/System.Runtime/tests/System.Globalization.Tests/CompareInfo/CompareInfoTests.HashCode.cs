@@ -32,7 +32,6 @@ namespace System.Globalization.Tests
             public override int GetHashCode(string obj)
             {
                 return _compareInfo.GetHashCode(obj, _compareOptions);
-
             }
         }
 

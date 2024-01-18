@@ -17,14 +17,29 @@ For WebAssembly in Browser we are using Web API instead of some ICU data. Ideall
 
 Hybrid has higher priority than sharding or custom modes, described in globalization-icu-wasm.md.
 
-**SortKey**
+**HashCode**
 
-In HybridGlobalization mode Invariant way of SortKey calculation is used. Comparison functions are locale-sensitive while hasing function are not, one of the side effects are described in the issue: https://github.com/dotnet/runtime/issues/96400. The following APIs will work in the same way as they do when `Invariant=true`:
+Affected public APIs:
+- System.Globalization.CompareInfo.GetHashCode
+
+For invariant culture all `CompareOptions` are available.
+
+For non-invariant cultures following `CompareOptions` are available:
+- `CompareOption.None`
+- `CompareOption.IgnoreCase`
+
+The remaining combinations for non-invariant cultures throw `PlatformNotSupportedException`.
+
+**SortKey**
 
 Affected public APIs:
 - System.Globalization.CompareInfo.GetSortKey
 - System.Globalization.CompareInfo.GetSortKeyLength
-- System.Globalization.CompareInfo.GetHashCode
+
+For invariant culture all `CompareOptions` are available.
+
+For non-invariant cultures `PlatformNotSupportedException` is thrown.
+
 Indirectly affected APIs (the list might not be complete):
 - Microsoft.VisualBasic.Collection.Add
 - System.Collections.Hashtable.Add
