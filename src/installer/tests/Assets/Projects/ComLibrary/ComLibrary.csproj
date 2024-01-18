@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <!-- Assembly version must match that in SxS manifests using this library. -->
+    <AssemblyVersion>1.0.0</AssemblyVersion>
   </PropertyGroup>
 
 </Project>
