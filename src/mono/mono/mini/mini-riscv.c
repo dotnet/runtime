@@ -2639,7 +2639,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					NOT_IMPLEMENTED;
 				}
 			} else {
-				g_assert_not_reached ();
+				NULLIFY_INS (ins);
+				// g_assert_not_reached ();
 			}
 			break;
 		}
@@ -2722,7 +2723,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					NOT_IMPLEMENTED;
 				}
 			} else {
-				g_assert_not_reached ();
+				NULLIFY_INS (ins);
+				// g_assert_not_reached ();
 			}
 			break;
 		}
@@ -3120,7 +3122,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				           next_ins->opcode == OP_LOADI4_MEMBASE || next_ins->opcode == OP_BR ||
 				           next_ins->opcode == OP_LOADI8_MEMBASE || next_ins->opcode == OP_ICONST ||
 				           next_ins->opcode == OP_I8CONST || next_ins->opcode == OP_ADD_IMM ||
-						   next_ins->opcode == OP_IXOR) {
+						   next_ins->opcode == OP_IXOR || next_ins->opcode == OP_ICOMPARE ||
+						   next_ins->opcode == OP_LCOMPARE) {
 					/**
 					 * there is compare without branch OP followed
 					 *
