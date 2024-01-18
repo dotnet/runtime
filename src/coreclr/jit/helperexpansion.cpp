@@ -49,7 +49,7 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
 // Return Value:
 //    Number of the local that replaces the tree
 //
-unsigned SplitAtTreeAndReplaceItWithLocal(
+static unsigned SplitAtTreeAndReplaceItWithLocal(
     Compiler* comp, BasicBlock* block, Statement* stmt, GenTree* tree, BasicBlock** topBlock, BasicBlock** bottomBlock)
 {
     BasicBlock* prevBb       = block;
@@ -1657,7 +1657,7 @@ PhaseStatus Compiler::fgLateCastExpansion()
 // Returns:
 //    Likely class handle or NO_CLASS_HANDLE
 //
-CORINFO_CLASS_HANDLE PickLikelyClass(Compiler* comp, IL_OFFSET offset, unsigned* likelihood)
+static CORINFO_CLASS_HANDLE PickLikelyClass(Compiler* comp, IL_OFFSET offset, unsigned* likelihood)
 {
     // TODO-InlineCast: consider merging this helper with pickGDV
 
