@@ -21,15 +21,17 @@ static bool strictArmAsm;
 
 enum PredicateType
 {
-    PREDICATE_NONE = 0,
-    PREDICATE_MERGE,
-    PREDICATE_ZERO,
-    PREDICATE_SIZED,
+    PREDICATE_NONE = 0, // Predicate printed with no extensions
+    PREDICATE_MERGE,    // Predicate printed with /m
+    PREDICATE_ZERO,     // Predicate printed with /z
+    PREDICATE_SIZED,    // Predicate printed with element size
+    PREDICATE_N_SIZED,  // Predicate printed printed as counter with element size
 };
 
 const char* emitSveRegName(regNumber reg);
 const char* emitVectorRegName(regNumber reg);
 const char* emitPredicateRegName(regNumber reg);
+const char* emitPredicateAsCounterRegName(regNumber reg);
 
 void emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);

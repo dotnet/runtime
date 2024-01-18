@@ -1904,6 +1904,14 @@ static const char * const  pRegNames[] =
     "p10", "p11", "p12", "p13", "p14",
     "p15"
 };
+
+static const char * const  pnRegNames[] =
+{
+    "pn0",  "pn1",  "pn2",  "pn3",  "pn4",
+    "pn5",  "pn6",  "pn7",  "pn8",  "pn9",
+    "pn10", "pn11", "pn12", "pn13", "pn14",
+    "pn15"
+};
 // clang-format on
 
 //------------------------------------------------------------------------
@@ -2008,6 +2016,24 @@ const char* emitter::emitPredicateRegName(regNumber reg)
     int index = (int)reg - (int)REG_P0;
 
     return pRegNames[index];
+}
+
+//------------------------------------------------------------------------
+// emitPredicateAsCounterRegName: Returns a predicate as counter register name.
+//
+// Arguments:
+//    reg - A predicate register.
+//
+// Return value:
+//    A string that represents a predicate as counter register name.
+//
+const char* emitter::emitPredicateAsCounterRegName(regNumber reg)
+{
+    assert((reg >= REG_P0) && (reg <= REG_P15));
+
+    int index = (int)reg - (int)REG_P0;
+
+    return pnRegNames[index];
 }
 
 /*****************************************************************************
@@ -14008,8 +14034,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_IF_4A_A:
         case IF_SVE_IM_3A:
         case IF_SVE_IN_4A:
-        case IF_SVE_CY_3A:
-        case IF_SVE_CY_3B:
         case IF_SVE_IX_4A:
         case IF_SVE_HI_3A:
         case IF_SVE_DG_2A:
@@ -14094,7 +14118,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_CF_2C:
         case IF_SVE_CF_2D:
         case IF_SVE_CI_3A:
-        case IF_SVE_DL_2A:
         case IF_SVE_DM_2A:
         case IF_SVE_DN_2A:
         case IF_SVE_DO_2A:
@@ -14102,11 +14125,14 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_DR_1A:
         case IF_SVE_DT_3A:
         case IF_SVE_DU_3A:
-        case IF_SVE_DY_3A:
         case IF_SVE_CK_2A:
         case IF_SVE_DI_2A:
-        case IF_SVE_DZ_1A:
             return PREDICATE_SIZED;
+
+        case IF_SVE_DL_2A:
+        case IF_SVE_DY_3A:
+        case IF_SVE_DZ_1A:
+            return PREDICATE_N_SIZED;
 
         // This is a special case as the second register could be ZERO or MERGE.
         // <Pg>/<ZM>
@@ -14179,6 +14205,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         case IF_SVE_CX_4A:
         case IF_SVE_CX_4A_A:
+        case IF_SVE_CY_3A:
+        case IF_SVE_CY_3B:
         case IF_SVE_GE_4A:
         case IF_SVE_HT_4A:
             assert(regpos >= 1 && regpos <= 2);
@@ -17386,7 +17414,15 @@ void emitter::emitDispSveConsecutiveRegList(regNumber firstReg, unsigned listSiz
 void emitter::emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma)
 {
     assert(isPredicateRegister(reg));
-    printf(emitPredicateRegName(reg));
+
+    if (ptype == PREDICATE_N_SIZED)
+    {
+        printf(emitPredicateAsCounterRegName(reg));
+    }
+    else
+    {
+        printf(emitPredicateRegName(reg));
+    }
 
     if (ptype == PREDICATE_MERGE)
     {
@@ -17396,7 +17432,7 @@ void emitter::emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts o
     {
         printf("/z");
     }
-    else if (ptype == PREDICATE_SIZED)
+    else if (ptype == PREDICATE_SIZED || ptype == PREDICATE_N_SIZED)
     {
         emitDispElemsize(optGetSveElemsize(opt));
     }
