@@ -5250,7 +5250,7 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
 // Returns:
 //   Result.
 //
-template<typename T>
+template <typename T>
 bool FlowGraphNaturalLoop::EvaluateRelop(T op1, T op2, genTreeOps oper)
 {
     switch (oper)
