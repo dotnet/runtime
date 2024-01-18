@@ -7830,7 +7830,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
 
     CORINFO_CLASS_HANDLE result = NULL;
 
-    JIT_TO_EE_TRANSITION_LEAF();
+    JIT_TO_EE_TRANSITION();
 
     TypeHandle constructedHandle(type);
     TypeHandle definitionHandle = ClassLoader::LoadTypeDefThrowing(
@@ -7842,7 +7842,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
 
     result = CORINFO_CLASS_HANDLE(definitionHandle.AsPtr());
 
-    JIT_TO_EE_TRANSITION_LEAF();    
+    JIT_TO_EE_TRANSITION();    
 
     // We forbid loading new types here, and we expect the resulting types to
     // always be available. That is because if we are trying to get the type
