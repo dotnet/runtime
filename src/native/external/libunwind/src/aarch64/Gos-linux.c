@@ -31,7 +31,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 HIDDEN inline int
 aarch64_local_resume (unw_addr_space_t as, unw_cursor_t *cursor, void *arg)
 {
-#ifdef __linux__
   struct cursor *c = (struct cursor *) cursor;
   unw_tdep_context_t *uc = c->uc;
 
@@ -140,9 +139,6 @@ aarch64_local_resume (unw_addr_space_t as, unw_cursor_t *cursor, void *arg)
       );
    }
   unreachable();
-#else
-  printf ("%s: implement me\n", __FUNCTION__);
-#endif
   return -UNW_EINVAL;
 }
 
