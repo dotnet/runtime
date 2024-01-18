@@ -276,6 +276,11 @@ enum insOpts : unsigned
     INS_OPTS_SCALABLE_D,
     INS_OPTS_SCALABLE_Q,
 
+    INS_OPTS_SCALABLE_S_UXTW,
+    INS_OPTS_SCALABLE_S_SXTW,
+    INS_OPTS_SCALABLE_D_UXTW,
+    INS_OPTS_SCALABLE_D_SXTW,
+
     INS_OPTS_MSL,         // Vector Immediate (shifting ones variant)
 
     INS_OPTS_S_TO_4BYTE,  // Single to INT32
@@ -317,7 +322,7 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_VL_2X,               // Variants with a vector length specifier of 2x (eg whilege)
     INS_SCALABLE_OPTS_VL_4X,               // Variants with a vector length specifier of 4x (eg whilege)
 
-    INS_SCALABLE_OPTS_MOD,
+    INS_SCALABLE_OPTS_LSL_N,
     INS_SCALABLE_OPTS_MOD_N,
 };
 

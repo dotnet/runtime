@@ -46,6 +46,7 @@ void emitDispFlags(insCflags flags);
 void emitDispBarrier(insBarrier barrier);
 void emitDispShiftOpts(insOpts opt);
 void emitDispExtendOpts(insOpts opt);
+void emitDispSveExtendOpts(insOpts opt);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
@@ -1036,6 +1037,12 @@ inline static bool insOptsScalableWide(insOpts opt)
     return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S));
 }
 
+inline static bool insOptsScalable32bitExtends(insOpts opt)
+{
+    return ((opt == INS_OPTS_SCALABLE_S_UXTW) || (opt == INS_OPTS_SCALABLE_S_SXTW) ||
+            (opt == INS_OPTS_SCALABLE_D_UXTW) || (opt == INS_OPTS_SCALABLE_D_SXTW));
+}
+
 inline static bool insScalableOptsNone(insScalableOpts sopt)
 {
     // `sopt` is used for instructions with no extra encoding variants.
@@ -1052,18 +1059,6 @@ inline static bool insScalableOptsWithVectorLength(insScalableOpts sopt)
 {
     // `sopt` is any of the scalable types that are valid for use with instructions with a vector length specifier (vl).
     return ((sopt == INS_SCALABLE_OPTS_VL_2X) || (sopt == INS_SCALABLE_OPTS_VL_4X));
-}
-
-inline static bool insScalableOptsMod(insScalableOpts sopt)
-{
-    // `sopt` denotes the instruction should be encoded with '<mod>'.
-    return sopt == INS_SCALABLE_OPTS_MOD;
-}
-
-inline static bool insScalableOptsModN(insScalableOpts sopt)
-{
-    // `sopt` denotes the instruction should be encoded with '<mod> #N'.
-    return sopt == INS_SCALABLE_OPTS_MOD_N;
 }
 
 static bool isValidImmCond(ssize_t imm);
