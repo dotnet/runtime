@@ -3299,6 +3299,19 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->opcode = mono_op_imm_to_op (ins->opcode);
 			ins->sreg2 = temp->dreg;
 			break;
+		case OP_DIV_UN_IMM:
+			NEW_INS_BEFORE (cfg, ins, temp, OP_I8CONST);
+			temp->inst_l = ins->inst_imm;
+			temp->dreg = mono_alloc_ireg (cfg);
+
+#ifdef TARGET_RISCV64
+			g_assert (mono_op_imm_to_op (ins->opcode) == OP_LDIV_UN);
+#else
+			g_assert (mono_op_imm_to_op (ins->opcode) == OP_IDIV_UN);
+#endif
+			ins->opcode = mono_op_imm_to_op (ins->opcode);
+			ins->sreg2 = temp->dreg;
+			break;
 		case OP_IMUL_IMM:
 		case OP_LMUL_IMM:
 		case OP_IDIV_IMM:
