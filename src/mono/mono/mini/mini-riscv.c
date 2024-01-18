@@ -4816,12 +4816,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		* So we need more add rd, rd, rs2 to fix the rd as the **new** value.
 		*/
 		case OP_ATOMIC_ADD_I4:
-			riscv_amoadd_w (code, RISCV_ORDER_ALL, ins->dreg, ins->sreg2, ins->sreg1);
-			riscv_addw (code, ins->dreg, ins->dreg, ins->sreg2);
+			riscv_amoadd_w (code, RISCV_ORDER_ALL, RISCV_T0, ins->sreg2, ins->sreg1);
+			riscv_addw (code, ins->dreg, RISCV_T0, ins->sreg2);
 			break;
 		case OP_ATOMIC_ADD_I8:
-			riscv_amoadd_d (code, RISCV_ORDER_ALL, ins->dreg, ins->sreg2, ins->sreg1);
-			riscv_add (code, ins->dreg, ins->dreg, ins->sreg2);
+			riscv_amoadd_d (code, RISCV_ORDER_ALL, RISCV_T0, ins->sreg2, ins->sreg1);
+			riscv_add (code, ins->dreg, RISCV_T0, ins->sreg2);
 			break;
 		case OP_ATOMIC_LOAD_I1:
 		case OP_ATOMIC_LOAD_U1: {
