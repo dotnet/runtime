@@ -3315,6 +3315,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IMUL_IMM:
 		case OP_LMUL_IMM:
 		case OP_IDIV_IMM:
+		case OP_IDIV_UN_IMM:
 		case OP_IREM_IMM:
 		case OP_LREM_IMM:
 		case OP_IREM_UN_IMM:
