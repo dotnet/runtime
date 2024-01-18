@@ -135,10 +135,12 @@ class ReduceExamples(threading.Thread):
                     if reduce_this:
                         print("Reducing {}".format(ex['Seed']))
                         output_path = path.join(self.examples_dir, str(ex["Seed"]) + ".cs")
+                        spmi_collections_path = path.join(self.examples_dir, str(ex["Seed"]) + "_spmi")
                         cmd = [self.fuzzlyn_path,
                             "--host", self.host_path,
                             "--reduce",
                             "--seed", str(ex['Seed']),
+                            "--collect-spmi-to", spmi_collections_path,
                             "--output", output_path]
                         run_command(cmd)
                         if path.exists(output_path):
