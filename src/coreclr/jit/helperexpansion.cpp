@@ -1790,20 +1790,19 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //     ...
     //
     // nullcheckBb (BBJ_COND):                      [weight: 1.0]
-    //     tmp = obj;
     //     if (tmp == null)
     //         goto lastBlock;
     //
     // typeCheckBb (BBJ_COND):                      [weight: 0.5]
-    //     if (tmp->pMT == likelyClass)
+    //     if (obj->pMT == likelyClass)
     //         goto typeCheckSucceedBb;
     //
     // fallbackBb (BBJ_ALWAYS):                     [weight: <profile>]
-    //     tmp = helper_call(cls, tmp);
+    //     tmp = helper_call(cls, obj);
     //     goto lastBlock;
     //
     // typeCheckSucceedBb (BBJ_ALWAYS):             [weight: <profile>]
-    //     nop (or tmp = null)
+    //     tmp = obj; (or tmp = null in case of 'MustNot')
     //
     // lastBlock (BBJ_any):                         [weight: 1.0]
     //     use(tmp);
@@ -1812,23 +1811,17 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // Block 1: nullcheckBb
     // TODO-InlineCast: assertionprop should leave us a mark that objArg is never null, so we can omit this check
     // it's too late to rely on upstream phases to do this for us (unless we do optRepeat).
-    GenTree* objTmp      = gtNewLclVarNode(tmpNum);
-    GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, objTmp, gtNewNull());
+    GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(objArg), gtNewNull());
     nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
     BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
                                                    debugInfo, lastBb, true);
-
-    // Set tmp's value to obj by default (before the nullcheck)
-    Statement* storeObjStmt = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(tmpNum, gtCloneExpr(objArg)), debugInfo);
-    gtSetStmtInfo(storeObjStmt);
-    fgSetStmtSeq(storeObjStmt);
 
     // if likelyCls == clsArg, we can just use clsArg that we've just spilled to a temp
     // it's a sort of manual CSE.
     GenTree* likelyClsNode = gtNewIconEmbClsHndNode(likelyCls);
 
     // Block 2: typeCheckBb
-    GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(objTmp)), likelyClsNode);
+    GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(objArg)), likelyClsNode);
     mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
     GenTree*    jtrue       = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
     BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, lastBb, true);
@@ -1847,8 +1840,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
     else
     {
-        // Otherwise, no-op (for simplicity, some downstream phase will collect this block)
-        typeCheckSucceedTree = gtNewNothingNode();
+        // Just return the original obj (assign to tmpNum)
+        typeCheckSucceedTree = gtNewTempStore(tmpNum, gtCloneExpr(objArg));
     }
     BasicBlock* typeCheckSucceedBb =
         fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo, lastBb);
