@@ -115,7 +115,8 @@ namespace System
                         break;
 
                     case AssignArrayEnum.AssignBoxValueClassOrPrimitive:
-                        throw null;
+                        BoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
 
                     case AssignArrayEnum.AssignMustCast:
                         throw null;
@@ -166,6 +167,29 @@ namespace System
                     ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
                     ref CastHelpers.Unbox(pDestMT, obj),
                     destSize);
+            }
+        }
+
+        // Will box each element in an array of value classes or primitives into an array of Objects.
+        private static unsafe void BoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            MethodTable* pSrcArrayMT = RuntimeHelpers.GetMethodTable(sourceArray);
+            TypeHandle srcTH = pSrcArrayMT->GetArrayElementTypeHandle();
+            // _ASSERTE(destTH.GetSignatureCorElementType() == ELEMENT_TYPE_CLASS || destTH.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE || CorTypeInfo::IsPrimitiveType(pDest->GetArrayElementType()));
+            // Debug.Assert(!RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle().IsValueType);
+
+            MethodTable* pSrcMT = srcTH.AsMethodTable();
+
+            RuntimeHelpers.RunClassConstructor(RuntimeTypeHandle.FromIntPtr((nint)pSrcMT)); // pSrcMT->CheckRunClassInitThrowing
+
+            nuint srcSize = pSrcArrayMT->ComponentSize;
+            ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcSize);
+            ref object? destData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<Array, object?[]>(ref destinationArray)), destinationIndex);
+
+            for (int i = 0; i < length; i++)
+            {
+                object? obj = RuntimeHelpers.Box(pSrcMT, ref Unsafe.AddByteOffset(ref data, (nuint)i * srcSize));
+                Unsafe.Add(ref destData, i) = obj;
             }
         }
 
