@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -232,7 +231,8 @@ namespace System.Security.Cryptography.X509Certificates
                     // The additional data contains the appropriate usage (e.g. emailProtection, serverAuth, ...).
                     // Because we don't validate for a specific usage, derived certificates are rejected.
                     // For now, we skip the certificates with AUX data and use the regular certificates.
-                    while (TryReadPemOrDer(fileBio, out ICertificatePal? pal))
+                    ICertificatePal? pal;
+                    while (OpenSslX509CertificateReader.TryReadX509PemNoAux(fileBio, out pal))
                     {
                         readData = true;
                         X509Certificate2 cert = new X509Certificate2(pal);
@@ -282,35 +282,6 @@ namespace System.Security.Cryptography.X509Certificates
                 }
 
                 return readData;
-
-                static bool TryReadPemOrDer(SafeBioHandle fileBio, [NotNullWhen(true)] out ICertificatePal? pal)
-                {
-                    int currentPosition = Interop.Crypto.BioTell(fileBio);
-
-                    if (OpenSslX509CertificateReader.TryReadX509PemNoAux(fileBio, out pal))
-                    {
-                        return true;
-                    }
-
-                    // If BIO_tell was not able to tell us the position, then the BIO cannot be rewound. Treat this the
-                    // same as not being able to read the contents as DER.
-                    if (currentPosition < 0)
-                    {
-                        pal = null;
-                        return false;
-                    }
-
-                    int seek = Interop.Crypto.BioSeek(fileBio, currentPosition);
-
-                    // If the BIO_seek failed, treat this the same as not being able to read the contents as DER.
-                    if (seek < 0)
-                    {
-                        pal = null;
-                        return false;
-                    }
-
-                    return OpenSslX509CertificateReader.TryReadX509Der(fileBio, out pal);
-                }
             }
 
             foreach (X509Certificate2 cert in uniqueRootCerts)

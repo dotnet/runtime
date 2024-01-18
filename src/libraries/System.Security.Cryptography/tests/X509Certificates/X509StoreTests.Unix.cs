@@ -90,33 +90,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.Linux)] // Windows/OSX doesn't use SSL_CERT_{DIR,FILE}.
-        private void X509Store_MachineStoreSupportsDer()
-        {
-            // We create a folder for our machine store and use it by setting SSL_CERT_DIR.
-            string sslCertDir = GetTestFilePath();
-            Directory.CreateDirectory(sslCertDir);
-
-            using X509Certificate2 cert = new(TestData.SelfSigned1PemBytes);
-
-            // Add a DER file.
-            File.WriteAllBytes(Path.Combine(sslCertDir, "1.der"), cert.RawData);
-
-            var psi = new ProcessStartInfo();
-            psi.Environment.Add("SSL_CERT_DIR", sslCertDir);
-            // Set SSL_CERT_FILE to avoid loading the default bundle file.
-            psi.Environment.Add("SSL_CERT_FILE", "/nonexisting");
-            RemoteExecutor.Invoke(static () =>
-            {
-                using (var store = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
-                {
-                    store.Open(OpenFlags.OpenExistingOnly);
-                    Assert.Equal(1, store.Certificates.Count);
-                }
-            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
-        }
-
         public static bool NotRunningAsRootAndRemoteExecutorSupported => !Environment.IsPrivilegedProcess && RemoteExecutor.IsSupported;
     }
 }
