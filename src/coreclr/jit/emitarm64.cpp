@@ -11042,8 +11042,15 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
 
                     case INS_OPTS_SCALABLE_D_UXTW:
                     case INS_OPTS_SCALABLE_D_SXTW:
-                        assert(sopt == INS_SCALABLE_OPTS_MOD_N);
-                        fmt = IF_SVE_JJ_4A_B;
+                        if (insScalableOptsNone(sopt))
+                        {
+                            fmt = IF_SVE_JJ_4A_C;
+                        }
+                        else
+                        {
+                            assert(sopt == INS_SCALABLE_OPTS_MOD_N);
+                            fmt = IF_SVE_JJ_4A_B;
+                        }
                         break;
 
                     default:
@@ -11077,8 +11084,15 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
 
                     case INS_OPTS_SCALABLE_D_UXTW:
                     case INS_OPTS_SCALABLE_D_SXTW:
-                        assert(sopt == INS_SCALABLE_OPTS_MOD_N);
-                        fmt = IF_SVE_JJ_4A_B;
+                        if (insScalableOptsNone(sopt))
+                        {
+                            fmt = IF_SVE_JJ_4A_C;
+                        }
+                        else
+                        {
+                            assert(sopt == INS_SCALABLE_OPTS_MOD_N);
+                            fmt = IF_SVE_JJ_4A_B;
+                        }
                         break;
 
                     default:
@@ -19813,6 +19827,9 @@ void emitter::emitDispInsHelp(
         case IF_SVE_JJ_4A:   // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
                              // offsets)
         case IF_SVE_JJ_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JJ_4A_C: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
         {
             emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(),
                                           true);                                      // ttttt
@@ -19824,11 +19841,25 @@ void emitter::emitDispInsHelp(
             switch (ins)
             {
                 case INS_sve_st1h:
-                    printf(" #1]");
+                    if (fmt == IF_SVE_JJ_4A_C)
+                    {
+                        printf("]");
+                    }
+                    else
+                    {
+                        printf(" #1]");
+                    }
                     break;
 
                 case INS_sve_st1w:
-                    printf(" #2]");
+                    if (fmt == IF_SVE_JJ_4A_C)
+                    {
+                        printf("]");
+                    }
+                    else
+                    {
+                        printf(" #2]");
+                    }
                     break;
 
                 case INS_sve_st1d:
@@ -19849,9 +19880,6 @@ void emitter::emitDispInsHelp(
             break;
         }
 
-        //                     // offsets)
-        //case IF_SVE_JJ_4A_C: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
-        //                     // offsets)
         //case IF_SVE_JJ_4A_D: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
         //                     // offsets)
         //case IF_SVE_JK_4A: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit unscaled
