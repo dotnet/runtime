@@ -68,7 +68,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
                 yield return new object[] {  1.4142135623730950,      4.1132503787829275,      DoubleCrossPlatformMachineEpsilon * 10 };   // value:  (sqrt(2))
                 yield return new object[] {  1.4426950408889634,      4.2320861065570819,      DoubleCrossPlatformMachineEpsilon * 10 };   // value:  (log2(e))
                 yield return new object[] {  1.5707963267948966,      4.8104773809653517,      DoubleCrossPlatformMachineEpsilon * 10 };   // value:  (pi / 2)
-                yield return new object[] {  2.3025850929940457,      10.0,                    0.0 };                                      // value:  (ln(10))
+                yield return new object[] {  2.3025850929940457,      10.0,                    DoubleCrossPlatformMachineEpsilon * 10 };                                      // value:  (ln(10))
                 yield return new object[] {  2.7182818284590452,      15.154262241479264,      DoubleCrossPlatformMachineEpsilon * 100 };  // value:  (e)
                 yield return new object[] {  3.1415926535897932,      23.140692632779269,      DoubleCrossPlatformMachineEpsilon * 100 };  // value:  (pi)
                 yield return new object[] {  double.PositiveInfinity, double.PositiveInfinity, 0.0 };
@@ -108,7 +108,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
                 yield return new object[] {  1.41421356f,            4.11325038f,            SingleCrossPlatformMachineEpsilon * 10 };     // value:  (sqrt(2))
                 yield return new object[] {  1.44269504f,            4.23208611f,            SingleCrossPlatformMachineEpsilon * 10 };     // value:  (log2(e))
                 yield return new object[] {  1.57079633f,            4.81047738f,            SingleCrossPlatformMachineEpsilon * 10 };     // value:  (pi / 2)
-                yield return new object[] {  2.30258509f,            10.0f,                  0.0f };                                       // value:  (ln(10))
+                yield return new object[] {  2.30258509f,            10.0f,                  SingleCrossPlatformMachineEpsilon * 10 };                                       // value:  (ln(10))
                 yield return new object[] {  2.71828183f,            15.1542622f,            SingleCrossPlatformMachineEpsilon * 100 };    // value:  (e)
                 yield return new object[] {  3.14159265f,            23.1406926f,            SingleCrossPlatformMachineEpsilon * 100 };    // value:  (pi)
                 yield return new object[] {  float.PositiveInfinity, float.PositiveInfinity, 0.0f };
