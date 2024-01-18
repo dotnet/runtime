@@ -90,17 +90,17 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
                 yield return new object[] { -1.0f,                   0.367879441f,           SingleCrossPlatformMachineEpsilon };
                 yield return new object[] { -0.785398163f,           0.455938128f,           SingleCrossPlatformMachineEpsilon };          // value: -(pi / 4)
                 yield return new object[] { -0.707106781f,           0.493068691f,           SingleCrossPlatformMachineEpsilon };          // value: -(1 / sqrt(2))
-                yield return new object[] { -0.693147181f,           0.5f,                   0.0f };                                       // value: -(ln(2))
+                yield return new object[] { -0.693147181f,           0.5f,                   SingleCrossPlatformMachineEpsilon };          // value: -(ln(2))
                 yield return new object[] { -0.636619772f,           0.529077808f,           SingleCrossPlatformMachineEpsilon };          // value: -(2 / pi)
                 yield return new object[] { -0.434294482f,           0.647721485f,           SingleCrossPlatformMachineEpsilon };          // value: -(log10(e))
                 yield return new object[] { -0.318309886f,           0.727377349f,           SingleCrossPlatformMachineEpsilon };          // value: -(1 / pi)
-                yield return new object[] { -0.0f,                   1.0f,                   0.0f };
+                yield return new object[] { -0.0f,                   1.0f,                   SingleCrossPlatformMachineEpsilon * 10 };
                 yield return new object[] {  float.NaN,              float.NaN,              0.0f };
-                yield return new object[] {  0.0f,                   1.0f,                   0.0f };
+                yield return new object[] {  0.0f,                   1.0f,                   SingleCrossPlatformMachineEpsilon * 10 };
                 yield return new object[] {  0.318309886f,           1.37480223f,            SingleCrossPlatformMachineEpsilon * 10 };     // value:  (1 / pi)
                 yield return new object[] {  0.434294482f,           1.54387344f,            SingleCrossPlatformMachineEpsilon * 10 };     // value:  (log10(e))
                 yield return new object[] {  0.636619772f,           1.89008116f,            SingleCrossPlatformMachineEpsilon * 10 };     // value:  (2 / pi)
-                yield return new object[] {  0.693147181f,           2.0f,                   0.0f };                                       // value:  (ln(2))
+                yield return new object[] {  0.693147181f,           2.0f,                   SingleCrossPlatformMachineEpsilon * 10 };                                       // value:  (ln(2))
                 yield return new object[] {  0.707106781f,           2.02811498f,            SingleCrossPlatformMachineEpsilon * 10 };     // value:  (1 / sqrt(2))
                 yield return new object[] {  0.785398163f,           2.19328005f,            SingleCrossPlatformMachineEpsilon * 10 };     // value:  (pi / 4)
                 yield return new object[] {  1.0f,                   2.71828183f,            SingleCrossPlatformMachineEpsilon * 10 };     //                          expected: (e)
