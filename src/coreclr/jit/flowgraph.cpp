@@ -5052,7 +5052,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     if (!CheckLoopConditionBaseCase(initBlock, info))
     {
-        JITDUMP("  Loop condition is not always true\n");
+        JITDUMP("  Loop condition may not be true on the first iteration\n");
         return false;
     }
 
@@ -5280,11 +5280,10 @@ bool FlowGraphNaturalLoop::EvaluateRelop(T op1, T op2, genTreeOps oper)
 
 //------------------------------------------------------------------------
 // CheckLoopConditionBaseCase: Verify that the loop condition is true when the
-// loop is entered (or validated immediately on entry).
+// loop is entered.
 //
 // Returns:
-//   True if we could prove that the condition is true at all interesting
-//   points in the loop.
+//   True if we could prove that the condition is true on entry.
 //
 // Remarks:
 //   Currently handles the following cases:
@@ -5323,18 +5322,130 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* initBlock, Nat
     }
 
     // Do we have a zero-trip test?
-    if (initBlock->KindIs(BBJ_COND))
+    if (initBlock->KindIs(BBJ_COND) && IsZeroTripTest(initBlock, info))
     {
-        GenTree* enteringJTrue = initBlock->lastStmt()->GetRootNode();
-        assert(enteringJTrue->OperIs(GT_JTRUE));
-        if (enteringJTrue->gtGetOp1()->OperIsCompare() && ((enteringJTrue->gtGetOp1()->gtFlags & GTF_RELOP_ZTT) != 0))
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsZeroTripTest: Check whether `initBlock`, a BBJ_COND block that enters the
+// loop in one case and not in the other, implies that the loop invariant is
+// true on entry.
+//
+// Returns:
+//   True if we could prove that the loop invariant is true on entry through
+//   "initBlock".
+//
+bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIterInfo* info)
+{
+    assert(initBlock->KindIs(BBJ_COND));
+    GenTree* enteringJTrue = initBlock->lastStmt()->GetRootNode();
+    assert(enteringJTrue->OperIs(GT_JTRUE));
+    GenTree* relop = enteringJTrue->gtGetOp1();
+    if (!relop->OperIsCmpCompare())
+    {
+        return false;
+    }
+
+    // Technically optExtractInitTestIncr only handles the "false"
+    // entry case, and preheader creation should ensure that that's the
+    // only time we'll see a BBJ_COND init block. However, it does not
+    // hurt to let this logic be correct by construction.
+    bool enterSide = CondInitBlockEnterSide(initBlock);
+
+    JITDUMP("  Init block " FMT_BB " enters the loop when condition [%06u] evaluates to %s\n", initBlock->bbNum,
+            Compiler::dspTreeID(relop), enterSide ? "true" : "false");
+
+    GenTree*   limitCandidate;
+    genTreeOps oper;
+
+    if (relop->gtGetOp1()->OperIsScalarLocal() && (relop->gtGetOp1()->AsLclVarCommon()->GetLclNum() == info->IterVar))
+    {
+        JITDUMP("    op1 is the iteration variable\n");
+        oper           = relop->gtOper;
+        limitCandidate = relop->gtGetOp2();
+    }
+    else if (relop->gtGetOp2()->OperIsScalarLocal() &&
+             (relop->gtGetOp2()->AsLclVarCommon()->GetLclNum() == info->IterVar))
+    {
+        JITDUMP("    op2 is the iteration variable\n");
+        oper           = GenTree::SwapRelop(relop->gtOper);
+        limitCandidate = relop->gtGetOp1();
+    }
+    else
+    {
+        JITDUMP("    Relop does not involve iteration variable\n");
+        return false;
+    }
+
+    if (!enterSide)
+    {
+        oper = GenTree::ReverseRelop(oper);
+    }
+
+    // Here we want to prove that [iterVar] [oper] [limitCandidate] implies
+    // [iterVar] [info->IterOper()] [info->Limit()]. Currently we just do the
+    // simple exact checks, but this could be improved.
+
+    if ((relop->IsUnsigned() != info->TestTree->IsUnsigned()) || (oper != info->TestOper()))
+    {
+        JITDUMP("    Condition guarantees V%02u %s%s [%06u], but invariant requires V%02u %s%s [%06u]\n", info->IterVar,
+                relop->IsUnsigned() ? "(uns) " : "", GenTree::OpName(oper), Compiler::dspTreeID(limitCandidate),
+                info->IterVar, info->TestTree->IsUnsigned() ? "(uns) " : "", GenTree::OpName(info->TestOper()),
+                Compiler::dspTreeID(info->Limit()));
+        return false;
+    }
+
+    JITDUMP("  Condition is established before entry at [%06u]\n", Compiler::dspTreeID(enteringJTrue->gtGetOp1()));
+    return true;
+}
+
+//------------------------------------------------------------------------
+// CondInitBlockEnterSide: Determine whether a BBJ_COND init block enters the
+// loop in the false or true case.
+//
+// Parameters:
+//   initBlock - A BBJ_COND block that is assumed to dominate the loop, and
+//   only enter the loop in one of the two cases.
+//
+// Returns:
+//   True if the loop is entered if the condition evaluates to true; otherwise false.
+//
+// Remarks:
+//   Handles only limited cases (optExtractInitTestIncr ensures that we see
+//   only limited cases).
+//
+bool FlowGraphNaturalLoop::CondInitBlockEnterSide(BasicBlock* initBlock)
+{
+    assert(initBlock->KindIs(BBJ_COND));
+
+    if (initBlock->FalseTargetIs(GetHeader()))
+    {
+        return false;
+    }
+
+    if (initBlock->TrueTargetIs(GetHeader()))
+    {
+        return true;
+    }
+
+    for (FlowEdge* enterEdge : EntryEdges())
+    {
+        BasicBlock* entering = enterEdge->getSourceBlock();
+        if (initBlock->FalseTargetIs(entering))
         {
-            JITDUMP("  Condition is established before entry at [%06u]\n",
-                    Compiler::dspTreeID(enteringJTrue->gtGetOp1()));
+            return false;
+        }
+        if (initBlock->TrueTargetIs(entering))
+        {
             return true;
         }
     }
 
+    assert(!"Could not find init block enter side");
     return false;
 }
 
