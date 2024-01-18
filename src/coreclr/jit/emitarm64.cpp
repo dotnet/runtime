@@ -17009,6 +17009,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_SVE_JJ_4A:   // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
                              // offsets)
+        case IF_SVE_JJ_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             //                     // offsets)
+        case IF_SVE_JJ_4A_C: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JJ_4A_D: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JK_4A: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit unscaled
+                           // offsets)
+        case IF_SVE_JK_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit
+                             // unscaled offsets)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
@@ -17031,8 +17041,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             dst += emitOutput_Instr(dst, code);
             break;
-        //case IF_SVE_JJ_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
-        //                     // offsets)
         //case IF_SVE_JJ_4A_C: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
         //                     // offsets)
         //case IF_SVE_JJ_4A_D: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
@@ -19801,7 +19809,35 @@ void emitter::emitDispInsHelp(
             }
             break;
         }
-        //case IF_SVE_JJ_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+        case IF_SVE_JJ_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+        {
+            emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), INS_OPTS_SCALABLE_D,
+                                          true);                                           // ttttt
+            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, INS_OPTS_SCALABLE_D, true); // ggg
+            printf("[");
+            emitDispReg(id->idReg3(), EA_8BYTE, true);               // nnnnn
+            emitDispSveReg(id->idReg4(), INS_OPTS_SCALABLE_D, true); // mmmmm
+            emitDispExtendOpts(id->idInsOpt());
+            switch (ins)
+            {
+                case INS_sve_st1h:
+                    printf(" #1]");
+                    break;
+
+                case INS_sve_st1w:
+                    printf(" #2]");
+                    break;
+
+                case INS_sve_st1d:
+                    printf("]");
+                    break;
+
+                default:
+                    assert(!"Invalid instruction");
+                    break;
+            }
+            break;
+        }
         //                     // offsets)
         //case IF_SVE_JJ_4A_C: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
         //                     // offsets)
