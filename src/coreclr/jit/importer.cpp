@@ -2493,19 +2493,25 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
 
 GenTree* Compiler::impGetGenericTypeDefinition(GenTree* type)
 {
-    // this intrinsic requires the first arg to be some `typeof()` expression,
+    // This intrinsic requires the first arg to be some `typeof()` expression,
     // ie. it applies to cases such as `typeof(...).GetGenericTypeDefinition()`.
     CORINFO_CLASS_HANDLE hClassType = NO_CLASS_HANDLE;
     if (gtIsTypeof(type, &hClassType))
     {
-        CORINFO_CLASS_HANDLE hClassResult = info.compCompHnd->getTypeDefinition(hClassType);
+        // Check that the 'typeof()' expression is being used on a type that is in fact generic.
+        // If that is not the case, we don't expand the intrinsic. This will end up using
+        // the usual Type.GetGenericTypeDefinition() at runtime, which will throw in this case.
+        if (info.compCompHnd->getTypeInstantiationArgument(hClassType, 0) != NO_CLASS_HANDLE)
+        {
+            CORINFO_CLASS_HANDLE hClassResult = info.compCompHnd->getTypeDefinition(hClassType);
 
-        GenTree* retNode = gtNewIconEmbClsHndNode(hClassResult);
+            GenTree* retNode = gtNewIconEmbClsHndNode(hClassResult);
 
-        // Drop the typeof(T) node
-        impPopStack();
+            // Drop the typeof(T) node
+            impPopStack();
 
-        return retNode;
+            return retNode;
+        }
     }
 
     return nullptr;
