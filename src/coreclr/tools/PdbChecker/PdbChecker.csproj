@@ -17,7 +17,7 @@
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
   </ItemGroup>
 
-  <Target Name="CopyMsdiaForTargetArchitecture" AfterTargets="AfterBuild">
+  <Target Name="CopyMsdiaForTargetArchitecture" AfterTargets="AfterBuild" Condition="'$(TargetOS)' == 'windows'">
     <PropertyGroup>
       <ArchitectureFolder>$(TargetArchitecture)</ArchitectureFolder>
       <ArchitectureFolder Condition="'$(TargetArchitecture)' == 'x64'">amd64</ArchitectureFolder>
