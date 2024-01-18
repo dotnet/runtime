@@ -257,5 +257,33 @@ namespace System.Reflection.Emit.Tests
                 }
             }
         }
+
+        [Fact]
+        public void GetABCMetadataToken_Validations()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("MyAssembly"), out MethodInfo _);
+            ModuleBuilder module = ab.DefineDynamicModule("MyModule");
+            TypeBuilder type = module.DefineType("MyType", TypeAttributes.Public);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Static | MethodAttributes.Public);
+            FieldBuilder field = type.DefineField("MyField", typeof(int), FieldAttributes.Public);
+            ConstructorBuilder constructor = type.DefineDefaultConstructor(MethodAttributes.Public);
+
+            Assert.Throws<InvalidOperationException>(() => module.GetMethodMetadataToken(method));
+            Assert.Throws<InvalidOperationException>(() => module.GetMethodMetadataToken(constructor));
+            Assert.Throws<InvalidOperationException>(() => module.GetFieldMetadataToken(field));
+            Assert.Throws<InvalidOperationException>(() => module.GetTypeMetadataToken(type));
+
+            SignatureHelper signature = SignatureHelper.GetMethodSigHelper(CallingConventions.VarArgs, typeof(void));
+            signature.AddArgument(typeof(string));
+            signature.AddSentinel();
+            signature.AddArgument(typeof(string));
+            signature.AddArgument(typeof(int));
+
+            int signatureToken = module.GetSignatureMetadataToken(signature);
+            int stringToken = module.GetStringMetadataToken("Hello");
+
+            Assert.True(signatureToken > 0);
+            Assert.True(stringToken > 0);
+        }
     }
 }

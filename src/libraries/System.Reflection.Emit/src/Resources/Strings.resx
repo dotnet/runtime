@@ -285,4 +285,7 @@
   <data name="Argument_BadSizeForData" xml:space="preserve">
     <value>Data size must be &amp;gt; 1 and &amp;lt; 0x3f0000.</value>
   </data>
+  <data name="InvalidOperation_TokenNotPopulated" xml:space="preserve">
+    <value>MetadataToken for the member is not generated until the assembly saved.</value>
+  </data>
 </root>
