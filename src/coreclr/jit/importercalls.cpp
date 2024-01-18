@@ -3842,6 +3842,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             {
                                 retNode = gtNewTrue();
                             }
+                            else if ((info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_SHAREDINST) != 0)
+                            {
+                                // if we have no type arguments, check that the type itself is not __Canon, and
+                                // simply skip expanding the intrinsic in that case, rather than incorrectly
+                                // hardcoding 'false' as the resulting expression.
+                                retNode = nullptr;
+                            }
                             else
                             {
                                 retNode = gtNewFalse();
