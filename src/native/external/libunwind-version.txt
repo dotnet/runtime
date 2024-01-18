@@ -5,3 +5,4 @@ Apply https://github.com/libunwind/libunwind/pull/700
 Apply https://github.com/libunwind/libunwind/pull/701
 Apply https://github.com/libunwind/libunwind/pull/703
 Apply https://github.com/libunwind/libunwind/pull/704
+Revert https://github.com/libunwind/libunwind/pull/503 # issue: https://github.com/libunwind/libunwind/issues/702
