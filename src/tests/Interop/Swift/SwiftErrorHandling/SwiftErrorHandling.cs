@@ -17,7 +17,7 @@ public class ErrorHandlingTests
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling018conditionallyThrowB004willE0SiSb_tKF")]
-    public unsafe static extern nint conditionallyThrowError(bool willThrow, SwiftError* error);
+    public static extern nint conditionallyThrowError(bool willThrow, ref SwiftError error);
 
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05getMyB7Message4from13messageLengthSPys6UInt16VGSgs0B0_p_s5Int32VztF")]
     public unsafe static extern void* GetErrorMessage(void* handle, out int length);
@@ -28,10 +28,10 @@ public class ErrorHandlingTests
         const string expectedErrorMessage = "Catch me if you can!";
         SetErrorMessageForSwift(expectedErrorMessage);
 
-        SwiftError error;
+        SwiftError error = new SwiftError();
 
         // This will throw an error
-        conditionallyThrowError(true, &error);
+        conditionallyThrowError(true, ref error);
         Assert.True(error.Value != null, "A Swift error was expected to be thrown.");
 
         string errorMessage = GetErrorMessageFromSwift(error);
@@ -44,10 +44,10 @@ public class ErrorHandlingTests
         const string expectedErrorMessage = "Catch me if you can!";
         SetErrorMessageForSwift(expectedErrorMessage);
 
-        SwiftError error;
+        SwiftError error = new SwiftError();
 
         // This will not throw an error
-        int result = (int)conditionallyThrowError(false, &error);
+        int result = (int)conditionallyThrowError(false, ref error);
 
         Assert.True(error.Value == null, "No Swift error was expected to be thrown.");
         Assert.True(result == 42, "The result from Swift does not match the expected value.");

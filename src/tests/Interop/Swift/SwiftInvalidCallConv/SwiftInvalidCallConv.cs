@@ -22,15 +22,19 @@ public class InvalidCallingConvTests
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
-    public unsafe static extern void FuncWithTwoErrorParameters(SwiftError* error1, SwiftError* error2);
+    public static extern void FuncWithTwoErrorParameters(ref SwiftError error1, ref SwiftError error2);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
-    public unsafe static extern void FuncWithMixedParameters(SwiftSelf self1, SwiftSelf self2, SwiftError* error1, SwiftError* error2);
+    public static extern void FuncWithMixedParameters(SwiftSelf self1, SwiftSelf self2, ref SwiftError error1, ref SwiftError error2);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
     public static extern void FuncWithSwiftErrorAsArg(SwiftError error1);
+
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
+    public unsafe static extern void FuncWithSwiftErrorAsUnsafeArg(SwiftError* error1);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
@@ -45,26 +49,24 @@ public class InvalidCallingConvTests
     }
 
     [Fact]
-    public unsafe static void TestFuncWithTwoErrorParameters()
+    public static void TestFuncWithTwoErrorParameters()
     {
         // Invalid due to multiple SwiftError arguments.
         SwiftError error = new SwiftError();
-        SwiftError* errorPtr = &error;
-        Assert.Throws<InvalidProgramException>(() => FuncWithTwoErrorParameters(errorPtr, errorPtr));
+        Assert.Throws<InvalidProgramException>(() => FuncWithTwoErrorParameters(ref error, ref error));
     }
 
     [Fact]
-    public unsafe static void TestFuncWithMixedParameters()
+    public static void TestFuncWithMixedParameters()
     {
         // Invalid due to multiple SwiftSelf/SwiftError arguments.
         SwiftSelf self = new SwiftSelf();
         SwiftError error = new SwiftError();
-        SwiftError* errorPtr = &error;
-        Assert.Throws<InvalidProgramException>(() => FuncWithMixedParameters(self, self, errorPtr, errorPtr));
+        Assert.Throws<InvalidProgramException>(() => FuncWithMixedParameters(self, self, ref error, ref error));
     }
 
     [Fact]
-    public unsafe static void TestFuncWithSwiftErrorAsArg()
+    public static void TestFuncWithSwiftErrorAsArg()
     {
         // Invalid due to SwiftError not passed as a pointer.
         SwiftError error = new SwiftError();
@@ -72,7 +74,16 @@ public class InvalidCallingConvTests
     }
 
     [Fact]
-    public unsafe static void TestFuncWithNonPrimitiveArg()
+    public unsafe static void TestFuncWithSwiftErrorAsUnsafeArg()
+    {
+        // Invalid due to SwiftError not passed as an unsafe pointer.
+        SwiftError error = new SwiftError();
+        SwiftError *errorPtr = &error;
+        Assert.Throws<InvalidProgramException>(() => FuncWithSwiftErrorAsUnsafeArg(errorPtr));
+    }
+
+    [Fact]
+    public static void TestFuncWithNonPrimitiveArg()
     {
         // Invalid due to a non-primitive argument.
         StringClass arg1 = new StringClass();
