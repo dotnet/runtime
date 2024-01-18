@@ -944,5 +944,13 @@ PTR_TableSegment CALLBACK xxxAsyncSegmentIterator(PTR_HandleTable pTable, TableS
 /*--------------------------------------------------------------------------*/
 
 #ifndef DACCESS_COMPILE
+
+/*
+ * WhichGeneration
+ *
+ * Get the generation of an object, where a frozen object is regarded as max_generation
+ *
+ */
 int WhichGeneration(_UNCHECKED_OBJECTREF obj);
+
 #endif //DACCESS_COMPILE

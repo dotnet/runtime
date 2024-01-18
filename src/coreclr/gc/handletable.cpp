@@ -25,11 +25,6 @@ DWORD g_dwHandles = 0;
 #endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 #ifndef DACCESS_COMPILE
-
-#ifndef INT_MAX
-#define INT_MAX       2147483647
-#endif
-
 int WhichGeneration(_UNCHECKED_OBJECTREF obj)
 {
     int generation = g_theGCHeap->WhichGeneration(obj);
