@@ -3103,6 +3103,7 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 	int dreg, this_reg = -1;
 	int prev_sp_offset;
 	MonoClass *klass = target_method->klass;
+	MonoMethodHeader *mheader = NULL;
 
 	if (!(mono_interp_opt & INTERP_OPT_INLINE) ||
 			!interp_method_check_inlining (td, target_method, csignature))
@@ -3166,7 +3167,7 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 	if (is_protected)
 		newobj_fast->flags |= INTERP_INST_FLAG_PROTECTED_NEWOBJ;
 
-	MonoMethodHeader *mheader = interp_method_get_header (target_method, error);
+	mheader = interp_method_get_header (target_method, error);
 	goto_if_nok (error, fail);
 
 	if (!interp_inline_method (td, target_method, mheader, error))
@@ -3180,6 +3181,7 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 	push_var (td, dreg);
 	return TRUE;
 fail:
+	mono_metadata_free_mh (mheader);
 	// Restore the state
 	td->sp = td->stack + prev_sp_offset;
 	td->last_ins = prev_last_ins;
@@ -3651,6 +3653,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->ip += 5;
 			goto done;
 		}
+		mono_metadata_free_mh (mheader);
 	}
 
 	/*
