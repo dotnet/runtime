@@ -3160,7 +3160,15 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 			if (klass) {
 				if (klass == swift_self) {
+					guint32 align;
+					MonoType *t = mini_get_underlying_type (sig->params [i]); 
+					int size = mini_type_stack_size_full (t, &align, cinfo->pinvoke);
+					guint32 align_size = ALIGN_TO (size, 8);
+	
+					ainfo->storage = ArgVtypeInIRegs;
 					ainfo->reg = ARMREG_R20;
+					ainfo->nregs = align_size / 8;
+					ainfo->size = size;
 				} else if (klass == swift_error) {
 					cfg->arch.swift_error_var = arg;
 					MONO_EMIT_NEW_ICONST (cfg, ARMREG_R21, 0);

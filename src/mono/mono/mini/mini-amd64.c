@@ -2312,12 +2312,14 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 			if (klass) {
 				if (klass == swift_self) {
-					if (ainfo->storage == ArgInIReg)
-						ainfo->reg = GINT32_TO_UINT8 (AMD64_R13);
-					else if (ainfo->storage == ArgValuetypeInReg)
-						ainfo->pair_regs [0] = GINT32_TO_UINT8 (AMD64_R13);
-					else
-						g_assert_not_reached ();
+					guint32 size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
+					g_assert (size == sizeof (target_mgreg_t));
+					ainfo->storage = ArgValuetypeInReg;
+					ainfo->pair_storage [0] = ArgInIReg;
+					ainfo->pair_regs [0] = GINT32_TO_UINT8 (AMD64_R13);
+					ainfo->nregs = 1;
+					ainfo->arg_size = 0;
+					ainfo->offset = 0;
 				} else if (klass == swift_error) {
 					cfg->arch.swift_error_var = in;
 					MONO_EMIT_NEW_ICONST (cfg, AMD64_R12, 0);
