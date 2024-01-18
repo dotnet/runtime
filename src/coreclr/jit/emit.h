@@ -779,12 +779,12 @@ protected:
         // For embedded rounding, EVEX.L'L semantic changes to indicate the rounding mode.
         // Multiple bits in _idEvexbContext are used to inform emitter to specially handle the EVEX.L'L bits.
         unsigned _idEvexbContext : 2;
-#endif                               //  TARGET_XARCH
+#endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
 
-            unsigned _idLclVar : 1;    // access a local on stack
-        unsigned     _idLclVarPair : 1 // carries information for 2 GC lcl vars.
+        unsigned _idLclVar : 1;    // access a local on stack
+        unsigned _idLclVarPair : 1 // carries information for 2 GC lcl vars.
 #endif
 
 #ifdef TARGET_LOONGARCH64
