@@ -2556,25 +2556,14 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         fgInsertStmtAtEnd(block, cloneStmt);
     }
 
-    // add an unconditional block after this block to jump to the target block's fallthrough block
-    //
-    assert(!target->IsLast());
-    BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetFalseTarget());
-
     // Fix up block's flow
     //
-    block->SetCond(target->GetTrueTarget(), next);
+    block->SetCond(target->GetTrueTarget(), target->GetFalseTarget());
     fgAddRefPred(block->GetTrueTarget(), block);
+    fgAddRefPred(block->GetFalseTarget(), block);
     fgRemoveRefPred(target, block);
 
-    // The new block 'next' will inherit its weight from 'block'
-    //
-    next->inheritWeight(block);
-    fgAddRefPred(next, block);
-    fgAddRefPred(next->GetTarget(), next);
-
-    JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB "\n",
-            block->bbNum, target->bbNum, next->bbNum);
+    JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB ")\n", block->bbNum, target->bbNum);
     JITDUMP("   expecting opts to key off V%02u in " FMT_BB "\n", lclNum, block->bbNum);
 
     return true;
@@ -3651,7 +3640,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         }
         else if (bPrev->KindIs(BBJ_COND))
         {
-            assert(bPrev->FalseTargetIs(block) || useProfile);
             bDest      = bPrev->GetTrueTarget();
             bFalseDest = bPrev->GetFalseTarget();
             // TODO: Cheaper to call fgRenumberBlocks first and compare bbNums?
@@ -4910,9 +4898,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     change   = true;
                     modified = true;
                     bDest    = block->GetTrueTarget();
-                    bNext    = block->GetFalseTarget();
 
-                    // TODO-NoFallThrough: Adjust the above logic once bbFalseTarget can diverge from bbNext
+                    // Optimization should not have inserted a new block
                     assert(block->NextIs(bNext));
                 }
             }
@@ -5055,12 +5042,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         }
                     }
 
-                    // TODO-NoFallThrough: Remove this requirement
-                    if (bDest->KindIs(BBJ_COND) && !bDest->NextIs(bDest->GetFalseTarget()))
-                    {
-                        optimizeJump = false;
-                    }
-
                     if (optimizeJump && isJumpToJoinFree)
                     {
                         // In the join free case, we also need to move bDest right after bNext
@@ -5079,15 +5060,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                             JITDUMP("\nMoving " FMT_BB " after " FMT_BB " to enable reversal\n", bDest->bbNum,
                                     bNext->bbNum);
 
-                            // If bDest can fall through we'll need to create a jump
-                            // block after it too. Remember where to jump to.
-                            //
-                            BasicBlock* const bDestNext = bDest->Next();
-
-                            // Once bbFalseTarget and bbNext can diverge, this assert will hit
-                            // TODO-NoFallThrough: Remove fall-through for BBJ_COND below
-                            assert(!bDest->KindIs(BBJ_COND) || bDest->FalseTargetIs(bDestNext));
-
                             // Move bDest
                             //
                             if (ehIsBlockEHLast(bDest))
@@ -5101,19 +5073,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                             if (ehIsBlockEHLast(bNext))
                             {
                                 ehUpdateLastBlocks(bNext, bDest);
-                            }
-
-                            // Add fall through fixup block, if needed.
-                            //
-                            if (bDest->KindIs(BBJ_COND))
-                            {
-                                BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true, bDestNext);
-                                bDest->SetFalseTarget(bFixup);
-                                bFixup->inheritWeight(bDestNext);
-
-                                fgRemoveRefPred(bDestNext, bDest);
-                                fgAddRefPred(bFixup, bDest);
-                                fgAddRefPred(bDestNext, bFixup);
                             }
                         }
                     }

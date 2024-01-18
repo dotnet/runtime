@@ -1897,10 +1897,10 @@ PhaseStatus Compiler::optOptimizeBools()
                 continue;
             }
 
-            // If there is no next block, we're done
+            // If the false target is not the next block, we're done
 
             BasicBlock* b2 = b1->GetFalseTarget();
-            if (b2 == nullptr)
+            if (!b1->NextIs(b2))
             {
                 break;
             }
