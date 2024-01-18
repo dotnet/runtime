@@ -386,7 +386,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        private static ref byte Unbox(void* toTypeHnd, object obj)
+        internal static ref byte Unbox(void* toTypeHnd, object obj)
         {
             // this will throw NullReferenceException if obj is null, attributed to the user code, as expected.
             if (RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)

@@ -111,7 +111,8 @@ namespace System
                 switch (r)
                 {
                     case AssignArrayEnum.AssignUnboxValueClass:
-                        throw null;
+                        UnBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
 
                     case AssignArrayEnum.AssignBoxValueClassOrPrimitive:
                         throw null;
@@ -140,6 +141,33 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CanAssignArrayType")]
         private static unsafe partial AssignArrayEnum CanAssignArrayType(void* srcTH, void* dstTH);
+
+        // Unboxes from an Object[] into a value class or primitive array.
+        private static unsafe void UnBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            MethodTable* pDestArrayMT = RuntimeHelpers.GetMethodTable(destinationArray);
+            TypeHandle destTH = pDestArrayMT->GetArrayElementTypeHandle();
+            // _ASSERTE(destTH.GetSignatureCorElementType() == ELEMENT_TYPE_CLASS || destTH.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE || CorTypeInfo::IsPrimitiveType(pDest->GetArrayElementType()));
+            // Debug.Assert(!RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle().IsValueType);
+
+            MethodTable* pDestMT = destTH.AsMethodTable();
+            nuint destSize = pDestArrayMT->ComponentSize;
+            ref object srcData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<Array, object[]>(ref sourceArray)), sourceIndex);
+            ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destSize);
+
+            for (int i = 0; i < length; i++)
+            {
+                object obj = Unsafe.Add(ref srcData, i);
+
+                // Now that we have retrieved the element, we are no longer subject to race
+                // conditions from another array mutator.
+
+                Buffer.Memmove(
+                    ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
+                    ref CastHelpers.Unbox(pDestMT, obj),
+                    destSize);
+            }
+        }
 
         // Provides a strong exception guarantee - either it succeeds, or
         // it throws an exception with no side effects.  The arrays must be
