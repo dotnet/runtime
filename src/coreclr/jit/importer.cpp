@@ -2490,6 +2490,27 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     return nullptr;
 }
 
+
+GenTree* Compiler::impGetGenericTypeDefinition(GenTree* type)
+{
+    // this intrinsic requires the first arg to be some `typeof()` expression,
+    // ie. it applies to cases such as `typeof(...).GetGenericTypeDefinition()`.
+    CORINFO_CLASS_HANDLE hClassType = NO_CLASS_HANDLE;
+    if (gtIsTypeof(type, &hClassType))
+    {
+        CORINFO_CLASS_HANDLE hClassResult = info.compCompHnd->getTypeDefinition(hClassType);
+
+        GenTree* retNode = gtNewIconEmbClsHndNode(hClassResult);
+
+        // Drop the typeof(T) node
+        impPopStack();
+
+        return retNode;
+    }
+
+    return nullptr;
+}
+
 /*****************************************************************************
  * 'logMsg' is true if a log message needs to be logged. false if the caller has
  *   already logged it (presumably in a more detailed fashion than done here)
