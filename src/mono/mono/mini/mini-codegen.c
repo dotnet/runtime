@@ -1095,6 +1095,9 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 #if !defined(TARGET_ARM) && !defined(TARGET_ARM64)
 		/* this seems to trigger a gcc compilation bug sometime (hreg is 0) */
 		/* On arm64, rgctx_reg is a global hreg, and it is used to pass an argument */
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+		if (!(mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL) && (hreg == AMD64_R12 || hreg == AMD64_R13)))
+#endif
 		g_assert (! is_global_ireg (hreg));
 #endif
 

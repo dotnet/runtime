@@ -1763,11 +1763,12 @@ ves_pinvoke_method (
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
-		int arg_index;
-		gpointer data = mono_arch_get_swift_error (&ccontext, sig, call_info, &arg_index);
+		int arg_index = -1;
+		gpointer data = mono_arch_get_swift_error (&ccontext, sig, &arg_index);
 
 		// Perform an indirect store at arg_index stack location
-		if (data != NULL) {
+		if (arg_index >= 0) {
+			g_assert (data);
 			stackval *result = (stackval*) STACK_ADD_BYTES (frame.stack, get_arg_offset (frame.imethod, sig, arg_index));
 			*(gpointer*)result->data.p = *(gpointer*)data;
 		}
