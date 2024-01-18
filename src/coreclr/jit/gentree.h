@@ -4079,8 +4079,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXPANDED_EARLY          = 0x00800000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x01000000, // this call has late devirtualzation info
     GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x02000000, // ldvirtftn on an interface type
-    GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable
-    GTF_CALL_M_CAST_NON_NULL           = 0x08000000, // this cast (helper call) can be expanded if it's profitable
+    GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)

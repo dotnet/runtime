@@ -1598,6 +1598,56 @@ PhaseStatus Compiler::fgLateCastExpansion()
 }
 
 //------------------------------------------------------------------------------
+// PickLikelyClass: picks a likely class handle corresponding to the given IL offset
+//
+// Arguments:
+//    comp       - Compiler instance
+//    offset     - IL offset
+//    likelihood - [out] likelihood of the returned class
+//
+// Returns:
+//    Likely class handle or NO_CLASS_HANDLE
+//
+CORINFO_CLASS_HANDLE PickLikelyClass(Compiler* comp, IL_OFFSET offset, unsigned* likelihood)
+{
+    // TODO-InlineCast: consider merging this helper with pickGDV
+
+    const int               maxLikelyClasses = 8;
+    LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
+    unsigned                likelyClassCount = getLikelyClasses(likelyClasses, maxLikelyClasses, comp->fgPgoSchema,
+                                                 comp->fgPgoSchemaCount, comp->fgPgoData, (int)offset);
+
+    if (likelyClassCount == 0)
+    {
+        return NO_CLASS_HANDLE;
+    }
+
+#ifdef DEBUG
+    // Print all the candidates and their likelihoods to the log
+    for (UINT32 i = 0; i < likelyClassCount; i++)
+    {
+        const char* className = comp->eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
+        JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+                likelyClasses[i].likelihood);
+    }
+
+    // Optional stress mode to pick a random known class, rather than
+    // the most likely known class.
+    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+    {
+        // Reuse the random inliner's random state.
+        CLRRandom* const random =
+            comp->impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+        unsigned index = static_cast<unsigned>(random->Next(static_cast<int>(likelyClassCount)));
+        *likelihood    = 100;
+        return (CORINFO_CLASS_HANDLE)likelyClasses[index].handle;
+    }
+#endif
+    *likelihood = likelyClasses[0].likelihood;
+    return (CORINFO_CLASS_HANDLE)likelyClasses[0].handle;
+}
+
+//------------------------------------------------------------------------------
 // fgLateCastExpansionForCall : Expand specific cast helper, see
 //    fgLateCastExpansion's comments.
 //
@@ -1624,62 +1674,27 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         return false;
     }
 
-    JITDUMP("Attempting to expand cast helper call [%06d] in " FMT_BB "...\n", dspTreeID(call), (*pBlock)->bbNum)
-
-    BasicBlock* block = *pBlock;
+    BasicBlock* lastBlock = *pBlock;
+    JITDUMP("Attempting to expand a cast helper call in " FMT_BB "...\n", lastBlock->bbNum);
+    DISPTREE(call);
+    JITDUMP("\n");
 
     // Currently, we only expand "isinst" and only using profile data. The long-term plan is to
     // move cast expansion logic here from the importer completely.
-    const int               maxLikelyClasses = 8;
-    LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
-    unsigned likelyClassCount = getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount,
-                                                 fgPgoData, call->gtCastHelperILOffset);
-
-    if (likelyClassCount == 0)
-    {
-        JITDUMP("No likely classes found - bail out.\n")
-        return false;
-    }
-
-#ifdef DEBUG
-    // Print all the candidates and their likelihoods to the log
-    for (UINT32 i = 0; i < likelyClassCount; i++)
-    {
-        const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
-        JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
-                likelyClasses[i].likelihood);
-    }
-
-    // Optional stress mode to pick a random known class, rather than
-    // the most likely known class.
-    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
-    {
-        // Reuse the random inliner's random state.
-        CLRRandom* const random =
-            impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-
-        unsigned index              = static_cast<unsigned>(random->Next(static_cast<int>(likelyClassCount)));
-        likelyClasses[0].handle     = likelyClasses[index].handle;
-        likelyClasses[0].likelihood = 100;
-        likelyClassCount            = 1;
-    }
-#endif
-
-    LikelyClassMethodRecord likelyClass = likelyClasses[0];
-    CORINFO_CLASS_HANDLE    likelyCls   = (CORINFO_CLASS_HANDLE)likelyClass.handle;
-
+    unsigned             likelihood = 100;
+    CORINFO_CLASS_HANDLE likelyCls  = PickLikelyClass(this, call->gtCastHelperILOffset, &likelihood);
     if (likelyCls == NO_CLASS_HANDLE)
     {
         // TODO: make null significant, so it could mean our object is likely just null
-        JITDUMP("Likely class is null - bail out.\n")
+        JITDUMP("Likely class is null - bail out.\n");
         return false;
     }
 
-    // if there is a dominating candidate with >= 40% likelihood, use it
-    const unsigned likelihoodMinThreshold = 40;
-    if (likelyClass.likelihood < likelihoodMinThreshold)
+    // if there is a dominating candidate with >= 50% likelihood, use it
+    const unsigned likelihoodMinThreshold = 50;
+    if (likelihood < likelihoodMinThreshold)
     {
-        JITDUMP("Likely class likelihood is below %u%% - bail out.\n", likelihoodMinThreshold)
+        JITDUMP("Likely class likelihood is below %u%% - bail out.\n", likelihoodMinThreshold);
         return false;
     }
 
@@ -1689,12 +1704,12 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     if (expectedCls == NO_CLASS_HANDLE)
     {
         // clsArg doesn't represent a class handle - bail out
-        // TODO: use VN if it's available (depends on when this phase is executed)
-        JITDUMP("clsArg is not a constant handle - bail out.\n")
+        // TODO-InlineCast: use VN if it's available (depends on when this phase is executed)
+        JITDUMP("clsArg is not a constant handle - bail out.\n");
         return false;
     }
 
-    TypeCompareState castResult = info.compCompHnd->compareTypesForCast(likelyCls, expectedCls);
+    const TypeCompareState castResult = info.compCompHnd->compareTypesForCast(likelyCls, expectedCls);
     if (castResult == TypeCompareState::May)
     {
         JITDUMP("compareTypesForCast returned May for this candidate\n");
@@ -1712,18 +1727,18 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     DebugInfo debugInfo = stmt->GetDebugInfo();
 
     // Split block right before the call tree (this is a standard pattern we use in helperexpansion.cpp)
-    BasicBlock* prevBb       = block;
+    BasicBlock* prevBb       = lastBlock;
     GenTree**   callUse      = nullptr;
     Statement*  newFirstStmt = nullptr;
-    block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
-    assert(prevBb != nullptr && block != nullptr);
-    *pBlock = block;
+    lastBlock                = fgSplitBlockBeforeTree(lastBlock, stmt, call, &newFirstStmt, &callUse);
+    assert(prevBb != nullptr && lastBlock != nullptr);
+    *pBlock = lastBlock;
     // Block ops inserted by the split need to be morphed here since we are after morph.
     // We cannot morph stmt yet as we may modify it further below, and the morphing
     // could invalidate callUse
     while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
     {
-        fgMorphStmtBlockOps(block, newFirstStmt);
+        fgMorphStmtBlockOps(lastBlock, newFirstStmt);
         newFirstStmt = newFirstStmt->GetNextStmt();
     }
 
@@ -1739,7 +1754,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // Replace the original call with that temp
     *callUse = gtNewLclvNode(tmpNum, call->TypeGet());
 
-    fgMorphStmtBlockOps(block, stmt);
+    fgMorphStmtBlockOps(lastBlock, stmt);
     gtUpdateStmtSideEffects(stmt);
 
     // We're going to expand this "isinst" like this:
@@ -1749,28 +1764,38 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //
     // nullcheckBb (BBJ_COND):                      [weight: 1.0]
     //     tmp = obj;
-    //     if (tmp == null) goto block;
+    //     if (tmp == null)
+    //         goto lastBlock;
+    //     fallthrough;
     //
     // typeCheckBb (BBJ_COND):                      [weight: 0.5]
-    //     if (tmp->pMT == likelyClass) goto block;
+    //     if (tmp->pMT == likelyClass)
+    //         goto typeCheckSucceedBb;
+    //     fallthrough;
     //
     // fallbackBb (BBJ_ALWAYS):                     [weight: <profile>]
     //     tmp = helper_call(cls, tmp);
+    //     goto lastBlock;
     //
-    // block (BBJ_any):                             [weight: 1.0]
+    // typeCheckSucceedBb (BBJ_ALWAYS):             [weight: <profile>]
+    //     nop (or tmp = null)
+    //     fallthrough;
+    //
+    // lastBlock (BBJ_any):                         [weight: 1.0]
     //     use(tmp);
     //
 
     // Block 1: nullcheckBb
-    // TODO: assertionprop should leave us a mark that objArg is never null, so we can omit this check
+    // TODO-InlineCast: assertionprop should leave us a mark that objArg is never null, so we can omit this check
     // it's too late to rely on upstream phases to do this for us (unless we do optRepeat).
     GenTree* objTmp      = gtNewLclVarNode(tmpNum);
     GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, objTmp, gtNewNull());
     nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
-    BasicBlock* nullcheckBb =
-        fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp), debugInfo, block, true);
+    BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
+                                                   debugInfo, lastBlock, true);
 
     // Insert statements to spill call's arguments (preserving the evaluation order)
+    // TODO-InlineCast: don't spill cls if possible, we only need it after the nullcheck
     const unsigned clsTmp   = lvaGrabTemp(true DEBUGARG("local for cls"));
     lvaTable[clsTmp].lvType = clsArg->TypeGet();
     Statement* storeObjStmt = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(tmpNum, objArg), debugInfo);
@@ -1790,7 +1815,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(objTmp)), likelyClsNode);
     mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
     GenTree*    jtrue       = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
-    BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, block, true);
+    BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, lastBlock, true);
 
     // Block 3: fallbackBb
     // NOTE: we spilled call's arguments above, we need to re-create it here (we can't just modify call's args)
@@ -1798,89 +1823,65 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         gtNewHelperCallNode(call->GetHelperNum(), TYP_REF, gtNewLclVarNode(clsTmp), gtNewLclVarNode(tmpNum));
     fallbackCall = fgMorphCall(fallbackCall->AsCall());
     gtSetEvalOrder(fallbackCall);
-    BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, gtNewTempStore(tmpNum, fallbackCall), debugInfo, block);
+    GenTree*    fallbackTree = gtNewTempStore(tmpNum, fallbackCall);
+    BasicBlock* fallbackBb   = fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, fallbackTree, debugInfo, lastBlock, true);
+
+    // Block 4: typeCheckSucceedBb
+    GenTree* typeCheckSucceedTree;
+    if (castResult == TypeCompareState::MustNot)
+    {
+        // With TypeCompareState::MustNot it means our likely class never passes the type check.
+        // it means we just check obj's type for being likelyclass and return null if it's true.
+        typeCheckSucceedTree = gtNewTempStore(tmpNum, gtNewNull());
+    }
+    else
+    {
+        // Otherwise, no-op (for simplicity, some upstream phase will collect this block)
+        typeCheckSucceedTree = gtNewNothingNode();
+    }
+    BasicBlock* typeCheckSucceedBb =
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo, lastBlock);
 
     //
     // Wire up the blocks
     //
     prevBb->SetTarget(nullcheckBb);
-    nullcheckBb->SetTrueTarget(block);
+    nullcheckBb->SetTrueTarget(lastBlock);
     nullcheckBb->SetFalseTarget(typeCheckBb);
-    typeCheckBb->SetTrueTarget(block);
+    typeCheckBb->SetTrueTarget(typeCheckSucceedBb);
     typeCheckBb->SetFalseTarget(fallbackBb);
-    fallbackBb->SetTarget(block);
-    fgRemoveRefPred(block, prevBb);
+    fallbackBb->SetTarget(lastBlock);
+    fgRemoveRefPred(lastBlock, prevBb);
     fgAddRefPred(nullcheckBb, prevBb);
     fgAddRefPred(typeCheckBb, nullcheckBb);
-    fgAddRefPred(block, nullcheckBb);
+    fgAddRefPred(lastBlock, nullcheckBb);
     fgAddRefPred(fallbackBb, typeCheckBb);
-    fgAddRefPred(block, typeCheckBb);
-    fgAddRefPred(block, fallbackBb);
+    fgAddRefPred(lastBlock, typeCheckSucceedBb);
+    fgAddRefPred(typeCheckSucceedBb, typeCheckBb);
+    fgAddRefPred(lastBlock, fallbackBb);
 
     //
     // Re-distribute weights
     // We assume obj is 50%/50% null/not-null (TODO: use profile data)
     // and rely on profile for the slow path.
     //
-    assert(likelyClass.likelihood <= 100);
     nullcheckBb->inheritWeight(prevBb);
     typeCheckBb->inheritWeightPercentage(nullcheckBb, 50);
-    fallbackBb->inheritWeightPercentage(typeCheckBb, 100 - likelyClass.likelihood);
-    block->inheritWeight(prevBb);
+    fallbackBb->inheritWeightPercentage(typeCheckBb, likelihood);
+    typeCheckSucceedBb->inheritWeightPercentage(typeCheckBb, 100 - likelihood);
+    lastBlock->inheritWeight(prevBb);
 
     //
     // Update bbNatLoopNum for all new blocks and validate EH regions
     //
-    nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-    typeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    assert(BasicBlock::sameEHRegion(prevBb, block));
+    nullcheckBb->bbNatLoopNum        = prevBb->bbNatLoopNum;
+    fallbackBb->bbNatLoopNum         = prevBb->bbNatLoopNum;
+    typeCheckBb->bbNatLoopNum        = prevBb->bbNatLoopNum;
+    typeCheckSucceedBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+    assert(BasicBlock::sameEHRegion(prevBb, lastBlock));
     assert(BasicBlock::sameEHRegion(prevBb, nullcheckBb));
     assert(BasicBlock::sameEHRegion(prevBb, fallbackBb));
     assert(BasicBlock::sameEHRegion(prevBb, typeCheckBb));
-
-    // Rare case: if profile points to a class that never passes the type check
-    // we can also optimize it like this:
-    //
-    // prevBb:                                      [weight: 1.0]
-    //     ...
-    //
-    // nullcheckBb (BBJ_COND):                      [weight: 1.0]
-    //     tmp = obj;
-    //     if (tmp == null) goto block;
-    //
-    // typeCheckBb (BBJ_COND):                      [weight: 0.5]
-    //     if (tmp->pMT == likelyClass) goto assignNullBb;
-    //
-    // fallbackBb (BBJ_ALWAYS):                     [weight: <profile>]
-    //     tmp = helper_call(cls, tmp);
-    //     goto block;
-    //
-    // assignNullBb (BBJ_ALWAYS):                   [weight: <profile>]
-    //     tmp = null;
-    //
-    // block (BBJ_any):                             [weight: 1.0]
-    //     use(tmp);
-    //
-
-    if (castResult == TypeCompareState::MustNot)
-    {
-        // Block 4: assignNullBb
-        //
-        // Let's do everything here instead of adding ifs in the previous blocks to make them simpler.
-        BasicBlock* assignNullBb =
-            fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, gtNewTempStore(tmpNum, gtNewNull()), debugInfo, block);
-
-        // typeCheckBb now jumps to assignNullBb on true
-        typeCheckBb->SetTrueTarget(assignNullBb);
-        // typeCheckBb is no longer a predecessor of block
-        fgRemoveRefPred(block, typeCheckBb);
-        fgAddRefPred(assignNullBb, typeCheckBb);
-        fgAddRefPred(block, assignNullBb);
-        assignNullBb->inheritWeightPercentage(typeCheckBb, likelyClass.likelihood);
-        assignNullBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    }
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
     if (fgCanCompactBlocks(prevBb, nullcheckBb))

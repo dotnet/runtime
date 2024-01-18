@@ -4802,7 +4802,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
                 return optAssertionProp_Update(arg1, call, stmt);
             }
 
-            // TODO: check optAssertionIsNonNull for the object argument and replace
+            // TODO-InlineCast: check optAssertionIsNonNull for the object argument and replace
             // the helper with its nonnull version, e.g.:
             // CORINFO_HELP_ISINSTANCEOFANY -> CORINFO_HELP_ISINSTANCEOFANY_NONNULL
             // so then fgLateCastExpansion can skip the null check.
