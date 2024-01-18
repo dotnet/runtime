@@ -83,9 +83,9 @@ namespace System.Runtime.InteropServices.Marshalling
         {
             if (UniqueInstance && Interlocked.CompareExchange(ref _released, 1, 0) == 0)
             {
+                GC.SuppressFinalize(this);
                 CacheStrategy.Clear(IUnknownStrategy);
                 IUnknownStrategy.Release(_instancePointer);
-                GC.SuppressFinalize(this);
             }
         }
 
