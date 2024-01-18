@@ -75,7 +75,6 @@ EXPORTS
         mono_method_get_name
         mono_method_signature
         mono_property_get_get_method
-        mono_raise_exception
         mono_runtime_invoke
         mono_runtime_invoke_with_nested_object
         mono_set_assemblies_path

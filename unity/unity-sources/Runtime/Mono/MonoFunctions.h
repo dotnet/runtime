@@ -48,7 +48,6 @@ DO_API(const char*, mono_class_get_namespace, (MonoClass * klass))
 DO_API(const char*, mono_class_get_name, (MonoClass * klass))
 DO_API(char*, mono_type_get_name, (MonoType * type))
 DO_API(gboolean, mono_metadata_type_equal, (MonoType * t1, MonoType * t2))
-DO_API_NO_RETURN(void, mono_raise_exception, (MonoException * ex))
 
 DO_API(void*, unity_coreclr_create_delegate, (const char* assemblyName, const char* typeName, const char* methodName))
 
