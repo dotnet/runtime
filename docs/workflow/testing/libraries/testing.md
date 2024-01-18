@@ -79,7 +79,8 @@ cd src\libraries\System.Collections.Immutable\tests
 dotnet build /t:Test
 ```
 
-**NOTE**: if you build the runtime using the [Docker container](/docs/workflow/building/coreclr/linux-instructions.md#build-using-docker), use `dotnet.sh` instead of `dotnet`.
+**NOTE**: if your environment doesn't have the required SDK installed (e.g. inside [Docker container](/docs/workflow/building/coreclr/linux-instructions.md#build-using-docker)),
+use `./dotnet.sh`/`.\dotnet.cmd` instead of `dotnet`.
 
 ### Running only certain tests
 
