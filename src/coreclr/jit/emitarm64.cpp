@@ -1492,12 +1492,21 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                            // offsets)
         case IF_SVE_JK_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit
                              // unscaled offsets)
-            //assert(insOptsScalable(id->idInsOpt()));
-            //assert(isVectorRegister(id->idReg10()));       // mmmmm
-            //assert(isPredicateRegister(id->idReg20()));    // ggg
-            //assert(isVectorRegister(id->idReg30()));       // ttttt
-            //assert(isValidGeneralRegister(id->idReg40())); // nnnnn
-            //assert(isValidImmShift(id->idInsOpt()));       // h
+            elemsize = id->idOpSize();
+            assert(isVectorRegister(id->idReg1()));
+            assert(isPredicateRegister(id->idReg2()));
+            assert(isGeneralRegister(id->idReg3()));
+            assert(isScalableVectorSize(elemsize));
+#ifdef DEBUG
+            if (insOptsScalableStandard(id->idInsOpt()))
+            {
+                assert(isGeneralRegister(id->idReg4()));
+            }
+            else
+            {
+                assert(isVectorRegister(id->idReg4()));
+            }
+#endif // DEBUG
             break;
 
         //case IF_SVE_JN_3A: // .........xx.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
