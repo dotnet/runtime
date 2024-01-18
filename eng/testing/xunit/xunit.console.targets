@@ -93,6 +93,6 @@
       <None Remove="@(_xunitAbstractionsRemove)" />
     </ItemGroup>
     <Error Condition="'$(Pkgxunit_runner_visualstudio)' != '' AND '$(TargetFrameworkIdentifier)' == '.NETFramework' AND '@(_xunitAbstractionsRemove)' == ''"
-           Text="Remove workaround above and GeneratePathProperty from the xunit.runner.visualstudio PackageReference as they are no longer needed"/>
+           Text="Remove workaround above and GeneratePathProperty from the xunit.runner.visualstudio PackageReference as they are no longer needed." />
   </Target>
 </Project>
