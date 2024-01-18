@@ -11036,8 +11036,15 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
                 {
                     case INS_OPTS_SCALABLE_S_UXTW:
                     case INS_OPTS_SCALABLE_S_SXTW:
-                        assert(sopt == INS_SCALABLE_OPTS_MOD_N);
-                        fmt = IF_SVE_JJ_4A;
+                        if (insScalableOptsNone(sopt))
+                        {
+                            fmt = IF_SVE_JJ_4A_D;
+                        }
+                        else
+                        {
+                            assert(sopt == INS_SCALABLE_OPTS_MOD_N);
+                            fmt = IF_SVE_JJ_4A;
+                        }
                         break;
 
                     case INS_OPTS_SCALABLE_D_UXTW:
@@ -11078,8 +11085,15 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
                 {
                     case INS_OPTS_SCALABLE_S_UXTW:
                     case INS_OPTS_SCALABLE_S_SXTW:
-                        assert(sopt == INS_SCALABLE_OPTS_MOD_N);
-                        fmt = IF_SVE_JJ_4A;
+                        if (insScalableOptsNone(sopt))
+                        {
+                            fmt = IF_SVE_JJ_4A_D;
+                        }
+                        else
+                        {
+                            assert(sopt == INS_SCALABLE_OPTS_MOD_N);
+                            fmt = IF_SVE_JJ_4A;
+                        }
                         break;
 
                     case INS_OPTS_SCALABLE_D_UXTW:
@@ -19830,6 +19844,8 @@ void emitter::emitDispInsHelp(
                              // offsets)
         case IF_SVE_JJ_4A_C: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
                              // offsets)
+        case IF_SVE_JJ_4A_D: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
         {
             emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(),
                                           true);                                      // ttttt
@@ -19841,7 +19857,7 @@ void emitter::emitDispInsHelp(
             switch (ins)
             {
                 case INS_sve_st1h:
-                    if (fmt == IF_SVE_JJ_4A_C)
+                    if ((fmt == IF_SVE_JJ_4A_C) || (fmt == IF_SVE_JJ_4A_D))
                     {
                         printf("]");
                     }
@@ -19852,7 +19868,7 @@ void emitter::emitDispInsHelp(
                     break;
 
                 case INS_sve_st1w:
-                    if (fmt == IF_SVE_JJ_4A_C)
+                    if ((fmt == IF_SVE_JJ_4A_C) || (fmt == IF_SVE_JJ_4A_D))
                     {
                         printf("]");
                     }
@@ -19880,8 +19896,6 @@ void emitter::emitDispInsHelp(
             break;
         }
 
-        //case IF_SVE_JJ_4A_D: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
-        //                     // offsets)
         //case IF_SVE_JK_4A: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit unscaled
         //                   // offsets)
         //case IF_SVE_JK_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit
