@@ -1021,6 +1021,7 @@ protected:
             {
                 return iiaJmpOffset;
             }
+
 #elif defined(TARGET_RISCV64)
             struct
             {
@@ -1038,6 +1039,9 @@ protected:
                 return iiaEncodedInstr;
             }
 #endif // defined(TARGET_RISCV64)
+
+            // Used for instrDesc that has relocatable immediate offset
+            bool iiaSecRel;
 
         } _idAddrUnion;
 
@@ -1415,6 +1419,16 @@ protected:
             return (idAddr()->_idRegBit == 1);
         }
         void idPredicateReg2Merge(bool val)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idRegBit = val ? 1 : 0;
+        }
+        bool idVectorLength4x() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idRegBit == 1);
+        }
+        void idVectorLength4x(bool val)
         {
             assert(!idIsSmallDsc());
             idAddr()->_idRegBit = val ? 1 : 0;

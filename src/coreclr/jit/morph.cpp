@@ -10605,6 +10605,16 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+#if defined(TARGET_XARCH)
+            if ((node->GetSimdSize() == 8) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                // When SSE4.1 isn't supported then Vector2 only needs a single horizontal add
+                // which means the result isn't broadcast across the entire vector and we can't
+                // optimize
+                break;
+            }
+#endif // TARGET_XARCH
+
             GenTree* op1      = node->Op(1);
             GenTree* sqrt     = nullptr;
             GenTree* toScalar = nullptr;
@@ -12974,7 +12984,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
     const bool makeCondAssertions =
         tree->OperIs(GT_JTRUE) && compCurBB->KindIs(BBJ_COND) && (compCurBB->NumSucc() == 2);
 
-    // Intialize apLocalIfTrue if we might look for it later,
+    // Initialize apLocalIfTrue if we might look for it later,
     // even if it ends up identical to apLocal.
     //
     if (makeCondAssertions)
@@ -13012,14 +13022,14 @@ void Compiler::fgAssertionGen(GenTree* tree)
 
         if (ifTrueAssertionIndex != NO_ASSERTION_INDEX)
         {
-            announce(ifTrueAssertionIndex, " [if true]");
+            announce(ifTrueAssertionIndex, "[if true] ");
             unsigned const bvIndex = ifTrueAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocalIfTrue, bvIndex);
         }
 
         if (ifFalseAssertionIndex != NO_ASSERTION_INDEX)
         {
-            announce(ifFalseAssertionIndex, " [if false]");
+            announce(ifFalseAssertionIndex, "[if false] ");
             unsigned const bvIndex = ifFalseAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocal, ifFalseAssertionIndex - 1);
         }
@@ -13480,7 +13490,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 //
 // Returns:
 //    true if 'stmt' was removed from the block.
-//  s false if 'stmt' is still in the block (even if other statements were removed).
+//    false if 'stmt' is still in the block (even if other statements were removed).
 //
 // Notes:
 //   Can be called anytime, unlike fgMorphStmts() which should only be called once.
@@ -13852,8 +13862,6 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //
 // Arguments:
 //    block - block in question
-//    highestReachablePostorder - maximum postorder number for a
-//     reachable block.
 //
 void Compiler::fgMorphBlock(BasicBlock* block)
 {
@@ -13894,7 +13902,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     // An equal number means pred == block (block is a self-loop).
                     // Either way the assertion info is not available, and we must assume the worst.
                     //
-                    if (pred->bbNewPostorderNum <= block->bbNewPostorderNum)
+                    if (pred->bbPostorderNum <= block->bbPostorderNum)
                     {
                         JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
                                 pred->bbNum);
@@ -14007,7 +14015,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
 //
 // Note:
 //   Morph almost always changes IR, so we don't actually bother to
-//   track if it made any changees.
+//   track if it made any changes.
 //
 PhaseStatus Compiler::fgMorphBlocks()
 {

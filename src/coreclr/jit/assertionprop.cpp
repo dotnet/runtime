@@ -1783,7 +1783,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     }
 #endif // DEBUG
 
-    // Track the shortcircuit criterias
+    // Track the short-circuit criteria
     optCanPropLclVar |= newAssertion->CanPropLclVar();
     optCanPropEqual |= newAssertion->CanPropEqualOrNotEqual();
     optCanPropNonNull |= newAssertion->CanPropNonNull();

@@ -21,7 +21,7 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
         behavior: "assembly",
     };
 
-    if (loaderHelpers.loadedAssemblies.some(f => f.includes(assemblyNameToLoad))) {
+    if (loaderHelpers.loadedAssemblies.includes(assemblyNameToLoad)) {
         return false;
     }
 

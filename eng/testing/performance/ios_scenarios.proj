@@ -21,9 +21,7 @@
     <SymbolsPath Condition="'$(iOSStripSymbols)' == 'True'"> nosymbols</SymbolsPath>
     <!-- For non-default configurations, add the configuration to the name of the test (in the matching format), otherwise don't add anything.
     This will ensure that PowerBI's using the test name rather than the run configuration for the data continue to work properly and defaults are connected -->
-    <HybridGlobalizationPath></HybridGlobalizationPath>
-    <HybridGlobalizationPath Condition="'$(hybridGlobalization)' == 'True'"> HybridGlobalization</HybridGlobalizationPath>
-    <RunConfigsString>$(LlvmPath)$(SymbolsPath)$(HybridGlobalizationPath)</RunConfigsString>
+    <RunConfigsString>$(LlvmPath)$(SymbolsPath)</RunConfigsString>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
