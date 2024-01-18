@@ -4499,6 +4499,16 @@ bool Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
             continue;
         }
 
+        // If this is a CALLFINALLYRET that is not in the loop, but the
+        // CALLFINALLY was, then we have to leave it in place. For compaction
+        // purposes this doesn't really make any difference, since no codegen
+        // is associated with the CALLFINALLYRET anyway.
+        if (cur->isBBCallFinallyPairTail())
+        {
+            cur = cur->Next();
+            continue;
+        }
+
         BasicBlock* lastNonLoopBlock = cur;
         while (true)
         {
