@@ -7844,7 +7844,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
 
     result = CORINFO_CLASS_HANDLE(definitionHandle.AsPtr());
 
-    JIT_TO_EE_TRANSITION();    
+    EE_TO_JIT_TRANSITION();    
 
     _ASSERTE(result != NULL);
 
