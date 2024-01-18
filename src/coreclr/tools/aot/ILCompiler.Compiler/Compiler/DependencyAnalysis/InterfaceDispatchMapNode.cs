@@ -191,7 +191,7 @@ namespace ILCompiler.DependencyAnalysis
                     // dispatch will walk the inheritance chain).
                     if (implMethod != null)
                     {
-                        TypeDesc implType = declType;
+                        DefType implType = declType;
                         while (!implType.HasSameTypeDefinition(implMethod.OwningType))
                             implType = implType.BaseType;
 

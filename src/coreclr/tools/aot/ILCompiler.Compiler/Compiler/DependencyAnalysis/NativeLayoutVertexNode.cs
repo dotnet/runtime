@@ -1044,7 +1044,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.BaseType != null && !_type.BaseType.IsRuntimeDeterminedSubtype)
             {
-                TypeDesc baseType = _type.BaseType;
+                DefType baseType = _type.BaseType;
                 do
                 {
                     yield return new DependencyListEntry(context.MaximallyConstructableType(baseType), "base types of canonical types must have their full vtables");

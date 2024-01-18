@@ -476,7 +476,7 @@ namespace ILCompiler.DependencyAnalysis
                             defTypeDefinition.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethodDefinition);
                         if (implMethod != null)
                         {
-                            TypeDesc implType = defType;
+                            DefType implType = defType;
                             while (!implType.HasSameTypeDefinition(implMethod.OwningType))
                                 implType = implType.BaseType;
 

@@ -1725,7 +1725,9 @@ namespace System.Configuration
                 // Validate the loaded and converted value
                 prop.Validate(propertyValue);
             }
+#pragma warning disable CA1859
             catch (ConfigurationException ce)
+#pragma warning restore
             {
                 // If the error is incomplete - complete it :)
                 if (string.IsNullOrEmpty(ce.Filename)) ce = new ConfigurationErrorsException(ce.Message, reader);
