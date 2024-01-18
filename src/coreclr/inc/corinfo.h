@@ -596,6 +596,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_READYTORUN_GCSTATIC_BASE,           // static gc field access
     CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE,        // static non gc field access
     CORINFO_HELP_READYTORUN_THREADSTATIC_BASE,
+    CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE,
     CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
     CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
@@ -1740,6 +1741,17 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 };
 
 //----------------------------------------------------------------------------
+// getThreadLocalStaticInfo_NativeAOT and CORINFO_THREAD_STATIC_INFO_NATIVEAOT: The EE instructs the JIT about how to access a thread local field
+
+struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
+{
+    uint32_t offsetOfThreadLocalStoragePointer;
+    CORINFO_CONST_LOOKUP tlsRootObject;
+    CORINFO_CONST_LOOKUP tlsIndexObject;
+    CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+};
+
+//----------------------------------------------------------------------------
 // Exception handling
 
 struct CORINFO_EH_CLAUSE
@@ -2832,6 +2844,10 @@ public:
             bool                                isGCType
             ) = 0;
 
+    virtual void getThreadLocalStaticInfo_NativeAOT(
+            CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo
+            ) = 0;
+
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
 
@@ -3366,6 +3382,7 @@ public:
 // It would be nicer to use existing IMAGE_REL_XXX constants instead of defining our own here...
 #define IMAGE_REL_BASED_REL32           0x10
 #define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
+#define IMAGE_REL_SECREL                0x104
 
 // The identifier for ARM32-specific PC-relative address
 // computation corresponds to the following instruction

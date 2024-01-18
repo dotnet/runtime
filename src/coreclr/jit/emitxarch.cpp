@@ -5702,7 +5702,15 @@ void emitter::emitIns_R_I(instruction ins,
             break;
     }
 
-    id = emitNewInstrSC(attr, val);
+    if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_SEC_RELOC(attr))
+    {
+        id                      = emitNewInstrCns(attr, val);
+        id->idAddr()->iiaSecRel = true;
+    }
+    else
+    {
+        id = emitNewInstrSC(attr, val);
+    }
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(reg);
@@ -15098,7 +15106,16 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         if (id->idIsCnsReloc())
         {
-            emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_BASED_MOFFSET);
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idAddr()->iiaSecRel)
+            {
+                // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
+                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
+            }
+            else
+            {
+                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val,
+                                     IMAGE_REL_BASED_MOFFSET);
+            }
         }
 
         goto DONE;

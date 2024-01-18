@@ -56,6 +56,8 @@ void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elem
 void emitDispSveConsecutiveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
 void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
+void emitDispLowPredicateRegPair(regNumber reg, insOpts opt);
+void emitDispVectorLengthSpecifier(instrDesc* id);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
@@ -418,6 +420,9 @@ static code_t insEncodeDatasizeBF(code_t code, emitAttr size);
 // Returns the encoding to select the vectorsize for SIMD Arm64 instructions
 static code_t insEncodeVectorsize(emitAttr size);
 
+// Returns the encoding to set the vector length specifier (vl) for an Arm64 SVE instruction
+static code_t insEncodeVectorLengthSpecifier(instrDesc* id);
+
 // Returns the encoding to select 'index' for an Arm64 vector elem instruction
 static code_t insEncodeVectorIndex(emitAttr elemsize, ssize_t index);
 
@@ -513,6 +518,12 @@ static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
 // Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
+static code_t insEncodeSimm5_20_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
+static code_t insEncodeUimm7_20_to_14(ssize_t imm);
+
 // Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
 // This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
 static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift, size_t imm);
@@ -575,7 +586,13 @@ static bool isValidUimm5(ssize_t value)
     return (0 <= value) && (value <= 0x1FLL);
 };
 
-// Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for fMOV).
+// Returns true if 'value' is a legal unsigned immediate 7 bit encoding (such as for CMPLT, CMPNE).
+static bool isValidUimm7(ssize_t value)
+{
+    return (0 <= value) && (value <= 0x7FLL);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for FMOV).
 static bool isValidUimm8(ssize_t value)
 {
     return (0 <= value) && (value <= 0xFFLL);
@@ -609,6 +626,12 @@ static bool isValidSimm19(ssize_t value)
 static bool isValidSimm14(ssize_t value)
 {
     return (-0x2000LL <= value) && (value <= 0x1FFFLL);
+};
+
+// Returns true if 'value' is a legal signed immediate 5 bit encoding (such as for CMPLO, CMPHI).
+static bool isValidSimm5(ssize_t value)
+{
+    return (-0x10LL <= value) && (value <= 0xFLL);
 };
 
 // Returns true if 'value' represents a valid 'bitmask immediate' encoding.
@@ -859,12 +882,17 @@ inline static bool isFloatReg(regNumber reg)
 
 inline static bool isPredicateRegister(regNumber reg)
 {
-    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LAST);
+    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LAST);
 }
 
 inline static bool isLowPredicateRegister(regNumber reg)
 {
-    return (reg >= REG_PREDICATE_FIRST && reg <= REG_PREDICATE_LOW_LAST);
+    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LOW_LAST);
+}
+
+inline static bool isHighPredicateRegister(regNumber reg)
+{
+    return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
 }
 
 inline static bool insOptsNone(insOpts opt)
@@ -1015,7 +1043,20 @@ inline static bool insOptsScalableWide(insOpts opt)
 
 inline static bool insScalableOptsNone(insScalableOpts sopt)
 {
+    // `sopt` is used for instructions with no extra encoding variants.
     return sopt == INS_SCALABLE_OPTS_NONE;
+}
+
+inline static bool insScalableOptsWithPredicatePair(insScalableOpts sopt)
+{
+    // `sopt` denotes the instruction's predicate register should be encoded as a {<Pd1>.<T>, <Pd2>.<T>} pair.
+    return sopt == INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR;
+}
+
+inline static bool insScalableOptsWithVectorLength(insScalableOpts sopt)
+{
+    // `sopt` is any of the scalable types that are valid for use with instructions with a vector length specifier (vl).
+    return ((sopt == INS_SCALABLE_OPTS_VL_2X) || (sopt == INS_SCALABLE_OPTS_VL_4X));
 }
 
 static bool isValidImmCond(ssize_t imm);
@@ -1043,7 +1084,7 @@ void emitIns(instruction ins);
 
 void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
-void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
+void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_R_I(instruction ins,
                  emitAttr    attr,
@@ -1057,7 +1098,12 @@ void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, i
 void emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_R(instruction     ins,
+                 emitAttr        attr,
+                 regNumber       reg1,
+                 regNumber       reg2,
+                 insOpts         opt  = INS_OPTS_NONE,
+                 insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
 {
