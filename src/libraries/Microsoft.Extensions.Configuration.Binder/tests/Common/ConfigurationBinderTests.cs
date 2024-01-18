@@ -2118,7 +2118,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotAppleMobile))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void TraceSwitchTest()
         {
             var dic = new Dictionary<string, string>
@@ -2147,7 +2147,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
         [Fact]
 #if !BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Investigate Build browser-wasm linux Release LibraryTests_EAT CI failure for reflection impl", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("Investigate Build browser-wasm linux Release LibraryTests_EAT CI failure for reflection impl", TestPlatforms.Browser)]
 #endif
         public void TestGraphWithUnsupportedMember()
         {

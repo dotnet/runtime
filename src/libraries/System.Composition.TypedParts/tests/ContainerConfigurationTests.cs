@@ -618,7 +618,7 @@ namespace System.Composition.Hosting.Tests
             yield return new object[] { new ContainerConfiguration().WithPart(typeof(ExportedProperty)) };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
+        [Theory]
         [MemberData(nameof(DebuggerAttributes_TestData))]
         public void DebuggerAttributes_GetViaReflection_Success(ContainerConfiguration configuration)
         {

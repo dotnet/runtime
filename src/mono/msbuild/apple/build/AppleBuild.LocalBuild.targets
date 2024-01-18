@@ -42,14 +42,6 @@
     <NoWarn Condition="'$(EnableSoftTrimming)' == 'true'">$(NoWarn);IL2035</NoWarn>
     <!-- https://github.com/dotnet/sdk/issues/18581 tracks needing to set 2 properties to disable warnings. -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
-
-    <!-- Reduce library test app size by trimming framework library features  -->
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
-    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
-    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
-    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
-    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
-    <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
   </PropertyGroup>
 
   <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this

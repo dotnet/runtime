@@ -90,7 +90,6 @@
 
   <Import Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Project="$(ILLinkPropsPath)" />
 
-  <!-- Make sure ILLinkTasksAssembly points at the right place. The above import sets it incorrectly -->
   <PropertyGroup>
     <ILLinkTasksAssembly>$(_ILLinkTasksAssembly)</ILLinkTasksAssembly>
   </PropertyGroup>
