@@ -1277,7 +1277,7 @@ VOID StubLinkerCPU::X86EmitPushRegs(unsigned regSet)
 {
     STANDARD_VM_CONTRACT;
 
-    for (X86Reg r = kEAX; r <= NumX86Regs; r = (X86Reg)(r+1))
+    for (X86Reg r = kEAX; r < NumX86Regs; r = (X86Reg)(r+1))
         if (regSet & (1U<<r))
         {
             X86EmitPushReg(r);
@@ -1289,10 +1289,14 @@ VOID StubLinkerCPU::X86EmitPopRegs(unsigned regSet)
 {
     STANDARD_VM_CONTRACT;
 
-    /* Cmp with regs num cause r is UCHAR */
-    for (X86Reg r = NumX86Regs; r <= NumX86Regs; r = (X86Reg)(r-1))
+    for (X86Reg r = (X86Reg)(NumX86Regs - 1); ; r = (X86Reg)(r-1))
+    {
         if (regSet & (1U<<r))
             X86EmitPopReg(r);
+
+        if (r == kEAX)
+            break;
+    }
 }
 
 
