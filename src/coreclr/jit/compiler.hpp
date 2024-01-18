@@ -572,6 +572,13 @@ static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc fun
 template <typename TFunc>
 BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
 {
+    // These are "pseudo-blocks" and control never actually flows into them
+    // (codegen directly jumps to its successor after finally calls).
+    if (KindIs(BBJ_CALLFINALLYRET))
+    {
+        return BasicBlockVisit::Continue;
+    }
+
     return ::VisitEHSuccs</* skipJumpDest */ false, TFunc>(comp, this, func);
 }
 
@@ -608,7 +615,8 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
 
         case BBJ_CALLFINALLYRET:
-            // No exceptions can occur in this paired block; skip its normal EH successors.
+            // These are "pseudo-blocks" and control never actually flows into them
+            // (codegen directly jumps to its successor after finally calls).
             return func(bbTarget);
 
         case BBJ_EHCATCHRET:
