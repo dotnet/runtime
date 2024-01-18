@@ -4330,6 +4330,13 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(regs != 0);
 
     emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs); // 5-bits;
+
+    // If we cannot fall into the false target, emit a jump to it
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
 }
 
 //---------------------------------------------------------------------
@@ -4874,16 +4881,31 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_JCC:
         {
+#if !FEATURE_FIXED_OUT_ARGS
             BasicBlock* tgtBlock = compiler->compCurBB->KindIs(BBJ_COND) ? compiler->compCurBB->GetTrueTarget()
                                                                          : compiler->compCurBB->GetTarget();
-#if !FEATURE_FIXED_OUT_ARGS
             assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
 #endif // !FEATURE_FIXED_OUT_ARGS
 
             GenTreeCC* jcc = treeNode->AsCC();
             assert(jcc->gtCondition.Is(GenCondition::EQ, GenCondition::NE));
             instruction ins = jcc->gtCondition.Is(GenCondition::EQ) ? INS_bceqz : INS_bcnez;
-            emit->emitIns_J(ins, tgtBlock, (int)1 /* cc */);
+
+            if (compiler->compCurBB->KindIs(BBJ_COND))
+            {
+                emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), (int)1 /* cc */);
+
+                // If we cannot fall into the false target, emit a jump to it
+                BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+                if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+                {
+                    inst_JMP(EJ_jmp, falseTarget);
+                }
+            }
+            else
+            {
+                emit->emitIns_J(ins, compiler->compCurBB->GetTarget(), (int)1 /* cc */);
+            }
         }
         break;
 
