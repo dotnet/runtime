@@ -843,6 +843,7 @@ ssse3_shuffle: dest:x src1:x src2:x len:6 clob:1
 sse41_dpps_imm: dest:x src1:x src2:x len:7 clob:1
 sse41_dppd_imm: dest:x src1:x src2:x len:7 clob:1
 vector_andnot: dest:x src1:x src2:x len:7 clob:1
+vector_integer_abs: dest:x src1:x len:6
 
 roundp: dest:x src1:x len:10
 

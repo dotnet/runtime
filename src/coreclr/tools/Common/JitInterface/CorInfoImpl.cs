@@ -4081,10 +4081,8 @@ namespace Internal.JitInterface
                     break;
             }
 
-#if READYTORUN
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
-#endif
 
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {

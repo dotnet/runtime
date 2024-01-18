@@ -173,7 +173,7 @@ namespace System.Threading
                 s_minSpinCount = DetermineMinSpinCount();
 
                 // Also initialize some types that are used later to prevent potential class construction cycles
-                NativeRuntimeEventSource.Log.IsEnabled();
+                _ = NativeRuntimeEventSource.Log;
             }
             catch
             {
