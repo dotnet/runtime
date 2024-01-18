@@ -931,11 +931,6 @@ extern "C" EXPORT_API MonoMethodSignature* EXPORT_CC mono_method_signature(MonoM
     return (MonoMethodSignature*)method;
 }
 
-extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_property_get_get_method(MonoProperty *prop)
-{
-    return (MonoMethod*)prop;
-}
-
 extern "C" EXPORT_API MonoObject* EXPORT_CC mono_runtime_invoke(MonoMethod *method, void *obj, void **params, MonoException **exc)
 {
     TRACE_API("%p, %p, %p, %p", method, obj, params, exc);

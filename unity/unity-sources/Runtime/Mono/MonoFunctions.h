@@ -88,8 +88,6 @@ DO_API(void, mono_debug_free_source_location, (MonoDebugSourceLocation * locatio
 DO_API_OPTIONAL(MonoDebugMethodJitInfo*, mono_debug_find_method, (MonoMethod * method, MonoDomain * domain))
 DO_API_OPTIONAL(void, mono_debug_free_method_jit_info, (MonoDebugMethodJitInfo * jit))
 
-DO_API(MonoMethod*, mono_property_get_get_method, (MonoProperty * prop))
-//DO_API(MonoDomain*, mono_object_get_domain, (MonoObject *obj))
 
 DO_API(void, mono_gc_collect, (int generation))
 
