@@ -1806,6 +1806,38 @@ namespace System.Runtime.Intrinsics
         internal static Vector512<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
             LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
 
+        /// <inheritdoc cref="Vector256.Log(Vector256{double})" />
+        public static Vector512<double> Log(Vector512<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogDouble<Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Log(vector._lower),
+                    Vector256.Log(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.Log(Vector256{float})" />
+        public static Vector512<float> Log(Vector512<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogSingle<Vector512<float>, Vector512<int>, Vector512<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Log(vector._lower),
+                    Vector256.Log(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector256.Log2(Vector256{double})" />
         public static Vector512<double> Log2(Vector512<double> vector)
         {

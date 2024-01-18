@@ -1021,6 +1021,7 @@ protected:
             {
                 return iiaJmpOffset;
             }
+
 #elif defined(TARGET_RISCV64)
             struct
             {
@@ -1038,6 +1039,9 @@ protected:
                 return iiaEncodedInstr;
             }
 #endif // defined(TARGET_RISCV64)
+
+            // Used for instrDesc that has relocatable immediate offset
+            bool iiaSecRel;
 
         } _idAddrUnion;
 

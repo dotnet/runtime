@@ -465,6 +465,7 @@ enum emitAttr : unsigned
                 EA_BYREF         = EA_BYREF_FLG |  EA_PTRSIZE,       /* size == -2 */
                 EA_DSP_RELOC_FLG = 0x400, // Is the displacement of the instruction relocatable?
                 EA_CNS_RELOC_FLG = 0x800, // Is the immediate of the instruction relocatable?
+                EA_CNS_SEC_RELOC = 0x1000, // Is the offset immediate that should be relocatable
 };
 
 #define EA_ATTR(x)                  ((emitAttr)(x))
@@ -481,6 +482,7 @@ enum emitAttr : unsigned
 #define EA_IS_GCREF_OR_BYREF(x)     ((((unsigned)(x)) & ((unsigned)(EA_BYREF_FLG | EA_GCREF_FLG))) != 0)
 #define EA_IS_DSP_RELOC(x)          ((((unsigned)(x)) & ((unsigned)EA_DSP_RELOC_FLG)) != 0)
 #define EA_IS_CNS_RELOC(x)          ((((unsigned)(x)) & ((unsigned)EA_CNS_RELOC_FLG)) != 0)
+#define EA_IS_CNS_SEC_RELOC(x)      ((((unsigned)(x)) & ((unsigned)EA_CNS_SEC_RELOC)) != 0)
 #define EA_IS_RELOC(x)              (EA_IS_DSP_RELOC(x) || EA_IS_CNS_RELOC(x))
 #define EA_TYPE(x)                  ((emitAttr)(((unsigned)(x)) & ~(EA_OFFSET_FLG | EA_DSP_RELOC_FLG | EA_CNS_RELOC_FLG)))
 
