@@ -232,6 +232,8 @@ public partial class Program
 
         IsTrue(typeof(GenericSimpleClass<int>).IsGenericType);
         IsTrue(typeof(GenericSimpleClass<>).IsGenericType);
+        IsTrue(typeof(GenericSimpleClass<int>.Nested).IsGenericType);
+        IsTrue(typeof(GenericSimpleClass<>.Nested).IsGenericType);
         IsTrue(typeof(GenericEnumClass<SimpleEnum>).IsGenericType);
         IsTrue(typeof(GenericEnumClass<>).IsGenericType);
         IsTrue(typeof(IGenericInterface<string>).IsGenericType);
@@ -325,7 +327,10 @@ public partial class Program
 }
 
 public class GenericSimpleClass<T>
-{    
+{
+    public class Nested
+    {       
+    }  
 }
 
 public class DerivedGenericSimpleClass : GenericSimpleClass<string>
