@@ -357,7 +357,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "zu-ZA", new [] { "zu-ZA" }};
             yield return new object[] { CultureInfo.CurrentCulture.Name, new [] { CultureInfo.CurrentCulture.Name } };
 
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { "az-Latn", new [] { "az-Latn" }};
                 yield return new object[] { "az-Latn-AZ", new [] { "az-Latn-AZ" }};
@@ -400,7 +400,7 @@ namespace System.Globalization.Tests
             Assert.Equal(cultureName, culture.ToString(), ignoreCase: true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         public void Ctor_String_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => new CultureInfo(null)); // Name is null
@@ -446,7 +446,7 @@ namespace System.Globalization.Tests
         [InlineData("de-DE-u-co-phonebk-t-xx", "de-DE-t-xx", "de-DE-t-xx_phoneboo")]
         [InlineData("de-DE-u-co-phonebk-t-xx-u-yy", "de-DE-t-xx-u-yy", "de-DE-t-xx-u-yy_phoneboo")]
         [InlineData("de-DE", "de-DE", "de-DE")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalizationAndNotHybrid))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void TestCreationWithMangledSortName(string cultureName, string expectedCultureName, string expectedSortName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
@@ -461,7 +461,7 @@ namespace System.Globalization.Tests
         [InlineData("qps-plocm", "qps-PLOCM")] // ICU normalize this name to "qps--plocm" which we normalize it back to "qps-plocm"
         [InlineData("zh_CN", "zh_cn")]
         [InlineData("km_KH", "km_kh")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalizationAndNotHybrid), nameof(PlatformDetection.IsNotWindowsServerCore))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser), nameof(PlatformDetection.IsNotWindowsServerCore))]
         public void TestCreationWithICUNormalizedNames(string cultureName, string expectedCultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
