@@ -957,11 +957,6 @@ inline static bool insOptsLSExtend(insOpts opt)
             (opt == INS_OPTS_UXTX) || (opt == INS_OPTS_SXTX));
 }
 
-inline static bool insOpts32BitExtend(insOpts opt)
-{
-    return ((opt == INS_OPTS_UXTW) || (opt == INS_OPTS_SXTW));
-}
-
 inline static bool insOpts64BitExtend(insOpts opt)
 {
     return ((opt == INS_OPTS_UXTX) || (opt == INS_OPTS_SXTX));
