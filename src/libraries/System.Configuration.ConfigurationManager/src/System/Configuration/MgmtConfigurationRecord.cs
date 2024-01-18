@@ -335,7 +335,7 @@ namespace System.Configuration
 
             string configKey = section.SectionInformation.SectionName;
             SectionRecord sectionRecord = GetSectionRecord(configKey, false);
-            if (sectionRecord.HasLocationInputs)
+            if ((sectionRecord != null) && sectionRecord.HasLocationInputs)
             {
                 SectionInput input = sectionRecord.LastLocationInput;
                 Debug.Assert(input.HasResult, "input.HasResult");
