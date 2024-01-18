@@ -1402,20 +1402,6 @@ namespace System.Runtime.Intrinsics
                 || Vector128.EqualsAny(left._upper, right._upper);
         }
 
-        internal static Vector256<T> Exp<T>(Vector256<T> vector)
-            where T : IExponentialFunctions<T>
-        {
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            for (int index = 0; index < Vector256<T>.Count; index++)
-            {
-                T value = T.Exp(vector.GetElement(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
-
         /// <summary>Computes the Exp of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its Exp computed.</param>
         /// <returns>A vector whose elements are the Exp of the elements in <paramref name="vector" />.</returns>
@@ -1427,7 +1413,10 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                return Exp<double>(vector);
+                return Create(
+                    Vector128.Exp(vector._lower),
+                    Vector128.Exp(vector._upper)
+                );
             }
         }
 
@@ -1442,7 +1431,10 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                return Exp<float>(vector);
+                return Create(
+                    Vector128.Exp(vector._lower),
+                    Vector128.Exp(vector._upper)
+                );
             }
         }
 

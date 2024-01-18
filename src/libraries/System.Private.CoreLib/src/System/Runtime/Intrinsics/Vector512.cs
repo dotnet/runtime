@@ -1478,7 +1478,10 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                return Exp<double>(vector);
+                return Create(
+                    Vector256.Exp(vector._lower),
+                    Vector256.Exp(vector._upper)
+                );
             }
         }
 
@@ -1493,7 +1496,10 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                return Exp<float>(vector);
+                return Create(
+                    Vector256.Exp(vector._lower),
+                    Vector256.Exp(vector._upper)
+                );
             }
         }
 
