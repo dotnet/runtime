@@ -5348,6 +5348,8 @@ public:
     IL_OFFSET fgFindBlockILOffset(BasicBlock* block);
     void fgFixEntryFlowForOSR();
 
+    void fgUpdateSingleReturnBlock(BasicBlock* block);
+
     BasicBlock* fgSplitBlockAtBeginning(BasicBlock* curr);
     BasicBlock* fgSplitBlockAtEnd(BasicBlock* curr);
     BasicBlock* fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt);

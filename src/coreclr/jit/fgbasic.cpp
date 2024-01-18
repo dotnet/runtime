@@ -4756,6 +4756,24 @@ IL_OFFSET Compiler::fgFindBlockILOffset(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------------
+// fgUpdateSingleReturnBlock : A block has been split. If it was the single return
+// block, then update the single return block pointer.
+//
+// Arguments:
+//    block - The block that was split
+//
+void Compiler::fgUpdateSingleReturnBlock(BasicBlock* block)
+{
+    assert(block->KindIs(BBJ_ALWAYS));
+    if (genReturnBB == block)
+    {
+        assert(block->GetTarget()->KindIs(BBJ_RETURN));
+        JITDUMP("Updating genReturnBB from " FMT_BB " to " FMT_BB "\n", block->bbNum, block->GetTarget()->bbNum);
+        genReturnBB = block->GetTarget();
+    }
+}
+
+//------------------------------------------------------------------------------
 // fgSplitBlockAtEnd - split the given block into two blocks.
 //                   All code in the block stays in the original block.
 //                   Control falls through from original to new block, and
@@ -4830,6 +4848,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     assert(curr->JumpsToNext());
 
     fgAddRefPred(newBlock, curr);
+
+    fgUpdateSingleReturnBlock(curr);
 
     return newBlock;
 }
