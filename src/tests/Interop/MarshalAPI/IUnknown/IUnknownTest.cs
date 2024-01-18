@@ -120,7 +120,6 @@ public class IUnknownMarshalingTest
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
     [SkipOnMono("Requires COM support")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85234")]
     public static void Run()
     {
         IUnknownMarshalingTest testObj = new IUnknownMarshalingTest();
@@ -130,7 +129,6 @@ public class IUnknownMarshalingTest
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
     [SkipOnMono("Requires COM support")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/85234")]
     public static void RunInALC()
     {
         TestLibrary.Utilities.ExecuteAndUnload(typeof(IUnknownMarshalingTest).Assembly.Location, nameof(IUnknownMarshalingTest), nameof(Run));
