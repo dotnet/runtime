@@ -115,26 +115,18 @@ FCIMPLEND
 
 
 // Returns an enum saying whether you can copy an array of srcType into destType.
-ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF pSrc, const BASEARRAYREF pDest)
+ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const TypeHandle srcTH, const TypeHandle destTH)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(pSrc != NULL);
-        PRECONDITION(pDest != NULL);
+        PRECONDITION(srcTH != NULL);
+        PRECONDITION(destTH != NULL);
     }
     CONTRACTL_END;
 
-    // This first bit is a minor optimization: e.g. when copying byte[] to byte[]
-    // we do not need to call GetArrayElementTypeHandle().
-    MethodTable *pSrcMT = pSrc->GetMethodTable();
-    MethodTable *pDestMT = pDest->GetMethodTable();
-    _ASSERTE(pSrcMT != pDestMT); // Handled by fast path
-
-    TypeHandle srcTH = pSrcMT->GetArrayElementTypeHandle();
-    TypeHandle destTH = pDestMT->GetArrayElementTypeHandle();
     _ASSERTE(srcTH != destTH);  // Handled by fast path
 
     // Value class boxing
@@ -190,6 +182,20 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
     return AssignWrongType;
 }
 
+extern "C" int QCALLTYPE Array_CanAssignArrayType(void* srcTH, void* destTH)
+{
+    QCALL_CONTRACT;
+
+    INT32 ret = 0;
+
+    BEGIN_QCALL;
+
+    ret = ArrayNative::CanAssignArrayType(TypeHandle::FromPtr(srcTH), TypeHandle::FromPtr(destTH));
+
+    END_QCALL;
+
+    return ret;
+}
 
 // Casts and assigns each element of src array to the dest array type.
 void ArrayNative::CastCheckEachElement(const BASEARRAYREF pSrcUnsafe, const unsigned int srcIndex, BASEARRAYREF pDestUnsafe, unsigned int destIndex, const unsigned int len)
@@ -652,71 +658,6 @@ void memmoveGCRefs(void *dest, const void *src, size_t len)
         InlinedMemmoveGCRefsHelper(dest, src, len);
     }
 }
-
-FCIMPL5(void, ArrayNative::CopySlow, ArrayBase* pSrc, INT32 iSrcIndex, ArrayBase* pDst, INT32 iDstIndex, INT32 iLength)
-{
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        BASEARRAYREF pSrc;
-        BASEARRAYREF pDst;
-    } gc;
-
-    gc.pSrc = (BASEARRAYREF)pSrc;
-    gc.pDst = (BASEARRAYREF)pDst;
-
-    // cannot pass null for source or destination
-    _ASSERTE(gc.pSrc != NULL && gc.pDst != NULL);
-
-    // source and destination must be arrays
-    _ASSERTE(gc.pSrc->GetMethodTable()->IsArray());
-    _ASSERTE(gc.pDst->GetMethodTable()->IsArray());
-
-    _ASSERTE(gc.pSrc->GetRank() == gc.pDst->GetRank());
-
-    // array bounds checking
-    _ASSERTE(iLength >= 0);
-    _ASSERTE(iSrcIndex >= 0);
-    _ASSERTE(iDstIndex >= 0);
-    _ASSERTE((DWORD)(iSrcIndex + iLength) <= gc.pSrc->GetNumComponents());
-    _ASSERTE((DWORD)(iDstIndex + iLength) <= gc.pDst->GetNumComponents());
-
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-
-    int r = CanAssignArrayType(gc.pSrc, gc.pDst);
-
-    if (r == AssignWrongType)
-        COMPlusThrow(kArrayTypeMismatchException, W("ArrayTypeMismatch_CantAssignType"));
-
-    if (iLength > 0)
-    {
-        switch (r)
-        {
-            case AssignUnboxValueClass:
-                UnBoxEachElement(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
-                break;
-
-            case AssignBoxValueClassOrPrimitive:
-                BoxEachElement(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
-                break;
-
-            case AssignMustCast:
-                CastCheckEachElement(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
-                break;
-
-            case AssignPrimitiveWiden:
-                PrimitiveWiden(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
-                break;
-
-            default:
-                _ASSERTE(!"Fell through switch in Array.Copy!");
-        }
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
 
 
 // Check we're allowed to create an array with the given element type.

@@ -95,8 +95,51 @@ namespace System
         // instance & might fail when called from within a CER, or if the
         // reliable flag is true, it will either always succeed or always
         // throw an exception with no side effects.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length);
+        private static unsafe void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            Debug.Assert(sourceArray.Rank == destinationArray.Rank);
+
+            TypeHandle srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle();
+            TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
+            AssignArrayEnum r = CanAssignArrayType(srcTH.m_asTAddr, destTH.m_asTAddr);
+
+            if (r == AssignArrayEnum.AssignWrongType)
+                ThrowHelper.ThrowArrayTypeMismatchException_CantAssignType();
+
+            if (length > 0)
+            {
+                switch (r)
+                {
+                    case AssignArrayEnum.AssignUnboxValueClass:
+                        throw null;
+
+                    case AssignArrayEnum.AssignBoxValueClassOrPrimitive:
+                        throw null;
+
+                    case AssignArrayEnum.AssignMustCast:
+                        throw null;
+
+                    case AssignArrayEnum.AssignPrimitiveWiden:
+                        throw null;
+
+                    default:
+                        Debug.Fail("Fell through switch in Array.Copy!");
+                        break;
+                }
+            }
+        }
+
+        private enum AssignArrayEnum
+        {
+            AssignWrongType,
+            AssignMustCast,
+            AssignBoxValueClassOrPrimitive,
+            AssignUnboxValueClass,
+            AssignPrimitiveWiden,
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CanAssignArrayType")]
+        private static unsafe partial AssignArrayEnum CanAssignArrayType(void* srcTH, void* dstTH);
 
         // Provides a strong exception guarantee - either it succeeds, or
         // it throws an exception with no side effects.  The arrays must be
