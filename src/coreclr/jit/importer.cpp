@@ -5607,7 +5607,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             // TODO: enable for cast-class as well.
             call->gtCallMoreFlags |= GTF_CALL_M_CAST_CAN_BE_EXPANDED;
             call->gtCastHelperILOffset = ilOffset;
-            setMethodHasExpandableCasts();
         }
         return call;
     }

@@ -1781,7 +1781,6 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     lvaSetClass(tmpNum, expectedCls);
 
     // Reload the arguments after the split
-    clsArg          = call->gtArgs.GetUserArgByIndex(0)->GetNode();
     GenTree* objArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
     *pBlock         = lastBb;
 
@@ -1819,22 +1818,14 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
                                                    debugInfo, lastBb, true);
 
-    // Insert statements to spill call's arguments (preserving the evaluation order)
-    // TODO-InlineCast: don't spill cls if possible, we only need it after the nullcheck
-    const unsigned clsTmp   = lvaGrabTemp(true DEBUGARG("local for cls"));
-    lvaTable[clsTmp].lvType = clsArg->TypeGet();
-    Statement* storeObjStmt = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(tmpNum, objArg), debugInfo);
-    Statement* storeClsStmt = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(clsTmp, clsArg), debugInfo);
+    // Set tmp's value to obj by default (before the nullcheck)
+    Statement* storeObjStmt = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(tmpNum, gtCloneExpr(objArg)), debugInfo);
     gtSetStmtInfo(storeObjStmt);
-    gtSetStmtInfo(storeClsStmt);
     fgSetStmtSeq(storeObjStmt);
-    fgSetStmtSeq(storeClsStmt);
-    gtUpdateStmtSideEffects(storeObjStmt);
-    gtUpdateStmtSideEffects(storeClsStmt);
 
     // if likelyCls == clsArg, we can just use clsArg that we've just spilled to a temp
     // it's a sort of manual CSE.
-    GenTree* likelyClsNode = likelyCls == expectedCls ? gtNewLclVarNode(clsTmp) : gtNewIconEmbClsHndNode(likelyCls);
+    GenTree* likelyClsNode = gtNewIconEmbClsHndNode(likelyCls);
 
     // Block 2: typeCheckBb
     GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(objTmp)), likelyClsNode);
@@ -1843,12 +1834,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, lastBb, true);
 
     // Block 3: fallbackBb
-    // NOTE: we spilled call's arguments above, we need to re-create it here (we can't just modify call's args)
-    GenTree* fallbackCall =
-        gtNewHelperCallNode(call->GetHelperNum(), TYP_REF, gtNewLclVarNode(clsTmp), gtNewLclVarNode(tmpNum));
-    fallbackCall = fgMorphCall(fallbackCall->AsCall());
-    gtSetEvalOrder(fallbackCall);
-    GenTree*    fallbackTree = gtNewTempStore(tmpNum, fallbackCall);
+    GenTree*    fallbackTree = gtNewTempStore(tmpNum, call);
     BasicBlock* fallbackBb   = fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, fallbackTree, debugInfo, lastBb, true);
 
     // Block 4: typeCheckSucceedBb
@@ -1861,7 +1847,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
     else
     {
-        // Otherwise, no-op (for simplicity, some upstream phase will collect this block)
+        // Otherwise, no-op (for simplicity, some downstream phase will collect this block)
         typeCheckSucceedTree = gtNewNothingNode();
     }
     BasicBlock* typeCheckSucceedBb =
