@@ -1402,9 +1402,8 @@ namespace System.Runtime.Intrinsics
                 || Vector128.EqualsAny(left._upper, right._upper);
         }
 
-        /// <summary>Computes the Exp of each element in a vector.</summary>
-        /// <param name="vector">The vector that will have its Exp computed.</param>
-        /// <returns>A vector whose elements are the Exp of the elements in <paramref name="vector" />.</returns>
+        /// <inheritdoc cref="Vector128.Exp(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<double> Exp(Vector256<double> vector)
         {
             if (IsHardwareAccelerated)
@@ -1420,9 +1419,8 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Computes the Exp of each element in a vector.</summary>
-        /// <param name="vector">The vector that will have its Exp computed.</param>
-        /// <returns>A vector whose elements are the Exp of the elements in <paramref name="vector" />.</returns>
+        /// <inheritdoc cref="Vector128.Exp(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<float> Exp(Vector256<float> vector)
         {
             if (IsHardwareAccelerated)
@@ -1792,6 +1790,7 @@ namespace System.Runtime.Intrinsics
             LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
 
         /// <inheritdoc cref="Vector128.Log(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<double> Log(Vector256<double> vector)
         {
             if (IsHardwareAccelerated)
@@ -1808,6 +1807,7 @@ namespace System.Runtime.Intrinsics
         }
 
         /// <inheritdoc cref="Vector128.Log(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<float> Log(Vector256<float> vector)
         {
             if (IsHardwareAccelerated)
@@ -1824,6 +1824,7 @@ namespace System.Runtime.Intrinsics
         }
 
         /// <inheritdoc cref="Vector128.Log2(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<double> Log2(Vector256<double> vector)
         {
             if (IsHardwareAccelerated)
@@ -1840,6 +1841,7 @@ namespace System.Runtime.Intrinsics
         }
 
         /// <inheritdoc cref="Vector128.Log2(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<float> Log2(Vector256<float> vector)
         {
             if (IsHardwareAccelerated)
