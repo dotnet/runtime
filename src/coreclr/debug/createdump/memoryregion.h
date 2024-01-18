@@ -9,6 +9,8 @@ extern long g_pageSize;
 #undef PAGE_MASK 
 #define PAGE_MASK (~(PAGE_SIZE-1))
 
+#define CONVERT_FROM_SIGN_EXTENDED(offset) ((ULONG_PTR)(offset))
+
 enum MEMORY_REGION_FLAGS : uint32_t
 {
     // PF_X        = 0x01,      // Execute

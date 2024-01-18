@@ -97,8 +97,8 @@ public:
     bool GatherCrashInfo(DumpType dumpType);
     void CombineMemoryRegions();
     bool EnumerateMemoryRegionsWithDAC(DumpType dumpType);
-    bool ReadMemory(void* address, void* buffer, size_t size);                          // read memory and add to dump
-    bool ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read);     // read raw memory
+    bool ReadMemory(uint64_t address, void* buffer, size_t size);                       // read memory and add to dump
+    bool ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read);  // read raw memory
     uint64_t GetBaseAddressFromAddress(uint64_t address);
     uint64_t GetBaseAddressFromName(const char* moduleName);
     ModuleInfo* GetModuleInfoFromBaseAddress(uint64_t baseAddress);
@@ -131,6 +131,7 @@ public:
     inline const std::vector<elf_aux_entry>& AuxvEntries() const { return m_auxvEntries; }
     inline size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
 #endif
+    bool ReadMemory(void* address, void* buffer, size_t size) { return ReadMemory((uint64_t)address, buffer, size); }
 
     // IUnknown
     STDMETHOD(QueryInterface)(___in REFIID InterfaceId, ___out PVOID* Interface);
@@ -160,7 +161,7 @@ private:
     bool InitializeDAC(DumpType dumpType);
     bool EnumerateManagedModules();
     bool UnwindAllThreads();
-    void AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);
+    void AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const std::string& pszName);
     int InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool PageCanBeRead(uint64_t start);

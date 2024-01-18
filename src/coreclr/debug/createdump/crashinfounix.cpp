@@ -374,7 +374,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
 
                     // explicit initialization for old gcc support; instead of just runtimeInfo { }
                     RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { }, .RuntimeVersion = { } };
-                    if (ReadMemory((void*)(baseAddress + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
+                    if (ReadMemory(baseAddress + symbolOffset, &runtimeInfo, sizeof(RuntimeInfo)))
                     {
                         if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
                         {
@@ -395,7 +395,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                     m_runtimeBaseAddress = baseAddress;
 
                     uint8_t cookie[sizeof(g_debugHeaderCookie)];
-                    if (ReadMemory((void*)(baseAddress + symbolOffset), cookie, sizeof(cookie)))
+                    if (ReadMemory(baseAddress + symbolOffset, cookie, sizeof(cookie)))
                     {
                         if (memcmp(cookie, g_debugHeaderCookie, sizeof(g_debugHeaderCookie)) == 0)
                         {
@@ -414,7 +414,7 @@ BOOL
 ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
 {
     size_t read = 0;
-    return g_crashInfo->ReadProcessMemory(address, buffer, size, &read);
+    return g_crashInfo->ReadProcessMemory(CONVERT_FROM_SIGN_EXTENDED(address), buffer, size, &read);
 }
 
 //
@@ -477,6 +477,8 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
 uint32_t
 CrashInfo::GetMemoryRegionFlags(uint64_t start)
 {
+    assert(start == CONVERT_FROM_SIGN_EXTENDED(start));
+
     ModuleRegion search(0, start, start + PAGE_SIZE, 0);
     const ModuleRegion* moduleRegion = SearchModuleRegions(search);
     if (moduleRegion != nullptr) {
@@ -486,7 +488,7 @@ CrashInfo::GetMemoryRegionFlags(uint64_t start)
     if (region != nullptr) {
         return region->Flags();
     }
-    TRACE("GetMemoryRegionFlags: FAILED\n");
+    TRACE_VERBOSE("GetMemoryRegionFlags: %016llx FAILED\n", start);
     return PF_R | PF_W | PF_X;
 }
 
@@ -494,7 +496,7 @@ CrashInfo::GetMemoryRegionFlags(uint64_t start)
 // Read raw memory
 //
 bool
-CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read)
+CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read)
 {
     assert(buffer != nullptr);
     assert(read != nullptr);
@@ -504,7 +506,7 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
     if (m_canUseProcVmReadSyscall)
     {
         iovec local{ buffer, size };
-        iovec remote{ address, size };
+        iovec remote{ (void*)address, size };
         *read = process_vm_readv(m_pid, &local, 1, &remote, 1, 0);
     }
 
