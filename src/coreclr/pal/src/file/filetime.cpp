@@ -263,6 +263,7 @@ BOOL PALAPI FileTimeToSystemTime( CONST FILETIME * lpFileTime,
 #else   /* HAVE_GMTIME_R */
         UnixSystemTime = gmtime( &UnixFileTime );
 #endif  /* HAVE_GMTIME_R */
+        if (!UnixSystemTime) return FALSE;
 
         /* Convert unix system time to Windows system time. */
         lpSystemTime->wDay      = (WORD)UnixSystemTime->tm_mday;
