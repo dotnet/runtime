@@ -555,11 +555,11 @@ enum GenTreeFlags : unsigned int
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
-    GTF_HW_ER_MASK              = 0x30000000, // Bits used by handle types below 
-    GTF_HW_ER_TOEVEN            = 0x00000000, // GT_HWINTRINSIC -- embedded rounding mode: ToEven (Default).
-    GTF_HW_ER_TONEGATIVEINFINITY = 0x10000000, // GT_HWINTRINSIC -- embedded rounding mode: ToNegativeInfinity.
-    GTF_HW_ER_TOPOSITIVEINFINITY = 0x20000000, // GT_HWINTRINSIC -- embedded rounding mode: ToPositiveInfinity.
-    GTF_HW_ER_TOZERO            = 0x30000000, // GT_HWINTRINSIC -- embedded rounding mode: ToZero.
+    GTF_HW_ER_MASK                = 0x30000000, // Bits used by handle types below 
+    GTF_HW_ER_TO_EVEN             = 0x00000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToEven (Default) "{rn-sae}"
+    GTF_HW_ER_TO_NEGATIVEINFINITY = 0x10000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToNegativeInfinity "{rd-sae}"
+    GTF_HW_ER_TO_POSITIVEINFINITY = 0x20000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToPositiveInfinity "{ru-sae}"
+    GTF_HW_ER_TO_ZERO             = 0x30000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToZero "{rz-sae}"
 
 };
 
@@ -2237,23 +2237,27 @@ public:
         assert(gtOper == GT_HWINTRINSIC);
         gtFlags &= ~GTF_HW_ER_MASK;
     }
+    // Set GenTreeFlags on HardwareIntrinsic node to specify the FloatRoundingMode.
+    // mode can be one of the values from System.Runtime.Intrinsics.X86.FloatRoundingMode.
     void SetEmbRoundingMode(uint8_t mode)
     {
         assert(gtOper == GT_HWINTRINSIC);
         ClearEmbRoundingMode();
         switch (mode)
         {
+            case 0x08:
+                break;
             case 0x09:
-                gtFlags |= GTF_HW_ER_TONEGATIVEINFINITY;
+                gtFlags |= GTF_HW_ER_TO_NEGATIVEINFINITY;
                 break;
             case 0x0A:
-                gtFlags |= GTF_HW_ER_TOPOSITIVEINFINITY;
+                gtFlags |= GTF_HW_ER_TO_POSITIVEINFINITY;
                 break;
             case 0x0B:
-                gtFlags |= GTF_HW_ER_TOZERO;
+                gtFlags |= GTF_HW_ER_TO_ZERO;
                 break;
             default:
-                break;
+                unreached();
         }
     }
 

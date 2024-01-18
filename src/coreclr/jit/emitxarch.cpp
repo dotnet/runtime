@@ -1140,13 +1140,14 @@ static bool isLowSimdReg(regNumber reg)
 }
 
 //------------------------------------------------------------------------
-// GetEmbRoudingMode: Get the rounding mode for embedded rounding
+// GetEmbRoundingMode: Get the rounding mode for embedded rounding
 //
 // Arguments:
-//     mode -- the flag from the correspoding gentree node indicating the mode.
+//     mode -- the flag from the corresponding GenTree node indicating the mode.
 //
 // Return Value:
 //   the instruction option carrying the rounding mode information.
+//
 insOpts emitter::GetEmbRoundingMode(uint8_t mode) const
 {
     switch (mode)
@@ -1332,16 +1333,16 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     if (attr == EA_32BYTE)
     {
-        // Set L bit to 01 in case of instructions that operate on 256-bits.
+        // Set EVEX.L'L bits to 01 in case of instructions that operate on 256-bits.
         code |= LBIT_IN_BYTE_EVEX_PREFIX;
     }
     else if (attr == EA_64BYTE)
     {
-        // Set L' bits to 10 in case of instructions that operate on 512-bits.
+        // Set EVEX.L'L bits to 10 in case of instructions that operate on 512-bits.
         code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
     }
 
-    if (id->idIsEvexbContext())
+    if (id->idIsEvexbContextSet())
     {
         code |= EVEX_B_BIT;
 
@@ -10699,7 +10700,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 //
 void emitter::emitDispEmbBroadcastCount(instrDesc* id)
 {
-    if (!id->idIsEvexbContext())
+    if (!id->idIsEvexbContextSet())
     {
         return;
     }
@@ -10715,7 +10716,7 @@ void emitter::emitDispEmbBroadcastCount(instrDesc* id)
 //
 void emitter::emitDispEmbRounding(instrDesc* id)
 {
-    if (!id->idIsEvexbContext())
+    if (!id->idIsEvexbContextSet())
     {
         return;
     }

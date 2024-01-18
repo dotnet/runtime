@@ -928,7 +928,7 @@ inline bool emitIsUncondJump(instrDesc* jmp)
 //
 inline bool HasEmbeddedBroadcast(const instrDesc* id) const
 {
-    return id->idIsEvexbContext();
+    return id->idIsEvexbContextSet();
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;

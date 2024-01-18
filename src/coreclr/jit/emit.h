@@ -774,7 +774,11 @@ protected:
         unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
         unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
-        unsigned _idEvexbContext : 2 // Does Evex.b need to be set for embedded broadcast/embedded rounding.
+        // EVEX.b can indicate several context: embedded broadcast, embedded rounding.
+        // For normal and embedded broadcast intrinsics, EVEX.L'L has the same semantic, vector length.
+        // For embedded rounding, EVEX.L'L semantic changes to indicate the rounding mode.
+        // Multiple bits in _idEvexbContext are used to inform emitter to specially handle the EVEX.L'L bits.
+        unsigned _idEvexbContext : 2;
 #endif                               //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
@@ -864,7 +868,7 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
         // x86:         54/50 bits
-        // amd64:       55/51 bits
+        // amd64:       55/50 bits
         // arm:         54/50 bits
         // arm64:       60/55 bits
         // loongarch64: 53/48 bits
@@ -1538,7 +1542,7 @@ protected:
         }
 
 #ifdef TARGET_XARCH
-        bool idIsEvexbContext() const
+        bool idIsEvexbContextSet() const
         {
             return _idEvexbContext != 0;
         }
@@ -3795,7 +3799,7 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
-    if (id->idIsEvexbContext())
+    if (id->idIsEvexbContextSet())
     {
         // should have the assumption that Evex.b now stands for the embedded broadcast context.
         // reference: Section 2.7.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.

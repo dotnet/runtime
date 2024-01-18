@@ -1057,7 +1057,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
     {
-
         size_t numArgs        = node->GetOperandCount();
         size_t expectedArgNum = HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId);
         if (numArgs == expectedArgNum)
@@ -1104,8 +1103,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (mode != 0x08)
                 {
                     // As embedded rounding can only work under register-to-register form, we can skip contain check at
-                    // this
-                    // point.
+                    // this point.
                     return node->gtNext;
                 }
             }
