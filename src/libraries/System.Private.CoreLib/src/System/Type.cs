@@ -74,6 +74,7 @@ namespace System
 
         public virtual int GetArrayRank() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
+        [Intrinsic]
         public virtual Type GetGenericTypeDefinition() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
         public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : EmptyTypes;
         public virtual Type[] GetGenericArguments() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
