@@ -2445,19 +2445,18 @@ bool Compiler::optIterSmallUnderflow(int iterAtExit, var_types decrType)
 }
 
 //-----------------------------------------------------------------------------
-// optComputeLoopRep: Helper for loop unrolling. Computes the number of repetitions
-// in a constant loop.
+// optComputeLoopRep: Helper for loop unrolling. Computes the number of times
+// the test block of a loop is executed.
 //
 // Arguments:
-//    constInit    - loop constant initial value
-//    constLimit   - loop constant limit
-//    iterInc      - loop iteration increment
-//    iterOper     - loop iteration increment operator (ADD, SUB, etc.)
-//    iterOperType - iteration operator type
-//    testOper     - type of loop test (i.e. GT_LE, GT_GE, etc.)
-//    unsTest      - true if test is unsigned
-//    dupCond      - true if the loop head contains a test which skips this loop
-//    iterCount    - *iterCount is set to the iteration count, if the function returns `true`
+//    constInit     - loop constant initial value
+//    constLimit    - loop constant limit
+//    iterInc       - loop iteration increment
+//    iterOper      - loop iteration increment operator (ADD, SUB, etc.)
+//    iterOperType  - iteration operator type
+//    testOper      - type of loop test (i.e. GT_LE, GT_GE, etc.)
+//    unsTest       - true if test is unsigned
+//    iterCount     - *iterCount is set to the iteration count, if the function returns `true`
 //
 // Returns:
 //   true if the loop has a constant repetition count, false if that cannot be proven
@@ -2469,7 +2468,6 @@ bool Compiler::optComputeLoopRep(int        constInit,
                                  var_types  iterOperType,
                                  genTreeOps testOper,
                                  bool       unsTest,
-                                 bool       dupCond,
                                  unsigned*  iterCount)
 {
     noway_assert(genActualType(iterOperType) == TYP_INT);
@@ -2535,22 +2533,8 @@ bool Compiler::optComputeLoopRep(int        constInit,
         return false;
     }
 
-    // Set iterSign to +1 for positive iterInc and -1 for negative iterInc.
-    iterSign = (iterInc > 0) ? +1 : -1;
-
-    // Initialize loopCount to zero.
+    iterSign  = (iterInc > 0) ? +1 : -1;
     loopCount = 0;
-
-    // If dupCond is true then the loop initialization block contains a test which skips
-    // this loop, if the constInit does not pass the loop test.
-    // Such a loop can execute zero times.
-    // If dupCond is false then we have a true do-while loop where we
-    // always execute the loop once before performing the loop test.
-    if (!dupCond)
-    {
-        loopCount += 1;
-        constInitX += iterInc;
-    }
 
     // bail if count is based on wrap-around math
     if (iterInc > 0)
@@ -2595,7 +2579,6 @@ bool Compiler::optComputeLoopRep(int        constInit,
             }
             else
             {
-                noway_assert(iterInc < 0);
                 // Stepping by -1, i.e. Mod with 1 is always zero.
                 if (iterInc != -1)
                 {
@@ -3041,40 +3024,30 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     //  - increment operation type (i.e. ADD, SUB, etc...)
     //  - loop test type (i.e. GT_GE, GT_LT, etc...)
 
-    BasicBlock* initBlock    = iterInfo.InitBlock;
-    int         lbeg         = iterInfo.ConstInitValue;
-    int         llim         = iterInfo.ConstLimit();
-    genTreeOps  testOper     = iterInfo.TestOper();
-    unsigned    lvar         = iterInfo.IterVar;
-    int         iterInc      = iterInfo.IterConst();
-    genTreeOps  iterOper     = iterInfo.IterOper();
-    var_types   iterOperType = iterInfo.IterOperType();
-    bool        unsTest      = (iterInfo.TestTree->gtFlags & GTF_UNSIGNED) != 0;
+    int        lbeg         = iterInfo.ConstInitValue;
+    int        llim         = iterInfo.ConstLimit();
+    genTreeOps testOper     = iterInfo.TestOper();
+    unsigned   lvar         = iterInfo.IterVar;
+    int        iterInc      = iterInfo.IterConst();
+    genTreeOps iterOper     = iterInfo.IterOper();
+    var_types  iterOperType = iterInfo.IterOperType();
+    bool       unsTest      = (iterInfo.TestTree->gtFlags & GTF_UNSIGNED) != 0;
 
     assert(!lvaGetDesc(lvar)->IsAddressExposed());
     assert(!lvaGetDesc(lvar)->lvIsStructField);
 
-    // Locate/initialize the increment/test statements.
-    Statement* initStmt = initBlock->lastStmt();
-    noway_assert((initStmt != nullptr) && (initStmt->GetNextStmt() == nullptr));
-
-    bool dupCond = false;
-    if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
-    {
-        // Must be a duplicated loop condition.
-
-        dupCond  = true;
-        initStmt = initStmt->GetPrevStmt();
-        noway_assert(initStmt != nullptr);
-    }
+    JITDUMP("Analyzing candidate for loop unrolling:\n");
+    DBEXEC(verbose, FlowGraphNaturalLoop::Dump(loop));
 
     // Find the number of iterations - the function returns false if not a constant number.
     unsigned totalIter;
-    if (!optComputeLoopRep(lbeg, llim, iterInc, iterOper, iterOperType, testOper, unsTest, dupCond, &totalIter))
+    if (!optComputeLoopRep(lbeg, llim, iterInc, iterOper, iterOperType, testOper, unsTest, &totalIter))
     {
         JITDUMP("Failed to unroll loop " FMT_LP ": not a constant iteration count\n", loop->GetIndex());
         return false;
     }
+
+    JITDUMP("Computed loop repetition count (number of test block executions) to be %u\n", totalIter);
 
     // Forget it if there are too many repetitions or not a constant loop.
 
@@ -3124,21 +3097,14 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     }
     incr = incr->AsLclVar()->Data();
 
-    GenTree* init = initStmt->GetRootNode();
-
     // Make sure everything looks ok.
     assert((iterInfo.TestBlock != nullptr) && iterInfo.TestBlock->KindIs(BBJ_COND));
 
     // clang-format off
-    if (!init->OperIs(GT_STORE_LCL_VAR) ||
-        (init->AsLclVar()->GetLclNum() != lvar) ||
-        !init->AsLclVar()->Data()->IsCnsIntOrI() ||
-        (init->AsLclVar()->Data()->AsIntCon()->gtIconVal != lbeg) ||
-
-        !((incr->gtOper == GT_ADD) || (incr->gtOper == GT_SUB)) ||
-        (incr->AsOp()->gtOp1->gtOper != GT_LCL_VAR) ||
+    if (!incr->OperIs(GT_ADD, GT_SUB) ||
+        !incr->AsOp()->gtOp1->OperIs(GT_LCL_VAR) ||
         (incr->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lvar) ||
-        (incr->AsOp()->gtOp2->gtOper != GT_CNS_INT) ||
+        !incr->AsOp()->gtOp2->OperIs(GT_CNS_INT) ||
         (incr->AsOp()->gtOp2->AsIntCon()->gtIconVal != iterInc) ||
 
         (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree))
@@ -3420,10 +3386,15 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
         }
     }
 
-    // If we get here, we successfully cloned all the blocks in the unrolled loop.
-    // Note we may not have done any cloning at all, if the loop iteration count was zero.
-    // Now redirect the last iteration to the real exit of the loop (or
-    // the entry to the exit if we unrolled 0 iterations).
+    // If we get here, we successfully cloned all the blocks in the
+    // unrolled loop. Note we may not have done any cloning at all if
+    // the loop iteration count was computed to be zero. Such loops are
+    // guaranteed to be unreachable since if the repetition count is
+    // zero the loop invariant is false on the first iteration, yet
+    // FlowGraphNaturalLoop::AnalyzeIteration only returns true if the
+    // loop invariant is true on every iteration. That means we have a
+    // guarding check before we enter the loop that will always be
+    // false.
     if (prevTestBlock != nullptr)
     {
         assert(prevTestBlock->KindIs(BBJ_ALWAYS));
@@ -3440,49 +3411,21 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
             BasicBlock* entering = entryEdge->getSourceBlock();
             assert(!entering->KindIs(BBJ_COND)); // Ensured by canonicalization
             optRedirectBlock(entering, &blockMap, Compiler::RedirectBlockOption::UpdatePredLists);
-
             JITDUMP("Redirecting original entry " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n",
                     entering->bbNum, loop->GetHeader()->bbNum, entering->bbNum, exit->bbNum);
         }
     }
 
-    // The old loop body is unreachable now.
-
-    // Control will fall through from the initBlock to its successor, which is either
-    // the preheader HEAD (if it exists), or the now empty TOP (if totalIter == 0),
-    // or the first cloned top.
-    //
-    // If the initBlock is a BBJ_COND drop the condition (and make initBlock a BBJ_ALWAYS block).
-    //
-    // TODO: Isn't this missing validity checks? This seems dangerous.
-    //
-    if (initBlock->KindIs(BBJ_COND))
-    {
-        assert(dupCond);
-        Statement* initBlockBranchStmt = initBlock->lastStmt();
-        noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
-        fgRemoveStmt(initBlock, initBlockBranchStmt);
-        fgRemoveRefPred(initBlock->GetTrueTarget(), initBlock);
-        initBlock->SetKindAndTarget(BBJ_ALWAYS, initBlock->GetFalseTarget());
-
-        // TODO-NoFallThrough: If bbFalseTarget can diverge from bbNext, it may not make sense to set
-        // BBF_NONE_QUIRK
-        initBlock->SetFlags(BBF_NONE_QUIRK);
-    }
-    else
-    {
-        // the loop must execute
-        assert(!dupCond);
-        assert(totalIter > 0);
-        noway_assert(initBlock->KindIs(BBJ_ALWAYS));
-    }
+    // The old loop body is unreachable now, but we will remove those
+    // blocks after we finish unrolling.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Whole unrolled loop:\n");
 
-        gtDispTree(initStmt->GetRootNode());
+        gtDispTree(iterInfo.InitTree);
         printf("\n");
         fgDumpTrees(bottom->Next(), insertAfter);
     }
