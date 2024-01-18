@@ -101,8 +101,8 @@ loadr4_membase: dest:f src1:b len:24
 loadr8_membase: dest:f src1:b len:24
 
 memory_barrier: len:4
-atomic_add_i4: dest:i src1:i src2:i len:4
-atomic_add_i8: dest:i src1:i src2:i len:4
+atomic_add_i4: dest:i src1:i src2:i len:8
+atomic_add_i8: dest:i src1:i src2:i len:8
 atomic_store_i1: dest:b src1:i len:8
 atomic_store_u1: dest:b src1:i len:8
 atomic_store_i2: dest:b src1:i len:8

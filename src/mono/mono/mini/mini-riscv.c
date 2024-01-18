@@ -4793,11 +4793,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MEMORY_BARRIER:
 			riscv_fence (code, mono_arch_get_memory_ordering(ins->backend.memory_barrier_kind), mono_arch_get_memory_ordering(ins->backend.memory_barrier_kind));
 			break;
+		/**
+		* OP_ATOMIC_ADD_I4 rd, rs1, rs2
+		* this instriuction increase the value of address rs1 by rs2
+		* and store the **new** value to rd.
+		* But in RISC-V amoadd rd, rs2(rs1) increase the value of address rs1 by rs2
+		* and store the **old** value to rd,  store the result value to address rs1.
+		* So we need more add rd, rd, rs2 to fix the rd as the **new** value.
+		*/
 		case OP_ATOMIC_ADD_I4:
 			riscv_amoadd_w (code, RISCV_ORDER_ALL, ins->dreg, ins->sreg2, ins->sreg1);
+			riscv_addw (code, ins->dreg, ins->dreg, ins->sreg2);
 			break;
 		case OP_ATOMIC_ADD_I8:
 			riscv_amoadd_d (code, RISCV_ORDER_ALL, ins->dreg, ins->sreg2, ins->sreg1);
+			riscv_add (code, ins->dreg, ins->dreg, ins->sreg2);
 			break;
 		case OP_ATOMIC_LOAD_I1:
 		case OP_ATOMIC_LOAD_U1: {
