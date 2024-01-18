@@ -24,19 +24,19 @@ namespace System.Runtime.InteropServices
         }
 
         public COMException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_COMException)
         {
             HResult = HResults.E_FAIL;
         }
 
         public COMException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_COMException, inner)
         {
             HResult = HResults.E_FAIL;
         }
 
         public COMException(string? message, int errorCode)
-            : base(message)
+            : base(message ?? SR.Arg_COMException)
         {
             HResult = errorCode;
         }
