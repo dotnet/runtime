@@ -8,6 +8,12 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
+        // invariant culture has empty CultureInfo.ToString() and
+        // m_name == CultureInfo._name == CultureInfo.ToString()
+        private bool _isInvariantCulture => string.IsNullOrEmpty(m_name);
+
+        private static bool LocalizedHashCodeSupportsCompareOptions(CompareOptions options) =>
+            options == CompareOptions.IgnoreCase || options == CompareOptions.None;
         private static void AssertHybridOnWasm(CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -126,7 +132,7 @@ namespace System.Globalization
             '\u2068', '\u2069', '\u202C'
         };
 
-        private ReadOnlySpan<char> RemoveEmptyChars(ReadOnlySpan<char> source)
+        private ReadOnlySpan<char> RemoveEmptyChars(ReadOnlySpan<char> source, CompareOptions options)
         {
             char[] result = new char[source.Length];
             int resultIndex = 0;
@@ -136,6 +142,13 @@ namespace System.Globalization
                 {
                     result[resultIndex++] = c;
                 }
+            }
+            if ((options & CompareOptions.IgnoreCase) != 0)
+            {
+                string resultStr = new string(result, 0, resultIndex);
+                TextInfo textInfo = new CultureInfo(m_name).TextInfo;
+                resultStr = textInfo.ToLower(resultStr);
+                return resultStr.AsSpan();
             }
             return result.AsSpan(0, resultIndex);
         }

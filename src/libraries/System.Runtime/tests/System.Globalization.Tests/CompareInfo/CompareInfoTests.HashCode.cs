@@ -43,6 +43,8 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "igloo", "IGLOO", CompareOptions.IgnoreCase };
             yield return new object[] { new CultureInfo("pl-PL").CompareInfo, "igloo", "İGLOO", CompareOptions.IgnoreCase };
             yield return new object[] { new CultureInfo("pl-PL").CompareInfo, "igloo", "IGLOO", CompareOptions.IgnoreCase };
+            yield return new object[] { new CultureInfo("tr-TR").CompareInfo, "igloo", "İGLOO", CompareOptions.IgnoreCase };
+            yield return new object[] { new CultureInfo("tr-TR").CompareInfo, "igloo", "IGLOO", CompareOptions.IgnoreCase };
 
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
@@ -51,8 +53,6 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("ja-JP").CompareInfo, "\u30A2", "\u3042", CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
                 yield return new object[] { new CultureInfo("en-GB").CompareInfo, "café", "cafe\u0301", CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
                 yield return new object[] { new CultureInfo("en-GB").CompareInfo, "café", "cafe\u0301", CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
-                yield return new object[] { new CultureInfo("tr-TR").CompareInfo, "igloo", "İGLOO", CompareOptions.IgnoreCase }; // HG: equal: True, hashCodesEqual: False
-                yield return new object[] { new CultureInfo("tr-TR").CompareInfo, "igloo", "IGLOO", CompareOptions.IgnoreCase }; // HG: equal: False, hashCodesEqual: True
             }
         }
 

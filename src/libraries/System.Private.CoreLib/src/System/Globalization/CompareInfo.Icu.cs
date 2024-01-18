@@ -695,7 +695,11 @@ namespace System.Globalization
 #if TARGET_BROWSER
             // JS cannot create locale-sensitive sort key, use invaraint functions instead.
             if (GlobalizationMode.Hybrid)
+            {
+                if (!_isInvariantCulture)
+                    throw new PlatformNotSupportedException(GetPNSEText("CreateSortKey"));
                 return InvariantCreateSortKey(source, options);
+            }
 #endif
 
             if ((options & ValidCompareMaskOffFlags) != 0)
@@ -751,7 +755,11 @@ namespace System.Globalization
 
 #if TARGET_BROWSER
             if (GlobalizationMode.Hybrid)
+            {
+                if (!_isInvariantCulture)
+                    throw new PlatformNotSupportedException(GetPNSEText("GetSortKey"));
                 return InvariantGetSortKey(source, destination, options);
+            }
 #endif
 
             // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
@@ -798,7 +806,11 @@ namespace System.Globalization
 
 #if TARGET_BROWSER
             if (GlobalizationMode.Hybrid)
-              return InvariantGetSortKeyLength(source, options);
+            {
+                if (!_isInvariantCulture)
+                    throw new PlatformNotSupportedException(GetPNSEText("GetSortKeyLength"));
+                return InvariantGetSortKeyLength(source, options);
+            }
 #endif
 
             // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
@@ -852,10 +864,15 @@ namespace System.Globalization
 #if TARGET_BROWSER
             if (GlobalizationMode.Hybrid)
             {
+                if (!_isInvariantCulture && !LocalizedHashCodeSupportsCompareOptions(options))
+                {
+                    throw new PlatformNotSupportedException(GetPNSEText("GetHashCode"));
+                }
+
                 // JS cannot create locale-sensitive HashCode, use invaraint functions instead
                 // empty chars influence invariant hashing algo but do not influence ICU hashing algo,
                 // Hybrid wants to behave like ICU
-                ReadOnlySpan<char> sanitizedSource = RemoveEmptyChars(source);
+                ReadOnlySpan<char> sanitizedSource = RemoveEmptyChars(source, options);
                 return InvariantGetHashCode(sanitizedSource, options);
             }
 #endif
