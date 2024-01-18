@@ -7823,25 +7823,31 @@ bool CEEInfo::haveSameMethodDefinition(
 CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
 {
     CONTRACTL {
-        THROWS;
+        NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
     CORINFO_CLASS_HANDLE result = NULL;
 
-    JIT_TO_EE_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();
 
     TypeHandle constructedHandle(type);
     TypeHandle definitionHandle = ClassLoader::LoadTypeDefThrowing(
         constructedHandle.GetModule(),
         constructedHandle.GetMethodTable()->GetCl(),
-        ClassLoader::ThrowIfNotFound,
-        ClassLoader::PermitUninstDefOrRef);
+        ClassLoader::ReturnNullIfNotFound,
+        ClassLoader::PermitUninstDefOrRef,
+        /* tokenNotToLoad */ tdAllTypes);
 
     result = CORINFO_CLASS_HANDLE(definitionHandle.AsPtr());
 
-    EE_TO_JIT_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();    
+
+    // We forbid loading new types here, and we expect the resulting types to
+    // always be available. That is because if we are trying to get the type
+    // definition of some 'Foo<Bar>' type, then 'Foo<>' must also be loaded.
+    _ASSERTE(result != NULL);
 
     return result;
 }
