@@ -12,6 +12,10 @@ namespace System.Globalization
         // m_name == CultureInfo._name == CultureInfo.ToString()
         private bool _isInvariantCulture => string.IsNullOrEmpty(m_name);
 
+        private TextInfo? _thisTextInfo;
+
+        private TextInfo thisTextInfo => _thisTextInfo ??= new CultureInfo(m_name).TextInfo;
+
         private static bool LocalizedHashCodeSupportsCompareOptions(CompareOptions options) =>
             options == CompareOptions.IgnoreCase || options == CompareOptions.None;
         private static void AssertHybridOnWasm(CompareOptions options)
@@ -125,6 +129,7 @@ namespace System.Globalization
             return idx;
         }
 
+        // chars that are ignored by ICU hashing algorithm but not ignored by invariant hashing
         private char[] emptyCharsToRemove = {
             '\u200d', '\u200b', '\u200c', '\uFEFF', '\u200E', '\u200F',
             '\u2060', '\u2063', '\u2061', '\u2062', '\u2064', '\u180E',
@@ -132,7 +137,7 @@ namespace System.Globalization
             '\u2068', '\u2069', '\u202C'
         };
 
-        private ReadOnlySpan<char> RemoveEmptyChars(ReadOnlySpan<char> source, CompareOptions options)
+        private ReadOnlySpan<char> SanitizeForInvariantHash(ReadOnlySpan<char> source, CompareOptions options)
         {
             char[] result = new char[source.Length];
             int resultIndex = 0;
@@ -146,8 +151,8 @@ namespace System.Globalization
             if ((options & CompareOptions.IgnoreCase) != 0)
             {
                 string resultStr = new string(result, 0, resultIndex);
-                TextInfo textInfo = new CultureInfo(m_name).TextInfo;
-                resultStr = textInfo.ToLower(resultStr);
+                // JS-based ToLower, to keep cases like Turkish I working
+                resultStr = _thisTextInfo.ToLower(resultStr);
                 return resultStr.AsSpan();
             }
             return result.AsSpan(0, resultIndex);

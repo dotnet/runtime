@@ -870,9 +870,7 @@ namespace System.Globalization
                 }
 
                 // JS cannot create locale-sensitive HashCode, use invaraint functions instead
-                // empty chars influence invariant hashing algo but do not influence ICU hashing algo,
-                // Hybrid wants to behave like ICU
-                ReadOnlySpan<char> sanitizedSource = RemoveEmptyChars(source, options);
+                ReadOnlySpan<char> sanitizedSource = SanitizeForInvariantHash(source, options);
                 return InvariantGetHashCode(sanitizedSource, options);
             }
 #endif
