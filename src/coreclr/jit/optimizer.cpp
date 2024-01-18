@@ -4466,11 +4466,6 @@ bool Compiler::optCompactLoops()
     bool changed = false;
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
         changed |= optCompactLoop(loop);
     }
 
