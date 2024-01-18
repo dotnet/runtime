@@ -1298,6 +1298,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     if (optReturnBlock)
     {
+        assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_RETURN));
         assert(m_b1->FalseTargetIs(m_b2));
         assert(m_b3 != nullptr);
@@ -1316,10 +1317,11 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update bbRefs and bbPreds
         //
-        // Replace pred 'm_b2' for 'm_b2->bbNext' with 'm_b1'
-        // Remove  pred 'm_b2' for 'm_b2->bbTarget'
+        // Replace pred 'm_b2' for 'm_b2->bbFalseTarget' with 'm_b1'
+        // Remove  pred 'm_b2' for 'm_b2->bbTrueTarget'
         m_comp->fgReplacePred(m_b2->GetFalseTarget(), m_b2, m_b1);
         m_comp->fgRemoveRefPred(m_b2->GetTrueTarget(), m_b2);
+        m_b1->SetFalseTarget(m_b2->GetFalseTarget());
     }
 
     // Get rid of the second block

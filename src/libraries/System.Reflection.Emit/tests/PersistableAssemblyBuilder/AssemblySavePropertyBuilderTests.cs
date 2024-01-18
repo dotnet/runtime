@@ -187,6 +187,7 @@ namespace System.Reflection.Emit.Tests
 
             MethodAttributes getMethodAttributes = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
             MethodBuilder method = type.DefineMethod("TestMethod", getMethodAttributes, typeof(int), null);
+            method.GetILGenerator().Emit(OpCodes.Ret);
             AssertExtensions.Throws<ArgumentException>(() => property.SetConstant((decimal)10));
             CustomAttributeBuilder customAttrBuilder = new CustomAttributeBuilder(typeof(IntPropertyAttribute).GetConstructor([typeof(int)]), [10]);
             type.CreateType();

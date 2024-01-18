@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.Bundle;
@@ -49,7 +49,7 @@ namespace AppHost.Bundle.Tests
                 .And.HaveStdOutContaining("Hello World");
 
             var extractDir = app.GetExtractionDir(extractBaseDir, bundledApp.Manifest);
-            extractDir.Should().OnlyHaveFiles(BundleHelper.GetExtractedFiles(bundledApp.Manifest, bundledApp.Options));
+            extractDir.Should().OnlyHaveFiles(GetExpectedExtractedFiles(bundledApp.Manifest, bundledApp.Options));
         }
 
         [InlineData("./foo", BundleOptions.BundleAllContent)]
@@ -93,7 +93,7 @@ namespace AppHost.Bundle.Tests
             using (TestArtifact extractionRoot = new TestArtifact(Path.Combine(Path.GetDirectoryName(singleFile), relativePath)))
             {
                 var extractedDir = sharedTestState.SelfContainedApp.GetExtractionDir(extractionRoot.Location, manifest);
-                var extractedFiles = BundleHelper.GetExtractedFiles(manifest, bundleOptions);
+                var extractedFiles = GetExpectedExtractedFiles(manifest, bundleOptions);
                 extractedDir.Should().OnlyHaveFiles(extractedFiles);
             }
         }
@@ -159,7 +159,7 @@ namespace AppHost.Bundle.Tests
 
             // Remove the extracted files, but keep the extraction directory
             var extractDir = app.GetExtractionDir(extractBaseDir, bundledApp.Manifest);
-            var extractedFiles = BundleHelper.GetExtractedFiles(bundledApp.Manifest, bundledApp.Options);
+            var extractedFiles = GetExpectedExtractedFiles(bundledApp.Manifest, bundledApp.Options);
 
             foreach (string file in extractedFiles)
                 File.Delete(Path.Combine(extractDir.FullName, file));
@@ -222,8 +222,41 @@ namespace AppHost.Bundle.Tests
                 .And.HaveStdOutContaining("Hello World");
 
             DirectoryInfo expectedExtractDir = sharedTestState.SelfContainedApp.GetExtractionDir(Path.Combine(home, ".net"), bundledApp.Manifest);
-            var extractedFiles = BundleHelper.GetExtractedFiles(bundledApp.Manifest, bundledApp.Options);
+            var extractedFiles = GetExpectedExtractedFiles(bundledApp.Manifest, bundledApp.Options);
             expectedExtractDir.Should().HaveFiles(extractedFiles);
+        }
+
+        private static List<string> GetExpectedExtractedFiles(Manifest manifest, BundleOptions bundleOptions)
+        {
+            List<string> expected = new List<string>();
+            foreach (FileEntry file in manifest.Files)
+            {
+                if (!ShouldBeExtracted(file.Type, bundleOptions))
+                    continue;
+
+                expected.Add(file.RelativePath);
+            }
+
+            return expected;
+
+            static bool ShouldBeExtracted(FileType type, BundleOptions options)
+            {
+                switch (type)
+                {
+                    case FileType.Assembly:
+                    case FileType.DepsJson:
+                    case FileType.RuntimeConfigJson:
+                        return options.HasFlag(BundleOptions.BundleAllContent);
+                    case FileType.NativeBinary:
+                        return options.HasFlag(BundleOptions.BundleNativeBinaries);
+                    case FileType.Symbols:
+                        return options.HasFlag(BundleOptions.BundleSymbolFiles);
+                    case FileType.Unknown:
+                        return options.HasFlag(BundleOptions.BundleOtherFiles);
+                    default:
+                        return false;
+                }
+            }
         }
 
         public class SharedTestState : IDisposable

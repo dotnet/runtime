@@ -4913,16 +4913,19 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // Type parameters:
 //   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
 //   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
+//   VisitEdge      - Functor type that takes two BasicBlock*.
 //
 // Parameters:
 //   visitPreorder  - Functor to visit block in its preorder
 //   visitPostorder - Functor to visit block in its postorder
+//   visitEdge      - Functor to visit an edge. Called after visitPreorder (if
+//                    this is the first time the successor is seen).
 //
 // Returns:
 //   Number of blocks visited.
 //
-template <typename VisitPreorder, typename VisitPostorder>
-unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder)
+template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge>
+unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, VisitEdge visitEdge)
 {
     BitVecTraits traits(fgBBNumMax + 1, this);
     BitVec       visited(BitVecOps::MakeEmpty(&traits));
@@ -4950,6 +4953,8 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
                     blocks.Emplace(this, succ);
                     visitPreorder(succ, preOrderIndex++);
                 }
+
+                visitEdge(block, succ);
             }
             else
             {

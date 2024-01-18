@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET6_0_OR_GREATER
+using System.Runtime.Intrinsics;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;

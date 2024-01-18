@@ -10,6 +10,7 @@
 #include "sstring.h"
 #include "ex.h"
 #include "holder.h"
+#include <minipal/utf8.h>
 
 
 #if defined(_MSC_VER)
@@ -864,27 +865,25 @@ COUNT_T SString::ConvertToUTF8(SString &s) const
         UNREACHABLE();
     }
 
-    // <TODO> @todo: use WC_NO_BEST_FIT_CHARS </TODO>
-    bool  allAscii;
-    DWORD length;
+    size_t length = minipal_get_length_utf16_to_utf8((CHAR16_T*)GetRawUnicode(), GetCount(), MINIPAL_MB_NO_REPLACE_INVALID_CHARS);
 
-    HRESULT hr = FString::Unicode_Utf8_Length(GetRawUnicode(), & allAscii, & length);
-
-    if (SUCCEEDED(hr))
+    if (length >= COUNT_T_MAX)
     {
-        s.Resize(length, REPRESENTATION_UTF8);
+        ThrowHR(COR_E_OVERFLOW);
+    }
 
-	//FString::Unicode_Utf8 expects an array all the time
-        //we optimize the empty string by replacing it with null for SString above in Resize
-        if (length > 0)
+    s.Resize((COUNT_T)length, REPRESENTATION_UTF8);
+
+    //we optimize the empty string by replacing it with null for SString above in Resize
+    if (length > 0)
+    {
+        if (!minipal_convert_utf16_to_utf8((CHAR16_T*)GetRawUnicode(), GetCount(), s.GetRawUTF8(), length, MINIPAL_MB_NO_REPLACE_INVALID_CHARS))
         {
-            hr = FString::Unicode_Utf8(GetRawUnicode(), allAscii, (LPSTR) s.GetRawUTF8(), length);
+            ThrowHR(EMAKEHR(errno));
         }
     }
 
-    IfFailThrow(hr);
-
-    RETURN length + 1;
+    RETURN (COUNT_T)length + 1;
 }
 
 //-----------------------------------------------------------------------------
