@@ -119,7 +119,8 @@ namespace System
                         break;
 
                     case AssignArrayEnum.AssignMustCast:
-                        throw null;
+                        CastCheckEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
 
                     case AssignArrayEnum.AssignPrimitiveWiden:
                         throw null;
@@ -190,6 +191,25 @@ namespace System
             {
                 object? obj = RuntimeHelpers.Box(pSrcMT, ref Unsafe.AddByteOffset(ref data, (nuint)i * srcSize));
                 Unsafe.Add(ref destData, i) = obj;
+            }
+        }
+
+        // Casts and assigns each element of src array to the dest array type.
+        private static unsafe void CastCheckEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
+
+            ref object? srcData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<Array, object?[]>(ref sourceArray)), sourceIndex);
+            ref object? destData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<Array, object?[]>(ref destinationArray)), destinationIndex);
+
+            for (int i = 0; i < length; i++)
+            {
+                object? obj = Unsafe.Add(ref srcData, i);
+
+                // Now that we have grabbed obj, we are no longer subject to races from another
+                // mutator thread.
+
+                Unsafe.Add(ref destData, i) = CastHelpers.ChkCastAny(destTH.AsMethodTable(), obj);
             }
         }
 
