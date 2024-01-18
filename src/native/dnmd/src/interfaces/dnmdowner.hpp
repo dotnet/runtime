@@ -87,6 +87,13 @@ protected:
     }
 
 public:
+    DNMDOwner(IUnknown* controllingUnknown, mdhandle_ptr md_ptr)
+        : TearOffBase(controllingUnknown)
+        , _handle{ std::move(md_ptr) }
+        , _malloc_to_free{ nullptr }
+        , _cotaskmem_to_free{ nullptr }
+    { }
+
     DNMDOwner(IUnknown* controllingUnknown, mdhandle_ptr md_ptr, malloc_ptr<void> mallocMem, dncp::cotaskmem_ptr<void> cotaskmemMem)
         : TearOffBase(controllingUnknown)
         , _handle{ std::move(md_ptr) }

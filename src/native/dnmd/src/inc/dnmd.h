@@ -38,6 +38,21 @@ typedef void* mdhandle_t;
 // If modifications are made, the data will not be updated in place.
 bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle);
 
+// Create a new metadata handle for a new image.
+// Returns a handle for the new image, or NULL if the handle could not be created.
+// The image will always be in the v1.1 ECMA-355 metadata format,
+// use the "v4.0.30319" version string,
+// and have an MVID of all zeros.
+mdhandle_t md_create_new_handle();
+
+#ifdef DNMD_PORTABLE_PDB
+// Create a new metadata handle for a new Portable PDB image.
+// Returns a handle for the new image, or NULL if the handle could not be created.
+// The image will always be in the v1.1 metadata format
+// and use the "PDB v1.0" version string.
+mdhandle_t md_create_new_pdb_handle();
+#endif // DNMD_PORTABLE_PDB
+
 // Apply delta data to the current metadata.
 bool md_apply_delta(mdhandle_t handle, void const* data, size_t data_len);
 
@@ -528,6 +543,8 @@ void md_commit_row_add(mdcursor_t row);
 // Add a user string to the #US heap.
 mduserstringcursor_t md_add_userstring_to_heap(mdhandle_t handle, char16_t const* userstring);
 
+// Write the metadata represented by the handle to the supplied buffer.
+// The metadata is always written with the v2.0 table schema.
 bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len);
 #ifdef __cplusplus
 }

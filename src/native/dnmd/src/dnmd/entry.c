@@ -248,6 +248,119 @@ bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle)
     return true;
 }
 
+// Initialize the minimal set of tables required for a valid metadata image.
+// Every image must have a row in the Module table
+// for module identity information
+// and a row in the TypeDef table for the global type.
+static bool initialize_minimal_table_rows(mdcxt_t* cxt)
+{
+    // Add the Module row for module identity
+    mdcursor_t module_cursor;
+    if (!md_append_row(cxt, mdtid_Module, &module_cursor))
+        return false;
+    
+    // Set the Generation to 0
+    uint32_t generation = 0;
+    if (1 != md_set_column_value_as_constant(module_cursor, mdtModule_Generation, 1, &generation))
+        return false;
+    
+    // Use the 0 index to specify the NULL guid as the guids for the image.
+    uint32_t guid_heap_offset = 0;
+    if (1 != set_column_value_as_heap_offset(module_cursor, mdtModule_Mvid, 1, &guid_heap_offset)
+        || 1 != set_column_value_as_heap_offset(module_cursor, mdtModule_EncBaseId, 1, &guid_heap_offset)
+        || 1 != set_column_value_as_heap_offset(module_cursor, mdtModule_EncId, 1, &guid_heap_offset))
+    {
+        return false;
+    }
+
+    char const* name = "";
+    if (1 != md_set_column_value_as_utf8(module_cursor, mdtModule_Name, 1, &name))
+        return false;
+    
+    // Mark that we're done adding the Module row.
+    md_commit_row_add(module_cursor);
+
+    // Add a row for the global <Module> type.
+    mdcursor_t global_type_cursor;
+    if (!md_append_row(cxt, mdtid_TypeDef, &global_type_cursor))
+        return false;
+
+    uint32_t flags = 0;
+    if (1 != md_set_column_value_as_constant(global_type_cursor, mdtTypeDef_Flags, 1, &flags))
+        return false;
+    
+    char const* global_type_name = "<Module>"; // Defined in ECMA-335 II.10.8
+    if (1 != md_set_column_value_as_utf8(global_type_cursor, mdtTypeDef_TypeName, 1, &global_type_name))
+        return false;
+    
+    char const* namespace = "";
+    if (1 != md_set_column_value_as_utf8(global_type_cursor, mdtTypeDef_TypeNamespace, 1, &namespace))
+        return false;
+    
+    mdToken nil_typedef = CreateTokenType(mdtTypeDef);
+    if (1 != md_set_column_value_as_token(global_type_cursor, mdtTypeDef_Extends, 1, &nil_typedef))
+        return false;
+
+    // Mark that we're done adding the TypeDef row.
+    md_commit_row_add(global_type_cursor);
+
+    return true;
+}
+
+mdhandle_t md_create_new_handle()
+{
+    mdcxt_t cxt;
+
+    memset(&cxt, 0, sizeof(mdcxt_t));
+    cxt.magic = MDLIB_MAGIC_NUMBER;
+    cxt.context_flags = mdc_none;
+    cxt.major_ver = 1;
+    cxt.minor_ver = 1;
+    cxt.flags = 0;
+    cxt.version = "v4.0.30319";
+    cxt.editor = NULL;
+    cxt.mem = NULL;
+
+    // Allocate and initialize a full context
+    // with the correctly-sized trailing memory.
+    mdcxt_t* pcxt = allocate_full_context(&cxt);
+    if (pcxt == NULL)
+        return NULL;
+    
+    if (!initialize_minimal_table_rows(pcxt))
+    {
+        free(pcxt);
+        return NULL;
+    }
+
+    return pcxt;
+}
+
+#ifdef DNMD_PORTABLE_PDB
+mdhandle_t md_create_new_pdb_handle()
+{
+    mdcxt_t cxt;
+
+    memset(&cxt, 0, sizeof(mdcxt_t));
+    cxt.magic = MDLIB_MAGIC_NUMBER;
+    cxt.context_flags = mdc_none;
+    cxt.major_ver = 1;
+    cxt.minor_ver = 1;
+    cxt.flags = 0;
+    cxt.version = "PDB v1.0";
+    cxt.editor = NULL;
+    cxt.mem = NULL;
+
+    // Allocate and initialize a full context
+    // with the correctly-sized trailing memory.
+    mdcxt_t* pcxt = allocate_full_context(&cxt);
+    if (pcxt == NULL)
+        return NULL;
+
+    return pcxt;
+}
+#endif // DNMD_PORTABLE_PDB
+
 bool md_apply_delta(mdhandle_t handle, void const* data, size_t data_len)
 {
     mdcxt_t* base = extract_mdcxt(handle);

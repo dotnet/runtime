@@ -24,11 +24,50 @@ namespace
             REFIID      riid,
             IUnknown** ppIUnk)
         {
-            UNREFERENCED_PARAMETER(rclsid);
-            UNREFERENCED_PARAMETER(dwCreateFlags);
-            UNREFERENCED_PARAMETER(riid);
-            UNREFERENCED_PARAMETER(ppIUnk);
-            return E_NOTIMPL;
+            if (rclsid != CLSID_CLR_v2_MetaData)
+            {
+                // DNMD::Interfaces only creating v2 metadata images.
+                return CLDB_E_FILE_OLDVER;
+            }
+
+            if (dwCreateFlags != 0)
+            {
+                return E_INVALIDARG;
+            }
+
+            mdhandle_ptr md_ptr { md_create_new_handle() };
+            if (md_ptr == nullptr)
+                return E_OUTOFMEMORY;
+            
+            // Initialize the MVID of the new image.
+            mdcursor_t moduleCursor;
+            if (!md_token_to_cursor(md_ptr.get(), TokenFromRid(1, mdtModule), &moduleCursor))
+                return E_FAIL;
+            
+            mdguid_t mvid;
+            HRESULT hr = PAL_CoCreateGuid(reinterpret_cast<GUID*>(&mvid));
+            if (FAILED(hr))
+                return hr;
+            
+            if (1 != md_set_column_value_as_guid(moduleCursor, mdtModule_Mvid, 1, &mvid))
+                return E_OUTOFMEMORY;
+            
+            dncp::com_ptr<ControllingIUnknown> obj;
+            obj.Attach(new (std::nothrow) ControllingIUnknown());
+            if (obj == nullptr)
+                return E_OUTOFMEMORY;
+
+            try
+            {
+                mdhandle_view handle_view{ obj->CreateAndAddTearOff<DNMDOwner>(std::move(md_ptr)) };
+                (void)obj->CreateAndAddTearOff<MetadataImportRO>(std::move(handle_view));
+            }
+            catch(std::bad_alloc const&)
+            {
+                return E_OUTOFMEMORY;
+            }
+
+            return obj->QueryInterface(riid, (void**)ppIUnk);
         }
 
         STDMETHOD(OpenScope)(
