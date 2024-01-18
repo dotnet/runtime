@@ -136,6 +136,7 @@ class ReduceExamples(threading.Thread):
                         print("Reducing {}".format(ex['Seed']))
                         output_path = path.join(self.examples_dir, str(ex["Seed"]) + ".cs")
                         spmi_collections_path = path.join(self.examples_dir, str(ex["Seed"]) + "_spmi")
+                        os.mkdir(spmi_collections_path)
                         cmd = [self.fuzzlyn_path,
                             "--host", self.host_path,
                             "--reduce",
