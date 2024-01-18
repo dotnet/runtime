@@ -2009,31 +2009,13 @@ const char* emitter::emitVectorRegName(regNumber reg)
 // Return value:
 //    A string that represents a predicate register name.
 //
-const char* emitter::emitPredicateRegName(regNumber reg)
+const char* emitter::emitPredicateRegName(regNumber reg, PredicateType ptype)
 {
     assert((reg >= REG_P0) && (reg <= REG_P15));
 
     int index = (int)reg - (int)REG_P0;
 
-    return pRegNames[index];
-}
-
-//------------------------------------------------------------------------
-// emitPredicateAsCounterRegName: Returns a predicate as counter register name.
-//
-// Arguments:
-//    reg - A predicate register.
-//
-// Return value:
-//    A string that represents a predicate as counter register name.
-//
-const char* emitter::emitPredicateAsCounterRegName(regNumber reg)
-{
-    assert((reg >= REG_P0) && (reg <= REG_P15));
-
-    int index = (int)reg - (int)REG_P0;
-
-    return pnRegNames[index];
+    return (ptype == PREDICATE_N_SIZED) ? pnRegNames[index] : pRegNames[index];
 }
 
 /*****************************************************************************
@@ -14209,7 +14191,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_CY_3B:
         case IF_SVE_GE_4A:
         case IF_SVE_HT_4A:
-            assert(regpos >= 1 && regpos <= 2);
+            assert((regpos == 1) || (regpos == 2));
             return (regpos == 1 ? PREDICATE_SIZED : PREDICATE_ZERO);
 
         default:
@@ -17414,15 +17396,7 @@ void emitter::emitDispSveConsecutiveRegList(regNumber firstReg, unsigned listSiz
 void emitter::emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma)
 {
     assert(isPredicateRegister(reg));
-
-    if (ptype == PREDICATE_N_SIZED)
-    {
-        printf(emitPredicateAsCounterRegName(reg));
-    }
-    else
-    {
-        printf(emitPredicateRegName(reg));
-    }
+    printf(emitPredicateRegName(reg, ptype));
 
     if (ptype == PREDICATE_MERGE)
     {

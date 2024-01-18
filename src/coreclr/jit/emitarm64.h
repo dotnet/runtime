@@ -30,8 +30,7 @@ enum PredicateType
 
 const char* emitSveRegName(regNumber reg);
 const char* emitVectorRegName(regNumber reg);
-const char* emitPredicateRegName(regNumber reg);
-const char* emitPredicateAsCounterRegName(regNumber reg);
+const char* emitPredicateRegName(regNumber reg, PredicateType ptype);
 
 void emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
