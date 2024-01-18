@@ -24,8 +24,8 @@ public class SslStreamCertificateContextOcspLinuxTests
         {
             intermediate.RevocationExpiration = null;
 
-            var ctx = ctxFactory(true);
-            var ocsp = await ctx.GetOcspResponseAsync();
+            SslStreamCertificateContext ctx = ctxFactory(true);
+            byte[] ocsp = await ctx.GetOcspResponseAsync();
             Assert.Null(ocsp);
         });
     }
@@ -37,8 +37,8 @@ public class SslStreamCertificateContextOcspLinuxTests
         {
             intermediate.RevocationExpiration = null;
 
-            var ctx = ctxFactory(false);
-            var ocsp = await ctx.GetOcspResponseAsync();
+            SslStreamCertificateContext ctx = ctxFactory(false);
+            byte[] ocsp = await ctx.GetOcspResponseAsync();
             Assert.NotNull(ocsp);
         });
     }
@@ -52,12 +52,12 @@ public class SslStreamCertificateContextOcspLinuxTests
         {
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
 
-            var ctx = ctxFactory(false);
-            var ocsp = await ctx.GetOcspResponseAsync();
+            SslStreamCertificateContext ctx = ctxFactory(false);
+            byte[] ocsp = await ctx.GetOcspResponseAsync();
             Assert.NotNull(ocsp);
 
             // should cache and return the same
-            var ocsp2 = await ctx.GetOcspResponseAsync();
+            byte[] ocsp2 = await ctx.GetOcspResponseAsync();
             Assert.Equal(ocsp, ocsp2);
         });
     }
@@ -69,8 +69,8 @@ public class SslStreamCertificateContextOcspLinuxTests
         {
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow;
 
-            var ctx = ctxFactory(false);
-            var ocsp = await ctx.GetOcspResponseAsync();
+            SslStreamCertificateContext ctx = ctxFactory(false);
+            byte[] ocsp = await ctx.GetOcspResponseAsync();
             Assert.Null(ocsp);
         });
     }
@@ -82,8 +82,8 @@ public class SslStreamCertificateContextOcspLinuxTests
         {
             responder.RespondKind = RespondKind.Invalid;
 
-            var ctx = ctxFactory(false);
-            var ocsp = await ctx.GetOcspResponseAsync();
+            SslStreamCertificateContext ctx = ctxFactory(false);
+            byte[] ocsp = await ctx.GetOcspResponseAsync();
             Assert.Null(ocsp);
 
             responder.RespondKind = RespondKind.Normal;
@@ -100,20 +100,20 @@ public class SslStreamCertificateContextOcspLinuxTests
             // Set the expiration to be in the future, but close enough that a refresh gets triggered
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.Add(SslStreamCertificateContext.MinRefreshBeforeExpirationInterval);
 
-            var ctx = ctxFactory(false);
-            var ocsp = await ctx.GetOcspResponseAsync();
+            SslStreamCertificateContext ctx = ctxFactory(false);
+            byte[] ocsp = await ctx.GetOcspResponseAsync();
             Assert.NotNull(ocsp);
 
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
 
             // first call will dispatch a download and return the cached response, the first call after
             // the pending download finishes will return the updated response
-            var ocsp2 = ctx.GetOcspResponseNoWaiting();
+            byte[] ocsp2 = ctx.GetOcspResponseNoWaiting();
             Assert.Equal(ocsp, ocsp2);
 
             await RetryHelper.ExecuteAsync(async () =>
             {
-                var ocsp3 = await ctx.GetOcspResponseAsync();
+                byte[] ocsp3 = await ctx.GetOcspResponseAsync();
                 Assert.NotNull(ocsp3);
                 Assert.NotEqual(ocsp, ocsp3);
             }, maxAttempts: 5, backoffFunc: i => (i + 1) * 200 /* ms */);
@@ -128,18 +128,18 @@ public class SslStreamCertificateContextOcspLinuxTests
         {
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddSeconds(1);
 
-            var ctx = ctxFactory(false);
+            SslStreamCertificateContext ctx = ctxFactory(false);
 
             await Task.Delay(2000);
 
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
 
             // The cached OCSP is expired, so the first call will dispatch a download and return the cached response,
-            var ocsp = ctx.GetOcspResponseNoWaiting();
+            byte[] ocsp = ctx.GetOcspResponseNoWaiting();
             Assert.Null(ocsp);
 
             // subsequent call will return the new response
-            var ocsp2 = await ctx.GetOcspResponseAsync();
+            byte[] ocsp2 = await ctx.GetOcspResponseAsync();
             Assert.NotNull(ocsp2);
         });
     }
@@ -155,15 +155,15 @@ public class SslStreamCertificateContextOcspLinuxTests
             // Set the expiration to be in the future, but close enough that a refresh gets triggered
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.Add(SslStreamCertificateContext.MinRefreshBeforeExpirationInterval);
 
-            var ctx = ctxFactory(false);
-            var ocsp = await ctx.GetOcspResponseAsync();
+            SslStreamCertificateContext ctx = ctxFactory(false);
+            byte[] ocsp = await ctx.GetOcspResponseAsync();
             Assert.NotNull(ocsp);
 
             responder.RespondKind = RespondKind.Invalid;
             for (int i = 0; i < 3; i++)
             {
                 await Task.Delay(SslStreamCertificateContext.RefreshAfterFailureBackOffInterval);
-                var ocsp2 = await ctx.GetOcspResponseAsync();
+                byte[] ocsp2 = await ctx.GetOcspResponseAsync();
                 Assert.Equal(ocsp, ocsp2);
             }
 
@@ -171,7 +171,7 @@ public class SslStreamCertificateContextOcspLinuxTests
             responder.RespondKind = RespondKind.Normal;
             await RetryHelper.ExecuteAsync(async () =>
             {
-                var ocsp3 = await ctx.GetOcspResponseAsync();
+                byte[] ocsp3 = await ctx.GetOcspResponseAsync();
                 Assert.NotNull(ocsp3);
                 Assert.NotEqual(ocsp, ocsp3);
             }, maxAttempts: 5, backoffFunc: i => (i + 1) * 200 /* ms */);
