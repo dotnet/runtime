@@ -34,6 +34,55 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
 };
 
 //------------------------------------------------------------------------------
+// SplitAtTreeAndReplaceItWithLocal : Split block at the given tree and replace it with a local
+//    See comments in gtSplitTree and fgSplitBlockBeforeTree
+//    TODO: use this function in more places in this file.
+//
+// Arguments:
+//    comp        - Compiler instance
+//    block       - Block to split
+//    stmt        - Statement containing the tree to split at
+//    tree        - Tree to split at
+//    topBlock    - [out] Top block after the split
+//    bottomBlock - [out] Bottom block after the split
+//
+// Return Value:
+//    Number of the local that replaces the tree
+//
+unsigned SplitAtTreeAndReplaceItWithLocal(
+    Compiler* comp, BasicBlock* block, Statement* stmt, GenTree* tree, BasicBlock** topBlock, BasicBlock** bottomBlock)
+{
+    BasicBlock* prevBb       = block;
+    GenTree**   callUse      = nullptr;
+    Statement*  newFirstStmt = nullptr;
+    block                    = comp->fgSplitBlockBeforeTree(block, stmt, tree, &newFirstStmt, &callUse);
+    assert(prevBb != nullptr && block != nullptr);
+
+    // Block ops inserted by the split need to be morphed here since we are after morph.
+    // We cannot morph stmt yet as we may modify it further below, and the morphing
+    // could invalidate callUse
+    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+    {
+        comp->fgMorphStmtBlockOps(block, newFirstStmt);
+        newFirstStmt = newFirstStmt->GetNextStmt();
+    }
+
+    // Grab a temp to store the result.
+    const unsigned tmpNum         = comp->lvaGrabTemp(true DEBUGARG("replacement local"));
+    comp->lvaTable[tmpNum].lvType = tree->TypeGet();
+
+    // Replace the original call with that temp
+    *callUse = comp->gtNewLclvNode(tmpNum, tree->TypeGet());
+
+    comp->fgMorphStmtBlockOps(block, stmt);
+    comp->gtUpdateStmtSideEffects(stmt);
+
+    *topBlock    = prevBb;
+    *bottomBlock = block;
+    return tmpNum;
+}
+
+//------------------------------------------------------------------------------
 // gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
 //
 // Arguments:
@@ -1674,8 +1723,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         return false;
     }
 
-    BasicBlock* lastBlock = *pBlock;
-    JITDUMP("Attempting to expand a cast helper call in " FMT_BB "...\n", lastBlock->bbNum);
+    BasicBlock* block = *pBlock;
+    JITDUMP("Attempting to expand a cast helper call in " FMT_BB "...\n", block->bbNum);
     DISPTREE(call);
     JITDUMP("\n");
 
@@ -1726,36 +1775,15 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     DebugInfo debugInfo = stmt->GetDebugInfo();
 
-    // Split block right before the call tree (this is a standard pattern we use in helperexpansion.cpp)
-    BasicBlock* prevBb       = lastBlock;
-    GenTree**   callUse      = nullptr;
-    Statement*  newFirstStmt = nullptr;
-    lastBlock                = fgSplitBlockBeforeTree(lastBlock, stmt, call, &newFirstStmt, &callUse);
-    assert(prevBb != nullptr && lastBlock != nullptr);
-    *pBlock = lastBlock;
-    // Block ops inserted by the split need to be morphed here since we are after morph.
-    // We cannot morph stmt yet as we may modify it further below, and the morphing
-    // could invalidate callUse
-    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
-    {
-        fgMorphStmtBlockOps(lastBlock, newFirstStmt);
-        newFirstStmt = newFirstStmt->GetNextStmt();
-    }
+    BasicBlock*    firstBb;
+    BasicBlock*    lastBb;
+    const unsigned tmpNum = SplitAtTreeAndReplaceItWithLocal(this, block, stmt, call, &firstBb, &lastBb);
+    lvaSetClass(tmpNum, expectedCls);
 
     // Reload the arguments after the split
     clsArg          = call->gtArgs.GetUserArgByIndex(0)->GetNode();
     GenTree* objArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-
-    // Grab a temp to store the result.
-    const unsigned tmpNum   = lvaGrabTemp(true DEBUGARG("local for result"));
-    lvaTable[tmpNum].lvType = call->TypeGet();
-    lvaSetClass(tmpNum, expectedCls);
-
-    // Replace the original call with that temp
-    *callUse = gtNewLclvNode(tmpNum, call->TypeGet());
-
-    fgMorphStmtBlockOps(lastBlock, stmt);
-    gtUpdateStmtSideEffects(stmt);
+    *pBlock         = lastBb;
 
     // We're going to expand this "isinst" like this:
     //
@@ -1766,12 +1794,10 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //     tmp = obj;
     //     if (tmp == null)
     //         goto lastBlock;
-    //     fallthrough;
     //
     // typeCheckBb (BBJ_COND):                      [weight: 0.5]
     //     if (tmp->pMT == likelyClass)
     //         goto typeCheckSucceedBb;
-    //     fallthrough;
     //
     // fallbackBb (BBJ_ALWAYS):                     [weight: <profile>]
     //     tmp = helper_call(cls, tmp);
@@ -1779,7 +1805,6 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //
     // typeCheckSucceedBb (BBJ_ALWAYS):             [weight: <profile>]
     //     nop (or tmp = null)
-    //     fallthrough;
     //
     // lastBlock (BBJ_any):                         [weight: 1.0]
     //     use(tmp);
@@ -1791,8 +1816,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     GenTree* objTmp      = gtNewLclVarNode(tmpNum);
     GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, objTmp, gtNewNull());
     nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
-    BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
-                                                   debugInfo, lastBlock, true);
+    BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
+                                                   debugInfo, lastBb, true);
 
     // Insert statements to spill call's arguments (preserving the evaluation order)
     // TODO-InlineCast: don't spill cls if possible, we only need it after the nullcheck
@@ -1815,7 +1840,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(objTmp)), likelyClsNode);
     mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
     GenTree*    jtrue       = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
-    BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, lastBlock, true);
+    BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, lastBb, true);
 
     // Block 3: fallbackBb
     // NOTE: we spilled call's arguments above, we need to re-create it here (we can't just modify call's args)
@@ -1824,7 +1849,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     fallbackCall = fgMorphCall(fallbackCall->AsCall());
     gtSetEvalOrder(fallbackCall);
     GenTree*    fallbackTree = gtNewTempStore(tmpNum, fallbackCall);
-    BasicBlock* fallbackBb   = fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, fallbackTree, debugInfo, lastBlock, true);
+    BasicBlock* fallbackBb   = fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, fallbackTree, debugInfo, lastBb, true);
 
     // Block 4: typeCheckSucceedBb
     GenTree* typeCheckSucceedTree;
@@ -1840,53 +1865,53 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         typeCheckSucceedTree = gtNewNothingNode();
     }
     BasicBlock* typeCheckSucceedBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo, lastBlock);
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo, lastBb);
 
     //
     // Wire up the blocks
     //
-    prevBb->SetTarget(nullcheckBb);
-    nullcheckBb->SetTrueTarget(lastBlock);
+    firstBb->SetTarget(nullcheckBb);
+    nullcheckBb->SetTrueTarget(lastBb);
     nullcheckBb->SetFalseTarget(typeCheckBb);
     typeCheckBb->SetTrueTarget(typeCheckSucceedBb);
     typeCheckBb->SetFalseTarget(fallbackBb);
-    fallbackBb->SetTarget(lastBlock);
-    fgRemoveRefPred(lastBlock, prevBb);
-    fgAddRefPred(nullcheckBb, prevBb);
+    fallbackBb->SetTarget(lastBb);
+    fgRemoveRefPred(lastBb, firstBb);
+    fgAddRefPred(nullcheckBb, firstBb);
     fgAddRefPred(typeCheckBb, nullcheckBb);
-    fgAddRefPred(lastBlock, nullcheckBb);
+    fgAddRefPred(lastBb, nullcheckBb);
     fgAddRefPred(fallbackBb, typeCheckBb);
-    fgAddRefPred(lastBlock, typeCheckSucceedBb);
+    fgAddRefPred(lastBb, typeCheckSucceedBb);
     fgAddRefPred(typeCheckSucceedBb, typeCheckBb);
-    fgAddRefPred(lastBlock, fallbackBb);
+    fgAddRefPred(lastBb, fallbackBb);
 
     //
     // Re-distribute weights
     // We assume obj is 50%/50% null/not-null (TODO: use profile data)
     // and rely on profile for the slow path.
     //
-    nullcheckBb->inheritWeight(prevBb);
+    nullcheckBb->inheritWeight(firstBb);
     typeCheckBb->inheritWeightPercentage(nullcheckBb, 50);
-    fallbackBb->inheritWeightPercentage(typeCheckBb, likelihood);
-    typeCheckSucceedBb->inheritWeightPercentage(typeCheckBb, 100 - likelihood);
-    lastBlock->inheritWeight(prevBb);
+    fallbackBb->inheritWeightPercentage(typeCheckBb, 100 - likelihood);
+    typeCheckSucceedBb->inheritWeightPercentage(typeCheckBb, likelihood);
+    lastBb->inheritWeight(firstBb);
 
     //
     // Update bbNatLoopNum for all new blocks and validate EH regions
     //
-    nullcheckBb->bbNatLoopNum        = prevBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum         = prevBb->bbNatLoopNum;
-    typeCheckBb->bbNatLoopNum        = prevBb->bbNatLoopNum;
-    typeCheckSucceedBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    assert(BasicBlock::sameEHRegion(prevBb, lastBlock));
-    assert(BasicBlock::sameEHRegion(prevBb, nullcheckBb));
-    assert(BasicBlock::sameEHRegion(prevBb, fallbackBb));
-    assert(BasicBlock::sameEHRegion(prevBb, typeCheckBb));
+    nullcheckBb->bbNatLoopNum        = firstBb->bbNatLoopNum;
+    fallbackBb->bbNatLoopNum         = firstBb->bbNatLoopNum;
+    typeCheckBb->bbNatLoopNum        = firstBb->bbNatLoopNum;
+    typeCheckSucceedBb->bbNatLoopNum = firstBb->bbNatLoopNum;
+    assert(BasicBlock::sameEHRegion(firstBb, lastBb));
+    assert(BasicBlock::sameEHRegion(firstBb, nullcheckBb));
+    assert(BasicBlock::sameEHRegion(firstBb, fallbackBb));
+    assert(BasicBlock::sameEHRegion(firstBb, typeCheckBb));
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
-    if (fgCanCompactBlocks(prevBb, nullcheckBb))
+    if (fgCanCompactBlocks(firstBb, nullcheckBb))
     {
-        fgCompactBlocks(prevBb, nullcheckBb);
+        fgCompactBlocks(firstBb, nullcheckBb);
     }
 
     return true;
