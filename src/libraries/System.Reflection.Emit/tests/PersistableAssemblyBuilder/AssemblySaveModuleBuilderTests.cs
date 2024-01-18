@@ -183,6 +183,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<InvalidOperationException>(() => module.DefineInitializedData("MyField2", new byte[] { 1, 0, 1 }, FieldAttributes.Public));
         }
 
+        // Field alignment is not working on mono
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public void DefineInitializedData_EnsureAlignmentIsMinimumNeededForUseOfCreateSpan()
         {
@@ -259,6 +260,8 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        // Standalone signature is not supported on mono
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96389", TestRuntimes.Mono)]
         public void GetABCMetadataToken_Validations()
         {
             AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("MyAssembly"), out MethodInfo _);
@@ -273,9 +276,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<InvalidOperationException>(() => module.GetFieldMetadataToken(field));
             Assert.Throws<InvalidOperationException>(() => module.GetTypeMetadataToken(type));
 
-            SignatureHelper signature = SignatureHelper.GetMethodSigHelper(CallingConventions.VarArgs, typeof(void));
-            signature.AddArgument(typeof(string));
-            signature.AddSentinel();
+            SignatureHelper signature = SignatureHelper.GetMethodSigHelper(CallingConventions.HasThis, typeof(void));
             signature.AddArgument(typeof(string));
             signature.AddArgument(typeof(int));
 
