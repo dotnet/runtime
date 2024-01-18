@@ -8374,8 +8374,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	code = realloc_code (cfg, max_epilog_size);
 
-	cinfo = cfg->arch.cinfo;
-
 	cfg->has_unwind_info_for_epilog = TRUE;
 
 	/* Mark the start of the epilog */
@@ -8412,6 +8410,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/* Load returned vtypes into registers if needed */
+	cinfo = cfg->arch.cinfo;
 	if (cinfo->ret.storage == ArgValuetypeInReg) {
 		ArgInfo *ainfo = &cinfo->ret;
 		MonoInst *inst = cfg->ret;

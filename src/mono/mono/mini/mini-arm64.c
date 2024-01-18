@@ -1993,7 +1993,7 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 
 	for (int i = 0; i < sig->param_count; i++) {
 		ainfo = &cinfo->args [i];
-		
+
 		if (ainfo->storage == ArgVtypeByRef) {
 			ccontext->gregs [ainfo->reg] = (host_mgreg_t)interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, i);
 			continue;
