@@ -5016,7 +5016,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_R4:
 		case OP_RISCV_SETFREG_R4: {
 			g_assert (riscv_stdext_d);
-			riscv_fcvt_s_d (code, RISCV_ROUND_TZ, ins->dreg, ins->sreg1);
+			riscv_fcvt_s_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			break;
 		}
 		case OP_RDIV: {
