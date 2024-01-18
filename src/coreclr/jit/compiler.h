@@ -5956,8 +5956,6 @@ public:
 
     void fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext);
 
-    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, bool noFallThroughQuirk = false);
-
     bool fgRenumberBlocks();
 
     bool fgExpandRarelyRunBlocks();

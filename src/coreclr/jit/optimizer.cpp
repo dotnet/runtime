@@ -2041,14 +2041,7 @@ private:
             FixupFallThrough(moveAfter, moveBefore, block);
             FixupFallThrough(lastNonLoopBlock, nextLoopBlock, moveBefore);
             // Also apply any adjustments needed where the blocks were snipped out of the loop.
-            BasicBlock* newBlock = FixupFallThrough(previous, block, nextLoopBlock);
-            if (newBlock != nullptr)
-            {
-                // This new block is in the loop and is a loop exit.
-                loopBlocks.Insert(newBlock->bbNum);
-                lastExit = newBlock;
-                ++exitCount;
-            }
+            FixupFallThrough(previous, block, nextLoopBlock);
 
             // Update moveAfter for the next insertion.
             moveAfter = lastNonLoopBlock;
@@ -2271,48 +2264,11 @@ private:
     //    oldNext - Previous value of `block->bbNext`.
     //    newNext - New value of `block->bbNext`.
     //
-    // Return Value:
-    //    If a new block is created to reconnect flow, the new block is
-    //    returned; otherwise, nullptr.
-    //
-    BasicBlock* FixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext)
+    void FixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext)
     {
         // If we create a new block, that will be our return value.
-        BasicBlock* newBlock = nullptr;
 
-        if (block->bbFallsThrough())
-        {
-            // Need to reconnect the flow from `block` to `oldNext`.
-
-            if (block->KindIs(BBJ_COND) && block->TrueTargetIs(newNext))
-            {
-                // Reverse the jump condition
-                GenTree* test = block->lastNode();
-                noway_assert(test->OperIsConditionalJump());
-
-                if (test->OperGet() == GT_JTRUE)
-                {
-                    GenTree* cond = comp->gtReverseCond(test->AsOp()->gtOp1);
-                    assert(cond == test->AsOp()->gtOp1); // Ensure `gtReverseCond` did not create a new node.
-                    test->AsOp()->gtOp1 = cond;
-                }
-                else
-                {
-                    comp->gtReverseCond(test);
-                }
-
-                // Redirect the Conditional JUMP
-                block->SetTrueTarget(block->GetFalseTarget());
-                block->SetFalseTarget(newNext);
-            }
-            else
-            {
-                // Insert an unconditional jump to `oldNext` just after `block`.
-                newBlock = comp->fgConnectFallThrough(block, oldNext, true /* noFallThroughQuirk */);
-                noway_assert((newBlock == nullptr) || loopBlocks.CanRepresent(newBlock->bbNum));
-            }
-        }
-        else if (block->KindIs(BBJ_ALWAYS) && block->TargetIs(newNext))
+        if (block->KindIs(BBJ_ALWAYS) && block->TargetIs(newNext))
         {
             // If block is newNext's only predecessor, move the IR from block to newNext,
             // but keep the now-empty block around.
@@ -2359,8 +2315,6 @@ private:
                 }
             }
         }
-
-        return newBlock;
     }
 
     //------------------------------------------------------------------------

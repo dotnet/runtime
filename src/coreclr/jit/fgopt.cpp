@@ -4707,35 +4707,26 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         /* We have decided to insert the block(s) after 'insertAfterBlk' */
         fgMoveBlocksAfter(bStart, bEnd, insertAfterBlk);
 
-        // useProfile should be true only when finalizing the block layout in Compiler::optOptimizeLayout.
-        // In this final pass, allow BBJ_COND blocks' false targets to diverge from bbNext.
-        // TODO-NoFallThrough: Always allow the false targets to diverge.
-        if (bDest)
+        if (bPrev->KindIs(BBJ_ALWAYS) && bPrev->JumpsToNext())
         {
-            /* We may need to insert an unconditional branch after bPrev to bDest */
-            fgConnectFallThrough(bPrev, bDest, /* noFallThroughQuirk */ useProfile);
-        }
-        else
-        {
-            /* If bPrev falls through, we must insert a jump to block */
-            fgConnectFallThrough(bPrev, block, /* noFallThroughQuirk */ useProfile);
+            bPrev->SetFlags(BBF_NONE_QUIRK);
         }
 
-        BasicBlock* bSkip = bEnd->Next();
-
-        /* If bEnd falls through, we must insert a jump to bNext */
-        fgConnectFallThrough(bEnd, bNext, /* noFallThroughQuirk */ useProfile);
+        if (bEnd->KindIs(BBJ_ALWAYS) && bEnd->JumpsToNext())
+        {
+            bEnd->SetFlags(BBF_NONE_QUIRK);
+        }
 
         if (bStart2 == nullptr)
         {
-            /* If insertAfterBlk falls through, we are forced to     */
-            /* add a jump around the block(s) we just inserted */
-            fgConnectFallThrough(insertAfterBlk, bSkip, /* noFallThroughQuirk */ useProfile);
+            if (insertAfterBlk->KindIs(BBJ_ALWAYS) && insertAfterBlk->JumpsToNext())
+            {
+                insertAfterBlk->SetFlags(BBF_NONE_QUIRK);
+            }
         }
-        else
+        else if (bPrev2->KindIs(BBJ_ALWAYS) && bPrev2->JumpsToNext())
         {
-            /* We may need to insert an unconditional branch after bPrev2 to bStart */
-            fgConnectFallThrough(bPrev2, bStart, /* noFallThroughQuirk */ useProfile);
+            bPrev2->SetFlags(BBF_NONE_QUIRK);
         }
 
 #if DEBUG
