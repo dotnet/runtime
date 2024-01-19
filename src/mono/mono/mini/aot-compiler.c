@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+#include <gmodule.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
@@ -183,6 +184,12 @@ struct _ReadOnlyValue {
 };
 static ReadOnlyValue *readonly_values;
 
+typedef enum {
+	DRIVER_MODE_NOT_SET,
+	DRIVER_MODE_DISABLE,
+	DRIVER_MODE_ENABLE
+} DriverMode;
+
 typedef struct MonoAotOptions {
 	char *outfile;
 	char *llvm_outfile;
@@ -258,6 +265,8 @@ typedef struct MonoAotOptions {
 	char *clangxx;
 	char *depfile;
 	char *runtime_init_callback;
+	DriverMode driver_mode;
+	char *driver_log_file;
 } MonoAotOptions;
 
 typedef enum {
@@ -538,13 +547,26 @@ aot_printf (MonoAotCompile *acfg, const gchar *format, ...)
 	FILE *output;
 	va_list args;
 
-	if (acfg->logfile)
+	if (acfg && acfg->logfile)
 		output = acfg->logfile;
 	else
 		output = stdout;
 
 	va_start (args, format);
 	vfprintf (output, format, args);
+	va_end (args);
+
+	if (acfg && acfg->aot_opts.driver_log_file)
+		fflush (output);
+}
+
+static void
+aot_print (const gchar *format, ...)
+{
+	va_list args;
+
+	va_start (args, format);
+	vfprintf (stdout, format, args);
 	va_end (args);
 }
 
@@ -554,13 +576,23 @@ aot_printerrf (MonoAotCompile *acfg, const gchar *format, ...)
 	FILE *output;
 	va_list args;
 
-	if (acfg->logfile)
+	if (acfg && acfg->logfile)
 		output = acfg->logfile;
 	else
 		output = stderr;
 
 	va_start (args, format);
 	vfprintf (output, format, args);
+	va_end (args);
+}
+
+static void
+aot_printerr (const gchar *format, ...)
+{
+	va_list args;
+
+	va_start (args, format);
+	vfprintf (stderr, format, args);
 	va_end (args);
 }
 
@@ -5531,7 +5563,7 @@ MONO_RESTORE_WARNING
 		char *export_symbols_out = g_string_free (export_symbols, FALSE);
 		FILE* export_symbols_outfile = fopen (acfg->aot_opts.export_symbols_outfile, "w");
 		if (!export_symbols_outfile) {
-			fprintf (stderr, "Unable to open specified export_symbols_outfile '%s' to append symbols '%s': %s\n", acfg->aot_opts.export_symbols_outfile, export_symbols_out, strerror (errno));
+			aot_printerrf (acfg, "Unable to open specified export_symbols_outfile '%s' to append symbols '%s': %s\n", acfg->aot_opts.export_symbols_outfile, export_symbols_out, strerror (errno));
 			g_free (export_symbols_out);
 			exit (1);
 		}
@@ -8591,12 +8623,12 @@ add_readonly_value (MonoAotOptions *opts, const char *val)
 	 */
 	fval = strrchr (val, '/');
 	if (!fval) {
-		fprintf (stderr, "AOT : invalid format for readonly field '%s', missing /.\n", val);
+		aot_printerr ("AOT : invalid format for readonly field '%s', missing /.\n", val);
 		exit (1);
 	}
 	tval = strrchr (val, '=');
 	if (!tval) {
-		fprintf (stderr, "AOT : invalid format for readonly field '%s', missing =.\n", val);
+		aot_printerr ("AOT : invalid format for readonly field '%s', missing =.\n", val);
 		exit (1);
 	}
 	rdv = g_new0 (ReadOnlyValue, 1);
@@ -8614,7 +8646,7 @@ add_readonly_value (MonoAotOptions *opts, const char *val)
 		rdv->value.i4 = atoi (fval);
 		rdv->type = MONO_TYPE_I4;
 	} else {
-		fprintf (stderr, "AOT : unsupported type for readonly field '%s'.\n", tval);
+		aot_printerr ("AOT : unsupported type for readonly field '%s'.\n", tval);
 		exit (1);
 	}
 	rdv->next = readonly_values;
@@ -8745,7 +8777,7 @@ static gboolean
 parse_cpu_features (const gchar *attr)
 {
 	if (!attr || strlen (attr) < 2) {
-		fprintf (stderr, "Invalid attribute");
+		aot_printerr ("Invalid attribute");
 		return FALSE;
 	}
 
@@ -8910,9 +8942,9 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->soft_debug = TRUE;
 		// Intentionally undocumented x2-- deprecated
 		} else if (str_begins_with (arg, "gen-seq-points-file=")) {
-			fprintf (stderr, "Mono Warning: aot option gen-seq-points-file= is deprecated.\n");
+			aot_printerr ("Mono Warning: aot option gen-seq-points-file= is deprecated.\n");
 		} else if (str_begins_with (arg, "gen-seq-points-file")) {
-			fprintf (stderr, "Mono Warning: aot option gen-seq-points-file is deprecated.\n");
+			aot_printerr ("Mono Warning: aot option gen-seq-points-file is deprecated.\n");
 		} else if (str_begins_with (arg, "msym-dir=")) {
 			mini_debug_options.no_seq_points_compact_data = FALSE;
 			opts->gen_msym_dir = TRUE;
@@ -9057,6 +9089,16 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		// direct pinvokes (managed-to-native wrappers) and fallbacks to JIT for majority of managed methods.
 		} else if (str_begins_with (arg, "wrappers-only")) {
 			opts->wrappers_only = TRUE;
+		} else if (str_begins_with (arg, "driver-logfile=")) {
+			opts->driver_log_file = g_strdup (arg + strlen ("driver-logfile="));
+			if (!opts->driver_log_file || opts->driver_log_file [0] == '\0') {
+				printf ("Missing driver-logfile.\n");
+				exit (1);
+			}
+			opts->driver_mode = DRIVER_MODE_DISABLE;
+		} else if (!strcmp (arg, "driver")) {
+			if (opts->driver_mode != DRIVER_MODE_DISABLE)
+				opts->driver_mode = DRIVER_MODE_ENABLE;
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    asmonly                              - \n");
@@ -9067,6 +9109,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    direct-pinvokes=<string>             - Specific direct pinvokes to generate direct calls for an entire 'module' or specific 'module!entrypoint' separated by semi-colons. Incompatible with 'direct-pinvoke' option.\n");
 			printf ("    direct-pinvoke-lists=<string>        - Files containing specific direct pinvokes to generate direct calls for an entire 'module' or specific 'module!entrypoint' on separate lines. Incompatible with 'direct-pinvoke' option.\n");
 			printf ("    direct-pinvoke                       - Generate direct calls for all direct pinvokes encountered in the managed assembly.\n");
+			printf ("    driver                               - Run AOT compiler in driver mode. Runs cross compiler and tools as child processes.\n");
+			printf ("    driver-logfile                       - Pass by driver parent process when executin AOT cross compiler as a child process. Executed commands will be logged into file instead of executed by child process. Path to file or 'stdout'.\n");
 			printf ("    dwarfdebug                           - \n");
 			printf ("    full                                 - \n");
 			printf ("    hybrid                               - \n");
@@ -9116,7 +9160,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    help/?                                 \n");
 			exit (0);
 		} else {
-			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
+			aot_printerr ("AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
 		}
 
@@ -10722,25 +10766,247 @@ mono_aot_patch_info_dup (MonoJumpInfo* ji)
 	return res;
 }
 
-static int
-execute_system (const char * command)
-{
-	int status = 0;
+static int driver_log_file_fd = -1;
 
-#if defined (HOST_WIN32)
+typedef enum {
+	CROSS_COMPILER_COMMAND,
+	LLVM_OPT_COMMAND,
+	LLVM_LLC_COMMAND,
+	LLVM_CLANG_COMMAND,
+	ASM_COMMAND,
+	STRIP_COMMAND,
+	DSYMUTIL_COMMAND,
+	LINKER_COMMAND,
+	RENAME_COMMAND,
+	UNLINK_COMMAND,
+	RM_COMMAND
+} CommandType;
+
+static const char *
+command_type_to_string(CommandType command_type)
+{
+	switch (command_type) {
+	case CROSS_COMPILER_COMMAND :
+		return "CROSS_COMPILER_COMMAND";
+	case LLVM_OPT_COMMAND :
+		return "LLVM_OPT_COMMAND";
+	case LLVM_LLC_COMMAND :
+		return "LLVM_LLC_COMMAND";
+	case LLVM_CLANG_COMMAND :
+		return "LLVM_CLANG_COMMAND";
+	case ASM_COMMAND :
+		return "ASM_COMMAND";
+	case STRIP_COMMAND :
+		return "STRIP_COMMAND";
+	case DSYMUTIL_COMMAND :
+		return "DSYMUTIL_COMMAND";
+	case LINKER_COMMAND :
+		return "LINKER_COMMAND";
+	case RENAME_COMMAND :
+		return "RENAME_COMMAND";
+	case UNLINK_COMMAND :
+		return "UNLINK_COMMAND";
+	case RM_COMMAND :
+		return "RM_COMMAND";
+	default:
+		g_assert_not_reached ();
+	}
+
+	g_assert_not_reached ();
+}
+
+static const char *
+command_type_to_log_format (CommandType command_type)
+{
+	switch (command_type) {
+	case CROSS_COMPILER_COMMAND :
+		return "Executing cross compiler: %s\n";
+	case LLVM_OPT_COMMAND :
+		return "Executing opt: %s\n";
+	case LLVM_LLC_COMMAND :
+		return "Executing llc: %s\n";
+	case LLVM_CLANG_COMMAND :
+		return "Executing clang: %s\n";
+	case ASM_COMMAND :
+		return "Executing the native assembler: %s\n";
+	case STRIP_COMMAND :
+		return "Executing strip: %s\n";
+	case DSYMUTIL_COMMAND :
+		return "Executing dsymutil: %s\n";
+	case LINKER_COMMAND :
+		return "Executing the native linker: %s\n";
+	case RENAME_COMMAND :
+		return "Executing rename: %s\n";
+	case UNLINK_COMMAND :
+		return "Executing unlink: %s\n";
+	case RM_COMMAND :
+		return "Executing rm: %s\n";
+	default:
+		g_assert_not_reached ();
+	}
+
+	g_assert_not_reached ();
+}
+
+static const char *
+get_execute_command (const char *command, CommandType *command_type)
+{
+	CommandType type = CROSS_COMPILER_COMMAND;
+
+	if (str_begins_with (command, "[LLVM_OPT_COMMAND] ")) {
+		type = LLVM_OPT_COMMAND;
+		command += strlen ("[LLVM_OPT_COMMAND] ");
+	} else if (str_begins_with (command, "[LLVM_LLC_COMMAND] ")) {
+		type = LLVM_LLC_COMMAND;
+		command += strlen ("[LLVM_LLC_COMMAND] ");
+	} else if (str_begins_with (command, "[LLVM_CLANG_COMMAND] ")) {
+		type = LLVM_CLANG_COMMAND;
+		command += strlen ("[LLVM_CLANG_COMMAND] ");
+	} else if (str_begins_with (command, "[ASM_COMMAND] ")) {
+		type = ASM_COMMAND;
+		command += strlen ("[ASM_COMMAND] ");
+	} else if (str_begins_with (command, "[STRIP_COMMAND] ")) {
+		type = STRIP_COMMAND;
+		command += strlen ("[STRIP_COMMAND] ");
+	} else if (str_begins_with (command, "[DSYMUTIL_COMMAND] ")) {
+		type = DSYMUTIL_COMMAND;
+		command += strlen ("[DSYMUTIL_COMMAND] ");
+	} else if (str_begins_with (command, "[LINKER_COMMAND] ")) {
+		type = LINKER_COMMAND;
+		command += strlen ("[LINKER_COMMAND] ");
+	} else if (str_begins_with (command, "[UNLINK_COMMAND] ")) {
+		type = UNLINK_COMMAND;
+		command += strlen ("[UNLINK_COMMAND] ");
+	} else if (str_begins_with (command, "[RENAME_COMMAND] ")) {
+		type = RENAME_COMMAND;
+		command += strlen ("[RENAME_COMMAND] ");
+	} else if (str_begins_with (command, "[RM_COMMAND] ")) {
+		type = RM_COMMAND;
+		command += strlen ("[RM_COMMAND] ");
+	} else {
+		command = NULL;
+	}
+
+	if (command_type)
+		*command_type = type;
+
+	return command;
+}
+
+static gboolean
+write_command_to_file (int fd, const char* command, size_t command_len)
+{
+	size_t offset = 0;
+	int nwritten;
+
+	do {
+		nwritten = g_write (fd, command + offset, GSIZE_TO_UINT32 (command_len - offset));
+		if (nwritten > 0)
+			offset += nwritten;
+	} while ((nwritten > 0 && offset < command_len) || (nwritten == -1 && errno == EINTR));
+
+	return nwritten == command_len;
+}
+
+static int
+execute_unlink (const char *file)
+{
+	if (driver_log_file_fd != -1) {
+		char * log_command = g_strdup_printf ("[%s] %s\n", command_type_to_string (UNLINK_COMMAND), file);
+		if (log_command) {
+			write_command_to_file (driver_log_file_fd, log_command, GSIZE_TO_INT (strlen (log_command)));
+			g_free (log_command);
+		}
+		return 0;
+	}
+
+	return g_unlink (file);
+}
+
+static int
+execute_rename (const char *old_file_name, const char *new_file_name)
+{
+	if (driver_log_file_fd != -1) {
+		char * log_command = g_strdup_printf ("[%s] %s,%s\n", command_type_to_string (RENAME_COMMAND), old_file_name, new_file_name);
+		if (log_command) {
+			write_command_to_file (driver_log_file_fd, log_command, GSIZE_TO_INT (strlen (log_command)));
+			g_free (log_command);
+		}
+		return 0;
+	}
+
+	return rename (old_file_name, new_file_name);
+}
+
+#ifdef HOST_WIN32
+static wchar_t *
+convert_command_to_wchar (const char *command)
+{
 	// We need an extra set of quotes around the whole command to properly handle commands
 	// with spaces since internally the command is called through "cmd /c.
 	char * quoted_command = g_strdup_printf ("\"%s\"", command);
-
 	int size =  MultiByteToWideChar (CP_UTF8, 0 , quoted_command , -1, NULL , 0);
 	wchar_t* wstr = g_malloc (sizeof (wchar_t) * size);
 	MultiByteToWideChar (CP_UTF8, 0, quoted_command, -1, wstr , size);
-	status = _wsystem (wstr);
-	g_free (wstr);
-
 	g_free (quoted_command);
-#elif defined (HAVE_SYSTEM)
-	status = system (command);
+	return wstr;
+}
+#endif
+
+static int
+execute_compiler_command (const char *command, GString *compiler_execute_command_log)
+{
+	if (!strstr (command, "driver-logfile=stdout")) {
+		aot_printerr ("Missing aot arguments disabling driver mode in child processes, passing commands using stdout to parent process.");
+		exit (1);
+	}
+
+	int status = 0;
+	FILE *stream = NULL;
+
+#if defined (HOST_WIN32)
+	wchar_t *wstr = convert_command_to_wchar (command);
+	stream = _wpopen (wstr, L"r");
+	g_free (wstr);
+#elif defined (HAVE_POPEN)
+	stream = popen (command, "r");
+#else
+	g_assert_not_reached ();
+#endif
+
+	char buffer [1];
+	GString *line = g_string_sized_new (G_N_ELEMENTS (buffer));
+	if (line && stream) {
+		size_t read = 0;
+		while ((read = fread (buffer, sizeof (buffer [0]), G_N_ELEMENTS (buffer), stream)) > 0) {
+			for (int i = 0; i < read; i++) {
+				g_string_append_c (line, buffer [i]);
+				if (buffer [i] == '\n') {
+					if (compiler_execute_command_log && get_execute_command (line->str, NULL)) {
+						g_string_append (compiler_execute_command_log, line->str);
+						g_string_set_size (line, 0);
+					}
+				}
+
+				if (buffer [i] == '\n' && line->len != 0) {
+					aot_print ("%s", line->str);
+					g_string_set_size (line, 0);
+				}
+			}
+		}
+
+		if (line->len != 0)
+			aot_print ("%s", line->str);
+	}
+
+	g_string_free (line, TRUE);
+
+#if defined (HOST_WIN32)
+	if (stream)
+		status = _pclose (stream);
+#elif defined (HAVE_POPEN)
+	if (stream)
+		status = pclose (stream);
 #else
 	g_assert_not_reached ();
 #endif
@@ -10748,7 +11014,68 @@ execute_system (const char * command)
 	return status;
 }
 
-#ifdef ENABLE_LLVM
+static int
+execute_system (MonoAotCompile *acfg, const char *command, CommandType command_type)
+{
+	if (driver_log_file_fd != -1) {
+		char * log_command = g_strdup_printf ("[%s] %s\n", command_type_to_string (command_type), command);
+		if (log_command) {
+			fflush (stdout);
+			write_command_to_file (driver_log_file_fd, log_command, GSIZE_TO_INT (strlen (log_command)));
+			g_free (log_command);
+		}
+		return 0;
+	}
+
+	g_assert (command_type != CROSS_COMPILER_COMMAND);
+
+	aot_printf (acfg, command_type_to_log_format (command_type), command);
+
+	int status = 0;
+
+	gint64 atv;
+	TV_GETTIME (atv);
+
+#if defined (HOST_WIN32)
+	wchar_t *wstr = convert_command_to_wchar (command);
+	status = _wsystem (wstr);
+	g_free (wstr);
+#elif defined (HAVE_SYSTEM)
+	status = system (command);
+#else
+	g_assert_not_reached ();
+#endif
+
+	gint64 btv;
+	TV_GETTIME (btv);
+
+	aot_printf (acfg, "Execution time: %d ms\n", GINT64_TO_INT (TV_ELAPSED (atv, btv) / 1000));
+
+	return status;
+}
+
+static char *
+create_tool_path (const char *base_path, const char *binary_name)
+{
+	GString *path = g_string_sized_new (strlen (base_path) + strlen (binary_name) + 1 + 2);
+	gboolean needs_wrap = strstr (base_path, " ") || strstr (binary_name, " ");
+	gboolean needs_dir_sep = !g_str_has_suffix (base_path, G_DIR_SEPARATOR_S);
+
+	if (needs_wrap)
+		g_string_append_c (path, '\"');
+
+	g_string_append (path, base_path);
+
+	if (needs_dir_sep)
+		g_string_append_c (path, G_DIR_SEPARATOR);
+
+	g_string_append (path, binary_name);
+
+	if (needs_wrap)
+		g_string_append_c (path, '\"');
+
+	return g_string_free (path, FALSE);
+}
 
 #ifdef HOST_WIN32
 #define OPT_NAME "opt.exe"
@@ -10756,11 +11083,31 @@ execute_system (const char * command)
 #define OPT_NAME "opt"
 #endif
 
+static char *
+get_llvm_opt_path (MonoAotOptions *aot_options)
+{
+	return create_tool_path (aot_options->llvm_path, OPT_NAME);
+}
+
 #ifdef HOST_WIN32
 #define LLC_NAME "llc.exe"
 #else
 #define LLC_NAME "llc"
 #endif
+
+static char *
+get_llvm_llc_path (MonoAotOptions *aot_options)
+{
+	return create_tool_path (aot_options->llvm_path, LLC_NAME);
+}
+
+static char *
+get_llvm_clang_path (MonoAotOptions *aot_options)
+{
+	return create_tool_path (aot_options->clangxx, "");
+}
+
+#ifdef ENABLE_LLVM
 
 /*
  * emit_llvm_file:
@@ -10771,7 +11118,7 @@ execute_system (const char * command)
 static gboolean
 emit_llvm_file (MonoAotCompile *acfg)
 {
-	char *command, *opts, *tempbc, *optbc, *output_fname;
+	char *tool_path, *command, *opts, *tempbc, *optbc, *output_fname;
 
 	if (acfg->aot_opts.llvm_only && acfg->aot_opts.asm_only) {
 		if (acfg->aot_opts.no_opt)
@@ -10862,9 +11209,11 @@ emit_llvm_file (MonoAotCompile *acfg)
 		opts = g_strdup_printf ("%s -fp-contract=fast -enable-no-infs-fp-math -enable-no-nans-fp-math -enable-no-signed-zeros-fp-math -enable-no-trapping-fp-math -enable-unsafe-fp-math", opts);
 	}
 
-	command = g_strdup_printf ("\"%s" OPT_NAME "\" -f %s -o \"%s\" \"%s\"", acfg->aot_opts.llvm_path, opts, optbc, tempbc);
-	aot_printf (acfg, "Executing opt: %s\n", command);
-	if (execute_system (command) != 0)
+	tool_path = get_llvm_opt_path (&acfg->aot_opts);
+	command = g_strdup_printf ("%s -f %s -o \"%s\" \"%s\"", tool_path, opts, optbc, tempbc);
+	g_free (tool_path);
+
+	if (execute_system (acfg, command, LLVM_OPT_COMMAND) != 0)
 		return FALSE;
 	g_free (opts);
 
@@ -10875,10 +11224,11 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (acfg->aot_opts.llvm_only) {
 		/* Use the stock clang from xcode */
 		// FIXME: arch
-		command = g_strdup_printf ("%s -fexceptions -fpic -O2 -fno-optimize-sibling-calls -Wno-override-module -c -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.clangxx, acfg->llvm_ofile, acfg->tmpbasename);
+		tool_path = get_llvm_clang_path (&acfg->aot_opts);
+		command = g_strdup_printf ("%s -fexceptions -fpic -O2 -fno-optimize-sibling-calls -Wno-override-module -c -o \"%s\" \"%s.opt.bc\"", tool_path, acfg->llvm_ofile, acfg->tmpbasename);
+		g_free (tool_path);
 
-		aot_printf (acfg, "Executing clang: %s\n", command);
-		if (execute_system (command) != 0)
+		if (execute_system (acfg, command, LLVM_CLANG_COMMAND) != 0)
 			return FALSE;
 		return TRUE;
 	}
@@ -10937,12 +11287,12 @@ emit_llvm_file (MonoAotCompile *acfg)
 		g_string_append_printf (acfg->llc_args, " -mattr=%s", acfg->aot_opts.llvm_cpu_attr);
 	}
 
-	command = g_strdup_printf ("\"%s" LLC_NAME "\" %s -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
+	tool_path = get_llvm_llc_path (&acfg->aot_opts);
+	command = g_strdup_printf ("%s %s -o \"%s\" \"%s.opt.bc\"", tool_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
+	g_free (tool_path);
 	g_free (output_fname);
 
-	aot_printf (acfg, "Executing llc: %s\n", command);
-
-	if (execute_system (command) != 0)
+	if (execute_system (acfg, command, LLVM_LLC_COMMAND) != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -11669,7 +12019,7 @@ emit_exception_info (MonoAotCompile *acfg)
 		char *aot_file_path = g_build_filename (dir, aot_file, (const char*)NULL);
 
 		if (g_ensure_directory_exists (aot_file_path) == FALSE) {
-			fprintf (stderr, "AOT : failed to create msym directory: %s\n", aot_file_path);
+			aot_printerr ("AOT : failed to create msym directory: %s\n", aot_file_path);
 			exit (1);
 		}
 
@@ -13091,7 +13441,7 @@ collect_methods (MonoAotCompile *acfg)
 				  (method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
 				  (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))) {
 				if (!mono_debug_lookup_method (method)) {
-					fprintf (stderr, "Method %s has no debug info, probably the .mdb file for the assembly is missing.\n", mono_method_get_full_name (method));
+					aot_printerrf (acfg, "Method %s has no debug info, probably the .mdb file for the assembly is missing.\n", mono_method_get_full_name (method));
 					exit (1);
 				}
 			}
@@ -13217,15 +13567,6 @@ compile_methods (MonoAotCompile *acfg)
 #endif
 }
 
-static int
-compile_asm (MonoAotCompile *acfg)
-{
-	char *command, *objfile;
-	char *outfile_name, *tmp_outfile_name, *llvm_ofile;
-	const char *tool_prefix = acfg->aot_opts.tool_prefix ? acfg->aot_opts.tool_prefix : "";
-	const char *as_prefix = acfg->aot_opts.as_prefix ? acfg->aot_opts.as_prefix : tool_prefix;
-	char *ld_flags = acfg->aot_opts.ld_flags ? acfg->aot_opts.ld_flags : g_strdup("");
-
 #ifdef TARGET_WIN32_MSVC
 #define AS_OPTIONS "--target=x86_64-pc-windows-msvc -c -x assembler"
 #elif defined(TARGET_AMD64) && !defined(TARGET_MACH)
@@ -13250,11 +13591,27 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_NAME "as"
 #endif
 
-#ifdef TARGET_WIN32_MSVC
-#define AS_OBJECT_FILE_SUFFIX "obj"
-#else
-#define AS_OBJECT_FILE_SUFFIX "o"
-#endif
+static char *
+get_assembler_path (MonoAotOptions *aot_options)
+{
+	const char *tool_prefix = aot_options->tool_prefix ? aot_options->tool_prefix : "";
+	const char *as_prefix = aot_options->as_prefix ? aot_options->tool_prefix : tool_prefix;
+	return create_tool_path (as_prefix, AS_NAME);
+}
+
+static char *
+get_strip_path (MonoAotOptions *aot_options)
+{
+	const char *tool_prefix = aot_options->tool_prefix ? aot_options->tool_prefix : "";
+	return create_tool_path (tool_prefix, "strip");
+}
+
+static char *
+get_dsymutil_path (MonoAotOptions *aot_options)
+{
+	const char *tool_prefix = aot_options->tool_prefix ? aot_options->tool_prefix : "";
+	return create_tool_path (tool_prefix, "dsymutil");
+}
 
 #if defined(__ppc__) && defined(TARGET_MACH)
 #define LD_NAME "gcc"
@@ -13293,6 +13650,39 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_OPTIONS "-Bsymbolic"
 #endif
 
+static char *
+get_linker_path (MonoAotOptions *aot_options)
+{
+	const char *ld_name = aot_options->ld_name;
+
+	if (ld_name == NULL)
+#ifdef LD_NAME
+		ld_name = LD_NAME;
+#else
+		ld_name = "ld";
+#endif
+
+	if (aot_options->tool_prefix)
+		return create_tool_path (aot_options->tool_prefix, ld_name);
+	else if (aot_options->llvm_only)
+		return create_tool_path (aot_options->clangxx, "");
+	else
+		return create_tool_path (aot_options->tool_prefix, ld_name);
+}
+
+#ifdef TARGET_WIN32_MSVC
+#define AS_OBJECT_FILE_SUFFIX "obj"
+#else
+#define AS_OBJECT_FILE_SUFFIX "o"
+#endif
+
+static int
+compile_asm (MonoAotCompile *acfg)
+{
+	char *tool_path, *command, *objfile;
+	char *outfile_name, *tmp_outfile_name, *llvm_ofile;
+	char *ld_flags = acfg->aot_opts.ld_flags ? acfg->aot_opts.ld_flags : g_strdup("");
+
 	if (acfg->aot_opts.asm_only) {
 		aot_printf (acfg, "Output file: '%s'.\n", acfg->tmpfname);
 		if (acfg->aot_opts.static_link)
@@ -13314,23 +13704,26 @@ compile_asm (MonoAotCompile *acfg)
 #ifdef TARGET_OSX
 	g_string_append (acfg->as_args, "-c -x assembler ");
 #endif
-
-	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
+	tool_path = get_assembler_path (&acfg->aot_opts);
+	command = g_strdup_printf ("%s %s %s -o %s %s", tool_path, AS_OPTIONS,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (objfile), wrap_path (acfg->tmpfname));
-	aot_printf (acfg, "Executing the native assembler: %s\n", command);
-	if (execute_system (command) != 0) {
+	g_free (tool_path);
+
+	if (execute_system (acfg, command, ASM_COMMAND) != 0) {
 		g_free (command);
 		g_free (objfile);
 		return 1;
 	}
 
 	if (acfg->llvm && !acfg->llvm_owriter) {
-		command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
+		tool_path = get_assembler_path (&acfg->aot_opts);
+		command = g_strdup_printf ("%s %s %s -o %s %s", tool_path, AS_OPTIONS,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (acfg->llvm_ofile), wrap_path (acfg->llvm_sfile));
-		aot_printf (acfg, "Executing the native assembler: %s\n", command);
-		if (execute_system (command) != 0) {
+		g_free (tool_path);
+
+		if (execute_system (acfg, command, ASM_COMMAND) != 0) {
 			g_free (command);
 			g_free (objfile);
 			return 1;
@@ -13365,39 +13758,30 @@ compile_asm (MonoAotCompile *acfg)
 	if (acfg->aot_opts.llvm_only)
 		ld_flags = g_strdup_printf ("%s %s", ld_flags, "-lstdc++");
 
+	tool_path = get_linker_path (&acfg->aot_opts);
+
 #ifdef TARGET_WIN32_MSVC
 	g_assert (tmp_outfile_name != NULL);
 	g_assert (objfile != NULL);
-	command = g_strdup_printf ("\"%s%s\" %s %s /OUT:%s %s %s", tool_prefix, LD_NAME,
+	command = g_strdup_printf ("%s %s %s /OUT:%s %s %s", tool_path,
 			acfg->aot_opts.nodebug ? LD_OPTIONS : LD_DEBUG_OPTIONS, ld_flags, wrap_path (tmp_outfile_name), wrap_path (objfile), wrap_path (llvm_ofile));
 #else
 	GString *str;
-
 	str = g_string_new ("");
-	const char *ld_binary_name = acfg->aot_opts.ld_name;
 #if defined(LD_NAME)
-	if (ld_binary_name == NULL) {
-		ld_binary_name = LD_NAME;
-	}
 	if (acfg->aot_opts.tool_prefix)
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+		g_string_append_printf (str, "%s %s", tool_path, LD_OPTIONS);
 	else if (acfg->aot_opts.llvm_only)
-		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
+		g_string_append_printf (str, "%s", tool_path);
 	else
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+		g_string_append_printf (str, "%s %s", tool_path, LD_OPTIONS);
 #else
-	if (ld_binary_name == NULL) {
-		ld_binary_name = "ld";
-	}
-
 	// Default (linux)
 	if (acfg->aot_opts.tool_prefix)
 		/* Cross compiling */
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
-	else if (acfg->aot_opts.llvm_only)
-		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
+		g_string_append_printf (str, "%s %s", tool_path, LD_OPTIONS);
 	else
-		g_string_append_printf (str, "\"%s%s\"", tool_prefix, ld_binary_name);
+		g_string_append_printf (str, "%s", tool_path);
 	g_string_append_printf (str, " -shared");
 #endif
 	g_string_append_printf (str, " -o %s %s %s %s",
@@ -13410,8 +13794,9 @@ compile_asm (MonoAotCompile *acfg)
 
 	command = g_string_free (str, FALSE);
 #endif
-	aot_printf (acfg, "Executing the native linker: %s\n", command);
-	if (execute_system (command) != 0) {
+	g_free (tool_path);
+
+	if (execute_system (acfg, command, LINKER_COMMAND) != 0) {
 		g_free (tmp_outfile_name);
 		g_free (outfile_name);
 		g_free (command);
@@ -13422,45 +13807,45 @@ compile_asm (MonoAotCompile *acfg)
 
 	g_free (command);
 
-	/*com = g_strdup_printf ("strip --strip-unneeded %s%s", acfg->image->name, MONO_SOLIB_EXT);
-	printf ("Stripping the binary: %s\n", com);
-	execute_system (com);
-	g_free (com);*/
+	/*tool_path = get_strip_path (&acfg->aot_opts);
+	command = g_strdup_printf ("%s --strip-unneeded %s%s", tool_path, acfg->image->name, MONO_SOLIB_EXT);
+	g_free (tool_path)
+	execute_system (acfg, command, STRIP_COMMAND)
+	g_free (command);*/
 
 #if defined(TARGET_ARM) && !defined(TARGET_MACH)
 	/*
 	 * gas generates 'mapping symbols' each time code and data is mixed, which
 	 * happens a lot in emit_and_reloc_code (), so we need to get rid of them.
 	 */
-	command = g_strdup_printf ("\"%sstrip\" --strip-symbol=\\$a --strip-symbol=\\$d %s", tool_prefix, wrap_path(tmp_outfile_name));
-	aot_printf (acfg, "Stripping the binary: %s\n", command);
-	if (execute_system (command) != 0) {
+	tool_path = get_strip_path (&acfg->aot_opts);
+	command = g_strdup_printf ("%s --strip-symbol=\\$a --strip-symbol=\\$d %s", tool_path, wrap_path (tmp_outfile_name));
+	g_free (tool_path);
+
+	if (execute_system (acfg, command, STRIP_COMMAND) != 0) {
 		g_free (tmp_outfile_name);
 		g_free (outfile_name);
 		g_free (command);
 		g_free (objfile);
 		return 1;
 	}
+
+	g_free (command);
 #endif
 
-	if (0 != rename (tmp_outfile_name, outfile_name)) {
-		if (G_FILE_ERROR_EXIST == g_file_error_from_errno (errno)) {
-			/* Since we are rebuilding the module we need to be able to replace any old copies. Remove old file and retry rename operation. */
-			unlink (outfile_name);
-			rename (tmp_outfile_name, outfile_name);
-		}
-	}
+	execute_unlink (outfile_name);
+	execute_rename (tmp_outfile_name, outfile_name);
 
 #if defined(TARGET_MACH)
-	command = g_strdup_printf ("dsymutil \"%s\"", outfile_name);
-	aot_printf (acfg, "Executing dsymutil: %s\n", command);
-	if (execute_system (command) != 0) {
+	tool_path = get_dsymutil_path (&acfg->aot_opts);
+	command = g_strdup_printf ("%s \"%s\"", tool_path, outfile_name);
+	if (execute_system (acfg, command, DSYMUTIL_COMMAND) != 0) {
 		return 1;
 	}
 #endif
 
 	if (!acfg->aot_opts.save_temps)
-		unlink (objfile);
+		execute_unlink (objfile);
 
 	g_free (tmp_outfile_name);
 	g_free (outfile_name);
@@ -13519,7 +13904,7 @@ load_profile_file (MonoAotCompile *acfg, char *filename)
 
 	infile = fopen (filename, "rb");
 	if (!infile) {
-		fprintf (stderr, "Unable to open file '%s': %s.\n", filename, strerror (errno));
+		aot_printerrf (acfg, "Unable to open file '%s': %s.\n", filename, strerror (errno));
 		exit (1);
 	}
 
@@ -14337,6 +14722,7 @@ aot_opts_free (MonoAotOptions *aot_opts)
 	g_free (aot_opts->clangxx);
 	g_free (aot_opts->depfile);
 	g_free (aot_opts->runtime_init_callback);
+	g_free (aot_opts->driver_log_file);
 }
 
 static void
@@ -15631,8 +16017,12 @@ emit_aot_image (MonoAotCompile *acfg)
 		aot_dump (acfg);
 
 	if (!acfg->aot_opts.save_temps && acfg->temp_dir_to_delete) {
+#ifdef HOST_WIN32
+		char *command = g_strdup_printf ("rmdir /s /q %s", acfg->temp_dir_to_delete);
+#else
 		char *command = g_strdup_printf ("rm -r %s", acfg->temp_dir_to_delete);
-		execute_system (command);
+#endif
+		execute_system (acfg, command, RM_COMMAND);
 		g_free (command);
 	}
 
@@ -15641,22 +16031,188 @@ emit_aot_image (MonoAotCompile *acfg)
 	return 0;
 }
 
+static gboolean
+validate_command_binary(const char *command, const char *tool_path)
+{
+	return strstr (command, tool_path) == command;
+}
+
+static gboolean
+validate_command (MonoAotOptions *aot_options, const char* command, CommandType command_type)
+{
+	char *tool_path = NULL;
+
+	switch (command_type) {
+	case LLVM_OPT_COMMAND :
+		tool_path = get_llvm_opt_path (aot_options);
+		break;
+	case LLVM_LLC_COMMAND :
+		tool_path = get_llvm_llc_path (aot_options);
+		break;
+	case LLVM_CLANG_COMMAND :
+		tool_path = get_llvm_clang_path (aot_options);
+		break;
+	case ASM_COMMAND :
+		tool_path = get_assembler_path (aot_options);
+		break;
+	case STRIP_COMMAND :
+		tool_path = get_strip_path (aot_options);
+		break;
+	case DSYMUTIL_COMMAND :
+		tool_path = get_dsymutil_path (aot_options);
+		break;
+	case LINKER_COMMAND :
+		tool_path = get_linker_path (aot_options);
+		break;
+	default :
+		g_assert_not_reached ();
+	}
+
+	gboolean result = validate_command_binary (command, tool_path);
+	g_free (tool_path);
+	return result;
+}
+
+static int
+execute_command (MonoAotOptions *aot_options, const char *command)
+{
+	CommandType command_type;
+	command = get_execute_command (command, &command_type);
+	if (command) {
+		switch (command_type) {
+		case LLVM_OPT_COMMAND :
+			g_assert (validate_command (aot_options, command, LLVM_OPT_COMMAND));
+			return execute_system (NULL, command, LLVM_OPT_COMMAND);
+		case LLVM_LLC_COMMAND :
+			g_assert (validate_command (aot_options, command, LLVM_LLC_COMMAND));
+			return execute_system (NULL, command, LLVM_LLC_COMMAND);
+		case LLVM_CLANG_COMMAND :
+			g_assert (validate_command (aot_options, command, LLVM_CLANG_COMMAND));
+			return execute_system (NULL, command, LLVM_CLANG_COMMAND);
+		case ASM_COMMAND :
+			g_assert (validate_command (aot_options, command, ASM_COMMAND));
+			return execute_system (NULL, command, ASM_COMMAND);
+		case STRIP_COMMAND :
+			g_assert (validate_command (aot_options, command, STRIP_COMMAND));
+			return execute_system (NULL, command, STRIP_COMMAND);
+		case DSYMUTIL_COMMAND :
+			g_assert (validate_command (aot_options, command, DSYMUTIL_COMMAND));
+			return execute_system (NULL, command, DSYMUTIL_COMMAND);
+		case LINKER_COMMAND :
+			g_assert (validate_command (aot_options, command, LINKER_COMMAND));
+			return execute_system (NULL, command, LINKER_COMMAND);
+		case UNLINK_COMMAND :
+			aot_printerr ("Command not supported by aot compiler driver, skipping: %s", command);
+			break;
+		case RENAME_COMMAND :
+			aot_printerr ("Command not supported by aot compiler driver, skipping: %s", command);
+			break;
+		case RM_COMMAND :
+			aot_printerr ("Command not supported by aot compiler driver, skipping: %s", command);
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	return 1;
+}
+
+static int
+run_as_aot_compiler_driver (MonoAotOptions *aot_options, int argc, const char * const *argv)
+{
+	int res = 1;
+	char aot_compiler_path [1024];
+
+	g_assert (aot_options->driver_mode == DRIVER_MODE_ENABLE);
+	g_assert (!aot_options->driver_log_file);
+
+	if ((!mono_use_llvm && !aot_options->llvm && !aot_options->llvm_only) && (!aot_options->outfile || !aot_options->temp_path)) {
+		aot_printerr ("Running aot compiler in driver mode requires outfile+temp-path aot options.");
+		return res;
+	}
+
+	if ((mono_use_llvm || aot_options->llvm || aot_options->llvm_only) && (!aot_options->outfile || !aot_options->llvm_outfile || !aot_options->temp_path)) {
+		aot_printerr ("Running aot compiler in driver mode requires outfile+llvm-outfile+temp-path aot options.");
+		return res;
+	}
+
+	if (g_module_address((void*)mono_aot_assemblies, aot_compiler_path, sizeof(aot_compiler_path), NULL, NULL, 0, NULL)) {
+		GString *compiler_execute_command_log = g_string_new (NULL);
+		GString *cmd_line = g_string_new (NULL);
+		if (compiler_execute_command_log && cmd_line) {
+			g_string_append_printf (cmd_line, "\"%s\"", aot_compiler_path);
+			g_string_append (cmd_line, " --aot=driver-logfile=stdout");
+			for (int i = 1; cmd_line && i < argc; i++)
+				g_string_append_printf (cmd_line, " \"%s\"", argv [i]);
+
+			if (!execute_compiler_command (cmd_line->str, compiler_execute_command_log)) {
+				gchar **cmds = g_strsplit (compiler_execute_command_log->str ? compiler_execute_command_log->str : "", "\n", 100);
+				gchar *cmd;
+				gboolean execute_succeeded = TRUE;
+
+				for (int i = 0; (cmd = cmds [i]) != NULL && *cmd != '\0'; i++) {
+					if (execute_command (aot_options, cmd)) {
+						execute_succeeded = FALSE;
+						break;
+					}
+				}
+
+				g_strfreev (cmds);
+
+				res = execute_succeeded ? 0 : 1;
+			}
+		}
+
+		g_string_free (cmd_line, TRUE);
+		g_string_free (compiler_execute_command_log, TRUE);
+	} else {
+		aot_printerr ("Error retrieving cross compiler binary path.");
+	}
+
+	return res;
+}
+
 int
-mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opts, const char *aot_options)
+mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opts, const char *aot_options, int orig_argc, const char * const *orig_argv)
 {
 	int res = 0;
 	MonoAotOptions aot_opts;
 
 	init_options (&aot_opts);
 	mono_aot_parse_options (aot_options, &aot_opts);
+
+	if (aot_opts.driver_mode == DRIVER_MODE_ENABLE) {
+		res = run_as_aot_compiler_driver (&aot_opts, orig_argc, orig_argv);
+		goto early_exit;
+	}
+
+	if (aot_opts.driver_log_file) {
+		if (strstr(aot_opts.driver_log_file, "stdout")) {
+			driver_log_file_fd = g_dup (fileno (stdout));
+		} else {
+#ifdef HOST_WIN32
+			driver_log_file_fd = g_open (aot_opts.driver_log_file, O_CREAT | O_RDWR, _S_IREAD | _S_IWRITE);
+#else
+			driver_log_file_fd = g_open (aot_opts.driver_log_file, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+#endif
+		}
+
+		if (driver_log_file_fd == -1) {
+			aot_printerr ("Error (%d) opening driver log file: %s", errno, aot_opts.driver_log_file);
+			res = 1;
+			goto early_exit;
+		}
+	}
+
 	if (aot_opts.direct_extern_calls && !(aot_opts.llvm && aot_opts.static_link)) {
-		fprintf (stderr, "The 'direct-extern-calls' option requires the 'llvm' and 'static' options.\n");
+		aot_printerr ("The 'direct-extern-calls' option requires the 'llvm' and 'static' options.\n");
 		res = 1;
 		goto early_exit;
 	}
 
 	if (aot_opts.runtime_init_callback != NULL && !aot_opts.static_link) {
-		fprintf (stderr, "The 'runtime-init-callback' option requires the 'static' option.\n");
+		aot_printerr ("The 'runtime-init-callback' option requires the 'static' option.\n");
 		res = 1;
 		goto early_exit;
 	}
@@ -15671,7 +16227,7 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 			}
 		}
 		if (dedup_aindex == -1) {
-			fprintf (stderr, "Can't find --dedup-include assembly '%s' among the assemblies to be compiled.\n", aot_opts.dedup_include);
+			aot_printerr ("Can't find --dedup-include assembly '%s' among the assemblies to be compiled.\n", aot_opts.dedup_include);
 			res = 1;
 			goto early_exit;
 		}
@@ -15688,7 +16244,7 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 
 	if (aot_opts.trimming_eligible_methods_outfile) {
 		if (g_ensure_directory_exists (aot_opts.trimming_eligible_methods_outfile) == FALSE) {
-			fprintf (stderr, "AOT : failed to create the directory to save the trimmable method names: %s\n", aot_opts.trimming_eligible_methods_outfile);
+			aot_printerr ("AOT : failed to create the directory to save the trimmable method names: %s\n", aot_opts.trimming_eligible_methods_outfile);
 			exit (1);
 		}
 	}
@@ -15696,13 +16252,19 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 	for (int i = 0; i < nassemblies; ++i) {
 		res = aot_assembly (assemblies [i], jit_opts, &aot_opts);
 		if (res != 0) {
-			fprintf (stderr, "AOT of image %s failed.\n", assemblies [i]->image->name);
+			aot_printerr ("AOT of image %s failed.\n", assemblies [i]->image->name);
 			res = 1;
 			goto early_exit;
 		}
 	}
 
 early_exit:
+
+	if (driver_log_file_fd != -1) {
+		g_close (driver_log_file_fd);
+		driver_log_file_fd = -1;
+	}
+
 	aot_opts_free (&aot_opts);
 	return res;
 }
@@ -15750,7 +16312,7 @@ mono_aot_get_method_index (MonoMethod *method)
 }
 
 int
-mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 opts, const char *aot_options)
+mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 opts, const char *aot_options, int orig_argc, const char * const *orig_argv)
 {
 	return 0;
 }

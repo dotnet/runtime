@@ -133,6 +133,9 @@ static const gint16 opt_names [] = {
 
 #define EXCLUDED_FROM_ALL (MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
 
+static int mono_main_argc;
+static const char * const *mono_main_argv;
+
 static char *mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend);
 static char *mono_parse_response_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend);
 
@@ -1421,7 +1424,7 @@ main_thread_handler (gpointer user_data)
 			assemblies [i] = assembly;
 		}
 
-		res = mono_aot_assemblies (assemblies, main_args->argc, main_args->opts, main_args->aot_options);
+		res = mono_aot_assemblies (assemblies, main_args->argc, main_args->opts, main_args->aot_options, mono_main_argc, mono_main_argv);
 		if (res)
 			exit (1);
 		return;
@@ -2071,6 +2074,11 @@ mono_main (int argc, char* argv[])
 	int test_jit_info_table = FALSE;
 #endif
 	ERROR_DECL (error);
+
+	if (!mono_main_argc && !mono_main_argv) {
+		mono_main_argc = argc;
+		mono_main_argv = (const char * const *)argv;
+	}
 
 #ifdef MOONLIGHT
 #ifndef HOST_WIN32
@@ -3100,6 +3108,9 @@ mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboo
 	if (buffer->len != 0)
 		g_ptr_array_add (array, g_strdup (buffer->str));
 	g_string_free (buffer, TRUE);
+
+	mono_main_argc = *ref_argc;
+	mono_main_argv = (const char * const *)*ref_argv;
 
 	merge_parsed_options (array, ref_argc, ref_argv, prepend);
 	g_ptr_array_free (array, TRUE);
