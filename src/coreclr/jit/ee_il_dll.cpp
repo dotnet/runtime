@@ -1149,7 +1149,7 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
     args->hotCodeSize                 = roDataOffset + args->roDataSize;
     args->roDataSize                  = 0;
 
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     info.compCompHnd->allocMem(args);
 

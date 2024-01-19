@@ -1423,7 +1423,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         assert(callType == EC_FUNC_TOKEN);
         assert(addr != NULL);
 
-        addr = (void*)(((size_t)addr) + (isJump ? 0 : 1)); // NOTE: low-bit0 is used for jirl ra/r0,rd,0
+        addr = (void*)(((size_t)addr) + (isJump ? 0 : 1)); // NOTE: low-bit0 is used for jalr ra/r0,rd,0
         id->idAddr()->iiaAddr = (BYTE*)addr;
 
         if (emitComp->opts.compReloc)
