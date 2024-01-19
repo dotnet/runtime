@@ -129,13 +129,40 @@ namespace System.Globalization
             return idx;
         }
 
-        // chars that are ignored by ICU hashing algorithm but not ignored by invariant hashing
-        private char[] emptyCharsToRemove = {
-            '\u200d', '\u200b', '\u200c', '\uFEFF', '\u200E', '\u200F',
-            '\u2060', '\u2063', '\u2061', '\u2062', '\u2064', '\u180E',
-            '\u202A', '\u202B', '\u202D', '\u202E', '\u2066', '\u2067',
-            '\u2068', '\u2069', '\u202C'
-        };
+        // there are chars that are ignored by ICU hashing algorithm but not ignored by invariant hashing
+        // Control: 1105 (out of 1105)
+        // Format: 697 (out of 731)
+        // OtherPunctuation: 6919 (out of 7004)
+        // SpaceSeparator: 289 (out of 289)
+        // OpenPunctuation: 1275 (out of 1343)
+        // ClosePunctuation: 1241 (out of 1309)
+        // DashPunctuation: 408 (out of 425)
+        // ConnectorPunctuation: 170 (out of 170)
+        // InitialQuotePunctuation: 204 (out of 204)
+        // FinalQuotePunctuation: 170 (out of 170)
+        // LineSeparator: 17 (out of 17)
+        // ParagraphSeparator: 17 (out of 17)
+        // OtherLetter: 34 (out of 784142)
+        // SpacingCombiningMark: 68 (out of 4420)
+        // ModifierLetter: 51 (out of 4012)
+        // EnclosingMark: 85 (out of 221)
+        // NonSpacingMark: 3281 (out of 18105)
+        // we can skip them all (~1027k chars) by checking for the remining UnicodeCategories (~291k chars)
+        // overskipping resutls in less collisions which is not a problem
+        private static bool ShouldNotBeSkipped(UnicodeCategory category) =>
+            category == UnicodeCategory.LowercaseLetter ||
+            category == UnicodeCategory.UppercaseLetter ||
+            category == UnicodeCategory.TitlecaseLetter ||
+            category == UnicodeCategory.LetterNumber ||
+            category == UnicodeCategory.OtherNumber ||
+            category == UnicodeCategory.Control ||
+            category == UnicodeCategory.Surrogate ||
+            category == UnicodeCategory.PrivateUse ||
+            category == UnicodeCategory.MathSymbol ||
+            category == UnicodeCategory.CurrencySymbol ||
+            category == UnicodeCategory.ModifierSymbol ||
+            category == UnicodeCategory.OtherSymbol ||
+            category == UnicodeCategory.OtherNotAssigned;
 
         private ReadOnlySpan<char> SanitizeForInvariantHash(ReadOnlySpan<char> source, CompareOptions options)
         {
@@ -143,7 +170,8 @@ namespace System.Globalization
             int resultIndex = 0;
             foreach (char c in source)
             {
-                if (Array.IndexOf(emptyCharsToRemove, c) == -1)
+                UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (ShouldNotBeSkipped(category))
                 {
                     result[resultIndex++] = c;
                 }
