@@ -1628,6 +1628,7 @@ namespace System.Globalization
 
 #if TARGET_BROWSER || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
         private static string GetPNSEText(string funcName) => SR.Format(SR.PlatformNotSupported_HybridGlobalization, funcName);
+        private static string GetPNSEWithReason(string funcName, string reason) => SR.Format(SR.PlatformNotSupportedWithReason_HybridGlobalization, funcName, reason);
 #endif
     }
 }

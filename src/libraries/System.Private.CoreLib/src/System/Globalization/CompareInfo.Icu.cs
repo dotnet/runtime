@@ -697,7 +697,7 @@ namespace System.Globalization
             if (GlobalizationMode.Hybrid)
             {
                 if (!_isInvariantCulture)
-                    throw new PlatformNotSupportedException(GetPNSEText("CreateSortKey"));
+                    throw new PlatformNotSupportedException(GetPNSEWithReason("CreateSortKey", "non-invariant culture"));
                 return InvariantCreateSortKey(source, options);
             }
 #endif
@@ -757,7 +757,7 @@ namespace System.Globalization
             if (GlobalizationMode.Hybrid)
             {
                 if (!_isInvariantCulture)
-                    throw new PlatformNotSupportedException(GetPNSEText("GetSortKey"));
+                    throw new PlatformNotSupportedException(GetPNSEWithReason("GetSortKey", "non-invariant culture"));
                 return InvariantGetSortKey(source, destination, options);
             }
 #endif
@@ -808,7 +808,7 @@ namespace System.Globalization
             if (GlobalizationMode.Hybrid)
             {
                 if (!_isInvariantCulture)
-                    throw new PlatformNotSupportedException(GetPNSEText("GetSortKeyLength"));
+                    throw new PlatformNotSupportedException(GetPNSEWithReason("GetSortKeyLength", "non-invariant culture"));
                 return InvariantGetSortKeyLength(source, options);
             }
 #endif
@@ -866,7 +866,7 @@ namespace System.Globalization
             {
                 if (!_isInvariantCulture && !LocalizedHashCodeSupportsCompareOptions(options))
                 {
-                    throw new PlatformNotSupportedException(GetPNSEText("GetHashCode"));
+                    throw new PlatformNotSupportedException(GetPNSEWithReason("GetHashCode", "non-invariant culture with CompareOptions different than None or IgnoreCase"));
                 }
 
                 // JS cannot create locale-sensitive HashCode, use invaraint functions instead
