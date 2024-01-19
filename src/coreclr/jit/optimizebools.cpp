@@ -1902,13 +1902,7 @@ PhaseStatus Compiler::optOptimizeBools()
                 continue;
             }
 
-            // If the false target is not the next block, we're done
-
             BasicBlock* b2 = b1->GetFalseTarget();
-            if (!b1->NextIs(b2))
-            {
-                break;
-            }
 
             // The next block must not be marked as BBF_DONT_REMOVE
             if (b2->HasFlag(BBF_DONT_REMOVE))
