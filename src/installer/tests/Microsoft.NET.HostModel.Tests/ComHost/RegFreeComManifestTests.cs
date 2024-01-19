@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Xml.Linq;
+
+using Microsoft.DotNet.CoreSetup.Test;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Microsoft.NET.HostModel.ComHost.Tests
@@ -20,19 +19,19 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
         [Fact]
         public void RegFreeComManifestCorrectlyIncludesComHostFile()
         {
-            using TestDirectory directory = TestDirectory.Create();
+            using TestArtifact directory = TestArtifact.Create(nameof(RegFreeComManifestCorrectlyIncludesComHostFile));
             JObject clsidMap = new JObject
             {
             };
 
-            string clsidmapPath = Path.Combine(directory.Path, "test.clsidmap");
+            string clsidmapPath = Path.Combine(directory.Location, "test.clsidmap");
             string json = JsonConvert.SerializeObject(clsidMap);
 
             string comHostName = "comhost.dll";
 
             File.WriteAllText(clsidmapPath, json);
 
-            string regFreeComManifestPath = Path.Combine(directory.Path, "test.manifest");
+            string regFreeComManifestPath = Path.Combine(directory.Location, "test.manifest");
 
             RegFreeComManifest.CreateManifestFromClsidmap("assemblyName", comHostName, "1.0.0.0", clsidmapPath, regFreeComManifestPath);
 
@@ -49,7 +48,7 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
         [Fact]
         public void EntryInClsidMapAddedToRegFreeComManifest()
         {
-            using TestDirectory directory = TestDirectory.Create();
+            using TestArtifact directory = TestArtifact.Create(nameof(EntryInClsidMapAddedToRegFreeComManifest));
             string guid = "{190f1974-fa98-4922-8ed4-cf748630abbe}";
             string assemblyName = "ComLibrary";
             string typeName = "ComLibrary.Server";
@@ -62,13 +61,13 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
                 }
             };
 
-            string clsidmapPath = Path.Combine(directory.Path, "test.clsidmap");
+            string clsidmapPath = Path.Combine(directory.Location, "test.clsidmap");
             string json = JsonConvert.SerializeObject(clsidMap);
             string comHostName = "comhost.dll";
 
             File.WriteAllText(clsidmapPath, json);
 
-            string regFreeComManifestPath = Path.Combine(directory.Path, "test.manifest");
+            string regFreeComManifestPath = Path.Combine(directory.Location, "test.manifest");
 
             RegFreeComManifest.CreateManifestFromClsidmap(assemblyName, comHostName, assemblyVersion, clsidmapPath, regFreeComManifestPath);
 
@@ -84,7 +83,7 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
         [Fact]
         public void EntryInClsidMapAddedToRegFreeComManifestIncludesProgId()
         {
-            using TestDirectory directory = TestDirectory.Create();
+            using TestArtifact directory = TestArtifact.Create(nameof(EntryInClsidMapAddedToRegFreeComManifestIncludesProgId));
             string guid = "{190f1974-fa98-4922-8ed4-cf748630abbe}";
             string assemblyName = "ComLibrary";
             string typeName = "ComLibrary.Server";
@@ -98,13 +97,13 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
                 }
             };
 
-            string clsidmapPath = Path.Combine(directory.Path, "test.clsidmap");
+            string clsidmapPath = Path.Combine(directory.Location, "test.clsidmap");
             string json = JsonConvert.SerializeObject(clsidMap);
             string comHostName = "comhost.dll";
 
             File.WriteAllText(clsidmapPath, json);
 
-            string regFreeComManifestPath = Path.Combine(directory.Path, "test.manifest");
+            string regFreeComManifestPath = Path.Combine(directory.Location, "test.manifest");
 
             RegFreeComManifest.CreateManifestFromClsidmap(assemblyName, comHostName, assemblyVersion, clsidmapPath, regFreeComManifestPath);
 

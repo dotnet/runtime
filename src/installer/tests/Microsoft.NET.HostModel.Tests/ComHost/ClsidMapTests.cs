@@ -107,8 +107,8 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
 
         private JObject CreateClsidMap(TestApp library)
         {
-            using var testDirectory = TestDirectory.Create();
-            string clsidMapPath = Path.Combine(testDirectory.Path, "test.clsidmap");
+            using var testDirectory = TestArtifact.Create("clsidmap");
+            string clsidMapPath = Path.Combine(testDirectory.Location, "test.clsidmap");
 
             using (var assemblyStream = new FileStream(library.AppDll, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.Read))
             using (PEReader peReader = new PEReader(assemblyStream))
