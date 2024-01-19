@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.CoreSetup.Test;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Text;
+
+using Microsoft.DotNet.CoreSetup.Test;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Microsoft.NET.HostModel.ComHost.Tests
@@ -26,25 +25,25 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
         [Fact]
         public void PublicComVisibleTypeWithGuidAdded()
         {
-            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibraryFixture);
+            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibrary);
             JProperty comVisibleEntry = clsidMap.Property(SharedTestState.ComVisibleGuid);
             Assert.NotNull(comVisibleEntry);
             JObject entry = (JObject)comVisibleEntry.Value;
             Assert.Equal(SharedTestState.ComVisibleTypeName, entry.Property("type").Value.ToString());
-            Assert.Equal(SharedTestState.ComVisibleAssemblyName, entry.Property("assembly").Value.ToString());
+            Assert.Equal(System.Reflection.AssemblyName.GetAssemblyName(sharedTestState.ComLibrary.AppDll).FullName, entry.Property("assembly").Value.ToString());
         }
 
         [Fact]
         public void PublicComVisibleTypeWithoutGuidThrows()
         {
-            var exception = Assert.Throws<MissingGuidException>(() => CreateClsidMap(sharedTestState.ComLibraryMissingGuidFixture));
+            var exception = Assert.Throws<MissingGuidException>(() => CreateClsidMap(sharedTestState.ComLibraryMissingGuid));
             Assert.Equal(SharedTestState.MissingGuidTypeName, exception.TypeName);
         }
 
         [Fact]
         public void PublicNestedTypeOfPublicTypeAdded()
         {
-            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibraryFixture);
+            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibrary);
             JProperty comVisibleEntry = clsidMap.Property(SharedTestState.ComVisibleNestedGuid);
             Assert.NotNull(comVisibleEntry);
             JObject entry = (JObject)comVisibleEntry.Value;
@@ -54,7 +53,7 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
         [Fact]
         public void NonPublicTypeNotAdded()
         {
-            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibraryFixture);
+            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibrary);
             JProperty comVisibleEntry = clsidMap.Property(SharedTestState.ComVisibleNonPublicGuid);
             Assert.Null(comVisibleEntry);
         }
@@ -62,7 +61,7 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
         [Fact]
         public void PublicNestedTypeOfNonPublicTypeNotAdded()
         {
-            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibraryFixture);
+            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibrary);
             JProperty comVisibleEntry = clsidMap.Property(SharedTestState.ComVisibleNonPublicNestedGuid);
             Assert.Null(comVisibleEntry);
         }
@@ -70,7 +69,7 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
         [Fact]
         public void PublicComVisibleTypeWithDuplicateGuidThrows()
         {
-            var exception = Assert.Throws<ConflictingGuidException>(() => CreateClsidMap(sharedTestState.ComLibraryConflictingGuidFixture));
+            var exception = Assert.Throws<ConflictingGuidException>(() => CreateClsidMap(sharedTestState.ComLibraryConflictingGuid));
             Assert.Equal(Guid.Parse(SharedTestState.ConflictingGuid), exception.Guid);
             Assert.Equal(SharedTestState.ConflictingGuidTypeName1, exception.TypeName1);
             Assert.Equal(SharedTestState.ConflictingGuidTypeName2, exception.TypeName2);
@@ -79,7 +78,7 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
         [Fact]
         public void DefaultProgIdIsTypeName()
         {
-            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibraryFixture);
+            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibrary);
             JProperty comVisibleEntry = clsidMap.Property(SharedTestState.ComVisibleGuid);
             Assert.NotNull(comVisibleEntry);
             JObject entry = (JObject)comVisibleEntry.Value;
@@ -89,7 +88,7 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
         [Fact]
         public void ExplicitProgIdUsed()
         {
-            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibraryFixture);
+            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibrary);
             JProperty comVisibleEntry = clsidMap.Property(SharedTestState.ComVisibleCustomProgIdGuid);
             Assert.NotNull(comVisibleEntry);
             JObject entry = (JObject)comVisibleEntry.Value;
@@ -99,19 +98,19 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
         [Fact]
         public void ExplicitlyEmptyProgIdNotInClsidMap()
         {
-            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibraryFixture);
+            JObject clsidMap = CreateClsidMap(sharedTestState.ComLibrary);
             JProperty comVisibleEntry = clsidMap.Property(SharedTestState.ExplicitNoProgIdGuid);
             Assert.NotNull(comVisibleEntry);
             JObject entry = (JObject)comVisibleEntry.Value;
             Assert.Null(entry.Property("progid"));
         }
 
-        private JObject CreateClsidMap(TestProjectFixture project)
+        private JObject CreateClsidMap(TestApp library)
         {
             using var testDirectory = TestDirectory.Create();
             string clsidMapPath = Path.Combine(testDirectory.Path, "test.clsidmap");
 
-            using (var assemblyStream = new FileStream(project.TestProject.AppDll, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.Read))
+            using (var assemblyStream = new FileStream(library.AppDll, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.Read))
             using (PEReader peReader = new PEReader(assemblyStream))
             {
                 if (peReader.HasMetadata)
@@ -126,12 +125,10 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
             {
                 return JObject.Load(clsidMapReader);
             }
-
         }
 
         public class SharedTestState : IDisposable
         {
-            public const string ComVisibleAssemblyName = "ComLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
             public const string NotComVisibleGuid = "{6e30943e-b8ab-4e02-a904-9f1b5bb1c97d}";
             public const string ComVisibleGuid = "{36e75747-aecd-43bf-9082-1a605889c762}";
             public const string ComVisibleTypeName = "ComLibrary.ComVisible";
@@ -151,31 +148,20 @@ namespace Microsoft.NET.HostModel.ComHost.Tests
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-
-                ComLibraryFixture = new TestProjectFixture("ComLibrary", RepoDirectories)
-                    .EnsureRestored()
-                    .BuildProject();
-
-                ComLibraryMissingGuidFixture = new TestProjectFixture("ComLibraryMissingGuid", RepoDirectories)
-                    .EnsureRestored()
-                    .BuildProject();
-
-                ComLibraryConflictingGuidFixture = new TestProjectFixture("ComLibraryConflictingGuid", RepoDirectories)
-                    .EnsureRestored()
-                    .BuildProject();
+                ComLibrary = TestApp.CreateFromBuiltAssets("ComLibrary");
+                ComLibraryMissingGuid = TestApp.CreateFromBuiltAssets("ComLibraryMissingGuid");
+                ComLibraryConflictingGuid = TestApp.CreateFromBuiltAssets("ComLibraryConflictingGuid");
             }
 
-            public RepoDirectoriesProvider RepoDirectories { get; }
-            public TestProjectFixture ComLibraryFixture { get; }
-            public TestProjectFixture ComLibraryMissingGuidFixture { get; }
-            public TestProjectFixture ComLibraryConflictingGuidFixture { get; }
+            public TestApp ComLibrary { get; }
+            public TestApp ComLibraryMissingGuid { get; }
+            public TestApp ComLibraryConflictingGuid { get; }
 
             public void Dispose()
             {
-                ComLibraryFixture.Dispose();
-                ComLibraryMissingGuidFixture.Dispose();
-                ComLibraryConflictingGuidFixture.Dispose();
+                ComLibrary?.Dispose();
+                ComLibraryMissingGuid?.Dispose();
+                ComLibraryConflictingGuid?.Dispose();
             }
         }
     }
