@@ -203,9 +203,15 @@ enum insFlags : uint64_t
 
 enum insOpts: unsigned
 {
-    INS_OPTS_NONE,
+    INS_OPTS_NONE = 0,
 
-    INS_OPTS_EVEX_b
+    INS_OPTS_EVEX_eb_er_rd = 1, // Embedded Broadcast or Round down
+
+    INS_OPTS_EVEX_er_ru = 2, // Round up
+
+    INS_OPTS_EVEX_er_rz = 3, // Round towards zero
+
+    INS_OPTS_b_MASK = (INS_OPTS_EVEX_eb_er_rd | INS_OPTS_EVEX_er_ru | INS_OPTS_EVEX_er_rz), // mask for Evex.b related features.
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
