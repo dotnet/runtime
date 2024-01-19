@@ -129,6 +129,12 @@ namespace ILCompiler
             new("--singlewarnassembly") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Generate single AOT/trimming warning for given assembly" };
         public CliOption<string[]> SingleWarnDisabledAssemblies { get; } =
             new("--nosinglewarnassembly") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Expand AOT/trimming warnings for given assembly" };
+        public CliOption<bool> TreatWarningsAsErrors { get; } =
+            new("--warnaserror") { Description = "Treat warnings as errors" };
+        public CliOption<string[]> WarningsAsErrorsEnable { get; } =
+            new("--warnaserr") { Description = "Enable treating specific warnings as errors" };
+        public CliOption<string[]> WarningsAsErrorsDisable { get; } =
+            new("--nowarnaserr") { Description = "Disable treating specific warnings as errors" };
         public CliOption<string[]> DirectPInvokes { get; } =
             new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "PInvoke to call directly" };
         public CliOption<string[]> DirectPInvokeLists { get; } =
@@ -225,6 +231,9 @@ namespace ILCompiler
             Options.Add(NoAotWarn);
             Options.Add(SingleWarnEnabledAssemblies);
             Options.Add(SingleWarnDisabledAssemblies);
+            Options.Add(TreatWarningsAsErrors);
+            Options.Add(WarningsAsErrorsEnable);
+            Options.Add(WarningsAsErrorsDisable);
             Options.Add(DirectPInvokes);
             Options.Add(DirectPInvokeLists);
             Options.Add(MaxGenericCycleDepth);
