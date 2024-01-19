@@ -1409,6 +1409,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             break;
 
+        case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            // Size specifier must be able to fit left-shifted immediate
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()) || !id->idOptionalShift());
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isValidUimm8(emitGetInsSC(id)));                           // iiiiiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            break;
+
         case IF_SVE_ED_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer min/max immediate (unpredicated)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                                   // ddddd
@@ -6314,6 +6323,27 @@ void emitter::emitIns_R_I(instruction     ins,
             ins = INS_sve_mov;
             break;
 
+        case INS_sve_add:
+        case INS_sve_sub:
+        case INS_sve_sqadd:
+        case INS_sve_sqsub:
+        case INS_sve_uqadd:
+        case INS_sve_uqsub:
+        case INS_sve_subr:
+            optionalShift = true;
+            hasShift      = (sopt == INS_SCALABLE_OPTS_SHIFT);
+
+            assert(insOptsScalableStandard(opt));
+            // Size specifier must be able to fit left-shifted immediate
+            assert(!hasShift || insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt) || hasShift);         // h
+            assert(isVectorRegister(reg));                         // ddddd
+            assert(isValidUimm8(imm));                             // iiiiiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt       = IF_SVE_EC_1A;
+            canEncode = true;
+            break;
+
         default:
             unreached();
             break;
@@ -6332,7 +6362,7 @@ void emitter::emitIns_R_I(instruction     ins,
 
     id->idReg1(reg);
 
-    // For instructions with optional shifts (INS_sve_mov, INS_sve_dup, etc.)
+    // For instructions with optional shifts (MOV, DUP, etc.)
     if (optionalShift)
     {
         id->idOptionalShift(hasShift);
@@ -16903,6 +16933,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
 
         case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
+        case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
         {
             code = emitInsCodeSve(ins, fmt);
             code |= (id->idOptionalShift() ? 0x2000 : 0);    // h
@@ -17350,18 +17381,18 @@ void emitter::emitDispFloatImm(ssize_t imm8)
 
 /*****************************************************************************
  *
- *  Display an immediate that is optionally LSL12.
+ *  Display an immediate with an optional left-shift.
  */
-void emitter::emitDispImmOptsLSL12(ssize_t imm, insOpts opt)
+void emitter::emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmount)
 {
-    if (!strictArmAsm && insOptsLSL12(opt))
+    if (!strictArmAsm && hasShift)
     {
-        imm <<= 12;
+        imm <<= shiftAmount;
     }
     emitDispImm(imm, false);
-    if (strictArmAsm && insOptsLSL12(opt))
+    if (strictArmAsm && hasShift)
     {
-        printf(", LSL #12");
+        printf(", LSL #%u", shiftAmount);
     }
 }
 
@@ -18487,7 +18518,7 @@ void emitter::emitDispInsHelp(
 
         case IF_DI_1A: // DI_1A   X.......shiiiiii iiiiiinnnnn.....      Rn       imm(i12,sh)
             emitDispReg(id->idReg1(), size, true);
-            emitDispImmOptsLSL12(emitGetInsSC(id), id->idInsOpt());
+            emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
             emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             break;
 
@@ -18544,7 +18575,7 @@ void emitter::emitDispInsHelp(
             }
             else
             {
-                emitDispImmOptsLSL12(emitGetInsSC(id), id->idInsOpt());
+                emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
             }
             break;
 
@@ -19620,26 +19651,23 @@ void emitter::emitDispInsHelp(
             emitDispFloatImm(emitGetInsSC(id));                 // iiiiiiii
             break;
 
+        // ADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+        // SQADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+        // UQADD <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+        // SUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+        // SUBR <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+        // SQSUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+        // UQSUB <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+        case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+
+            FALLTHROUGH;
         // DUP <Zd>.<T>, #<imm>{, <shift>}
         // MOV <Zd>.<T>, #<imm>{, <shift>}
         case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
-        {
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-            ssize_t imm = emitGetInsSC(id);                     // iiiiiiii
-            if (id->idOptionalShift())                          // h
-            {
-                // Special case for left-shifted zero
-                if (imm == 0)
-                {
-                    printf("#0, LSL #8");
-                    break;
-                }
-
-                imm <<= 8;
-            }
-            emitDispImm(imm, false);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);             // ddddd
+            emitDispImmOptsLSL(emitGetInsSC(id), id->idOptionalShift(), 8); // iiiiiiii, h
             break;
-        }
 
         // SMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>
         // SMIN <Zdn>.<T>, <Zdn>.<T>, #<imm>
@@ -22361,11 +22389,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SVE_DZ_1A: // ........xx...... .............DDD -- sve_int_pn_ptrue
-            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            break;
-
         case IF_SVE_EA_1A: // ........xx...... ...iiiiiiiiddddd -- SVE broadcast floating-point immediate (unpredicated)
+        case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;

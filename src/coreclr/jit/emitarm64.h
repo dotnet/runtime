@@ -41,7 +41,7 @@ void emitDispInst(instruction ins);
 void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false, bool isAddrOffset = false);
 void emitDispFloatZero();
 void emitDispFloatImm(ssize_t imm8);
-void emitDispImmOptsLSL12(ssize_t imm, insOpts opt);
+void emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmount);
 void emitDispCond(insCond cond);
 void emitDispFlags(insCflags flags);
 void emitDispBarrier(insBarrier barrier);
