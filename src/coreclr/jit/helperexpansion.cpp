@@ -1999,10 +1999,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     BasicBlock*    lastBb;
     const unsigned tmpNum = SplitAtTreeAndReplaceItWithLocal(this, block, stmt, call, &firstBb, &lastBb);
     lvaSetClass(tmpNum, expectedCls);
-
-    // Reload the arguments after the split
-    GenTree* objArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-    *pBlock         = lastBb;
+    GenTree* tmpNode = gtNewLclvNode(tmpNum, call->TypeGet());
+    *pBlock          = lastBb;
 
     // We're going to expand this "isinst" like this:
     //
@@ -2011,11 +2009,11 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //
     // nullcheckBb (BBJ_COND):                      [weight: 1.0]
     //     tmp = obj;
-    //     if (obj == null)
+    //     if (tmp == null)
     //         goto lastBlock;
     //
     // typeCheckBb (BBJ_COND):                      [weight: 0.5]
-    //     if (obj->pMT == likelyCls)
+    //     if (tmp->pMT == likelyCls)
     //         goto typeCheckSucceedBb;
     //
     // fallbackBb (BBJ_ALWAYS):                     [weight: <profile>]
@@ -2032,21 +2030,22 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // Block 1: nullcheckBb
     // TODO-InlineCast: assertionprop should leave us a mark that objArg is never null, so we can omit this check
     // it's too late to rely on upstream phases to do this for us (unless we do optRepeat).
-    GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(objArg), gtNewNull());
+    GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, tmpNode, gtNewNull());
     nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
     BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
                                                    debugInfo, lastBb, true);
 
     // The very first statement in the whole expansion is to assign obj to tmp.
     // We assume it's the value we're going to return in most cases.
-    Statement* assignTmp = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(tmpNum, gtCloneExpr(objArg)), debugInfo);
+    GenTree*   originalObj = gtCloneExpr(call->gtArgs.GetUserArgByIndex(1)->GetNode());
+    Statement* assignTmp   = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(tmpNum, originalObj), debugInfo);
     gtSetStmtInfo(assignTmp);
     fgSetStmtSeq(assignTmp);
 
     // Block 2: typeCheckBb
     // TODO-InlineCast: if likelyCls == expectedCls we can consider saving to a local to re-use.
     GenTree* likelyClsNode = gtNewIconEmbClsHndNode(likelyCls);
-    GenTree* mtCheck       = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(objArg)), likelyClsNode);
+    GenTree* mtCheck       = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(tmpNode)), likelyClsNode);
     mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
     GenTree*    jtrue       = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
     BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, lastBb, true);
