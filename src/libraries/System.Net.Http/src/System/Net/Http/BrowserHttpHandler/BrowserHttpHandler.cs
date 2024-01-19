@@ -232,7 +232,7 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> CallFetch()
         {
-            _cancellationToken.ThrowIfCancellationRequested();
+            CancellationHelper.ThrowIfCancellationRequested(_cancellationToken);
 
             BrowserHttpWriteStream? writeStream = null;
             Task fetchPromise;
@@ -258,7 +258,7 @@ namespace System.Net.Http
                     else
                     {
                         byte[] buffer = await _request.Content.ReadAsByteArrayAsync(_cancellationToken).ConfigureAwait(false);
-                        _cancellationToken.ThrowIfCancellationRequested();
+                        CancellationHelper.ThrowIfCancellationRequested(_cancellationToken);
 
                         Memory<byte> bufferMemory = buffer.AsMemory();
                         // http_wasm_fetch_byte makes a copy of the bytes synchronously, so we can un-pin it synchronously
@@ -366,7 +366,7 @@ namespace System.Net.Http
 
         private Task WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
             _controller.ThrowIfDisposed();
 
             // http_wasm_transform_stream_write makes a copy of the bytes synchronously, so we can dispose the handle synchronously

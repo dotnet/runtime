@@ -129,10 +129,8 @@ namespace System.Net.Http
 
         public static async Task CancellationHelper(Task promise, CancellationToken cancellationToken, JSObject jsController)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                throw Http.CancellationHelper.CreateOperationCanceledException(null, cancellationToken);
-            }
+            Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
+
             if (promise.IsCompletedSuccessfully)
             {
                 return;
@@ -156,7 +154,7 @@ namespace System.Net.Http
             }
             catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
             {
-                throw Http.CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+                Http.CancellationHelper.ThrowIfCancellationRequested(oce, cancellationToken);
             }
             catch (JSException jse)
             {
@@ -164,20 +162,14 @@ namespace System.Net.Http
                 {
                     throw Http.CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
                 }
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    throw Http.CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
-                }
+                Http.CancellationHelper.ThrowIfCancellationRequested(jse, cancellationToken);
                 throw new HttpRequestException(jse.Message, jse);
             }
         }
 
         public static async Task<T> CancellationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject jsController)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                throw Http.CancellationHelper.CreateOperationCanceledException(null, cancellationToken);
-            }
+            Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
             if (promise.IsCompletedSuccessfully)
             {
                 return promise.Result;

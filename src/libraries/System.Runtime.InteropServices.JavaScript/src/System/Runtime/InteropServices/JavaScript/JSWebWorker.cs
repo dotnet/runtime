@@ -48,23 +48,28 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal sealed class JSWebWorkerInstance<T> : IDisposable
         {
-            private JSSynchronizationContext? _jsSynchronizationContext;
-            private TaskCompletionSource<T> _taskCompletionSource;
-            private Thread _thread;
-            private CancellationToken _cancellationToken;
+            private readonly TaskCompletionSource<T> _taskCompletionSource;
+            private readonly Thread _thread;
+            private readonly CancellationToken _cancellationToken;
+            private readonly Func<Task<T>> _body;
+
             private CancellationTokenRegistration? _cancellationRegistration;
-            private Func<Task<T>> _body;
+            private JSSynchronizationContext? _jsSynchronizationContext;
             private Task<T>? _resultTask;
             private bool _isDisposed;
 
-            public JSWebWorkerInstance(Func<Task<T>> bodyRes, CancellationToken cancellationToken)
+            public JSWebWorkerInstance(Func<Task<T>> body, CancellationToken cancellationToken)
             {
-                _taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.DenyChildAttach | TaskCreationOptions.RunContinuationsAsynchronously | TaskCreationOptions.HideScheduler);
+                // Task created from this TCS is consumed by external caller, on outer thread.
+                // We don't want the continuations of that task to run on JSWebWorker
+                // only the tasks created inside of the callback should run in JSWebWorker
+                // TODO TaskCreationOptions.HideScheduler ?
+                _taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
                 _thread = new Thread(ThreadMain);
                 _resultTask = null;
                 _cancellationToken = cancellationToken;
                 _cancellationRegistration = null;
-                _body = bodyRes;
+                _body = body;
                 JSHostImplementation.SetHasExternalEventLoop(_thread);
             }
 
@@ -84,10 +89,11 @@ namespace System.Runtime.InteropServices.JavaScript
                         }
                         if (t.IsCanceled)
                         {
-                            throw new OperationCanceledException(self._cancellationToken);
+                            throw new OperationCanceledException("Cancelled while waiting for underlying WebWorker to become available.", self._cancellationToken);
                         }
                         throw t.Exception!;
-                    }, this, _cancellationToken, TaskContinuationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
+                        // ideally this will execute on UI thread quickly: ExecuteSynchronously
+                    }, this, _cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.FromCurrentSynchronizationContext());
                 }
                 else
                 {
@@ -171,6 +177,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Dispose();
             }
 
+            // TODO use https://github.com/dotnet/runtime/pull/97077
             private void PropagateCompletion()
             {
                 if (_resultTask!.IsFaulted)
@@ -186,7 +193,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else if (_resultTask.IsCanceled)
                 {
-                    _taskCompletionSource.TrySetCanceled();
+                    _taskCompletionSource.TrySetCanceled(_cancellationToken);
                 }
                 else
                 {

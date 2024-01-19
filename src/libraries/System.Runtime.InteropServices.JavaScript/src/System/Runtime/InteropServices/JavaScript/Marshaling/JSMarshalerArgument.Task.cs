@@ -49,7 +49,8 @@ namespace System.Runtime.InteropServices.JavaScript
             lock (ctx)
             {
                 PromiseHolder holder = ctx.GetPromiseHolder(slot.GCHandle);
-                TaskCompletionSource tcs = new TaskCompletionSource(holder, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.RunContinuationsAsynchronously);
+                // we want to run the continuations on the original thread which called the JSImport, so RunContinuationsAsynchronously, rather than ExecuteSynchronously
+                TaskCompletionSource tcs = new TaskCompletionSource(holder, TaskCreationOptions.RunContinuationsAsynchronously);
                 ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
                 {
                     if (arguments_buffer == null)
@@ -98,7 +99,8 @@ namespace System.Runtime.InteropServices.JavaScript
             lock (ctx)
             {
                 var holder = ctx.GetPromiseHolder(slot.GCHandle);
-                TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.RunContinuationsAsynchronously);
+                // we want to run the continuations on the original thread which called the JSImport, so RunContinuationsAsynchronously, rather than ExecuteSynchronously
+                TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder, TaskCreationOptions.RunContinuationsAsynchronously);
                 ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
                 {
                     if (arguments_buffer == null)
