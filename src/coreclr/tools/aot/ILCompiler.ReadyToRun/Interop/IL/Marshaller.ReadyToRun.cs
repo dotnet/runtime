@@ -124,13 +124,10 @@ namespace Internal.TypeSystem.Interop
             {
                 // Swift calling convention has strict rules about value types that the JIT does not implement.
                 // Skip stub generation of Swift methods with value types to allow an exception at runtime.
-                if (targetMethod.Signature.ReturnType is { IsValueType: true, IsEnum: false, IsPrimitive: false })
-                {
-                    return true;
-                }
                 foreach (var param in targetMethod.Signature)
                 {
-                    if (param is { IsValueType: true, IsEnum: false, IsPrimitive: false })
+                    if (param is DefType { IsValueType: true, IsEnum: false, IsPrimitive: false } defType
+                        && !VectorFieldLayoutAlgorithm.IsVectorType(paramType))
                     {
                         return true;
                     }
@@ -153,13 +150,10 @@ namespace Internal.TypeSystem.Interop
             {
                 // Swift calling convention has strict rules about value types that the JIT does not implement.
                 // Skip stub generation of Swift methods with value types to allow an exception at runtime.
-                if (methodSig.ReturnType is { IsValueType: true, IsEnum: false, IsPrimitive: false })
-                {
-                    return true;
-                }
                 foreach (var param in methodSig)
                 {
-                    if (param is { IsValueType: true, IsEnum: false, IsPrimitive: false })
+                    if (param is DefType { IsValueType: true, IsEnum: false, IsPrimitive: false } defType
+                        && !VectorFieldLayoutAlgorithm.IsVectorType(paramType))
                     {
                         return true;
                     }
