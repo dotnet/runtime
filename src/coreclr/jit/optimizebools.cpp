@@ -1340,16 +1340,6 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         m_comp->ehUpdateForDeletedBlock(m_b3);
     }
 
-    // Update loop table
-    if (m_comp->optLoopTableValid)
-    {
-        m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b2);
-        if (optReturnBlock)
-        {
-            m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
-        }
-    }
-
     // Update IL range of first block
     m_b1->bbCodeOffsEnd = optReturnBlock ? m_b3->bbCodeOffsEnd : m_b2->bbCodeOffsEnd;
 }

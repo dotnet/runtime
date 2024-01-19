@@ -862,7 +862,6 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
         {
             BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
             newBlk->inheritWeight(insertAfter);
-            newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
             JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
             comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
@@ -897,7 +896,6 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     {
         BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
         newBlk->inheritWeight(insertAfter);
-        newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
         JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
         comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);

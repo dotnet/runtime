@@ -5830,11 +5830,10 @@ void Compiler::RecomputeFlowGraphAnnotations()
 
     fgComputeReachability();
     optSetBlockWeights();
-    optFindLoops();
 
     fgInvalidateDfsTree();
     m_dfsTree = fgComputeDfs();
-    optFindNewLoops();
+    optFindLoops();
 
     if (fgHasLoops)
     {
@@ -5842,13 +5841,6 @@ void Compiler::RecomputeFlowGraphAnnotations()
     }
 
     m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
-
-    // Dominators and the loop table are computed above for old<->new loop
-    // crossreferencing, but they are not actually used for optimization
-    // anymore.
-    optLoopTableValid = false;
-    optLoopTable      = nullptr;
-    optLoopCount      = 0;
 }
 
 /*****************************************************************************/
@@ -9075,7 +9067,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
     fprintf(s_csvFile, "%u,", comp->fgBBcount);
     fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
-    fprintf(s_csvFile, "%u,", comp->optLoopCount);
+    fprintf(s_csvFile, "%u,", comp->optNumNaturalLoopsFound);
     fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
 #if FEATURE_LOOP_ALIGN
 #ifdef DEBUG
@@ -9328,16 +9320,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cCVarSet,    dCVarSet       : Display a "converted" VARSET_TP: the varset is assumed to be tracked variable
  *                                    indices. These are converted to variable numbers and sorted. (Calls
  *                                    dumpConvertedVarSet()).
- *      cLoop,       dLoop          : Display the blocks of a loop, including the trees, given a loop number (call
- *                                    optPrintLoopInfo()).
- *      cLoopPtr,    dLoopPtr       : Display the blocks of a loop, including the trees, given a LoopDsc* (call
- *                                    optPrintLoopInfo()).
- *      cLoops,      dLoops         : Display the loop table (call optPrintLoopTable()).
- *      cNewLoops,   dNewLoops      : Display the loop table (call FlowGraphNaturalLoops::Dump()) with
+ *      cLoops,      dLoops         : Display the loop table (call FlowGraphNaturalLoops::Dump()) with
  *                                    Compiler::m_loops.
- *      cNewLoopsA,  dNewLoopsA     : Display the loop table (call FlowGraphNaturalLoops::Dump()) with a given
+ *      cLoopsA,     dLoopsA        : Display the loop table (call FlowGraphNaturalLoops::Dump()) with a given
  *                                    loops arg.
- *      cNewLoop,    dNewLoop       : Display a single loop (call FlowGraphNaturalLoop::Dump()) with given
+ *      cLoop,       dLoop          : Display a single loop (call FlowGraphNaturalLoop::Dump()) with given
  *                                    loop arg.
  *      cTreeFlags,  dTreeFlags     : Display tree flags for a specified tree.
  *      cVN,         dVN            : Display a ValueNum (call vnPrint()).
@@ -9352,7 +9339,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      dFindTree                   : Find a tree in the IR, specifying a tree id. Sets `dbTree` and `dbTreeBlock`.
  *      dFindStmt                   : Find a Statement in the IR, specifying a statement id. Sets `dbStmt`.
  *      dFindBlock                  : Find a block in the IR, specifying a block number. Sets `dbBlock`.
- *      dFindLoop                   : Find a loop in the loop table, specifying a loop number. Sets `dbLoop`.
+ *      dFindLoop                   : Find a loop in the loop table, specifying a loop index. Sets `dbLoop`.
  */
 
 // Make the debug helpers available (under #ifdef DEBUG) even though they are unreferenced. When the Microsoft
@@ -9392,12 +9379,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:cDoms")
 #pragma comment(linker, "/include:cLiveness")
 #pragma comment(linker, "/include:cCVarSet")
-#pragma comment(linker, "/include:cLoop")
-#pragma comment(linker, "/include:cLoopPtr")
 #pragma comment(linker, "/include:cLoops")
-#pragma comment(linker, "/include:cNewLoops")
-#pragma comment(linker, "/include:cNewLoopsA")
-#pragma comment(linker, "/include:cNewLoop")
+#pragma comment(linker, "/include:cLoopsA")
+#pragma comment(linker, "/include:cLoop")
 #pragma comment(linker, "/include:cTreeFlags")
 #pragma comment(linker, "/include:cVN")
 
@@ -9422,11 +9406,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:dLiveness")
 #pragma comment(linker, "/include:dCVarSet")
 #pragma comment(linker, "/include:dLoop")
-#pragma comment(linker, "/include:dLoopPtr")
 #pragma comment(linker, "/include:dLoops")
-#pragma comment(linker, "/include:dNewLoops")
-#pragma comment(linker, "/include:dNewLoopsA")
-#pragma comment(linker, "/include:dNewLoop")
 #pragma comment(linker, "/include:dTreeFlags")
 #pragma comment(linker, "/include:dVN")
 
@@ -9464,11 +9444,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:_cLiveness")
 #pragma comment(linker, "/include:_cCVarSet")
 #pragma comment(linker, "/include:_cLoop")
-#pragma comment(linker, "/include:_cLoopPtr")
 #pragma comment(linker, "/include:_cLoops")
-#pragma comment(linker, "/include:_cNewLoops")
-#pragma comment(linker, "/include:_cNewLoopsA")
-#pragma comment(linker, "/include:_cNewLoop")
+#pragma comment(linker, "/include:_cLoopsA")
 #pragma comment(linker, "/include:_cTreeFlags")
 #pragma comment(linker, "/include:_cVN")
 
@@ -9492,12 +9469,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma comment(linker, "/include:_dDoms")
 #pragma comment(linker, "/include:_dLiveness")
 #pragma comment(linker, "/include:_dCVarSet")
-#pragma comment(linker, "/include:_dLoop")
-#pragma comment(linker, "/include:_dLoopPtr")
 #pragma comment(linker, "/include:_dLoops")
-#pragma comment(linker, "/include:_dNewLoops")
-#pragma comment(linker, "/include:_dNewLoopsA")
-#pragma comment(linker, "/include:_dNewLoop")
+#pragma comment(linker, "/include:_dLoopsA")
+#pragma comment(linker, "/include:_dLoop")
 #pragma comment(linker, "/include:_dTreeFlags")
 #pragma comment(linker, "/include:_dVN")
 
@@ -9673,44 +9647,21 @@ JITDBGAPI void __cdecl cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
     printf("\n"); // dumpConvertedVarSet() doesn't emit a trailing newline
 }
 
-JITDBGAPI void __cdecl cLoop(Compiler* comp, unsigned loopNum)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Loop %u\n", sequenceNumber++);
-    comp->optPrintLoopInfo(loopNum, /* verbose */ true);
-    printf("\n");
-}
-
-JITDBGAPI void __cdecl cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *LoopPtr %u\n", sequenceNumber++);
-    comp->optPrintLoopInfo(loop, /* verbose */ true);
-    printf("\n");
-}
-
 JITDBGAPI void __cdecl cLoops(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Loops %u\n", sequenceNumber++);
-    comp->optPrintLoopTable();
-}
-
-JITDBGAPI void __cdecl cNewLoops(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *NewLoops %u\n", sequenceNumber++);
     FlowGraphNaturalLoops::Dump(comp->m_loops);
 }
 
-JITDBGAPI void __cdecl cNewLoopsA(Compiler* comp, FlowGraphNaturalLoops* loops)
+JITDBGAPI void __cdecl cLoopsA(Compiler* comp, FlowGraphNaturalLoops* loops)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *NewLoopsA %u\n", sequenceNumber++);
     FlowGraphNaturalLoops::Dump(loops);
 }
 
-JITDBGAPI void __cdecl cNewLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
+JITDBGAPI void __cdecl cLoop(Compiler* comp, FlowGraphNaturalLoop* loop)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *NewLoop %u\n", sequenceNumber++);
@@ -9768,10 +9719,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_VAR_USEASG)
                 {
                     chars += printf("[VAR_USEASG]");
-                }
-                if (tree->gtFlags & GTF_VAR_ITERATOR)
-                {
-                    chars += printf("[VAR_ITERATOR]");
                 }
                 if (tree->gtFlags & GTF_VAR_MOREUSES)
                 {
@@ -10309,34 +10256,19 @@ JITDBGAPI void __cdecl dCVarSet(VARSET_VALARG_TP vars)
     cCVarSet(JitTls::GetCompiler(), vars);
 }
 
-JITDBGAPI void __cdecl dLoop(unsigned loopNum)
-{
-    cLoop(JitTls::GetCompiler(), loopNum);
-}
-
-JITDBGAPI void __cdecl dLoopPtr(const Compiler::LoopDsc* loop)
-{
-    cLoopPtr(JitTls::GetCompiler(), loop);
-}
-
 JITDBGAPI void __cdecl dLoops()
 {
     cLoops(JitTls::GetCompiler());
 }
 
-JITDBGAPI void __cdecl dNewLoops()
+JITDBGAPI void __cdecl dLoopsA(FlowGraphNaturalLoops* loops)
 {
-    cNewLoops(JitTls::GetCompiler());
+    cLoopsA(JitTls::GetCompiler(), loops);
 }
 
-JITDBGAPI void __cdecl dNewLoopsA(FlowGraphNaturalLoops* loops)
+JITDBGAPI void __cdecl dLoop(FlowGraphNaturalLoop* loop)
 {
-    cNewLoopsA(JitTls::GetCompiler(), loops);
-}
-
-JITDBGAPI void __cdecl dNewLoop(FlowGraphNaturalLoop* loop)
-{
-    cNewLoop(JitTls::GetCompiler(), loop);
+    cLoop(JitTls::GetCompiler(), loop);
 }
 
 JITDBGAPI void __cdecl dTreeFlags(GenTree* tree)
@@ -10373,11 +10305,11 @@ JITDBGAPI void __cdecl dBlockList(BasicBlockList* list)
 // Trees, Stmts, and/or Blocks using id or bbNum.
 // That can be used in watch window or as a way to get address of fields for data breakpoints.
 
-GenTree*           dbTree;
-Statement*         dbStmt;
-BasicBlock*        dbTreeBlock;
-BasicBlock*        dbBlock;
-Compiler::LoopDsc* dbLoop;
+GenTree*              dbTree;
+Statement*            dbStmt;
+BasicBlock*           dbTreeBlock;
+BasicBlock*           dbBlock;
+FlowGraphNaturalLoop* dbLoop;
 
 // Debug APIs for finding Trees, Stmts, and/or Blocks.
 // As a side effect, they set the debug variables above.
@@ -10469,18 +10401,18 @@ JITDBGAPI BasicBlock* __cdecl dFindBlock(unsigned bbNum)
     return nullptr;
 }
 
-JITDBGAPI Compiler::LoopDsc* __cdecl dFindLoop(unsigned loopNum)
+JITDBGAPI FlowGraphNaturalLoop* __cdecl dFindLoop(unsigned index)
 {
     Compiler* comp = JitTls::GetCompiler();
     dbLoop         = nullptr;
 
-    if (loopNum >= comp->optLoopCount)
+    if ((comp->m_loops == nullptr) || (index >= comp->m_loops->NumLoops()))
     {
-        printf("loopNum %u out of range\n", loopNum);
+        printf("Index %u out of range\n", index);
         return nullptr;
     }
 
-    dbLoop = &comp->optLoopTable[loopNum];
+    dbLoop = comp->m_loops->GetLoopByIndex(index);
     return dbLoop;
 }
 

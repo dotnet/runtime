@@ -266,16 +266,8 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock*   top                = block;
-        unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
-
-        BBKinds       oldJumpKind = top->GetKind();
-        unsigned char lpIndex     = top->bbNatLoopNum;
-
-        if (oldJumpKind == BBJ_COND)
-        {
-            lpIndexFallThrough = top->GetFalseTarget()->bbNatLoopNum;
-        }
+        BasicBlock* top         = block;
+        BBKinds     oldJumpKind = top->GetKind();
 
         BasicBlock* poll = fgNewBBafter(BBJ_ALWAYS, top, true);
         bottom           = fgNewBBafter(top->GetKind(), poll, true);
@@ -301,24 +293,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // Mark Poll as rarely run.
         poll->bbSetRunRarely();
-
-        if (optLoopTableValid)
-        {
-            poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
-
-            bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
-            if (lpIndex != BasicBlock::NOT_IN_LOOP)
-            {
-                // Set the new lpBottom in the natural loop table
-                optLoopTable[lpIndex].lpBottom = bottom;
-            }
-
-            if (lpIndexFallThrough != BasicBlock::NOT_IN_LOOP)
-            {
-                // Set the new lpHead in the natural loop table
-                optLoopTable[lpIndexFallThrough].lpHead = bottom;
-            }
-        }
 
         // Add the GC_CALL node to Poll.
         Statement* pollStmt = fgNewStmtAtEnd(poll, call);
