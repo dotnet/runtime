@@ -70,7 +70,6 @@ export function setLoaderGlobals(
     });
 
     Object.assign(globalObjects.module, {
-        disableDotnet6Compatibility: true,
         config: deep_merge_config(monoConfig, { environmentVariables: {} }),
     });
     Object.assign(runtimeHelpers, {

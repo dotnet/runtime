@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.20)
 project(mono-wasm-runtime C)
 
 option(DISABLE_THREADS "defined if the build does NOT support multithreading" ON)
-option(DISABLE_LEGACY_JS_INTEROP "defined if the build does not support legacy JavaScript interop" OFF)
 option(ENABLE_JS_INTEROP_BY_VALUE "defined when JS interop without pointers to managed objects" OFF)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".js")

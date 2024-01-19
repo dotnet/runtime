@@ -28,8 +28,7 @@ export let ENVIRONMENT_IS_PTHREAD: boolean;
 export let exportedRuntimeAPI: RuntimeAPI = null as any;
 export let runtimeHelpers: RuntimeHelpers = null as any;
 export let loaderHelpers: LoaderHelpers = null as any;
-// this is when we link with workload tools. The consts:wasmEnableLegacyJsInterop is when we compile with rollup.
-export let linkerDisableLegacyJsInterop = false;
+
 export let linkerWasmEnableSIMD = true;
 export let linkerWasmEnableEH = true;
 export let linkerEnableAotProfiler = false;
@@ -39,7 +38,6 @@ export let _runtimeModuleLoaded = false; // please keep it in place also as roll
 
 export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
-    linkerDisableLegacyJsInterop = internals.linkerDisableLegacyJsInterop;
     linkerWasmEnableSIMD = internals.linkerWasmEnableSIMD;
     linkerWasmEnableEH = internals.linkerWasmEnableEH;
     linkerEnableAotProfiler = internals.linkerEnableAotProfiler;
