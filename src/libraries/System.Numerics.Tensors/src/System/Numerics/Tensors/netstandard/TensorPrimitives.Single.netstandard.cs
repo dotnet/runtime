@@ -808,9 +808,11 @@ namespace System.Numerics.Tensors
 
         private static readonly int[] s_0through7 = [0, 1, 2, 3, 4, 5, 6, 7];
 
-        private static int IndexOfMinMaxCore<TIndexOfMinMaxOperator>(ReadOnlySpan<float> x, TIndexOfMinMaxOperator op = default)
+        private static int IndexOfMinMaxCore<T, TIndexOfMinMaxOperator>(ReadOnlySpan<float> x, TIndexOfMinMaxOperator op = default)
             where TIndexOfMinMaxOperator : struct, IIndexOfOperator
         {
+            Debug.Assert(typeof(T) == typeof(float), "The generic parameter exists only to provide the same signature as the generic implementation.");
+
             if (x.IsEmpty)
             {
                 return -1;
