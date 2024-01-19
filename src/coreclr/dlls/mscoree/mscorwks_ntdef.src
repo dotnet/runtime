@@ -62,7 +62,6 @@ EXPORTS
         mono_field_get_parent
         mono_gc_collect
         mono_image_get_table_rows
-        mono_is_debugger_attached
         mono_jit_info_table_find
         mono_jit_init
         mono_jit_init_version

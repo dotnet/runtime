@@ -642,11 +642,6 @@ extern "C" EXPORT_API void EXPORT_CC coreclr_image_get_custom_attribute_data(Mon
     mdImport->GetParentToken(token, parent_type_token);
 }
 
-extern "C" EXPORT_API gboolean EXPORT_CC mono_is_debugger_attached(void)
-{
-    return FALSE;
-}
-
 extern "C" EXPORT_API MonoJitInfo* EXPORT_CC mono_jit_info_table_find(MonoDomain* domain, void* ip)
 {
     ASSERT_NOT_IMPLEMENTED;

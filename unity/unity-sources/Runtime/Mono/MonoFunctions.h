@@ -67,8 +67,6 @@ DO_API(MonoType*, mono_signature_get_params, (MonoMethodSignature * sig, gpointe
 DO_API(MonoType*, mono_signature_get_return_type, (MonoMethodSignature * sig))
 DO_API(MonoType*, mono_class_get_type, (MonoClass * klass))
 
-DO_API(gboolean, mono_is_debugger_attached, (void))
-
 DO_API(int, mono_assembly_name_parse, (const char* name, MonoAssemblyName * assembly))
 DO_API(int, mono_image_get_table_rows, (MonoImage * image, int table_id))
 DO_API(gboolean, mono_metadata_signature_equal, (MonoMethodSignature * sig1, MonoMethodSignature * sig2))
