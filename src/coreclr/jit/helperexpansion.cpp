@@ -1940,6 +1940,26 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         return false;
     }
 
+    bool isInstanceOf = false;
+    switch (call->GetHelperNum())
+    {
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+            isInstanceOf = true;
+            break;
+
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTCLASS:
+        case CORINFO_HELP_CHKCASTANY:
+            break;
+
+        default:
+            return false;
+    }
+
     // Helper calls are never tail calls
     assert(!call->IsTailCall());
 
@@ -1982,6 +2002,13 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     if (castResult == TypeCompareState::May)
     {
         JITDUMP("compareTypesForCast returned May for this candidate\n");
+        return false;
+    }
+
+    if ((castResult == TypeCompareState::MustNot) && isInstanceOf)
+    {
+        // Don't expand castclass if likelyclass always fails the type check
+        // it's going to throw an exception anyway.
         return false;
     }
 
