@@ -35,6 +35,7 @@ dummy_use: src1:i len:0
 il_seq_point: len:0
 seq_point: len:0
 
+arglist: src1:i len:12
 check_this: src1:b len:4
 get_ex_obj: dest:i len:4
 gc_safe_point: src1:i len:12 clob:c

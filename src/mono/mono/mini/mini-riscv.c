@@ -1028,15 +1028,23 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		ArgInfo *ainfo = cinfo->args + sig->hasthis + pindex;
 
 		// process the variable parameter sig->sentinelpos mark the first VARARG
-		if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos))
-			NOT_IMPLEMENTED;
+		if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos)){
+			cinfo->next_arg = RISCV_A7 + 1;
+			cinfo->next_farg = RISCV_FA7 + 1;
+			/* Emit the signature cookie just before the implicit arguments */
+			add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type ());
+		}
 
 		add_param (cinfo, ainfo, sig->params [pindex]);
 	}
 
 	/* Handle the case where there are no implicit arguments */
-	if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos))
-		NOT_IMPLEMENTED;
+	if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos)){
+		cinfo->next_arg = RISCV_A7 + 1;
+		cinfo->next_farg = RISCV_FA7 + 1;
+		/* Emit the signature cookie just before the implicit arguments */
+		add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type ());
+	}
 
 	cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
 
@@ -1500,7 +1508,6 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int re
 static void
 emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 {
-	NOT_IMPLEMENTED;
 	MonoMethodSignature *tmp_sig;
 	int sig_reg;
 
@@ -2280,6 +2287,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	{
 	loop_start:
 		switch (ins->opcode) {
+		case OP_ARGLIST:
 		case OP_CKFINITE:
 		case OP_BREAK:
 		case OP_IL_SEQ_POINT:
@@ -4475,6 +4483,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			code = mono_riscv_emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
 			                             GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break));
+			break;
+		case OP_ARGLIST:
+			g_assert (cfg->arch.cinfo);
+			riscv_addi (code, RISCV_T0, RISCV_FP, cfg->arch.cinfo->sig_cookie.offset);
+			code = mono_riscv_emit_store (code, RISCV_T0, ins->sreg1, 0, 0);
 			break;
 
 		case OP_NOP:
