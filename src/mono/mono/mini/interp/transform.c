@@ -3103,6 +3103,7 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 	int dreg, this_reg = -1;
 	int prev_sp_offset;
 	MonoClass *klass = target_method->klass;
+	MonoMethodHeader *mheader = NULL;
 
 	if (!(mono_interp_opt & INTERP_OPT_INLINE) ||
 			!interp_method_check_inlining (td, target_method, csignature))
@@ -3166,7 +3167,7 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 	if (is_protected)
 		newobj_fast->flags |= INTERP_INST_FLAG_PROTECTED_NEWOBJ;
 
-	MonoMethodHeader *mheader = interp_method_get_header (target_method, error);
+	mheader = interp_method_get_header (target_method, error);
 	goto_if_nok (error, fail);
 
 	if (!interp_inline_method (td, target_method, mheader, error))
@@ -3180,6 +3181,7 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 	push_var (td, dreg);
 	return TRUE;
 fail:
+	mono_metadata_free_mh (mheader);
 	// Restore the state
 	td->sp = td->stack + prev_sp_offset;
 	td->last_ins = prev_last_ins;
@@ -3214,10 +3216,14 @@ interp_constrained_box (TransformData *td, MonoClass *constrained_class, MonoMet
 static MonoMethod*
 interp_get_method (MonoMethod *method, guint32 token, MonoImage *image, MonoGenericContext *generic_context, MonoError *error)
 {
-	if (method->wrapper_type == MONO_WRAPPER_NONE)
+	if (method->wrapper_type == MONO_WRAPPER_NONE) {
 		return mono_get_method_checked (image, token, NULL, generic_context, error);
-	else
-		return (MonoMethod *)mono_method_get_wrapper_data (method, token);
+	} else {
+		MonoMethod *target_method = mono_method_get_wrapper_data (method, token);
+		if (generic_context)
+			target_method = mono_class_inflate_generic_method_checked (target_method, generic_context, error);
+		return target_method;
+	}
 }
 
 /*
@@ -3440,13 +3446,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			target_method = interp_get_method (method, token, image, generic_context, error);
 			return_val_if_nok (error, FALSE);
 			csignature = mono_method_signature_internal (target_method);
-
-			if (generic_context) {
-				csignature = mono_inflate_generic_signature (csignature, generic_context, error);
-				return_val_if_nok (error, FALSE);
-				target_method = mono_class_inflate_generic_method_checked (target_method, generic_context, error);
-				return_val_if_nok (error, FALSE);
-			}
 		}
 	} else {
 		csignature = mono_method_signature_internal (target_method);
@@ -3654,6 +3653,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->ip += 5;
 			goto done;
 		}
+		mono_metadata_free_mh (mheader);
 	}
 
 	/*
