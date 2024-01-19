@@ -208,16 +208,6 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_element_class(MonoClas
 
 thread_local ThreadLocalPoolAllocator<ApproxFieldDescIterator,5> g_ApproxFieldDescIteratorAlloc;
 
-extern "C" EXPORT_API guint32 EXPORT_CC mono_class_get_flags(MonoClass *klass)
-{
-    MonoClass_clr* clrClass = reinterpret_cast<MonoClass_clr*>(klass);
-    mdTypeDef token = clrClass->GetCl();
-    IMDInternalImport *pImport = clrClass->GetMDImport();
-    DWORD           dwClassAttrs;
-    pImport->GetTypeDefProps(token, &dwClassAttrs, NULL);
-    return dwClassAttrs;
-}
-
 // Wrap iterator value in heap allocated value we can return from embedding API
 struct MethodTable_InterfaceMapIteratorWrapper
 {

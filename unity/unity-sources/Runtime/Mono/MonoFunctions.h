@@ -98,8 +98,6 @@ DO_API(MonoClass*, mono_class_get_element_class, (MonoClass * klass));
 
 DO_API(int, mono_array_element_size, (MonoClass * classOfArray))
 
-DO_API(guint32, mono_class_get_flags, (MonoClass * klass))
-
 DO_API(void, mono_set_dirs, (const char *assembly_dir, const char *config_dir))
 
 DO_API(MonoException*, mono_unity_loader_get_last_error_and_error_prepare_exception, (void))
