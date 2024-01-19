@@ -15,7 +15,7 @@ using System.Reflection.PortableExecutable;
 
 namespace Microsoft.NET.HostModel.Tests
 {
-    public class AppHostUpdateTests
+    public class CreateAppHost
     {
         /// <summary>
         /// hash value embedded in default apphost executable in a place where the path to the app binary should be stored.
@@ -318,6 +318,16 @@ namespace Microsoft.NET.HostModel.Tests
                     enableMacOSCodeSign: true));
                 Assert.Contains($"{destinationFilePath}: is already signed", exception.Message);
                 Assert.True(exception.ExitCode == 1, $"AppHostSigningException.ExitCode - expected: 1, actual: '{exception.ExitCode}'");
+            }
+        }
+
+        [Fact]
+        private void ResourceWithUnknownLanguage()
+        {
+            // https://github.com/dotnet/runtime/issues/88465
+            using (TestApp app = TestApp.CreateFromBuiltAssets("AppWithUnknownLanguageResource"))
+            {
+                app.CreateAppHost();
             }
         }
 
