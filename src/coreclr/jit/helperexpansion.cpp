@@ -2045,7 +2045,9 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // Block 2: typeCheckBb
     // TODO-InlineCast: if likelyCls == expectedCls we can consider saving to a local to re-use.
     GenTree* likelyClsNode = gtNewIconEmbClsHndNode(likelyCls);
-    GenTree* mtCheck       = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(tmpNode)), likelyClsNode);
+    auto     mtLookup      = gtNewMethodTableLookup(gtCloneExpr(tmpNode));
+    mtLookup->gtFlags &= ~GTF_EXCEPT;
+    GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, mtLookup, likelyClsNode);
     mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
     GenTree*    jtrue       = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
     BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, lastBb, true);

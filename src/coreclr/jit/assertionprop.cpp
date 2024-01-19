@@ -4802,10 +4802,12 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
                 return optAssertionProp_Update(arg1, call, stmt);
             }
 
-            AssertionIndex nonNullIdx = NO_ASSERTION_INDEX;
-            bool           isVNUsed   = false;
-            if (optAssertionIsNonNull(arg1, assertions, &isVNUsed, &nonNullIdx) && isVNUsed &&
-                (nonNullIdx != NO_ASSERTION_INDEX))
+            // Leave a hint for fgLateCastExpansion that obj is never null.
+            INDEBUG(AssertionIndex nonNullIdx = NO_ASSERTION_INDEX);
+            INDEBUG(bool vnBased = false);
+            // GTF_CALL_M_CAST_CAN_BE_EXPANDED check is to improve TP
+            if (((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) != 0) &&
+                optAssertionIsNonNull(arg1, assertions DEBUGARG(&vnBased) DEBUGARG(&nonNullIdx)))
             {
                 call->gtCallMoreFlags |= GTF_CALL_M_CAST_OBJ_NONNULL;
                 return optAssertionProp_Update(call, call, stmt);
