@@ -101,7 +101,6 @@ public class GenerateWasmBootJson : Task
 
         if (IsTargeting80OrLater())
         {
-            result.debugLevel = ParseOptionalInt(DebugLevel) ?? (DebugBuild ? 1 : 0);
             result.mainAssemblyName = entryAssemblyName;
             result.globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant();
 
@@ -327,6 +326,16 @@ public class GenerateWasmBootJson : Task
 
                 return;
             }
+        }
+        
+        if (IsTargeting80OrLater())
+        {
+            // If user didn't gave us a value, check if we have any PDB.
+            var debugLevel = ParseOptionalInt(DebugLevel);
+            if (debugLevel == null)
+                debugLevel = Resources?.pdb?.Count > 0 ? -1 : 0;
+
+            result.debugLevel = debugLevel;
         }
 
         if (ConfigurationFiles != null)

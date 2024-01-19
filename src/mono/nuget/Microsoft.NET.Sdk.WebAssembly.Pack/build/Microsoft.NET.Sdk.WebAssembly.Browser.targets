@@ -204,8 +204,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
       <_WasmDebugLevel>$(WasmDebugLevel)</_WasmDebugLevel>
-      <_WasmDebugLevel Condition="'$(_WasmDebugLevel)' == ''">0</_WasmDebugLevel>
-      <_WasmDebugLevel Condition="'$(_WasmDebugLevel)' == '0' and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</_WasmDebugLevel>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
@@ -336,6 +334,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
     <PropertyGroup>
       <_WasmBuildBootJsonPath>$(IntermediateOutputPath)blazor.boot.json</_WasmBuildBootJsonPath>
+      <_WasmDebugLevel Condition="'$(_WasmDebugLevel)' == ''">-1</_WasmDebugLevel>
     </PropertyGroup>
 
     <ItemGroup>
@@ -533,6 +532,9 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="GeneratePublishWasmBootJson" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">
+    <PropertyGroup>
+      <_WasmDebugLevel Condition="'$(_WasmDebugLevel)' == ''">0</_WasmDebugLevel>
+    </PropertyGroup>
 
     <ItemGroup>
       <_WasmPublishAsset
@@ -549,7 +551,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- We remove the extensions since they are added to the list of static web assets but we need to compute the target path for them -->
       <_WasmPublishAsset Remove="@(_BlazorExtensionsCandidatesForPublish)" />
-
     </ItemGroup>
 
     <ComputeStaticWebAssetsTargetPaths
