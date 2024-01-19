@@ -2112,6 +2112,16 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     assert(BasicBlock::sameEHRegion(firstBb, fallbackBb));
     assert(BasicBlock::sameEHRegion(firstBb, typeCheckBb));
 
+    // call guarantees that obj is never null, we can drop the nullcheck
+    // by converting it to a BBJ_ALWAYS to typeCheckBb.
+    if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) != 0)
+    {
+        fgRemoveStmt(nullcheckBb, nullcheckBb->lastStmt());
+        nullcheckBb->SetKindAndTarget(BBJ_ALWAYS, typeCheckBb);
+        typeCheckBb->inheritWeight(nullcheckBb);
+        fgRemoveRefPred(lastBb, nullcheckBb);
+    }
+
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
     if (fgCanCompactBlocks(firstBb, nullcheckBb))
     {
