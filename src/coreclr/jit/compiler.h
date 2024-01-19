@@ -5832,6 +5832,9 @@ public:
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
     bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
+    PhaseStatus fgLateCastExpansion();
+    bool fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -7523,6 +7526,7 @@ public:
 #define OMF_HAS_TLS_FIELD                      0x00010000 // Method contains TLS field access
 #define OMF_HAS_SPECIAL_INTRINSICS             0x00020000 // Method contains special intrinsics expanded in late phases
 #define OMF_HAS_RECURSIVE_TAILCALL             0x00040000 // Method contains recursive tail call
+#define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
 
     // clang-format on
 
@@ -7561,6 +7565,16 @@ public:
     void setMethodHasStaticInit()
     {
         optMethodFlags |= OMF_HAS_STATIC_INIT;
+    }
+
+    bool doesMethodHaveExpandableCasts()
+    {
+        return (optMethodFlags & OMF_HAS_EXPANDABLE_CAST) != 0;
+    }
+
+    void setMethodHasExpandableCasts()
+    {
+        optMethodFlags |= OMF_HAS_EXPANDABLE_CAST;
     }
 
     bool doesMethodHaveGuardedDevirtualization() const
