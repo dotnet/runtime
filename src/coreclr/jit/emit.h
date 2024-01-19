@@ -1433,6 +1433,16 @@ protected:
             assert(!idIsSmallDsc());
             idAddr()->_idRegBit = val ? 1 : 0;
         }
+        bool idOptionalShift() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idRegBit == 1);
+        }
+        void idOptionalShift(bool val)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idRegBit = val ? 1 : 0;
+        }
 #endif // TARGET_ARM64
 
 #endif // TARGET_ARMARCH

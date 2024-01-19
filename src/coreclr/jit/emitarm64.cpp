@@ -1396,8 +1396,17 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_EA_1A: // ........xx...... ...iiiiiiiiddddd -- SVE broadcast floating-point immediate (unpredicated)
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
-            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             assert(isValidUimm8(emitGetInsSC(id)));                           // iiiiiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            break;
+
+        case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            // Size specifier must be able to fit left-shifted immediate
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()) || !id->idOptionalShift());
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isValidSimm8(emitGetInsSC(id)));                           // iiiiiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             break;
 
         case IF_SVE_ED_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer min/max immediate (unpredicated)
@@ -6010,18 +6019,21 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction ins,
-                          emitAttr    attr,
-                          regNumber   reg,
-                          ssize_t     imm,
-                          insOpts     opt /* = INS_OPTS_NONE */
+void emitter::emitIns_R_I(instruction     ins,
+                          emitAttr        attr,
+                          regNumber       reg,
+                          ssize_t         imm,
+                          insOpts         opt /* = INS_OPTS_NONE */,
+                          insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */
                           DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
-    emitAttr  size      = EA_SIZE(attr);
-    emitAttr  elemsize  = EA_UNKNOWN;
-    insFormat fmt       = IF_NONE;
-    bool      canEncode = false;
-    bool      signedImm = false;
+    emitAttr  size          = EA_SIZE(attr);
+    emitAttr  elemsize      = EA_UNKNOWN;
+    insFormat fmt           = IF_NONE;
+    bool      canEncode     = false;
+    bool      signedImm     = false;
+    bool      optionalShift = false;
+    bool      hasShift      = true;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -6283,6 +6295,25 @@ void emitter::emitIns_R_I(instruction ins,
             canEncode = true;
             break;
 
+        case INS_sve_mov:
+        case INS_sve_dup:
+            optionalShift = true;
+            hasShift      = (sopt == INS_SCALABLE_OPTS_SHIFT);
+
+            assert(insOptsScalableStandard(opt));
+            // Size specifier must be able to fit left-shifted immediate
+            assert(!hasShift || insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt) || hasShift);         // h
+            assert(isVectorRegister(reg));                         // ddddd
+            assert(isValidSimm8(imm));                             // iiiiiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt       = IF_SVE_EB_1A;
+            canEncode = true;
+
+            // MOV is an alias for DUP, and is always the preferred disassembly.
+            ins = INS_sve_mov;
+            break;
+
         default:
             unreached();
             break;
@@ -6292,13 +6323,20 @@ void emitter::emitIns_R_I(instruction ins,
     assert(canEncode);
     assert(fmt != IF_NONE);
 
-    instrDesc* id = emitNewInstrSC(attr, imm);
+    // Instructions with optional shifts need larger instrDesc to store state
+    instrDesc* id = optionalShift ? emitNewInstrCns(attr, imm) : emitNewInstrSC(attr, imm);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idInsOpt(opt);
 
     id->idReg1(reg);
+
+    // For instructions with optional shifts (INS_sve_mov, INS_sve_dup, etc.)
+    if (optionalShift)
+    {
+        id->idOptionalShift(hasShift);
+    }
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
@@ -16856,13 +16894,26 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SVE_EE_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer multiply immediate (unpredicated)
         {
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
-            code_t imm8 = (code_t)(emitGetInsSC(id) & 0xFF);
-            code |= (imm8 << 5);                                          // iiiiiiii
+            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
+            code_t imm8 = (code_t)(emitGetInsSC(id) & 0xFF); // iiiiiiii
+            code |= (imm8 << 5);
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
         }
+
+        case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
+        {
+            code = emitInsCodeSve(ins, fmt);
+            code |= (id->idOptionalShift() ? 0x2000 : 0);    // h
+            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
+            code_t imm8 = (code_t)(emitGetInsSC(id) & 0xFF); // iiiiiiii
+            code |= (imm8 << 5);
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+        }
+
         case IF_SVE_DU_3A: // ........xx.mmmmm ......nnnnn.DDDD -- SVE pointer conflict compare
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1());                     // DDDD
@@ -19568,6 +19619,27 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             emitDispFloatImm(emitGetInsSC(id));                 // iiiiiiii
             break;
+
+        // DUP <Zd>.<T>, #<imm>{, <shift>}
+        // MOV <Zd>.<T>, #<imm>{, <shift>}
+        case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
+        {
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            ssize_t imm = emitGetInsSC(id);                     // iiiiiiii
+            if (id->idOptionalShift())                          // h
+            {
+                // Special case for left-shifted zero
+                if (imm == 0)
+                {
+                    printf("#0, LSL #8");
+                    break;
+                }
+
+                imm <<= 8;
+            }
+            emitDispImm(imm, false);
+            break;
+        }
 
         // SMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>
         // SMIN <Zdn>.<T>, <Zdn>.<T>, #<imm>
@@ -22304,6 +22376,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_sve_umin:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
                     result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
                 default:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
@@ -22314,6 +22387,25 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_EE_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer multiply immediate (unpredicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_5C;
+            break;
+
+        case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
+            switch (ins)
+            {
+                // TODO-SVE: Why are these different? MOV is an alias for DUP
+                case INS_sve_mov:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+                case INS_sve_dup:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
