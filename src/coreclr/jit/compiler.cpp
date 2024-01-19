@@ -5127,6 +5127,26 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
 
+    // Block layout should not change at this point.
+    // Do one last pass to reverse any conditions that might yield more fall-through branches.
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        if (block->KindIs(BBJ_COND) && block->CanRemoveJumpToTarget(block->GetTrueTarget(), comp))
+        {
+            // Reverse the jump condition
+            GenTree* test = block->lastNode();
+            assert(test->OperIsConditionalJump());
+            GenTree* cond = comp->gtReverseCond(test);
+            assert(cond == test); // Ensure `gtReverseCond` did not create a new node.
+
+            BasicBlock* newFalseTarget = block->GetTrueTarget();
+            BasicBlock* newTrueTarget  = block->GetFalseTarget();
+            block->SetTrueTarget(newTrueTarget);
+            block->SetFalseTarget(newFalseTarget);
+            assert(block->CanRemoveJumpToTarget(newFalseTarget, comp));
+        }
+    }
+
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
 

@@ -4987,11 +4987,11 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 // (b) block jump target is elsewhere but join free, and
                 //      bFalseDest's jump target has a join.
                 //
-                if ((bFalseDest != nullptr) &&           // block is a BBJ_COND block
-                    (bFalseDest->bbRefs == 1) &&         // No other block jumps to bFalseDest
-                    bFalseDest->KindIs(BBJ_ALWAYS) &&    // The next block is a BBJ_ALWAYS block
-                    !bFalseDest->JumpsToNext() &&        // and it doesn't jump to the next block (we might compact them)
-                    bFalseDest->isEmpty() &&             // and it is an empty block
+                if ((bFalseDest != nullptr) &&        // block is a BBJ_COND block
+                    (bFalseDest->bbRefs == 1) &&      // No other block jumps to bFalseDest
+                    bFalseDest->KindIs(BBJ_ALWAYS) && // The next block is a BBJ_ALWAYS block
+                    !bFalseDest->JumpsToNext() &&     // and it doesn't jump to the next block (we might compact them)
+                    bFalseDest->isEmpty() &&          // and it is an empty block
                     !bFalseDest->TargetIs(bFalseDest) && // special case for self jumps
                     !bDest->IsFirstColdBlock(this) &&
                     !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
@@ -5014,7 +5014,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     // * don't consider lexical predecessors, or we may confuse loop recognition
                     // * don't consider blocks of different rarities
                     //
-                    BasicBlock* const bFalseDestTarget    = bFalseDest->GetTarget();
+                    BasicBlock* const bFalseDestTarget = bFalseDest->GetTarget();
                     const bool        isJumpToJoinFree = !isJumpAroundEmpty && (bDest->bbRefs == 1) &&
                                                   (bFalseDestTarget->bbRefs > 1) && (bDest->bbNum > block->bbNum) &&
                                                   (block->isRunRarely() == bDest->isRunRarely());
@@ -5112,7 +5112,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         block->SetTrueTarget(bFalseDest->GetTarget());
                         block->SetFalseTarget(bFalseDest->Next());
 
-                        fgAddRefPred(bFalseDest->GetTarget(), block, fgRemoveRefPred(bFalseDest->GetTarget(), bFalseDest));
+                        fgAddRefPred(bFalseDest->GetTarget(), block,
+                                     fgRemoveRefPred(bFalseDest->GetTarget(), bFalseDest));
 
                         /*
                           Unlink bFalseDest from the BasicBlock list; note that we can
