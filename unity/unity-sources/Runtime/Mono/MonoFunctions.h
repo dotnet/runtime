@@ -86,9 +86,6 @@ DO_API(void, mono_debug_free_source_location, (MonoDebugSourceLocation * locatio
 DO_API_OPTIONAL(MonoDebugMethodJitInfo*, mono_debug_find_method, (MonoMethod * method, MonoDomain * domain))
 DO_API_OPTIONAL(void, mono_debug_free_method_jit_info, (MonoDebugMethodJitInfo * jit))
 
-
-DO_API(void, mono_gc_collect, (int generation))
-
 DO_API(gint32, mono_class_instance_size, (MonoClass * klass))
 DO_API(guint32, mono_class_get_type_token, (MonoClass * klass))
 DO_API(MonoClass*, mono_class_get_interfaces, (MonoClass * klass, gpointer * iter))

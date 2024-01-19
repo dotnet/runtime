@@ -536,14 +536,6 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_field_get_parent(MonoClassField 
     return (MonoClass*)fieldDesc->GetApproxEnclosingMethodTable();
 }
 
-extern "C" EXPORT_API void EXPORT_CC mono_gc_collect(int generation)
-{
-    FCALL_CONTRACT;
-    _ASSERTE(generation >= -1);
-    GCX_COOP();
-    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, false, collection_blocking);
-}
-
 static inline OBJECTHANDLE handle_from_uintptr(uintptr_t p)
 {
     // mask off bit that is set for pinned in managed
