@@ -88,6 +88,7 @@ export function http_wasm_transform_stream_write(controller: HttpController, buf
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     const copy = view.slice() as Uint8Array;
     return wrap_as_cancelable_promise(async () => {
+        mono_assert(controller.streamWriter, "expected streamWriter");
         mono_assert(controller.fetchResponsePromise, "expected fetch promise");
         // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
         await Promise.race([controller.streamWriter.ready, controller.fetchResponsePromise]);
@@ -98,6 +99,7 @@ export function http_wasm_transform_stream_write(controller: HttpController, buf
 export function http_wasm_transform_stream_close(controller: HttpController): ControllablePromise<void> {
     mono_assert(controller, "expected controller");
     return wrap_as_cancelable_promise(async () => {
+        mono_assert(controller.streamWriter, "expected streamWriter");
         mono_assert(controller.fetchResponsePromise, "expected fetch promise");
         // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
         await Promise.race([controller.streamWriter.ready, controller.fetchResponsePromise]);
@@ -144,28 +146,25 @@ export function http_wasm_fetch(controller: HttpController, url: string, header_
     for (let i = 0; i < option_names.length; i++) {
         options[option_names[i]] = option_values[i];
     }
+    // make the fetch cancellable
     controller.fetchResponsePromise = wrap_as_cancelable_promise(() => {
-        return loaderHelpers.fetch_like(url, options).then((res) => {
-            controller.fetchResponse = res;
-            controller.responseHeaderNames = [];
-            controller.responseHeaderValues = [];
-            if (res.headers && (<any>res.headers).entries) {
-                const entries: Iterable<string[]> = (<any>res.headers).entries();
+        return loaderHelpers.fetch_like(url, options);
+    });
+    // avoid processing headers if the fetch is cancelled
+    controller.fetchResponsePromise.then((res) => {
+        controller.fetchResponse = res;
+        controller.responseHeaderNames = [];
+        controller.responseHeaderValues = [];
+        if (res.headers && (<any>res.headers).entries) {
+            const entries: Iterable<string[]> = (<any>res.headers).entries();
 
-                for (const pair of entries) {
-                    controller.responseHeaderNames.push(pair[0]);
-                    controller.responseHeaderValues.push(pair[1]);
-                }
+            for (const pair of entries) {
+                controller.responseHeaderNames.push(pair[0]);
+                controller.responseHeaderValues.push(pair[1]);
             }
-            return res;
-        });
+        }
     });
     return controller.fetchResponsePromise as ControllablePromise<any>;
-}
-
-export function http_wasm_get_response_header_names(controller: HttpController): string[] {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
-    return controller.responseHeaderNames;
 }
 
 export function http_wasm_get_response_type(controller: HttpController): string | undefined {
@@ -179,8 +178,15 @@ export function http_wasm_get_response_status(controller: HttpController): numbe
 }
 
 
+export function http_wasm_get_response_header_names(controller: HttpController): string[] {
+    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    mono_assert(controller.responseHeaderNames, "expected responseHeaderNames");
+    return controller.responseHeaderNames;
+}
+
 export function http_wasm_get_response_header_values(controller: HttpController): string[] {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
+    mono_assert(controller.responseHeaderValues, "expected responseHeaderValues");
     return controller.responseHeaderValues;
 }
 
@@ -197,6 +203,7 @@ export function http_wasm_get_response_length(controller: HttpController): Contr
 export function http_wasm_get_response_bytes(controller: HttpController, view: Span): number {
     mono_assert(controller, "expected controller");
     mono_assert(controller.responseBuffer, "expected resoved arrayBuffer");
+    mono_assert(controller.currentBufferOffset != undefined, "expected currentBufferOffset");
     if (controller.currentBufferOffset == controller.responseBuffer!.byteLength) {
         return 0;
     }
@@ -212,6 +219,7 @@ export function http_wasm_get_streamed_response_bytes(controller: HttpController
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     return wrap_as_cancelable_promise(async () => {
+        mono_assert(controller.currentBufferOffset != undefined, "expected currentBufferOffset");
         if (!controller.streamReader) {
             controller.streamReader = controller.fetchResponse!.body!.getReader();
         }
@@ -247,14 +255,14 @@ interface HttpController {
     // response
     fetchResponsePromise?: ControllablePromise<Response>
     fetchResponse?: Response
-    responseHeaderNames: string[];
-    responseHeaderValues: string[];
-    currentBufferOffset: number
+    responseHeaderNames?: string[];
+    responseHeaderValues?: string[];
+    currentBufferOffset?: number
 
     // non-streaming response
     responseBuffer?: ArrayBuffer
 
     // streaming response
-    streamWriter: WritableStreamDefaultWriter<Uint8Array>
+    streamWriter?: WritableStreamDefaultWriter<Uint8Array>
     currentStreamReaderChunk?: ReadableStreamReadResult<Uint8Array>
 }

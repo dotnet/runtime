@@ -113,8 +113,8 @@ namespace System.Net.Http
             IntPtr bufferPtr,
             int bufferLength);
 
-        public static unsafe Task<int> GetStreamedResponseBytesUnsafe(BrowserHttpController _fetchResponse, Memory<byte> buffer, MemoryHandle handle)
-            => GetStreamedResponseBytes(_fetchResponse._jsController!, (IntPtr)handle.Pointer, buffer.Length);
+        public static unsafe Task<int> GetStreamedResponseBytesUnsafe(JSObject jsController, Memory<byte> buffer, MemoryHandle handle)
+            => GetStreamedResponseBytes(jsController, (IntPtr)handle.Pointer, buffer.Length);
 
 
         [JSImport("INTERNAL.http_wasm_get_response_length")]

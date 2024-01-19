@@ -112,13 +112,8 @@ namespace System.Net.Http
         public const bool SupportsProxy = false;
         public const bool SupportsRedirectConfiguration = true;
 
-#if FEATURE_WASM_THREADS
-        private ConcurrentDictionary<string, object?>? _properties;
-        public IDictionary<string, object?> Properties => _properties ??= new ConcurrentDictionary<string, object?>();
-#else
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
-#endif
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -139,19 +134,16 @@ namespace System.Net.Http
         private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
         private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
 
-
-        internal JSObject _jsController;
+        internal readonly JSObject _jsController;
         private readonly CancellationTokenRegistration _abortRegistration;
+        private readonly string[] _optionNames;
+        private readonly object?[] _optionValues;
+        private readonly string[] _headerNames;
+        private readonly string[] _headerValues;
+        private readonly string uri;
+        private readonly CancellationToken _cancellationToken;
+        private readonly HttpRequestMessage _request;
         private bool _isDisposed;
-
-        private string[] _optionNames;
-        private object?[] _optionValues;
-
-        private string[] _headerNames;
-        private string[] _headerValues;
-        private string uri;
-        private CancellationToken _cancellationToken;
-        private HttpRequestMessage _request;
 
         public BrowserHttpController(HttpRequestMessage request, bool? allowAutoRedirect, CancellationToken cancellationToken)
         {
@@ -244,7 +236,6 @@ namespace System.Net.Http
 
             BrowserHttpWriteStream? writeStream = null;
             Task fetchPromise;
-            MemoryHandle? pinBuffer = null;
             bool streamingRequestEnabled = false;
 
             try
@@ -270,8 +261,9 @@ namespace System.Net.Http
                         _cancellationToken.ThrowIfCancellationRequested();
 
                         Memory<byte> bufferMemory = buffer.AsMemory();
-                        pinBuffer = bufferMemory.Pin();
-                        fetchPromise = BrowserHttpInterop.FetchBytes(_jsController, uri, _headerNames, _headerValues, _optionNames, _optionValues, pinBuffer.Value, buffer.Length);
+                        // http_wasm_fetch_byte makes a copy of the bytes synchronously, so we can un-pin it synchronously
+                        using MemoryHandle pinBuffer = bufferMemory.Pin();
+                        fetchPromise = BrowserHttpInterop.FetchBytes(_jsController, uri, _headerNames, _headerValues, _optionNames, _optionValues, pinBuffer, buffer.Length);
                     }
                 }
                 else
@@ -284,9 +276,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                BrowserHttpInterop.AbortRequest(_jsController);
-
-                Dispose();
+                Dispose(); // will also abort request
                 if (ex is JSException jse)
                 {
                     throw new HttpRequestException(jse.Message, jse);
@@ -295,7 +285,6 @@ namespace System.Net.Http
             }
             finally
             {
-                pinBuffer?.Dispose();
                 writeStream?.Dispose();
             }
         }
@@ -378,18 +367,12 @@ namespace System.Net.Http
         private Task WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            _controller.ThrowIfDisposed();
 
-            MemoryHandle pinBuffer = buffer.Pin();
-            try
-            {
-                Task writePromise = BrowserHttpInterop.TransformStreamWriteUnsafe(_controller._jsController, buffer, pinBuffer);
-                return BrowserHttpInterop.CancellationHelper(writePromise, cancellationToken, _controller._jsController);
-            }
-            catch
-            {
-                pinBuffer.Dispose();
-                throw;
-            }
+            // http_wasm_transform_stream_write makes a copy of the bytes synchronously, so we can dispose the handle synchronously
+            using MemoryHandle pinBuffer = buffer.Pin();
+            Task writePromise = BrowserHttpInterop.TransformStreamWriteUnsafe(_controller._jsController, buffer, pinBuffer);
+            return BrowserHttpInterop.CancellationHelper(writePromise, cancellationToken, _controller._jsController);
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -451,10 +434,10 @@ namespace System.Net.Http
         private int _length = -1;
         private readonly BrowserHttpController _controller;
 
-        public BrowserHttpContent(BrowserHttpController fetchResponse)
+        public BrowserHttpContent(BrowserHttpController controller)
         {
-            ArgumentNullException.ThrowIfNull(fetchResponse);
-            _controller = fetchResponse;
+            ArgumentNullException.ThrowIfNull(controller);
+            _controller = controller;
         }
 
         // TODO allocate smaller buffer and call multiple times
@@ -483,7 +466,6 @@ namespace System.Net.Http
 
         protected override async Task<Stream> CreateContentReadStreamAsync()
         {
-            _controller.ThrowIfDisposed();
             byte[] data = await GetResponseData(CancellationToken.None).ConfigureAwait(false);
             return new MemoryStream(data, writable: false);
         }
@@ -494,7 +476,6 @@ namespace System.Net.Http
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(stream, nameof(stream));
-            _controller.ThrowIfDisposed();
 
             byte[] data = await GetResponseData(cancellationToken).ConfigureAwait(false);
             await stream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
@@ -523,31 +504,31 @@ namespace System.Net.Http
     {
         private BrowserHttpController _controller; // we own the object and have to dispose it
 
-        public BrowserHttpReadStream(BrowserHttpController fetchResponse)
+        public BrowserHttpReadStream(BrowserHttpController controller)
         {
-            _controller = fetchResponse;
+            _controller = controller;
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
             _controller.ThrowIfDisposed();
 
             MemoryHandle pinBuffer = buffer.Pin();
+            int bytesCount;
             try
             {
                 _controller.ThrowIfDisposed();
 
-                var promise = BrowserHttpInterop.GetStreamedResponseBytesUnsafe(_controller, buffer, pinBuffer);
-                var task = BrowserHttpInterop.CancellationHelper(promise, cancellationToken, _controller._jsController);
-                return new ValueTask<int>(task);
-
+                var promise = BrowserHttpInterop.GetStreamedResponseBytesUnsafe(_controller._jsController, buffer, pinBuffer);
+                bytesCount = await BrowserHttpInterop.CancellationHelper(promise, cancellationToken, _controller._jsController).ConfigureAwait(false);
             }
             finally
             {
+                // this must be after await, because http_wasm_get_streamed_response_bytes is using the buffer in a continuation
                 pinBuffer.Dispose();
             }
-
+            return bytesCount;
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
