@@ -2038,10 +2038,10 @@ private:
             comp->ehUpdateLastBlocks(moveAfter, lastNonLoopBlock);
 
             // Apply any adjustments needed for fallthrough at the boundaries of the moved region.
-            FixupFallThrough(moveAfter, moveBefore, block);
-            FixupFallThrough(lastNonLoopBlock, nextLoopBlock, moveBefore);
+            FixupFallThrough(moveAfter, block);
+            FixupFallThrough(lastNonLoopBlock, moveBefore);
             // Also apply any adjustments needed where the blocks were snipped out of the loop.
-            FixupFallThrough(previous, block, nextLoopBlock);
+            FixupFallThrough(previous, nextLoopBlock);
 
             // Update moveAfter for the next insertion.
             moveAfter = lastNonLoopBlock;
@@ -2261,14 +2261,32 @@ private:
     //
     // Arguments:
     //    block - Block whose `bbNext` has changed.
-    //    oldNext - Previous value of `block->bbNext`.
     //    newNext - New value of `block->bbNext`.
     //
-    void FixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext)
+    void FixupFallThrough(BasicBlock* block, BasicBlock* newNext)
     {
-        // If we create a new block, that will be our return value.
+        if (block->KindIs(BBJ_COND) && block->TrueTargetIs(newNext))
+        {
+            // Reverse the jump condition
+            GenTree* test = block->lastNode();
+            noway_assert(test->OperIsConditionalJump());
 
-        if (block->KindIs(BBJ_ALWAYS) && block->TargetIs(newNext))
+            if (test->OperGet() == GT_JTRUE)
+            {
+                GenTree* cond = comp->gtReverseCond(test->AsOp()->gtOp1);
+                assert(cond == test->AsOp()->gtOp1); // Ensure `gtReverseCond` did not create a new node.
+                test->AsOp()->gtOp1 = cond;
+            }
+            else
+            {
+                comp->gtReverseCond(test);
+            }
+
+            // Redirect the Conditional JUMP
+            block->SetTrueTarget(block->GetFalseTarget());
+            block->SetFalseTarget(newNext);
+        }
+        else if (block->KindIs(BBJ_ALWAYS) && block->TargetIs(newNext))
         {
             // If block is newNext's only predecessor, move the IR from block to newNext,
             // but keep the now-empty block around.

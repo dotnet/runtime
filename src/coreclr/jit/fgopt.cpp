@@ -1653,7 +1653,16 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 break;
 
             case BBJ_COND:
-                block->SetTrueTarget(bDest->GetTarget());
+                if (block->TrueTargetIs(bDest))
+                {
+                    assert(!block->FalseTargetIs(bDest));
+                    block->SetTrueTarget(bDest->GetTarget());
+                }
+                else
+                {
+                    assert(block->FalseTargetIs(bDest));
+                    block->SetFalseTarget(bDest->GetTarget());
+                }
                 break;
 
             default:
@@ -4916,12 +4925,22 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 BasicBlock* bFalseDest = block->GetFalseTarget();
                 assert(bFalseDest != nullptr);
 
-                if (bFalseDest->KindIs(BBJ_ALWAYS) && bFalseDest->TargetIs(bDest) && bFalseDest->isEmpty())
+                if (bFalseDest->KindIs(BBJ_ALWAYS) && bFalseDest->isEmpty())
                 {
-                    // Optimize bFalseDest -> BBJ_ALWAYS -> bDest
-                    block->SetFalseTarget(bDest);
-                    fgRemoveRefPred(bFalseDest, block);
-                    fgAddRefPred(bDest, block);
+                    if (bFalseDest->TargetIs(bDest))
+                    {
+                        // Optimize bFalseDest -> BBJ_ALWAYS -> bDest
+                        block->SetFalseTarget(bDest);
+                        fgRemoveRefPred(bFalseDest, block);
+                        fgAddRefPred(bDest, block);
+                    }
+                    else if (bFalseDest->TargetIs(bNext))
+                    {
+                        // Enable fallthrough into false target
+                        block->SetFalseTarget(bNext);
+                        fgRemoveRefPred(bFalseDest, block);
+                        fgAddRefPred(bNext, block);
+                    }
                 }
                 else if (bDest->KindIs(BBJ_ALWAYS) && bDest->TargetIs(bFalseDest) && bDest->isEmpty())
                 {
@@ -4958,35 +4977,33 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     }
                 }
 
+                BasicBlock* bFalseDest = block->KindIs(BBJ_COND) ? block->GetFalseTarget() : nullptr;
+
                 // Check for cases where reversing the branch condition may enable
                 // other flow opts.
                 //
-                // Current block falls through to an empty bNext BBJ_ALWAYS, and
-                // (a) block jump target is bNext's bbNext.
+                // Current block jumps to an empty bFalseDest BBJ_ALWAYS, and
+                // (a) block jump target is bFalseDest's bbNext.
                 // (b) block jump target is elsewhere but join free, and
-                //      bNext's jump target has a join.
+                //      bFalseDest's jump target has a join.
                 //
-                if (block->KindIs(BBJ_COND) &&     // block is a BBJ_COND block
-                    (bNext != nullptr) &&          // block isn't the last block
-                    block->FalseTargetIs(bNext) && // block falls into its false target
-                    (bNext->bbRefs == 1) &&        // No other block jumps to bNext
-                    bNext->KindIs(BBJ_ALWAYS) &&   // The next block is a BBJ_ALWAYS block
-                    !bNext->JumpsToNext() &&       // and it doesn't jump to the next block (we might compact them)
-                    bNext->isEmpty() &&            // and it is an empty block
-                    !bNext->TargetIs(bNext) &&     // special case for self jumps
+                if ((bFalseDest != nullptr) &&           // block is a BBJ_COND block
+                    (bFalseDest->bbRefs == 1) &&         // No other block jumps to bFalseDest
+                    bFalseDest->KindIs(BBJ_ALWAYS) &&    // The next block is a BBJ_ALWAYS block
+                    !bFalseDest->JumpsToNext() &&        // and it doesn't jump to the next block (we might compact them)
+                    bFalseDest->isEmpty() &&             // and it is an empty block
+                    !bFalseDest->TargetIs(bFalseDest) && // special case for self jumps
                     !bDest->IsFirstColdBlock(this) &&
                     !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
                 {
-                    assert(!block->IsLast());
-
                     // case (a)
                     //
-                    const bool isJumpAroundEmpty = bNext->NextIs(bDest);
+                    const bool isJumpAroundEmpty = bFalseDest->NextIs(bDest);
 
                     // case (b)
                     //
                     // Note the asymmetric checks for refs == 1 and refs > 1 ensures that we
-                    // differentiate the roles played by bDest and bNextJumpDest. We need some
+                    // differentiate the roles played by bDest and bFalseDestTarget. We need some
                     // sense of which arrangement is preferable to avoid getting stuck in a loop
                     // reversing and re-reversing.
                     //
@@ -4997,9 +5014,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     // * don't consider lexical predecessors, or we may confuse loop recognition
                     // * don't consider blocks of different rarities
                     //
-                    BasicBlock* const bNextJumpDest    = bNext->GetTarget();
+                    BasicBlock* const bFalseDestTarget    = bFalseDest->GetTarget();
                     const bool        isJumpToJoinFree = !isJumpAroundEmpty && (bDest->bbRefs == 1) &&
-                                                  (bNextJumpDest->bbRefs > 1) && (bDest->bbNum > block->bbNum) &&
+                                                  (bFalseDestTarget->bbRefs > 1) && (bDest->bbNum > block->bbNum) &&
                                                   (block->isRunRarely() == bDest->isRunRarely());
 
                     bool optimizeJump = isJumpAroundEmpty || isJumpToJoinFree;
@@ -5012,9 +5029,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         optimizeJump = false;
                     }
 
-                    // Also consider bNext's try region
+                    // Also consider bFalseDest's try region
                     //
-                    if (bNext->hasTryIndex() && !BasicBlock::sameTryRegion(block, bNext))
+                    if (bFalseDest->hasTryIndex() && !BasicBlock::sameTryRegion(block, bFalseDest))
                     {
                         optimizeJump = false;
                     }
@@ -5035,21 +5052,21 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
                     if (optimizeJump && isJumpToJoinFree)
                     {
-                        // In the join free case, we also need to move bDest right after bNext
+                        // In the join free case, we also need to move bDest right after bFalseDest
                         // to create same flow as in the isJumpAroundEmpty case.
                         //
-                        if (!fgEhAllowsMoveBlock(bNext, bDest) || bDest->isBBCallFinallyPair())
+                        if (!fgEhAllowsMoveBlock(bFalseDest, bDest) || bDest->isBBCallFinallyPair())
                         {
                             optimizeJump = false;
                         }
                         else
                         {
-                            // We don't expect bDest to already be right after bNext.
+                            // We don't expect bDest to already be right after bFalseDest.
                             //
-                            assert(!bNext->NextIs(bDest));
+                            assert(!bFalseDest->NextIs(bDest));
 
                             JITDUMP("\nMoving " FMT_BB " after " FMT_BB " to enable reversal\n", bDest->bbNum,
-                                    bNext->bbNum);
+                                    bFalseDest->bbNum);
 
                             // Move bDest
                             //
@@ -5059,11 +5076,11 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                             }
 
                             fgUnlinkBlock(bDest);
-                            fgInsertBBafter(bNext, bDest);
+                            fgInsertBBafter(bFalseDest, bDest);
 
-                            if (ehIsBlockEHLast(bNext))
+                            if (ehIsBlockEHLast(bFalseDest))
                             {
-                                ehUpdateLastBlocks(bNext, bDest);
+                                ehUpdateLastBlocks(bFalseDest, bDest);
                             }
                         }
                     }
@@ -5072,7 +5089,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     {
                         JITDUMP("\nReversing a conditional jump around an unconditional jump (" FMT_BB " -> " FMT_BB
                                 ", " FMT_BB " -> " FMT_BB ")\n",
-                                block->bbNum, bDest->bbNum, bNext->bbNum, bNextJumpDest->bbNum);
+                                block->bbNum, bDest->bbNum, bFalseDest->bbNum, bFalseDestTarget->bbNum);
 
                         //  Reverse the jump condition
                         //
@@ -5091,38 +5108,38 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         }
 
                         // Optimize the Conditional JUMP to go to the new target
-                        assert(block->FalseTargetIs(bNext));
-                        block->SetTrueTarget(bNext->GetTarget());
-                        block->SetFalseTarget(bNext->Next());
+                        assert(block->FalseTargetIs(bFalseDest));
+                        block->SetTrueTarget(bFalseDest->GetTarget());
+                        block->SetFalseTarget(bFalseDest->Next());
 
-                        fgAddRefPred(bNext->GetTarget(), block, fgRemoveRefPred(bNext->GetTarget(), bNext));
+                        fgAddRefPred(bFalseDest->GetTarget(), block, fgRemoveRefPred(bFalseDest->GetTarget(), bFalseDest));
 
                         /*
-                          Unlink bNext from the BasicBlock list; note that we can
+                          Unlink bFalseDest from the BasicBlock list; note that we can
                           do this even though other blocks could jump to it - the
                           reason is that elsewhere in this function we always
                           redirect jumps to jumps to jump to the final label,
-                          so even if another block jumps to bNext it won't matter
+                          so even if another block jumps to bFalseDest it won't matter
                           once we're done since any such jump will be redirected
                           to the final target by the time we're done here.
                         */
 
-                        fgRemoveRefPred(bNext, block);
-                        fgUnlinkBlockForRemoval(bNext);
+                        fgRemoveRefPred(bFalseDest, block);
+                        fgUnlinkBlockForRemoval(bFalseDest);
 
                         /* Mark the block as removed */
-                        bNext->SetFlags(BBF_REMOVED);
+                        bFalseDest->SetFlags(BBF_REMOVED);
 
                         if (optLoopTableValid)
                         {
                             // Update the loop table if we removed the bottom of a loop, for example.
-                            fgUpdateLoopsAfterCompacting(block, bNext);
+                            fgUpdateLoopsAfterCompacting(block, bFalseDest);
                         }
 
                         // If this is the first Cold basic block update fgFirstColdBlock
-                        if (bNext->IsFirstColdBlock(this))
+                        if (bFalseDest->IsFirstColdBlock(this))
                         {
-                            fgFirstColdBlock = bNext->Next();
+                            fgFirstColdBlock = bFalseDest->Next();
                         }
 
                         //
@@ -5132,7 +5149,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
                         for (EHblkDsc* const HBtab : EHClauses(this))
                         {
-                            if ((HBtab->ebdTryLast == bNext) || (HBtab->ebdHndLast == bNext))
+                            if ((HBtab->ebdTryLast == bFalseDest) || (HBtab->ebdHndLast == bFalseDest))
                             {
                                 fgSkipRmvdBlocks(HBtab);
                             }
@@ -5155,11 +5172,11 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                            as jumping to REPEAT will cause us to delete 'block'
                            because it currently appears to be unreachable.  As
                            it is a self loop that only has a single bbRef (itself)
-                           However since the unlinked bNext has additional bbRefs
+                           However since the unlinked bFalseDest has additional bbRefs
                            (that we will later connect to 'block'), it is not really
                            unreachable.
                         */
-                        if ((bNext->bbRefs > 0) && bNext->TargetIs(block) && (block->bbRefs == 1))
+                        if ((bFalseDest->bbRefs > 0) && bFalseDest->TargetIs(block) && (block->bbRefs == 1))
                         {
                             continue;
                         }
