@@ -4,6 +4,7 @@
 using System;
 using Debug = System.Diagnostics.Debug;
 using System.Runtime.InteropServices.ObjectiveC;
+using ILCompiler;
 using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem.Interop
@@ -970,6 +971,24 @@ namespace Internal.TypeSystem.Interop
         public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)
         {
             return module.Assembly is not EcmaAssembly assembly || !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
+        }
+
+        public static bool IsSwiftIntrinsicValueType(TypeDesc type)
+        {
+            Debug.Assert(type.IsValueType && !type.IsPrimitive && !type.IsEnum);
+            if (!type.IsIntrinsic)
+                return false;
+
+            if (type is not DefType defType)
+                return false;
+
+            if (VectorFieldLayoutAlgorithm.IsVectorType(defType))
+                return true;
+
+            if (defType is { Namespace: "System.Runtime.InteropServices.Swift", Name: "SwiftSelf" })
+                return true;
+
+            return false;
         }
     }
 }

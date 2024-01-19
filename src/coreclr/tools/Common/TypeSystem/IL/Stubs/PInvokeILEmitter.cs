@@ -394,8 +394,8 @@ namespace Internal.IL.Stubs
                 // Throw an exception if we encounter a value type that is not a primitive (and as such needs this lowering logic applied).
                 foreach (var marshaller in _marshallers)
                 {
-                    if (marshaller.ManagedType is DefType { IsValueType: true, IsEnum: false, IsPrimitive: false } paramType
-                        && !VectorFieldLayoutAlgorithm.IsVectorType(paramType))
+                    if (marshaller.ManagedType is { IsValueType: true, IsEnum: false, IsPrimitive: false } param
+                        && !MarshalHelpers.IsSwiftIntrinsicValueType(param))
                     {
                         throw new NotSupportedException();
                     }

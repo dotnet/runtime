@@ -126,8 +126,8 @@ namespace Internal.TypeSystem.Interop
                 // Skip stub generation of Swift methods with value types to allow an exception at runtime.
                 foreach (var param in targetMethod.Signature)
                 {
-                    if (param is DefType { IsValueType: true, IsEnum: false, IsPrimitive: false } defType
-                        && !VectorFieldLayoutAlgorithm.IsVectorType(paramType))
+                    if (param is { IsValueType: true, IsEnum: false, IsPrimitive: false }
+                        && !MarshalHelpers.IsSwiftIntrinsicValueType(param))
                     {
                         return true;
                     }
@@ -152,8 +152,8 @@ namespace Internal.TypeSystem.Interop
                 // Skip stub generation of Swift methods with value types to allow an exception at runtime.
                 foreach (var param in methodSig)
                 {
-                    if (param is DefType { IsValueType: true, IsEnum: false, IsPrimitive: false } defType
-                        && !VectorFieldLayoutAlgorithm.IsVectorType(paramType))
+                    if (param is { IsValueType: true, IsEnum: false, IsPrimitive: false }
+                        && !MarshalHelpers.IsSwiftIntrinsicValueType(param))
                     {
                         return true;
                     }
