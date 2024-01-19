@@ -839,6 +839,24 @@ void CodeGen::genCodeForBBlist()
     // This call is for cleaning the GC refs
     genUpdateLife(VarSetOps::MakeEmpty(compiler));
 
+#if !defined(FEATURE_EH_FUNCLETS)
+    // If this is a synchronized method on x86, and we generated all the code without
+    // generating the "exit monitor" call, then we must have deleted the single return block
+    // with that call because it was dead code. We still need to report the monitor range
+    // to the VM in the GC info, so create a label at the very end so we have a marker for
+    // the monitor end range.
+
+    if ((compiler->info.compFlags & CORINFO_FLG_SYNCH) && (compiler->syncEndEmitCookie == nullptr))
+    {
+        JITDUMP("Synchronized method with missing exit monitor call; adding final label\n");
+
+        // The GC liveness sets should all be empty.
+        compiler->syncEndEmitCookie =
+            GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
+        noway_assert(compiler->syncEndEmitCookie != nullptr);
+    }
+#endif // !FEATURE_EH_FUNCLETS
+
     /* Finalize the spill  tracking logic */
 
     regSet.rsSpillEnd();
