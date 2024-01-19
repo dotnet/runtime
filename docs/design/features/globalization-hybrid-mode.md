@@ -364,9 +364,9 @@ The Hybrid responses may differ because they use Web API functions. To better il
 |        ShortTimePattern       |                                       `Intl.DateTimeFormat(locale, { timeStyle: "medium" })`                                       |                 bg-BG                |        HH:mm       |        H:mm       |
 |        YearMonthPattern       |                           `Date.prototype.toLocaleDateString(locale, { year: "numeric", month: "long" })`                          |                 ar-SA                |      MMMM yyyy     |    MMMM yyyy g    |
 
-### OSX
+### Apple platforms
 
-For OSX platforms we are using native apis instead of ICU data.
+For Apple platforms (iOS/tvOS/maccatalyst) we are using native apis instead of ICU data.
 
 ## String comparison
 

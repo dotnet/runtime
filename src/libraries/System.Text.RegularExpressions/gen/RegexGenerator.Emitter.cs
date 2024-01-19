@@ -400,55 +400,57 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Adds a SearchValues instance declaration to the required helpers collection.</summary>
-        private static string EmitSearchValues(char[] chars, Dictionary<string, string[]> requiredHelpers)
+        private static string EmitSearchValues(char[] chars, Dictionary<string, string[]> requiredHelpers, string? fieldName = null)
         {
             Array.Sort(chars);
 
-            string fieldName;
-            if (RegexCharClass.IsAscii(chars))
+            if (fieldName is null)
             {
-                // The set of ASCII characters can be represented as a 128-bit bitmap. Use the 16-byte hex string as the key.
-                var bitmap = new byte[16];
-                foreach (char c in chars)
+                if (RegexCharClass.IsAscii(chars))
                 {
-                    bitmap[c >> 3] |= (byte)(1 << (c & 7));
+                    // The set of ASCII characters can be represented as a 128-bit bitmap. Use the 16-byte hex string as the key.
+                    var bitmap = new byte[16];
+                    foreach (char c in chars)
+                    {
+                        bitmap[c >> 3] |= (byte)(1 << (c & 7));
+                    }
+
+                    string hexBitmap = BitConverter.ToString(bitmap).Replace("-", string.Empty);
+
+                    fieldName = hexBitmap switch
+                    {
+                        "FFFFFFFF000000000000000000000080" => "s_asciiControl",
+                        "000000000000FF030000000000000000" => "s_asciiDigits",
+                        "0000000000000000FEFFFF07FEFFFF07" => "s_asciiLetters",
+                        "000000000000FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigits",
+                        "000000000000FF037E0000007E000000" => "s_asciiHexDigits",
+                        "000000000000FF03000000007E000000" => "s_asciiHexDigitsLower",
+                        "000000000000FF037E00000000000000" => "s_asciiHexDigitsUpper",
+                        "00000000EEF7008C010000B800000028" => "s_asciiPunctuation",
+                        "00000000010000000000000000000000" => "s_asciiSeparators",
+                        "00000000100800700000004001000050" => "s_asciiSymbols",
+                        "003E0000010000000000000000000000" => "s_asciiWhiteSpace",
+                        "000000000000FF03FEFFFF87FEFFFF07" => "s_asciiWordChars",
+
+                        "00000000FFFFFFFFFFFFFFFFFFFFFF7F" => "s_asciiExceptControl",
+                        "FFFFFFFFFFFF00FCFFFFFFFFFFFFFFFF" => "s_asciiExceptDigits",
+                        "FFFFFFFFFFFFFFFF010000F8010000F8" => "s_asciiExceptLetters",
+                        "FFFFFFFFFFFF00FC010000F8010000F8" => "s_asciiExceptLettersAndDigits",
+                        "FFFFFFFFFFFFFFFFFFFFFFFF010000F8" => "s_asciiExceptLower",
+                        "FFFFFFFF1108FF73FEFFFF47FFFFFFD7" => "s_asciiExceptPunctuation",
+                        "FFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptSeparators",
+                        "FFFFFFFFEFF7FF8FFFFFFFBFFEFFFFAF" => "s_asciiExceptSymbols",
+                        "FFFFFFFFFFFFFFFF010000F8FFFFFFFF" => "s_asciiExceptUpper",
+                        "FFC1FFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptWhiteSpace",
+                        "FFFFFFFFFFFF00FC01000078010000F8" => "s_asciiExceptWordChars",
+
+                        _ => $"s_ascii_{hexBitmap.TrimStart('0')}"
+                    };
                 }
-
-                string hexBitmap = BitConverter.ToString(bitmap).Replace("-", string.Empty);
-
-                fieldName = hexBitmap switch
+                else
                 {
-                    "FFFFFFFF000000000000000000000080" => "s_asciiControl",
-                    "000000000000FF030000000000000000" => "s_asciiDigits",
-                    "0000000000000000FEFFFF07FEFFFF07" => "s_asciiLetters",
-                    "000000000000FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigits",
-                    "000000000000FF037E0000007E000000" => "s_asciiHexDigits",
-                    "000000000000FF03000000007E000000" => "s_asciiHexDigitsLower",
-                    "000000000000FF037E00000000000000" => "s_asciiHexDigitsUpper",
-                    "00000000EEF7008C010000B800000028" => "s_asciiPunctuation",
-                    "00000000010000000000000000000000" => "s_asciiSeparators",
-                    "00000000100800700000004001000050" => "s_asciiSymbols",
-                    "003E0000010000000000000000000000" => "s_asciiWhiteSpace",
-                    "000000000000FF03FEFFFF87FEFFFF07" => "s_asciiWordChars",
-
-                    "00000000FFFFFFFFFFFFFFFFFFFFFF7F" => "s_asciiExceptControl",
-                    "FFFFFFFFFFFF00FCFFFFFFFFFFFFFFFF" => "s_asciiExceptDigits",
-                    "FFFFFFFFFFFFFFFF010000F8010000F8" => "s_asciiExceptLetters",
-                    "FFFFFFFFFFFF00FC010000F8010000F8" => "s_asciiExceptLettersAndDigits",
-                    "FFFFFFFFFFFFFFFFFFFFFFFF010000F8" => "s_asciiExceptLower",
-                    "FFFFFFFF1108FF73FEFFFF47FFFFFFD7" => "s_asciiExceptPunctuation",
-                    "FFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptSeparators",
-                    "FFFFFFFFEFF7FF8FFFFFFFBFFEFFFFAF" => "s_asciiExceptSymbols",
-                    "FFFFFFFFFFFFFFFF010000F8FFFFFFFF" => "s_asciiExceptUpper",
-                    "FFC1FFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptWhiteSpace",
-                    "FFFFFFFFFFFF00FC01000078010000F8" => "s_asciiExceptWordChars",
-
-                    _ => $"s_ascii_{hexBitmap.TrimStart('0')}"
-                };
-            }
-            else
-            {
-                fieldName = GetSHA256FieldName("s_nonAscii_", new string(chars));
+                    fieldName = GetSHA256FieldName("s_nonAscii_", new string(chars));
+                }
             }
 
             if (!requiredHelpers.ContainsKey(fieldName))
@@ -1142,6 +1144,11 @@ namespace System.Text.RegularExpressions.Generator
                             (false, true) => $"{span}.IndexOfAnyExceptInRange({Literal(primarySet.Range.Value.LowInclusive)}, {Literal(primarySet.Range.Value.HighInclusive)})",
                             (true, true) => $"{span}.IndexOfAnyExcept({Literal(primarySet.Range.Value.LowInclusive)})",
                         };
+                    }
+                    else if (RegexCharClass.IsUnicodeCategoryOfSmallCharCount(primarySet.Set, out char[]? setChars, out bool negated, out string? description))
+                    {
+                        // We have a known set of characters, and we can use the supplied IndexOfAny{Except}(...).
+                        indexOf = $"{span}.{(negated ? "IndexOfAnyExcept" : "IndexOfAny")}({EmitSearchValues(setChars, requiredHelpers, $"s_{description}")})";
                     }
                     else
                     {

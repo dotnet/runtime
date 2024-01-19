@@ -301,18 +301,20 @@ bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------
-// CanRemoveJumpToFalseTarget: determine if jump to false target can be omitted
+// CanRemoveJumpToTarget: determine if jump to target can be omitted
 //
 // Arguments:
+//    target - true/false target of BBJ_COND block
 //    compiler - current compiler instance
 //
 // Returns:
-//    true if block is a BBJ_COND that can fall into its false target
+//    true if block is a BBJ_COND that can fall into target
 //
-bool BasicBlock::CanRemoveJumpToFalseTarget(Compiler* compiler) const
+bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const
 {
     assert(KindIs(BBJ_COND));
-    return NextIs(bbFalseTarget) && !hasAlign() && !compiler->fgInDifferentRegions(this, bbFalseTarget);
+    assert(TrueTargetIs(target) || FalseTargetIs(target));
+    return NextIs(target) && !compiler->fgInDifferentRegions(this, target);
 }
 
 //------------------------------------------------------------------------
@@ -1170,7 +1172,7 @@ unsigned BasicBlock::NumSucc() const
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueTarget == bbFalseTarget)
             {
                 return 1;
             }
@@ -1295,7 +1297,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueTarget == bbFalseTarget)
             {
                 return 1;
             }
@@ -1609,9 +1611,8 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
 
     block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
 
-    block->bbPreorderNum     = 0;
-    block->bbPostorderNum    = 0;
-    block->bbNewPostorderNum = 0;
+    block->bbPreorderNum  = 0;
+    block->bbPostorderNum = 0;
 
     return block;
 }

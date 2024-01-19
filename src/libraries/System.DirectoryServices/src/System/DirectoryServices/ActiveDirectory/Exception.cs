@@ -87,19 +87,19 @@ namespace System.DirectoryServices.ActiveDirectory
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class ActiveDirectoryOperationException : Exception, ISerializable
     {
-        public ActiveDirectoryOperationException(string? message, Exception? inner, int errorCode) : base(message, inner)
+        public ActiveDirectoryOperationException(string? message, Exception? inner, int errorCode) : base(message ?? SR.DSUnknownFailure, inner)
         {
             ErrorCode = errorCode;
         }
 
-        public ActiveDirectoryOperationException(string? message, int errorCode) : base(message)
+        public ActiveDirectoryOperationException(string? message, int errorCode) : base(message ?? SR.DSUnknownFailure)
         {
             ErrorCode = errorCode;
         }
 
-        public ActiveDirectoryOperationException(string? message, Exception? inner) : base(message, inner) { }
+        public ActiveDirectoryOperationException(string? message, Exception? inner) : base(message ?? SR.DSUnknownFailure, inner) { }
 
-        public ActiveDirectoryOperationException(string? message) : base(message) { }
+        public ActiveDirectoryOperationException(string? message) : base(message ?? SR.DSUnknownFailure) { }
 
         public ActiveDirectoryOperationException() : base(SR.DSUnknownFailure) { }
 
@@ -205,14 +205,14 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         private readonly SyncFromAllServersErrorInformation[]? _errors;
 
-        public SyncFromAllServersOperationException(string? message, Exception? inner, SyncFromAllServersErrorInformation[]? errors) : base(message, inner)
+        public SyncFromAllServersOperationException(string? message, Exception? inner, SyncFromAllServersErrorInformation[]? errors) : base(message ?? SR.DSSyncAllFailure, inner)
         {
             _errors = errors;
         }
 
-        public SyncFromAllServersOperationException(string? message, Exception? inner) : base(message, inner) { }
+        public SyncFromAllServersOperationException(string? message, Exception? inner) : base(message ?? SR.DSSyncAllFailure, inner) { }
 
-        public SyncFromAllServersOperationException(string? message) : base(message) { }
+        public SyncFromAllServersOperationException(string? message) : base(message ?? SR.DSSyncAllFailure) { }
 
         public SyncFromAllServersOperationException() : base(SR.DSSyncAllFailure) { }
 
@@ -253,14 +253,14 @@ namespace System.DirectoryServices.ActiveDirectory
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class ForestTrustCollisionException : ActiveDirectoryOperationException, ISerializable
     {
-        public ForestTrustCollisionException(string? message, Exception? inner, ForestTrustRelationshipCollisionCollection? collisions) : base(message, inner)
+        public ForestTrustCollisionException(string? message, Exception? inner, ForestTrustRelationshipCollisionCollection? collisions) : base(message ?? SR.ForestTrustCollision, inner)
         {
             Collisions = collisions;
         }
 
-        public ForestTrustCollisionException(string? message, Exception? inner) : base(message, inner) { }
+        public ForestTrustCollisionException(string? message, Exception? inner) : base(message ?? SR.ForestTrustCollision, inner) { }
 
-        public ForestTrustCollisionException(string? message) : base(message) { }
+        public ForestTrustCollisionException(string? message) : base(message ?? SR.ForestTrustCollision) { }
 
         public ForestTrustCollisionException() : base(SR.ForestTrustCollision) { }
 

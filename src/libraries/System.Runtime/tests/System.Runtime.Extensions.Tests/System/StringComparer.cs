@@ -179,7 +179,7 @@ namespace System.Tests
                 yield return new object[] { "turky i", "TURKY \u0130", "tr-TR", CompareOptions.IgnoreCase, true};
             }
 
-            if (PlatformDetection.IsNotHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 bool ignoreSymbolsIgnoresOnlyPunctuation = PlatformDetection.IsHybridGlobalizationOnBrowser;
                 yield return new object[] { "abcd", "ab cd", "en-US", CompareOptions.IgnoreSymbols, true };
