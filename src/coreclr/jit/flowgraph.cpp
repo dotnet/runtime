@@ -3539,15 +3539,15 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 }
 
 //------------------------------------------------------------------------
-// fgFindExcptnTarget: finds the block to jump that will throw a given kind of exception
+// fgFindExcptnTarget: finds the block to jump to that will throw a given kind of exception
 //
 // Arguments:
-//    kind - kind of exception to throw
+//    kind -- kind of exception to throw
 //    refData -- bbThrowIndex of the block that will jump to the throw helper
 //
 // Return Value:
 //    Code descriptor for the appropriate throw helper block, or nullptr if no such
-//    descriptor exists
+//    descriptor exists.
 //
 Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
 {
@@ -3559,7 +3559,7 @@ Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigne
 
     if (add == nullptr)
     {
-        // We should't be asking for these blocks late in compilation
+        // We shouldn't be asking for these blocks late in compilation
         // unless we know there are entries to be found.
         assert(!fgRngChkThrowAdded);
     }
