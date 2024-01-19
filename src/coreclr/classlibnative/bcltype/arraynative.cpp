@@ -121,7 +121,7 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const TypeHandle sr
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_ANY;
         PRECONDITION(srcTH != NULL);
         PRECONDITION(destTH != NULL);
     }
