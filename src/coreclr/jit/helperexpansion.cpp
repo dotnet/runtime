@@ -1927,9 +1927,8 @@ static CORINFO_CLASS_HANDLE PickLikelyClass(Compiler* comp, IL_OFFSET offset, un
 //
 bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    if (!call->IsHelperCall() || !impIsCastHelperMayHaveProfileData(call->GetHelperNum()))
+    if (!call->IsHelperCall())
     {
-        // Not a cast helper we're interested in
         return false;
     }
 
