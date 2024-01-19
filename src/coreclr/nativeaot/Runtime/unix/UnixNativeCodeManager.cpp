@@ -87,12 +87,12 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
 
     unw_proc_info_t procInfo;
 
-    if (!UnwindHelpers::GetUnwindProcInfo((PCODE)ControlPC, m_UnwindInfoSections, &procInfo))
+    if (!UnwindHelpers::GetUnwindProcInfo(PINSTRToPCODE((TADDR)ControlPC), m_UnwindInfoSections, &procInfo))
     {
         return false;
     }
 
-    assert((procInfo.start_ip <= (PCODE)ControlPC) && ((PCODE)ControlPC < procInfo.end_ip));
+    assert((procInfo.start_ip <= PINSTRToPCODE((TADDR)ControlPC)) && (PINSTRToPCODE((TADDR)ControlPC) < procInfo.end_ip));
 
     pMethodInfo->start_ip = procInfo.start_ip;
     pMethodInfo->format = procInfo.format;
@@ -607,7 +607,7 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
         {
             unw_proc_info_t procInfo;
 
-            bool result = UnwindHelpers::GetUnwindProcInfo((PCODE)pvAddress, m_UnwindInfoSections, &procInfo);
+            bool result = UnwindHelpers::GetUnwindProcInfo(PINSTRToPCODE((TADDR)pvAddress), m_UnwindInfoSections, &procInfo);
             ASSERT(result);
 
             if (branchTarget < procInfo.start_ip || branchTarget >= procInfo.end_ip)
