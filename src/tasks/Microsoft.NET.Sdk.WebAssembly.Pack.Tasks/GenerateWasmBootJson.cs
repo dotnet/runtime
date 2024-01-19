@@ -327,15 +327,11 @@ public class GenerateWasmBootJson : Task
                 return;
             }
         }
-        
+
         if (IsTargeting80OrLater())
         {
-            // If user didn't gave us a value, check if we have any PDB.
-            var debugLevel = ParseOptionalInt(DebugLevel);
-            if (debugLevel == null)
-                debugLevel = Resources?.pdb?.Count > 0 ? -1 : 0;
-
-            result.debugLevel = debugLevel;
+            // If user didn't give us a value, check if we have any PDB.
+            result.debugLevel = ParseOptionalInt(DebugLevel) ?? (result.resources?.pdb?.Count > 0 ? -1 : 0);
         }
 
         if (ConfigurationFiles != null)
