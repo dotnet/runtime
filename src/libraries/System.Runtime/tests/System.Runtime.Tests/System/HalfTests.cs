@@ -1105,7 +1105,7 @@ namespace System.Tests
         {
             float value = o_value is float floatValue ? floatValue : (float)(Half)o_value;
             Half result = Half.Parse(value.ToString());
-            AssertExtensions.Equal(value, result);
+            AssertExtensions.Equal((Half)value, result);
         }
 
         [Theory]
@@ -1114,7 +1114,7 @@ namespace System.Tests
         {
             float value = o_value is float floatValue ? floatValue : (float)(Half)o_value;
             Half result = Half.Parse(value.ToString("R"));
-            AssertExtensions.Equal(value, result);
+            AssertExtensions.Equal((Half)value, result);
         }
 
         public static IEnumerable<object[]> RoundTripFloat_CornerCases()

@@ -1124,6 +1124,10 @@ namespace System
         }
 #endif
 
+        /// <summary>Verifies that two <see cref="double"/> values's binary representations are identical.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
         public static void Equal(double expected, double actual)
         {
             if (BitConverter.DoubleToInt64Bits(expected) == BitConverter.DoubleToInt64Bits(actual))
@@ -1134,6 +1138,10 @@ namespace System
             throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
         }
 
+        /// <summary>Verifies that two <see cref="float"/> values's binary representations are identical.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
         public static void Equal(float expected, float actual)
         {
             if (BitConverter.SingleToInt32Bits(expected) == BitConverter.SingleToInt32Bits(actual))
@@ -1151,6 +1159,10 @@ namespace System
         }
 
 #if NET6_0_OR_GREATER
+        /// <summary>Verifies that two <see cref="Half"/> values's binary representations are identical.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
         public static void Equal(Half expected, Half actual)
         {
             if (BitConverter.HalfToUInt16Bits(expected) == BitConverter.HalfToUInt16Bits(actual))
