@@ -39,11 +39,12 @@ namespace System.Diagnostics
 }
 
 #if FEATURE_WASM_THREADS
-namespace System.Runtime.InteropServices.JavaScript
+namespace System.Threading
 {
-    public class JSProxyContextBase {
+    public partial class Monitor
+    {
         [ThreadStatic]
-        public static JSProxyContextBase? CurrentThreadContextBase;
+        public static bool ThrowOnBlockingWaitOnJSInteropThread;
     }
 }
 #endif

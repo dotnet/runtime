@@ -49,6 +49,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var ctx = new JSSynchronizationContext(isMainThread, cancellationToken);
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
+            Monitor.ThrowOnBlockingWaitOnJSInteropThread = true;
 
             var proxyContext = ctx.ProxyContext;
             JSProxyContext.CurrentThreadContext = proxyContext;

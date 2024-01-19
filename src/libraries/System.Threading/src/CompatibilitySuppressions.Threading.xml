@@ -100,4 +100,8 @@
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Threading.Monitor.Wait(System.Object):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Threading.Monitor.ThrowOnBlockingWaitOnJSInteropThread</Target>
+  </Suppression>
 </Suppressions>
