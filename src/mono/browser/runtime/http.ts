@@ -58,7 +58,7 @@ export function http_wasm_create_controller(): HttpController {
     const controller: HttpController = {
         abortController: new AbortController()
     };
-    return controller as HttpController;
+    return controller;
 }
 
 export function http_wasm_abort_request(controller: HttpController): void {
