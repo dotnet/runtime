@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -174,6 +175,7 @@ namespace System
         }
 
         // Will box each element in an array of value classes or primitives into an array of Objects.
+        [UnconditionalSuppressMessage("Trimming", "IL2059:The type passed to the RunClassConstructor is not statically known, Trimmer can't make sure that its static constructor is available.", Justification = "The type handle is retrieved from existing array.")]
         private static unsafe void BoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             MethodTable* pSrcArrayMT = RuntimeHelpers.GetMethodTable(sourceArray);
