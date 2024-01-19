@@ -55,7 +55,7 @@ export function http_wasm_supports_streaming_response(): boolean {
 export function http_wasm_create_controller(): HttpController {
     verifyEnvironment();
     assert_js_interop();
-    const controller: Partial<HttpController> = {
+    const controller: HttpController = {
         abortController: new AbortController()
     };
     return controller as HttpController;
@@ -151,7 +151,7 @@ export function http_wasm_fetch(controller: HttpController, url: string, header_
         return loaderHelpers.fetch_like(url, options);
     });
     // avoid processing headers if the fetch is cancelled
-    controller.fetchResponsePromise.then((res) => {
+    controller.fetchResponsePromise.then((res: Response) => {
         controller.fetchResponse = res;
         controller.responseHeaderNames = [];
         controller.responseHeaderValues = [];
@@ -164,7 +164,7 @@ export function http_wasm_fetch(controller: HttpController, url: string, header_
             }
         }
     });
-    return controller.fetchResponsePromise as ControllablePromise<any>;
+    return controller.fetchResponsePromise;
 }
 
 export function http_wasm_get_response_type(controller: HttpController): string | undefined {
@@ -253,7 +253,7 @@ interface HttpController {
     streamReader?: ReadableStreamDefaultReader<Uint8Array>
 
     // response
-    fetchResponsePromise?: ControllablePromise<Response>
+    fetchResponsePromise?: ControllablePromise<any>
     fetchResponse?: Response
     responseHeaderNames?: string[];
     responseHeaderValues?: string[];
