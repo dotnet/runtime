@@ -2947,7 +2947,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 						break;
 					}
 				} else if (next_ins->opcode == OP_LCGT_UN || next_ins->opcode == OP_ICGT_UN) {
-					if (RISCV_VALID_I_IMM (ins->inst_imm + 1)) {
+					if ((ins->inst_imm != -1) && RISCV_VALID_I_IMM (ins->inst_imm + 1)) {
 						// compare rs1, imm; lcgt_un rd => sltiu rd, rs1, imm; xori rd, rd, 1
 						ins->opcode = OP_RISCV_SLTIU;
 						ins->dreg = next_ins->dreg;
@@ -2958,6 +2958,15 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 						next_ins->dreg = ins->dreg;
 						next_ins->sreg1 = ins->dreg;
 						next_ins->inst_imm = 1;
+						break;
+					}
+					else if ((ins->inst_imm == -1)) {
+						// rs1 will never greater than -1
+						next_ins->opcode = OP_ADD_IMM;
+						next_ins->sreg1 = RISCV_ZERO;
+						next_ins->inst_imm = 0;
+
+						NULLIFY_INS (ins);
 						break;
 					}
 				} else if (next_ins->opcode == OP_LCGT || next_ins->opcode == OP_ICGT) {
