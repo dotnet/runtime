@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
         /// <param name="message">
         ///   The error message that explains the reason for the exception.
         /// </param>
-        public AuthenticationTagMismatchException(string? message) : base(message)
+        public AuthenticationTagMismatchException(string? message) : base(message ?? SR.Cryptography_AuthTagMismatch)
         {
         }
 
@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
         ///   <see langword="null" />, the current exception is raised in a catch block that handles the inner exception.
         /// </param>
         public AuthenticationTagMismatchException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Cryptography_AuthTagMismatch, inner)
         {
         }
     }

@@ -12617,6 +12617,10 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvStdcall() { }
     }
+    public partial class CallConvSwift
+    {
+        public CallConvSwift() { }
+    }
     public partial class CallConvSuppressGCTransition
     {
         public CallConvSuppressGCTransition() { }
@@ -13812,6 +13816,22 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { }
             public static ref T GetPinnableReference(System.Span<T> managed) { throw null; }
         }
+    }
+}
+namespace System.Runtime.InteropServices.Swift
+{
+    [System.CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftSelf
+    {
+        public SwiftSelf(void* value) { }
+        public void* Value { get; }
+    }
+
+    [System.CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftError
+    {
+        public SwiftError(void* value) { }
+        public void* Value { get; }
     }
 }
 namespace System.Runtime.Remoting

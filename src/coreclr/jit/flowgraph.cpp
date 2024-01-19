@@ -150,13 +150,12 @@ PhaseStatus Compiler::fgInsertGCPolls()
         block = curBasicBlock;
     }
 
-    // If we split a block to create a GC Poll, then rerun fgReorderBlocks to push the rarely run blocks out
-    // past the epilog.  We should never split blocks unless we're optimizing.
+    // If we split a block to create a GC Poll, call fgUpdateChangedFlowGraph.
+    // We should never split blocks unless we're optimizing.
     if (createdPollBlocks)
     {
         noway_assert(opts.OptimizationEnabled());
-        fgReorderBlocks(/* useProfileData */ false);
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+        fgRenumberBlocks();
     }
 
     return result;
@@ -2850,7 +2849,6 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 void Compiler::fgCreateFuncletPrologBlocks()
 {
     noway_assert(fgPredsComputed);
-    noway_assert(!fgDomsComputed); // this function doesn't maintain the dom sets
     assert(!fgFuncletsCreated);
 
     bool prologBlocksCreated = false;
@@ -3955,7 +3953,7 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
 //
 bool FlowGraphDfsTree::Contains(BasicBlock* block) const
 {
-    return (block->bbNewPostorderNum < m_postOrderCount) && (m_postOrder[block->bbNewPostorderNum] == block);
+    return (block->bbPostorderNum < m_postOrderCount) && (m_postOrder[block->bbPostorderNum] == block);
 }
 
 //------------------------------------------------------------------------
@@ -3977,7 +3975,7 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 {
     assert(Contains(ancestor) && Contains(descendant));
     return (ancestor->bbPreorderNum <= descendant->bbPreorderNum) &&
-           (descendant->bbNewPostorderNum <= ancestor->bbNewPostorderNum);
+           (descendant->bbPostorderNum <= ancestor->bbPostorderNum);
 }
 
 //------------------------------------------------------------------------
@@ -3996,12 +3994,12 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
     bool         hasCycle  = false;
 
     auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
-        block->bbPreorderNum     = preorderNum;
-        block->bbNewPostorderNum = UINT_MAX;
+        block->bbPreorderNum  = preorderNum;
+        block->bbPostorderNum = UINT_MAX;
     };
 
     auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
-        block->bbNewPostorderNum = postorderNum;
+        block->bbPostorderNum = postorderNum;
         assert(postorderNum < fgBBcount);
         postOrder[postorderNum] = block;
     };
@@ -4009,7 +4007,7 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
     auto visitEdge = [&hasCycle](BasicBlock* block, BasicBlock* succ) {
         // Check if block -> succ is a backedge, in which case the flow
         // graph has a cycle.
-        if ((succ->bbPreorderNum <= block->bbPreorderNum) && (succ->bbNewPostorderNum == UINT_MAX))
+        if ((succ->bbPreorderNum <= block->bbPreorderNum) && (succ->bbPostorderNum == UINT_MAX))
         {
             hasCycle = true;
         }
@@ -4025,10 +4023,11 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
 //
 void Compiler::fgInvalidateDfsTree()
 {
-    m_dfsTree  = nullptr;
-    m_loops    = nullptr;
-    m_domTree  = nullptr;
-    fgSsaValid = false;
+    m_dfsTree          = nullptr;
+    m_loops            = nullptr;
+    m_domTree          = nullptr;
+    m_reachabilitySets = nullptr;
+    fgSsaValid         = false;
 }
 
 //------------------------------------------------------------------------
@@ -4087,7 +4086,7 @@ unsigned FlowGraphNaturalLoop::LoopBlockBitVecIndex(BasicBlock* block)
 {
     assert(m_dfsTree->Contains(block));
 
-    unsigned index = m_header->bbNewPostorderNum - block->bbNewPostorderNum;
+    unsigned index = m_header->bbPostorderNum - block->bbPostorderNum;
     assert(index < m_blocksSize);
     return index;
 }
@@ -4110,12 +4109,12 @@ unsigned FlowGraphNaturalLoop::LoopBlockBitVecIndex(BasicBlock* block)
 //
 bool FlowGraphNaturalLoop::TryGetLoopBlockBitVecIndex(BasicBlock* block, unsigned* pIndex)
 {
-    if (block->bbNewPostorderNum > m_header->bbNewPostorderNum)
+    if (block->bbPostorderNum > m_header->bbPostorderNum)
     {
         return false;
     }
 
-    unsigned index = m_header->bbNewPostorderNum - block->bbNewPostorderNum;
+    unsigned index = m_header->bbPostorderNum - block->bbPostorderNum;
     if (index >= m_blocksSize)
     {
         return false;
@@ -4315,7 +4314,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
     {
         unsigned          rpoNum = dfsTree->GetPostOrderCount() - i;
         BasicBlock* const block  = dfsTree->GetPostOrder(i - 1);
-        JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum, block->bbNum, block->bbPreorderNum, block->bbNewPostorderNum);
+        JITDUMP("%02u -> " FMT_BB "[%u, %u]\n", rpoNum, block->bbNum, block->bbPreorderNum, block->bbPostorderNum);
     }
 
     unsigned improperLoopHeaders = 0;
@@ -4366,7 +4365,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         // this is a natural loop and to find all the blocks in the loop.
         //
 
-        loop->m_blocksSize = loop->m_header->bbNewPostorderNum + 1;
+        loop->m_blocksSize = loop->m_header->bbPostorderNum + 1;
 
         BitVecTraits loopTraits = loop->LoopBlockTraits();
         loop->m_blocks          = BitVecOps::MakeEmpty(&loopTraits);
@@ -4934,15 +4933,31 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 //   otherwise false.
 //
 // Remarks:
-//   The function guarantees that at all definitions of the iteration local,
-//   the loop condition is reestablished before iteration continues. In other
-//   words, if this function returns true the loop invariant is guaranteed to
-//   be upheld in all blocks in the loop (but see below for establishing the
-//   base case).
+//   On a true return, the function guarantees that the loop invariant is true
+//   and maintained at all points within the loop, except possibly right after
+//   the update of the iterator variable (NaturalLoopIterInfo::IterTree). The
+//   function guarantees that the test (NaturalLoopIterInfo::TestTree) occurs
+//   immediately after the update, so no IR in the loop is executed without the
+//   loop invariant being true, except for the test.
 //
-//   Currently we do not validate that there is a zero-trip test ensuring the
-//   condition is true, so it is up to the user to validate that. This is
-//   normally done via GTF_RELOP_ZTT set by loop inversion.
+//   The loop invariant is defined as the expression obtained by
+//   [info->IterVar] [info->TestOper()] [info->Limit()]. Note that
+//   [info->TestTree()] may not be of this form; it could for instance have the
+//   iterator variable as the second operand. However,
+//   [NaturalLoopIterInfo::TestOper()] will automatically normalize the test
+//   oper so that the invariant is equivalent to the returned form that has the
+//   iteration variable as op1 and the limit as op2.
+//
+//   The limit can be further decomposed via NaturalLoopIterInfo::ConstLimit,
+//   ::VarLimit and ::ArrLenLimit.
+//
+//   As an example, if info->IterVar == V02, info->TestOper() == GT_LT and
+//   info->ConstLimit() == 10, then the function guarantees that the value of
+//   the local V02 is less than 10 everywhere within the loop (except possibly
+//   at the test).
+//
+//   In some cases we also know the initial value on entry to the loop; see
+//   ::HasConstInit and ::ConstInitValue.
 //
 bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 {
@@ -4973,8 +4988,15 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         return false;
     }
 
-    info->TestBlock = cond;
-    info->IterVar   = comp->optIsLoopIncrTree(info->IterTree);
+    assert(ContainsBlock(cond->GetTrueTarget()) != ContainsBlock(cond->GetFalseTarget()));
+
+    info->TestBlock    = cond;
+    info->IterVar      = comp->optIsLoopIncrTree(info->IterTree);
+    info->ExitedOnTrue = !ContainsBlock(cond->GetTrueTarget());
+
+    // TODO-CQ: Currently, since we only look at the lexically bottom most block all loops have
+    // ExitedOnTrue == false. Once we recognize more structures this can be true.
+    assert(!info->ExitedOnTrue);
 
     assert(info->IterVar != BAD_VAR_NUM);
     LclVarDsc* const iterVarDsc = comp->lvaGetDesc(info->IterVar);
@@ -5028,13 +5050,20 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         return false;
     }
 
+    if (!CheckLoopConditionBaseCase(initBlock, info))
+    {
+        JITDUMP("  Loop condition is not always true\n");
+        return false;
+    }
+
 #ifdef DEBUG
     if (comp->verbose)
     {
         printf("  IterVar = V%02u\n", info->IterVar);
 
         if (info->HasConstInit)
-            printf("  Const init with value %d in " FMT_BB "\n", info->ConstInitValue, info->InitBlock->bbNum);
+            printf("  Const init with value %d (at [%06u])\n", info->ConstInitValue,
+                   Compiler::dspTreeID(info->InitTree));
 
         printf("  Test is [%06u] (", Compiler::dspTreeID(info->TestTree));
         if (info->HasConstLimit)
@@ -5076,7 +5105,7 @@ void FlowGraphNaturalLoop::MatchInit(NaturalLoopIterInfo* info, BasicBlock* init
 
     info->HasConstInit   = true;
     info->ConstInitValue = (int)initValue->AsIntCon()->IconValue();
-    info->InitBlock      = initBlock;
+    INDEBUG(info->InitTree = init);
 }
 
 //------------------------------------------------------------------------
@@ -5119,12 +5148,12 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
     GenTree* limitOp;
 
     // Make sure op1 or op2 is the iterVar.
-    if (opr1->gtOper == GT_LCL_VAR && opr1->AsLclVarCommon()->GetLclNum() == info->IterVar)
+    if (opr1->OperIsScalarLocal() && (opr1->AsLclVarCommon()->GetLclNum() == info->IterVar))
     {
         iterOp  = opr1;
         limitOp = opr2;
     }
-    else if (opr2->gtOper == GT_LCL_VAR && opr2->AsLclVarCommon()->GetLclNum() == info->IterVar)
+    else if (opr2->OperIsScalarLocal() && (opr2->AsLclVarCommon()->GetLclNum() == info->IterVar))
     {
         iterOp  = opr2;
         limitOp = opr1;
@@ -5139,11 +5168,8 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
         return false;
     }
 
-    // Mark the iterator node.
-    iterOp->gtFlags |= GTF_VAR_ITERATOR;
-
     // Check what type of limit we have - constant, variable or arr-len.
-    if (limitOp->gtOper == GT_CNS_INT)
+    if (limitOp->IsCnsIntOrI())
     {
         info->HasConstLimit = true;
         if ((limitOp->gtFlags & GTF_ICON_SIMD_COUNT) != 0)
@@ -5211,6 +5237,105 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
 
     info->TestTree = relop;
     return true;
+}
+
+//------------------------------------------------------------------------
+// EvaluateRelop: Evaluate a relational operator with constant arguments.
+//
+// Parameters:
+//   op1  - First operand
+//   op2  - Second operand
+//   oper - Operator
+//
+// Returns:
+//   Result.
+//
+template <typename T>
+bool FlowGraphNaturalLoop::EvaluateRelop(T op1, T op2, genTreeOps oper)
+{
+    switch (oper)
+    {
+        case GT_EQ:
+            return op1 == op2;
+
+        case GT_NE:
+            return op1 != op2;
+
+        case GT_LT:
+            return op1 < op2;
+
+        case GT_LE:
+            return op1 <= op2;
+
+        case GT_GT:
+            return op1 > op2;
+
+        case GT_GE:
+            return op1 >= op2;
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// CheckLoopConditionBaseCase: Verify that the loop condition is true when the
+// loop is entered (or validated immediately on entry).
+//
+// Returns:
+//   True if we could prove that the condition is true at all interesting
+//   points in the loop.
+//
+// Remarks:
+//   Currently handles the following cases:
+//     * The condition being trivially true in the first iteration (e.g. for (int i = 0; i < 3; i++))
+//     * The condition is checked before entry (often due to loop inversion)
+//
+bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info)
+{
+    // TODO: A common loop idiom is to enter the loop at the test, with the
+    // unique in-loop predecessor of the header block being the increment. We
+    // currently do not handle these patterns in `optExtractInitTestIncr`.
+    // Instead we depend on loop inversion to put them into an
+    //   if (x) { do { ... } while (x) }
+    // form. Once we handle the pattern in `optExtractInitTestIncr` we can
+    // handle it here by checking for whether the test is the header and first
+    // thing in the header.
+
+    // Is it trivially true?
+    if (info->HasConstInit && info->HasConstLimit)
+    {
+        int initVal  = info->ConstInitValue;
+        int limitVal = info->ConstLimit();
+
+        assert(genActualType(info->TestTree->gtGetOp1()) == TYP_INT);
+
+        bool isTriviallyTrue = info->TestTree->IsUnsigned()
+                                   ? EvaluateRelop<uint32_t>((uint32_t)initVal, (uint32_t)limitVal, info->TestOper())
+                                   : EvaluateRelop<int32_t>(initVal, limitVal, info->TestOper());
+
+        if (isTriviallyTrue)
+        {
+            JITDUMP("  Condition is trivially true on entry (%d %s%s %d)\n", initVal,
+                    info->TestTree->IsUnsigned() ? "(uns)" : "", GenTree::OpName(info->TestOper()), limitVal);
+            return true;
+        }
+    }
+
+    // Do we have a zero-trip test?
+    if (initBlock->KindIs(BBJ_COND))
+    {
+        GenTree* enteringJTrue = initBlock->lastStmt()->GetRootNode();
+        assert(enteringJTrue->OperIs(GT_JTRUE));
+        if (enteringJTrue->gtGetOp1()->OperIsCompare() && ((enteringJTrue->gtGetOp1()->gtFlags & GTF_RELOP_ZTT) != 0))
+        {
+            JITDUMP("  Condition is established before entry at [%06u]\n",
+                    Compiler::dspTreeID(enteringJTrue->gtGetOp1()));
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -5341,7 +5466,7 @@ var_types NaturalLoopIterInfo::IterOperType()
 //
 bool NaturalLoopIterInfo::IsReversed()
 {
-    return TestTree->gtGetOp2()->OperIs(GT_LCL_VAR) && ((TestTree->gtGetOp2()->gtFlags & GTF_VAR_ITERATOR) != 0);
+    return TestTree->gtGetOp2()->OperIsScalarLocal() && (TestTree->gtGetOp2()->AsLclVar()->GetLclNum() == IterVar);
 }
 
 //------------------------------------------------------------------------
@@ -5354,7 +5479,15 @@ bool NaturalLoopIterInfo::IsReversed()
 genTreeOps NaturalLoopIterInfo::TestOper()
 {
     genTreeOps op = TestTree->OperGet();
-    return IsReversed() ? GenTree::SwapRelop(op) : op;
+    if (IsReversed())
+    {
+        op = GenTree::SwapRelop(op);
+    }
+    if (ExitedOnTrue)
+    {
+        op = GenTree::ReverseRelop(op);
+    }
+    return op;
 }
 
 //------------------------------------------------------------------------
@@ -5508,11 +5641,11 @@ BasicBlock* FlowGraphDominatorTree::IntersectDom(BasicBlock* finger1, BasicBlock
 {
     while (finger1 != finger2)
     {
-        if (finger1 == nullptr || finger2 == nullptr)
+        if ((finger1 == nullptr) || (finger2 == nullptr))
         {
             return nullptr;
         }
-        while (finger1 != nullptr && finger1->bbNewPostorderNum < finger2->bbNewPostorderNum)
+        while ((finger1 != nullptr) && (finger1->bbPostorderNum < finger2->bbPostorderNum))
         {
             finger1 = finger1->bbIDom;
         }
@@ -5520,7 +5653,7 @@ BasicBlock* FlowGraphDominatorTree::IntersectDom(BasicBlock* finger1, BasicBlock
         {
             return nullptr;
         }
-        while (finger2 != nullptr && finger2->bbNewPostorderNum < finger1->bbNewPostorderNum)
+        while ((finger2 != nullptr) && (finger2->bbPostorderNum < finger1->bbPostorderNum))
         {
             finger2 = finger2->bbIDom;
         }
@@ -5560,9 +5693,36 @@ bool FlowGraphDominatorTree::Dominates(BasicBlock* dominator, BasicBlock* domina
     //
     // where the equality holds when you ask if A dominates itself.
     //
-    return (m_preorderNum[dominator->bbNewPostorderNum] <= m_preorderNum[dominated->bbNewPostorderNum]) &&
-           (m_postorderNum[dominator->bbNewPostorderNum] >= m_postorderNum[dominated->bbNewPostorderNum]);
+    return (m_preorderNum[dominator->bbPostorderNum] <= m_preorderNum[dominated->bbPostorderNum]) &&
+           (m_postorderNum[dominator->bbPostorderNum] >= m_postorderNum[dominated->bbPostorderNum]);
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// FlowGraphDominatorTree::Dump: Dump a textual representation of the dominator
+// tree.
+//
+void FlowGraphDominatorTree::Dump()
+{
+    Compiler* comp = m_dfsTree->GetCompiler();
+
+    for (BasicBlock* block : comp->Blocks())
+    {
+        if (!m_dfsTree->Contains(block) || (m_domTree[block->bbPostorderNum].firstChild == nullptr))
+            continue;
+
+        printf(FMT_BB " : ", block->bbNum);
+        for (BasicBlock* child = m_domTree[block->bbPostorderNum].firstChild; child != nullptr;
+             child             = m_domTree[child->bbPostorderNum].nextSibling)
+        {
+            printf(FMT_BB " ", child->bbNum);
+        }
+        printf("\n");
+    }
+
+    printf("\n");
+}
+#endif
 
 //------------------------------------------------------------------------
 // FlowGraphDominatorTree::Build: Compute the dominator tree for the blocks in
@@ -5589,6 +5749,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
     // Reset BlockPredsWithEH cache.
     comp->m_blockToEHPreds = nullptr;
+    comp->m_dominancePreds = nullptr;
 
     assert((comp->fgFirstBB->bbPreds == nullptr) && !comp->fgFirstBB->hasTryIndex());
     assert(postOrder[count - 1] == comp->fgFirstBB);
@@ -5617,7 +5778,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
                     continue; // Unreachable pred
                 }
 
-                if ((numIters <= 0) && (domPred->bbNewPostorderNum <= poNum))
+                if ((numIters <= 0) && (domPred->bbPostorderNum <= poNum))
                 {
                     continue; // Pred not yet visited
                 }
@@ -5632,6 +5793,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
                 }
             }
 
+            assert(bbIDom != nullptr);
             // Did we change the bbIDom value?  If so, we go around the outer loop again.
             if (block->bbIDom != bbIDom)
             {
@@ -5656,8 +5818,8 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
         assert(parent != nullptr);
         assert(dfsTree->Contains(block) && dfsTree->Contains(parent));
 
-        domTree[i].nextSibling                        = domTree[parent->bbNewPostorderNum].firstChild;
-        domTree[parent->bbNewPostorderNum].firstChild = block;
+        domTree[i].nextSibling                     = domTree[parent->bbPostorderNum].firstChild;
+        domTree[parent->bbPostorderNum].firstChild = block;
     }
 
 #ifdef DEBUG
@@ -5674,7 +5836,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
             printf(FMT_BB " :", postOrder[poNum]->bbNum);
             for (BasicBlock* child = domTree[poNum].firstChild; child != nullptr;
-                 child             = domTree[child->bbNewPostorderNum].nextSibling)
+                 child             = domTree[child->bbPostorderNum].nextSibling)
             {
                 printf(" " FMT_BB, child->bbNum);
             }
@@ -5685,7 +5847,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 #endif
 
     // Assign preorder/postorder nums for fast "domnates" queries.
-    class NumberDomTreeVisitor : public NewDomTreeVisitor<NumberDomTreeVisitor>
+    class NumberDomTreeVisitor : public DomTreeVisitor<NumberDomTreeVisitor>
     {
         unsigned* m_preorderNums;
         unsigned* m_postorderNums;
@@ -5694,18 +5856,18 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
     public:
         NumberDomTreeVisitor(Compiler* comp, unsigned* preorderNums, unsigned* postorderNums)
-            : NewDomTreeVisitor(comp), m_preorderNums(preorderNums), m_postorderNums(postorderNums)
+            : DomTreeVisitor(comp), m_preorderNums(preorderNums), m_postorderNums(postorderNums)
         {
         }
 
         void PreOrderVisit(BasicBlock* block)
         {
-            m_preorderNums[block->bbNewPostorderNum] = m_preNum++;
+            m_preorderNums[block->bbPostorderNum] = m_preNum++;
         }
 
         void PostOrderVisit(BasicBlock* block)
         {
-            m_postorderNums[block->bbNewPostorderNum] = m_postNum++;
+            m_postorderNums[block->bbPostorderNum] = m_postNum++;
         }
     };
 
@@ -5736,7 +5898,7 @@ FlowGraphNaturalLoop* BlockToNaturalLoopMap::GetLoop(BasicBlock* block)
         return nullptr;
     }
 
-    unsigned index = m_indices[block->bbNewPostorderNum];
+    unsigned index = m_indices[block->bbPostorderNum];
     if (index == UINT_MAX)
     {
         return nullptr;
@@ -5771,10 +5933,132 @@ BlockToNaturalLoopMap* BlockToNaturalLoopMap::Build(FlowGraphNaturalLoops* loops
     for (FlowGraphNaturalLoop* loop : loops->InReversePostOrder())
     {
         loop->VisitLoopBlocks([=](BasicBlock* block) {
-            indices[block->bbNewPostorderNum] = loop->GetIndex();
+            indices[block->bbPostorderNum] = loop->GetIndex();
             return BasicBlockVisit::Continue;
         });
     }
 
     return new (comp, CMK_Loops) BlockToNaturalLoopMap(loops, indices);
 }
+
+//------------------------------------------------------------------------
+// BlockReachabilitySets::Build: Build the reachability sets.
+//
+// Parameters:
+//   dfsTree - DFS tree
+//
+// Returns:
+//   The sets.
+//
+// Remarks:
+//   This algorithm consumes O(n^2) memory because we're using dense
+//   bitsets to represent reachability.
+//
+BlockReachabilitySets* BlockReachabilitySets::Build(FlowGraphDfsTree* dfsTree)
+{
+    Compiler*    comp            = dfsTree->GetCompiler();
+    BitVecTraits postOrderTraits = dfsTree->PostOrderTraits();
+    BitVec*      sets            = new (comp, CMK_Reachability) BitVec[dfsTree->GetPostOrderCount()];
+
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        sets[i] = BitVecOps::MakeSingleton(&postOrderTraits, i);
+    }
+
+    // Find the reachable blocks. Also, set BBF_GC_SAFE_POINT.
+    bool     change;
+    unsigned changedIterCount = 1;
+    do
+    {
+        change = false;
+
+        for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+
+            for (BasicBlock* const predBlock : block->PredBlocks())
+            {
+                change |= BitVecOps::UnionDChanged(&postOrderTraits, sets[block->bbPostorderNum],
+                                                   sets[predBlock->bbPostorderNum]);
+            }
+        }
+
+        ++changedIterCount;
+    } while (change);
+
+#if COUNT_BASIC_BLOCKS
+    computeReachabilitySetsIterationTable.record(changedIterCount);
+#endif // COUNT_BASIC_BLOCKS
+
+    BlockReachabilitySets* reachabilitySets = new (comp, CMK_Reachability) BlockReachabilitySets(dfsTree, sets);
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("\nAfter computing reachability sets:\n");
+        reachabilitySets->Dump();
+    }
+#endif
+
+    return reachabilitySets;
+}
+
+//------------------------------------------------------------------------
+// BlockReachabilitySets::CanReach: Check if "from" can flow to "to" through
+// only regular control flow edges.
+//
+// Parameters:
+//   from - Start block
+//   to   - Candidate destination block
+//
+// Returns:
+//   True if so.
+//
+bool BlockReachabilitySets::CanReach(BasicBlock* from, BasicBlock* to)
+{
+    assert(m_dfsTree->Contains(from));
+
+    if (!m_dfsTree->Contains(to))
+    {
+        return false;
+    }
+
+    BitVecTraits poTraits = m_dfsTree->PostOrderTraits();
+    return BitVecOps::IsMember(&poTraits, m_reachabilitySets[to->bbPostorderNum], from->bbPostorderNum);
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// BlockReachabilitySets::Dump: Dump the reachability sets to stdout.
+//
+void BlockReachabilitySets::Dump()
+{
+    printf("------------------------------------------------\n");
+    printf("BBnum  Reachable by \n");
+    printf("------------------------------------------------\n");
+
+    Compiler*    comp            = m_dfsTree->GetCompiler();
+    BitVecTraits postOrderTraits = m_dfsTree->PostOrderTraits();
+
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        printf(FMT_BB " : ", block->bbNum);
+        if (m_dfsTree->Contains(block))
+        {
+            BitVecOps::Iter iter(&postOrderTraits, m_reachabilitySets[block->bbPostorderNum]);
+            unsigned        poNum = 0;
+            const char*     sep   = "";
+            while (iter.NextElem(&poNum))
+            {
+                printf("%s" FMT_BB, sep, m_dfsTree->GetPostOrder(poNum)->bbNum);
+                sep = " ";
+            }
+        }
+        else
+        {
+            printf("[unreachable]");
+        }
+        printf("\n");
+    }
+}
+#endif

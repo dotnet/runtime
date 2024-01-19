@@ -536,6 +536,7 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_STATIC_BOX_PTR     = 0x10000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
     GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
     GTF_ICON_STATIC_ADDR_PTR    = 0x13000000, // GT_CNS_INT -- constant is a pointer to a static base address
+    GTF_ICON_SECREL_OFFSET      = 0x14000000, // GT_CNS_INT -- constant is an offset in a certain section.
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
@@ -5801,21 +5802,42 @@ struct GenTreeFptrVal : public GenTree
 /* gtQmark */
 struct GenTreeQmark : public GenTreeOp
 {
-    GenTreeQmark(var_types type, GenTree* cond, GenTreeColon* colon) : GenTreeOp(GT_QMARK, type, cond, colon)
+    unsigned gtThenLikelihood;
+
+    GenTreeQmark(var_types type, GenTree* cond, GenTreeColon* colon, unsigned thenLikelihood = 50)
+        : GenTreeOp(GT_QMARK, type, cond, colon), gtThenLikelihood(thenLikelihood)
     {
         // These must follow a specific form.
         assert((cond != nullptr) && cond->TypeIs(TYP_INT));
         assert((colon != nullptr) && colon->OperIs(GT_COLON));
     }
 
-    GenTree* ThenNode()
+    GenTree* ThenNode() const
     {
         return gtOp2->AsColon()->ThenNode();
     }
 
-    GenTree* ElseNode()
+    GenTree* ElseNode() const
     {
         return gtOp2->AsColon()->ElseNode();
+    }
+
+    unsigned ThenNodeLikelihood() const
+    {
+        assert(gtThenLikelihood <= 100);
+        return gtThenLikelihood;
+    }
+
+    unsigned ElseNodeLikelihood() const
+    {
+        assert(gtThenLikelihood <= 100);
+        return 100 - gtThenLikelihood;
+    }
+
+    void SetThenNodeLikelihood(unsigned thenLikelihood)
+    {
+        assert(thenLikelihood <= 100);
+        gtThenLikelihood = thenLikelihood;
     }
 
 #if DEBUGGABLE_GENTREE

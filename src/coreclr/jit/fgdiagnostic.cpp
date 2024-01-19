@@ -136,7 +136,7 @@ void Compiler::fgDebugCheckUpdate()
         // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
         if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
         {
-            noway_assert(!"Unnecessary jump to the next block!");
+            noway_assert(!"BBJ_COND true/false targets are the same!");
         }
 
         // For a BBJ_CALLFINALLY block we make sure that we are followed by a BBJ_CALLFINALLYRET block
@@ -1815,7 +1815,7 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
             fprintf(m_file, "%*s", m_indent, "");
 
             loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* block) {
-                if (BitVecOps::IsMember(&m_traits, m_outputBlocks, block->bbNewPostorderNum))
+                if (BitVecOps::IsMember(&m_traits, m_outputBlocks, block->bbPostorderNum))
                 {
                     return BasicBlockVisit::Continue;
                 }
@@ -1833,7 +1833,7 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
                 }
 
                 fprintf(m_file, FMT_BB ";", block->bbNum);
-                BitVecOps::AddElemD(&m_traits, m_outputBlocks, block->bbNewPostorderNum);
+                BitVecOps::AddElemD(&m_traits, m_outputBlocks, block->bbPostorderNum);
 
                 return BasicBlockVisit::Continue;
             });
@@ -1859,52 +1859,6 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
 
 /*****************************************************************************/
 #ifdef DEBUG
-
-void Compiler::fgDispReach()
-{
-    printf("------------------------------------------------\n");
-    printf("BBnum  Reachable by \n");
-    printf("------------------------------------------------\n");
-
-    for (BasicBlock* const block : Blocks())
-    {
-        printf(FMT_BB " : ", block->bbNum);
-        BlockSetOps::Iter iter(this, block->bbReach);
-        unsigned          bbNum = 0;
-        while (iter.NextElem(&bbNum))
-        {
-            printf(FMT_BB " ", bbNum);
-        }
-        printf("\n");
-    }
-}
-
-void Compiler::fgDispDoms()
-{
-    // Don't bother printing this when we have a large number of BasicBlocks in the method
-    if (fgBBcount > 256)
-    {
-        return;
-    }
-
-    printf("------------------------------------------------\n");
-    printf("BBnum  Dominated by\n");
-    printf("------------------------------------------------\n");
-
-    for (unsigned i = 1; i <= fgBBNumMax; ++i)
-    {
-        BasicBlock* current = fgBBReversePostorder[i];
-        printf(FMT_BB ":  ", current->bbNum);
-        while (current != current->bbIDom)
-        {
-            printf(FMT_BB " ", current->bbNum);
-            current = current->bbIDom;
-        }
-        printf("\n");
-    }
-}
-
-/*****************************************************************************/
 
 void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 */)
 {
@@ -2299,6 +2253,12 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         {
             printf(" osr-entry");
         }
+    }
+
+    // Indicate if it's the single return block
+    if (block == genReturnBB)
+    {
+        printf(" one-return");
     }
 
     printf("\n");
@@ -3023,13 +2983,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         maxBBNum = max(maxBBNum, block->bbNum);
 
-        // BBJ_COND's normal (false) jump target is expected to be the next block
-        // TODO-NoFallThrough: Allow bbFalseTarget to diverge from bbNext
-        if (block->KindIs(BBJ_COND))
-        {
-            assert(block->NextIs(block->GetFalseTarget()));
-        }
-
         // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
         // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will
         // dynamically create the unique switch list.
@@ -3239,6 +3192,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     if (genReturnBB != nullptr)
     {
         assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->bbStmtList != nullptr);
+        assert(genReturnBB->KindIs(BBJ_RETURN));
     }
 
     // If this is an inlinee, we're done checking.
@@ -4783,6 +4737,15 @@ void Compiler::fgDebugCheckSsa()
 //
 void Compiler::fgDebugCheckLoopTable()
 {
+    if ((m_loops != nullptr) && optLoopsRequirePreHeaders)
+    {
+        for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+        {
+            assert(loop->EntryEdges().size() == 1);
+            assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
+        }
+    }
+
 #ifdef DEBUG
     if (!optLoopTableValid)
     {
@@ -5094,22 +5057,22 @@ void Compiler::fgDebugCheckLoopTable()
         // 1. The pre-header dominates the entry (if pre-headers are required).
         // 2. The entry dominates the exit.
         // 3. The IDom tree from the exit reaches the entry.
-        if (fgDomsComputed)
+        if (m_domTree != nullptr)
         {
             if (optLoopsRequirePreHeaders)
             {
-                assert(fgDominate(loop.lpHead, loop.lpEntry));
+                assert(m_domTree->Dominates(loop.lpHead, loop.lpEntry));
             }
 
             if (loop.lpExitCnt == 1)
             {
                 assert(loop.lpExit != nullptr);
-                assert(fgDominate(loop.lpEntry, loop.lpExit));
+                assert(m_domTree->Dominates(loop.lpEntry, loop.lpExit));
 
                 BasicBlock* cur = loop.lpExit;
                 while ((cur != nullptr) && (cur != loop.lpEntry))
                 {
-                    assert(fgDominate(cur, loop.lpExit));
+                    assert(m_domTree->Dominates(cur, loop.lpExit));
                     cur = cur->bbIDom;
                 }
                 assert(cur == loop.lpEntry); // We must be able to reach the entry from the exit via the IDom tree.
@@ -5190,7 +5153,7 @@ void Compiler::fgDebugCheckDfsTree()
     unsigned count =
         fgRunDfs([](BasicBlock* block, unsigned preorderNum) { assert(block->bbPreorderNum == preorderNum); },
                  [=](BasicBlock* block, unsigned postorderNum) {
-                     assert(block->bbNewPostorderNum == postorderNum);
+                     assert(block->bbPostorderNum == postorderNum);
                      assert(m_dfsTree->GetPostOrder(postorderNum) == block);
                  },
                  [](BasicBlock* block, BasicBlock* succ) {});

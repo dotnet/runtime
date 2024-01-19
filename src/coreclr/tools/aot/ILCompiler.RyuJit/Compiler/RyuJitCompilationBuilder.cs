@@ -23,7 +23,7 @@ namespace ILCompiler
 
         public RyuJitCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
             : base(context, group,
-                  new NativeAotNameMangler(context.Target.IsWindows ? (NodeMangler)new WindowsNodeMangler() : (NodeMangler)new UnixNodeMangler(), false))
+                  new NativeAotNameMangler(context.Target.IsWindows ? (NodeMangler)new WindowsNodeMangler() : (NodeMangler)new UnixNodeMangler()))
         {
         }
 

@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Condition="'$(TargetOS)' == 'browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -13,6 +14,11 @@
     <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+  <!-- Make debugging easier -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <WasmNativeStrip>false</WasmNativeStrip>
+    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />

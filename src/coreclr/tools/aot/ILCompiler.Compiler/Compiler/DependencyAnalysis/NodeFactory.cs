@@ -1342,7 +1342,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 
-        protected internal TlsRootNode TlsRoot = new TlsRootNode();
+        public TlsRootNode TlsRoot = new TlsRootNode();
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {

@@ -228,7 +228,7 @@ namespace System.Buffers.Text.Tests
                 yield return decimal.MaxValue;
 
                 // negative 0m. The formatter is expected *not* to emit a minus sign in this case.
-                yield return (new MutableDecimal() { High = 0, Mid = 0, Low = 0, IsNegative = true }).ToDecimal();
+                yield return new decimal(0, 0, 0, isNegative: true, 0);
 
                 yield return 0.304m; // Round down
                 yield return -0.304m;

@@ -65,17 +65,42 @@ DataFlow::DataFlow(Compiler* pCompiler) : m_pCompiler(pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
-    assert(fgDomsComputed);
+    assert(m_domTree != nullptr);
     assert(fgReturnBlocksComputed);
 
     bool       madeChanges                = false;
     bool       firstBBDominatesAllReturns = true;
     const bool usingProfileWeights        = fgIsUsingProfileWeights();
 
+    // TODO-Quirk: Previously, this code ran on a dominator tree based only on
+    // regular flow. This meant that all handlers were not considered to be
+    // dominated by fgFirstBB. When those handlers could reach a return
+    // block that return was also not considered to be dominated by fgFirstBB.
+    // In practice the code below would then not make any changes for those
+    // functions. We emulate that behavior here.
+    for (EHblkDsc* eh : EHClauses(this))
+    {
+        BasicBlock* flowBlock = eh->ExFlowBlock();
+
+        for (BasicBlockList* retBlocks = fgReturnBlocks; retBlocks != nullptr; retBlocks = retBlocks->next)
+        {
+            if (m_dfsTree->Contains(flowBlock) && m_reachabilitySets->CanReach(flowBlock, retBlocks->block))
+            {
+                firstBBDominatesAllReturns = false;
+                break;
+            }
+        }
+
+        if (!firstBBDominatesAllReturns)
+        {
+            break;
+        }
+    }
+
     for (BasicBlock* const block : Blocks())
     {
-        /* Blocks that can't be reached via the first block are rarely executed */
-        if (!fgReachable(fgFirstBB, block) && !block->isRunRarely())
+        // Blocks that can't be reached via the first block are rarely executed
+        if (!m_reachabilitySets->CanReach(fgFirstBB, block) && !block->isRunRarely())
         {
             madeChanges = true;
             block->bbSetRunRarely();
@@ -95,7 +120,8 @@ PhaseStatus Compiler::optSetBlockWeights()
 
                 for (BasicBlockList* retBlocks = fgReturnBlocks; retBlocks != nullptr; retBlocks = retBlocks->next)
                 {
-                    if (!fgDominate(block, retBlocks->block))
+                    // TODO-Quirk: Returns that are unreachable can just be ignored.
+                    if (!m_dfsTree->Contains(retBlocks->block) || !m_domTree->Dominates(block, retBlocks->block))
                     {
                         blockDominatesAllReturns = false;
                         break;
@@ -155,7 +181,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 {
     noway_assert(begBlk->bbNum <= endBlk->bbNum);
     noway_assert(begBlk->isLoopHead());
-    noway_assert(fgReachable(begBlk, endBlk));
+    noway_assert(m_reachabilitySets->CanReach(begBlk, endBlk));
     noway_assert(!opts.MinOpts());
 
 #ifdef DEBUG
@@ -213,7 +239,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
         // (since this is a loop) begBlk must likewise be reachable from curBlk.
 
-        if (fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
+        if (m_reachabilitySets->CanReach(curBlk, begBlk) && m_reachabilitySets->CanReach(begBlk, curBlk))
         {
             // If `curBlk` reaches any of the back edge blocks we set `reachable`.
             // If `curBlk` dominates any of the back edge blocks we set `dominates`.
@@ -224,8 +250,8 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             {
                 BasicBlock* backedge = tmp->getSourceBlock();
 
-                reachable |= fgReachable(curBlk, backedge);
-                dominates |= fgDominate(curBlk, backedge);
+                reachable |= m_reachabilitySets->CanReach(curBlk, backedge);
+                dominates |= m_domTree->Dominates(curBlk, backedge);
 
                 if (dominates && reachable)
                 {
@@ -319,7 +345,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #endif
         return;
     }
-    noway_assert(fgReachable(begBlk, endBlk));
+    noway_assert(m_reachabilitySets->CanReach(begBlk, endBlk));
 
 #ifdef DEBUG
     if (verbose)
@@ -357,11 +383,11 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
         // (since this is a loop) begBlk must likewise be reachable from curBlk.
         //
-        if (fgReachable(curBlk, begBlk) && fgReachable(begBlk, curBlk))
+        if (m_reachabilitySets->CanReach(curBlk, begBlk) && m_reachabilitySets->CanReach(begBlk, curBlk))
         {
             weight_t scale = 1.0 / BB_LOOP_WEIGHT_SCALE;
 
-            if (!fgDominate(curBlk, endBlk))
+            if (!m_domTree->Dominates(curBlk, endBlk))
             {
                 scale *= 2;
             }
@@ -498,22 +524,23 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
     if (!skipUnmarkLoop &&                      // If we want to unmark this loop...
         (fgCurBBEpochSize == fgBBNumMax + 1) && // We didn't add new blocks since last renumber...
-        fgDomsComputed &&                       // Given the doms are computed and valid...
+        (m_reachabilitySets != nullptr) &&      // Given the reachability sets are computed and valid...
         (fgCurBBEpochSize == fgDomBBcount + 1))
     {
         // This block must reach conditionally or always
 
-        if (block->KindIs(BBJ_ALWAYS) &&                   // This block always reaches
-            block->GetTarget()->isLoopHead() &&            // to a loop head...
-            (block->GetTarget()->bbNum <= block->bbNum) && // This is a backedge...
-            fgReachable(block->GetTarget(), block))        // Block's back edge target can reach block...
+        if (block->KindIs(BBJ_ALWAYS) &&                             // This block always reaches
+            block->GetTarget()->isLoopHead() &&                      // to a loop head...
+            (block->GetTarget()->bbNum <= block->bbNum) &&           // This is a backedge...
+            m_reachabilitySets->CanReach(block->GetTarget(), block)) // Block's back edge target can reach block...
         {
             optUnmarkLoopBlocks(block->GetTarget(), block); // Unscale the blocks in such loop.
         }
-        else if (block->KindIs(BBJ_COND) &&                         // This block conditionally reaches
-                 block->GetTrueTarget()->isLoopHead() &&            // to a loop head...
-                 (block->GetTrueTarget()->bbNum <= block->bbNum) && // This is a backedge...
-                 fgReachable(block->GetTrueTarget(), block))        // Block's back edge target can reach block...
+        else if (block->KindIs(BBJ_COND) &&                                   // This block conditionally reaches
+                 block->GetTrueTarget()->isLoopHead() &&                      // to a loop head...
+                 (block->GetTrueTarget()->bbNum <= block->bbNum) &&           // This is a backedge...
+                 m_reachabilitySets->CanReach(block->GetTrueTarget(), block)) // Block's back edge target can reach
+                                                                              // block...
         {
             optUnmarkLoopBlocks(block->GetTrueTarget(), block); // Unscale the blocks in such loop.
         }
@@ -1719,15 +1746,6 @@ public:
             return false;
         }
 
-        // Compact the loop (sweep through it and move out any blocks that aren't part of the
-        // flow cycle), and find the exits.
-        if (!MakeCompactAndFindExits())
-        {
-            // Unable to preserve well-formed loop during compaction.
-            JITDUMP("    can't compact\n");
-            return false;
-        }
-
         // We have a valid loop.
         return true;
     }
@@ -1819,7 +1837,7 @@ private:
                 // and when we process its unique predecessor we'll abort if ENTRY
                 // doesn't dominate that.
             }
-            else if (!comp->fgDominate(entry, block))
+            else if (!comp->m_domTree->Dominates(entry, block))
             {
                 JITDUMP("   (find cycle) entry:" FMT_BB " does not dominate " FMT_BB "\n", entry->bbNum, block->bbNum);
                 return false;
@@ -1846,7 +1864,7 @@ private:
                         // of an outer loop.  For the dominance test, if `predBlock` is a new block, use
                         // its unique predecessor since the dominator tree has info for that.
                         BasicBlock* effectivePred = (predBlock->bbNum > oldBlockMaxNum ? predBlock->Prev() : predBlock);
-                        if (comp->fgDominate(entry, effectivePred))
+                        if (comp->m_domTree->Dominates(entry, effectivePred))
                         {
                             // Outer loop back-edge
                             continue;
@@ -1922,516 +1940,6 @@ private:
         }
         return block->bbNum;
     }
-
-    //------------------------------------------------------------------------
-    // MakeCompactAndFindExits: Compact the loop (sweep through it and move out
-    //   any blocks that aren't part of the flow cycle), and find the exits (set
-    //   lastExit and exitCount).
-    //
-    // Return Value:
-    //    true  - Loop successfully compacted (or `loopBlocks` expanded to
-    //            include all blocks in the lexical range), exits enumerated.
-    //    false - Loop cannot be made compact and remain well-formed.
-    //
-    bool MakeCompactAndFindExits()
-    {
-        // Compaction (if it needs to happen) will require an insertion point.
-        BasicBlock* moveAfter = nullptr;
-
-        for (BasicBlock* previous = top->Prev(); previous != bottom;)
-        {
-            BasicBlock* block = previous->Next();
-
-            if (loopBlocks.IsMember(block->bbNum))
-            {
-                // This block is a member of the loop.  Check to see if it may exit the loop.
-                CheckForExit(block);
-
-                // Done processing this block; move on to the next.
-                previous = block;
-                continue;
-            }
-
-            // This block is lexically between TOP and BOTTOM, but it does not
-            // participate in the flow cycle.  Check for a run of consecutive
-            // such blocks.
-            //
-            // If blocks have been reordered and bbNum no longer reflects bbNext ordering
-            // (say by a call to MakeCompactAndFindExits for an earlier loop or unsuccessful
-            // attempt to find a loop), the bottom block of this loop may now appear earlier
-            // in the bbNext chain than other loop blocks. So when the previous hasn't reached bottom
-            // and block is a non-loop block, and we walk the bbNext chain, we may reach the end.
-            // If so, give up on recognition of this loop.
-            //
-            BasicBlock* lastNonLoopBlock = block;
-            BasicBlock* nextLoopBlock    = block->Next();
-            while ((nextLoopBlock != nullptr) && !loopBlocks.IsMember(nextLoopBlock->bbNum))
-            {
-                lastNonLoopBlock = nextLoopBlock;
-                nextLoopBlock    = nextLoopBlock->Next();
-            }
-
-            if (nextLoopBlock == nullptr)
-            {
-                JITDUMP("Did not find expected loop block when walking from " FMT_BB "\n", lastNonLoopBlock->bbNum);
-                return false;
-            }
-
-            // Choose an insertion point for non-loop blocks if we haven't yet done so.
-            if (moveAfter == nullptr)
-            {
-                moveAfter = FindInsertionPoint();
-            }
-
-            if (!BasicBlock::sameEHRegion(previous, nextLoopBlock) || !BasicBlock::sameEHRegion(previous, moveAfter))
-            {
-                // EH regions would be ill-formed if we moved these blocks out.
-                // See if we can consider them loop blocks without introducing
-                // a side-entry.
-                if (CanTreatAsLoopBlocks(block, lastNonLoopBlock))
-                {
-                    // The call to `canTreatAsLoop` marked these blocks as part of the loop;
-                    // iterate without updating `previous` so that we'll analyze them as part
-                    // of the loop.
-                    continue;
-                }
-                else
-                {
-                    // We can't move these out of the loop or leave them in, so just give
-                    // up on this loop.
-                    return false;
-                }
-            }
-
-            // Now physically move the blocks.
-            BasicBlock* moveBefore = moveAfter->Next();
-
-            comp->fgUnlinkRange(block, lastNonLoopBlock);
-            comp->fgMoveBlocksAfter(block, lastNonLoopBlock, moveAfter);
-            comp->ehUpdateLastBlocks(moveAfter, lastNonLoopBlock);
-
-            // Apply any adjustments needed for fallthrough at the boundaries of the moved region.
-            FixupFallThrough(moveAfter, moveBefore, block);
-            FixupFallThrough(lastNonLoopBlock, nextLoopBlock, moveBefore);
-            // Also apply any adjustments needed where the blocks were snipped out of the loop.
-            BasicBlock* newBlock = FixupFallThrough(previous, block, nextLoopBlock);
-            if (newBlock != nullptr)
-            {
-                // This new block is in the loop and is a loop exit.
-                loopBlocks.Insert(newBlock->bbNum);
-                lastExit = newBlock;
-                ++exitCount;
-            }
-
-            // Update moveAfter for the next insertion.
-            moveAfter = lastNonLoopBlock;
-
-            // Note that we've changed the flow graph, and continue without updating
-            // `previous` so that we'll process nextLoopBlock.
-            changedFlowGraph = true;
-        }
-
-        if ((exitCount == 1) && (lastExit == nullptr))
-        {
-            // If we happen to have a loop with two exits, one of which goes to an
-            // infinite loop that's lexically nested inside it, where the inner loop
-            // can't be moved out,  we can end up in this situation (because
-            // CanTreatAsLoopBlocks will have decremented the count expecting to find
-            // another exit later).  Bump the exit count to 2, since downstream code
-            // will not be prepared for null lastExit with exitCount of 1.
-            assert(forgotExit);
-            exitCount = 2;
-        }
-
-        // Loop compaction was successful
-        return true;
-    }
-
-    //------------------------------------------------------------------------
-    // FindInsertionPoint: Find an appropriate spot to which blocks that are
-    //    lexically between TOP and BOTTOM but not part of the flow cycle
-    //    can be moved.
-    //
-    // Return Value:
-    //    Block after which to insert moved blocks.
-    //
-    BasicBlock* FindInsertionPoint()
-    {
-        // Find an insertion point for blocks we're going to move.  Move them down
-        // out of the loop, and if possible find a spot that won't break up fall-through.
-        BasicBlock* moveAfter = bottom;
-        while (moveAfter->bbFallsThrough())
-        {
-            // Keep looking for a better insertion point if we can.
-            BasicBlock* newMoveAfter = TryAdvanceInsertionPoint(moveAfter);
-
-            if (newMoveAfter == nullptr)
-            {
-                // Ran out of candidate insertion points, so just split up the fall-through.
-                return moveAfter;
-            }
-
-            moveAfter = newMoveAfter;
-        }
-
-        return moveAfter;
-    }
-
-    //------------------------------------------------------------------------
-    // TryAdvanceInsertionPoint: Find the next legal insertion point after
-    //    the given one, if one exists.
-    //
-    // Arguments:
-    //    oldMoveAfter - Prior insertion point; find the next after this.
-    //
-    // Return Value:
-    //    The next block after `oldMoveAfter` that is a legal insertion point
-    //    (i.e. blocks being swept out of the loop can be moved immediately
-    //    after it), if one exists, else nullptr.
-    //
-    BasicBlock* TryAdvanceInsertionPoint(BasicBlock* oldMoveAfter)
-    {
-        BasicBlock* newMoveAfter = oldMoveAfter->Next();
-
-        if (!BasicBlock::sameEHRegion(oldMoveAfter, newMoveAfter))
-        {
-            // Don't cross an EH region boundary.
-            return nullptr;
-        }
-
-        if (newMoveAfter->KindIs(BBJ_ALWAYS, BBJ_COND))
-        {
-            unsigned int destNum = newMoveAfter->KindIs(BBJ_ALWAYS) ? newMoveAfter->GetTarget()->bbNum
-                                                                    : newMoveAfter->GetTrueTarget()->bbNum;
-            if ((destNum >= top->bbNum) && (destNum <= bottom->bbNum) && !loopBlocks.IsMember(destNum))
-            {
-                // Reversing this branch out of block `newMoveAfter` could confuse this algorithm
-                // (in particular, the edge would still be numerically backwards but no longer be
-                // lexically backwards, so a lexical forward walk from TOP would not find BOTTOM),
-                // so don't do that.
-                // We're checking for BBJ_ALWAYS and BBJ_COND only here -- we don't need to
-                // check for BBJ_SWITCH because we'd never consider it a loop back-edge.
-                return nullptr;
-            }
-        }
-
-        // Similarly check to see if advancing to `newMoveAfter` would reverse the lexical order
-        // of an edge from the run of blocks being moved to `newMoveAfter` -- doing so would
-        // introduce a new lexical back-edge, which could (maybe?) confuse the loop search
-        // algorithm, and isn't desirable layout anyway.
-        for (BasicBlock* const predBlock : newMoveAfter->PredBlocks())
-        {
-            unsigned int predNum = predBlock->bbNum;
-
-            if ((predNum >= top->bbNum) && (predNum <= bottom->bbNum) && !loopBlocks.IsMember(predNum))
-            {
-                // Don't make this forward edge a backwards edge.
-                return nullptr;
-            }
-        }
-
-        if (IsRecordedBottom(newMoveAfter))
-        {
-            // This is the BOTTOM of another loop; don't move any blocks past it, to avoid moving them
-            // out of that loop (we should have already done so when processing that loop if it were legal).
-            return nullptr;
-        }
-
-        // Advancing the insertion point is ok, except that we can't split up any call finally
-        // pair, so if we've got such a pair recurse to see if we can move past the whole thing.
-        return (newMoveAfter->isBBCallFinallyPair() ? TryAdvanceInsertionPoint(newMoveAfter) : newMoveAfter);
-    }
-
-    //------------------------------------------------------------------------
-    // isOuterBottom: Determine if the given block is the BOTTOM of a previously
-    //    recorded loop.
-    //
-    // Arguments:
-    //    block - Block to check for BOTTOM-ness.
-    //
-    // Return Value:
-    //    true - The blocks was recorded as `bottom` of some earlier-processed loop.
-    //    false - No loops yet recorded have this block as their `bottom`.
-    //
-    bool IsRecordedBottom(BasicBlock* block)
-    {
-        if (block->bbNum > oldBlockMaxNum)
-        {
-            // This is a new block, which can't be an outer bottom block because we only allow old blocks
-            // as BOTTOM.
-            return false;
-        }
-        return BlockSetOps::IsMember(comp, bottomBlocks, block->bbNum);
-    }
-
-    //------------------------------------------------------------------------
-    // CanTreatAsLoopBlocks: If the given range of blocks can be treated as
-    //    loop blocks, add them to loopBlockSet and return true.  Otherwise,
-    //    return false.
-    //
-    // Arguments:
-    //    firstNonLoopBlock - First block in the run to be subsumed.
-    //    lastNonLoopBlock - Last block in the run to be subsumed.
-    //
-    // Return Value:
-    //    true - The blocks from `fistNonLoopBlock` to `lastNonLoopBlock` were
-    //           successfully added to `loopBlocks`.
-    //    false - Treating the blocks from `fistNonLoopBlock` to `lastNonLoopBlock`
-    //            would not be legal (it would induce a side-entry).
-    //
-    // Notes:
-    //    `loopBlocks` may be modified even if `false` is returned.
-    //    `exitCount` and `lastExit` may be modified if this process identifies
-    //    in-loop edges that were previously counted as exits.
-    //
-    bool CanTreatAsLoopBlocks(BasicBlock* firstNonLoopBlock, BasicBlock* lastNonLoopBlock)
-    {
-        for (BasicBlock* const testBlock : comp->Blocks(firstNonLoopBlock, lastNonLoopBlock))
-        {
-            for (BasicBlock* const testPred : testBlock->PredBlocks())
-            {
-                unsigned int predPosNum         = PositionNum(testPred);
-                unsigned int firstNonLoopPosNum = PositionNum(firstNonLoopBlock);
-                unsigned int lastNonLoopPosNum  = PositionNum(lastNonLoopBlock);
-
-                if (loopBlocks.IsMember(predPosNum) ||
-                    ((predPosNum >= firstNonLoopPosNum) && (predPosNum <= lastNonLoopPosNum)))
-                {
-                    // This pred is in the loop (or what will be the loop if we determine this
-                    // run of exit blocks doesn't include a side-entry).
-
-                    if (predPosNum < firstNonLoopPosNum)
-                    {
-                        // We've already counted this block as an exit, so decrement the count.
-                        --exitCount;
-                        if (lastExit == testPred)
-                        {
-                            // Erase this now-bogus `lastExit` entry.
-                            lastExit = nullptr;
-                            INDEBUG(forgotExit = true);
-                        }
-                    }
-                }
-                else
-                {
-                    // This pred is not in the loop, so this constitutes a side-entry.
-                    return false;
-                }
-            }
-
-            // Either we're going to abort the loop on a subsequent testBlock, or this
-            // testBlock is part of the loop.
-            loopBlocks.Insert(testBlock->bbNum);
-        }
-
-        // All blocks were ok to leave in the loop.
-        return true;
-    }
-
-    //------------------------------------------------------------------------
-    // FixupFallThrough: Re-establish any broken control flow connectivity
-    //    and eliminate any "goto-next"s that were created by changing the
-    //    given block's lexical follower.
-    //
-    // Arguments:
-    //    block - Block whose `bbNext` has changed.
-    //    oldNext - Previous value of `block->bbNext`.
-    //    newNext - New value of `block->bbNext`.
-    //
-    // Return Value:
-    //    If a new block is created to reconnect flow, the new block is
-    //    returned; otherwise, nullptr.
-    //
-    BasicBlock* FixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext)
-    {
-        // If we create a new block, that will be our return value.
-        BasicBlock* newBlock = nullptr;
-
-        if (block->bbFallsThrough())
-        {
-            // Need to reconnect the flow from `block` to `oldNext`.
-
-            if (block->KindIs(BBJ_COND) && block->TrueTargetIs(newNext))
-            {
-                // Reverse the jump condition
-                GenTree* test = block->lastNode();
-                noway_assert(test->OperIsConditionalJump());
-
-                if (test->OperGet() == GT_JTRUE)
-                {
-                    GenTree* cond = comp->gtReverseCond(test->AsOp()->gtOp1);
-                    assert(cond == test->AsOp()->gtOp1); // Ensure `gtReverseCond` did not create a new node.
-                    test->AsOp()->gtOp1 = cond;
-                }
-                else
-                {
-                    comp->gtReverseCond(test);
-                }
-
-                // Redirect the Conditional JUMP to go to `oldNext`
-                block->SetTrueTarget(oldNext);
-                block->SetFalseTarget(newNext);
-            }
-            else
-            {
-                // Insert an unconditional jump to `oldNext` just after `block`.
-                newBlock = comp->fgConnectFallThrough(block, oldNext);
-                noway_assert((newBlock == nullptr) || loopBlocks.CanRepresent(newBlock->bbNum));
-            }
-        }
-        else if (block->KindIs(BBJ_ALWAYS) && block->TargetIs(newNext))
-        {
-            // If block is newNext's only predecessor, move the IR from block to newNext,
-            // but keep the now-empty block around.
-            //
-            // We move the IR because loop recognition has a very limited search capability and
-            // won't walk from one block's statements to another, even if the blocks form
-            // a linear chain. So this IR move enhances counted loop recognition.
-            //
-            // The logic here is essentially echoing fgCompactBlocks... but we don't call
-            // that here because we don't want to delete block and do the necessary updates
-            // to all the other data in flight, and we'd also prefer that newNext be the
-            // survivor, not block.
-            //
-            if ((newNext->bbRefs == 1) && comp->fgCanCompactBlocks(block, newNext))
-            {
-                JITDUMP("Moving stmts from " FMT_BB " to " FMT_BB "\n", block->bbNum, newNext->bbNum);
-                Statement* stmtList1 = block->firstStmt();
-                Statement* stmtList2 = newNext->firstStmt();
-
-                // Is there anything to move?
-                //
-                if (stmtList1 != nullptr)
-                {
-                    // Append newNext stmts to block's stmts.
-                    //
-                    if (stmtList2 != nullptr)
-                    {
-                        Statement* stmtLast1 = block->lastStmt();
-                        Statement* stmtLast2 = newNext->lastStmt();
-
-                        stmtLast1->SetNextStmt(stmtList2);
-                        stmtList2->SetPrevStmt(stmtLast1);
-                        stmtList1->SetPrevStmt(stmtLast2);
-                    }
-
-                    // Move block's stmts to newNext
-                    //
-                    newNext->bbStmtList = stmtList1;
-                    block->bbStmtList   = nullptr;
-
-                    // Update newNext's block flags
-                    //
-                    newNext->CopyFlags(block, BBF_COMPACT_UPD);
-                }
-            }
-        }
-
-        return newBlock;
-    }
-
-    //------------------------------------------------------------------------
-    // CheckForExit: Check if the given block has any successor edges that are
-    //    loop exits, and update `lastExit` and `exitCount` if so.
-    //
-    // Arguments:
-    //    block - Block whose successor edges are to be checked.
-    //
-    // Notes:
-    //    If one block has multiple exiting successor edges, those are counted
-    //    as multiple exits in `exitCount`.
-    //
-    void CheckForExit(BasicBlock* block)
-    {
-        assert(!block->HasTarget() || block->HasInitializedTarget());
-
-        switch (block->GetKind())
-        {
-            case BBJ_ALWAYS:
-            {
-                BasicBlock* exitPoint = block->GetTarget();
-
-                if (!loopBlocks.IsMember(exitPoint->bbNum))
-                {
-                    // Exit from a block other than BOTTOM
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if !defined(FEATURE_EH_FUNCLETS)
-                    // On non-funclet platforms (x86), the catch exit is a BBJ_ALWAYS, but we don't want that to
-                    // be considered a loop exit block, as catch handlers don't have predecessor lists and don't
-                    // show up as might be expected in the dominator tree.
-                    if (!BasicBlock::sameHndRegion(block, exitPoint))
-                    {
-                        break;
-                    }
-#endif // !defined(FEATURE_EH_FUNCLETS)
-
-                    lastExit = block;
-                    exitCount++;
-                }
-                break;
-            }
-            case BBJ_COND:
-                if (!loopBlocks.IsMember(block->GetTrueTarget()->bbNum))
-                {
-                    lastExit = block;
-                    exitCount++;
-                }
-
-                if (!loopBlocks.IsMember(block->GetFalseTarget()->bbNum))
-                {
-                    lastExit = block;
-                    exitCount++;
-                }
-                break;
-            case BBJ_CALLFINALLY:
-                // Check fallthrough successor
-                if (!loopBlocks.IsMember(block->Next()->bbNum))
-                {
-                    lastExit = block;
-                    exitCount++;
-                }
-
-                FALLTHROUGH;
-            case BBJ_CALLFINALLYRET:
-            case BBJ_EHCATCHRET:
-                if (!loopBlocks.IsMember(block->GetTarget()->bbNum))
-                {
-                    lastExit = block;
-                    exitCount++;
-                }
-                break;
-
-            case BBJ_EHFINALLYRET:
-            case BBJ_EHFAULTRET:
-            case BBJ_EHFILTERRET:
-                // The "try" associated with this "finally" must be in the same loop, so the
-                // finally block will return control inside the loop.
-                break;
-
-            case BBJ_THROW:
-            case BBJ_RETURN:
-                // Those are exits from the loop
-                lastExit = block;
-                exitCount++;
-                break;
-
-            case BBJ_SWITCH:
-                for (BasicBlock* const exitPoint : block->SwitchTargets())
-                {
-                    if (!loopBlocks.IsMember(exitPoint->bbNum))
-                    {
-                        lastExit = block;
-                        exitCount++;
-                    }
-                }
-                break;
-
-            default:
-                noway_assert(!"Unexpected bbKind");
-                break;
-        }
-    }
 };
 } // end (anonymous) namespace
 
@@ -2453,7 +1961,6 @@ void Compiler::optFindNaturalLoops()
     }
 #endif // DEBUG
 
-    noway_assert(fgDomsComputed);
     assert(fgHasLoops);
 
 #if COUNT_LOOPS
@@ -2546,12 +2053,10 @@ NO_MORE_LOOPS:
 
     if (mod)
     {
-        // Need to renumber blocks now since loop canonicalization
-        // depends on it; can defer the rest of fgUpdateChangedFlowGraph()
-        // until after canonicalizing loops. Dominator information is
-        // recorded in terms of block numbers, so flag it invalid.
-        fgDomsComputed = false;
+        fgInvalidateDfsTree();
         fgRenumberBlocks();
+        m_dfsTree = fgComputeDfs();
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
     }
 
     // Now the loop indices are stable. We can figure out parent/child relationships
@@ -2583,44 +2088,6 @@ NO_MORE_LOOPS:
         }
     }
 
-    // Make sure that loops are canonical: that every loop has a unique "top", by creating an empty "nop"
-    // one, if necessary, for loops containing others that share a "top."
-    //
-    // Also make sure that no loop's "bottom" is another loop's "head".
-    //
-    for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
-    {
-        // Traverse the outermost loops as entries into the loop nest; so skip non-outermost.
-        if (optLoopTable[loopInd].lpParent != BasicBlock::NOT_IN_LOOP)
-        {
-            continue;
-        }
-
-        // Otherwise...
-        if (optCanonicalizeLoopNest(loopInd))
-        {
-            mod = true;
-        }
-    }
-    if (mod)
-    {
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
-    }
-
-    // Create a loop pre-header for every loop.
-    bool modForPreHeader = false;
-    for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
-    {
-        if (fgCreateLoopPreHeader(loopInd))
-        {
-            modForPreHeader = true;
-        }
-    }
-    if (modForPreHeader)
-    {
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
-    }
-
     for (BasicBlock* block : Blocks())
     {
         block->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
@@ -2630,9 +2097,6 @@ NO_MORE_LOOPS:
     {
         optLoopTable[loopInd].lpEntry->SetFlags(BBF_OLD_LOOP_HEADER_QUIRK);
     }
-
-    // Starting now, we require all loops to have pre-headers.
-    optLoopsRequirePreHeaders = true;
 
 #ifdef DEBUG
     if (verbose && (optLoopCount > 0))
@@ -2810,546 +2274,6 @@ bool Compiler::optIsLoopEntry(BasicBlock* block) const
 }
 
 //-----------------------------------------------------------------------------
-// optCanonicalizeLoopNest: Canonicalize a loop nest
-//
-// Arguments:
-//   loopInd - index of outermost loop in the nest
-//
-// Returns:
-//   true if the flow graph was modified
-//
-// Notes:
-//   For loopInd and all contained loops, ensures each loop top's back edges
-//   only come from this loop.
-//
-//   Will split top blocks and redirect edges if needed.
-//
-bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
-{
-    // First canonicalize the loop.
-    //
-    bool modified = optCanonicalizeLoop(loopInd);
-
-    // Then any children.
-    //
-    for (unsigned char child = optLoopTable[loopInd].lpChild; //
-         child != BasicBlock::NOT_IN_LOOP;                    //
-         child = optLoopTable[child].lpSibling)
-    {
-        modified |= optCanonicalizeLoopNest(child);
-    }
-
-    return modified;
-}
-
-//-----------------------------------------------------------------------------
-// optCanonicalizeLoop: ensure that each loop top's back edges come only from
-//   blocks in the same loop, and that no loop head/bottom blocks coincide.
-//
-// Arguments:
-//   loopInd - index of the loop to consider
-//
-// Returns:
-//   true if flow changes were made
-//
-// Notes:
-//
-// Back edges incident on loop top fall into one three groups:
-//
-// (1) Outer non-loop backedges (preds dominated by entry where pred is not in loop)
-// (2) The canonical backedge (pred == bottom)
-// (3) Nested loop backedges or nested non-loop backedges
-//     (preds dominated by entry, where pred is in loop, pred != bottom)
-//
-// We assume dominance has already been established by loop recognition (that is,
-// anything classified as a loop will have all backedges dominated by loop entry,
-// so the only possible non-backedge predecessor of top will be head).
-//
-// We cannot check dominance here as the flow graph is being modified.
-//
-// If either set (1) or (3) is non-empty the loop is not canonical.
-//
-// This method will split the loop top into two or three blocks depending on
-// whether (1) or (3) is non-empty, and redirect the edges accordingly.
-//
-// Loops are canonicalized outer to inner, so inner loops should never see outer loop
-// non-backedges, as the parent loop canonicalization should have handled them.
-//
-bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
-{
-    bool              modified = false;
-    BasicBlock*       h        = optLoopTable[loopInd].lpHead;
-    BasicBlock* const t        = optLoopTable[loopInd].lpTop;
-    BasicBlock* const e        = optLoopTable[loopInd].lpEntry;
-    BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
-
-    // Normally, `head` either falls through to the `top` or branches to a non-`top` middle
-    // entry block. If the `head` branches to `top` because it is the BBJ_CALLFINALLYRET of a
-    // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, we canonicalize by introducing a new fall-through
-    // head block. See FindEntry() for the logic that allows this.
-    if (h->KindIs(BBJ_CALLFINALLYRET) && h->TargetIs(t))
-    {
-        // Insert new head
-
-        BasicBlock* const newH = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true, /*jumpDest*/ h->Next());
-        newH->SetFlags(BBF_NONE_QUIRK);
-        newH->inheritWeight(h);
-        newH->bbNatLoopNum = h->bbNatLoopNum;
-        h->SetTarget(newH);
-
-        fgRemoveRefPred(t, h);
-        fgAddRefPred(newH, h);
-        fgAddRefPred(t, newH);
-
-        optUpdateLoopHead(loopInd, h, newH);
-
-        JITDUMP("in optCanonicalizeLoop: " FMT_LP " head " FMT_BB
-                " is BBJ_CALLFINALLYRET of BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair that targets top " FMT_BB
-                ". Replacing with new BBJ_ALWAYS head " FMT_BB ".",
-                loopInd, h->bbNum, t->bbNum, newH->bbNum);
-
-        h        = newH;
-        modified = true;
-    }
-
-    // Look for case (1)
-    //
-    bool doOuterCanon = false;
-
-    for (BasicBlock* const topPredBlock : t->PredBlocks())
-    {
-        const bool predIsInLoop = (t->bbNum <= topPredBlock->bbNum) && (topPredBlock->bbNum <= b->bbNum);
-        if (predIsInLoop || (topPredBlock == h))
-        {
-            // no action needed
-        }
-        else
-        {
-            JITDUMP("in optCanonicalizeLoop: " FMT_LP " top " FMT_BB " (entry " FMT_BB " bottom " FMT_BB
-                    ") %shas a non-loop backedge from " FMT_BB "%s\n",
-                    loopInd, t->bbNum, e->bbNum, b->bbNum, doOuterCanon ? "also " : "", topPredBlock->bbNum,
-                    doOuterCanon ? "" : ": need to canonicalize non-loop backedges");
-            doOuterCanon = true;
-        }
-    }
-
-    if (doOuterCanon)
-    {
-        const bool didCanon = optCanonicalizeLoopCore(loopInd, LoopCanonicalizationOption::Outer);
-        assert(didCanon);
-        modified |= didCanon;
-    }
-
-    // Look for case (3)
-    //
-    // Outer canon should not update loop top.
-    //
-    assert(t == optLoopTable[loopInd].lpTop);
-    if (t->bbNatLoopNum != loopInd)
-    {
-        JITDUMP("in optCanonicalizeLoop: " FMT_LP " has top " FMT_BB " (entry " FMT_BB " bottom " FMT_BB
-                ") with natural loop number " FMT_LP ": need to canonicalize nested inner loop backedges\n",
-                loopInd, t->bbNum, e->bbNum, b->bbNum, t->bbNatLoopNum);
-
-        const bool didCanon = optCanonicalizeLoopCore(loopInd, LoopCanonicalizationOption::Current);
-        assert(didCanon);
-        modified |= didCanon;
-    }
-
-    // Check if this loopInd head is also the bottom of some sibling.
-    // If so, add a block in between to serve as the new head.
-    //
-    auto repairLoop = [this](unsigned char loopInd, unsigned char sibling) {
-
-        BasicBlock* const h        = optLoopTable[loopInd].lpHead;
-        BasicBlock* const siblingB = optLoopTable[sibling].lpBottom;
-
-        if (h == siblingB)
-        {
-            // We have
-            //
-            //   sibling.B (== loopInd.H) -e-> loopInd.T
-            //
-            // where e is a "critical edge", that is
-            // * sibling.B has other successors (notably sibling.T),
-            // * loopInd.T has other predecessors (notably loopInd.B)
-            //
-            // turn this into
-            //
-            //  sibling.B -> newH (== loopInd.H) -> loopInd.T
-            //
-            // Ideally we'd just call fgSplitEdge, but we are
-            // not keeping pred lists in good shape.
-            //
-            BasicBlock* const t = optLoopTable[loopInd].lpTop;
-            assert(siblingB->KindIs(BBJ_COND));
-            assert(siblingB->FalseTargetIs(t));
-
-            JITDUMP(FMT_LP " head " FMT_BB " is also " FMT_LP " bottom\n", loopInd, h->bbNum, sibling);
-
-            BasicBlock* const newH = fgNewBBbefore(BBJ_ALWAYS, t, /*extendRegion*/ false, /*jumpDest*/ t);
-            newH->SetFlags(BBF_NONE_QUIRK);
-
-            fgSetEHRegionForNewLoopHead(newH, t);
-
-            h->SetFalseTarget(newH);
-            fgRemoveRefPred(t, h);
-            fgAddRefPred(t, newH);
-            fgAddRefPred(newH, h);
-
-            // Anything that flows into sibling will flow here.
-            // So we use sibling.H as our best guess for weight.
-            //
-            newH->inheritWeight(optLoopTable[sibling].lpHead);
-            newH->bbNatLoopNum = optLoopTable[loopInd].lpParent;
-            optUpdateLoopHead(loopInd, h, newH);
-
-            return true;
-        }
-        return false;
-    };
-
-    if (optLoopTable[loopInd].lpParent == BasicBlock::NOT_IN_LOOP)
-    {
-        // check against all other top-level loops
-        //
-        for (unsigned char sibling = 0; sibling < optLoopCount; sibling++)
-        {
-            if (optLoopTable[sibling].lpParent != BasicBlock::NOT_IN_LOOP)
-            {
-                continue;
-            }
-
-            modified |= repairLoop(loopInd, sibling);
-        }
-    }
-    else
-    {
-        // check against all other sibling loops
-        //
-        const unsigned char parentLoop = optLoopTable[loopInd].lpParent;
-
-        for (unsigned char sibling = optLoopTable[parentLoop].lpChild; //
-             sibling != BasicBlock::NOT_IN_LOOP;                       //
-             sibling = optLoopTable[sibling].lpSibling)
-        {
-            if (sibling == loopInd)
-            {
-                continue;
-            }
-
-            modified |= repairLoop(loopInd, sibling);
-        }
-    }
-
-    if (modified)
-    {
-        JITDUMP("Done canonicalizing " FMT_LP "\n\n", loopInd);
-    }
-
-    return modified;
-}
-
-//-----------------------------------------------------------------------------
-// optCanonicalizeLoopCore: ensure that each loop top's back edges come do not
-//   come from outer/inner loops.
-//
-// Arguments:
-//   loopInd - index of the loop to consider
-//   option - which set of edges to move when canonicalizing
-//
-// Returns:
-//   true if flow changes were made
-//
-// Notes:
-//   option ::Outer retargets all backedges that do not come from loops in the block.
-//   option ::Current retargets the canonical backedge (from bottom)
-//
-bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizationOption option)
-{
-    // Otherwise, the top of this loop is also part of a nested loop or has
-    // non-loop backedges.
-    //
-    // Insert a new unique top for this loop. We must be careful to put this new
-    // block in the correct EH region. Note that t->bbPrev might be in a different
-    // EH region. For example:
-    //
-    // try {
-    //      ...
-    //      BB07
-    // }
-    // BB08 // "first"
-    //
-    // In this case, first->bbPrev is BB07, which is in a different 'try' region.
-    // On the other hand, the first block of multiple loops might be the first
-    // block of a 'try' region that is completely contained in the multiple loops.
-    // for example:
-    //
-    // BB08 try { }
-    // ...
-    // BB10 BBJ_ALWAYS => BB08
-    // ...
-    // BB12 BBJ_ALWAYS => BB08
-    //
-    // Here, we have two loops, both with BB08 as the "first" block. Block BB08
-    // is a single-block "try" region. Neither loop "bottom" block is in the same
-    // "try" region as BB08. This is legal because you can jump to the first block
-    // of a try region. With EH normalization, no two "try" regions will share
-    // this block. In this case, we need to insert a new block for the outer loop
-    // in the same EH region as the branch from the "bottom":
-    //
-    // BB30 BBJ_ALWAYS
-    // BB08 try { }
-    // ...
-    // BB10 BBJ_ALWAYS => BB08
-    // ...
-    // BB12 BBJ_ALWAYS => BB30
-    //
-    // Another possibility is that the "first" block of the loop nest can be the first block
-    // of a "try" region that also has other predecessors than those in the loop, or even in
-    // the "try" region (since blocks can target the first block of a "try" region). For example:
-    //
-    // BB08 try {
-    // ...
-    // BB10 BBJ_ALWAYS => BB08
-    // ...
-    // BB12 BBJ_ALWAYS => BB08
-    // BB13 }
-    // ...
-    // BB20 BBJ_ALWAYS => BB08
-    // ...
-    // BB25 BBJ_ALWAYS => BB08
-    //
-    // Here, BB08 has 4 flow graph predecessors: BB10, BB12, BB20, BB25. These are all potential loop
-    // bottoms, for four possible nested loops. However, we require all the loop bottoms to be in the
-    // same EH region. For loops BB08..BB10 and BB08..BB12, we need to add a new "top" block within
-    // the try region, immediately before BB08. The bottom of the loop BB08..BB10 loop will target the
-    // old BB08, and the bottom of the BB08..BB12 loop will target the new loop header. The other branches
-    // (BB20, BB25) must target the new loop header, both for correctness, and to avoid the illegal
-    // situation of branching to a non-first block of a 'try' region.
-    //
-    // We can also have a loop nest where the "first" block is outside of a "try" region
-    // and the back edges are inside a "try" region, for example:
-    //
-    // BB02 // "first"
-    // ...
-    // BB09 try { BBJ_COND => BB02
-    // ...
-    // BB15 BBJ_COND => BB02
-    // ...
-    // BB21 } // end of "try"
-    //
-    // In this case, both loop back edges were formed by "leave" instructions that were
-    // imported into branches that were later made conditional. In this case, we don't
-    // want to copy the EH region of the back edge, since that would create a block
-    // outside of and disjoint with the "try" region of the back edge. However, to
-    // simplify things, we disqualify this type of loop, so we should never see this here.
-    //
-    BasicBlock* const b = optLoopTable[loopInd].lpBottom;
-    BasicBlock* const t = optLoopTable[loopInd].lpTop;
-    BasicBlock* const h = optLoopTable[loopInd].lpHead;
-
-    // The loop must be entirely contained within a single handler region.
-    assert(BasicBlock::sameHndRegion(t, b));
-
-    // We expect h to be already "canonical" -- that is, it falls through to t
-    // and is not a degenerate BBJ_COND (both branches and falls through to t)
-    // or a side entry to the loop.
-    //
-    // Because of this, introducing a block before t automatically gives us
-    // the right flow out of h.
-    //
-    assert(!h->KindIs(BBJ_COND) || h->FalseTargetIs(t));
-    assert(!h->KindIs(BBJ_ALWAYS) || h->TargetIs(t));
-    assert(h->KindIs(BBJ_ALWAYS, BBJ_COND));
-
-    // If the bottom block is in the same "try" region, then we extend the EH
-    // region. Otherwise, we add the new block outside the "try" region.
-    //
-    const bool        extendRegion = BasicBlock::sameTryRegion(t, b);
-    BasicBlock* const newT         = fgNewBBbefore(BBJ_ALWAYS, t, extendRegion, t);
-    newT->SetFlags(BBF_NONE_QUIRK);
-
-    if (h->KindIs(BBJ_COND))
-    {
-        BasicBlock* const hj = h->GetTrueTarget();
-        assert((hj->bbNum < t->bbNum) || (hj->bbNum > b->bbNum));
-        h->SetFalseTarget(newT);
-    }
-    else
-    {
-        h->SetTarget(newT);
-    }
-
-    fgRemoveRefPred(t, h);
-    fgAddRefPred(t, newT);
-    fgAddRefPred(newT, h);
-
-    // Initially give newT the same weight as t; we will subtract from
-    // this for each edge that does not move from t to newT.
-    //
-    newT->inheritWeight(t);
-
-    if (!extendRegion)
-    {
-        // We need to set the EH region manually. Set it to be the same
-        // as the bottom block.
-        newT->copyEHRegion(b);
-    }
-
-    // NewT will be the target for the outer/current loop's backedge(s).
-    //
-    BlockToBlockMap* const blockMap = new (getAllocator(CMK_LoopOpt)) BlockToBlockMap(getAllocator(CMK_LoopOpt));
-    blockMap->Set(t, newT);
-
-    // The new block can reach the same set of blocks as the old one, but don't try to reflect
-    // that in its reachability set here -- creating the new block may have changed the BlockSet
-    // representation from short to long, and canonicalizing loops is immediately followed by
-    // a call to fgUpdateChangedFlowGraph which will recompute the reachability sets anyway.
-
-    bool firstPred = true;
-    for (BasicBlock* const topPredBlock : t->PredBlocks())
-    {
-        // We set profile weight of newT assuming all edges would
-        // be redirected there. So, if we don't redirect this edge,
-        // this is how much we'll have to adjust newT's weight.
-        //
-        weight_t weightAdjust = BB_ZERO_WEIGHT;
-
-        if (option == LoopCanonicalizationOption::Current)
-        {
-            // Redirect the (one and only) true backedge of this loop.
-            //
-            if (topPredBlock != b)
-            {
-                if ((topPredBlock != h) && topPredBlock->hasProfileWeight())
-                {
-                    // Note this may overstate the adjustment, if topPredBlock is BBJ_COND.
-                    //
-                    weightAdjust = topPredBlock->bbWeight;
-                }
-            }
-            else if (topPredBlock != newT)
-            {
-                JITDUMP("in optCanonicalizeLoop (current): redirect bottom->top backedge " FMT_BB " -> " FMT_BB
-                        " to " FMT_BB " -> " FMT_BB "\n",
-                        topPredBlock->bbNum, t->bbNum, topPredBlock->bbNum, newT->bbNum);
-                optRedirectBlock(b, blockMap, RedirectBlockOption::UpdatePredLists);
-            }
-        }
-        else if (option == LoopCanonicalizationOption::Outer)
-        {
-            // Redirect non-loop preds of "t" to go to "newT". Inner loops that also branch to "t" should continue
-            // to do so. However, there maybe be other predecessors from outside the loop nest that need to be updated
-            // to point to "newT". This normally wouldn't happen, since they too would be part of the loop nest.
-            // However,
-            // they might have been prevented from participating in the loop nest due to different EH nesting, or some
-            // other reason.
-            //
-            // Skip if topPredBlock is in the loop.
-            // Note that this uses block number to detect membership in the loop. We are adding blocks during
-            // canonicalization, and those block numbers will be new, and larger than previous blocks. However, we work
-            // outside-in, so we shouldn't encounter the new blocks at the loop boundaries, or in the predecessor lists.
-            //
-            if ((t->bbNum <= topPredBlock->bbNum) && (topPredBlock->bbNum <= b->bbNum))
-            {
-                if (topPredBlock->hasProfileWeight())
-                {
-                    // Note this may overstate the adjustment, if topPredBlock is BBJ_COND.
-                    //
-                    weightAdjust = topPredBlock->bbWeight;
-                }
-            }
-            else if (topPredBlock != newT)
-            {
-                JITDUMP("in optCanonicalizeLoop (outer): redirect %s->top %sedge " FMT_BB " -> " FMT_BB " to " FMT_BB
-                        " -> " FMT_BB "\n",
-                        topPredBlock == h ? "head" : "nonloop", topPredBlock == h ? "" : "back", topPredBlock->bbNum,
-                        t->bbNum, topPredBlock->bbNum, newT->bbNum);
-                optRedirectBlock(topPredBlock, blockMap, RedirectBlockOption::UpdatePredLists);
-            }
-        }
-        else
-        {
-            unreached();
-        }
-
-        if (weightAdjust > BB_ZERO_WEIGHT)
-        {
-            JITDUMP("in optCanonicalizeLoop: removing block " FMT_BB " weight " FMT_WT " from " FMT_BB "\n",
-                    topPredBlock->bbNum, weightAdjust, newT->bbNum);
-
-            if (newT->bbWeight >= weightAdjust)
-            {
-                newT->setBBProfileWeight(newT->bbWeight - weightAdjust);
-            }
-            else if (newT->bbWeight > BB_ZERO_WEIGHT)
-            {
-                newT->setBBProfileWeight(BB_ZERO_WEIGHT);
-            }
-        }
-    }
-
-    assert(h->NextIs(newT));
-    assert(newT->NextIs(t));
-
-    // With the Option::Current we are changing which block is loop top.
-    // Make suitable updates.
-    //
-    if (option == LoopCanonicalizationOption::Current)
-    {
-        JITDUMP("in optCanonicalizeLoop (current): " FMT_BB " is now the top of loop " FMT_LP "\n", newT->bbNum,
-                loopInd);
-
-        optLoopTable[loopInd].lpTop = newT;
-        newT->bbNatLoopNum          = loopInd;
-
-        // If loopInd was a do-while loop (top == entry), update entry, as well.
-        //
-        BasicBlock* const origE = optLoopTable[loopInd].lpEntry;
-        if (origE == t)
-        {
-            JITDUMP("updating entry of " FMT_LP " to " FMT_BB "\n", loopInd, newT->bbNum);
-            optLoopTable[loopInd].lpEntry = newT;
-        }
-
-        // If any loops nested in "loopInd" have the same head and entry as "loopInd",
-        // it must be the case that they were do-while's (since "h" fell through to the entry).
-        // The new node "newT" becomes the head of such loops.
-        for (unsigned char childLoop = optLoopTable[loopInd].lpChild; //
-             childLoop != BasicBlock::NOT_IN_LOOP;                    //
-             childLoop = optLoopTable[childLoop].lpSibling)
-        {
-            assert(newT->KindIs(BBJ_ALWAYS));
-            if ((optLoopTable[childLoop].lpEntry == origE) && (optLoopTable[childLoop].lpHead == h) &&
-                newT->TargetIs(origE))
-            {
-                optUpdateLoopHead(childLoop, h, newT);
-
-                // Fix pred list here, so when we walk preds of child loop tops
-                // we see the right blocks.
-                //
-                fgReplacePred(optLoopTable[childLoop].lpTop, h, newT);
-            }
-        }
-    }
-    else if (option == LoopCanonicalizationOption::Outer)
-    {
-        JITDUMP("in optCanonicalizeLoop (outer): " FMT_BB " is outside of loop " FMT_LP "\n", newT->bbNum, loopInd);
-
-        // If we are lifting outer backeges, then newT belongs to our parent loop
-        //
-        newT->bbNatLoopNum = optLoopTable[loopInd].lpParent;
-
-        // newT is now the header of this loop
-        //
-        optUpdateLoopHead(loopInd, h, newT);
-    }
-
-    return true;
-}
-
-//-----------------------------------------------------------------------------
 // optLoopContains: Check if one loop contains another
 //
 // Arguments:
@@ -3521,19 +2445,18 @@ bool Compiler::optIterSmallUnderflow(int iterAtExit, var_types decrType)
 }
 
 //-----------------------------------------------------------------------------
-// optComputeLoopRep: Helper for loop unrolling. Computes the number of repetitions
-// in a constant loop.
+// optComputeLoopRep: Helper for loop unrolling. Computes the number of times
+// the test block of a loop is executed.
 //
 // Arguments:
-//    constInit    - loop constant initial value
-//    constLimit   - loop constant limit
-//    iterInc      - loop iteration increment
-//    iterOper     - loop iteration increment operator (ADD, SUB, etc.)
-//    iterOperType - iteration operator type
-//    testOper     - type of loop test (i.e. GT_LE, GT_GE, etc.)
-//    unsTest      - true if test is unsigned
-//    dupCond      - true if the loop head contains a test which skips this loop
-//    iterCount    - *iterCount is set to the iteration count, if the function returns `true`
+//    constInit     - loop constant initial value
+//    constLimit    - loop constant limit
+//    iterInc       - loop iteration increment
+//    iterOper      - loop iteration increment operator (ADD, SUB, etc.)
+//    iterOperType  - iteration operator type
+//    testOper      - type of loop test (i.e. GT_LE, GT_GE, etc.)
+//    unsTest       - true if test is unsigned
+//    iterCount     - *iterCount is set to the iteration count, if the function returns `true`
 //
 // Returns:
 //   true if the loop has a constant repetition count, false if that cannot be proven
@@ -3545,7 +2468,6 @@ bool Compiler::optComputeLoopRep(int        constInit,
                                  var_types  iterOperType,
                                  genTreeOps testOper,
                                  bool       unsTest,
-                                 bool       dupCond,
                                  unsigned*  iterCount)
 {
     noway_assert(genActualType(iterOperType) == TYP_INT);
@@ -3611,22 +2533,8 @@ bool Compiler::optComputeLoopRep(int        constInit,
         return false;
     }
 
-    // Set iterSign to +1 for positive iterInc and -1 for negative iterInc.
-    iterSign = (iterInc > 0) ? +1 : -1;
-
-    // Initialize loopCount to zero.
+    iterSign  = (iterInc > 0) ? +1 : -1;
     loopCount = 0;
-
-    // If dupCond is true then the loop initialization block contains a test which skips
-    // this loop, if the constInit does not pass the loop test.
-    // Such a loop can execute zero times.
-    // If dupCond is false then we have a true do-while loop where we
-    // always execute the loop once before performing the loop test.
-    if (!dupCond)
-    {
-        loopCount += 1;
-        constInitX += iterInc;
-    }
 
     // bail if count is based on wrap-around math
     if (iterInc > 0)
@@ -3671,7 +2579,6 @@ bool Compiler::optComputeLoopRep(int        constInit,
             }
             else
             {
-                noway_assert(iterInc < 0);
                 // Stepping by -1, i.e. Mod with 1 is always zero.
                 if (iterInc != -1)
                 {
@@ -3972,10 +2879,99 @@ PhaseStatus Compiler::optUnrollLoops()
 
     // Look for loop unrolling candidates
 
-    bool change      = false;
+    int  unrollCount = 0;
     bool anyIRchange = false;
-    INDEBUG(int unrollCount = 0); // count of loops unrolled
 
+    int passes = 0;
+
+    while (true)
+    {
+        // We track loops for which we unrolled a descendant loop. Since unrolling
+        // introduces/removes blocks, we retry unrolling for the parent loops
+        // separately, to avoid having to maintain the removed/added blocks.
+        BitVecTraits loopTraits((unsigned)m_loops->NumLoops(), this);
+        BitVec       loopsWithUnrolledDescendant(BitVecOps::MakeEmpty(&loopTraits));
+
+        // Visit loops in post order (inner loops before outer loops).
+        for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
+        {
+            if (BitVecOps::IsMember(&loopTraits, loopsWithUnrolledDescendant, loop->GetIndex()))
+            {
+                continue;
+            }
+
+            if (!optTryUnrollLoop(loop, &anyIRchange))
+            {
+                continue;
+            }
+
+            unrollCount++;
+
+            // Mark in all ancestors now that one of their descendant loops was
+            // unrolled to indicate that the set of loop blocks changed.
+            for (FlowGraphNaturalLoop* ancestor = loop->GetParent(); ancestor != nullptr;
+                 ancestor                       = ancestor->GetParent())
+            {
+                BitVecOps::AddElemD(&loopTraits, loopsWithUnrolledDescendant, ancestor->GetIndex());
+            }
+        }
+
+        if ((unrollCount == 0) || BitVecOps::IsEmpty(&loopTraits, loopsWithUnrolledDescendant) || (passes >= 10))
+        {
+            break;
+        }
+
+        JITDUMP("A nested loop was unrolled. Doing another pass (pass %d)\n", passes + 1);
+        fgRenumberBlocks();
+        fgInvalidateDfsTree();
+        m_dfsTree = fgComputeDfs();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        passes++;
+    }
+
+    if (unrollCount > 0)
+    {
+        assert(anyIRchange);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\nFinished unrolling %d loops in %d passes", unrollCount, passes);
+            printf("\n");
+        }
+#endif // DEBUG
+
+        // We left the old loops unreachable as part of unrolling, so get rid of
+        // those blocks now.
+        fgDfsBlocksAndRemove();
+        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+        fgRenumberBlocks();
+
+        DBEXEC(verbose, fgDispBasicBlocks());
+    }
+
+#ifdef DEBUG
+    fgDebugCheckBBlist(true);
+#endif // DEBUG
+
+    return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-----------------------------------------------------------------------------
+// optTryUnrollLoop: Do legality and profitability checks and try to unroll a
+// single loop.
+//
+// Parameters:
+//   loop      - The loop to try unrolling
+//   changedIR - [out] Whether or not the IR was changed. Can be true even if
+//               the function returns false.
+//
+// Returns:
+//   True if the loop was unrolled, in which case the flow graph was changed.
+//
+bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
+{
     static const unsigned ITER_LIMIT[COUNT_OPT_CODE + 1] = {
         10, // BLENDED_CODE
         0,  // SMALL_CODE
@@ -4005,568 +3001,437 @@ PhaseStatus Compiler::optUnrollLoops()
     assert(UNROLL_LIMIT_SZ[SMALL_CODE] == 0);
     assert(UNROLL_LIMIT_SZ[COUNT_OPT_CODE] == 0);
 
-    int passes = 0;
-RETRY_UNROLL:
-    BitVecTraits loopTraits((unsigned)m_loops->NumLoops(), this);
-    // We track loops for which we unrolled a descendant loop. Since unrolling
-    // introduces/removes blocks, we retry unrolling for the parent loops
-    // separately, to avoid having to maintain the removed/added blocks.
-    BitVec loopsWithUnrolledDescendant(BitVecOps::MakeEmpty(&loopTraits));
-
-    // Visit loops in post order (inner loops before outer loops).
-    for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
+    NaturalLoopIterInfo iterInfo;
+    if (!loop->AnalyzeIteration(&iterInfo))
     {
-        // TODO-Quirk: Remove
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
-        if (BitVecOps::IsMember(&loopTraits, loopsWithUnrolledDescendant, loop->GetIndex()))
-        {
-            continue;
-        }
-
-        NaturalLoopIterInfo iterInfo;
-        if (!loop->AnalyzeIteration(&iterInfo))
-        {
-            continue;
-        }
-
-        // Check for required flags:
-        // HasConstInit  - required because this transform only handles full unrolls
-        // HasConstLimit - required because this transform only handles full unrolls
-        if (!iterInfo.HasConstInit || !iterInfo.HasConstLimit)
-        {
-            // Don't print to the JitDump about this common case.
-            continue;
-        }
-
-        // Get the loop data:
-        //  - initial constant
-        //  - limit constant
-        //  - iterator
-        //  - iterator increment
-        //  - increment operation type (i.e. ADD, SUB, etc...)
-        //  - loop test type (i.e. GT_GE, GT_LT, etc...)
-
-        BasicBlock* initBlock    = iterInfo.InitBlock;
-        int         lbeg         = iterInfo.ConstInitValue;
-        int         llim         = iterInfo.ConstLimit();
-        genTreeOps  testOper     = iterInfo.TestOper();
-        unsigned    lvar         = iterInfo.IterVar;
-        int         iterInc      = iterInfo.IterConst();
-        genTreeOps  iterOper     = iterInfo.IterOper();
-        var_types   iterOperType = iterInfo.IterOperType();
-        bool        unsTest      = (iterInfo.TestTree->gtFlags & GTF_UNSIGNED) != 0;
-
-        assert(!lvaGetDesc(lvar)->IsAddressExposed());
-        assert(!lvaGetDesc(lvar)->lvIsStructField);
-
-        // Locate/initialize the increment/test statements.
-        Statement* initStmt = initBlock->lastStmt();
-        noway_assert((initStmt != nullptr) && (initStmt->GetNextStmt() == nullptr));
-
-        bool dupCond = false;
-        if (initStmt->GetRootNode()->OperIs(GT_JTRUE))
-        {
-            // Must be a duplicated loop condition.
-
-            dupCond  = true;
-            initStmt = initStmt->GetPrevStmt();
-            noway_assert(initStmt != nullptr);
-        }
-
-        // Find the number of iterations - the function returns false if not a constant number.
-        unsigned totalIter;
-        if (!optComputeLoopRep(lbeg, llim, iterInc, iterOper, iterOperType, testOper, unsTest, dupCond, &totalIter))
-        {
-            JITDUMP("Failed to unroll loop " FMT_LP ": not a constant iteration count\n", loop->GetIndex());
-            continue;
-        }
-
-        // Forget it if there are too many repetitions or not a constant loop.
-
-        if (totalIter > iterLimit)
-        {
-            JITDUMP("Failed to unroll loop " FMT_LP ": too many iterations (%d > %d) (heuristic)\n", loop->GetIndex(),
-                    totalIter, iterLimit);
-            continue;
-        }
-
-        int unrollLimitSz = UNROLL_LIMIT_SZ[compCodeOpt()];
-
-        if (INDEBUG(compStressCompile(STRESS_UNROLL_LOOPS, 50) ||) false)
-        {
-            // In stress mode, quadruple the size limit, and drop
-            // the restriction that loop limit must be vector element count.
-            unrollLimitSz *= 4;
-        }
-        else if (totalIter <= 1)
-        {
-            // No limit for single iteration loops
-            // If there is no iteration (totalIter == 0), we will remove the loop body entirely.
-            unrollLimitSz = INT_MAX;
-        }
-        else if (totalIter <= opts.compJitUnrollLoopMaxIterationCount)
-        {
-            // We can unroll this
-        }
-        else if (iterInfo.HasSimdLimit)
-        {
-            // We can unroll this
-        }
-        else
-        {
-            JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", loop->GetIndex());
-            continue;
-        }
-
-        GenTree* incr = iterInfo.IterTree;
-
-        // Don't unroll loops we don't understand.
-        if (!incr->OperIs(GT_STORE_LCL_VAR))
-        {
-            JITDUMP("Failed to unroll loop " FMT_LP ": unknown increment op (%s)\n", loop->GetIndex(),
-                    GenTree::OpName(incr->gtOper));
-            continue;
-        }
-        incr = incr->AsLclVar()->Data();
-
-        GenTree* init = initStmt->GetRootNode();
-
-        // Make sure everything looks ok.
-        assert((iterInfo.TestBlock != nullptr) && iterInfo.TestBlock->KindIs(BBJ_COND));
-
-        // clang-format off
-        if (!init->OperIs(GT_STORE_LCL_VAR) ||
-            (init->AsLclVar()->GetLclNum() != lvar) ||
-            !init->AsLclVar()->Data()->IsCnsIntOrI() ||
-            (init->AsLclVar()->Data()->AsIntCon()->gtIconVal != lbeg) ||
-
-            !((incr->gtOper == GT_ADD) || (incr->gtOper == GT_SUB)) ||
-            (incr->AsOp()->gtOp1->gtOper != GT_LCL_VAR) ||
-            (incr->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lvar) ||
-            (incr->AsOp()->gtOp2->gtOper != GT_CNS_INT) ||
-            (incr->AsOp()->gtOp2->AsIntCon()->gtIconVal != iterInc) ||
-
-            (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree))
-        {
-            noway_assert(!"Bad precondition in Compiler::optUnrollLoops()");
-            continue;
-        }
-        // clang-format on
-
-        // After this point, assume we've changed the IR. In particular, we call gtSetStmtInfo() which
-        // can modify the IR. We may still fail to unroll if the EH region conditions don't hold, if
-        // the size heuristics don't succeed, or if cloning any individual block fails.
-        anyIRchange = true;
-
-        // Heuristic: Estimated cost in code size of the unrolled loop.
-
-        {
-            ClrSafeInt<unsigned> loopCostSz; // Cost is size of one iteration
-
-            BasicBlockVisit result = loop->VisitLoopBlocksReversePostOrder([=, &loopCostSz](BasicBlock* block) {
-
-                if (!BasicBlock::sameEHRegion(block, loop->GetHeader()))
-                {
-                    // Unrolling would require cloning EH regions
-                    // Note that only non-funclet model (x86) could actually have a loop including a handler
-                    // but not it's corresponding `try`, if its `try` was moved due to being marked "rare".
-                    JITDUMP("Failed to unroll loop " FMT_LP ": EH constraint\n", loop->GetIndex());
-                    return BasicBlockVisit::Abort;
-                }
-
-                for (Statement* const stmt : block->Statements())
-                {
-                    gtSetStmtInfo(stmt);
-                    loopCostSz += stmt->GetCostSz();
-                }
-
-                return BasicBlockVisit::Continue;
-            });
-
-            if (result == BasicBlockVisit::Abort)
-            {
-                continue;
-            }
-
-#ifdef DEBUG
-            // With the EH constraint above verified it is not possible for
-            // BBJ_RETURN blocks to be part of the loop; a BBJ_RETURN block can
-            // only be part of the loop if its exceptional flow can reach the
-            // header, but that would require the handler to also be part of
-            // the loop, which guarantees that the loop contains two distinct
-            // EH regions.
-            loop->VisitLoopBlocks([](BasicBlock* block) {
-                assert(!block->KindIs(BBJ_RETURN));
-                return BasicBlockVisit::Continue;
-            });
-#endif
-
-            // Compute the estimated increase in code size for the unrolled loop.
-
-            ClrSafeInt<unsigned> fixedLoopCostSz(8);
-
-            ClrSafeInt<int> unrollCostSz = ClrSafeInt<int>(loopCostSz * ClrSafeInt<unsigned>(totalIter)) -
-                                           ClrSafeInt<int>(loopCostSz + fixedLoopCostSz);
-
-            // Don't unroll if too much code duplication would result.
-
-            if (unrollCostSz.IsOverflow() || (unrollCostSz.Value() > unrollLimitSz))
-            {
-                JITDUMP("Failed to unroll loop " FMT_LP ": size constraint (%d > %d) (heuristic)\n", loop->GetIndex(),
-                        unrollCostSz.Value(), unrollLimitSz);
-                continue;
-            }
-
-            // Looks like a good idea to unroll this loop, let's do it!
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-            JITDUMP("\nUnrolling loop " FMT_LP " unrollCostSz = %d\n", loop->GetIndex(), unrollCostSz.Value());
-            JITDUMPEXEC(FlowGraphNaturalLoop::Dump(loop));
-        }
-
-        // Create the unrolled loop statement list.
-        {
-            // We unroll a loop focused around the test and IV that was
-            // identified by FlowGraphNaturalLoop::AnalyzeIteration. Note that:
-            //
-            // * The loop can have multiple exits. The exit guarded on the IV
-            //   is the one we can optimize away when we unroll, since we know
-            //   the value of the IV in each iteration. The other exits will
-            //   remain in place in each iteration.
-            //
-            // * The loop can have multiple backedges. Often, there is a
-            //   single backedge that becomes statically unreachable when we
-            //   optimize the exit guarded on the IV. In that case the loop
-            //   structure disappears. However, if there were multiple backedges,
-            //   the loop structure can remain in each unrolled iteration.
-            //
-            // * The loop being unrolled can also have nested loops, which will
-            //   be duplicated for each unrolled iteration.
-            //
-            // * Unrolling a loop creates or removes basic blocks, depending on
-            //   whether the iter count is 0. When nested loops are unrolled,
-            //   instead of trying to maintain the new right set of loop blocks
-            //   that exist in all ancestor loops, we skip unrolling for all
-            //   ancestor loops and instead recompute the loop structure and
-            //   retry unrolling. It is rare to have multiple nested unrollings
-            //   of loops, so this is not a TP issue.
-
-            BlockToBlockMap blockMap(getAllocator(CMK_LoopUnroll));
-
-            BasicBlock* bottom        = loop->GetLexicallyBottomMostBlock();
-            BasicBlock* insertAfter   = bottom;
-            BasicBlock* prevTestBlock = nullptr;
-            unsigned    iterToUnroll  = totalIter; // The number of iterations left to unroll
-
-            // Find the exit block of the IV test first. We need to do that
-            // here since it may have implicit fallthrough that we'll change
-            // below.
-            BasicBlock* exiting = iterInfo.TestBlock;
-            assert(exiting->KindIs(BBJ_COND));
-            assert(loop->ContainsBlock(exiting->GetTrueTarget()) != loop->ContainsBlock(exiting->GetFalseTarget()));
-            BasicBlock* exit =
-                loop->ContainsBlock(exiting->GetTrueTarget()) ? exiting->GetFalseTarget() : exiting->GetTrueTarget();
-
-            // If the bottom block falls out of the loop, then insert an
-            // explicit block to branch around the unrolled iterations we are
-            // going to create.
-            if (bottom->KindIs(BBJ_COND))
-            {
-                // TODO-NoFallThrough: Shouldn't need new BBJ_ALWAYS block once bbFalseTarget can diverge from bbNext
-                BasicBlock* bottomNext = bottom->Next();
-                assert(bottom->FalseTargetIs(bottomNext));
-                JITDUMP("Create branch around unrolled loop\n");
-                BasicBlock* bottomRedirBlk = fgNewBBafter(BBJ_ALWAYS, bottom, /*extendRegion*/ true, bottomNext);
-                JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", bottomRedirBlk->bbNum, bottom->bbNum);
-
-                bottom->SetFalseTarget(bottomRedirBlk);
-                fgAddRefPred(bottomRedirBlk, bottom);
-                JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomRedirBlk->bbNum);
-                fgReplacePred(bottomNext, bottom, bottomRedirBlk);
-                JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", bottom->bbNum,
-                        bottomNext->bbNum, bottomRedirBlk->bbNum, bottomNext->bbNum);
-
-                insertAfter = bottomRedirBlk;
-            }
-
-            for (int lval = lbeg; iterToUnroll > 0; iterToUnroll--)
-            {
-                BasicBlock* testBlock = nullptr;
-                loop->VisitLoopBlocksLexical([&](BasicBlock* block) {
-
-                    // Don't set a jump target for now.
-                    // BasicBlock::CopyTarget() will fix the jump kind/target in the loop below.
-                    BasicBlock* newBlock = fgNewBBafter(BBJ_ALWAYS, insertAfter, /*extendRegion*/ true);
-                    insertAfter          = newBlock;
-
-                    blockMap.Set(block, newBlock, BlockToBlockMap::Overwrite);
-
-                    // Now clone block state and statements from `from` block to `to` block.
-                    //
-                    BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval);
-
-                    newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
-
-                    // Block weight should no longer have the loop multiplier
-                    //
-                    // Note this is not quite right, as we may not have upscaled by this amount
-                    // and we might not have upscaled at all, if we had profile data.
-                    //
-                    newBlock->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
-
-                    // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-                    assert(newBlock->KindIs(BBJ_ALWAYS));
-                    assert(!newBlock->HasInitializedTarget());
-
-                    if (block == iterInfo.TestBlock)
-                    {
-                        // Remove the test; we're doing a full unroll.
-
-                        Statement* testCopyStmt = newBlock->lastStmt();
-                        GenTree*   testCopyExpr = testCopyStmt->GetRootNode();
-                        assert(testCopyExpr->gtOper == GT_JTRUE);
-                        GenTree* sideEffList = nullptr;
-                        gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
-                        if (sideEffList == nullptr)
-                        {
-                            fgRemoveStmt(newBlock, testCopyStmt);
-                        }
-                        else
-                        {
-                            testCopyStmt->SetRootNode(sideEffList);
-                        }
-
-                        // Save the test block of the previously unrolled
-                        // iteration, so that we can redirect it when we create
-                        // the next iteration (or to the exit for the last
-                        // iteration).
-                        assert(testBlock == nullptr);
-                        testBlock = newBlock;
-                    }
-                    else if (block->bbFallsThrough() && !loop->ContainsBlock(block->Next()))
-                    {
-                        assert(block->KindIs(BBJ_COND) && "Cannot handle fallthrough for non BBJ_COND block");
-                        // Handle fallthrough.
-                        // TODO-Quirk: Skip empty blocks and go directly to their destination.
-                        BasicBlock* targetBlk = block->Next();
-                        if (targetBlk->KindIs(BBJ_ALWAYS) && targetBlk->isEmpty())
-                            targetBlk = targetBlk->GetTarget();
-
-                        BasicBlock* newRedirBlk =
-                            fgNewBBafter(BBJ_ALWAYS, insertAfter, /* extendRegion */ true, targetBlk);
-                        newRedirBlk->copyEHRegion(insertAfter);
-                        newRedirBlk->bbWeight = block->Next()->bbWeight;
-                        newRedirBlk->CopyFlags(block->Next(), BBF_RUN_RARELY | BBF_PROF_WEIGHT);
-                        newRedirBlk->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
-
-                        fgAddRefPred(targetBlk, newRedirBlk);
-                        insertAfter = newRedirBlk;
-                    }
-
-                    return BasicBlockVisit::Continue;
-                });
-
-                assert(testBlock != nullptr);
-
-                // Now redirect any branches within the newly-cloned iteration.
-                loop->VisitLoopBlocks([=, &blockMap](BasicBlock* block) {
-                    // Do not include the test block; we will redirect it on
-                    // the next iteration or after the loop.
-                    if (block == iterInfo.TestBlock)
-                    {
-                        return BasicBlockVisit::Continue;
-                    }
-
-                    // Jump kind/target should not be set yet
-                    BasicBlock* newBlock = blockMap[block];
-                    assert(!newBlock->HasInitializedTarget());
-
-                    // Now copy the jump kind/target
-                    newBlock->CopyTarget(this, block);
-                    optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
-
-                    return BasicBlockVisit::Continue;
-                });
-
-                // Redirect previous iteration (or entry) to this iteration.
-                if (prevTestBlock != nullptr)
-                {
-                    // Redirect exit edge from previous iteration to new entry.
-                    assert(prevTestBlock->KindIs(BBJ_ALWAYS));
-                    BasicBlock* newHeader = blockMap[loop->GetHeader()];
-                    prevTestBlock->SetTarget(newHeader);
-                    fgAddRefPred(newHeader, prevTestBlock);
-
-                    JITDUMP("Redirecting previously created exiting " FMT_BB " -> " FMT_BB
-                            " (unrolled iteration header)\n",
-                            prevTestBlock->bbNum, newHeader->bbNum);
-                }
-                else
-                {
-                    // Redirect all predecessors to the new one.
-                    for (FlowEdge* enterEdge : loop->EntryEdges())
-                    {
-                        BasicBlock* entering = enterEdge->getSourceBlock();
-                        JITDUMP("Redirecting " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", entering->bbNum,
-                                loop->GetHeader()->bbNum, entering->bbNum, blockMap[loop->GetHeader()]->bbNum);
-                        assert(!entering->KindIs(BBJ_COND)); // Ensured by canonicalization
-                        optRedirectBlock(entering, &blockMap, Compiler::RedirectBlockOption::UpdatePredLists);
-                    }
-                }
-
-                prevTestBlock = testBlock;
-
-                // update the new value for the unrolled iterator
-
-                switch (iterOper)
-                {
-                    case GT_ADD:
-                        lval += iterInc;
-                        break;
-
-                    case GT_SUB:
-                        lval -= iterInc;
-                        break;
-
-                    case GT_RSH:
-                    case GT_LSH:
-                        noway_assert(!"Unrolling not implemented for this loop iterator");
-                        goto DONE_LOOP;
-
-                    default:
-                        noway_assert(!"Unknown operator for constant loop iterator");
-                        goto DONE_LOOP;
-                }
-            }
-
-            // If we get here, we successfully cloned all the blocks in the unrolled loop.
-            // Note we may not have done any cloning at all, if the loop iteration count was zero.
-            // Now redirect the last iteration to the real exit of the loop (or
-            // the entry to the exit if we unrolled 0 iterations).
-            if (prevTestBlock != nullptr)
-            {
-                assert(prevTestBlock->KindIs(BBJ_ALWAYS));
-                prevTestBlock->SetTarget(exit);
-                fgAddRefPred(exit, prevTestBlock);
-                JITDUMP("Redirecting final iteration exiting " FMT_BB " to original exit " FMT_BB "\n",
-                        prevTestBlock->bbNum, exit->bbNum);
-            }
-            else
-            {
-                blockMap.Set(loop->GetHeader(), exit, BlockToBlockMap::Overwrite);
-                for (FlowEdge* entryEdge : loop->EntryEdges())
-                {
-                    BasicBlock* entering = entryEdge->getSourceBlock();
-                    assert(!entering->KindIs(BBJ_COND)); // Ensured by canonicalization
-                    optRedirectBlock(entering, &blockMap, Compiler::RedirectBlockOption::UpdatePredLists);
-
-                    JITDUMP("Redirecting original entry " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n",
-                            entering->bbNum, loop->GetHeader()->bbNum, entering->bbNum, exit->bbNum);
-                }
-            }
-
-            // The old loop body is unreachable now.
-
-            // Control will fall through from the initBlock to its successor, which is either
-            // the preheader HEAD (if it exists), or the now empty TOP (if totalIter == 0),
-            // or the first cloned top.
-            //
-            // If the initBlock is a BBJ_COND drop the condition (and make initBlock a BBJ_ALWAYS block).
-            //
-            // TODO: Isn't this missing validity checks? This seems dangerous.
-            //
-            if (initBlock->KindIs(BBJ_COND))
-            {
-                assert(dupCond);
-                Statement* initBlockBranchStmt = initBlock->lastStmt();
-                noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
-                fgRemoveStmt(initBlock, initBlockBranchStmt);
-                fgRemoveRefPred(initBlock->GetTrueTarget(), initBlock);
-                initBlock->SetKindAndTarget(BBJ_ALWAYS, initBlock->GetFalseTarget());
-
-                // TODO-NoFallThrough: If bbFalseTarget can diverge from bbNext, it may not make sense to set
-                // BBF_NONE_QUIRK
-                initBlock->SetFlags(BBF_NONE_QUIRK);
-            }
-            else
-            {
-                // the loop must execute
-                assert(!dupCond);
-                assert(totalIter > 0);
-                noway_assert(initBlock->KindIs(BBJ_ALWAYS));
-            }
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Whole unrolled loop:\n");
-
-                gtDispTree(initStmt->GetRootNode());
-                printf("\n");
-                fgDumpTrees(bottom, insertAfter);
-            }
-#endif // DEBUG
-
-            // Remember that something has changed.
-            INDEBUG(++unrollCount);
-            change = true;
-
-            for (FlowGraphNaturalLoop* ancestor = loop->GetParent(); ancestor != nullptr;
-                 ancestor                       = ancestor->GetParent())
-            {
-                BitVecOps::AddElemD(&loopTraits, loopsWithUnrolledDescendant, ancestor->GetIndex());
-            }
-        }
-
-    DONE_LOOP:;
+        return false;
     }
 
-    if (change && !BitVecOps::IsEmpty(&loopTraits, loopsWithUnrolledDescendant) && (passes < 10))
+    // Check for required flags:
+    // HasConstInit  - required because this transform only handles full unrolls
+    // HasConstLimit - required because this transform only handles full unrolls
+    if (!iterInfo.HasConstInit || !iterInfo.HasConstLimit)
     {
-        fgDomsComputed = false;
-        fgRenumberBlocks(); // For proper lexical visit
-        m_dfsTree = fgComputeDfs();
-        optFindNewLoops();
-        passes++;
-        goto RETRY_UNROLL;
+        // Don't print to the JitDump about this common case.
+        return false;
     }
 
-    if (change)
+    // Get the loop data:
+    //  - initial constant
+    //  - limit constant
+    //  - iterator
+    //  - iterator increment
+    //  - increment operation type (i.e. ADD, SUB, etc...)
+    //  - loop test type (i.e. GT_GE, GT_LT, etc...)
+
+    int        lbeg         = iterInfo.ConstInitValue;
+    int        llim         = iterInfo.ConstLimit();
+    genTreeOps testOper     = iterInfo.TestOper();
+    unsigned   lvar         = iterInfo.IterVar;
+    int        iterInc      = iterInfo.IterConst();
+    genTreeOps iterOper     = iterInfo.IterOper();
+    var_types  iterOperType = iterInfo.IterOperType();
+    bool       unsTest      = (iterInfo.TestTree->gtFlags & GTF_UNSIGNED) != 0;
+
+    assert(!lvaGetDesc(lvar)->IsAddressExposed());
+    assert(!lvaGetDesc(lvar)->lvIsStructField);
+
+    JITDUMP("Analyzing candidate for loop unrolling:\n");
+    DBEXEC(verbose, FlowGraphNaturalLoop::Dump(loop));
+
+    // Find the number of iterations - the function returns false if not a constant number.
+    unsigned totalIter;
+    if (!optComputeLoopRep(lbeg, llim, iterInc, iterOper, iterOperType, testOper, unsTest, &totalIter))
     {
-        assert(anyIRchange);
+        JITDUMP("Failed to unroll loop " FMT_LP ": not a constant iteration count\n", loop->GetIndex());
+        return false;
+    }
 
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nFinished unrolling %d loops", unrollCount);
-            printf("\n");
-        }
-#endif // DEBUG
+    JITDUMP("Computed loop repetition count (number of test block executions) to be %u\n", totalIter);
 
-        // We left the old loop unreachable as part of unrolling, so get rid of
-        // those blocks now.
-        fgDfsBlocksAndRemove();
-        optFindNewLoops();
+    // Forget it if there are too many repetitions or not a constant loop.
 
-        fgDomsComputed = false;
-        fgRenumberBlocks();
+    if (totalIter > iterLimit)
+    {
+        JITDUMP("Failed to unroll loop " FMT_LP ": too many iterations (%d > %d) (heuristic)\n", loop->GetIndex(),
+                totalIter, iterLimit);
+        return false;
+    }
 
-        DBEXEC(verbose, fgDispBasicBlocks());
+    int unrollLimitSz = UNROLL_LIMIT_SZ[compCodeOpt()];
+
+    if (INDEBUG(compStressCompile(STRESS_UNROLL_LOOPS, 50) ||) false)
+    {
+        // In stress mode, quadruple the size limit, and drop
+        // the restriction that loop limit must be vector element count.
+        unrollLimitSz *= 4;
+    }
+    else if (totalIter <= 1)
+    {
+        // No limit for single iteration loops
+        // If there is no iteration (totalIter == 0), we will remove the loop body entirely.
+        unrollLimitSz = INT_MAX;
+    }
+    else if (totalIter <= opts.compJitUnrollLoopMaxIterationCount)
+    {
+        // We can unroll this
+    }
+    else if (iterInfo.HasSimdLimit)
+    {
+        // We can unroll this
     }
     else
     {
-        assert(unrollCount == 0);
+        JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", loop->GetIndex());
+        return false;
+    }
+
+    GenTree* incr = iterInfo.IterTree;
+
+    // Don't unroll loops we don't understand.
+    if (!incr->OperIs(GT_STORE_LCL_VAR))
+    {
+        JITDUMP("Failed to unroll loop " FMT_LP ": unknown increment op (%s)\n", loop->GetIndex(),
+                GenTree::OpName(incr->gtOper));
+        return false;
+    }
+    incr = incr->AsLclVar()->Data();
+
+    // Make sure everything looks ok.
+    assert((iterInfo.TestBlock != nullptr) && iterInfo.TestBlock->KindIs(BBJ_COND));
+
+    // clang-format off
+    if (!incr->OperIs(GT_ADD, GT_SUB) ||
+        !incr->AsOp()->gtOp1->OperIs(GT_LCL_VAR) ||
+        (incr->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lvar) ||
+        !incr->AsOp()->gtOp2->OperIs(GT_CNS_INT) ||
+        (incr->AsOp()->gtOp2->AsIntCon()->gtIconVal != iterInc) ||
+
+        (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree))
+    {
+        noway_assert(!"Bad precondition in Compiler::optUnrollLoops()");
+        return false;
+    }
+    // clang-format on
+
+    // After this point, assume we've changed the IR. In particular, we call gtSetStmtInfo() which
+    // can modify the IR. We may still fail to unroll if the EH region conditions don't hold, or if
+    // the size heuristics don't succeed.
+    *changedIR = true;
+
+    // Heuristic: Estimated cost in code size of the unrolled loop.
+
+    ClrSafeInt<unsigned> loopCostSz; // Cost is size of one iteration
+
+    BasicBlockVisit result = loop->VisitLoopBlocksReversePostOrder([=, &loopCostSz](BasicBlock* block) {
+
+        if (!BasicBlock::sameEHRegion(block, loop->GetHeader()))
+        {
+            // Unrolling would require cloning EH regions
+            // Note that only non-funclet model (x86) could actually have a loop including a handler
+            // but not it's corresponding `try`, if its `try` was moved due to being marked "rare".
+            JITDUMP("Failed to unroll loop " FMT_LP ": EH constraint\n", loop->GetIndex());
+            return BasicBlockVisit::Abort;
+        }
+
+        for (Statement* const stmt : block->Statements())
+        {
+            gtSetStmtInfo(stmt);
+            loopCostSz += stmt->GetCostSz();
+        }
+
+        return BasicBlockVisit::Continue;
+    });
+
+    if (result == BasicBlockVisit::Abort)
+    {
+        return false;
     }
 
 #ifdef DEBUG
-    fgDebugCheckBBlist(true);
+    // With the EH constraint above verified it is not possible for
+    // BBJ_RETURN blocks to be part of the loop; a BBJ_RETURN block can
+    // only be part of the loop if its exceptional flow can reach the
+    // header, but that would require the handler to also be part of
+    // the loop, which guarantees that the loop contains two distinct
+    // EH regions.
+    loop->VisitLoopBlocks([](BasicBlock* block) {
+        assert(!block->KindIs(BBJ_RETURN));
+        return BasicBlockVisit::Continue;
+    });
+#endif
+
+    // Compute the estimated increase in code size for the unrolled loop.
+
+    ClrSafeInt<unsigned> fixedLoopCostSz(8);
+
+    ClrSafeInt<int> unrollCostSz =
+        ClrSafeInt<int>(loopCostSz * ClrSafeInt<unsigned>(totalIter)) - ClrSafeInt<int>(loopCostSz + fixedLoopCostSz);
+
+    // Don't unroll if too much code duplication would result.
+
+    if (unrollCostSz.IsOverflow() || (unrollCostSz.Value() > unrollLimitSz))
+    {
+        JITDUMP("Failed to unroll loop " FMT_LP ": size constraint (%d > %d) (heuristic)\n", loop->GetIndex(),
+                unrollCostSz.Value(), unrollLimitSz);
+        return false;
+    }
+
+    // Looks like a good idea to unroll this loop, let's do it!
+    JITDUMP("\nUnrolling loop " FMT_LP " unrollCostSz = %d\n", loop->GetIndex(), unrollCostSz.Value());
+    JITDUMPEXEC(FlowGraphNaturalLoop::Dump(loop));
+
+    // We unroll a loop focused around the test and IV that was
+    // identified by FlowGraphNaturalLoop::AnalyzeIteration. Note that:
+    //
+    // * The loop can have multiple exits. The exit guarded on the IV
+    //   is the one we can optimize away when we unroll, since we know
+    //   the value of the IV in each iteration. The other exits will
+    //   remain in place in each iteration.
+    //
+    // * The loop can have multiple backedges. Often, there is a
+    //   single backedge that becomes statically unreachable when we
+    //   optimize the exit guarded on the IV. In that case the loop
+    //   structure disappears. However, if there were multiple backedges,
+    //   the loop structure can remain in each unrolled iteration.
+    //
+    // * The loop being unrolled can also have nested loops, which will
+    //   be duplicated for each unrolled iteration.
+    //
+    // * Unrolling a loop creates or removes basic blocks, depending on
+    //   whether the iter count is 0. When nested loops are unrolled,
+    //   instead of trying to maintain the new right set of loop blocks
+    //   that exist in all ancestor loops, we skip unrolling for all
+    //   ancestor loops and instead recompute the loop structure and
+    //   retry unrolling. It is rare to have multiple nested unrollings
+    //   of loops, so this is not a TP issue.
+
+    BlockToBlockMap blockMap(getAllocator(CMK_LoopUnroll));
+
+    BasicBlock* bottom        = loop->GetLexicallyBottomMostBlock();
+    BasicBlock* insertAfter   = bottom;
+    BasicBlock* prevTestBlock = nullptr;
+    unsigned    iterToUnroll  = totalIter; // The number of iterations left to unroll
+
+    // Find the exit block of the IV test first. We need to do that
+    // here since it may have implicit fallthrough that we'll change
+    // below.
+    BasicBlock* exiting = iterInfo.TestBlock;
+    assert(exiting->KindIs(BBJ_COND));
+    assert(loop->ContainsBlock(exiting->GetTrueTarget()) != loop->ContainsBlock(exiting->GetFalseTarget()));
+    BasicBlock* exit =
+        loop->ContainsBlock(exiting->GetTrueTarget()) ? exiting->GetFalseTarget() : exiting->GetTrueTarget();
+
+    // If the bottom block falls out of the loop, then insert an
+    // explicit block to branch around the unrolled iterations we are
+    // going to create.
+    if (bottom->KindIs(BBJ_COND))
+    {
+        // TODO-NoFallThrough: Shouldn't need new BBJ_ALWAYS block once bbFalseTarget can diverge from bbNext
+        BasicBlock* bottomNext = bottom->Next();
+        assert(bottom->FalseTargetIs(bottomNext));
+        JITDUMP("Create branch around unrolled loop\n");
+        BasicBlock* bottomRedirBlk = fgNewBBafter(BBJ_ALWAYS, bottom, /*extendRegion*/ true, bottomNext);
+        JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", bottomRedirBlk->bbNum, bottom->bbNum);
+
+        bottom->SetFalseTarget(bottomRedirBlk);
+        fgAddRefPred(bottomRedirBlk, bottom);
+        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomRedirBlk->bbNum);
+        fgReplacePred(bottomNext, bottom, bottomRedirBlk);
+        JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomNext->bbNum,
+                bottomRedirBlk->bbNum, bottomNext->bbNum);
+
+        insertAfter = bottomRedirBlk;
+    }
+
+    for (int lval = lbeg; iterToUnroll > 0; iterToUnroll--)
+    {
+        BasicBlock* testBlock = nullptr;
+        loop->VisitLoopBlocksLexical([&](BasicBlock* block) {
+
+            // Don't set a jump target for now.
+            // BasicBlock::CopyTarget() will fix the jump kind/target in the loop below.
+            BasicBlock* newBlock = fgNewBBafter(BBJ_ALWAYS, insertAfter, /*extendRegion*/ true);
+            insertAfter          = newBlock;
+
+            blockMap.Set(block, newBlock, BlockToBlockMap::Overwrite);
+
+            // Now clone block state and statements from `from` block to `to` block.
+            //
+            BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval);
+
+            newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
+
+            // Block weight should no longer have the loop multiplier
+            //
+            // Note this is not quite right, as we may not have upscaled by this amount
+            // and we might not have upscaled at all, if we had profile data.
+            //
+            newBlock->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
+
+            // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
+            assert(newBlock->KindIs(BBJ_ALWAYS));
+            assert(!newBlock->HasInitializedTarget());
+
+            if (block == iterInfo.TestBlock)
+            {
+                // Remove the test; we're doing a full unroll.
+
+                Statement* testCopyStmt = newBlock->lastStmt();
+                GenTree*   testCopyExpr = testCopyStmt->GetRootNode();
+                assert(testCopyExpr->gtOper == GT_JTRUE);
+                GenTree* sideEffList = nullptr;
+                gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+                if (sideEffList == nullptr)
+                {
+                    fgRemoveStmt(newBlock, testCopyStmt);
+                }
+                else
+                {
+                    testCopyStmt->SetRootNode(sideEffList);
+                }
+
+                // Save the test block of the previously unrolled
+                // iteration, so that we can redirect it when we create
+                // the next iteration (or to the exit for the last
+                // iteration).
+                assert(testBlock == nullptr);
+                testBlock = newBlock;
+            }
+            else if (block->bbFallsThrough() && !loop->ContainsBlock(block->Next()))
+            {
+                assert(block->KindIs(BBJ_COND) && "Cannot handle fallthrough for non BBJ_COND block");
+                // Handle fallthrough.
+                // TODO-Quirk: Skip empty blocks and go directly to their destination.
+                BasicBlock* targetBlk = block->Next();
+                if (targetBlk->KindIs(BBJ_ALWAYS) && targetBlk->isEmpty())
+                    targetBlk = targetBlk->GetTarget();
+
+                BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, insertAfter, /* extendRegion */ true, targetBlk);
+                newRedirBlk->copyEHRegion(insertAfter);
+                newRedirBlk->bbWeight = block->Next()->bbWeight;
+                newRedirBlk->CopyFlags(block->Next(), BBF_RUN_RARELY | BBF_PROF_WEIGHT);
+                newRedirBlk->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
+
+                fgAddRefPred(targetBlk, newRedirBlk);
+                insertAfter = newRedirBlk;
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        assert(testBlock != nullptr);
+
+        // Now redirect any branches within the newly-cloned iteration.
+        loop->VisitLoopBlocks([=, &blockMap](BasicBlock* block) {
+            // Do not include the test block; we will redirect it on
+            // the next iteration or after the loop.
+            if (block == iterInfo.TestBlock)
+            {
+                return BasicBlockVisit::Continue;
+            }
+
+            // Jump kind/target should not be set yet
+            BasicBlock* newBlock = blockMap[block];
+            assert(!newBlock->HasInitializedTarget());
+
+            // Now copy the jump kind/target
+            newBlock->CopyTarget(this, block);
+            optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
+
+            return BasicBlockVisit::Continue;
+        });
+
+        // Redirect previous iteration (or entry) to this iteration.
+        if (prevTestBlock != nullptr)
+        {
+            // Redirect exit edge from previous iteration to new entry.
+            assert(prevTestBlock->KindIs(BBJ_ALWAYS));
+            BasicBlock* newHeader = blockMap[loop->GetHeader()];
+            prevTestBlock->SetTarget(newHeader);
+            fgAddRefPred(newHeader, prevTestBlock);
+
+            JITDUMP("Redirecting previously created exiting " FMT_BB " -> " FMT_BB " (unrolled iteration header)\n",
+                    prevTestBlock->bbNum, newHeader->bbNum);
+        }
+        else
+        {
+            // Redirect all predecessors to the new one.
+            for (FlowEdge* enterEdge : loop->EntryEdges())
+            {
+                BasicBlock* entering = enterEdge->getSourceBlock();
+                JITDUMP("Redirecting " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", entering->bbNum,
+                        loop->GetHeader()->bbNum, entering->bbNum, blockMap[loop->GetHeader()]->bbNum);
+                assert(!entering->KindIs(BBJ_COND)); // Ensured by canonicalization
+                optRedirectBlock(entering, &blockMap, Compiler::RedirectBlockOption::UpdatePredLists);
+            }
+        }
+
+        prevTestBlock = testBlock;
+
+        // update the new value for the unrolled iterator
+
+        switch (iterOper)
+        {
+            case GT_ADD:
+                lval += iterInc;
+                break;
+
+            case GT_SUB:
+                lval -= iterInc;
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
+    // If we get here, we successfully cloned all the blocks in the
+    // unrolled loop. Note we may not have done any cloning at all if
+    // the loop iteration count was computed to be zero. Such loops are
+    // guaranteed to be unreachable since if the repetition count is
+    // zero the loop invariant is false on the first iteration, yet
+    // FlowGraphNaturalLoop::AnalyzeIteration only returns true if the
+    // loop invariant is true on every iteration. That means we have a
+    // guarding check before we enter the loop that will always be
+    // false.
+    if (prevTestBlock != nullptr)
+    {
+        assert(prevTestBlock->KindIs(BBJ_ALWAYS));
+        prevTestBlock->SetTarget(exit);
+        fgAddRefPred(exit, prevTestBlock);
+        JITDUMP("Redirecting final iteration exiting " FMT_BB " to original exit " FMT_BB "\n", prevTestBlock->bbNum,
+                exit->bbNum);
+    }
+    else
+    {
+        blockMap.Set(loop->GetHeader(), exit, BlockToBlockMap::Overwrite);
+        for (FlowEdge* entryEdge : loop->EntryEdges())
+        {
+            BasicBlock* entering = entryEdge->getSourceBlock();
+            assert(!entering->KindIs(BBJ_COND)); // Ensured by canonicalization
+            optRedirectBlock(entering, &blockMap, Compiler::RedirectBlockOption::UpdatePredLists);
+            JITDUMP("Redirecting original entry " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n",
+                    entering->bbNum, loop->GetHeader()->bbNum, entering->bbNum, exit->bbNum);
+        }
+    }
+
+    // The old loop body is unreachable now, but we will remove those
+    // blocks after we finish unrolling.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Whole unrolled loop:\n");
+
+        gtDispTree(iterInfo.InitTree);
+        printf("\n");
+        fgDumpTrees(bottom->Next(), insertAfter);
+    }
 #endif // DEBUG
 
-    return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return true;
 }
 
 Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* tree)
@@ -5207,7 +4072,7 @@ PhaseStatus Compiler::optOptimizeLayout()
 {
     noway_assert(opts.OptimizationEnabled());
 
-    fgUpdateFlowGraph(/* doTailDuplication */ false);
+    fgUpdateFlowGraph();
     fgReorderBlocks(/* useProfile */ true);
     fgUpdateFlowGraph();
 
@@ -5239,7 +4104,7 @@ void Compiler::optMarkLoopHeads()
         printf("*************** In optMarkLoopHeads()\n");
     }
 
-    assert(fgReachabilitySetsValid);
+    assert(m_reachabilitySets != nullptr);
     fgDebugCheckBBNumIncreasing();
 
     int loopHeadsMarked = 0;
@@ -5251,10 +4116,9 @@ void Compiler::optMarkLoopHeads()
     {
         // Set BBF_LOOP_HEAD if we have backwards branches to this block.
 
-        unsigned blockNum = block->bbNum;
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            if (blockNum <= predBlock->bbNum)
+            if (block->bbNum <= predBlock->bbNum)
             {
                 if (predBlock->KindIs(BBJ_CALLFINALLY))
                 {
@@ -5263,7 +4127,7 @@ void Compiler::optMarkLoopHeads()
                 }
 
                 // If block can reach predBlock then we have a loop head
-                if (BlockSetOps::IsMember(this, predBlock->bbReach, blockNum))
+                if (m_reachabilitySets->CanReach(block, predBlock))
                 {
                     hasLoops = true;
                     block->SetFlags(BBF_LOOP_HEAD);
@@ -5332,6 +4196,16 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
     // This code depends on block number ordering.
     INDEBUG(fgDebugCheckBBNumIncreasing());
 
+    assert(m_dfsTree != nullptr);
+    if (m_reachabilitySets == nullptr)
+    {
+        m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
+    }
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
+
     unsigned generalLoopCount = 0;
 
     // We will use the following terminology:
@@ -5366,7 +4240,7 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
             }
 
             /* the top block must be able to reach the bottom block */
-            if (!fgReachable(top, bottom))
+            if (!m_reachabilitySets->CanReach(top, bottom))
             {
                 continue;
             }
@@ -5410,14 +4284,13 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
 //
 // The JIT recognizes two types of loops in a function: natural loops and "general" (or "unnatural") loops.
 // Natural loops are those which get added to the loop table. Most downstream optimizations require
-// using natural loops. See `optFindNaturalLoops` for a definition of the criteria for recognizing a natural loop.
+// using natural loops. See `FlowGraphNaturalLoop` for a definition of the criteria satisfied by a natural loop.
 // A general loop is defined as a lexical (program order) range of blocks where a later block branches to an
 // earlier block (that is, there is a back edge in the flow graph), and the later block is reachable from the earlier
-// block. General loops are used for weighting flow graph blocks (when there is no block profile data), as well as
-// for determining if we require fully interruptible GC information.
+// block. General loops are used for weighting flow graph blocks (when there is no block profile data).
 //
 // Notes:
-//  Also (re)sets all non-IBC block weights, and marks loops potentially needing alignment padding.
+//  Also (re)sets all non-IBC block weights.
 //
 void Compiler::optFindLoops()
 {
@@ -5429,7 +4302,6 @@ void Compiler::optFindLoops()
 #endif
 
     noway_assert(opts.OptimizationEnabled());
-    assert(fgDomsComputed);
 
     optMarkLoopHeads();
 
@@ -5438,7 +4310,6 @@ void Compiler::optFindLoops()
     if (fgHasLoops)
     {
         optFindNaturalLoops();
-        optFindAndScaleGeneralLoopBlocks();
     }
 
     optLoopTableValid = true;
@@ -5454,13 +4325,15 @@ PhaseStatus Compiler::optFindLoopsPhase()
     m_dfsTree = fgComputeDfs();
     optFindNewLoops();
 
+    if (fgHasLoops)
+    {
+        optFindAndScaleGeneralLoopBlocks();
+    }
+
     // The old loop table is no longer valid.
     optLoopTableValid = false;
     optLoopTable      = nullptr;
     optLoopCount      = 0;
-
-    // Old dominators and reachability sets are no longer valid.
-    fgDomsComputed = false;
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -5472,6 +4345,25 @@ void Compiler::optFindNewLoops()
 {
     m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
+    if (optCompactLoops())
+    {
+        fgInvalidateDfsTree();
+        m_dfsTree = fgComputeDfs();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+    }
+
+    if (optCanonicalizeLoops())
+    {
+        fgInvalidateDfsTree();
+        m_dfsTree = fgComputeDfs();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+    }
+
+    fgRenumberBlocks();
+
+    // Starting now, we require all loops to have pre-headers.
+    optLoopsRequirePreHeaders = true;
+
     // Leave a bread crumb for future phases like loop alignment about whether
     // looking for loops makes sense. We generally do not expect phases to
     // introduce new cycles/loops in the flow graph; if they do, they should
@@ -5481,6 +4373,524 @@ void Compiler::optFindNewLoops()
     // loops by removing edges.
     fgMightHaveNaturalLoops = m_dfsTree->HasCycle();
     assert(fgMightHaveNaturalLoops || (m_loops->NumLoops() == 0));
+}
+
+//-----------------------------------------------------------------------------
+// optCanonicalizeLoops: Canonicalize natural loops.
+//
+// Parameters:
+//   loops - Structure containing loops
+//
+// Returns:
+//   True if any flow graph modifications were made
+//
+// Remarks:
+//   Guarantees that all natural loops have preheaders.
+//
+bool Compiler::optCanonicalizeLoops()
+{
+    bool changed = false;
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+    {
+        changed |= optCreatePreheader(loop);
+    }
+
+    return changed;
+}
+
+//-----------------------------------------------------------------------------
+// optCompactLoops: Compact loops to make their loop blocks lexical if possible.
+//
+// Returns:
+//   True if the flow graph was changed.
+//
+bool Compiler::optCompactLoops()
+{
+    bool changed = false;
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+    {
+        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
+        {
+            continue;
+        }
+
+        changed |= optCompactLoop(loop);
+    }
+
+    return changed;
+}
+
+//-----------------------------------------------------------------------------
+// optCompactLoop: Compact a specific loop.
+//
+// Parameters:
+//   loop - The loop
+//
+// Returns:
+//   True if the flow graph was changed.
+//
+bool Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
+{
+    BasicBlock* insertionPoint = nullptr;
+
+    BasicBlock* top           = loop->GetLexicallyTopMostBlock();
+    unsigned    numLoopBlocks = loop->NumLoopBlocks();
+
+    BasicBlock* cur              = top;
+    bool        changedFlowGraph = false;
+    while (numLoopBlocks > 0)
+    {
+        if (loop->ContainsBlock(cur))
+        {
+            numLoopBlocks--;
+            cur = cur->Next();
+            continue;
+        }
+
+        BasicBlock* lastNonLoopBlock = cur;
+        while (true)
+        {
+            // Should always have a "bottom" block of the loop where we stop.
+            assert(lastNonLoopBlock->Next() != nullptr);
+            if (loop->ContainsBlock(lastNonLoopBlock->Next()))
+            {
+                break;
+            }
+
+            lastNonLoopBlock = lastNonLoopBlock->Next();
+        }
+
+        if (insertionPoint == nullptr)
+        {
+            insertionPoint = optFindLoopCompactionInsertionPoint(loop, top);
+        }
+
+        BasicBlock* previous      = cur->Prev();
+        BasicBlock* nextLoopBlock = lastNonLoopBlock->Next();
+        assert(previous != nullptr);
+        if (!BasicBlock::sameEHRegion(previous, nextLoopBlock) || !BasicBlock::sameEHRegion(previous, insertionPoint))
+        {
+            // EH regions would be ill-formed if we moved these blocks out.
+            cur = nextLoopBlock;
+            continue;
+        }
+
+        // Now physically move the blocks.
+        BasicBlock* moveBefore = insertionPoint->Next();
+
+        fgUnlinkRange(cur, lastNonLoopBlock);
+        fgMoveBlocksAfter(cur, lastNonLoopBlock, insertionPoint);
+        ehUpdateLastBlocks(insertionPoint, lastNonLoopBlock);
+
+        // Apply any adjustments needed for fallthrough at the boundaries of the moved region.
+        changedFlowGraph |= optLoopCompactionFixupFallThrough(insertionPoint, moveBefore, cur);
+        changedFlowGraph |= optLoopCompactionFixupFallThrough(lastNonLoopBlock, nextLoopBlock, moveBefore);
+        // Also apply any adjustments needed where the blocks were snipped out of the loop.
+        changedFlowGraph |= optLoopCompactionFixupFallThrough(previous, cur, nextLoopBlock);
+
+        // Update insertionPoint for the next insertion.
+        insertionPoint = lastNonLoopBlock;
+
+        cur = nextLoopBlock;
+    }
+
+    return changedFlowGraph;
+}
+
+//-----------------------------------------------------------------------------
+// optFindLoopCompactionInsertionPoint: Find a good insertion point at which to
+// move blocks from the lexical range of "loop" that is not part of the loop.
+//
+// Parameters:
+//   loop - The loop
+//   top  - Lexical top block of the loop.
+//
+// Returns:
+//   Non-null insertion point.
+//
+BasicBlock* Compiler::optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* top)
+{
+    // Find an insertion point for blocks we're going to move.  Move them down
+    // out of the loop, and if possible find a spot that won't break up fall-through.
+    BasicBlock* bottom         = loop->GetLexicallyBottomMostBlock();
+    BasicBlock* insertionPoint = bottom;
+    while (insertionPoint->bbFallsThrough())
+    {
+        // Keep looking for a better insertion point if we can.
+        BasicBlock* newInsertionPoint = optTryAdvanceLoopCompactionInsertionPoint(loop, insertionPoint, top, bottom);
+        if (newInsertionPoint == nullptr)
+        {
+            // Ran out of candidate insertion points, so just split up the fall-through.
+            break;
+        }
+
+        insertionPoint = newInsertionPoint;
+    }
+
+    return insertionPoint;
+}
+
+//-----------------------------------------------------------------------------
+// optTryAdvanceLoopCompactionInsertionPoint: Advance the insertion point to
+// avoid having to insert new blocks due to fallthrough.
+//
+// Parameters:
+//   loop           - The loop
+//   insertionPoint - Current insertion point
+//   top            - Lexical top block of the loop.
+//   bottom         - Lexical bottom block of the loop.
+//
+// Returns:
+//   New insertion point.
+//
+BasicBlock* Compiler::optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop,
+                                                                BasicBlock*           insertionPoint,
+                                                                BasicBlock*           top,
+                                                                BasicBlock*           bottom)
+{
+    BasicBlock* newInsertionPoint = insertionPoint->Next();
+
+    if (!BasicBlock::sameEHRegion(insertionPoint, newInsertionPoint))
+    {
+        // Don't cross an EH region boundary.
+        return nullptr;
+    }
+
+    // TODO-Quirk: Compatibility with old compaction
+    if (newInsertionPoint->KindIs(BBJ_ALWAYS, BBJ_COND))
+    {
+        BasicBlock* dest =
+            newInsertionPoint->KindIs(BBJ_ALWAYS) ? newInsertionPoint->GetTarget() : newInsertionPoint->GetTrueTarget();
+        if ((dest->bbNum >= top->bbNum) && (dest->bbNum <= bottom->bbNum) && !loop->ContainsBlock(dest))
+        {
+            return nullptr;
+        }
+    }
+
+    // TODO-Quirk: Compatibility with old compaction
+    for (BasicBlock* const predBlock : newInsertionPoint->PredBlocks())
+    {
+        if ((predBlock->bbNum >= top->bbNum) && (predBlock->bbNum <= bottom->bbNum) && !loop->ContainsBlock(predBlock))
+        {
+            // Don't make this forward edge a backwards edge.
+            return nullptr;
+        }
+    }
+
+    // Compaction runs on outer loops before inner loops. That means all
+    // unlexical blocks here are part of an ancestor loop (or trivial
+    // BBJ_ALWAYS exit blocks). To avoid breaking lexicality of ancestor loops
+    // we avoid moving any block past the bottom of an ancestor loop.
+    for (FlowGraphNaturalLoop* ancestor = loop->GetParent(); ancestor != nullptr; ancestor = ancestor->GetParent())
+    {
+        if (newInsertionPoint == ancestor->GetLexicallyBottomMostBlock())
+        {
+            return nullptr;
+        }
+    }
+
+    // Advancing the insertion point is ok, except that we can't split up any call finally
+    // pair, so if we've got such a pair recurse to see if we can move past the whole thing.
+    return newInsertionPoint->isBBCallFinallyPair()
+               ? optTryAdvanceLoopCompactionInsertionPoint(loop, newInsertionPoint, top, bottom)
+               : newInsertionPoint;
+}
+
+//-----------------------------------------------------------------------------
+// optLoopCompactionFixupFallThrough: Fix up fallthrough introduced due to
+// moving a range of blocks.
+//
+// Parameters:
+//   block   - Block that may have fallthrough
+//   oldNext - The old block that was the fallthrough block
+//   newNext - The new block that was the fallthrough block
+//
+// Returns:
+//   True if the flow graph was changed by this function.
+//
+bool Compiler::optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext)
+{
+    bool changed = false;
+
+    if (block->bbFallsThrough())
+    {
+        // Need to reconnect the flow from `block` to `oldNext`.
+
+        if (block->KindIs(BBJ_COND) && (newNext != nullptr) && block->TrueTargetIs(newNext))
+        {
+            // Reverse the jump condition
+            GenTree* test = block->lastNode();
+            noway_assert(test->OperIsConditionalJump());
+
+            if (test->OperGet() == GT_JTRUE)
+            {
+                GenTree* cond = gtReverseCond(test->AsOp()->gtOp1);
+                assert(cond == test->AsOp()->gtOp1); // Ensure `gtReverseCond` did not create a new node.
+                test->AsOp()->gtOp1 = cond;
+            }
+            else
+            {
+                gtReverseCond(test);
+            }
+
+            // Redirect the Conditional JUMP to go to `oldNext`
+            block->SetTrueTarget(oldNext);
+            block->SetFalseTarget(newNext);
+        }
+        else
+        {
+            // Insert an unconditional jump to `oldNext` just after `block`.
+            fgConnectFallThrough(block, oldNext);
+        }
+
+        changed = true;
+    }
+    else if (block->KindIs(BBJ_ALWAYS) && block->TargetIs(newNext))
+    {
+        // If block is newNext's only predecessor, move the IR from block to newNext,
+        // but keep the now-empty block around.
+        //
+        // We move the IR because loop recognition has a very limited search capability and
+        // won't walk from one block's statements to another, even if the blocks form
+        // a linear chain. So this IR move enhances counted loop recognition.
+        //
+        // The logic here is essentially echoing fgCompactBlocks... but we don't call
+        // that here because we don't want to delete block and do the necessary updates
+        // to all the other data in flight, and we'd also prefer that newNext be the
+        // survivor, not block.
+        //
+        if ((newNext->bbRefs == 1) && fgCanCompactBlocks(block, newNext))
+        {
+            JITDUMP("Moving stmts from " FMT_BB " to " FMT_BB "\n", block->bbNum, newNext->bbNum);
+            Statement* stmtList1 = block->firstStmt();
+            Statement* stmtList2 = newNext->firstStmt();
+
+            // Is there anything to move?
+            //
+            if (stmtList1 != nullptr)
+            {
+                // Append newNext stmts to block's stmts.
+                //
+                if (stmtList2 != nullptr)
+                {
+                    Statement* stmtLast1 = block->lastStmt();
+                    Statement* stmtLast2 = newNext->lastStmt();
+
+                    stmtLast1->SetNextStmt(stmtList2);
+                    stmtList2->SetPrevStmt(stmtLast1);
+                    stmtList1->SetPrevStmt(stmtLast2);
+                }
+
+                // Move block's stmts to newNext
+                //
+                newNext->bbStmtList = stmtList1;
+                block->bbStmtList   = nullptr;
+
+                // Update newNext's block flags
+                //
+                newNext->CopyFlags(block, BBF_COMPACT_UPD);
+            }
+        }
+    }
+
+    return changed;
+}
+
+//-----------------------------------------------------------------------------
+// optCreatePreheader: Create (or find) a preheader for a natural loop.
+//
+// Parameters:
+//   loop - The loop to create the preheader for
+//
+// Returns:
+//   True if a new preheader block had to be created.
+//
+bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
+{
+    BasicBlock* header = loop->GetHeader();
+
+    // If the header is already a try entry then we need to keep it as such
+    // since blocks from within the loop will be jumping back to it after we're
+    // done. Thus, in that case we insert the preheader in the enclosing try
+    // region.
+    unsigned headerEHRegion    = header->hasTryIndex() ? header->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+    unsigned preheaderEHRegion = headerEHRegion;
+    if ((headerEHRegion != EHblkDsc::NO_ENCLOSING_INDEX) && bbIsTryBeg(header))
+    {
+        preheaderEHRegion = ehTrueEnclosingTryIndexIL(headerEHRegion);
+    }
+
+    if (!bbIsHandlerBeg(header) && (loop->EntryEdges().size() == 1))
+    {
+        BasicBlock* preheaderCandidate = loop->EntryEdges()[0]->getSourceBlock();
+        unsigned    candidateEHRegion =
+            preheaderCandidate->hasTryIndex() ? preheaderCandidate->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+        if (preheaderCandidate->KindIs(BBJ_ALWAYS) && (preheaderCandidate->GetUniqueSucc() == loop->GetHeader()) &&
+            (candidateEHRegion == preheaderEHRegion))
+        {
+            JITDUMP("Natural loop " FMT_LP " already has preheader " FMT_BB "\n", loop->GetIndex(),
+                    preheaderCandidate->bbNum);
+            preheaderCandidate->SetFlags(BBF_LOOP_PREHEADER);
+            return false;
+        }
+    }
+
+    BasicBlock* insertBefore = loop->GetLexicallyTopMostBlock();
+    if (!BasicBlock::sameEHRegion(insertBefore, header))
+    {
+        insertBefore = header;
+    }
+
+    BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false, header);
+    preheader->SetFlags(BBF_INTERNAL | BBF_LOOP_PREHEADER);
+    fgSetEHRegionForNewPreheader(preheader);
+
+    if (preheader->NextIs(header))
+    {
+        preheader->SetFlags(BBF_NONE_QUIRK);
+    }
+
+    preheader->bbCodeOffs = insertBefore->bbCodeOffs;
+
+    JITDUMP("Created new preheader " FMT_BB " for " FMT_LP "\n", preheader->bbNum, loop->GetIndex());
+
+    fgAddRefPred(header, preheader);
+
+    for (FlowEdge* enterEdge : loop->EntryEdges())
+    {
+        BasicBlock* enterBlock = enterEdge->getSourceBlock();
+        JITDUMP("Entry edge " FMT_BB " -> " FMT_BB " becomes " FMT_BB " -> " FMT_BB "\n", enterBlock->bbNum,
+                header->bbNum, enterBlock->bbNum, preheader->bbNum);
+
+        fgReplaceJumpTarget(enterBlock, preheader, header);
+    }
+
+    // For BBJ_COND blocks preceding header, fgReplaceJumpTarget set their false targets to preheader.
+    // Direct fallthrough to preheader by inserting a jump after the block.
+    // TODO-NoFallThrough: Remove this, and just rely on fgReplaceJumpTarget to do the fixup
+    BasicBlock* fallthroughSource = header->Prev();
+    if (fallthroughSource->KindIs(BBJ_COND) && fallthroughSource->FalseTargetIs(preheader))
+    {
+        FlowEdge*   edge      = fgRemoveRefPred(preheader, fallthroughSource);
+        BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, fallthroughSource, true, preheader);
+        fgAddRefPred(preheader, newAlways, edge);
+        fgAddRefPred(newAlways, fallthroughSource, edge);
+
+        JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " to preheader\n", newAlways->bbNum,
+                fallthroughSource->bbNum);
+        fallthroughSource->SetFalseTarget(newAlways);
+    }
+
+    // Make sure false target is set correctly for fallthrough into preheader.
+    if (!preheader->IsFirst())
+    {
+        fallthroughSource = preheader->Prev();
+        assert(!fallthroughSource->KindIs(BBJ_COND) || fallthroughSource->FalseTargetIs(preheader));
+    }
+
+    optSetPreheaderWeight(loop, preheader);
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// optSetPreheaderWeight: Set the weight of a newly created preheader, after it
+// has been added to the flowgraph.
+//
+// Parameters:
+//   loop      - The loop
+//   preheader - The new preheader block
+//
+void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader)
+{
+    if (loop->EntryEdges().size() == 1)
+    {
+        // TODO-Quirk: If we have just one entry block then get the weight from there.
+        // This doesn't really make sense for BBJ_COND, but it's what old loop
+        // finding used to do.
+
+        BasicBlock* prevEntering = loop->EntryEdge(0)->getSourceBlock();
+        preheader->inheritWeight(prevEntering);
+        preheader->RemoveFlags(BBF_PROF_WEIGHT);
+
+        if (!fgIsUsingProfileWeights() || !prevEntering->KindIs(BBJ_COND))
+        {
+            return;
+        }
+
+        if ((prevEntering->bbWeight == BB_ZERO_WEIGHT) || (loop->GetHeader()->bbWeight == BB_ZERO_WEIGHT))
+        {
+            preheader->bbWeight = BB_ZERO_WEIGHT;
+            preheader->SetFlags(BBF_RUN_RARELY);
+            return;
+        }
+
+        // Allow for either the fall-through or branch to target entry.
+        BasicBlock* skipLoopBlock;
+        if (prevEntering->FalseTargetIs(preheader))
+        {
+            skipLoopBlock = prevEntering->GetTrueTarget();
+        }
+        else
+        {
+            skipLoopBlock = prevEntering->GetFalseTarget();
+        }
+        assert(skipLoopBlock != loop->GetHeader());
+
+        bool allValidProfileWeights = (prevEntering->hasProfileWeight() && skipLoopBlock->hasProfileWeight() &&
+                                       loop->GetHeader()->hasProfileWeight());
+
+        if (!allValidProfileWeights)
+        {
+            return;
+        }
+
+        weight_t loopEnteredCount = 0;
+        weight_t loopSkippedCount = 0;
+        bool     useEdgeWeights   = fgHaveValidEdgeWeights;
+
+        if (useEdgeWeights)
+        {
+            const FlowEdge* edgeToEntry    = fgGetPredForBlock(preheader, prevEntering);
+            const FlowEdge* edgeToSkipLoop = fgGetPredForBlock(skipLoopBlock, prevEntering);
+            assert(edgeToEntry != nullptr);
+            assert(edgeToSkipLoop != nullptr);
+
+            loopEnteredCount = (edgeToEntry->edgeWeightMin() + edgeToEntry->edgeWeightMax()) / 2.0;
+            loopSkippedCount = (edgeToSkipLoop->edgeWeightMin() + edgeToSkipLoop->edgeWeightMax()) / 2.0;
+
+            // Watch out for cases where edge weights were not properly maintained
+            // so that it appears no profile flow enters the loop.
+            //
+            useEdgeWeights = !fgProfileWeightsConsistent(loopEnteredCount, BB_ZERO_WEIGHT);
+        }
+
+        if (!useEdgeWeights)
+        {
+            loopEnteredCount = loop->GetHeader()->bbWeight;
+            loopSkippedCount = skipLoopBlock->bbWeight;
+        }
+
+        weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
+
+        JITDUMP("%s edge weights; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
+                fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnteredCount,
+                loopSkippedCount, loopTakenRatio);
+
+        // Calculate a good approximation of the preheader's block weight
+        weight_t preheaderWeight = (prevEntering->bbWeight * loopTakenRatio);
+        preheader->setBBProfileWeight(preheaderWeight);
+        assert(!preheader->isRunRarely());
+
+        // Normalize edge weights
+        FlowEdge* const edgeToPreheader = fgGetPredForBlock(preheader, prevEntering);
+        assert(edgeToPreheader != nullptr);
+        edgeToPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, preheader);
+
+        FlowEdge* const edgeFromPreheader = fgGetPredForBlock(loop->GetHeader(), preheader);
+        edgeFromPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, loop->GetHeader());
+        return;
+    }
 }
 
 /*****************************************************************************
@@ -6471,11 +5881,6 @@ PhaseStatus Compiler::optHoistLoopCode()
     LoopHoistContext hoistCtxt(this);
     for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
     {
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
 #if LOOP_HOIST_STATS
         // Record stats
         m_curLoopHasHoistedExpression = false;
@@ -6676,11 +6081,6 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
 
     for (FlowGraphNaturalLoop* childLoop = loop->GetChild(); childLoop != nullptr; childLoop = childLoop->GetSibling())
     {
-        if (!childLoop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
         assert(childLoop->EntryEdges().size() == 1);
         BasicBlock* childPreHead = childLoop->EntryEdge(0)->getSourceBlock();
         if (loop->ExitEdges().size() == 1)
@@ -6711,17 +6111,26 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
                 ", or pre-headers of nested loops, if any:\n",
                 exiting->bbNum);
 
-        // Push dominators, until we reach "entry" or exit the loop.
-
+        // Push dominators, until we reach the header or exit the loop.
+        //
+        // Note that there is a mismatch between the dominator tree dominance
+        // and loop header dominance; the dominator tree dominance relation
+        // guarantees that a block A that dominates B was exited before B is
+        // entered, meaning it could not possibly have thrown an exception. On
+        // the other hand loop finding guarantees only that the header was
+        // entered before other blocks in the loop. If the header is a
+        // try-begin then blocks inside the catch may not necessarily be fully
+        // dominated by the header, but may still be part of the loop.
+        //
         BasicBlock* cur = exiting;
-        while ((cur != nullptr) && (cur != loop->GetHeader()))
+        while ((cur != nullptr) && (cur != loop->GetHeader()) && loop->ContainsBlock(cur))
         {
             JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);
-            assert(loop->ContainsBlock(cur));
             defExec.Push(cur);
             cur = cur->bbIDom;
         }
-        noway_assert(cur == loop->GetHeader());
+
+        assert((cur == loop->GetHeader()) || bbIsTryBeg(loop->GetHeader()));
     }
     else // More than one exit
     {
@@ -7756,70 +7165,65 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
 }
 
 //------------------------------------------------------------------------------
-// fgSetEHRegionForNewLoopHead: When a new loop HEAD block is created, this sets the EH region properly for
-// the new block.
+// fgSetEHRegionForNewPreheader: Set the EH region for a newly inserted
+// preheader.
 //
 // In which EH region should the header live?
 //
-// The header block is added immediately before `top`.
+// The preheader block is expected to have been added immediately before a
+// block `next` in the loop that is also in the same EH region as the header.
+// This is usually the lexically first block of the loop, but may also be the
+// header itself.
 //
-// The `top` block cannot be the first block of a filter or handler: `top` must have a back-edge from a
-// BBJ_COND or BBJ_ALWAYS within the loop, and a filter or handler cannot be branched to like that.
+// If the `next` block is NOT the first block of a `try` region, the preheader
+// can simply extend the header block's EH region.
 //
-// The `top` block can be the first block of a `try` region, and you can fall into or branch to the
-// first block of a `try` region. (For top-entry loops, `top` will both be the target of a back-edge
-// and a fall-through from the previous block.)
+// If the `next` block IS the first block of a `try`, we find its parent region
+// and use that. For mutual-protect regions, we need to find the actual parent,
+// as the block stores the most "nested" mutual region. For non-mutual-protect
+// regions, due to EH canonicalization, we are guaranteed that no other EH
+// regions begin on the same block, so looking to just the parent is
+// sufficient. Note that we can't just extend the EH region of the header to
+// the preheader, because the header will still be the target of backward
+// branches from within the loop. If those backward branches come from outside
+// the `try` (say, only the top half of the loop is a `try` region), then we
+// can't branch to a non-first `try` region block (you always must enter the
+// `try` in the first block).
 //
-// If the `top` block is NOT the first block of a `try` region, the header can simply extend the
-// `top` block region.
-//
-// If the `top` block IS the first block of a `try`, we find its parent region and use that. For mutual-protect
-// regions, we need to find the actual parent, as the block stores the most "nested" mutual region. For
-// non-mutual-protect regions, due to EH canonicalization, we are guaranteed that no other EH regions begin
-// on the same block, so looking to just the parent is sufficient. Note that we can't just extend the EH
-// region of `top` to the header, because `top` will still be the target of backward branches from
-// within the loop. If those backward branches come from outside the `try` (say, only the top half of the loop
-// is a `try` region), then we can't branch to a non-first `try` region block (you always must entry the `try`
-// in the first block).
-//
-// Note that hoisting any code out of a try region, for example, to a pre-header block in a different
-// EH region, needs to ensure that no exceptions will be thrown.
+// Note that hoisting any code out of a try region, for example, to a preheader
+// block in a different EH region, needs to ensure that no exceptions will be
+// thrown.
 //
 // Arguments:
-//    newHead - the new `head` block, which has already been added to the block list ahead of the loop `top`
-//    top     - the loop `top` block
+//    preheader - the new preheader block, which has already been added to the
+//                block list before a block inside the loop that shares EH
+//                region with the header.
 //
-void Compiler::fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top)
+void Compiler::fgSetEHRegionForNewPreheader(BasicBlock* preheader)
 {
-    assert(newHead->NextIs(top));
-    assert(!fgIsFirstBlockOfFilterOrHandler(top));
+    BasicBlock* next = preheader->Next();
 
-    if (bbIsTryBeg(top))
+    if (bbIsTryBeg(next))
     {
-        // `top` is the beginning of a try block. Figure out the EH region to use.
-        assert(top->hasTryIndex());
-        unsigned newTryIndex = ehTrueEnclosingTryIndexIL(top->getTryIndex());
+        // `next` is the beginning of a try block. Figure out the EH region to use.
+        assert(next->hasTryIndex());
+        unsigned newTryIndex = ehTrueEnclosingTryIndexIL(next->getTryIndex());
         if (newTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
         {
             // No EH try index.
-            newHead->clearTryIndex();
+            preheader->clearTryIndex();
         }
         else
         {
-            newHead->setTryIndex(newTryIndex);
+            preheader->setTryIndex(newTryIndex);
         }
 
-        // What handler region to use? Use the same handler region as `top`.
-        newHead->copyHndIndex(top);
+        // What handler region to use? Use the same handler region as `next`.
+        preheader->copyHndIndex(next);
     }
     else
     {
-        // `top` is not the beginning of a try block. Just extend the EH region to the pre-header.
-        // We don't need to call `fgExtendEHRegionBefore()` because all the special handling that function
-        // does it to account for `top` being the first block of a `try` or handler region, which we know
-        // is not true.
-
-        newHead->copyEHRegion(top);
+        fgExtendEHRegionBefore(next);
     }
 }
 
@@ -7850,396 +7254,6 @@ PhaseStatus Compiler::fgCanonicalizeFirstBB()
     // TODO-Quirk: Remove
     fgCanonicalizedFirstBB = true;
     return PhaseStatus::MODIFIED_EVERYTHING;
-}
-
-//------------------------------------------------------------------------------
-// fgCreateLoopPreHeader: Creates a pre-header block for the given loop.
-// A pre-header is a block outside the loop that falls through or branches to the loop
-// entry block. It is the only non-loop predecessor block to the entry block (thus, it
-// dominates the entry block). The pre-header replaces the current lpHead in the loop table.
-// The pre-header will be placed immediately before the loop top block, which is the first
-// block of the loop in program order.
-//
-// Once a loop has a pre-header, calling this function will immediately return without
-// creating another.
-//
-// If there already exists a block that meets the pre-header requirements, that block is marked
-// as a pre-header, and no flow graph modification is made.
-//
-// A loop with a pre-header has the flag LPFLG_HAS_PREHEAD, and its pre-header block has the flag BBF_LOOP_PREHEADER.
-//
-// Note that the pre-header block can be in a different EH region from blocks in the loop, including the
-// entry block. Code doing hoisting is required to check the EH legality of hoisting to the pre-header
-// before doing so.
-//
-// Since the flow graph has changed, if needed, fgUpdateChangedFlowGraph() should be called after this
-// to update the block numbers, reachability, and dominators. The loop table does not need to be rebuilt.
-// The new pre-header block does have a copy of the previous 'head' reachability set, but the pre-header
-// itself doesn't exist in any reachability/dominator sets. `fgDominate` has code to specifically
-// handle queries about the pre-header dominating other blocks, even without re-computing dominators.
-// The preds lists have been maintained.
-//
-// The code does not depend on the order of the BasicBlock bbNum.
-//
-// Arguments:
-//    lnum  - loop index
-//
-// Returns:
-//    true if new pre-header was created
-//
-bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
-{
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgCreateLoopPreHeader for " FMT_LP "\n", lnum);
-    }
-#endif // DEBUG
-
-    LoopDsc& loop = optLoopTable[lnum];
-
-    // Have we already created a loop pre-header block?
-
-    if (loop.lpFlags & LPFLG_HAS_PREHEAD)
-    {
-        JITDUMP("   pre-header already exists\n");
-        INDEBUG(loop.lpValidatePreHeader());
-        return false;
-    }
-
-    // Assert that we haven't created SSA. It is assumed that we create all loop pre-headers before building SSA.
-    assert(fgSsaPassesCompleted == 0);
-
-    BasicBlock* head  = loop.lpHead;
-    BasicBlock* top   = loop.lpTop;
-    BasicBlock* entry = loop.lpEntry;
-
-    // Ensure that lpHead always dominates lpEntry
-
-    noway_assert(fgDominate(head, entry));
-
-    // If `head` is already a valid pre-header, then mark it so.
-    if (head->GetUniqueSucc() == entry)
-    {
-        // The loop entry must have a single non-loop predecessor, which is the pre-header.
-        bool loopHasProperEntryBlockPreds = true;
-        for (BasicBlock* const predBlock : entry->PredBlocks())
-        {
-            if (head == predBlock)
-            {
-                continue;
-            }
-            const bool intraLoopPred = optLoopContains(lnum, predBlock->bbNatLoopNum);
-            if (!intraLoopPred)
-            {
-                loopHasProperEntryBlockPreds = false;
-                break;
-            }
-        }
-        if (loopHasProperEntryBlockPreds)
-        {
-            // Does this existing region have the same EH region index that we will use when we create the pre-header?
-            // If not, we want to create a new pre-header with the expected region.
-            bool headHasCorrectEHRegion = false;
-            if (bbIsTryBeg(top))
-            {
-                assert(top->hasTryIndex());
-                unsigned newTryIndex     = ehTrueEnclosingTryIndexIL(top->getTryIndex());
-                unsigned compareTryIndex = head->hasTryIndex() ? head->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
-                headHasCorrectEHRegion   = newTryIndex == compareTryIndex;
-            }
-            else
-            {
-                headHasCorrectEHRegion = BasicBlock::sameTryRegion(head, top);
-            }
-
-            if (headHasCorrectEHRegion)
-            {
-                JITDUMP("   converting existing header " FMT_BB " into pre-header\n", head->bbNum);
-                loop.lpFlags |= LPFLG_HAS_PREHEAD;
-                assert(!head->HasFlag(BBF_LOOP_PREHEADER)); // It isn't already a loop pre-header
-                head->SetFlags(BBF_LOOP_PREHEADER);
-                INDEBUG(loop.lpValidatePreHeader());
-                INDEBUG(fgDebugCheckLoopTable());
-                return false;
-            }
-            else
-            {
-                JITDUMP("   existing head " FMT_BB " doesn't have correct EH region\n", head->bbNum);
-            }
-        }
-        else
-        {
-            JITDUMP("   existing head " FMT_BB " isn't unique non-loop predecessor of loop entry\n", head->bbNum);
-        }
-    }
-    else
-    {
-        JITDUMP("   existing head " FMT_BB " doesn't have unique successor branching to loop entry\n", head->bbNum);
-    }
-
-    // Allocate a new basic block for the pre-header.
-
-    const bool  isTopEntryLoop = loop.lpIsTopEntry();
-    BasicBlock* preHead        = BasicBlock::New(this, BBJ_ALWAYS, entry);
-    if (isTopEntryLoop)
-    {
-        preHead->SetFlags(BBF_NONE_QUIRK);
-    }
-
-    preHead->SetFlags(BBF_INTERNAL | BBF_LOOP_PREHEADER);
-
-    // Must set IL code offset
-    preHead->bbCodeOffs = top->bbCodeOffs;
-
-    // Set the default value of the preHead weight in case we don't have
-    // valid profile data and since this blocks weight is just an estimate
-    // we clear any BBF_PROF_WEIGHT flag that we may have picked up from head.
-    //
-    preHead->inheritWeight(head);
-    preHead->RemoveFlags(BBF_PROF_WEIGHT);
-
-    // Copy the bbReach set from head for the new preHead block
-    preHead->bbReach = BlockSetOps::MakeEmpty(this);
-    BlockSetOps::Assign(this, preHead->bbReach, head->bbReach);
-    // Also include 'head' in the preHead bbReach set
-    BlockSetOps::AddElemD(this, preHead->bbReach, head->bbNum);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nCreated PreHeader (" FMT_BB ") for loop " FMT_LP " (" FMT_BB " - " FMT_BB, preHead->bbNum, lnum,
-               top->bbNum, loop.lpBottom->bbNum);
-        if (!isTopEntryLoop)
-        {
-            printf(", entry " FMT_BB, entry->bbNum);
-        }
-        printf("), with weight = %s\n", refCntWtd2str(preHead->getBBWeight(this)));
-    }
-#endif
-
-    // The preheader block is part of the containing loop (if any).
-    preHead->bbNatLoopNum = loop.lpParent;
-
-    if (fgIsUsingProfileWeights() && head->KindIs(BBJ_COND))
-    {
-        if ((head->bbWeight == BB_ZERO_WEIGHT) || (entry->bbWeight == BB_ZERO_WEIGHT))
-        {
-            preHead->bbWeight = BB_ZERO_WEIGHT;
-            preHead->SetFlags(BBF_RUN_RARELY);
-        }
-        else
-        {
-            // Allow for either the fall-through or branch to target 'entry'.
-            BasicBlock* skipLoopBlock;
-            if (head->FalseTargetIs(entry))
-            {
-                skipLoopBlock = head->GetTrueTarget();
-            }
-            else
-            {
-                skipLoopBlock = head->GetFalseTarget();
-            }
-            assert(skipLoopBlock != entry);
-
-            bool allValidProfileWeights =
-                (head->hasProfileWeight() && skipLoopBlock->hasProfileWeight() && entry->hasProfileWeight());
-
-            if (allValidProfileWeights)
-            {
-                weight_t loopEnteredCount = 0;
-                weight_t loopSkippedCount = 0;
-                bool     useEdgeWeights   = fgHaveValidEdgeWeights;
-
-                if (useEdgeWeights)
-                {
-                    const FlowEdge* edgeToEntry    = fgGetPredForBlock(entry, head);
-                    const FlowEdge* edgeToSkipLoop = fgGetPredForBlock(skipLoopBlock, head);
-                    noway_assert(edgeToEntry != nullptr);
-                    noway_assert(edgeToSkipLoop != nullptr);
-
-                    loopEnteredCount = (edgeToEntry->edgeWeightMin() + edgeToEntry->edgeWeightMax()) / 2.0;
-                    loopSkippedCount = (edgeToSkipLoop->edgeWeightMin() + edgeToSkipLoop->edgeWeightMax()) / 2.0;
-
-                    // Watch out for cases where edge weights were not properly maintained
-                    // so that it appears no profile flow enters the loop.
-                    //
-                    useEdgeWeights = !fgProfileWeightsConsistent(loopEnteredCount, BB_ZERO_WEIGHT);
-                }
-
-                if (!useEdgeWeights)
-                {
-                    loopEnteredCount = entry->bbWeight;
-                    loopSkippedCount = skipLoopBlock->bbWeight;
-                }
-
-                weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
-
-                JITDUMP("%s edge weights; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
-                        fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnteredCount,
-                        loopSkippedCount, loopTakenRatio);
-
-                // Calculate a good approximation of the preHead's block weight
-                weight_t preHeadWeight = (head->bbWeight * loopTakenRatio);
-                preHead->setBBProfileWeight(preHeadWeight);
-                noway_assert(!preHead->isRunRarely());
-            }
-        }
-    }
-
-    // Link in the preHead block
-    fgInsertBBbefore(top, preHead);
-    fgSetEHRegionForNewLoopHead(preHead, top);
-
-    // TODO-CQ: set dominators for this block, to allow loop optimizations requiring them
-    //        (e.g: hoisting expression in a loop with the same 'head' as this one)
-
-    // Update the loop table
-
-    loop.lpHead = preHead;
-    loop.lpFlags |= LPFLG_HAS_PREHEAD;
-
-    // The new block becomes the 'head' of the loop - update bbRefs and bbPreds.
-    // All non-loop predecessors of 'entry' now jump to 'preHead'.
-
-    preHead->bbRefs       = 0;
-    bool checkNestedLoops = false;
-
-    for (BasicBlock* const predBlock : entry->PredBlocks())
-    {
-        // Is the predBlock in the loop?
-        //
-        // We want to use:
-        //    const bool intraLoopPred = loop.lpContains(predBlock);
-        // but we can't depend on the bbNum ordering.
-        //
-        // Previously, this code wouldn't redirect predecessors dominated by the entry. However, that can
-        // lead to a case where non-loop predecessor is dominated by the loop entry, and that predecessor
-        // continues to branch to the entry, not the new pre-header. This is normally ok for hoisting
-        // because it will introduce an SSA PHI def within the loop, which will inhibit hoisting. However,
-        // it complicates the definition of what a pre-header is.
-
-        const bool intraLoopPred = optLoopContains(lnum, predBlock->bbNatLoopNum);
-        if (intraLoopPred)
-        {
-            if (predBlock != loop.lpBottom)
-            {
-                checkNestedLoops = true;
-            }
-            continue;
-        }
-
-        switch (predBlock->GetKind())
-        {
-            case BBJ_COND:
-                if (predBlock->TrueTargetIs(entry))
-                {
-                    predBlock->SetTrueTarget(preHead);
-                    noway_assert(!predBlock->FalseTargetIs(preHead));
-                }
-                else
-                {
-                    noway_assert((entry == top) && (predBlock == head) && predBlock->NextIs(preHead));
-                    predBlock->SetFalseTarget(preHead);
-                }
-                fgRemoveRefPred(entry, predBlock);
-                fgAddRefPred(preHead, predBlock);
-                break;
-
-            case BBJ_ALWAYS:
-            case BBJ_EHCATCHRET:
-                noway_assert(predBlock->TargetIs(entry));
-                predBlock->SetTarget(preHead);
-                fgRemoveRefPred(entry, predBlock);
-                fgAddRefPred(preHead, predBlock);
-                break;
-
-            case BBJ_SWITCH:
-                unsigned jumpCnt;
-                jumpCnt = predBlock->GetSwitchTargets()->bbsCount;
-                BasicBlock** jumpTab;
-                jumpTab = predBlock->GetSwitchTargets()->bbsDstTab;
-
-                do
-                {
-                    assert(*jumpTab);
-                    if ((*jumpTab) == entry)
-                    {
-                        (*jumpTab) = preHead;
-
-                        fgRemoveRefPred(entry, predBlock);
-                        fgAddRefPred(preHead, predBlock);
-                    }
-                } while (++jumpTab, --jumpCnt);
-
-                UpdateSwitchTableTarget(predBlock, entry, preHead);
-                break;
-
-            default:
-                noway_assert(!"Unexpected bbKind");
-                break;
-        }
-    }
-
-    FlowEdge* const edgeToPreHeader = fgGetPredForBlock(preHead, head);
-    noway_assert(edgeToPreHeader != nullptr);
-    edgeToPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, preHead);
-
-    noway_assert(fgGetPredForBlock(entry, preHead) == nullptr);
-    FlowEdge* const edgeFromPreHeader = fgAddRefPred(entry, preHead);
-    edgeFromPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, entry);
-
-    /*
-        If we found at least one back-edge in the flowgraph pointing to the entry of the loop
-        (other than the back-edge of the loop we are considering) then we likely have nested
-        do-while loops with the same entry block and inserting the preheader block changes the head
-        of all the nested loops. Now we will update this piece of information in the loop table, and
-        mark all nested loops as having a preheader (the preheader block can be shared among all nested
-        do-while loops with the same entry block).
-    */
-    if (checkNestedLoops)
-    {
-        for (unsigned l = 0; l < optLoopCount; l++)
-        {
-            if (optLoopTable[l].lpHead == head)
-            {
-                // loop.lpHead was already changed from 'head' to 'preHead'
-                noway_assert(l != lnum);
-
-                // If it shares head, it must be a top-entry loop that shares top.
-                noway_assert(optLoopTable[l].lpEntry == top);
-
-                optUpdateLoopHead(l, optLoopTable[l].lpHead, preHead);
-                optLoopTable[l].lpFlags |= LPFLG_HAS_PREHEAD;
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Same PreHeader (" FMT_BB ") can be used for loop " FMT_LP " (" FMT_BB " - " FMT_BB ")\n\n",
-                           preHead->bbNum, l, top->bbNum, optLoopTable[l].lpBottom->bbNum);
-                }
-#endif
-            }
-        }
-    }
-
-    // We added a new block and altered the preds list; make sure the flow graph has been marked as being modified.
-    assert(fgModified);
-
-#ifdef DEBUG
-    fgDebugCheckBBlist();
-    fgVerifyHandlerTab();
-    fgDebugCheckLoopTable();
-
-    if (verbose)
-    {
-        JITDUMP("*************** After fgCreateLoopPreHeader for " FMT_LP "\n", lnum);
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
-        optPrintLoopTable();
-    }
-#endif
-
-    return true;
 }
 
 LoopSideEffects::LoopSideEffects() : VarInOut(VarSetOps::UninitVal()), VarUseDef(VarSetOps::UninitVal())

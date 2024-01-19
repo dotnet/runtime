@@ -354,6 +354,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         throw new InvalidOperationException("ReleasePromiseHolder expected PromiseHolder " + holderGCHandle);
                     }
+                    holder.IsDisposed = true;
                 }
                 else
                 {
@@ -367,9 +368,9 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         throw new InvalidOperationException("ReleasePromiseHolder expected PromiseHolder" + holderGCHandle);
                     }
+                    holder.IsDisposed = true;
                     handle.Free();
                 }
-                holder.IsDisposed = true;
             }
         }
 

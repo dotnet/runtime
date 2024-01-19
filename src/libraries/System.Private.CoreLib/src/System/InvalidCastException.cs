@@ -21,19 +21,19 @@ namespace System
         }
 
         public InvalidCastException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_InvalidCastException)
         {
             HResult = HResults.COR_E_INVALIDCAST;
         }
 
         public InvalidCastException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_InvalidCastException, innerException)
         {
             HResult = HResults.COR_E_INVALIDCAST;
         }
 
         public InvalidCastException(string? message, int errorCode)
-            : base(message)
+            : base(message ?? SR.Arg_InvalidCastException)
         {
             HResult = errorCode;
         }
