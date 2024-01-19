@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -123,7 +124,8 @@ namespace System
                         break;
 
                     case AssignArrayEnum.AssignPrimitiveWiden:
-                        throw null;
+                        PrimitiveWiden(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        break;
 
                     default:
                         Debug.Fail("Fell through switch in Array.Copy!");
@@ -210,6 +212,170 @@ namespace System
                 // mutator thread.
 
                 Unsafe.Add(ref destData, i) = CastHelpers.ChkCastAny(destTH.AsMethodTable(), obj);
+            }
+        }
+
+        // Widen primitive types to another primitive type.
+        private static void PrimitiveWiden(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            // Get appropriate sizes, which requires method tables.
+
+            CorElementType srcElType = sourceArray.GetCorElementTypeOfElementType();
+            CorElementType destElType = destinationArray.GetCorElementTypeOfElementType();
+
+            switch (srcElType)
+            {
+                case CorElementType.ELEMENT_TYPE_U1:
+                    switch (destElType)
+                    {
+                        case CorElementType.ELEMENT_TYPE_CHAR:
+                        case CorElementType.ELEMENT_TYPE_I2:
+                        case CorElementType.ELEMENT_TYPE_U2:
+                            GenericScalarWiden<byte, ushort>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_I4:
+                        case CorElementType.ELEMENT_TYPE_U4:
+                            GenericScalarWiden<byte, uint>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_I8:
+                        case CorElementType.ELEMENT_TYPE_U8:
+                            GenericScalarWiden<byte, ulong>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R4:
+                            GenericScalarWiden<byte, float>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R8:
+                            GenericScalarWiden<byte, double>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        default:
+                            Debug.Fail("Array.Copy from U1 to another type hit unsupported widening conversion"); break;
+                    }
+                    break;
+
+                case CorElementType.ELEMENT_TYPE_I1:
+                    switch (destElType)
+                    {
+                        case CorElementType.ELEMENT_TYPE_I2:
+                            GenericScalarWiden<sbyte, short>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_I4:
+                            GenericScalarWiden<sbyte, int>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_I8:
+                            GenericScalarWiden<sbyte, long>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R4:
+                            GenericScalarWiden<sbyte, float>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R8:
+                            GenericScalarWiden<sbyte, double>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        default:
+                            Debug.Fail("Array.Copy from I1 to another type hit unsupported widening conversion"); break;
+                    }
+                    break;
+
+                case CorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_CHAR:
+                    switch (destElType)
+                    {
+                        case CorElementType.ELEMENT_TYPE_U2:
+                        case CorElementType.ELEMENT_TYPE_CHAR:
+                            // U2 and CHAR are identical in conversion
+                            GenericScalarWiden<ushort, ushort>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_I4:
+                        case CorElementType.ELEMENT_TYPE_U4:
+                            GenericScalarWiden<ushort, uint>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_I8:
+                        case CorElementType.ELEMENT_TYPE_U8:
+                            GenericScalarWiden<ushort, ulong>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R4:
+                            GenericScalarWiden<ushort, float>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R8:
+                            GenericScalarWiden<ushort, double>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        default:
+                            Debug.Fail("Array.Copy from U2 to another type hit unsupported widening conversion"); break;
+                    }
+                    break;
+
+                case CorElementType.ELEMENT_TYPE_I2:
+                    switch (destElType)
+                    {
+                        case CorElementType.ELEMENT_TYPE_I4:
+                            GenericScalarWiden<short, int>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_I8:
+                            GenericScalarWiden<short, long>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R4:
+                            GenericScalarWiden<short, float>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R8:
+                            GenericScalarWiden<short, double>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        default:
+                            Debug.Fail("Array.Copy from I2 to another type hit unsupported widening conversion"); break;
+                    }
+                    break;
+
+                case CorElementType.ELEMENT_TYPE_U4:
+                    switch (destElType)
+                    {
+                        case CorElementType.ELEMENT_TYPE_I8:
+                        case CorElementType.ELEMENT_TYPE_U8:
+                            GenericScalarWiden<uint, ulong>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R4:
+                            GenericScalarWiden<uint, float>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R8:
+                            GenericScalarWiden<uint, double>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        default:
+                            Debug.Fail("Array.Copy from U4 to another type hit unsupported widening conversion"); break;
+                    }
+                    break;
+
+                case CorElementType.ELEMENT_TYPE_I4:
+                    switch (destElType)
+                    {
+                        case CorElementType.ELEMENT_TYPE_I8:
+                            GenericScalarWiden<int, long>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R4:
+                            GenericScalarWiden<int, float>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R8:
+                            GenericScalarWiden<int, double>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        default:
+                            Debug.Fail("Array.Copy from I4 to another type hit unsupported widening conversion"); break;
+                    }
+                    break;
+
+                case CorElementType.ELEMENT_TYPE_U8:
+                    switch (destElType)
+                    {
+                        case CorElementType.ELEMENT_TYPE_R4:
+                            GenericScalarWiden<ulong, float>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R8:
+                            GenericScalarWiden<ulong, double>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        default:
+                            Debug.Fail("Array.Copy from U8 to another type hit unsupported widening conversion"); break;
+                    }
+                    break;
+
+                case CorElementType.ELEMENT_TYPE_I8:
+                    switch (destElType)
+                    {
+                        case CorElementType.ELEMENT_TYPE_R4:
+                            GenericScalarWiden<long, float>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        case CorElementType.ELEMENT_TYPE_R8:
+                            GenericScalarWiden<long, double>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+                        default:
+                            Debug.Fail("Array.Copy from I8 to another type hit unsupported widening conversion"); break;
+                    }
+                    break;
+
+                case CorElementType.ELEMENT_TYPE_R4:
+                    Debug.Assert(destElType == CorElementType.ELEMENT_TYPE_R8);
+                    GenericScalarWiden<float, double>(sourceArray, sourceIndex, destinationArray, destinationIndex, length); break;
+
+                default:
+                    Debug.Fail("Fell through outer switch in PrimitiveWiden!  Unknown primitive type for source array!"); break;
+            }
+
+            static void GenericScalarWiden<TFrom, TTo>(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+                where TFrom : unmanaged, INumber<TFrom>
+                where TTo : unmanaged, INumber<TTo>
+            {
+                ref TFrom src = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<TFrom[]>(sourceArray)), sourceIndex);
+                ref TTo dst = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<TTo[]>(destinationArray)), destinationIndex);
+
+                for (int i = 0; i < length; i++)
+                {
+                    Unsafe.Add(ref dst, i) = TTo.CreateTruncating(Unsafe.Add(ref src, i));
+                }
             }
         }
 
