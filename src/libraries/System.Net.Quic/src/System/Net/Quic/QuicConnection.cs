@@ -109,7 +109,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private int _disposed;
 
     private readonly ValueTaskSource _connectedTcs = new ValueTaskSource();
-    private TaskCompletionSource? _shutdownTcs;
+    private readonly ValueTaskSource _shutdownTcs = new ValueTaskSource();
 
     private readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
 
@@ -467,7 +467,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
-        if (Interlocked.CompareExchange(ref _shutdownTcs, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously), null) == null)
+        if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken))
         {
             unsafe
             {
@@ -478,7 +478,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
         }
 
-        return new ValueTask(_shutdownTcs.Task.WaitAsync(cancellationToken));
+        return valueTask;
     }
 
     private unsafe int HandleEventConnected(ref CONNECTED_DATA data)
@@ -520,7 +520,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
         _shutdownTokenSource.Cancel();
-        Interlocked.CompareExchange(ref _shutdownTcs, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously), null);
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
@@ -627,7 +626,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
 
         // Check if the connection has been shut down and if not, shut it down.
-        if (Interlocked.CompareExchange(ref _shutdownTcs, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously), null) == null)
+        if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
         {
             unsafe
             {
@@ -637,7 +636,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                     (ulong)_defaultCloseErrorCode);
             }
         }
-        else if (!_shutdownTcs.Task.IsCompletedSuccessfully)
+        else if (!valueTask.IsCompletedSuccessfully)
         {
             unsafe
             {
@@ -649,7 +648,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
 
         // Wait for SHUTDOWN_COMPLETE, the last event, so that all resources can be safely released.
-        await _shutdownTcs.Task.ConfigureAwait(false);
+        await valueTask.ConfigureAwait(false);
         Debug.Assert(_connectedTcs.IsCompleted);
         _handle.Dispose();
         _shutdownTokenSource.Dispose();

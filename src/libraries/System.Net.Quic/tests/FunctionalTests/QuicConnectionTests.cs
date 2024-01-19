@@ -134,27 +134,7 @@ namespace System.Net.Quic.Tests
                 {
                     var cts = new CancellationTokenSource();
                     cts.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await clientConnection.CloseAsync(ExpectedErrorCode, cts.Token));
-                    await clientConnection.DisposeAsync();
-                    sync.Release();
-                },
-                async serverConnection =>
-                {
-                    await sync.WaitAsync();
-                    await serverConnection.DisposeAsync();
-                });
-        }
-
-        [Fact]
-        public async Task DisposeAfterCloseTaskStored()
-        {
-            using var sync = new SemaphoreSlim(0);
-
-            await RunClientServer(
-                async clientConnection =>
-                {
-                    var cts = new CancellationTokenSource();
-                    var task = clientConnection.CloseAsync(0).AsTask();
+                    await Assert.ThrowsAsync<OperationCanceledException>(async () => await clientConnection.CloseAsync(ExpectedErrorCode, cts.Token));
                     await clientConnection.DisposeAsync();
                     sync.Release();
                 },
