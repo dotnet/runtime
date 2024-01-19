@@ -2648,7 +2648,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->opcode = OP_RISCV_BEQ;
 					next_ins->sreg1 = ins->dreg;
 					next_ins->sreg2 = RISCV_ZERO;
-				} else {
+				} 
+				else if(next_ins->opcode == OP_IL_SEQ_POINT){
+					NULLIFY_INS (ins);
+				}
+				else {
 					g_print ("Unhandaled op %s following after OP_RCOMPARE\n", mono_inst_name (next_ins->opcode));
 					NOT_IMPLEMENTED;
 				}
@@ -2730,7 +2734,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->opcode = OP_RISCV_BNE;
 					next_ins->sreg1 = ins->dreg;
 					next_ins->sreg2 = RISCV_ZERO;
-				} else if (next_ins->opcode == OP_BR || next_ins->opcode == OP_LOADR4_MEMBASE) {
+				} else if (next_ins->opcode == OP_BR || next_ins->opcode == OP_LOADR4_MEMBASE ||
+							next_ins->opcode == OP_IL_SEQ_POINT) {
 					NULLIFY_INS (ins);
 				} else {
 					g_print ("Unhandaled op %s following after OP_FCOMPARE\n", mono_inst_name (next_ins->opcode));
@@ -3137,7 +3142,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				           next_ins->opcode == OP_LOADI8_MEMBASE || next_ins->opcode == OP_ICONST ||
 				           next_ins->opcode == OP_I8CONST || next_ins->opcode == OP_ADD_IMM ||
 						   next_ins->opcode == OP_IXOR || next_ins->opcode == OP_ICOMPARE ||
-						   next_ins->opcode == OP_LCOMPARE) {
+						   next_ins->opcode == OP_LCOMPARE || next_ins->opcode == OP_LOADR8_MEMBASE) {
 					/**
 					 * there is compare without branch OP followed
 					 *
