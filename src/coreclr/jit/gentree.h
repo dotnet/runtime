@@ -2245,8 +2245,6 @@ public:
         ClearEmbRoundingMode();
         switch (mode)
         {
-            case 0x08:
-                break;
             case 0x09:
                 gtFlags |= GTF_HW_ER_TO_NEGATIVEINFINITY;
                 break;
@@ -2257,7 +2255,7 @@ public:
                 gtFlags |= GTF_HW_ER_TO_ZERO;
                 break;
             default:
-                unreached();
+                break;
         }
     }
 
