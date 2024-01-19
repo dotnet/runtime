@@ -163,6 +163,8 @@ export function http_wasm_fetch(controller: HttpController, url: string, header_
                 controller.responseHeaderValues.push(pair[1]);
             }
         }
+    }).catch(() => {
+        // ignore
     });
     return controller.responsePromise;
 }
