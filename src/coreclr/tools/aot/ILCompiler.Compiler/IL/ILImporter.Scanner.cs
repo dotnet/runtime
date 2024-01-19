@@ -1050,7 +1050,7 @@ namespace Internal.IL
                     helperId = ReadyToRunHelperId.GetNonGCStaticBase;
                 }
 
-                DefType owningType = field.OwningType;
+                TypeDesc owningType = field.OwningType;
                 if (owningType.IsRuntimeDeterminedSubtype)
                 {
                     _dependencies.Add(GetGenericLookupHelper(helperId, owningType), reason);

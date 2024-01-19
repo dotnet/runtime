@@ -14,7 +14,7 @@ namespace Internal.IL
 {
     public sealed class NativeAotILProvider : ILProvider
     {
-        private static MethodIL TryGetRuntimeImplementedMethodIL(EcmaMethod method)
+        private static MethodIL TryGetRuntimeImplementedMethodIL(MethodDesc method)
         {
             // Provides method bodies for runtime implemented methods. It can return null for
             // methods that are treated specially by the codegen.
@@ -36,7 +36,7 @@ namespace Internal.IL
         /// It can return null if it's not an intrinsic recognized by the compiler,
         /// but an intrinsic e.g. recognized by codegen.
         /// </summary>
-        private static MethodIL TryGetIntrinsicMethodIL(EcmaMethod method)
+        private static MethodIL TryGetIntrinsicMethodIL(MethodDesc method)
         {
             Debug.Assert(method.IsIntrinsic);
 

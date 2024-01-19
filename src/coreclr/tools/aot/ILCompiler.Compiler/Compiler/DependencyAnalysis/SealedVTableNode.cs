@@ -165,7 +165,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (implMethod.Signature.IsStatic ||
                             (implMethod.CanMethodBeInSealedVTable() && !implMethod.OwningType.HasSameTypeDefinition(declType)))
                         {
-                            DefType implType = declType;
+                            TypeDesc implType = declType;
                             while (!implType.HasSameTypeDefinition(implMethod.OwningType))
                                 implType = implType.BaseType;
 

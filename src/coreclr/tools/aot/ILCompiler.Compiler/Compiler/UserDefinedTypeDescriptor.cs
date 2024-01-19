@@ -749,7 +749,7 @@ namespace ILCompiler
                 return typeIndex;
         }
 
-        private void InsertStaticFieldRegionMember(List<DataFieldDescriptor> fieldDescs, MetadataType defType, List<DataFieldDescriptor> staticFields, string staticFieldForm,
+        private void InsertStaticFieldRegionMember(List<DataFieldDescriptor> fieldDescs, DefType defType, List<DataFieldDescriptor> staticFields, string staticFieldForm,
                                                    bool staticDataInObject, bool isThreadStatic)
         {
             if (staticFields != null && (staticFields.Count > 0))

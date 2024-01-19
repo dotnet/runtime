@@ -16,11 +16,9 @@ namespace ILCompiler
         {
             public TypeDesc Type => EqualsMethod.OwningType;
 
-#pragma warning disable CA1859
             public MethodDesc EqualsMethod { get; }
 
             public MethodDesc GetHashCodeMethod { get; }
-#pragma warning restore
 
             public EnumInfo(TypeDesc enumType)
             {

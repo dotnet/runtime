@@ -160,7 +160,7 @@ namespace ILCompiler
             {
                 // The derived class should be a subclass of the base class.
                 // this check is performed via typedef checking instead of casting, as we accept canon methods calling exact types
-                DefType checkType;
+                TypeDesc checkType;
                 for (checkType = implType; checkType != null && !checkType.HasSameTypeDefinition(declMethod.OwningType); checkType = checkType.BaseType)
                 { }
 

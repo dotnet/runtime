@@ -160,7 +160,7 @@ namespace Internal.IL
             StaticField
         };
 
-        private static bool TryParseUnsafeAccessorAttribute(EcmaMethod method, CustomAttributeValue<TypeDesc> decodedValue, out UnsafeAccessorKind kind, out string name)
+        private static bool TryParseUnsafeAccessorAttribute(MethodDesc method, CustomAttributeValue<TypeDesc> decodedValue, out UnsafeAccessorKind kind, out string name)
         {
             kind = default;
             name = default;
@@ -526,7 +526,7 @@ namespace Internal.IL
             return emit.Link(context.Declaration);
         }
 
-        private static MethodIL GenerateAccessorBadImageFailure(EcmaMethod method)
+        private static MethodIL GenerateAccessorBadImageFailure(MethodDesc method)
         {
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();

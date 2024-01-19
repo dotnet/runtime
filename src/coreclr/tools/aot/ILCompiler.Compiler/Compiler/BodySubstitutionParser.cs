@@ -160,9 +160,7 @@ namespace ILCompiler
             return null;
         }
 
-#pragma warning disable CA1859
         private static object TryCreateSubstitution(TypeDesc type, string value)
-#pragma warning restore
         {
             switch (type.UnderlyingType.Category)
             {
