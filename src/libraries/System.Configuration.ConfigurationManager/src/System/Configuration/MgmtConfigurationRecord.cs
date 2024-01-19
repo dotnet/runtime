@@ -343,7 +343,7 @@ namespace System.Configuration
             }
             else
             {
-                if (sectionRecord.HasIndirectLocationInputs)
+                if ((sectionRecord != null) && sectionRecord.HasIndirectLocationInputs)
                 {
                     Debug.Assert(IsLocationConfig, "Indirect location inputs exist only in location config record");
                     SectionInput input = sectionRecord.LastIndirectLocationInput;
