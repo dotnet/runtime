@@ -148,7 +148,8 @@ namespace System.Globalization
         // EnclosingMark: 85 (out of 221)
         // NonSpacingMark: 3281 (out of 18105)
         // we can skip them all (~1027k chars) by checking for the remaining UnicodeCategories (~291k chars)
-        // overskipping resutls in less collisions which is not a problem
+        // skipping more characters than ICU would lead to hashes with smaller distribution and more collisions in hash tables
+        // but it makes the behavior correct and consistent with locale-aware equals, which is acceptable tradeoff
         private static bool ShouldNotBeSkipped(UnicodeCategory category) =>
             category == UnicodeCategory.LowercaseLetter ||
             category == UnicodeCategory.UppercaseLetter ||
