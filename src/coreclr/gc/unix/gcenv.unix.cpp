@@ -220,6 +220,8 @@ AffinitySet g_processAffinitySet;
 extern "C" int g_highestNumaNode;
 extern "C" bool g_numaAvailable;
 
+static int64_t g_totalPhysicalMemSize = 0;
+
 #ifdef TARGET_APPLE
 static int *g_kern_memorystatus_level_mib = NULL;
 static size_t g_kern_memorystatus_level_mib_length = 0;
@@ -230,7 +232,6 @@ static size_t g_kern_memorystatus_level_mib_length = 0;
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::Initialize()
 {
-    bool success = true;
     int pageSize = sysconf( _SC_PAGE_SIZE );
 
     g_pageSizeUnixInl = uint32_t((pageSize > 0) ? pageSize : 0x1000);
@@ -326,21 +327,53 @@ bool GCToOSInterface::Initialize()
 #ifdef TARGET_APPLE
     const char* mem_free_name = "kern.memorystatus_level";
     int rc = sysctlnametomib(mem_free_name, NULL, &g_kern_memorystatus_level_mib_length);
-    if (rc == 0)
+    if (rc != 0)
     {
-        g_kern_memorystatus_level_mib = (int*)malloc(g_kern_memorystatus_level_mib_length * sizeof(int));
-        rc = sysctlnametomib(mem_free_name, g_kern_memorystatus_level_mib, &g_kern_memorystatus_level_mib_length);
-        if (rc != 0)
-        {
-            free(g_kern_memorystatus_level_mib);
-            g_kern_memorystatus_level_mib = NULL;
-            g_kern_memorystatus_level_mib_length = 0;
-            success = false;
-        }
+        return false;
+    }
+
+    g_kern_memorystatus_level_mib = (int*)malloc(g_kern_memorystatus_level_mib_length * sizeof(int));
+    if (g_kern_memorystatus_level_mib == NULL)
+    {
+        return false;
+    }
+
+    rc = sysctlnametomib(mem_free_name, g_kern_memorystatus_level_mib, &g_kern_memorystatus_level_mib_length);
+    if (rc != 0)
+    {
+        free(g_kern_memorystatus_level_mib);
+        g_kern_memorystatus_level_mib = NULL;
+        g_kern_memorystatus_level_mib_length = 0;
+        return false;
     }
 #endif
 
-    return success;
+    // Get the physical memory size
+#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
+    long pages = sysconf(_SC_PHYS_PAGES);
+    if (pages == -1)
+    {
+        return false;
+    }
+
+    g_totalPhysicalMemSize = (uint64_t)pages * (uint64_t)g_pageSizeUnixInl;
+#elif HAVE_SYSCTL
+    int mib[2];
+    mib[0] = CTL_HW;
+    mib[1] = HW_MEMSIZE;
+    size_t length = sizeof(INT64);
+    int rc = sysctl(mib, 2, &g_totalPhysicalMemSize, &length, NULL, 0);
+    if (rc == 0)
+    {
+        return false;
+    }
+#else // HAVE_SYSCTL
+#error "Don't know how to get total physical memory on this platform"
+#endif // HAVE_SYSCTL
+
+    assert(g_totalPhysicalMemSize != 0);
+
+    return true;
 }
 
 // Shutdown the interface implementation
@@ -1234,34 +1267,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
         return restricted_limit;
     }
 
-    // Get the physical memory size
-#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
-    long pages = sysconf(_SC_PHYS_PAGES);
-    if (pages == -1)
-    {
-        return 0;
-    }
-
-    long pageSize = sysconf(_SC_PAGE_SIZE);
-    if (pageSize == -1)
-    {
-        return 0;
-    }
-
-    return (uint64_t)pages * (uint64_t)pageSize;
-#elif HAVE_SYSCTL
-    int mib[3];
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
-    int64_t physical_memory = 0;
-    size_t length = sizeof(INT64);
-    int rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
-    assert(rc == 0);
-
-    return physical_memory;
-#else // HAVE_SYSCTL
-#error "Don't know how to get total physical memory on this platform"
-#endif // HAVE_SYSCTL
+    return g_totalPhysicalMemSize;
 }
 
 // Get amount of physical memory available for use in the system
@@ -1273,20 +1279,12 @@ uint64_t GetAvailablePhysicalMemory()
 #if defined(__APPLE__)
     uint32_t mem_free = 0;
     size_t mem_free_length = sizeof(uint32_t);
-    if (g_kern_memorystatus_level_mib != NULL)
+    assert(g_kern_memorystatus_level_mib != NULL);
+    int rc = sysctl(g_kern_memorystatus_level_mib, g_kern_memorystatus_level_mib_length, &mem_free, &mem_free_length, NULL, 0);
+    assert(rc == 0);
+    if (rc == 0)
     {
-        int rc = sysctl(g_kern_memorystatus_level_mib, g_kern_memorystatus_level_mib_length, &mem_free, &mem_free_length, NULL, 0);
-        if (rc == 0)
-        {
-            int64_t mem_size = 0;
-            size_t mem_size_length = sizeof(int64_t);
-            int mib[] = { CTL_HW, HW_MEMSIZE };
-            rc = sysctl(mib, 2, &mem_size, &mem_size_length, NULL, 0);
-            if (rc == 0)
-            {
-                available = (int64_t)mem_free * mem_size / 100;
-            }
-        }
+        available = (int64_t)mem_free * g_totalPhysicalMemSize / 100;
     }
 #elif defined(__FreeBSD__)
     size_t inactive_count = 0, laundry_count = 0, free_count = 0;
