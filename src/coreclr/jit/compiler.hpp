@@ -3941,6 +3941,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
 #ifdef FEATURE_READYTORUN
         helper == CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE || helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
         helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE || helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE ||
+        helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR ||
         helper == CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE ||
 #endif
         helper == CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS;
@@ -5011,7 +5012,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder(TFunc func
         // loop block rpo index = head block rpoIndex + index
         // loop block po index = PostOrderCount - 1 - loop block rpo index
         //                     = headPreOrderIndex - index
-        unsigned poIndex = m_header->bbNewPostorderNum - index;
+        unsigned poIndex = m_header->bbPostorderNum - index;
         assert(poIndex < m_dfsTree->GetPostOrderCount());
         return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
     });
@@ -5039,7 +5040,7 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksPostOrder(TFunc func)
 {
     BitVecTraits traits(m_blocksSize, m_dfsTree->GetCompiler());
     bool result = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
-        unsigned poIndex = m_header->bbNewPostorderNum - index;
+        unsigned poIndex = m_header->bbPostorderNum - index;
         assert(poIndex < m_dfsTree->GetPostOrderCount());
         return func(m_dfsTree->GetPostOrder(poIndex)) == BasicBlockVisit::Continue;
     });

@@ -90,7 +90,7 @@ namespace System.Tests
                 yield return new object[] { "AaBbCcDdEeFfGgHh".Insert(i, "\u00E9" /* LATIN SMALL LETTER E WITH ACUTE */) };
                 yield return new object[] { "AaBbCcDdEeFfGgHh".Insert(i, "\u044D" /* CYRILLIC SMALL LETTER E */) };
                 // https://github.com/dotnet/runtime/issues/95503
-                if (PlatformDetection.IsNotHybridGlobalizationOnOSX && PlatformDetection.IsNotHybridGlobalizationOnBrowser)
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform && PlatformDetection.IsNotHybridGlobalizationOnBrowser)
                     yield return new object[] { "AaBbCcDdEeFfGgHh".Insert(i, "\u0131" /* LATIN SMALL LETTER DOTLESS I */) };
             }
 
