@@ -58,14 +58,16 @@ namespace System.Reflection.Emit
         /// Serializes the assembly to stream.
         /// </summary>
         /// <param name="stream">The stream to which the assembly serialized.</param>
-        /// <exception cref="ArgumentNullException"> <paramref name="stream"/> is null </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is null.</exception>
+        /// <exception cref="NotSupportedException">The AssemblyBuilder instance doesn't support saving.</exception>
         public void Save(Stream stream) => SaveCore(stream);
 
         /// <summary>
         /// Saves the assembly to disk.
         /// </summary>
         /// <param name="assemblyFileName">The file name of the assembly.</param>
-        /// <exception cref="ArgumentNullException"> <paramref name="assemblyFileName"/> is null </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="assemblyFileName"/> is null.</exception>
+        /// <exception cref="NotSupportedException">The AssemblyBuilder instance doesn't support saving.</exception>
         public void Save(string assemblyFileName)
         {
             ArgumentNullException.ThrowIfNull(assemblyFileName);
