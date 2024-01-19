@@ -11,7 +11,6 @@
 #include "ecall.h"
 #include "mscoree.h"
 #include "stringliteralmap.h"
-#include "threadlocalpoolallocator.h"
 #include "threads.h"
 #include "threadsuspend.h"
 #include "typeparse.h"
@@ -205,8 +204,6 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_element_class(MonoClas
 
     return (MonoClass*)reinterpret_cast<MonoClass_clr*>(klass)->GetArrayElementTypeHandle().GetMethodTable();
 }
-
-thread_local ThreadLocalPoolAllocator<ApproxFieldDescIterator,5> g_ApproxFieldDescIteratorAlloc;
 
 // Wrap iterator value in heap allocated value we can return from embedding API
 struct MethodTable_InterfaceMapIteratorWrapper
