@@ -1109,7 +1109,7 @@ namespace Internal.JitInterface
         CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
         CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access from the data segment
         CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
-        CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
+        CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic empty string (String.Empty)
         CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN, // intrinsic BitConverter.IsLittleEndian
     }
 
@@ -1155,6 +1155,15 @@ namespace Internal.JitInterface
         public uint offsetOfMaxThreadStaticBlocks;
         public uint offsetOfThreadStaticBlocks;
         public uint offsetOfGCDataPointer;
+    };
+
+
+    public unsafe struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
+    {
+        public uint offsetOfThreadLocalStoragePointer;
+        public CORINFO_CONST_LOOKUP tlsRootObject;
+        public CORINFO_CONST_LOOKUP tlsIndexObject;
+        public CORINFO_CONST_LOOKUP threadStaticBaseSlow;
     };
 
     // System V struct passing

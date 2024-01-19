@@ -329,8 +329,6 @@ export const enum GlobalizationMode {
 }
 
 export type DotnetModuleConfig = {
-    disableDotnet6Compatibility?: boolean,
-
     config?: MonoConfig,
     configSrc?: string,
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
@@ -387,14 +385,6 @@ export type APIType = {
 }
 
 export type RuntimeAPI = {
-    /**
-     * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
-     */
-    MONO: any,
-    /**
-     * @deprecated Please use API object instead. See also BINDINGType in dotnet-legacy.d.ts
-     */
-    BINDING: any,
     INTERNAL: any,
     Module: EmscriptenModule,
     runtimeId: number,

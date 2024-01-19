@@ -136,7 +136,7 @@ void Compiler::fgDebugCheckUpdate()
         // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
         if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
         {
-            noway_assert(!"Unnecessary jump to the next block!");
+            noway_assert(!"BBJ_COND true/false targets are the same!");
         }
 
         // For a BBJ_CALLFINALLY block we make sure that we are followed by a BBJ_CALLFINALLYRET block
@@ -2255,6 +2255,12 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         }
     }
 
+    // Indicate if it's the single return block
+    if (block == genReturnBB)
+    {
+        printf(" one-return");
+    }
+
     printf("\n");
 }
 
@@ -2977,13 +2983,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         maxBBNum = max(maxBBNum, block->bbNum);
 
-        // BBJ_COND's normal (false) jump target is expected to be the next block
-        // TODO-NoFallThrough: Allow bbFalseTarget to diverge from bbNext
-        if (block->KindIs(BBJ_COND))
-        {
-            assert(block->NextIs(block->GetFalseTarget()));
-        }
-
         // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
         // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will
         // dynamically create the unique switch list.
@@ -3193,6 +3192,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     if (genReturnBB != nullptr)
     {
         assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->bbStmtList != nullptr);
+        assert(genReturnBB->KindIs(BBJ_RETURN));
     }
 
     // If this is an inlinee, we're done checking.

@@ -469,69 +469,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         #endregion
 
-        #region Legacy
-
-        // legacy
-        public void RegisterCSOwnedObject(JSObject proxy)
-        {
-            lock (this)
-            {
-                ThreadCsOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
-            }
-        }
-
-        // legacy
-        public JSObject? GetCSOwnedObjectByJSHandle(nint jsHandle, int shouldAddInflight)
-        {
-            lock (this)
-            {
-                if (ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
-                {
-                    reference.TryGetTarget(out JSObject? jsObject);
-                    if (shouldAddInflight != 0)
-                    {
-                        jsObject?.AddInFlight();
-                    }
-                    return jsObject;
-                }
-            }
-            return null;
-        }
-
-        // legacy
-        public JSObject CreateCSOwnedProxy(nint jsHandle, LegacyHostImplementation.MappedType mappedType, int shouldAddInflight)
-        {
-            lock (this)
-            {
-                JSObject? res = null;
-                if (!ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
-                !reference.TryGetTarget(out res) ||
-                res.IsDisposed)
-                {
-#pragma warning disable CS0612 // Type or member is obsolete
-                    res = mappedType switch
-                    {
-                        LegacyHostImplementation.MappedType.JSObject => new JSObject(jsHandle, JSProxyContext.MainThreadContext),
-                        LegacyHostImplementation.MappedType.Array => new Array(jsHandle),
-                        LegacyHostImplementation.MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
-                        LegacyHostImplementation.MappedType.DataView => new DataView(jsHandle),
-                        LegacyHostImplementation.MappedType.Function => new Function(jsHandle),
-                        LegacyHostImplementation.MappedType.Uint8Array => new Uint8Array(jsHandle),
-                        _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
-                    };
-#pragma warning restore CS0612 // Type or member is obsolete
-                    ThreadCsOwnedObjects[jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
-                }
-                if (shouldAddInflight != 0)
-                {
-                    res.AddInFlight();
-                }
-                return res;
-            }
-        }
-
-        #endregion
-
         #region Dispose
 
         private void Dispose(bool disposing)

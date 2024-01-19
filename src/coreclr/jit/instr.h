@@ -203,9 +203,15 @@ enum insFlags : uint64_t
 
 enum insOpts: unsigned
 {
-    INS_OPTS_NONE,
+    INS_OPTS_NONE = 0,
 
-    INS_OPTS_EVEX_b
+    INS_OPTS_EVEX_eb_er_rd = 1, // Embedded Broadcast or Round down
+
+    INS_OPTS_EVEX_er_ru = 2, // Round up
+
+    INS_OPTS_EVEX_er_rz = 3, // Round towards zero
+
+    INS_OPTS_b_MASK = (INS_OPTS_EVEX_eb_er_rd | INS_OPTS_EVEX_er_ru | INS_OPTS_EVEX_er_rz), // mask for Evex.b related features.
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -316,6 +322,10 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR, // Variants with {<Pd1>.<T>, <Pd2>.<T>} predicate pair (eg whilege)
     INS_SCALABLE_OPTS_VL_2X,               // Variants with a vector length specifier of 2x (eg whilege)
     INS_SCALABLE_OPTS_VL_4X,               // Variants with a vector length specifier of 4x (eg whilege)
+
+    // Removable once REG_V0 and REG_P0 are distinct
+    INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)
+    INS_SCALABLE_OPTS_UNPREDICATED_WIDE, // Variants without a predicate and wide elements (eg asr)
 };
 
 enum insCond : unsigned
@@ -465,6 +475,7 @@ enum emitAttr : unsigned
                 EA_BYREF         = EA_BYREF_FLG |  EA_PTRSIZE,       /* size == -2 */
                 EA_DSP_RELOC_FLG = 0x400, // Is the displacement of the instruction relocatable?
                 EA_CNS_RELOC_FLG = 0x800, // Is the immediate of the instruction relocatable?
+                EA_CNS_SEC_RELOC = 0x1000, // Is the offset immediate that should be relocatable
 };
 
 #define EA_ATTR(x)                  ((emitAttr)(x))
@@ -481,6 +492,7 @@ enum emitAttr : unsigned
 #define EA_IS_GCREF_OR_BYREF(x)     ((((unsigned)(x)) & ((unsigned)(EA_BYREF_FLG | EA_GCREF_FLG))) != 0)
 #define EA_IS_DSP_RELOC(x)          ((((unsigned)(x)) & ((unsigned)EA_DSP_RELOC_FLG)) != 0)
 #define EA_IS_CNS_RELOC(x)          ((((unsigned)(x)) & ((unsigned)EA_CNS_RELOC_FLG)) != 0)
+#define EA_IS_CNS_SEC_RELOC(x)      ((((unsigned)(x)) & ((unsigned)EA_CNS_SEC_RELOC)) != 0)
 #define EA_IS_RELOC(x)              (EA_IS_DSP_RELOC(x) || EA_IS_CNS_RELOC(x))
 #define EA_TYPE(x)                  ((emitAttr)(((unsigned)(x)) & ~(EA_OFFSET_FLG | EA_DSP_RELOC_FLG | EA_CNS_RELOC_FLG)))
 

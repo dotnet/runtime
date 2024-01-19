@@ -774,8 +774,12 @@ protected:
         unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
         unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
-        unsigned _idEvexbContext : 1; // does EVEX.b need to be set.
-#endif                                //  TARGET_XARCH
+        // EVEX.b can indicate several context: embedded broadcast, embedded rounding.
+        // For normal and embedded broadcast intrinsics, EVEX.L'L has the same semantic, vector length.
+        // For embedded rounding, EVEX.L'L semantic changes to indicate the rounding mode.
+        // Multiple bits in _idEvexbContext are used to inform emitter to specially handle the EVEX.L'L bits.
+        unsigned _idEvexbContext : 2;
+#endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
 
@@ -808,8 +812,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         47 bits
-        // amd64:       47 bits
+        // x86:         48 bits
+        // amd64:       48 bits
         // arm:         48 bits
         // arm64:       53 bits
         // loongarch64: 46 bits
@@ -828,7 +832,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (15)
+#define ID_EXTRA_BITFIELD_BITS (16)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -863,8 +867,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:         53/49 bits
-        // amd64:       54/49 bits
+        // x86:         54/50 bits
+        // amd64:       55/50 bits
         // arm:         54/50 bits
         // arm64:       60/55 bits
         // loongarch64: 53/48 bits
@@ -880,8 +884,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:         11/15 bits
-        // amd64:       10/15 bits
+        // x86:         10/14 bits
+        // amd64:       9/14 bits
         // arm:         10/14 bits
         // arm64:        4/9 bits
         // loongarch64: 11/16 bits
@@ -1021,6 +1025,7 @@ protected:
             {
                 return iiaJmpOffset;
             }
+
 #elif defined(TARGET_RISCV64)
             struct
             {
@@ -1038,6 +1043,9 @@ protected:
                 return iiaEncodedInstr;
             }
 #endif // defined(TARGET_RISCV64)
+
+            // Used for instrDesc that has relocatable immediate offset
+            bool iiaSecRel;
 
         } _idAddrUnion;
 
@@ -1574,15 +1582,35 @@ protected:
         }
 
 #ifdef TARGET_XARCH
-        bool idIsEvexbContext() const
+        bool idIsEvexbContextSet() const
         {
             return _idEvexbContext != 0;
         }
-        void idSetEvexbContext()
+
+        void idSetEvexbContext(insOpts instOptions)
         {
             assert(_idEvexbContext == 0);
-            _idEvexbContext = 1;
-            assert(_idEvexbContext == 1);
+            if (instOptions == INS_OPTS_EVEX_eb_er_rd)
+            {
+                _idEvexbContext = 1;
+            }
+            else if (instOptions == INS_OPTS_EVEX_er_ru)
+            {
+                _idEvexbContext = 2;
+            }
+            else if (instOptions == INS_OPTS_EVEX_er_rz)
+            {
+                _idEvexbContext = 3;
+            }
+            else
+            {
+                unreached();
+            }
+        }
+
+        unsigned idGetEvexbContext() const
+        {
+            return _idEvexbContext;
         }
 #endif
 
@@ -1862,11 +1890,6 @@ protected:
 #define PERFSCORE_MEMORY_READ 1
 #define PERFSCORE_MEMORY_WRITE 2
 #define PERFSCORE_MEMORY_READ_WRITE 3
-
-#define PERFSCORE_CODESIZE_COST_HOT 0.10f
-#define PERFSCORE_CODESIZE_COST_COLD 0.01f
-
-#define PERFSCORE_CALLEE_SPILL_COST 0.75f
 
     struct insExecutionCharacteristics
     {
@@ -2162,6 +2185,7 @@ protected:
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
     void emitDispEmbBroadcastCount(instrDesc* id);
+    void emitDispEmbRounding(instrDesc* id);
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -3810,7 +3834,7 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
-    if (id->idIsEvexbContext())
+    if (id->idIsEvexbContextSet())
     {
         // should have the assumption that Evex.b now stands for the embedded broadcast context.
         // reference: Section 2.7.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.
