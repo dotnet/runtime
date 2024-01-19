@@ -57,7 +57,7 @@ namespace System.Reflection.Emit
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
         public void Save(string assemblyFileName) { throw null; }
         public void Save(System.IO.Stream stream) { throw null; }
-        protected abstract void SaveCore(System.IO.Stream stream);
+        protected virtual void SaveCore(System.IO.Stream stream) { throw null; }
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, System.ReadOnlySpan<byte> binaryAttribute);

@@ -299,7 +299,5 @@ namespace System.Reflection.Emit
                     binaryAttribute);
             }
         }
-
-        protected override void SaveCore(Stream stream) => throw new NotSupportedException();
     }
 }

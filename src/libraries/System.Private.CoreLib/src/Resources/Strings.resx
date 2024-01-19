@@ -4283,4 +4283,10 @@
   <data name="Reflection_Disabled" xml:space="preserve">
     <value>This operation is not available because the reflection support was disabled at compile time.</value>
   </data>
+  <data name="NotSupported_AssemblySave" xml:space="preserve">
+    <value>This AssemblyBuilder version doesn't support saving, use AssemblyBuilder.DefinePersistedAssembly(...) to get the AssemblyBuilder version that supports saving.</value>
+  </data>
+  <data name="NullReference_AssemblyBuilderConstructor" xml:space="preserve">
+    <value>The constructor of the persisted 'AssemblyBuilder' type was null.</value>
+  </data>
 </root>
