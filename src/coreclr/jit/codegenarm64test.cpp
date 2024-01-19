@@ -5597,6 +5597,34 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_F(INS_sve_fmov, EA_SCALABLE, REG_V4, -0.125, INS_OPTS_SCALABLE_S); // FMOV <Zd>.<T>, #<const>
     theEmitter->emitIns_R_F(INS_sve_fmov, EA_SCALABLE, REG_V5, 31.0, INS_OPTS_SCALABLE_D);   // FMOV <Zd>.<T>, #<const>
 
+    // IF_SVE_ED_1A
+    theEmitter->emitIns_R_I(INS_sve_smax, EA_SCALABLE, REG_V0, -128,
+                            INS_OPTS_SCALABLE_B); // SMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_smax, EA_SCALABLE, REG_V1, 127,
+                            INS_OPTS_SCALABLE_H); // SMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_smin, EA_SCALABLE, REG_V2, -128,
+                            INS_OPTS_SCALABLE_S); // SMIN <Zdn>.<T>, <Zdn>.<T>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_smin, EA_SCALABLE, REG_V3, 127,
+                            INS_OPTS_SCALABLE_D); // SMIN <Zdn>.<T>, <Zdn>.<T>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_umax, EA_SCALABLE, REG_V4, 0,
+                            INS_OPTS_SCALABLE_B); // UMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_umax, EA_SCALABLE, REG_V5, 255,
+                            INS_OPTS_SCALABLE_H); // UMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_umin, EA_SCALABLE, REG_V6, 0,
+                            INS_OPTS_SCALABLE_S); // UMIN <Zdn>.<T>, <Zdn>.<T>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_umin, EA_SCALABLE, REG_V7, 255,
+                            INS_OPTS_SCALABLE_D); // UMIN <Zdn>.<T>, <Zdn>.<T>, #<imm>
+
+    // IF_SVE_EE_1A
+    theEmitter->emitIns_R_I(INS_sve_mul, EA_SCALABLE, REG_V0, -128,
+                            INS_OPTS_SCALABLE_B); // MUL <Zdn>.<T>, <Zdn>.<T>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_mul, EA_SCALABLE, REG_V1, 0,
+                            INS_OPTS_SCALABLE_H); // MUL <Zdn>.<T>, <Zdn>.<T>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_mul, EA_SCALABLE, REG_V2, 5,
+                            INS_OPTS_SCALABLE_S); // MUL <Zdn>.<T>, <Zdn>.<T>, #<imm>
+    theEmitter->emitIns_R_I(INS_sve_mul, EA_SCALABLE, REG_V3, 127,
+                            INS_OPTS_SCALABLE_D); // MUL <Zdn>.<T>, <Zdn>.<T>, #<imm>
+
     // IF_SVE_IH_3A
     theEmitter->emitIns_R_R_R_I(INS_sve_ld1d, EA_SCALABLE, REG_V5, REG_P3, REG_R4, 0,
                                 INS_OPTS_SCALABLE_D); // LD1D    {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]

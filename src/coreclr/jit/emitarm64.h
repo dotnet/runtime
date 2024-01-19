@@ -600,6 +600,12 @@ static bool isValidUimm8(ssize_t value)
     return (0 <= value) && (value <= 0xFFLL);
 };
 
+// Returns true if 'value' is a legal signed immediate 8 bit encoding (such as for SMAX, SMIN).
+static bool isValidSimm8(ssize_t value)
+{
+    return (-128 <= value) && (value <= 127);
+};
+
 // Returns true if 'value' is a legal unsigned immediate 12 bit encoding (such as for CMP, CMN).
 static bool isValidUimm12(ssize_t value)
 {

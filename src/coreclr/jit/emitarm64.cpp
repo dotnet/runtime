@@ -1400,6 +1400,20 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm8(emitGetInsSC(id)));                           // iiiiiiii
             break;
 
+        case IF_SVE_ED_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer min/max immediate (unpredicated)
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                                   // ddddd
+            assert(isValidSimm8(emitGetInsSC(id)) || isValidUimm8(emitGetInsSC(id))); // iiiiiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt())));         // xx
+            break;
+
+        case IF_SVE_EE_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer multiply immediate (unpredicated)
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isValidSimm8(emitGetInsSC(id)));                           // iiiiiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            break;
+
         case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
                              // immediate)
         case IF_SVE_IH_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
@@ -6007,6 +6021,7 @@ void emitter::emitIns_R_I(instruction ins,
     emitAttr  elemsize  = EA_UNKNOWN;
     insFormat fmt       = IF_NONE;
     bool      canEncode = false;
+    bool      signedImm = false;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -6233,6 +6248,39 @@ void emitter::emitIns_R_I(instruction ins,
             {
                 assert(!"Instruction cannot be encoded: IF_DI_1A");
             }
+            break;
+
+        case INS_sve_smax:
+        case INS_sve_smin:
+            signedImm = true;
+
+            FALLTHROUGH;
+        case INS_sve_umax:
+        case INS_sve_umin:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg));                         // ddddd
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+
+            if (signedImm)
+            {
+                assert(isValidSimm8(imm)); // iiiiiiii
+            }
+            else
+            {
+                assert(isValidUimm8(imm)); // iiiiiiii
+            }
+
+            fmt       = IF_SVE_ED_1A;
+            canEncode = true;
+            break;
+
+        case INS_sve_mul:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg));                         // ddddd
+            assert(isValidSimm8(imm));                             // iiiiiiii
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt       = IF_SVE_EE_1A;
+            canEncode = true;
             break;
 
         default:
@@ -16804,13 +16852,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SVE_EA_1A: // ........xx...... ...iiiiiiiiddddd -- SVE broadcast floating-point immediate (unpredicated)
+        case IF_SVE_ED_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer min/max immediate (unpredicated)
+        case IF_SVE_EE_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer multiply immediate (unpredicated)
+        {
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
-            code |= ((code_t)emitGetInsSC(id) << 5);                      // iiiiiiii
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code_t imm8 = (code_t)(emitGetInsSC(id) & 0xFF);
+            code |= (imm8 << 5);                                          // iiiiiiii
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
-
+        }
         case IF_SVE_DU_3A: // ........xx.mmmmm ......nnnnn.DDDD -- SVE pointer conflict compare
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1());                     // DDDD
@@ -19515,6 +19567,18 @@ void emitter::emitDispInsHelp(
         case IF_SVE_EA_1A: // ........xx...... ...iiiiiiiiddddd -- SVE broadcast floating-point immediate (unpredicated)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             emitDispFloatImm(emitGetInsSC(id));                 // iiiiiiii
+            break;
+
+        // SMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>
+        // SMIN <Zdn>.<T>, <Zdn>.<T>, #<imm>
+        // UMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>
+        // UMIN <Zdn>.<T>, <Zdn>.<T>, #<imm>
+        case IF_SVE_ED_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer min/max immediate (unpredicated)
+        // MUL <Zdn>.<T>, <Zdn>.<T>, #<imm>
+        case IF_SVE_EE_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer multiply immediate (unpredicated)
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispImm(emitGetInsSC(id), false);               // iiiiiiii
             break;
 
         // { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -22232,6 +22296,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_EA_1A: // ........xx...... ...iiiiiiiiddddd -- SVE broadcast floating-point immediate (unpredicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_ED_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer min/max immediate (unpredicated)
+            switch (ins)
+            {
+                case INS_sve_umin:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                default:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+            }
+            break;
+
+        case IF_SVE_EE_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer multiply immediate (unpredicated)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_5C;
             break;
 
         case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
