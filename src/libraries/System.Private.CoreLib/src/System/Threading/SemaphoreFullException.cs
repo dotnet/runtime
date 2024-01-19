@@ -15,11 +15,11 @@ namespace System.Threading
         {
         }
 
-        public SemaphoreFullException(string? message) : base(message)
+        public SemaphoreFullException(string? message) : base(message ?? SR.Threading_SemaphoreFullException)
         {
         }
 
-        public SemaphoreFullException(string? message, Exception? innerException) : base(message, innerException)
+        public SemaphoreFullException(string? message, Exception? innerException) : base(message ?? SR.Threading_SemaphoreFullException, innerException)
         {
         }
 

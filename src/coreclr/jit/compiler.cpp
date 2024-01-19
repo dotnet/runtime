@@ -287,9 +287,6 @@ Histogram bbCntTable(bbCntBuckets);
 unsigned  bbSizeBuckets[] = {1, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 0};
 Histogram bbOneBBSizeTable(bbSizeBuckets);
 
-unsigned  domsChangedIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
-Histogram domsChangedIterationTable(domsChangedIterationBuckets);
-
 unsigned  computeReachabilitySetsIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
 Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIterationBuckets);
 
@@ -1560,12 +1557,6 @@ void Compiler::compShutdown()
     jitprintf("IL method size frequency table for methods with a single basic block:\n");
     jitprintf("--------------------------------------------------\n");
     bbOneBBSizeTable.dump(jitstdout());
-    jitprintf("--------------------------------------------------\n");
-
-    jitprintf("--------------------------------------------------\n");
-    jitprintf("fgComputeDoms `while (change)` iterations:\n");
-    jitprintf("--------------------------------------------------\n");
-    domsChangedIterationTable.dump(jitstdout());
     jitprintf("--------------------------------------------------\n");
 
     jitprintf("--------------------------------------------------\n");
@@ -5839,7 +5830,7 @@ void Compiler::RecomputeFlowGraphAnnotations()
     assert(JitConfig.JitOptRepeatCount() > 0);
     // Recompute reachability sets, dominators, and loops.
     optResetLoopInfo();
-    fgDomsComputed = false;
+
     fgComputeReachability();
     optSetBlockWeights();
     optFindLoops();
@@ -5861,7 +5852,6 @@ void Compiler::RecomputeFlowGraphAnnotations()
     optLoopTableValid = false;
     optLoopTable      = nullptr;
     optLoopCount      = 0;
-    fgDomsComputed    = false;
 }
 
 /*****************************************************************************/
@@ -9335,8 +9325,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cVarsFinal,  dVarsFinal     : Display the local variable table (call lvaTableDump(FINAL_FRAME_LAYOUT)).
  *      cBlockPreds, dBlockPreds    : Display a block's predecessors (call block->dspPreds()).
  *      cBlockSuccs, dBlockSuccs    : Display a block's successors (call block->dspSuccs(compiler)).
- *      cReach,      dReach         : Display all block reachability (call fgDispReach()).
- *      cDoms,       dDoms          : Display all block dominators (call fgDispDoms()).
+ *      cReach,      dReach         : Display all block reachability (call BlockReachabilitySets::Dump).
+ *      cDoms,       dDoms          : Display all block dominators (call FlowGraphDominatorTree::Dump).
  *      cLiveness,   dLiveness      : Display per-block variable liveness (call fgDispBBLiveness()).
  *      cCVarSet,    dCVarSet       : Display a "converted" VARSET_TP: the varset is assumed to be tracked variable
  *                                    indices. These are converted to variable numbers and sorted. (Calls
@@ -9661,7 +9651,14 @@ JITDBGAPI void __cdecl cDoms(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Doms %u\n", sequenceNumber++);
-    comp->fgDispDoms();
+    if (comp->m_domTree != nullptr)
+    {
+        comp->m_domTree->Dump();
+    }
+    else
+    {
+        printf("  Not computed\n");
+    }
 }
 
 JITDBGAPI void __cdecl cLiveness(Compiler* comp)
