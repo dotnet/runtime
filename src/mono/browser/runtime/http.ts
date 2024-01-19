@@ -219,15 +219,15 @@ export function http_wasm_get_streamed_response_bytes(controller: HttpController
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     return wrap_as_cancelable_promise(async () => {
-        mono_assert(controller.currentBufferOffset != undefined, "expected currentBufferOffset");
+        mono_assert(controller.response, "expected response");
         if (!controller.streamReader) {
-            controller.streamReader = controller.response!.body!.getReader();
+            controller.streamReader = controller.response.body!.getReader();
         }
-        if (!controller.currentStreamReaderChunk) {
+        if (!controller.currentStreamReaderChunk || controller.currentBufferOffset === undefined) {
             controller.currentStreamReaderChunk = await controller.streamReader.read();
             controller.currentBufferOffset = 0;
         }
-        if (controller.currentStreamReaderChunk!.done) {
+        if (controller.currentStreamReaderChunk.done) {
             return 0;
         }
 
