@@ -51,7 +51,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private CancellationTokenSource CreateTestCaseTimeoutSource()
         {
             var cts = new CancellationTokenSource(TimeoutMilliseconds);
-            cts.Token.Register(() => {
+            cts.Token.Register(() =>
+            {
                 Console.WriteLine($"Unexpected test case timeout at {DateTime.Now.ToString("u")} ManagedThreadId:{Environment.CurrentManagedThreadId}");
             });
             return cts;
@@ -78,7 +79,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task Executor_Cancellation(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = new CancellationTokenSource();
 
             TaskCompletionSource ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var canceledTask = executor.Execute(() =>
@@ -98,7 +99,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSDelay_Cancellation(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = new CancellationTokenSource();
             TaskCompletionSource ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var canceledTask = executor.Execute(async () =>
             {
@@ -119,9 +120,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public async Task JSSynchronizationContext_Send_Post_Items_Cancellation()
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = new CancellationTokenSource();
 
-            ManualResetEventSlim blocker=new ManualResetEventSlim(false);
+            ManualResetEventSlim blocker = new ManualResetEventSlim(false);
             TaskCompletionSource never = new TaskCompletionSource();
             SynchronizationContext capturedSynchronizationContext = null;
             TaskCompletionSource jswReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -191,12 +192,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public async Task JSSynchronizationContext_Send_Post_To_Canceled()
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = new CancellationTokenSource();
 
             TaskCompletionSource never = new TaskCompletionSource();
             SynchronizationContext capturedSynchronizationContext = null;
             TaskCompletionSource jswReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            JSObject capturedGlobalThis=null;
+            JSObject capturedGlobalThis = null;
 
             var canceledTask = JSWebWorker.RunAsync(() =>
             {
@@ -249,7 +250,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public async Task JSWebWorker_Abandon_Running()
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = new CancellationTokenSource();
 
             TaskCompletionSource never = new TaskCompletionSource();
             TaskCompletionSource ready = new TaskCompletionSource();
@@ -274,7 +275,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public async Task JSWebWorker_Abandon_Running_JS()
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = new CancellationTokenSource();
 
             TaskCompletionSource ready = new TaskCompletionSource();
 
@@ -300,7 +301,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task Executor_Propagates(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
             bool hit = false;
             var failedTask = executor.Execute(() =>
             {
@@ -320,7 +321,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedConsole(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(() =>
             {
                 Console.WriteLine("C# Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId);
@@ -331,7 +332,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSConsole(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(() =>
             {
                 WebWorkerTestHelper.Log("JS Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
@@ -342,7 +343,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task NativeThreadId(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await executor.StickyAwait(WebWorkerTestHelper.InitializeAsync(), cts.Token);
@@ -366,7 +367,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task ThreadingTimer(Executor executor)
         {
             var hit = false;
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 TaskCompletionSource tcs = new TaskCompletionSource();
@@ -388,7 +389,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSDelay_ContinueWith(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
@@ -404,7 +405,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSDelay_ConfigureAwait_True(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
@@ -419,7 +420,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task ManagedDelay_ContinueWith(Executor executor)
         {
             var hit = false;
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await Task.Delay(10, cts.Token).ContinueWith(_ =>
@@ -433,7 +434,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedDelay_ConfigureAwait_True(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await Task.Delay(10, cts.Token).ConfigureAwait(true);
@@ -445,7 +446,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedYield(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await Task.Yield();
@@ -497,7 +498,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads2x))]
         public async Task JSObject_CapturesAffinity(Executor executor1, Executor executor2)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
 
             var e1Job = async (Task e2done, TaskCompletionSource<JSObject> e1State) =>
             {
@@ -532,7 +533,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task WebSocketClient_ContentInSameThread(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
 
             var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
             var message = "hello";
@@ -557,7 +558,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads2x))]
         public Task WebSocketClient_ResponseCloseInDifferentThread(Executor executor1, Executor executor2)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
 
             var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
             var message = "hello";
@@ -592,7 +593,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads2x))]
         public Task WebSocketClient_CancelInDifferentThread(Executor executor1, Executor executor2)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = new CancellationTokenSource();
 
             var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
             var message = ".delay5sec"; // this will make the loopback server slower
@@ -629,7 +630,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task HttpClient_ContentInSameThread(Executor executor)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
             var uri = WebWorkerTestHelper.GetOriginUrl() + "/_framework/blazor.boot.json";
 
             await executor.Execute(async () =>
@@ -649,7 +650,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         private Task HttpClient_ActionInDifferentThread(string url, Executor executor1, Executor executor2, Func<HttpResponseMessage, Task> e2Job)
         {
-            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            var cts = CreateTestCaseTimeoutSource();
 
             var e1Job = async (Task e2done, TaskCompletionSource<HttpResponseMessage> e1State) =>
             {
@@ -689,9 +690,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var url = WebWorkerTestHelper.LocalHttpEcho + "?delay10sec=true&guid=" + Guid.NewGuid();
             await HttpClient_ActionInDifferentThread(url, executor1, executor2, async (HttpResponseMessage response) =>
             {
-                CancellationTokenSource cts = new CancellationTokenSource();
                 await Assert.ThrowsAsync<TaskCanceledException>(async () =>
                 {
+                    CancellationTokenSource cts = new CancellationTokenSource();
                     var promise = response.Content.ReadAsStringAsync(cts.Token);
                     cts.Cancel();
                     await promise;
