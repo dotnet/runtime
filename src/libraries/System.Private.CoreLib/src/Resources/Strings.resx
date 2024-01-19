@@ -4286,7 +4286,4 @@
   <data name="NotSupported_AssemblySave" xml:space="preserve">
     <value>This AssemblyBuilder instance doesn't support saving. Use AssemblyBuilder.DefinePersistedAssembly to create an AssemblyBuilder instance that supports saving.</value>
   </data>
-  <data name="NullReference_AssemblyBuilderConstructor" xml:space="preserve">
-    <value>The constructor of the persisted 'AssemblyBuilder' type was null.</value>
-  </data>
 </root>
