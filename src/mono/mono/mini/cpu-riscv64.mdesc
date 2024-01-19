@@ -138,18 +138,18 @@ iconst: dest:i len:16
 int_add: dest:i src1:i src2:i len:4
 int_sub: dest:i src1:i src2:i len:4
 int_mul: dest:i src1:i src2:i len:4
-int_div: dest:i src1:i src2:i len:32
+int_div: dest:i src1:i src2:i len:80
 int_div_un: dest:i src1:i src2:i len:32
-int_rem: dest:i src1:i src2:i len:32
+int_rem: dest:i src1:i src2:i len:80
 int_rem_un: dest:i src1:i src2:i len:32
 
 i8const: dest:i len:16
 long_add: dest:i src1:i src2:i len:4
 long_sub: dest:i src1:i src2:i len:4
 long_mul: dest:i src1:i src2:i len:4
-long_div: dest:i src1:i src2:i len:32
+long_div: dest:i src1:i src2:i len:80
 long_div_un: dest:i src1:i src2:i len:32
-long_rem: dest:i src1:i src2:i len:32
+long_rem: dest:i src1:i src2:i len:80
 long_rem_un: dest:i src1:i src2:i len:32
 
 r8const: dest:f len:16
