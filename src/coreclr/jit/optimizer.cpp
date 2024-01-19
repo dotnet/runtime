@@ -4512,6 +4512,12 @@ BasicBlock* Compiler::optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* 
     BasicBlock* insertionPoint = bottom;
     while (insertionPoint->bbFallsThrough())
     {
+        if (insertionPoint->KindIs(BBJ_COND) && !insertionPoint->NextIs(insertionPoint->GetFalseTarget()))
+        {
+            // Found a BBJ_COND block that does not fall through, so insert after it.
+            break;
+        }
+
         // Keep looking for a better insertion point if we can.
         BasicBlock* newInsertionPoint = optTryAdvanceLoopCompactionInsertionPoint(loop, insertionPoint, top, bottom);
         if (newInsertionPoint == nullptr)
