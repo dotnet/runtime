@@ -12,6 +12,7 @@ jobs:
       env:
         ROOTFS_DIR: /crossrootfs/riscv64
         QEMU_LD_PREFIX: /crossrootfs/riscv64
+        CORE_ROOT: /runtime/artifacts/tests/coreclr/linux.riscv64.Debug/Tests/Core_Root/
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -68,15 +69,14 @@ jobs:
             artifacts/tests/
           key: ${{ runner.os }}-dotnet-cross-build
       - name: Build Tests programs
-        run: ./build.sh -mono -Debug riscv64 -tree:JIT/ --ci
+        run: ./build.sh -mono -Debug riscv64 --ci
         working-directory: ./src/tests
       - name: Run tests
         run: qemu-riscv64-static /crossrootfs/riscv64/bin/bash -c ./run.sh Debug
         working-directory: ./src/tests
       - name: Upload Test error Log
-        if: ${{ failure() }}
         uses: actions/upload-artifact@v2
         with:
-          name: test-error-log.log
-          path: ./artifacts/log/TestRunResults_linux_riscv64_Debug.log
+          name: test-error-log
+          path: ./artifacts/log/
       
