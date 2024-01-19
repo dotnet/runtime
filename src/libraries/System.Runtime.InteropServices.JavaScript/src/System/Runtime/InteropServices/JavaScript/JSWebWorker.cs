@@ -59,7 +59,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public JSWebWorkerInstance(Func<Task<T>> bodyRes, CancellationToken cancellationToken)
             {
-                _taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.DenyChildAttach | TaskCreationOptions.RunContinuationsAsynchronously | TaskCreationOptions.HideScheduler);
                 _thread = new Thread(ThreadMain);
                 _resultTask = null;
                 _cancellationToken = cancellationToken;
@@ -75,14 +75,19 @@ namespace System.Runtime.InteropServices.JavaScript
                     // give browser chance to load more threads
                     // until there at least one thread loaded, it doesn't make sense to `Start`
                     // because that would also hang, but in a way blocking the UI thread, much worse.
-                    JavaScriptImports.ThreadAvailable().ContinueWith(t =>
+                    JavaScriptImports.ThreadAvailable().ContinueWith(static (t, o) =>
                     {
+                        var self = (JSWebWorkerInstance<T>)o!;
                         if (t.IsCompletedSuccessfully)
                         {
-                            _thread.Start();
+                            self._thread.Start();
                         }
-                        return t;
-                    }, _cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.FromCurrentSynchronizationContext());
+                        if (t.IsCanceled)
+                        {
+                            throw new OperationCanceledException(self._cancellationToken);
+                        }
+                        throw t.Exception!;
+                    }, this, _cancellationToken, TaskContinuationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
                 }
                 else
                 {
@@ -97,16 +102,17 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     if (_cancellationToken.IsCancellationRequested)
                     {
-                        PropagateCompletionAndDispose(Task.FromException<T>(new OperationCanceledException(_cancellationToken)));
+                        PropagateCompletionAndDispose(Task.FromCanceled<T>(_cancellationToken));
                         return;
                     }
 
                     // receive callback when the cancellation is requested
-                    _cancellationRegistration = _cancellationToken.Register(() =>
+                    _cancellationRegistration = _cancellationToken.Register(static (o) =>
                     {
+                        var self = (JSWebWorkerInstance<T>)o!;
                         // this could be executing on any thread
-                        PropagateCompletionAndDispose(Task.FromException<T>(new OperationCanceledException(_cancellationToken)));
-                    });
+                        self.PropagateCompletionAndDispose(Task.FromCanceled<T>(self._cancellationToken));
+                    }, this);
 
                     // JSSynchronizationContext also registers to _cancellationToken
                     _jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(false, _cancellationToken);

@@ -30,9 +30,32 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
     public class WebWorkerTest : IAsyncLifetime
     {
-        const int TimeoutMilliseconds = 300;
+        const int TimeoutMilliseconds = 5000;
+
+        public static bool _isWarmupDone;
+
+        public async Task InitializeAsync()
+        {
+            if (_isWarmupDone)
+            {
+                return;
+            }
+            await Task.Delay(500);
+            _isWarmupDone = true;
+        }
+
+        public Task DisposeAsync() => Task.CompletedTask;
 
         #region Executors
+
+        private CancellationTokenSource CreateTestCaseTimeoutSource()
+        {
+            var cts = new CancellationTokenSource(TimeoutMilliseconds);
+            cts.Token.Register(() => {
+                Console.WriteLine($"Unexpected test case timeout at {DateTime.Now.ToString("u")} ManagedThreadId:{Environment.CurrentManagedThreadId}");
+            });
+            return cts;
+        }
 
         public static IEnumerable<object[]> GetTargetThreads()
         {
@@ -677,19 +700,5 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         #endregion
-
-        public static bool _isWarmupDone;
-
-        public async Task InitializeAsync()
-        {
-            if (_isWarmupDone)
-            {
-                return;
-            }
-            await Task.Delay(500);
-            _isWarmupDone = true;
-        }
-
-        public Task DisposeAsync() => Task.CompletedTask;
     }
 }

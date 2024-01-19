@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+<!--
+
   <Import Condition="'$(TargetOS)' == 'browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
+-->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
