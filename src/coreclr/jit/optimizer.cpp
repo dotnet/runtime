@@ -4409,11 +4409,6 @@ bool Compiler::optCompactLoops()
     bool changed = false;
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
         changed |= optCompactLoop(loop);
     }
 
@@ -4443,6 +4438,16 @@ bool Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
         if (loop->ContainsBlock(cur))
         {
             numLoopBlocks--;
+            cur = cur->Next();
+            continue;
+        }
+
+        // If this is a CALLFINALLYRET that is not in the loop, but the
+        // CALLFINALLY was, then we have to leave it in place. For compaction
+        // purposes this doesn't really make any difference, since no codegen
+        // is associated with the CALLFINALLYRET anyway.
+        if (cur->isBBCallFinallyPairTail())
+        {
             cur = cur->Next();
             continue;
         }
