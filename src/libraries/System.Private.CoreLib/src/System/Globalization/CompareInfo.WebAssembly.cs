@@ -147,7 +147,7 @@ namespace System.Globalization
         // ModifierLetter: 51 (out of 4012)
         // EnclosingMark: 85 (out of 221)
         // NonSpacingMark: 3281 (out of 18105)
-        // we can skip them all (~1027k chars) by checking for the remining UnicodeCategories (~291k chars)
+        // we can skip them all (~1027k chars) by checking for the remaining UnicodeCategories (~291k chars)
         // overskipping resutls in less collisions which is not a problem
         private static bool ShouldNotBeSkipped(UnicodeCategory category) =>
             category == UnicodeCategory.LowercaseLetter ||
@@ -155,7 +155,6 @@ namespace System.Globalization
             category == UnicodeCategory.TitlecaseLetter ||
             category == UnicodeCategory.LetterNumber ||
             category == UnicodeCategory.OtherNumber ||
-            category == UnicodeCategory.Control ||
             category == UnicodeCategory.Surrogate ||
             category == UnicodeCategory.PrivateUse ||
             category == UnicodeCategory.MathSymbol ||
@@ -178,9 +177,9 @@ namespace System.Globalization
             }
             if ((options & CompareOptions.IgnoreCase) != 0)
             {
-                string? resultStr = new string(result, 0, resultIndex);
-                // JS-based ToLower, to keep cases like Turkish I working
-                resultStr = _thisTextInfo?.ToLower(resultStr);
+                string resultStr = new string(result, 0, resultIndex);
+                // JS-based ToUpper, to keep cases like Turkish I working
+                resultStr = thisTextInfo.ToUpper(resultStr);
                 return resultStr.AsSpan();
             }
             return result.AsSpan(0, resultIndex);
