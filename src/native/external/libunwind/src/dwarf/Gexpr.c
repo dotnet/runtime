@@ -110,7 +110,7 @@ static const uint8_t operands[256] =
   };
 
 static inline unw_sword_t
-sword (unw_addr_space_t as, unw_word_t val)
+sword (unw_addr_space_t as UNUSED, unw_word_t val)
 {
   switch (dwarf_addr_size (as))
     {

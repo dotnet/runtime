@@ -82,7 +82,7 @@ namespace System.Reflection.Emit.Tests
 
                     FieldInfo testField = testEnum.GetField("FieldOne");
                     Assert.Equal(enumBuilder.Name, testField.DeclaringType.Name);
-                    Assert.Equal(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal, literal.Attributes);
+                    Assert.Equal(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault, literal.Attributes);
                     Assert.Equal(enumBuilder.AsType().FullName, testField.FieldType.FullName);
                 }
             }

@@ -34,7 +34,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void WritePEImage(Stream peStream, BlobBuilder ilBuilder)
+        private void WritePEImage(Stream peStream, BlobBuilder ilBuilder, BlobBuilder fieldData)
         {
             var peHeaderBuilder = new PEHeaderBuilder(
                 // For now only support DLL, DLL files are considered executable files
@@ -45,6 +45,7 @@ namespace System.Reflection.Emit
                 header: peHeaderBuilder,
                 metadataRootBuilder: new MetadataRootBuilder(_metadataBuilder),
                 ilStream: ilBuilder,
+                mappedFieldData: fieldData,
                 strongNameSignatureSize: 0);
 
             // Write executable into the specified stream.
@@ -81,10 +82,11 @@ namespace System.Reflection.Emit
             _module.WriteCustomAttributes(_customAttributes, assemblyHandle);
 
             var ilBuilder = new BlobBuilder();
+            var fieldDataBuilder = new BlobBuilder();
             MethodBodyStreamEncoder methodBodyEncoder = new MethodBodyStreamEncoder(ilBuilder);
-            _module.AppendMetadata(methodBodyEncoder);
+            _module.AppendMetadata(methodBodyEncoder, fieldDataBuilder);
 
-            WritePEImage(stream, ilBuilder);
+            WritePEImage(stream, ilBuilder, fieldDataBuilder);
             _previouslySaved = true;
         }
 
@@ -119,5 +121,9 @@ namespace System.Reflection.Emit
         }
 
         public override string? FullName => _assemblyName.FullName;
+
+        public override Module ManifestModule => _module ?? throw new InvalidOperationException(SR.InvalidOperation_AModuleRequired);
+
+        public override AssemblyName GetName(bool copiedName) => (AssemblyName)_assemblyName.Clone();
     }
 }

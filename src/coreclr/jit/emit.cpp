@@ -4299,7 +4299,15 @@ void emitter::emitDispJumpList()
             else
 #endif // TARGET_ARM64
             {
-                printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
+                insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
+                if (targetGroup == nullptr)
+                {
+                    printf(" -> ILLEGAL");
+                }
+                else
+                {
+                    printf(" -> IG%02u", targetGroup->igNum);
+                }
             }
 
             if (jmp->idjShort)
