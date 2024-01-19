@@ -6398,83 +6398,6 @@ void Compiler::fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk)
     insertAfterBlk->SetNext(newBlk);
 }
 
-// We have two edges (bAlt => bCur) and (bCur => bNext).
-//
-// Returns true if the weight of (bAlt => bCur)
-//  is greater than the weight of (bCur => bNext).
-// We compare the edge weights if we have valid edge weights
-//  otherwise we compare blocks weights.
-//
-bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
-{
-    // bCur can't be NULL and must be a fall through bbKind
-    noway_assert(bCur != nullptr);
-    noway_assert(bCur->bbFallsThrough() || (bCur->KindIs(BBJ_ALWAYS) && bCur->JumpsToNext()));
-    noway_assert(bAlt != nullptr);
-
-    if (bAlt->KindIs(BBJ_ALWAYS))
-    {
-        // If bAlt doesn't jump to bCur, it can't be a better fall through than bCur
-        if (!bAlt->TargetIs(bCur))
-        {
-            return false;
-        }
-    }
-    else if (bAlt->KindIs(BBJ_COND))
-    {
-        // If bAlt doesn't potentially jump to bCur, it can't be a better fall through than bCur
-        if (!bAlt->TrueTargetIs(bCur))
-        {
-            return false;
-        }
-    }
-    else
-    {
-        // We only handle the cases when bAlt is a BBJ_ALWAYS or a BBJ_COND
-        return false;
-    }
-
-    // BBJ_CALLFINALLY shouldn't have a flow edge into the next (BBJ_CALLFINALLYRET) block
-    if (bCur->isBBCallFinallyPair())
-    {
-        return false;
-    }
-
-    // Currently bNext is the fall through for bCur
-    // TODO-NoFallThrough: Allow bbFalseTarget to diverge from bbNext for BBJ_COND
-    assert(!bCur->KindIs(BBJ_COND) || bCur->NextIs(bCur->GetFalseTarget()));
-    BasicBlock* bNext = bCur->Next();
-    noway_assert(bNext != nullptr);
-
-    // We will set result to true if bAlt is a better fall through than bCur
-    bool result;
-    if (fgHaveValidEdgeWeights)
-    {
-        // We will compare the edge weight for our two choices
-        FlowEdge* edgeFromAlt = fgGetPredForBlock(bCur, bAlt);
-        FlowEdge* edgeFromCur = fgGetPredForBlock(bNext, bCur);
-        noway_assert(edgeFromCur != nullptr);
-        noway_assert(edgeFromAlt != nullptr);
-
-        result = (edgeFromAlt->edgeWeightMin() > edgeFromCur->edgeWeightMax());
-    }
-    else
-    {
-        if (bAlt->KindIs(BBJ_ALWAYS))
-        {
-            // Our result is true if bAlt's weight is more than bCur's weight
-            result = (bAlt->bbWeight > bCur->bbWeight);
-        }
-        else
-        {
-            noway_assert(bAlt->KindIs(BBJ_COND));
-            // Our result is true if bAlt's weight is more than twice bCur's weight
-            result = (bAlt->bbWeight > (2 * bCur->bbWeight));
-        }
-    }
-    return result;
-}
-
 //------------------------------------------------------------------------
 // Finds the block closest to endBlk in the range [startBlk..endBlk) after which a block can be
 // inserted easily. Note that endBlk cannot be returned; its predecessor is the last block that can
@@ -6690,24 +6613,9 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
         const bool blkFallsThrough =
             blk->bbFallsThrough() && (!blk->KindIs(BBJ_COND) || blk->NextIs(blk->GetFalseTarget()));
         const bool blkJumpsToNext = blk->KindIs(BBJ_ALWAYS) && blk->HasFlag(BBF_NONE_QUIRK) && blk->JumpsToNext();
-        if ((!blkFallsThrough && !blkJumpsToNext) || (blk == nearBlk))
+        if (!blkFallsThrough && !blkJumpsToNext)
         {
             bool updateBestBlk = true; // We will probably update the bestBlk
-
-            // If blk falls through then we must decide whether to use the nearBlk
-            // hint
-            if (blkFallsThrough || blkJumpsToNext)
-            {
-                noway_assert(blk == nearBlk);
-                if (jumpBlk != nullptr)
-                {
-                    updateBestBlk = fgIsBetterFallThrough(blk, jumpBlk);
-                }
-                else
-                {
-                    updateBestBlk = false;
-                }
-            }
 
             // If we already have a best block, see if the 'runRarely' flags influences
             // our choice. If we want a runRarely insertion point, and the existing best
@@ -6717,7 +6625,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
             // want a non-rarely-run block), but bestBlock->isRunRarely() is true. In that
             // case, we should update the block, also. Probably what we want is:
             //    (bestBlk->isRunRarely() != runRarely) && (blk->isRunRarely() == runRarely)
-            if (updateBestBlk && (bestBlk != nullptr) && runRarely && bestBlk->isRunRarely() && !blk->isRunRarely())
+            if ((bestBlk != nullptr) && runRarely && bestBlk->isRunRarely() && !blk->isRunRarely())
             {
                 updateBestBlk = false;
             }

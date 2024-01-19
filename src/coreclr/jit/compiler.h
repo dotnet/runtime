@@ -5926,8 +5926,6 @@ public:
 
     void fgFindBasicBlocks();
 
-    bool fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt);
-
     bool fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionIndex, bool putInTryRegion);
 
     BasicBlock* fgFindInsertPoint(unsigned    regionIndex,
