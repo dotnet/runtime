@@ -499,6 +499,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Average(x => x));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97224", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsAppleMobile))]
         [Fact]
         public void Decimal_WithSelector()
         {
@@ -545,6 +546,7 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<decimal?>().Average(selector));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97224", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsAppleMobile))]
         [Fact]
         public void NullableDecimal_WithSelector()
         {
