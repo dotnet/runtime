@@ -55,7 +55,7 @@ For other issues, please file them to their appropriate sibling repos. We have l
 * [.NET source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
 * [API Reference docs](https://docs.microsoft.com/dotnet/api)
 * [.NET API Catalog](https://apisof.net) (incl. APIs from daily builds and API usage info)
-* [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing /// comments
+* [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing
 * [.NET Discord Server](https://aka.ms/dotnet-discord) - a place to discuss the development of .NET and its ecosystem
 
 ## .NET Foundation
