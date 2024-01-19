@@ -382,7 +382,7 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_nested_types(MonoClass
             ClassLoader::ThrowIfNotFound,
             ClassLoader::PermitUninstDefOrRef);
         nestedIterator->index++;
-        MONO_ASSERTE(!th.IsNull());
+        assert(!th.IsNull());
         return (MonoClass*)th.GetMethodTable();
     }
     else
@@ -1408,13 +1408,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_type_get_name_full_chunked(MonoT
 {
     ASSERT_NOT_IMPLEMENTED;
 }
-
-#ifdef _DEBUG
-extern "C" void EXPORT_CC mono_debug_assert_dialog(const char *szFile, int iLine, const char *szExpr)
-{
-    DbgAssertDialog(szFile, iLine, szExpr);
-}
-#endif
 
 extern "C" EXPORT_API void EXPORT_CC coreclr_unity_profiler_register(const CLSID* classId, const guint16* profilerDllPathUtf16)
 {
