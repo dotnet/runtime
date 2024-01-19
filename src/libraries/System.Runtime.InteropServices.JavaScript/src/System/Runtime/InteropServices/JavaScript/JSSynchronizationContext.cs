@@ -216,7 +216,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     Environment.FailFast($"JSSynchronizationContext.Send failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 }
 
+                var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
+                Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
                 signal.Wait();
+                Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
 
                 if (_isCancellationRequested)
                 {
