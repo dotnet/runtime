@@ -24,7 +24,6 @@ namespace System.Reflection.Emit
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal object? _defaultValue = DBNull.Value;
         internal FieldDefinitionHandle _handle;
-        internal int _rvaSize;
         internal byte[]? _rvaData;
 
         internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
@@ -107,10 +106,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal void SetData(byte[]? data, int size)
+        internal void SetData(byte[] data)
         {
-            _rvaData = data ?? new byte[size];
-            _rvaSize = size;
+            _rvaData = data;
             _attributes |= FieldAttributes.HasFieldRVA;
         }
 

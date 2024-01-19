@@ -369,6 +369,11 @@ namespace System.Reflection.Emit
 
         protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes)
         {
+            if (data.Length <= 0 || data.Length >= 0x003f0000)
+            {
+                throw new ArgumentException(SR.Argument_BadSizeForData, nameof(data.Length));
+            }
+
             // This method will define an initialized Data in .sdata.
             // We will create a fake TypeDef to represent the data with size. This TypeDef
             // will be the signature for the Field.
@@ -549,20 +554,20 @@ namespace System.Reflection.Emit
 
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes)
         {
-            // This method will define an uninitialized Data in .sdata.
-            // We will create a fake TypeDef to represent the data with size. This TypeDef
-            // will be the signature for the Field.
-            return DefineDataHelper(name, null, size, attributes);
-        }
-
-        private FieldBuilder DefineDataHelper(string name, byte[]? data, int size, FieldAttributes attributes)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-
             if (size <= 0 || size >= 0x003f0000)
             {
                 throw new ArgumentException(SR.Argument_BadSizeForData, nameof(size));
             }
+
+            // This method will define an uninitialized Data in .sdata.
+            // We will create a fake TypeDef to represent the data with size. This TypeDef
+            // will be the signature for the Field.
+            return DefineDataHelper(name, new byte[size], size, attributes);
+        }
+
+        private FieldBuilder DefineDataHelper(string name, byte[] data, int size, FieldAttributes attributes)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             ThrowIfCreated();
 
@@ -581,10 +586,10 @@ namespace System.Reflection.Emit
                 valueClassType.CreateType();
             }
 
-            FieldBuilder fdBuilder = DefineField(name, valueClassType, attributes | FieldAttributes.Static);
+            FieldBuilder fdBuilder = DefineField(name, valueClassType, attributes | FieldAttributes.Static | FieldAttributes.HasFieldRVA);
 
             // now we need to set the RVA
-            ((FieldBuilderImpl)fdBuilder).SetData(data, size);
+            ((FieldBuilderImpl)fdBuilder).SetData(data);
             return fdBuilder;
         }
 

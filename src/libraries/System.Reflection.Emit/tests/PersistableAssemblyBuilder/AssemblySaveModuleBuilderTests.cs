@@ -173,8 +173,8 @@ namespace System.Reflection.Emit.Tests
             AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineInitializedData(null, [1, 0, 1], FieldAttributes.Public));
             AssertExtensions.Throws<ArgumentException>("name", () => module.DefineInitializedData("", [1, 0, 1], FieldAttributes.Private));
             AssertExtensions.Throws<ArgumentNullException>("data", () => module.DefineInitializedData("MyField", null, FieldAttributes.Public));
-            AssertExtensions.Throws<ArgumentException>("size", () => module.DefineInitializedData("MyField", [], FieldAttributes.Public));
-            AssertExtensions.Throws<ArgumentException>("size", () => module.DefineInitializedData("MyField", new byte[0x3f0000], FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentException>("Length", () => module.DefineInitializedData("MyField", [], FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentException>("Length", () => module.DefineInitializedData("MyField", new byte[0x3f0000], FieldAttributes.Public));
 
             FieldBuilder field = module.DefineInitializedData("MyField", [1, 0, 1], FieldAttributes.Public);
             module.CreateGlobalFunctions();
@@ -183,8 +183,9 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<InvalidOperationException>(() => module.DefineInitializedData("MyField2", new byte[] { 1, 0, 1 }, FieldAttributes.Public));
         }
 
-        // Field alignment is not working on mono
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
+        // Field RVA alignment is not working on mono
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97172", TestRuntimes.Mono)]
         public void DefineInitializedData_EnsureAlignmentIsMinimumNeededForUseOfCreateSpan()
         {
             using (TempFile file = TempFile.Create())

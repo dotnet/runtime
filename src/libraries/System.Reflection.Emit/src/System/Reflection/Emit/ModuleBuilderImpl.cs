@@ -447,7 +447,7 @@ namespace System.Reflection.Emit
                     AddDefaultValue(handle, field._defaultValue);
                 }
 
-                if (field.Attributes.HasFlag(FieldAttributes.HasFieldRVA) && field._rvaSize > 0)
+                if (field.Attributes.HasFlag(FieldAttributes.HasFieldRVA) && field._rvaData != null)
                 {
                     _metadataBuilder.AddFieldRelativeVirtualAddress(handle, fieldDataBuilder.Count);
                     fieldDataBuilder.WriteBytes(field._rvaData!);
