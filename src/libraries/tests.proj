@@ -525,7 +525,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http.Json\tests\FunctionalTests\System.Net.Http.Json.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ObjectModel\tests\System.ObjectModel.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\ReflectionOnly\System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\System.Runtime.InteropServices.JavaScript.Legacy.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Formatters\tests\System.Runtime.Serialization.Formatters.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json\tests\ReflectionOnly\System.Runtime.Serialization.Json.ReflectionOnly.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json\tests\System.Runtime.Serialization.Json.Tests.csproj" />
