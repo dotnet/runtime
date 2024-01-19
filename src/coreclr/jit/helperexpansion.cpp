@@ -1790,19 +1790,19 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //     ...
     //
     // nullcheckBb (BBJ_COND):                      [weight: 1.0]
-    //     if (tmp == null)
+    //     if (obj == null)
     //         goto lastBlock;
     //
     // typeCheckBb (BBJ_COND):                      [weight: 0.5]
-    //     if (obj->pMT == likelyClass)
+    //     if (obj->pMT == likelyCls)
     //         goto typeCheckSucceedBb;
     //
     // fallbackBb (BBJ_ALWAYS):                     [weight: <profile>]
-    //     tmp = helper_call(cls, obj);
+    //     tmp = helper_call(expectedCls, obj);
     //     goto lastBlock;
     //
     // typeCheckSucceedBb (BBJ_ALWAYS):             [weight: <profile>]
-    //     tmp = obj; (or tmp = null in case of 'MustNot')
+    //     tmp = obj; (or tmp = null; in case of 'MustNot')
     //
     // lastBlock (BBJ_any):                         [weight: 1.0]
     //     use(tmp);
@@ -1816,12 +1816,10 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
                                                    debugInfo, lastBb, true);
 
-    // if likelyCls == clsArg, we can just use clsArg that we've just spilled to a temp
-    // it's a sort of manual CSE.
-    GenTree* likelyClsNode = gtNewIconEmbClsHndNode(likelyCls);
-
     // Block 2: typeCheckBb
-    GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(objArg)), likelyClsNode);
+    // TODO-InlineCast: if likelyCls == expectedCls we can consider saving to a local to re-use.
+    GenTree* likelyClsNode = gtNewIconEmbClsHndNode(likelyCls);
+    GenTree* mtCheck       = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(objArg)), likelyClsNode);
     mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
     GenTree*    jtrue       = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
     BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, lastBb, true);
