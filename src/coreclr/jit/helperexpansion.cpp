@@ -1848,6 +1848,11 @@ PhaseStatus Compiler::fgLateCastExpansion()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    if (JitConfig.JitConsumeProfileForCasts() == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
     if (preferSize)
     {
@@ -1935,6 +1940,9 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         return false;
     }
 
+    // Helper calls are never tail calls
+    assert(!call->IsTailCall());
+
     BasicBlock* block = *pBlock;
     JITDUMP("Attempting to expand a cast helper call in " FMT_BB "...\n", block->bbNum);
     DISPTREE(call);
@@ -2002,6 +2010,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //     ...
     //
     // nullcheckBb (BBJ_COND):                      [weight: 1.0]
+    //     tmp = obj;
     //     if (obj == null)
     //         goto lastBlock;
     //
@@ -2014,7 +2023,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //     goto lastBlock;
     //
     // typeCheckSucceedBb (BBJ_ALWAYS):             [weight: <profile>]
-    //     tmp = obj; (or tmp = null; in case of 'MustNot')
+    //     no-op (or tmp = null; in case of 'MustNot')
     //
     // lastBlock (BBJ_any):                         [weight: 1.0]
     //     use(tmp);
@@ -2027,6 +2036,12 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
     BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
                                                    debugInfo, lastBb, true);
+
+    // The very first statement in the whole expansion is to assign obj to tmp.
+    // We assume it's the value we're going to return in most cases.
+    Statement* assignTmp = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(tmpNum, gtCloneExpr(objArg)), debugInfo);
+    gtSetStmtInfo(assignTmp);
+    fgSetStmtSeq(assignTmp);
 
     // Block 2: typeCheckBb
     // TODO-InlineCast: if likelyCls == expectedCls we can consider saving to a local to re-use.
@@ -2050,8 +2065,9 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
     else
     {
-        // Just return the original obj (assign to tmpNum)
-        typeCheckSucceedTree = gtNewTempStore(tmpNum, gtCloneExpr(objArg));
+        // tmp is already assigned to obj, so we don't need to do anything here
+        // some downstream phase will collect this block. It's done for simplicity.
+        typeCheckSucceedTree = gtNewNothingNode();
     }
     BasicBlock* typeCheckSucceedBb =
         fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo, lastBb);
