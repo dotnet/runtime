@@ -5129,21 +5129,24 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Block layout should not change at this point.
     // Do one last pass to reverse any conditions that might yield more fall-through branches.
-    for (BasicBlock* const block : Blocks())
+    if (opts.OptimizationEnabled())
     {
-        if (block->KindIs(BBJ_COND) && block->CanRemoveJumpToTarget(block->GetTrueTarget(), this))
+        for (BasicBlock* const block : Blocks())
         {
-            // Reverse the jump condition
-            GenTree* test = block->lastNode();
-            assert(test->OperIsConditionalJump());
-            GenTree* cond = gtReverseCond(test);
-            assert(cond == test); // Ensure `gtReverseCond` did not create a new node.
+            if (block->KindIs(BBJ_COND) && block->CanRemoveJumpToTarget(block->GetTrueTarget(), this))
+            {
+                // Reverse the jump condition
+                GenTree* test = block->lastNode();
+                assert(test->OperIsConditionalJump());
+                GenTree* cond = gtReverseCond(test);
+                assert(cond == test); // Ensure `gtReverseCond` did not create a new node.
 
-            BasicBlock* newFalseTarget = block->GetTrueTarget();
-            BasicBlock* newTrueTarget  = block->GetFalseTarget();
-            block->SetTrueTarget(newTrueTarget);
-            block->SetFalseTarget(newFalseTarget);
-            assert(block->CanRemoveJumpToTarget(newFalseTarget, this));
+                BasicBlock* newFalseTarget = block->GetTrueTarget();
+                BasicBlock* newTrueTarget  = block->GetFalseTarget();
+                block->SetTrueTarget(newTrueTarget);
+                block->SetFalseTarget(newFalseTarget);
+                assert(block->CanRemoveJumpToTarget(newFalseTarget, this));
+            }
         }
     }
 
