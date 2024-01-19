@@ -4682,13 +4682,66 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				riscv_fdiv_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
 			}
 			break;
-		case OP_IDIV:
-		case OP_LDIV:
+		case OP_IREM:
+		case OP_IDIV:{
 			g_assert (riscv_stdext_m);
+			/* Check for zero */
 			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
 			                                   "DivideByZeroException");
-			riscv_div (code, ins->dreg, ins->sreg1, ins->sreg2);
+			/* Check for INT64_MIN/-1 */
+#ifdef TARGET_RISCV64
+			code = mono_riscv_emit_imm (code, RISCV_T0, 0xffffffff80000000);
+#else
+			code = mono_riscv_emit_imm (code, RISCV_T0, 0x80000000);
+#endif
+			// compare t0, rs1; ceq rd => xor t0, t0, rs1; sltiu t0, t0, 1
+			riscv_xor (code, RISCV_T0, RISCV_T0, ins->sreg1);
+			riscv_sltiu (code, RISCV_T1, RISCV_T0, 1);
+#ifdef TARGET_RISCV64
+			code = mono_riscv_emit_imm (code, RISCV_T0, 0xffffffffffffffff);
+#else
+			code = mono_riscv_emit_imm (code, RISCV_T0, 0xffffffff);
+#endif
+			riscv_xor (code, RISCV_T0, RISCV_T0, ins->sreg2);
+			riscv_sltiu (code, RISCV_T0, RISCV_T0, 1);
+			riscv_and (code, RISCV_T0, RISCV_T0, RISCV_T1);
+			riscv_addi (code, RISCV_T0, RISCV_T0, -1);
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO,
+			                                   "OverflowException");
+			if (ins->opcode == OP_IREM)
+#ifdef TARGET_RISCV64
+				riscv_remw (code, ins->dreg, ins->sreg1, ins->sreg2);
+#else
+				riscv_rem (code, ins->dreg, ins->sreg1, ins->sreg2);
+#endif
+			else
+				riscv_div (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+		}
+		case OP_LREM:
+		case OP_LDIV:{
+			g_assert (riscv_stdext_m);
+			/* Check for zero */
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
+			                                   "DivideByZeroException");
+			/* Check for INT64_MIN/-1 */
+			code = mono_riscv_emit_imm (code, RISCV_T0, 0x8000000000000000);
+			// compare t0, rs1; ceq rd => xor t0, t0, rs1; sltiu t0, t0, 1
+			riscv_xor (code, RISCV_T0, RISCV_T0, ins->sreg1);
+			riscv_sltiu (code, RISCV_T1, RISCV_T0, 1);
+			code = mono_riscv_emit_imm (code, RISCV_T0, 0xffffffffffffffff);
+			riscv_xor (code, RISCV_T0, RISCV_T0, ins->sreg2);
+			riscv_sltiu (code, RISCV_T0, RISCV_T0, 1);
+			riscv_and (code, RISCV_T0, RISCV_T0, RISCV_T1);
+			riscv_addi (code, RISCV_T0, RISCV_T0, -1);
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO,
+			                                   "OverflowException");
+			if (ins->opcode == OP_LREM)
+				riscv_rem (code, ins->dreg, ins->sreg1, ins->sreg2);
+			else
+				riscv_div (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		}
 		case OP_IDIV_UN:
 #ifdef TARGET_RISCV64
 			g_assert (riscv_stdext_m);
@@ -4702,20 +4755,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
 			                                   "DivideByZeroException");
 			riscv_divu (code, ins->dreg, ins->sreg1, ins->sreg2);
-			break;
-		case OP_IREM:
-#ifdef TARGET_RISCV64
-			g_assert (riscv_stdext_m);
-			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
-			                                   "DivideByZeroException");
-			riscv_remw (code, ins->dreg, ins->sreg1, ins->sreg2);
-			break;
-#endif
-		case OP_LREM:
-			g_assert (riscv_stdext_m);
-			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
-			                                   "DivideByZeroException");
-			riscv_rem (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IREM_UN:
 #ifdef TARGET_RISCV64
