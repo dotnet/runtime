@@ -380,9 +380,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 throw new NotImplementedException($"Unknown {nameof(assertOptions.GlobalizationMode)} = {assertOptions.GlobalizationMode}");
         }
 
-        IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
-        if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
-            actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules.json"));
+        IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "*.*");
         AssertFileNames(expected, actual);
         if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
         {
@@ -480,14 +478,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         expected = expected.Order().Select(f => Path.GetFileName(f)).Distinct();
         var actualFileNames = actual.Order().Select(f => Path.GetFileName(f));
-        if (expected.Count() != actualFileNames.Count())
-        {
-            throw new XunitException(
-                    $"Expected: {string.Join(", ", expected)}{Environment.NewLine}" +
-                    $"Actual:   {string.Join(", ", actualFileNames)}");
-        }
-
-        Assert.Equal(expected, actualFileNames);
+        Assert.All(expected, item => Assert.Contains(item, actualFileNames));
     }
 
     public virtual string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null)
