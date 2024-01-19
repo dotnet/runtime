@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Moq;
 using Xunit;
 
@@ -1286,6 +1287,57 @@ namespace System.ComponentModel.Tests
             else
             {
                 Assert.False(ConcurrentError, "Fallback type descriptor is used. Possible race condition.");
+            }
+        }
+
+        [SkipOnPlatform(TestPlatforms.Browser, "Thread.Start is not supported on browsers.")]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ConcurrentAddProviderAndGetProvider()
+        {
+            // Use a timeout value lower than RemoteExecutor in order to get a nice Fail message.
+            const int Timeout = 50000;
+
+            RemoteInvokeOptions options = new()
+            {
+                TimeOut = 60000
+            };
+
+            ConcurrentAddProvider();
+
+            RemoteExecutor.Invoke(() =>
+            {
+                using var finished = new CountdownEvent(2);
+
+                Thread t1 = new Thread(() =>
+                {
+                    ConcurrentAddProvider();
+                    finished.Signal();
+                });
+
+                Thread t2 = new Thread(() =>
+                {
+                    ConcurrentGetProvider();
+                    finished.Signal();
+                });
+
+                t1.Start();
+                t2.Start();
+                finished.Wait(Timeout);
+
+                if (finished.CurrentCount != 0)
+                {
+                    Assert.Fail("Timeout. Possible deadlock.");
+                }
+            }, options).Dispose();
+
+            static void ConcurrentAddProvider()
+            {
+                TypeDescriptor.AddProvider(new EmptyPropertiesTypeProvider(), typeof(MyClass));
+            }
+
+            static void ConcurrentGetProvider()
+            {
+                TypeDescriptor.GetProvider(typeof(TypeWithProperty));
             }
         }
 
