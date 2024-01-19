@@ -434,14 +434,14 @@ namespace System.Reflection.Emit.Tests
                 Type[] cmodsReq2 = [typeof(uint)];
                 Type[] cmodsOpt1 = [typeof(int)];
                 Type[] cmodsOpt2 = [typeof(long), typeof(byte), typeof(bool)];
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder methodAll = type.DefineMethod("AllModifiers", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
                     typeof(string), [typeof(int), typeof(short)], [typeof(Version)], [typeof(int), typeof(long)], [cmodsReq1, cmodsReq2], [cmodsOpt1, cmodsOpt2]);
                 ILGenerator ilGenerator = methodAll.GetILGenerator();
                 ilGenerator.Emit(OpCodes.Ldstr, "Hello World");
                 ilGenerator.Emit(OpCodes.Ret);
                 Type createdType = type.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
                 {
@@ -475,7 +475,7 @@ namespace System.Reflection.Emit.Tests
 
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("DefinePInvokeMethodExecution_Windows"), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("DefinePInvokeMethodExecution_Windows"));
                 TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
                 MethodBuilder mb = tb.DefinePInvokeMethod(
                     "GetEnvironmentVariableW",
@@ -489,7 +489,7 @@ namespace System.Reflection.Emit.Tests
                 mb.SetImplementationFlags(mb.GetMethodImplementationFlags() | MethodImplAttributes.PreserveSig);
 
                 Type t = tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
                 Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
@@ -544,12 +544,12 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 MethodBuilder mb = tb.DefinePInvokeMethod(p.MethodName, p.LibName, p.EntrypointName, p.Attributes, p.ManagedCallConv, p.ReturnType,
                     p.ReturnTypeReqMods, p.ReturnTypeOptMods, p.ParameterTypes, p.ParameterTypeReqMods, p.ParameterTypeOptMods, p.NativeCallConv, p.Charset);
                 mb.SetImplementationFlags(mb.GetMethodImplementationFlags() | MethodImplAttributes.PreserveSig);
                 Type t = tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
                 {
@@ -676,7 +676,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 FieldBuilder greetingField = tb.DefineField("Greeting", typeof(string), FieldAttributes.Private | FieldAttributes.Static);
                 ConstructorBuilder constructor = tb.DefineTypeInitializer();
                 ILGenerator constructorIlGenerator = constructor.GetILGenerator();
@@ -685,7 +685,7 @@ namespace System.Reflection.Emit.Tests
                 constructorIlGenerator.Emit(OpCodes.Ret);
 
                 tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
                 Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
@@ -700,7 +700,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 FieldBuilder myFieldBuilder = tb.DefineUninitializedData("MyGreeting", 4, FieldAttributes.Public);
                 var loadAddressMethod = tb.DefineMethod("LoadAddress", MethodAttributes.Public | MethodAttributes.Static, typeof(IntPtr), null);
                 var methodIL = loadAddressMethod.GetILGenerator();
@@ -708,7 +708,7 @@ namespace System.Reflection.Emit.Tests
                 methodIL.Emit(OpCodes.Ret);
 
                 Type t = tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
                 Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
