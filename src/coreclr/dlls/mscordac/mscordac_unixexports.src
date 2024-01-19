@@ -18,6 +18,8 @@ IID_ICLRDataTarget
 IID_ICorDebugDataTarget4
 IID_ICLRDataEnumMemoryRegionsCallback
 nativeStringResourceTable_mscorrc
+minipal_get_length_utf16_to_utf8
+minipal_convert_utf16_to_utf8
 
 ; All the # exports are prefixed with DAC_
 #PAL_CatchHardwareExceptionHolderEnter

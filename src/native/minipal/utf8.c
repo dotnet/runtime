@@ -2074,6 +2074,9 @@ size_t minipal_get_length_utf8_to_utf16(const char* source, size_t sourceLength,
     return GetCharCount(&enc, (unsigned char*)source, sourceLength);
 }
 
+#ifdef HOST_UNIX
+__attribute__ ((visibility ("default")))
+#endif
 size_t minipal_get_length_utf16_to_utf8(const CHAR16_T* source, size_t sourceLength, unsigned int flags)
 {
     errno = 0;
@@ -2121,6 +2124,9 @@ size_t minipal_convert_utf8_to_utf16(const char* source, size_t sourceLength, CH
     return ret;
 }
 
+#ifdef HOST_UNIX
+__attribute__ ((visibility ("default")))
+#endif
 size_t minipal_convert_utf16_to_utf8(const CHAR16_T* source, size_t sourceLength, char* destination, size_t destinationLength, unsigned int flags)
 {
     size_t ret;
