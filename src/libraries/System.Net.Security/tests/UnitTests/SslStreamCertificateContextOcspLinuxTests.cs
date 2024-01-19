@@ -67,7 +67,7 @@ public class SslStreamCertificateContextOcspLinuxTests
     {
         await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
         {
-            intermediate.RevocationExpiration = DateTimeOffset.UtcNow;
+            intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddMinutes(-5);
 
             SslStreamCertificateContext ctx = ctxFactory(false);
             byte[] ocsp = await ctx.GetOcspResponseAsync();
