@@ -35,6 +35,8 @@
   <ItemGroup>
     <_pastShimFiles Include="System.Globalization.Native.dylib" />
     <_pastShimFiles Include="System.Globalization.Native.so" />
+    <_pastShimFiles Include="System.HybridGlobalization.Native.dylib" />
+    <_pastShimFiles Include="System.HybridGlobalization.Native.so" />
     <_pastShimFiles Include="System.IO.Compression.Native.a" />
     <_pastShimFiles Include="System.IO.Compression.Native.dylib" />
     <_pastShimFiles Include="System.IO.Compression.Native.so" />
@@ -80,6 +82,9 @@
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.HybridGlobalization.Native.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.HybridGlobalization.Native.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.HybridGlobalization.Native.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.IO.Compression.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.IO.Compression.Native.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.IO.Compression.Native.so" IsNative="true" />

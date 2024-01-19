@@ -12,9 +12,12 @@ namespace System.Globalization
             /// the GlobalizationMode.Invariant check. Globalization P/Invokes, e.g. in CompareInfo.GetSortKey,
             /// rely on ICU already being loaded before they are called.
             /// </summary>
-#if !TARGET_MACCATALYST && !TARGET_IOS && !TARGET_TVOS
             static Settings()
             {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                   return;
+#endif
                 // Use GlobalizationMode.Invariant to allow ICU initialization to be trimmed when Invariant=true
                 // and PredefinedCulturesOnly is unspecified.
                 if (!GlobalizationMode.Invariant)
@@ -33,7 +36,6 @@ namespace System.Globalization
                     }
                 }
             }
-#endif
 
             private static string GetIcuLoadFailureMessage()
             {

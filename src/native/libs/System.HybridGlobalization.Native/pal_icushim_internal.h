@@ -21,7 +21,11 @@
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
-
+#if defined(APPLE_HYBRID_GLOBALIZATION)
+#include <unicode/uchar.h>
+#include <unicode/uidna.h>
+#include <unicode/utypes.h>
+#else
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>
@@ -42,6 +46,7 @@
 #include <unicode/urename.h>
 #include <unicode/ustring.h>
 
+#endif
 #endif
 
 #elif defined(TARGET_WINDOWS)
@@ -347,3 +352,35 @@ const char* GlobalizationNative_GetICUDataPathFallback(void);
 #endif
 
 #endif // !defined(STATIC_ICU)
+#if defined(APPLE_HYBRID_GLOBALIZATION)
+/**
+ * Append a code point to a string, overwriting 1 or 2 code units.
+ * The offset points to the current end of the string contents
+ * and is advanced (post-increment).
+ * "Safe" macro, checks for a valid code point.
+ * Converts code points outside of Basic Multilingual Plane into
+ * corresponding surrogate pairs if sufficient space in the string.
+ * High surrogate range: 0xD800 - 0xDBFF 
+ * Low surrogate range: 0xDC00 - 0xDFFF
+ * If the code point is not valid or a trail surrogate does not fit,
+ * then isError is set to true.
+ *
+ * @param buffer const uint16_t * string buffer
+ * @param offset string offset, must be offset<capacity
+ * @param capacity size of the string buffer
+ * @param codePoint code point to append
+ * @param isError output bool set to true if an error occurs, otherwise not modified
+ */
+#define Append(buffer, offset, capacity, codePoint, isError) { \
+    if ((offset) >= (capacity)) /* insufficiently sized destination buffer */ { \
+        (isError) = InsufficientBuffer; \
+    } else if ((uint32_t)(codePoint) > 0x10ffff) /* invalid code point */  { \
+        (isError) = InvalidCodePoint; \
+    } else if ((uint32_t)(codePoint) <= 0xffff) { \
+        (buffer)[(offset)++] = (uint16_t)(codePoint); \
+    } else { \
+        (buffer)[(offset)++] = (uint16_t)(((codePoint) >> 10) + 0xd7c0); \
+        (buffer)[(offset)++] = (uint16_t)(((codePoint)&0x3ff) | 0xdc00); \
+    } \
+}
+#endif

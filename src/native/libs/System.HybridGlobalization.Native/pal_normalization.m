@@ -88,4 +88,3 @@ int32_t GlobalizationNative_NormalizeStringNative(NormalizationForm normalizatio
     }
 }
 #endif
-

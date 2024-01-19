@@ -143,6 +143,7 @@ else()
         coreclr_static
 
         System.Globalization.Native-Static
+        System.HybridGlobalization.Native-Static
         System.IO.Compression.Native-Static
         System.Net.Security.Native-Static
         System.Native-Static

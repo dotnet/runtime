@@ -86,6 +86,7 @@ jobs:
       - src/libraries/System.Private.CoreLib/*
       - src/native/libs/Common/*
       - src/native/libs/System.Globalization.Native/*
+      - src/native/libs/System.HybridGlobalization.Native/*
       - src/native/libs/System.IO.Compression.Native/*
       exclude:
       - eng/Version.Details.xml
@@ -109,6 +110,7 @@ jobs:
       - src/libraries/System.Private.CoreLib/*
       - src/native/libs/Common/*
       - src/native/libs/System.Globalization.Native/*
+      - src/native/libs/System.HybridGlobalization.Native/*
       - src/native/libs/System.IO.Compression.Native/*
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}

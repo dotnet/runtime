@@ -22,6 +22,7 @@ namespace
 #define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
 #else
 #define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
+#define HYBRID_GLOBALIZATION_DLL_NAME "libSystem.HybridGlobalization.Native"
 #endif
 
 // here we handle PInvokes whose implementation is always statically linked (even in .so/.dll case)
@@ -30,6 +31,11 @@ static const void* DefaultResolveDllImport(const char* libraryName, const char* 
     if (strcmp(libraryName, GLOBALIZATION_DLL_NAME) == 0)
     {
         return GlobalizationResolveDllImport(entrypointName);
+    }
+    // Add hybrid globalization here
+    if (strcmp(libraryName, HYBRID_GLOBALIZATION_DLL_NAME) == 0)
+    {
+        return HybridGlobalizationResolveDllImport(entrypointName);
     }
 
     return nullptr;

@@ -16,7 +16,7 @@
     <_UsePThreads />
     <_UsePThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'"> usepthreads</_UsePThreads>
 
-    <_IcuDir Condition="'$(TargetsAppleMobile)' != 'true' and '$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
+    <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
     <_IcuDirArg Condition="'$(_IcuDir)' != ''"> icudir "$(_IcuDir)"</_IcuDirArg>
 
     <_BuildNativeArgs>$(_BuildNativeArgs)$(_IcuDirArg)$(_UsePThreads)</_BuildNativeArgs>
@@ -55,7 +55,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_IcuArtifacts Condition="'$(_IcuDir)' != '' and '$(TargetsAppleMobile)' != 'true'"
+      <_IcuArtifacts Condition="'$(_IcuDir)' != ''"
                      Include="$(_IcuDir)/lib/libicuuc.a;
                               $(_IcuDir)/lib/libicui18n.a;
                               $(_IcuDir)/lib/libicudata.a;
