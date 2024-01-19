@@ -18,13 +18,13 @@ namespace System.Collections.Generic
         }
 
         public KeyNotFoundException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_KeyNotFound)
         {
             HResult = HResults.COR_E_KEYNOTFOUND;
         }
 
         public KeyNotFoundException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_KeyNotFound, innerException)
         {
             HResult = HResults.COR_E_KEYNOTFOUND;
         }
