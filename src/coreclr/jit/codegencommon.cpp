@@ -4475,8 +4475,8 @@ void CodeGen::genCheckUseBlockInit()
     // Block init algorithm needs SIMD instructions
     genUseBlockInit = 0;
 #elif defined(TARGET_64BIT)
-    genUseBlockInit = (genInitStkLclCnt > 8);
-#else // !TARGET_64BIT && !TARGET_XARCH
+    genUseBlockInit        = (genInitStkLclCnt > 8);
+#else  // !TARGET_64BIT && !TARGET_XARCH
     genUseBlockInit = (genInitStkLclCnt > 4);
 #endif // !defined(TARGET_64BIT)
 
