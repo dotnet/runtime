@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JSImportGenerator.Unit.Tests", "tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj", "{BFED925C-18F2-4C98-833E-66F205234598}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.JavaScript.Legacy.Tests", "tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\System.Runtime.InteropServices.JavaScript.Legacy.Tests.csproj", "{ABA5A92B-CAD8-47E8-A7CE-D28A67FB69C0}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.JavaScript.Tests", "tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj", "{765B4AA5-723A-44FF-BC4E-EB0F03103F6D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{FB12C247-AFEF-4772-BB0C-983969B6CF32}"
