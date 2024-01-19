@@ -27,7 +27,7 @@ namespace AppHost.Bundle.Tests
         {
             var singleFile = sharedTestState.App.Bundle();
 
-            // Create the servicing directory, and copy the servived DLL from service fixture to the servicing directory.
+            // Create the servicing directory, and copy the serviced DLL from service fixture to the servicing directory.
             var serviced = sharedTestState.ServicedLibrary;
             var serviceBasePath = Path.Combine(sharedTestState.App.Location, "coreservicing");
             var servicePath = Path.Combine(serviceBasePath, "pkgs", serviced.Name, "1.0.0");
