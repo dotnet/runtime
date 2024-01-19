@@ -191,12 +191,22 @@ namespace ILCompiler.ObjectWriter
                 }
                 else
                 {
-                    if (addend != 0)
+                    if (relocType is IMAGE_REL_BASED_THUMB_MOV32_PCREL)
+                    {
+                        long inlineValue = Relocation.ReadValue(relocType, (void*)pData);
+                        addend += inlineValue;
+                        Debug.Assert(addend >= short.MinValue && addend <= short.MaxValue);
+                        // This expands into two relocations where each of them has to have the
+                        // same base 16-bit addend + PC difference between the two instructions.
+                        addend = (long)((((uint)(addend + 4) & 0xffff) << 16) + (ushort)addend);
+                        Relocation.WriteValue(relocType, (void*)pData, addend);
+                    }
+                    else if (addend != 0)
                     {
                         long inlineValue = Relocation.ReadValue(relocType, (void*)pData);
                         Relocation.WriteValue(relocType, (void*)pData, inlineValue + addend);
-                        addend = 0;
                     }
+                    addend = 0;
                 }
             }
 
