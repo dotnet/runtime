@@ -1643,6 +1643,9 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			}
 			break;
 		}
+		case ArgOnStackR4:
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, RISCV_SP, ainfo->offset, arg->dreg);
+			break;
 		case ArgOnStackR8:
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, RISCV_SP, ainfo->offset, arg->dreg);
 			break;
@@ -2111,6 +2114,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			ins->inst_offset = -offset;
 			break;
 		case ArgOnStack:
+		case ArgOnStackR4:
+		case ArgOnStackR8:
 		case ArgVtypeOnStack:
 			/* These are in the parent frame */
 			g_assert (ainfo->offset >= 0);
@@ -2157,6 +2162,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			// 	offset += 8;
 			// 	break;
 			// }
+
 
 			/* The vtype address is in a register, will be copied to the stack in the prolog */
 			MONO_INST_NEW (cfg, vtaddr, 0);
@@ -3981,6 +3987,8 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				// }
 				break;
 			case ArgOnStack:
+			case ArgOnStackR4:
+			case ArgOnStackR8:
 			case ArgVtypeOnStack:
 			case ArgVtypeByRefOnStack:
 				break;
