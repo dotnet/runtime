@@ -86,9 +86,12 @@ namespace System.Reflection.Emit.Tests
             using (var stream = new MemoryStream())
             {
                 AssemblySaveTools.WriteAssemblyToStream(s_assemblyName, types, stream);
-                Assembly assemblyFromStream = AssemblySaveTools.LoadAssemblyFromStream(stream);
 
-                AssertTypesAndTypeMembers(types, assemblyFromStream.Modules.First().GetTypes());
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromStream = mlc.LoadFromStream(stream);
+                    AssertTypesAndTypeMembers(types, assemblyFromStream.Modules.First().GetTypes());
+                }
             }
         }
 

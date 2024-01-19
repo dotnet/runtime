@@ -45,6 +45,7 @@ namespace System.Reflection.Emit
         public static AssemblyBuilder DefinePersistedAssembly(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes = null)
         {
             ArgumentNullException.ThrowIfNull(name);
+            ArgumentException.ThrowIfNullOrEmpty(name.Name, "AssemblyName.Name");
             ArgumentNullException.ThrowIfNull(coreAssembly);
 
             Type assemblyType = Type.GetType("System.Reflection.Emit.AssemblyBuilderImpl, System.Reflection.Emit", throwOnError: true)!;
@@ -55,9 +56,9 @@ namespace System.Reflection.Emit
         protected abstract ModuleBuilder? GetDynamicModuleCore(string name);
 
         /// <summary>
-        /// Serializes the assembly to stream.
+        /// Serializes the assembly to <see cref="Stream"/>.
         /// </summary>
-        /// <param name="stream">The stream to which the assembly serialized.</param>
+        /// <param name="stream">The <see cref="Stream"/> to which the assembly serialized.</param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> is null.</exception>
         /// <exception cref="NotSupportedException">The AssemblyBuilder instance doesn't support saving.</exception>
         public void Save(Stream stream) => SaveCore(stream);
@@ -77,7 +78,7 @@ namespace System.Reflection.Emit
         }
 
         /// <summary>
-        /// When implemented in derived type serializer the assembly to stream.
+        /// When implemented in a derived type, serializes the assembly to a stream.
         /// </summary>
         /// <param name="stream">The stream to which the assembly serialized.</param>
         protected virtual void SaveCore(Stream stream) => throw new NotSupportedException(SR.NotSupported_AssemblySave);

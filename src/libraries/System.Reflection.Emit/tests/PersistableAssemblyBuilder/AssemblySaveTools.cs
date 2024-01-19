@@ -71,9 +71,6 @@ namespace System.Reflection.Emit.Tests
         internal static AssemblyBuilder PopulateAssemblyBuilder(AssemblyName assemblyName, List<CustomAttributeBuilder>? assemblyAttributes = null) =>
             AssemblyBuilder.DefinePersistedAssembly(assemblyName, CoreMetadataAssemblyResolver.s_coreAssembly, assemblyAttributes);
 
-        internal static Assembly LoadAssemblyFromStream(Stream stream) =>
-            new MetadataLoadContext(new CoreMetadataAssemblyResolver()).LoadFromStream(stream);
-
         internal static void AssertAssemblyNameAndModule(AssemblyName sourceAName, AssemblyName aNameFromDisk, Module moduleFromDisk)
         {
             // Runtime assemblies adding AssemblyNameFlags.PublicKey in Assembly.GetName() overloads

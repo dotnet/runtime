@@ -21,11 +21,7 @@ namespace System.Reflection.Emit
 
         internal AssemblyBuilderImpl(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes = null)
         {
-            name = (AssemblyName)name.Clone();
-
-            ArgumentException.ThrowIfNullOrEmpty(name.Name, "AssemblyName.Name");
-
-            _assemblyName = name;
+            _assemblyName = (AssemblyName)name.Clone();
             _coreAssembly = coreAssembly;
             _metadataBuilder = new MetadataBuilder();
 
