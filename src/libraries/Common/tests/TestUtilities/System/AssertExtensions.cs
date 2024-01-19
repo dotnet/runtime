@@ -663,6 +663,126 @@ namespace System
             }
         }
 
+        static unsafe bool IsNegativeZero(float value)
+        {
+            return (*(uint*)(&value)) == 0x80000000;
+        }
+
+        static unsafe bool IsPositiveZero(float value)
+        {
+            return (*(uint*)(&value)) == 0x00000000;
+        }
+
+        static unsafe bool IsNegativeZero(double value)
+        {
+            return (*(ulong*)(&value)) == 0x8000000000000000;
+        }
+
+        static unsafe bool IsPositiveZero(double value)
+        {
+            return (*(ulong*)(&value)) == 0x0000000000000000;
+        }
+
+#if NET6_0_OR_GREATER
+        static unsafe bool IsNegativeZero(Half value)
+        {
+            return (*(ushort*)(&value)) == 0x8000;
+        }
+
+        static unsafe bool IsPositiveZero(Half value)
+        {
+            return (*(ushort*)(&value)) == 0x0000;
+        }
+#endif
+
+        // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
+        // but also NaN and +-infinity) are correctly and consistently represented.
+        static string ToStringPadded(float value)
+        {
+            if (float.IsNaN(value))
+            {
+                return "NaN".PadLeft(10);
+            }
+            else if (float.IsPositiveInfinity(value))
+            {
+                return "+\u221E".PadLeft(10);
+            }
+            else if (float.IsNegativeInfinity(value))
+            {
+                return "-\u221E".PadLeft(10);
+            }
+            else if (IsNegativeZero(value))
+            {
+                return "-0.0".PadLeft(10);
+            }
+            else if (IsPositiveZero(value))
+            {
+                return "+0.0".PadLeft(10);
+            }
+            else
+            {
+                return $"{value,10:G9}";
+            }
+        }
+
+        static string ToStringPadded(double value)
+        {
+            if (double.IsNaN(value))
+            {
+                return "NaN".PadLeft(20);
+            }
+            else if (double.IsPositiveInfinity(value))
+            {
+                return "+\u221E".PadLeft(20);
+            }
+            else if (double.IsNegativeInfinity(value))
+            {
+                return "-\u221E".PadLeft(20);
+            }
+            else if (IsNegativeZero(value))
+            {
+                return "-0.0".PadLeft(20);
+            }
+            else if (IsPositiveZero(value))
+            {
+                return "+0.0".PadLeft(20);
+            }
+            else
+            {
+                return $"{value,20:G17}";
+            }
+        }
+
+#if NET6_0_OR_GREATER
+        static string ToStringPadded(Half value)
+        {
+            if (Half.IsNaN(value))
+            {
+                return "NaN".PadLeft(5);
+            }
+            else if (Half.IsPositiveInfinity(value))
+            {
+                return "+\u221E".PadLeft(5);
+            }
+            else if (Half.IsNegativeInfinity(value))
+            {
+                return "-\u221E".PadLeft(5);
+            }
+            else if (IsNegativeZero(value))
+            {
+                return "-0.0".PadLeft(5);
+            }
+            else if (IsPositiveZero(value))
+            {
+                return "+0.0".PadLeft(5);
+            }
+            else
+            {
+                return $"{value,5:G5}";
+            }
+        }
+#endif
+
         /// <summary>Verifies that two <see cref="double"/> values are equal, within the <paramref name="allowedVariance"/>.</summary>
         /// <param name="expected">The expected value</param>
         /// <param name="actual">The value to be compared against</param>
@@ -773,46 +893,6 @@ namespace System
             if (delta > variance)
             {
                 throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
-            }
-
-            static unsafe bool IsNegativeZero(double value)
-            {
-                return (*(ulong*)(&value)) == 0x8000000000000000;
-            }
-
-            static unsafe bool IsPositiveZero(double value)
-            {
-                return (*(ulong*)(&value)) == 0x0000000000000000;
-            }
-
-            // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
-            // but also NaN and +-infinity) are correctly and consistently represented.
-            static string ToStringPadded(double value)
-            {
-                if (double.IsNaN(value))
-                {
-                    return "NaN".PadLeft(20);
-                }
-                else if (double.IsPositiveInfinity(value))
-                {
-                    return "+\u221E".PadLeft(20);
-                }
-                else if (double.IsNegativeInfinity(value))
-                {
-                    return "-\u221E".PadLeft(20);
-                }
-                else if (IsNegativeZero(value))
-                {
-                    return "-0.0".PadLeft(20);
-                }
-                else if (IsPositiveZero(value))
-                {
-                    return "+0.0".PadLeft(20);
-                }
-                else
-                {
-                    return $"{value,20:G17}";
-                }
             }
         }
 
@@ -926,46 +1006,6 @@ namespace System
             if (delta > variance)
             {
                 throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
-            }
-
-            static unsafe bool IsNegativeZero(float value)
-            {
-                return (*(uint*)(&value)) == 0x80000000;
-            }
-
-            static unsafe bool IsPositiveZero(float value)
-            {
-                return (*(uint*)(&value)) == 0x00000000;
-            }
-
-            // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
-            // but also NaN and +-infinity) are correctly and consistently represented.
-            static string ToStringPadded(float value)
-            {
-                if (float.IsNaN(value))
-                {
-                    return "NaN".PadLeft(10);
-                }
-                else if (float.IsPositiveInfinity(value))
-                {
-                    return "+\u221E".PadLeft(10);
-                }
-                else if (float.IsNegativeInfinity(value))
-                {
-                    return "-\u221E".PadLeft(10);
-                }
-                else if (IsNegativeZero(value))
-                {
-                    return "-0.0".PadLeft(10);
-                }
-                else if (IsPositiveZero(value))
-                {
-                    return "+0.0".PadLeft(10);
-                }
-                else
-                {
-                    return $"{value,10:G9}";
-                }
             }
         }
 
@@ -1081,46 +1121,50 @@ namespace System
             {
                 throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
+        }
+#endif
 
-            static unsafe bool IsNegativeZero(Half value)
+        public static void Equal(double expected, double actual)
+        {
+            if (BitConverter.DoubleToInt64Bits(expected) == BitConverter.DoubleToInt64Bits(actual))
             {
-                return (*(ushort*)(&value)) == 0x8000;
+                return;
             }
 
-            static unsafe bool IsPositiveZero(Half value)
+            throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+        }
+
+        public static void Equal(float expected, float actual)
+        {
+            if (BitConverter.SingleToInt32Bits(expected) == BitConverter.SingleToInt32Bits(actual))
             {
-                return (*(ushort*)(&value)) == 0x0000;
+                return;
             }
 
-            // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
-            // but also NaN and +-infinity) are correctly and consistently represented.
-            static string ToStringPadded(Half value)
+            if (PlatformDetection.IsRiscV64Process && float.IsNaN(expected) && float.IsNaN(actual))
             {
-                if (Half.IsNaN(value))
-                {
-                    return "NaN".PadLeft(5);
-                }
-                else if (Half.IsPositiveInfinity(value))
-                {
-                    return "+\u221E".PadLeft(5);
-                }
-                else if (Half.IsNegativeInfinity(value))
-                {
-                    return "-\u221E".PadLeft(5);
-                }
-                else if (IsNegativeZero(value))
-                {
-                    return "-0.0".PadLeft(5);
-                }
-                else if (IsPositiveZero(value))
-                {
-                    return "+0.0".PadLeft(5);
-                }
-                else
-                {
-                    return $"{value,5:G5}";
-                }
+                // RISC-V does not preserve payload
+                return;
             }
+
+            throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+        }
+
+#if NET6_0_OR_GREATER
+        public static void Equal(Half expected, Half actual)
+        {
+            if (BitConverter.HalfToUInt16Bits(expected) == BitConverter.HalfToUInt16Bits(actual))
+            {
+                return;
+            }
+
+            if (PlatformDetection.IsRiscV64Process && Half.IsNaN(expected) && Half.IsNaN(actual))
+            {
+                // RISC-V does not preserve payload
+                return;
+            }
+
+            throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
         }
 #endif
     }

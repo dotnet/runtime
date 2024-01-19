@@ -400,14 +400,6 @@ namespace System.Tests
                 (BitConverter.UInt16BitsToHalf(0b1_00001_0000000000), BitConverter.Int32BitsToSingle(unchecked((int)0xB8800000))) // highest negative normal
             };
 
-            if (PlatformDetection.IsRiscV64Process) // RISC-V does not preserve payload
-            {
-                data[12] = (BitConverter.UInt16BitsToHalf(0b0_11111_1010101010),
-                                BitConverter.Int32BitsToSingle(0x7FC00000)); // Positive Signalling NaN
-                data[13] = (BitConverter.UInt16BitsToHalf(0b1_11111_1010101010),
-                                BitConverter.Int32BitsToSingle(unchecked((int)0xFFC00000))); // Negative Signalling NaN
-            }
-
             foreach ((Half original, float expected) in data)
             {
                 yield return new object[] { original, expected };
@@ -419,7 +411,7 @@ namespace System.Tests
         public static void ExplicitConversion_ToSingle(Half value, float expected) // Check the underlying bits for verifying NaNs
         {
             float f = (float)value;
-            Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(f));
+            AssertExtensions.Equal(expected, f);
         }
 
         public static IEnumerable<object[]> ExplicitConversion_ToDouble_TestData()
@@ -474,7 +466,7 @@ namespace System.Tests
         public static void ExplicitConversion_ToDouble(Half value, double expected) // Check the underlying bits for verifying NaNs
         {
             double d = (double)value;
-            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(d));
+            AssertExtensions.Equal(expected, d);
         }
 
         // ---------- Start of To-half conversion tests ----------
@@ -551,14 +543,6 @@ namespace System.Tests
                 (BitConverter.Int32BitsToSingle(0x33000000), BitConverter.UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
             };
 
-            if (PlatformDetection.IsRiscV64Process) // RISC-V does not preserve payload
-            {
-                data[10] = (BitConverter.Int32BitsToSingle(unchecked((int)0xFFD55555)),
-                                BitConverter.UInt16BitsToHalf(0b1_11111_1000000000)); // Negative Signalling NaN
-                data[11] = (BitConverter.Int32BitsToSingle(0x7FD55555),
-                                BitConverter.UInt16BitsToHalf(0b0_11111_1000000000)); // Positive Signalling NaN
-            }
-
             foreach ((float original, Half expected) in data)
             {
                 yield return new object[] { original, expected };
@@ -570,7 +554,7 @@ namespace System.Tests
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)f;
-            Assert.Equal(BitConverter.HalfToUInt16Bits(expected), BitConverter.HalfToUInt16Bits(h));
+            AssertExtensions.Equal(expected, h);
         }
 
         public static IEnumerable<object[]> ExplicitConversion_FromDouble_TestData()
@@ -664,7 +648,7 @@ namespace System.Tests
         public static void ExplicitConversion_FromDouble(double d, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)d;
-            Assert.Equal(BitConverter.HalfToUInt16Bits(expected), BitConverter.HalfToUInt16Bits(h));
+            AssertExtensions.Equal(expected, h);
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
@@ -1121,7 +1105,7 @@ namespace System.Tests
         {
             float value = o_value is float floatValue ? floatValue : (float)(Half)o_value;
             Half result = Half.Parse(value.ToString());
-            Assert.Equal(BitConverter.HalfToUInt16Bits((Half)value), BitConverter.HalfToUInt16Bits(result));
+            AssertExtensions.Equal(value, result);
         }
 
         [Theory]
@@ -1130,7 +1114,7 @@ namespace System.Tests
         {
             float value = o_value is float floatValue ? floatValue : (float)(Half)o_value;
             Half result = Half.Parse(value.ToString("R"));
-            Assert.Equal(BitConverter.HalfToUInt16Bits((Half)value), BitConverter.HalfToUInt16Bits(result));
+            AssertExtensions.Equal(value, result);
         }
 
         public static IEnumerable<object[]> RoundTripFloat_CornerCases()
