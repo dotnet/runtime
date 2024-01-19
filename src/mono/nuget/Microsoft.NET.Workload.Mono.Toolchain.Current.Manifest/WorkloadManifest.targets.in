@@ -45,7 +45,6 @@
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Keep in sync with WasmApp.Native.targets -->
     <_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded Condition="
-        '$(WasmEnableLegacyJsInterop)' == 'false' or
         '$(WasmEnableSIMD)' == 'false' or
         '$(WasmEnableExceptionHandling)' == 'false' or
         '$(InvariantTimezone)' == 'true' or

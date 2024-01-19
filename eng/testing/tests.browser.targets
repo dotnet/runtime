@@ -33,7 +33,6 @@
                                     >true</InstallV8ForTests>
 
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasmBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
-    <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
@@ -46,21 +45,6 @@
   <PropertyGroup Condition="'$(TestTrimming)' == 'true'">
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local'">
-    <!--
-      When building for BuildAOTTestsOnHelix=true, the BrowserWasmApp.targets are *not* imported, because
-      they get instead used by the AOT proxy project on helix.
-
-      On the build machine only the regular part of the build is run, which includes trimming. But if
-      BrowserWasmApp.targets modify any trimming arguments, then those will not get picked up by this build.
-      For example - linker substitution files used with simd builds.
-
-      So, set those parameters explicitly here.
-      -->
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.LegacyJsInterop.xml"</_ExtraTrimmerArgs>
-  </PropertyGroup>
-
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
        for WBT, and debugger tests -->
