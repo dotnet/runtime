@@ -24,9 +24,9 @@ namespace System.Linq
 
             if (first is ICollection<TSource> firstCol && second is ICollection<TSource> secondCol)
             {
-                if (first is TSource[] firstArray && second is TSource[] secondArray)
+                if (first.TryGetSpan(out ReadOnlySpan<TSource> firstSpan) && second.TryGetSpan(out ReadOnlySpan<TSource> secondSpan))
                 {
-                    return ((ReadOnlySpan<TSource>)firstArray).SequenceEqual(secondArray, comparer);
+                    return firstSpan.SequenceEqual(secondSpan, comparer);
                 }
 
                 if (firstCol.Count != secondCol.Count)

@@ -2006,13 +2006,15 @@ struct NaturalLoopIterInfo
     // The local that is the induction variable.
     unsigned IterVar = BAD_VAR_NUM;
 
+#ifdef DEBUG
+    // Tree that initializes induction varaible outside the loop.
+    // Only valid if HasConstInit is true.
+    GenTree* InitTree = nullptr;
+#endif
+
     // Constant value that the induction variable is initialized with, outside
     // the loop. Only valid if HasConstInit is true.
     int ConstInitValue = 0;
-
-    // Block outside the loop that initializes the induction variable. Only
-    // valid if HasConstInit is true.
-    BasicBlock* InitBlock = nullptr;
 
     // Tree that has the loop test for the induction variable.
     GenTree* TestTree = nullptr;
@@ -2022,6 +2024,9 @@ struct NaturalLoopIterInfo
 
     // Tree that mutates the induction variable.
     GenTree* IterTree = nullptr;
+
+    // Is the loop exited when TestTree is true?
+    bool ExitedOnTrue : 1;
 
     // Whether or not we found an initialization of the induction variable.
     bool HasConstInit : 1;
@@ -2042,7 +2047,8 @@ struct NaturalLoopIterInfo
     bool HasArrayLengthLimit : 1;
 
     NaturalLoopIterInfo()
-        : HasConstInit(false)
+        : ExitedOnTrue(false)
+        , HasConstInit(false)
         , HasConstLimit(false)
         , HasSimdLimit(false)
         , HasInvariantLocalLimit(false)
@@ -2053,7 +2059,6 @@ struct NaturalLoopIterInfo
     int IterConst();
     genTreeOps IterOper();
     var_types IterOperType();
-    bool IsReversed();
     genTreeOps TestOper();
     bool IsIncreasingLoop();
     bool IsDecreasingLoop();
@@ -2062,6 +2067,9 @@ struct NaturalLoopIterInfo
     int ConstLimit();
     unsigned VarLimit();
     bool ArrLenLimit(Compiler* comp, ArrIndex* index);
+
+private:
+    bool IsReversed();
 };
 
 // Represents a natural loop in the flow graph. Natural loops are characterized
@@ -2136,7 +2144,9 @@ class FlowGraphNaturalLoop
 
     void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
     bool MatchLimit(NaturalLoopIterInfo* info, GenTree* test);
-
+    bool CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info);
+    template<typename T>
+    static bool EvaluateRelop(T op1, T op2, genTreeOps oper);
 public:
     BasicBlock* GetHeader() const
     {
@@ -3269,6 +3279,10 @@ public:
                                        GenTree*    op2,
                                        GenTree*    op3,
                                        GenTree*    op4,
+                                       CorInfoType simdBaseJitType,
+                                       unsigned    simdSize);
+    GenTree* gtNewSimdToScalarNode(var_types   type,
+                                       GenTree*    op1,
                                        CorInfoType simdBaseJitType,
                                        unsigned    simdSize);
 #endif // TARGET_XARCH
@@ -5344,6 +5358,8 @@ public:
     IL_OFFSET fgFindBlockILOffset(BasicBlock* block);
     void fgFixEntryFlowForOSR();
 
+    void fgUpdateSingleReturnBlock(BasicBlock* block);
+
     BasicBlock* fgSplitBlockAtBeginning(BasicBlock* curr);
     BasicBlock* fgSplitBlockAtEnd(BasicBlock* curr);
     BasicBlock* fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt);
@@ -5807,6 +5823,7 @@ public:
 
     PhaseStatus fgExpandThreadLocalAccess();
     bool fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+    bool fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgExpandStaticInit();
     bool fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
@@ -6809,7 +6826,12 @@ public:
 
     void optFindLoops();
     void optFindNewLoops();
-    bool optCanonicalizeLoops(FlowGraphNaturalLoops* loops);
+    bool optCanonicalizeLoops();
+    bool optCompactLoops();
+    bool optCompactLoop(FlowGraphNaturalLoop* loop);
+    BasicBlock* optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* top);
+    BasicBlock* optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* insertionPoint, BasicBlock* top, BasicBlock* bottom);
+    bool optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
     void optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader);
 
@@ -7189,7 +7211,6 @@ private:
                            var_types  iterType,
                            genTreeOps testOper,
                            bool       unsignedTest,
-                           bool       dupCond,
                            unsigned*  iterCount);
 
 protected:

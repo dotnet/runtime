@@ -161,7 +161,11 @@ DEFINE_INT(jiterpreter_table_size, "jiterpreter-table-size", 6 * 1024, "Size of 
 DEFINE_INT(jiterpreter_aot_table_size, "jiterpreter-aot-table-size", 3 * 1024, "Size of the jiterpreter AOT trampoline function tables")
 #endif // HOST_BROWSER
 
+#if defined(TARGET_WASM) || defined(TARGET_IOS)  || defined(TARGET_TVOS) || defined (TARGET_MACCAT)
 DEFINE_BOOL_READONLY(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", TRUE, "Use a mrgctx for all gshared methods")
+#else
+DEFINE_BOOL(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", FALSE, "Use a mrgctx for all gshared methods")
+#endif
 
 #if defined(TARGET_WASI)
 DEFINE_BOOL_READONLY(llvm_emulate_unwind, "emulate-unwind", TRUE, "")

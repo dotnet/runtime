@@ -2255,6 +2255,12 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         }
     }
 
+    // Indicate if it's the single return block
+    if (block == genReturnBB)
+    {
+        printf(" one-return");
+    }
+
     printf("\n");
 }
 
@@ -3186,6 +3192,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     if (genReturnBB != nullptr)
     {
         assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->bbStmtList != nullptr);
+        assert(genReturnBB->KindIs(BBJ_RETURN));
     }
 
     // If this is an inlinee, we're done checking.
