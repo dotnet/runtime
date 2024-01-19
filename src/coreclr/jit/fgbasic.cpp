@@ -6606,9 +6606,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
             }
         }
 
-        // Look for an insert location:
-        // 1. We want blocks that don't end with a fall through,
-        // 2. Also, when blk equals nearBlk we may want to insert here.
+        // Look for an insert location. We want blocks that don't end with a fall through.
         // Quirk: Manually check for BBJ_COND fallthrough behavior
         const bool blkFallsThrough =
             blk->bbFallsThrough() && (!blk->KindIs(BBJ_COND) || blk->NextIs(blk->GetFalseTarget()));
