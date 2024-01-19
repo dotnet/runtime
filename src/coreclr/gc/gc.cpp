@@ -49132,11 +49132,6 @@ Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t 
                 // end of the allocated space.
                 newAlloc = (Object*)freeobj;
                 freeobj = (CObjectHeader*)((uint8_t*)freeobj + Align(size));
-                if (flags & GC_ALLOC_ZEROING_OPTIONAL)
-                {
-                    // clean the syncblock of the free object.
-                    *(((PTR_PTR)freeobj)-1) = 0;
-                }
             }
             else
             {
