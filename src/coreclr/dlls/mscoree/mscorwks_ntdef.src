@@ -72,7 +72,6 @@ EXPORTS
         mono_method_get_name
         mono_method_signature
         mono_runtime_invoke
-        mono_runtime_invoke_with_nested_object
         mono_set_assemblies_path
         mono_set_assemblies_path_null_separated
         mono_set_dirs
