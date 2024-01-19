@@ -7802,8 +7802,6 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
     BOOL fIntercepted = pThread->GetExceptionState()->GetFlags()->DebuggerInterceptInfo();
     _ASSERTE(fIntercepted);
 
-    ExInfo::PopExInfos(pThread, (void*)targetSp);
-
     // retrieve the interception information
     MethodDesc *pInterceptMD = NULL;
     StackFrame sfInterceptStackFrame;
@@ -7811,6 +7809,8 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
     ULONG_PTR   ulRelOffset;
 
     pThread->GetExceptionState()->GetDebuggerState()->GetDebuggerInterceptInfo(&pInterceptMD, NULL, (PBYTE*)&(sfInterceptStackFrame.SP), &ulRelOffset, NULL);
+
+    ExInfo::PopExInfos(pThread, (void*)targetSp);
 
     PCODE pStartAddress = pInterceptMD->GetNativeCode();
 
@@ -8239,6 +8239,11 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
 #else
         CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
 #endif
+    }
+
+    while ((pFrame != FRAME_TOP) && (pFrame < (void*)GetSP(pStackwalkCtx)))
+    {
+        pFrame = pFrame->PtrNextFrame();
     }
 
     REGDISPLAY* pRD = &pExInfo->m_regDisplay;

@@ -349,7 +349,7 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     // m_exContext.ContextFlags = CONTEXT_FLOATING_POINT;
     // ClrCaptureContext(&m_exContext);
     //m_exContext.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | (m_exContext.ContextFlags & CONTEXT_EXCEPTION_ACTIVE);
-    m_exContext.ContextFlags = m_exContext.ContextFlags & (CONTEXT_ALL | CONTEXT_EXCEPTION_ACTIVE);
+    m_exContext.ContextFlags = m_exContext.ContextFlags & (CONTEXT_FULL | CONTEXT_EXCEPTION_ACTIVE);
 }
 
 #if defined(TARGET_UNIX)
