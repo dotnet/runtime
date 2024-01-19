@@ -1789,7 +1789,7 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
     BEGIN_DYNAMIC_HELPER_EMIT(48);
 
-    const IntReg RegR0 = 0, RegT0 = 5, RegA2 = 12, RegA3 = 1;
+    const IntReg RegR0 = 0, RegT0 = 5, RegA2 = 12, RegA3 = 13;
 
     *(DWORD*)p = UTypeInstr(0x17, RegT0, 0);// auipc t0, 0
     p += 4;
@@ -1797,7 +1797,7 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
     p += 4;
     *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA3, RegT0, 32);// ld a3,32(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 40);;// ld t0,40(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 40);// ld t0,40(t0)
     p += 4;
     *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegT0, 0);// jalr x0, 0(t0)
     p += 4;
