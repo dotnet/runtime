@@ -895,7 +895,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 // fgCanCompactBlocks: Determine if a block and its bbNext successor can be compacted.
 //
 // Arguments:
-//    block - block to check. If nullptr, return false.
+//    block - block to check. Cannot be nullptr.
 //    bNext - bbNext of `block`. If nullptr, return false.
 //
 // Returns:
@@ -903,11 +903,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 //
 bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 {
-    if ((block == nullptr) || (bNext == nullptr))
-    {
-        return false;
-    }
-
+    assert(block != nullptr);
     assert(block->NextIs(bNext));
 
     if (!block->KindIs(BBJ_ALWAYS) || !block->TargetIs(bNext) || block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
