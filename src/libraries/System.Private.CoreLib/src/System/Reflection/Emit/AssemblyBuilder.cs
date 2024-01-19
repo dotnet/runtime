@@ -48,13 +48,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(coreAssembly);
 
             Type assemblyType = Type.GetType("System.Reflection.Emit.AssemblyBuilderImpl, System.Reflection.Emit", throwOnError: true)!;
-            ConstructorInfo? con = assemblyType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [typeof(AssemblyName), typeof(Assembly), typeof(IEnumerable<CustomAttributeBuilder>)]);
-
-            if (con == null)
-            {
-                throw new NullReferenceException(SR.NullReference_AssemblyBuilderConstructor);
-            }
-
+            ConstructorInfo con = assemblyType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [typeof(AssemblyName), typeof(Assembly), typeof(IEnumerable<CustomAttributeBuilder>)])!;
             return (AssemblyBuilder)con.Invoke([name, coreAssembly, assemblyAttributes]);
         }
 
@@ -84,7 +78,7 @@ namespace System.Reflection.Emit
         /// When implemented in derived type serializer the assembly to stream.
         /// </summary>
         /// <param name="stream">The stream to which the assembly serialized.</param>
-        protected virtual void SaveCore(Stream stream) => throw new NotSupportedException("");
+        protected virtual void SaveCore(Stream stream) => throw new NotSupportedException(SR.NotSupported_AssemblySave);
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
