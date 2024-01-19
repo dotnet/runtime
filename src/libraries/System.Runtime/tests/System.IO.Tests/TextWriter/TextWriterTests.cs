@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -686,17 +689,31 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async Task CreateBroadcasting_DelegatesToAllWriters()
+        public void CreateBroadcasting_InvalidInputs_Throws()
         {
             AssertExtensions.Throws<ArgumentNullException>("writers", () => TextWriter.CreateBroadcasting(null));
-            AssertExtensions.Throws<ArgumentNullException>("writers", () => TextWriter.CreateBroadcasting(new TextWriter[] { null }));
-            AssertExtensions.Throws<ArgumentNullException>("writers", () => TextWriter.CreateBroadcasting(new TextWriter[] { new StringWriter(), null }));
-            AssertExtensions.Throws<ArgumentNullException>("writers", () => TextWriter.CreateBroadcasting(new TextWriter[] { null, new StringWriter() }));
+            AssertExtensions.Throws<ArgumentNullException>("writers", () => TextWriter.CreateBroadcasting([null]));
+            AssertExtensions.Throws<ArgumentNullException>("writers", () => TextWriter.CreateBroadcasting([new StringWriter(), null]));
+            AssertExtensions.Throws<ArgumentNullException>("writers", () => TextWriter.CreateBroadcasting([null, new StringWriter()]));
+        }
 
+        [Fact]
+        public void CreateBroadcasting_DefersToFirstWriterForProperties()
+        {
+            using TextWriter writer1 = new IndentedTextWriter(TextWriter.Null, "    ");
+            using TextWriter writer2 = new StreamWriter(Stream.Null, Encoding.UTF32);
+
+            Assert.Same(CultureInfo.InvariantCulture, TextWriter.CreateBroadcasting(writer1, writer2).FormatProvider);
+            Assert.Same(Encoding.UTF32, TextWriter.CreateBroadcasting(writer2, writer1).Encoding);
+        }
+
+        [Fact]
+        public async Task CreateBroadcasting_DelegatesToAllWriters()
+        {
             Assert.Same(TextWriter.Null, TextWriter.CreateBroadcasting());
 
-            StringWriter sw1 = new(), sw2 = new(), oracle = new();
-            TextWriter broadcasting = TextWriter.CreateBroadcasting(sw1, TextWriter.Null, sw2);
+            using StringWriter sw1 = new(), sw2 = new(), oracle = new();
+            using TextWriter broadcasting = TextWriter.CreateBroadcasting(sw1, TextWriter.Null, sw2);
 
             oracle.Write(true);
             broadcasting.Write(true);
@@ -863,6 +880,26 @@ namespace System.IO.Tests
             string expected = oracle.ToString();
             Assert.Equal(expected, sw1.ToString());
             Assert.Equal(expected, sw2.ToString());
+        }
+
+        [Fact]
+        public void CreateBroadcasting_AllMethodsOverridden()
+        {
+            HashSet<string> exempted = ["Close", "Dispose", "get_NewLine", "set_NewLine"];
+
+            HashSet<MethodInfo> baseMethods =
+                typeof(TextWriter)
+                .GetMethods(BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Instance)
+                .Where(m => m.IsVirtual)
+                .Where(m => !exempted.Contains(m.Name))
+                .ToHashSet();
+
+            foreach (MethodInfo derivedMethod in TextWriter.CreateBroadcasting(TextWriter.Null, TextWriter.Null).GetType().GetMethods(BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Instance))
+            {
+                baseMethods.Remove(derivedMethod.GetBaseDefinition());
+            }
+
+            Assert.Empty(baseMethods);
         }
 
         private sealed class TrackingTextWriter : TextWriter
