@@ -515,9 +515,9 @@ namespace System.Reflection.Emit.Tests
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Module m = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First();
-                Type[] type1Params = m.GetTypes()[2].GetGenericArguments();
+                Type[] type1Params = m.GetTypes()[0].GetGenericArguments();
                 Type[] type2Params = m.GetTypes()[1].GetGenericArguments();
-                Type[] type3Params = m.GetTypes()[0].GetGenericArguments();
+                Type[] type3Params = m.GetTypes()[2].GetGenericArguments();
 
                 Assert.Equal("U", type1Params[0].Name);
                 Assert.Empty(type1Params[0].GetTypeInfo().GetGenericParameterConstraints());
@@ -529,10 +529,10 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal("TOne", type3Params[0].Name);
                 Assert.Equal(nameof(EmptyTestClass), type3Params[0].GetTypeInfo().GetGenericParameterConstraints()[0].Name);
 
-                Type[] method11Params = m.GetTypes()[2].GetMethod("TwoParameters").GetGenericArguments();
-                Type[] method12Params = m.GetTypes()[2].GetMethod("FiveTypeParameters").GetGenericArguments();
+                Type[] method11Params = m.GetTypes()[0].GetMethod("TwoParameters").GetGenericArguments();
+                Type[] method12Params = m.GetTypes()[0].GetMethod("FiveTypeParameters").GetGenericArguments();
                 Assert.Equal(nameof(IMultipleMethod), method12Params[2].GetTypeInfo().GetGenericParameterConstraints()[0].Name);
-                Type[] method13Params = m.GetTypes()[2].GetMethod("OneParameter").GetGenericArguments();
+                Type[] method13Params = m.GetTypes()[0].GetMethod("OneParameter").GetGenericArguments();
                 Type[] method21Params = m.GetTypes()[1].GetMethod("TestMethod").GetGenericArguments();
                 
                 Assert.Equal("M", method11Params[0].Name);
