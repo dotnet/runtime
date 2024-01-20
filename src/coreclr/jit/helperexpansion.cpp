@@ -494,9 +494,14 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
         return result;
     }
 
+    //if (isNativeAOT)
+    //{
+    //    return result;
+    //}
+
     // TODO: Replace with opts.compCodeOpt once it's fixed
     const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
-    if (preferSize)
+    if (!isNativeAOT && preferSize)
     {
         // The optimization comes with a codegen size increase
         JITDUMP("Optimized for size - bail out.\n")
@@ -632,7 +637,12 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
             //
             GenTree* tls_get_addr_val =
                 gtNewIconHandleNode((size_t)threadStaticInfo.tlsGetAddrFtnPtr.handle, GTF_ICON_FTN_ADDR);
+            tls_get_addr_val->SetContained();
+
+            //GenTreeCall* tlsRefCall = gtNewCallNode(CT_ tls_get_addr_val, TYP_I_IMPL);
             GenTreeCall* tlsRefCall = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+            tlsRefCall->gtFlags |= GTF_TLS_GET_ADDR;
+                // //            
 
             // This is an indirect call which takes an argument.
             // Populate and set the ABI appropriately.

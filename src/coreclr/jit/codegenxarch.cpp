@@ -394,6 +394,9 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
 
+    // write a printf statement here to help debug problems with imm constant sizes
+
+
     emitAttr origAttr = size;
     if (!compiler->opts.compReloc)
     {
@@ -411,6 +414,10 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
         // instruction selection due to different memory placement at runtime.
         if (EA_IS_RELOC(origAttr) && genDataIndirAddrCanBeEncodedAsPCRelOffset(imm))
         {
+            if (EA_IS_CNS_TLSGD_RELOC(origAttr))
+            {
+                GetEmitter()->emitIns_Data16(1);
+            }
             if (!EA_IS_CNS_SEC_RELOC(origAttr))
             {
                 // We will use lea so displacement and not immediate will be relocatable
@@ -633,6 +640,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 else if (con->IsIconHandle(GTF_ICON_TLSGD_OFFSET))
                 {
                     attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
+                    //attr = (emitAttr)((unsigned)attr & ~EA_8BYTE);
+                    //attr = (emitAttr)((unsigned)attr | EA_2BYTE);
                 }
             }
 
@@ -6379,29 +6388,51 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
         else
         {
-            // We have already generated code for gtControlExpr evaluating it into a register.
-            // We just need to emit "call reg" in this case.
-            assert(genIsValidIntReg(target->GetRegNum()));
-
-            // For fast tailcalls this is happening in epilog, so we should
-            // have already consumed target in genCall.
-            if (!call->IsFastTailCall())
+            if (!compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (call->gtFlags & GTF_TLS_GET_ADDR) == 0)
             {
-                genConsumeReg(target);
+                // We have already generated code for gtControlExpr evaluating it into a register.
+                // We just need to emit "call reg" in this case.
+                assert(genIsValidIntReg(target->GetRegNum()));
+
+                // For fast tailcalls this is happening in epilog, so we should
+                // have already consumed target in genCall.
+                if (!call->IsFastTailCall())
+                {
+                    genConsumeReg(target);
+                }
+
+                // clang-format off
+                genEmitCall(emitter::EC_INDIR_R,
+                            methHnd,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            nullptr // addr
+                            X86_ARG(argSizeForEmitter),
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            di,
+                            target->GetRegNum(),
+                            call->IsFastTailCall());
+                // clang-format on
+            }
+            else
+            {
+                GetEmitter()->emitIns_Data16(1);
+                GetEmitter()->emitIns_Data16(1);
+
+                // clang-format off
+                genEmitCall(emitter::EC_FUNC_TOKEN,
+                            (CORINFO_METHOD_HANDLE)1,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            (void*)1 // addr
+                            X86_ARG(argSizeForEmitter),
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            di,
+                            target->GetRegNum(),
+                            call->IsFastTailCall());
+                // clang-format on
             }
 
-            // clang-format off
-            genEmitCall(emitter::EC_INDIR_R,
-                        methHnd,
-                        INDEBUG_LDISASM_COMMA(sigInfo)
-                        nullptr // addr
-                        X86_ARG(argSizeForEmitter),
-                        retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        di,
-                        target->GetRegNum(),
-                        call->IsFastTailCall());
-            // clang-format on
         }
     }
     else

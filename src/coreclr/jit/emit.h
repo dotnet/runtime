@@ -1572,6 +1572,15 @@ protected:
         }
 #endif
 
+        bool idIsCallAddr() const
+        {
+            return _idCallAddr != 0;
+        }
+        void idSetIsCallAddr()
+        {
+            _idCallAddr = 1;
+        }
+
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
         // code, it is not necessary to generate GC info for a call so labeled.
