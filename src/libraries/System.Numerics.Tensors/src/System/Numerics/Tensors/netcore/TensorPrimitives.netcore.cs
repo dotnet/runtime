@@ -2739,21 +2739,21 @@ namespace System.Numerics.Tensors
 
             if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && x.Length >= Vector512<T>.Count)
             {
+                Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
+
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 static Vector512<T> CreateVector512T(int i) =>
                     sizeof(T) == sizeof(long) ? Vector512.Create((long)i).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector512.Create(i).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector512.Create((short)i).As<short, T>() :
-                    sizeof(T) == sizeof(byte) ? Vector512.Create((byte)i).As<byte, T>() :
-                    throw new NotSupportedException();
+                    Vector512.Create((byte)i).As<byte, T>();
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector512<T> resultIndex =
                     sizeof(T) == sizeof(long) ? Vector512.Create(0L, 1, 2, 3, 4, 5, 6, 7).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31).As<short, T>() :
-                    sizeof(T) == sizeof(byte) ? Vector512.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63).As<byte, T>() :
-                    throw new NotSupportedException();
+                    Vector512.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63).As<byte, T>();
                 Vector512<T> currentIndex = resultIndex;
                 Vector512<T> increment = CreateVector512T(Vector512<T>.Count);
 
@@ -2808,10 +2808,9 @@ namespace System.Numerics.Tensors
                         if (nanMask != Vector512<T>.Zero)
                         {
                             int indexInVectorOfFirstMatch = IndexOfFirstMatch(nanMask);
-                            return
-                                sizeof(T) == sizeof(long) ? (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
-                                sizeof(T) == sizeof(int) ? (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch] :
-                                throw new NotSupportedException();
+                            return typeof(T) == typeof(double) ?
+                                (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
+                                (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch];
                         }
                     }
 
@@ -2824,21 +2823,21 @@ namespace System.Numerics.Tensors
 
             if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && x.Length >= Vector256<T>.Count)
             {
+                Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
+
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 static Vector256<T> CreateVector256T(int i) =>
                     sizeof(T) == sizeof(long) ? Vector256.Create((long)i).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector256.Create(i).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector256.Create((short)i).As<short, T>() :
-                    sizeof(T) == sizeof(byte) ? Vector256.Create((byte)i).As<byte, T>() :
-                    throw new NotSupportedException();
+                    Vector256.Create((byte)i).As<byte, T>();
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector256<T> resultIndex =
                     sizeof(T) == sizeof(long) ? Vector256.Create(0L, 1, 2, 3).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<short, T>() :
-                    sizeof(T) == sizeof(byte) ? Vector256.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31).As<byte, T>() :
-                    throw new NotSupportedException();
+                    Vector256.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31).As<byte, T>();
                 Vector256<T> currentIndex = resultIndex;
                 Vector256<T> increment = CreateVector256T(Vector256<T>.Count);
 
@@ -2893,10 +2892,9 @@ namespace System.Numerics.Tensors
                         if (nanMask != Vector256<T>.Zero)
                         {
                             int indexInVectorOfFirstMatch = IndexOfFirstMatch(nanMask);
-                            return
-                                sizeof(T) == sizeof(long) ? (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
-                                sizeof(T) == sizeof(int) ? (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch] :
-                                throw new NotSupportedException();
+                            return typeof(T) == typeof(double) ?
+                                (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
+                                (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch];
                         }
                     }
 
@@ -2909,21 +2907,21 @@ namespace System.Numerics.Tensors
 
             if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && x.Length >= Vector128<T>.Count)
             {
+                Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
+
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 static Vector128<T> CreateVector128T(int i) =>
                     sizeof(T) == sizeof(long) ? Vector128.Create((long)i).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector128.Create(i).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector128.Create((short)i).As<short, T>() :
-                    sizeof(T) == sizeof(byte) ? Vector128.Create((byte)i).As<byte, T>() :
-                    throw new NotSupportedException();
+                    Vector128.Create((byte)i).As<byte, T>();
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector128<T> resultIndex =
                     sizeof(T) == sizeof(long) ? Vector128.Create(0L, 1).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector128.Create(0, 1, 2, 3).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector128.Create(0, 1, 2, 3, 4, 5, 6, 7).As<short, T>() :
-                    sizeof(T) == sizeof(byte) ? Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<byte, T>() :
-                    throw new NotSupportedException();
+                    Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<byte, T>();
                 Vector128<T> currentIndex = resultIndex;
                 Vector128<T> increment = CreateVector128T(Vector128<T>.Count);
 
@@ -2978,10 +2976,9 @@ namespace System.Numerics.Tensors
                         if (nanMask != Vector128<T>.Zero)
                         {
                             int indexInVectorOfFirstMatch = IndexOfFirstMatch(nanMask);
-                            return
-                                sizeof(T) == sizeof(long) ? (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
-                                sizeof(T) == sizeof(int) ? (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch] :
-                                throw new NotSupportedException();
+                            return typeof(T) == typeof(double) ?
+                                (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
+                                (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch];
                         }
                     }
 
@@ -9820,6 +9817,10 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>y / x</summary>
+        /// <remarks>
+        /// This exists only to enable reusing InvokeSpanScalarIntoDestination. If we ever add an InvokeScalarSpanIntoDestination,
+        /// this can be deleted and the relevant call site can switch to using <see cref="DivideOperator{T}"/>.
+        /// </remarks>
         internal readonly struct InvertedDivideOperator<T> : IBinaryOperator<T> where T : IDivisionOperators<T, T, T>
         {
             public static bool Vectorizable => true;
