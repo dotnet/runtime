@@ -10,7 +10,7 @@ using Xunit;
 
 namespace InterlockedTest
 {
-    class Program
+    public unsafe class Program
     {
         private static int _errors = 0;
 
