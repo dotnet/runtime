@@ -4,10 +4,24 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Loader;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
+    class TestAssemblyLoadContext : AssemblyLoadContext
+    {
+        public TestAssemblyLoadContext() : base(isCollectible: true)
+        {
+        }
+
+        protected override Assembly? Load(AssemblyName name)
+        {
+            return null;
+        }
+    }
+
+
     internal static class AssemblySaveTools
     {
         private static readonly AssemblyName s_assemblyName = new AssemblyName("MyDynamicAssembly")
