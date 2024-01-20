@@ -6432,7 +6432,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                             di,
                             target->GetRegNum(),
-                            call->IsFastTailCall());
+                            call->IsFastTailCall(),
+                            true);
                 // clang-format on
             }
 
