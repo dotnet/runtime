@@ -98,6 +98,8 @@ public:
     // Initializes a standalone GC.
     static HRESULT InitializeStandaloneGC();
 
+    static void InitializeGCWithStashedEventStateChanges(IGCHeap* heap);
+
     // Records a change in eventing state. This ultimately will inform the GC that it needs to be aware
     // of new events being enabled.
     static void RecordEventStateChange(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level);

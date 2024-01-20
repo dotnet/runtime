@@ -137,6 +137,7 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
     if (initResult == S_OK)
     {
         g_pGCHeap = heap;
+        GCHeapUtilities::InitializeGCWithStashedEventStateChanges(heap);
         g_pGCHandleManager = manager;
         g_gcDacGlobals = &g_gc_dac_vars;
         LOG((LF_GC, LL_INFO100, "GC load successful\n"));
