@@ -48,8 +48,20 @@ namespace System.Threading
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte Exchange(ref byte location1, byte value)
+        {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+            return Exchange(ref location1, value); // Must expand intrinsic
+#else
+            if (Unsafe.IsNullRef(ref location1))
+                ThrowHelper.ThrowNullReferenceException();
+            return Exchange8(ref location1, value);
+#endif
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern byte Exchange(ref byte location1, byte value);
+        private static extern byte Exchange8(ref byte location1, byte value);
 
         /// <summary>Sets a 16-bit signed integer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
@@ -57,8 +69,20 @@ namespace System.Threading
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static short Exchange(ref short location1, short value)
+        {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+            return Exchange(ref location1, value); // Must expand intrinsic
+#else
+            if (Unsafe.IsNullRef(ref location1))
+                ThrowHelper.ThrowNullReferenceException();
+            return Exchange16(ref location1, value);
+#endif
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern short Exchange(ref short location1, short value);
+        private static extern short Exchange16(ref short location1, short value);
 
         /// <summary>Sets a 32-bit signed integer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
@@ -145,8 +169,20 @@ namespace System.Threading
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte CompareExchange(ref byte location1, byte value, byte comparand)
+        {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+            return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
+#else
+            if (Unsafe.IsNullRef(ref location1))
+                ThrowHelper.ThrowNullReferenceException();
+            return CompareExchange8(ref location1, value, comparand);
+#endif
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern byte CompareExchange(ref byte location1, byte value, byte comparand);
+        private static extern byte CompareExchange8(ref byte location1, byte value, byte comparand);
 
         /// <summary>Compares two 16-bit signed integers for equality and, if they are equal, replaces the first value.</summary>
         /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
@@ -155,8 +191,20 @@ namespace System.Threading
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static short CompareExchange(ref short location1, short value, short comparand)
+        {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+            return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
+#else
+            if (Unsafe.IsNullRef(ref location1))
+                ThrowHelper.ThrowNullReferenceException();
+            return CompareExchange16(ref location1, value, comparand);
+#endif
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern short CompareExchange(ref short location1, short value, short comparand);
+        private static extern short CompareExchange16(ref short location1, short value, short comparand);
 
         /// <summary>Compares two 32-bit signed integers for equality and, if they are equal, replaces the first value.</summary>
         /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>

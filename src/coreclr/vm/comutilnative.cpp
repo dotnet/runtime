@@ -71,8 +71,8 @@ FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
 
     PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
 
-	// Set a flag against the TES to indicate this is a foreign exception raise.
-	pCurTES->SetRaisingForeignException();
+    // Set a flag against the TES to indicate this is a foreign exception raise.
+    pCurTES->SetRaisingForeignException();
 }
 FCIMPLEND
 
