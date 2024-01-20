@@ -6416,14 +6416,17 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             }
             else
             {
+                GenTree* tlsGetAddr = (GenTree*)call->gtCallMethHnd;
+                
+                //printf("%x\n", arg1);
                 GetEmitter()->emitIns_Data16(1);
                 GetEmitter()->emitIns_Data16(1);
 
                 // clang-format off
                 genEmitCall(emitter::EC_FUNC_TOKEN,
-                            (CORINFO_METHOD_HANDLE)1,
+                            (CORINFO_METHOD_HANDLE)tlsGetAddr->AsIntCon()->gtIconVal,
                             INDEBUG_LDISASM_COMMA(sigInfo)
-                            (void*)1 // addr
+                            (void*)tlsGetAddr->AsIntCon()->gtIconVal // addr
                             X86_ARG(argSizeForEmitter),
                             retSize
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),

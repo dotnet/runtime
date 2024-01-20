@@ -2325,7 +2325,7 @@ void CodeGen::genEmitCall(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               di, base, REG_NA, 0, 0, isJump);
+                               di, base, REG_NA, 0, 0, isJump, true);
 }
 // clang-format on
 

@@ -9474,7 +9474,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber             xreg,
                            unsigned              xmul,
                            ssize_t               disp,
-                           bool                  isJump)
+                           bool                  isJump,
+                           bool                  isTlsGetAddr)
 // clang-format on
 {
     /* Sanity check the arguments depending on callType */
@@ -9673,21 +9674,27 @@ void emitter::emitIns_Call(EmitCallType          callType,
         
         if (codeGen->genCodeAddrNeedsReloc((size_t)addr))
         {
-            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && (id->idIns() == INS_call))
+            //if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && (id->idIns() == INS_call))
+            //{
+            //    if (((size_t)addr) != 1)
+            //    {
+            //        id->idSetIsDspReloc();
+            //    }
+            //    else
+            //    {
+            //        id->idSetIsCallAddr();
+            //        sz += 1;
+            //    }
+            //}
+            //else
             {
-                if (((size_t)addr) != 1)
-                {
-                    id->idSetIsDspReloc();
-                }
-                else
+                id->idSetIsDspReloc();
+
+                if (isTlsGetAddr)
                 {
                     id->idSetIsCallAddr();
                     sz += 1;
                 }
-            }
-            else
-            {
-                id->idSetIsDspReloc();
             }
         }
     }
@@ -15279,6 +15286,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
                 }
                 else if (id->idIsCallRegPtr())
                 {
+                    assert(false);
                     // For TLS GD, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
                     emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_TLSGD);
                 }
