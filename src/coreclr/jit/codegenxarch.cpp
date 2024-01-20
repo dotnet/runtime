@@ -6424,7 +6424,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 
                 // clang-format off
                 genEmitCall(emitter::EC_FUNC_TOKEN,
-                            (CORINFO_METHOD_HANDLE)tlsGetAddr->AsIntCon()->gtIconVal,
+                            (CORINFO_METHOD_HANDLE)1,
                             INDEBUG_LDISASM_COMMA(sigInfo)
                             (void*)tlsGetAddr->AsIntCon()->gtIconVal // addr
                             X86_ARG(argSizeForEmitter),
@@ -6432,8 +6432,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                             di,
                             target->GetRegNum(),
-                            call->IsFastTailCall(),
-                            true);
+                            call->IsFastTailCall());
                 // clang-format on
             }
 

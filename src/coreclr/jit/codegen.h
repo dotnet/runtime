@@ -503,8 +503,7 @@ protected:
                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                      const DebugInfo&      di,
                      regNumber             base,
-                     bool                  isJump,
-                     bool                  isTlsGetAddr = false);
+                     bool                  isJump);
     // clang-format on
 
     // clang-format off

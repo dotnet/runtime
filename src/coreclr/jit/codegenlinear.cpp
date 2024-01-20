@@ -2305,8 +2305,7 @@ void CodeGen::genEmitCall(int                   callType,
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                           const DebugInfo& di,
                           regNumber             base,
-                          bool                  isJump,
-                          bool                  isTlsGetAddr)
+                          bool                  isJump)
 {
 #if !defined(TARGET_X86)
     int argSize = 0;
@@ -2326,7 +2325,7 @@ void CodeGen::genEmitCall(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               di, base, REG_NA, 0, 0, isJump, isTlsGetAddr);
+                               di, base, REG_NA, 0, 0, isJump);
 }
 // clang-format on
 

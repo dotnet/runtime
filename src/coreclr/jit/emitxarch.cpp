@@ -9474,8 +9474,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber             xreg,
                            unsigned              xmul,
                            ssize_t               disp,
-                           bool                  isJump,
-                           bool                  isTlsGetAddr)
+                           bool                  isJump)
 // clang-format on
 {
     /* Sanity check the arguments depending on callType */
@@ -9690,7 +9689,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             {
                 id->idSetIsDspReloc();
 
-                if (isTlsGetAddr)
+                if ((size_t)methHnd == 1)
                 {
                     id->idSetIsCallAddr();
                     sz += 1;
