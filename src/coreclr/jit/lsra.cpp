@@ -1407,7 +1407,7 @@ PhaseStatus LinearScan::doLinearScan()
     else
 #endif // TARGET_ARM64
     {
-        if (enregisterLocalVars)
+        if (enregisterLocalVars || compiler->opts.OptimizationEnabled())
         {
             allocateRegisters();
         }
@@ -2928,6 +2928,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 regNumber LinearScan::allocateRegMinimal(Interval*    currentInterval,
                                          RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
+    assert(!enregisterLocalVars);
     regNumber  foundReg;
     regMaskTP  foundRegBit;
     RegRecord* availablePhysRegRecord;
@@ -4845,6 +4846,7 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
 //
 void LinearScan::allocateRegistersMinimal()
 {
+    assert(!enregisterLocalVars);
     JITDUMP("*************** In LinearScan::allocateRegistersMinimal()\n");
     DBEXEC(VERBOSE, lsraDumpIntervals("before allocateRegistersMinimal"));
 
@@ -5604,11 +5606,7 @@ void LinearScan::allocateRegisters()
     }
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-#ifdef TARGET_ARM64
-    // allocateRegisters() can be called even if enregisterLocalVars= false, but
-    // method needs consecutive registers.
     if (enregisterLocalVars)
-#endif
     {
         VarSetOps::Iter largeVectorVarsIter(compiler, largeVectorVars);
         unsigned        largeVectorVarIndex = 0;
@@ -5958,22 +5956,13 @@ void LinearScan::allocateRegisters()
             }
             else
             {
-#ifdef TARGET_ARM64
-                if (hasConsecutiveRegister)
-                {
-                    if (enregisterLocalVars)
-                    {
-                        processBlockEndAllocation<true>(currentBlock);
-                    }
-                    else
-                    {
-                        processBlockEndAllocation<false>(currentBlock);
-                    }
-                }
-                else
-#endif
+                if (enregisterLocalVars)
                 {
                     processBlockEndAllocation<true>(currentBlock);
+                }
+                else
+                {
+                    processBlockEndAllocation<false>(currentBlock);
                 }
                 currentBlock = moveToNextBlock();
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_START_BB, nullptr, REG_NA, currentBlock));
@@ -12390,7 +12379,7 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     {
         ordering = W("ABCDEFGHIJKLMNOPQ");
 
-        if (!linearScan->enregisterLocalVars)
+        if (!linearScan->enregisterLocalVars && linearScan->compiler->opts.OptimizationDisabled())
         {
             ordering = W("MQQQQQQQQQQQQQQQQ");
         }
@@ -13707,6 +13696,7 @@ Selection_Done:
 regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*    currentInterval,
                                                        RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
+    assert(!linearScan->enregisterLocalVars);
 #ifdef DEBUG
     *registerScore = NONE;
 #endif
