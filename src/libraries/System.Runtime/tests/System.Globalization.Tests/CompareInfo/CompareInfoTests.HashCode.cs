@@ -121,7 +121,7 @@ namespace System.Globalization.Tests
             yield return new object[] { '\u2029', thaiCmpInfo }; // ParagraphSeparator: PARAGRAPH SEPARATOR
         }
 
-        [Theory]
+        [ConditionalTheory(PlatformDetection.IsIcuGlobalization)]
         [MemberData(nameof(CheckHashingOfSkippedChars_TestData))]
         public void CheckHashingOfSkippedChars(char character, CompareInfo cmpInfo)
         {
