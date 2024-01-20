@@ -661,6 +661,152 @@ namespace System.Numerics.Tensors.Tests
         }
         #endregion
 
+        #region Span,Span,Scalar -> Destination
+        public static IEnumerable<object[]> SpanSpanScalarDestinationFunctionsToTest()
+        {
+            yield return new object[] { new SpanSpanScalarDestinationDelegate(TensorPrimitives.FusedMultiplyAdd), new Func<T, T, T, T>(T.FusedMultiplyAdd) };
+            yield return new object[] { new SpanSpanScalarDestinationDelegate(TensorPrimitives.Lerp), new Func<T, T, T, T>(T.Lerp) };
+        }
+
+        [Theory]
+        [MemberData(nameof(SpanSpanScalarDestinationFunctionsToTest))]
+        public void SpanSpanScalarDestination_AllLengths(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<T> y = CreateAndFillTensor(tensorLength);
+                T z = NextRandom();
+                using BoundedMemory<T> destination = CreateTensor(tensorLength);
+
+                tensorPrimitivesMethod(x, y, z, destination);
+
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    AssertEqualTolerance(expectedMethod(x[i], y[i], z), destination[i]);
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(SpanSpanScalarDestinationFunctionsToTest))]
+        public void SpanSpanScalarDestination_InPlace(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                T[] xOrig = x.Span.ToArray();
+                T z = NextRandom();
+
+                tensorPrimitivesMethod(x, x, z, x);
+
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    AssertEqualTolerance(expectedMethod(xOrig[i], xOrig[i], z), x[i]);
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(SpanSpanScalarDestinationFunctionsToTest))]
+        public void SpanSpanScalarDestination_ThrowsForTooShortDestination(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> _)
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<T> y = CreateAndFillTensor(tensorLength);
+                T z = NextRandom();
+                using BoundedMemory<T> destination = CreateTensor(tensorLength - 1);
+
+                AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(x, y, z, destination));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(SpanSpanScalarDestinationFunctionsToTest))]
+        public void SpanSpanScalarDestination_ThrowsForOverlapppingInputsWithOutputs(SpanSpanScalarDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> _)
+        {
+            T[] array = new T[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(4, 2), default, array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(4, 2), default, array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(4, 2), default, array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(4, 2), default, array.AsSpan(5, 2)));
+        }
+        #endregion
+
+        #region Span,Scalar,Span -> Destination
+        public static IEnumerable<object[]> SpanScalarSpanDestinationFunctionsToTest()
+        {
+            yield return new object[] { new SpanScalarSpanDestinationDelegate(TensorPrimitives.FusedMultiplyAdd), new Func<T, T, T, T>(T.FusedMultiplyAdd) };
+            yield return new object[] { new SpanScalarSpanDestinationDelegate(TensorPrimitives.Lerp), new Func<T, T, T, T>(T.Lerp) };
+        }
+
+        [Theory]
+        [MemberData(nameof(SpanScalarSpanDestinationFunctionsToTest))]
+        public void SpanScalarSpanDestination_AllLengths(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                T y = NextRandom();
+                using BoundedMemory<T> z = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<T> destination = CreateTensor(tensorLength);
+
+                tensorPrimitivesMethod(x, y, z, destination);
+
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    AssertEqualTolerance(expectedMethod(x[i], y, z[i]), destination[i]);
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(SpanScalarSpanDestinationFunctionsToTest))]
+        public void SpanScalarSpanDestination_InPlace(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> expectedMethod)
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                T[] xOrig = x.Span.ToArray();
+                T y = NextRandom();
+
+                tensorPrimitivesMethod(x, y, x, x);
+
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    AssertEqualTolerance(expectedMethod(xOrig[i], y, xOrig[i]), x[i]);
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(SpanScalarSpanDestinationFunctionsToTest))]
+        public void SpanScalarSpanDestination_ThrowsForTooShortDestination(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> _)
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                T y = NextRandom();
+                using BoundedMemory<T> z = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<T> destination = CreateTensor(tensorLength - 1);
+
+                AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(x, y, z, destination));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(SpanScalarSpanDestinationFunctionsToTest))]
+        public void SpanScalarSpanDestination_ThrowsForOverlapppingInputsWithOutputs(SpanScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T, T> _)
+        {
+            T[] array = new T[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), default, array.AsSpan(4, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), default, array.AsSpan(4, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), default, array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), default, array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
+        #endregion
+
         #region Span -> Destination,Destination
         public static IEnumerable<object[]> SpanDestinationDestinationFunctionsToTest()
         {
@@ -856,130 +1002,6 @@ namespace System.Numerics.Tensors.Tests
 
                 AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ILogB<T>(x.Span, destination.Span));
             });
-        }
-        #endregion
-
-        #region FusedMultiplyAdd
-        [Fact]
-        public void FusedMultiplyAdd_TensorTensorScalar_AllLengths()
-        {
-            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
-            {
-                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
-                using BoundedMemory<T> y = CreateAndFillTensor(tensorLength);
-                T addend = NextRandom();
-                using BoundedMemory<T> destination = CreateTensor(tensorLength);
-
-                TensorPrimitives.FusedMultiplyAdd(x, y, addend, destination);
-
-                for (int i = 0; i < tensorLength; i++)
-                {
-                    AssertEqualTolerance((x[i] * y[i]) + addend, destination[i]);
-                }
-            });
-        }
-
-        [Fact]
-        public void FusedMultiplyAdd_TensorTensorScalar_InPlace()
-        {
-            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
-            {
-                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
-                T[] xOrig = x.Span.ToArray();
-                T addend = NextRandom();
-
-                TensorPrimitives.FusedMultiplyAdd(x, x, addend, x);
-
-                for (int i = 0; i < tensorLength; i++)
-                {
-                    AssertEqualTolerance((xOrig[i] * xOrig[i]) + addend, x[i]);
-                }
-            });
-        }
-
-        [Fact]
-        public void FusedMultiplyAdd_TensorTensorScalar_ThrowsForTooShortDestination()
-        {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
-            {
-                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
-                using BoundedMemory<T> y = CreateAndFillTensor(tensorLength);
-                T addend = NextRandom();
-                using BoundedMemory<T> destination = CreateTensor(tensorLength - 1);
-
-                AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.FusedMultiplyAdd(x, y, addend, destination));
-            });
-        }
-
-        [Fact]
-        public void FusedMultiplyAdd_TensorTensorScalar_ThrowsForOverlapppingInputsWithOutputs()
-        {
-            T[] array = new T[10];
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.FusedMultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), default(T), array.AsSpan(0, 2)));
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.FusedMultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), default(T), array.AsSpan(2, 2)));
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.FusedMultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), default(T), array.AsSpan(3, 2)));
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.FusedMultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), default(T), array.AsSpan(5, 2)));
-        }
-
-        [Fact]
-        public void FusedMultiplyAdd_TensorScalarTensor()
-        {
-            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
-            {
-                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
-                T y = NextRandom();
-                using BoundedMemory<T> addend = CreateAndFillTensor(tensorLength);
-                using BoundedMemory<T> destination = CreateTensor(tensorLength);
-
-                TensorPrimitives.FusedMultiplyAdd(x, y, addend, destination);
-
-                for (int i = 0; i < tensorLength; i++)
-                {
-                    AssertEqualTolerance((x[i] * y) + addend[i], destination[i]);
-                }
-            });
-        }
-
-        [Fact]
-        public void FusedMultiplyAdd_TensorScalarTensor_InPlace()
-        {
-            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
-            {
-                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
-                T[] xOrig = x.Span.ToArray();
-                T y = NextRandom();
-
-                TensorPrimitives.FusedMultiplyAdd(x, y, x, x);
-
-                for (int i = 0; i < tensorLength; i++)
-                {
-                    AssertEqualTolerance((xOrig[i] * y) + xOrig[i], x[i]);
-                }
-            });
-        }
-
-        [Fact]
-        public void FusedMultiplyAdd_TensorScalarTensor_ThrowsForTooShortDestination()
-        {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
-            {
-                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
-                T y = NextRandom();
-                using BoundedMemory<T> addend = CreateAndFillTensor(tensorLength);
-                using BoundedMemory<T> destination = CreateTensor(tensorLength - 1);
-
-                AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.FusedMultiplyAdd(x, y, addend, destination));
-            });
-        }
-
-        [Fact]
-        public void FusedMultiplyAdd_TensorScalarTensor_ThrowsForOverlapppingInputsWithOutputs()
-        {
-            T[] array = new T[10];
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.FusedMultiplyAdd(array.AsSpan(1, 2), default(T), array.AsSpan(4, 2), array.AsSpan(0, 2)));
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.FusedMultiplyAdd(array.AsSpan(1, 2), default(T), array.AsSpan(4, 2), array.AsSpan(2, 2)));
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.FusedMultiplyAdd(array.AsSpan(1, 2), default(T), array.AsSpan(4, 2), array.AsSpan(3, 2)));
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.FusedMultiplyAdd(array.AsSpan(1, 2), default(T), array.AsSpan(4, 2), array.AsSpan(5, 2)));
         }
         #endregion
 

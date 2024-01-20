@@ -1084,6 +1084,48 @@ namespace System.Numerics.Tensors
             where T : IFloatingPointIeee754<T> =>
             InvokeSpanSpanSpanIntoSpan<T, LerpOperator<T>>(x, y, amount, destination);
 
+        /// <summary>Computes the element-wise linear interpolation between two values based on the given weight in the specified tensors of numbers.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <param name="amount">The third tensor, represented as a scalar.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = T.Lerp(<paramref name="x" />[i], <paramref name="y" />[i], <paramref name="amount" />)</c>.
+        /// </para>
+        /// <para>
+        /// If either of the element-wise input values is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>, the resulting element-wise value is also NaN.
+        /// </para>
+        /// </remarks>
+        public static void Lerp<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T amount, Span<T> destination)
+            where T : IFloatingPointIeee754<T> =>
+            InvokeSpanSpanScalarIntoSpan<T, LerpOperator<T>>(x, y, amount, destination);
+
+        /// <summary>Computes the element-wise linear interpolation between two values based on the given weight in the specified tensors of numbers.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a scalar.</param>
+        /// <param name="amount">The third tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="amount" />.</exception>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="amount"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = T.Lerp(<paramref name="x" />[i], <paramref name="y" />, <paramref name="amount" />[i])</c>.
+        /// </para>
+        /// <para>
+        /// If either of the element-wise input values is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>, the resulting element-wise value is also NaN.
+        /// </para>
+        /// </remarks>
+        public static void Lerp<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> amount, Span<T> destination)
+            where T : IFloatingPointIeee754<T> =>
+            InvokeSpanScalarSpanIntoSpan<T, LerpOperator<T>>(x, y, amount, destination);
+
         /// <summary>Computes the element-wise natural (base <c>e</c>) logarithm of numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>

@@ -96,6 +96,8 @@ namespace System.Numerics.Tensors.Tests
         public delegate void SpanScalarDestinationDelegate<T1, T2, T3>(ReadOnlySpan<T1> x, T2 y, Span<T3> destination);
         public delegate void ScalarSpanDestinationDelegate(T x, ReadOnlySpan<T> y, Span<T> destination);
         public delegate void SpanSpanSpanDestinationDelegate(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> z, Span<T> destination);
+        public delegate void SpanSpanScalarDestinationDelegate(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T z, Span<T> destination);
+        public delegate void SpanScalarSpanDestinationDelegate(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> z, Span<T> destination);
         public delegate void SpanDestinationDestinationDelegate(ReadOnlySpan<T> x, Span<T> destination1, Span<T> destination2);
 
         protected virtual bool IsFloatingPoint => typeof(T) == typeof(float) || typeof(T) == typeof(double);
