@@ -1302,8 +1302,6 @@ namespace System.ComponentModel.Tests
                 TimeOut = 60000
             };
 
-            ConcurrentAddProvider();
-
             RemoteExecutor.Invoke(() =>
             {
                 using var finished = new CountdownEvent(2);
@@ -1332,12 +1330,19 @@ namespace System.ComponentModel.Tests
 
             static void ConcurrentAddProvider()
             {
-                TypeDescriptor.AddProvider(new EmptyPropertiesTypeProvider(), typeof(MyClass));
+                var provider = new EmptyPropertiesTypeProvider();
+                TypeDescriptor.AddProvider(provider, typeof(MyClass));
+
+                // This test primarily verifies no deadlock, but verify the values anyway.
+                Assert.True(TypeDescriptor.GetProvider(typeof(MyClass)).IsSupportedType(typeof(MyClass)));
             }
 
             static void ConcurrentGetProvider()
             {
-                TypeDescriptor.GetProvider(typeof(TypeWithProperty));
+                TypeDescriptionProvider provider = TypeDescriptor.GetProvider(typeof(TypeWithProperty));
+
+                // This test primarily verifies no deadlock, but verify the values anyway.
+                Assert.True(provider.IsSupportedType(typeof(TypeWithProperty)));
             }
         }
 
@@ -1395,6 +1400,7 @@ namespace System.ComponentModel.Tests
             TypeConverter[] actualConverters = await Task.WhenAll(
                 Enumerable.Range(0, 100).Select(_ =>
                     Task.Run(() => TypeDescriptor.GetConverter(typeForGetConverter))));
+
             Assert.All(actualConverters,
                 currentConverter => Assert.IsType(expectedConverterType, currentConverter));
         }
