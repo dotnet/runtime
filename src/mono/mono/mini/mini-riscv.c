@@ -4497,6 +4497,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_andi (code, RISCV_T0, RISCV_T0, ~(RISCV_FCLASS_INF | RISCV_FCLASS_NAN));
 			code =
 			    mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO, "ArithmeticException");
+			if (ins->dreg != ins->sreg1){
+				if (riscv_stdext_d)
+					riscv_fsgnj_d (code, ins->dreg, ins->sreg1, ins->sreg1);
+				else
+					riscv_fsgnj_s (code, ins->dreg, ins->sreg1, ins->sreg1);
+			}
 		}
 		case OP_BREAK:
 			/*
