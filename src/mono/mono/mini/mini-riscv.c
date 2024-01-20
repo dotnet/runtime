@@ -1995,7 +1995,6 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_OVF_U2_UN:
 	case OP_ICONV_TO_OVF_I8:
 	case OP_ICONV_TO_OVF_I8_UN:
-	case OP_ICONV_TO_OVF_U4:
 	case OP_ICONV_TO_OVF_U4_UN:
 	case OP_ICONV_TO_OVF_U8:
 	case OP_ICONV_TO_OVF_U8_UN:
@@ -2006,6 +2005,13 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 
 	case OP_ICONV_TO_U4:
 		ins->opcode = OP_ZEXT_I4;
+		break;
+	case OP_ICONV_TO_OVF_U4:
+		MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, ins->dreg, ins->sreg1);
+		MONO_EMIT_NEW_ICOMPARE_IMM (cfg, ins->dreg, 0);
+		MONO_EMIT_NEW_COND_EXC (cfg, ILT, "OverflowException");
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, ins->sreg1);
+		NULLIFY_INS (ins);
 		break;
 	default:
 		g_print ("Can't decompose the OP %s\n", mono_inst_name (ins->opcode));
