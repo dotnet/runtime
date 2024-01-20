@@ -1819,6 +1819,9 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
 
     // Is the entry block a handler or filter start?  If so, then if we cloned, we could create a jump
     // into the middle of a handler (to go to the cloned copy.)  Reject.
+    // TODO: This seems like it can be deleted. If the header is the beginning
+    // of a handler then the loop should be fully contained within the handler,
+    // and the cloned loop will also be in the handler.
     if (bbIsHandlerBeg(loop->GetHeader()))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Header block is a handler start.\n", loop->GetIndex());
@@ -1873,6 +1876,8 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
             return false;
         }
 
+        // TODO-Quirk: Can be removed, loop invariant is validated by
+        // `FlowGraphNaturalLoop::AnalyzeIteration`.
         if (!iterInfo->TestTree->OperIsCompare() || ((iterInfo->TestTree->gtFlags & GTF_RELOP_ZTT) == 0))
         {
             JITDUMP("Loop cloning: rejecting loop " FMT_LP
@@ -3010,12 +3015,6 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
     bool result = false;
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        // TODO-Quirk: Remove
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
         JITDUMP("Considering loop " FMT_LP " to clone for optimizations.\n", loop->GetIndex());
         NaturalLoopIterInfo iterInfo;
         if (loop->AnalyzeIteration(&iterInfo))
@@ -3165,9 +3164,9 @@ PhaseStatus Compiler::optCloneLoops()
 
     if (optLoopsCloned > 0)
     {
-        fgDomsComputed = false;
         fgRenumberBlocks();
 
+        fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }

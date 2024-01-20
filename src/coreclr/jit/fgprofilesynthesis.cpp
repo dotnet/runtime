@@ -335,9 +335,12 @@ void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
 {
     // Assume each switch case is equally probable
     //
+
     const unsigned n = block->NumSucc();
     assert(n != 0);
-    const weight_t p = 1 / (weight_t)n;
+
+    // Duplicate zero check to silence "divide by zero" compiler warning
+    const weight_t p = (n != 0) ? (1 / (weight_t)n) : 0;
 
     // Each unique edge gets some multiple of that basic probability
     //

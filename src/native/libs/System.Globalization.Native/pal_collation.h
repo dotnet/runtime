@@ -65,7 +65,7 @@ PALEXPORT int32_t GlobalizationNative_GetSortKey(SortHandle* pSortHandle,
                                                  uint8_t* sortKey,
                                                  int32_t cbSortKeyLength,
                                                  int32_t options);
-#if (defined(__APPLE__) && (TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS))
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 PALEXPORT int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName,
                                                           int32_t lNameLength,
                                                           const uint16_t* lpTarget,

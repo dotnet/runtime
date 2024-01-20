@@ -26,7 +26,6 @@
     <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">true</WasmEnableSIMD>
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
-    <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(MonoWasmThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
@@ -357,7 +356,8 @@
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a;
-                                  $(ICULibDir)/libicudata.a" />
+                                  $(ICULibDir)/libicudata.a;
+                                  $(BrowserProjectRoot)runtime/hybrid-globalization/segmentation-rules.json" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>
@@ -392,7 +392,6 @@
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' != 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;nosimd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DENABLE_JS_INTEROP_BY_VALUE=1</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_LEGACY_JS_INTEROP=1</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) $(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
 
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)</CMakeBuildRuntimeConfigureCmd>
@@ -404,8 +403,6 @@
       <CMakeBuildRuntimeCmd Condition="'$(OS)' != 'Windows_NT'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp;  $(CMakeBuildRuntimeCmd)'</CMakeBuildRuntimeCmd>
     </PropertyGroup>
     <ItemGroup>
-      <_CmakeEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP=1" Condition="'$(WasmEnableLegacyJsInterop)' == 'false'"/>
-      <_CmakeEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP=0" Condition="'$(WasmEnableLegacyJsInterop)' != 'false'"/>
       <_CmakeEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE=1" Condition="'$(WasmEnableJsInteropByValue)' != 'false'"/>
       <_CmakeEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' == 'false'"/>
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
@@ -479,7 +476,6 @@
                        $(NativeBinDir)dotnet.runtime.js.map;
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
-                       $(NativeBinDir)dotnet-legacy.d.ts;
                        $(NativeBinDir)package.json;
                        $(NativeBinDir)dotnet.native.wasm"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
@@ -528,7 +524,7 @@
 
   <ItemGroup>
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/**/*.ts"
-		   Exclude="$(BrowserProjectRoot)runtime/dotnet.d.ts;$(BrowserProjectRoot)runtime/dotnet-legacy.d.ts;$(BrowserProjectRoot)runtime/diagnostics-mock.d.ts;$(BrowserProjectRoot)runtime/node_modules/**/*.ts" />
+		   Exclude="$(BrowserProjectRoot)runtime/dotnet.d.ts;$(BrowserProjectRoot)runtime/diagnostics-mock.d.ts;$(BrowserProjectRoot)runtime/node_modules/**/*.ts" />
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/**/tsconfig.*"
 		   Exclude="$(BrowserProjectRoot)runtime/node_modules/**/tsconfig.*" />
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/workers/**/*.js"/>
@@ -548,8 +544,6 @@
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:0" Condition="'$(WasmEnableSIMD)' == 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_EH:1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_EH:0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
-      <_MonoRollupEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP:1" Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" />
-      <_MonoRollupEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP:0" Condition="'$(WasmEnableLegacyJsInterop)' != 'false'" />
       <_MonoRollupEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE:1" Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
       <_MonoRollupEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE:0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <_MonoRollupEnvironmentVariable Include="MonoDiagnosticsMock:$(MonoDiagnosticsMock)" />

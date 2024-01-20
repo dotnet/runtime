@@ -80,6 +80,37 @@ PhaseStatus StackLevelSetter::DoPhase()
             madeChanges = true;
         }
     }
+    else
+    {
+        // Mark all the throw helpers as used to avoid asserts later.
+        for (Compiler::AddCodeDsc* add = comp->fgGetAdditionalCodeDescriptors(); add != nullptr; add = add->acdNext)
+        {
+            add->acdUsed = true;
+        }
+    }
+
+    // The above loop might have moved a BBJ_COND's true target to its next block.
+    // In such cases, reverse the condition so we can remove a branch.
+    if (madeChanges)
+    {
+        for (BasicBlock* const block : comp->Blocks())
+        {
+            if (block->KindIs(BBJ_COND) && block->CanRemoveJumpToTarget(block->GetTrueTarget(), comp))
+            {
+                // Reverse the jump condition
+                GenTree* test = block->lastNode();
+                assert(test->OperIsConditionalJump());
+                GenTree* cond = comp->gtReverseCond(test);
+                assert(cond == test); // Ensure `gtReverseCond` did not create a new node.
+
+                BasicBlock* newFalseTarget = block->GetTrueTarget();
+                BasicBlock* newTrueTarget  = block->GetFalseTarget();
+                block->SetTrueTarget(newTrueTarget);
+                block->SetFalseTarget(newFalseTarget);
+                assert(block->CanRemoveJumpToTarget(newFalseTarget, comp));
+            }
+        }
+    }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -167,6 +198,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
 // Arguments:
 //   node - the node to process;
 //   block - the source block for the node.
+//
 void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 {
     assert(node->OperMayThrow(comp));
@@ -204,10 +236,20 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             {
                 SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
             }
+            else
+            {
+                // Even if we thought it might divide by zero during morph, now we know it never will.
+                node->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+            }
 
             if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
             {
                 SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
+            }
+            else
+            {
+                // Even if we thought it might overflow during morph, now we know it never will.
+                node->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
             }
         }
         break;
@@ -233,10 +275,12 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 // Arguments:
 //   kind - the special throw-helper kind;
 //   block - the source block that targets helper.
+//
 void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* block)
 {
     Compiler::AddCodeDsc* add = comp->fgFindExcptnTarget(kind, comp->bbThrowIndex(block));
     assert(add != nullptr);
+
     // We expect we'll actually need this helper.
     add->acdUsed = true;
 

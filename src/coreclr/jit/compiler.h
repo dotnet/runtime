@@ -1568,24 +1568,6 @@ enum API_ICorJitInfo_Names
     API_COUNT
 };
 
-enum class FlowGraphUpdates
-{
-    COMPUTE_BASICS  = 0,      // renumber blocks, reachability, etc
-    COMPUTE_DOMS    = 1 << 0, // recompute dominators
-    COMPUTE_RETURNS = 1 << 1, // recompute return blocks
-    COMPUTE_LOOPS   = 1 << 2, // recompute loop table
-};
-
-inline constexpr FlowGraphUpdates operator|(FlowGraphUpdates a, FlowGraphUpdates b)
-{
-    return (FlowGraphUpdates)((unsigned int)a | (unsigned int)b);
-}
-
-inline constexpr FlowGraphUpdates operator&(FlowGraphUpdates a, FlowGraphUpdates b)
-{
-    return (FlowGraphUpdates)((unsigned int)a & (unsigned int)b);
-}
-
 // Profile checking options
 //
 // clang-format off
@@ -2024,13 +2006,15 @@ struct NaturalLoopIterInfo
     // The local that is the induction variable.
     unsigned IterVar = BAD_VAR_NUM;
 
+#ifdef DEBUG
+    // Tree that initializes induction varaible outside the loop.
+    // Only valid if HasConstInit is true.
+    GenTree* InitTree = nullptr;
+#endif
+
     // Constant value that the induction variable is initialized with, outside
     // the loop. Only valid if HasConstInit is true.
     int ConstInitValue = 0;
-
-    // Block outside the loop that initializes the induction variable. Only
-    // valid if HasConstInit is true.
-    BasicBlock* InitBlock = nullptr;
 
     // Tree that has the loop test for the induction variable.
     GenTree* TestTree = nullptr;
@@ -2040,6 +2024,9 @@ struct NaturalLoopIterInfo
 
     // Tree that mutates the induction variable.
     GenTree* IterTree = nullptr;
+
+    // Is the loop exited when TestTree is true?
+    bool ExitedOnTrue : 1;
 
     // Whether or not we found an initialization of the induction variable.
     bool HasConstInit : 1;
@@ -2060,7 +2047,8 @@ struct NaturalLoopIterInfo
     bool HasArrayLengthLimit : 1;
 
     NaturalLoopIterInfo()
-        : HasConstInit(false)
+        : ExitedOnTrue(false)
+        , HasConstInit(false)
         , HasConstLimit(false)
         , HasSimdLimit(false)
         , HasInvariantLocalLimit(false)
@@ -2071,7 +2059,6 @@ struct NaturalLoopIterInfo
     int IterConst();
     genTreeOps IterOper();
     var_types IterOperType();
-    bool IsReversed();
     genTreeOps TestOper();
     bool IsIncreasingLoop();
     bool IsDecreasingLoop();
@@ -2080,6 +2067,9 @@ struct NaturalLoopIterInfo
     int ConstLimit();
     unsigned VarLimit();
     bool ArrLenLimit(Compiler* comp, ArrIndex* index);
+
+private:
+    bool IsReversed();
 };
 
 // Represents a natural loop in the flow graph. Natural loops are characterized
@@ -2089,7 +2079,8 @@ struct NaturalLoopIterInfo
 //   loop can reach every other block of the loop.
 //
 // * All loop blocks are dominated by the header block, i.e. the header block
-//   is guaranteed to be entered on every iteration.
+//   is guaranteed to be entered on every iteration. Note that in the prescence
+//   of exceptional flow the header might not fully execute on every iteration.
 //
 // * From the above it follows that the loop can only be entered at the header
 //   block. FlowGraphNaturalLoop::EntryEdges() gives a vector of these edges.
@@ -2153,7 +2144,9 @@ class FlowGraphNaturalLoop
 
     void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
     bool MatchLimit(NaturalLoopIterInfo* info, GenTree* test);
-
+    bool CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info);
+    template<typename T>
+    static bool EvaluateRelop(T op1, T op2, genTreeOps oper);
 public:
     BasicBlock* GetHeader() const
     {
@@ -2349,7 +2342,7 @@ public:
 class FlowGraphDominatorTree
 {
     template<typename TVisitor>
-    friend class NewDomTreeVisitor;
+    friend class DomTreeVisitor;
 
     const FlowGraphDfsTree* m_dfsTree;
     const DomTreeNode* m_domTree;
@@ -2368,6 +2361,10 @@ class FlowGraphDominatorTree
 public:
     BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
     bool Dominates(BasicBlock* dominator, BasicBlock* dominated);
+
+#ifdef DEBUG
+    void Dump();
+#endif
 
     static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfsTree);
 };
@@ -2389,6 +2386,30 @@ public:
     FlowGraphNaturalLoop* GetLoop(BasicBlock* block);
 
     static BlockToNaturalLoopMap* Build(FlowGraphNaturalLoops* loops);
+};
+
+// Represents a data structure that can answer A -> B reachability queries in
+// O(1) time. Only takes regular flow into account; if A -> B requires
+// exceptional flow, then CanReach returns false.
+class BlockReachabilitySets
+{
+    FlowGraphDfsTree* m_dfsTree;
+    BitVec* m_reachabilitySets;
+
+    BlockReachabilitySets(FlowGraphDfsTree* dfsTree, BitVec* reachabilitySets)
+        : m_dfsTree(dfsTree)
+        , m_reachabilitySets(reachabilitySets)
+    {
+    }
+
+public:
+    bool CanReach(BasicBlock* from, BasicBlock* to);
+
+#ifdef DEBUG
+    void Dump();
+#endif
+
+    static BlockReachabilitySets* Build(FlowGraphDfsTree* dfsTree);
 };
 
 enum class FieldKindForVN
@@ -3258,6 +3279,10 @@ public:
                                        GenTree*    op2,
                                        GenTree*    op3,
                                        GenTree*    op4,
+                                       CorInfoType simdBaseJitType,
+                                       unsigned    simdSize);
+    GenTree* gtNewSimdToScalarNode(var_types   type,
+                                       GenTree*    op1,
                                        CorInfoType simdBaseJitType,
                                        unsigned    simdSize);
 #endif // TARGET_XARCH
@@ -4987,15 +5012,7 @@ public:
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
     FlowGraphDominatorTree* m_domTree;
-
-    // After the dominance tree is computed, we cache a DFS preorder number and DFS postorder number to compute
-    // dominance queries in O(1). fgDomTreePreOrder and fgDomTreePostOrder are arrays giving the block's preorder and
-    // postorder number, respectively. The arrays are indexed by basic block number. (Note that blocks are numbered
-    // starting from one. Thus, we always waste element zero. This makes debugging easier and makes the code less likely
-    // to suffer from bugs stemming from forgetting to add or subtract one from the block number to form an array
-    // index). The arrays are of size fgBBNumMax + 1.
-    unsigned* fgDomTreePreOrder;
-    unsigned* fgDomTreePostOrder;
+    BlockReachabilitySets* m_reachabilitySets;
 
     bool fgBBVarSetsInited;
 
@@ -5044,10 +5061,6 @@ public:
             roundUp(fgCurBBEpochSize, (unsigned)(sizeof(size_t) * 8)) / unsigned(sizeof(size_t) * 8);
 
 #ifdef DEBUG
-        // All BlockSet objects are now invalid!
-        fgReachabilitySetsValid = false; // the bbReach sets are now invalid!
-        fgEnterBlksSetValid     = false; // the fgEnterBlks set is now invalid!
-
         if (verbose)
         {
             unsigned epochArrSize = BasicBlockBitSetTraits::GetArrSize(this);
@@ -5120,20 +5133,11 @@ public:
 
     bool fgModified;             // True if the flow graph has been modified recently
     bool fgPredsComputed;        // Have we computed the bbPreds list
-    bool fgDomsComputed;         // Have we computed the dominator sets?
     bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
     bool fgCanonicalizedFirstBB; // TODO-Quirk: did we end up canonicalizing first BB?
 
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
-
-    BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
-                          // begin blocks.
-
-#ifdef DEBUG
-    bool fgReachabilitySetsValid; // Are the bbReach sets valid?
-    bool fgEnterBlksSetValid;     // Is the fgEnterBlks set valid?
-#endif                            // DEBUG
 
     bool fgRemoveRestOfBlock; // true if we know that we will throw
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
@@ -5354,6 +5358,8 @@ public:
     IL_OFFSET fgFindBlockILOffset(BasicBlock* block);
     void fgFixEntryFlowForOSR();
 
+    void fgUpdateSingleReturnBlock(BasicBlock* block);
+
     BasicBlock* fgSplitBlockAtBeginning(BasicBlock* curr);
     BasicBlock* fgSplitBlockAtEnd(BasicBlock* curr);
     BasicBlock* fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt);
@@ -5366,7 +5372,7 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block);
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
-    GenTree* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
+    GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
     bool fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
@@ -5776,25 +5782,10 @@ public:
     void vnPrint(ValueNum vn, unsigned level);
 #endif
 
-    bool fgDominate(const BasicBlock* b1, const BasicBlock* b2); // Return true if b1 dominates b2
-
     // Dominator computation member functions
     // Not exposed outside Compiler
 protected:
-    bool fgReachable(BasicBlock* b1, BasicBlock* b2); // Returns true if block b1 can reach block b2
-
-    // Compute immediate dominators, the dominator tree and and its pre/post-order travsersal numbers.
-    void fgComputeDoms();
-
-    BlockSet_ValRet_T fgGetDominatorSet(BasicBlock* block); // Returns a set of blocks that dominate the given block.
-    // Note: this is relatively slow compared to calling fgDominate(),
-    // especially if dealing with a single block versus block check.
-
-    void fgComputeReachabilitySets(); // Compute bbReach sets. (Also sets BBF_GC_SAFE_POINT flag on blocks.)
-
     void fgComputeReturnBlocks(); // Initialize fgReturnBlocks to a list of BBJ_RETURN blocks.
-
-    void fgComputeEnterBlocksSet(); // Compute the set of entry blocks, 'fgEnterBlks'.
 
     // Remove blocks determined to be unreachable by the 'canRemoveBlock'.
     template <typename CanRemoveBlockBody>
@@ -5802,33 +5793,9 @@ protected:
 
     PhaseStatus fgComputeReachability(); // Perform flow graph node reachability analysis.
 
-    PhaseStatus fgComputeDominators(); // Compute (new) dominators
+    PhaseStatus fgComputeDominators(); // Compute dominators
 
     bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
-
-    BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
-
-    unsigned fgDfsReversePostorder();
-    void fgDfsReversePostorderHelper(BasicBlock* block,
-                                     BlockSet&   visited,
-                                     unsigned&   preorderIndex,
-                                     unsigned&   reversePostorderIndex);
-
-    INDEBUG(void fgDispDomTree(DomTreeNode* domTree);) // Helper that prints out the Dominator Tree in debug builds.
-
-    DomTreeNode* fgBuildDomTree(); // Once we compute all the immediate dominator sets for each node in the flow graph
-                                   // (performed by fgComputeDoms), this procedure builds the dominance tree represented
-                                   // adjacency lists.
-
-    // In order to speed up the queries of the form 'Does A dominates B', we can perform a DFS preorder and postorder
-    // traversal of the dominance tree and the dominance query will become A dominates B iif preOrder(A) <= preOrder(B)
-    // && postOrder(A) >= postOrder(B) making the computation O(1).
-    void fgNumberDomTree(DomTreeNode* domTree);
-
-    // When the flow graph changes, we need to update the block numbers, reachability sets,
-    // dominators, and possibly loops.
-    //
-    void fgUpdateChangedFlowGraph(FlowGraphUpdates updates);
 
 public:
     enum GCPollType
@@ -5856,6 +5823,7 @@ public:
 
     PhaseStatus fgExpandThreadLocalAccess();
     bool fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+    bool fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgExpandStaticInit();
     bool fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
@@ -5863,6 +5831,9 @@ public:
     PhaseStatus fgVNBasedIntrinsicExpansion();
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
     bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+
+    PhaseStatus fgLateCastExpansion();
+    bool fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
@@ -6005,7 +5976,7 @@ public:
 
     void fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext);
 
-    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst);
+    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, bool noFallThroughQuirk = false);
 
     bool fgRenumberBlocks();
 
@@ -6051,8 +6022,6 @@ public:
     bool fgOptimizeBranch(BasicBlock* bJump);
 
     bool fgOptimizeSwitchBranches(BasicBlock* block);
-
-    bool fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev);
 
     bool fgOptimizeSwitchJumps();
 #ifdef DEBUG
@@ -6118,8 +6087,6 @@ public:
 
 #ifdef DEBUG
 
-    void fgDispDoms();
-    void fgDispReach();
     void fgDispBBLiveness(BasicBlock* block);
     void fgDispBBLiveness();
     void fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth = 0);
@@ -6602,7 +6569,11 @@ public:
     struct AddCodeDsc
     {
         AddCodeDsc*     acdNext;
-        BasicBlock*     acdDstBlk; // block  to  which we jump
+
+        // Initially the source block of the exception. After fgCreateThrowHelperBlocks, the block to which
+        // we jump to raise the exception.
+        BasicBlock*     acdDstBlk;
+
         unsigned        acdData;
         SpecialCodeKind acdKind; // what kind of a special block is this?
         bool            acdUsed; // do we need to keep this helper block?
@@ -6862,13 +6833,19 @@ public:
 
     void optFindLoops();
     void optFindNewLoops();
-    bool optCanonicalizeLoops(FlowGraphNaturalLoops* loops);
+    bool optCanonicalizeLoops();
+    bool optCompactLoops();
+    bool optCompactLoop(FlowGraphNaturalLoop* loop);
+    BasicBlock* optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* top);
+    BasicBlock* optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* insertionPoint, BasicBlock* top, BasicBlock* bottom);
+    bool optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
     void optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader);
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
+    bool optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR);
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
 
@@ -7241,7 +7218,6 @@ private:
                            var_types  iterType,
                            genTreeOps testOper,
                            bool       unsignedTest,
-                           bool       dupCond,
                            unsigned*  iterCount);
 
 protected:
@@ -7550,6 +7526,7 @@ public:
 #define OMF_HAS_TLS_FIELD                      0x00010000 // Method contains TLS field access
 #define OMF_HAS_SPECIAL_INTRINSICS             0x00020000 // Method contains special intrinsics expanded in late phases
 #define OMF_HAS_RECURSIVE_TAILCALL             0x00040000 // Method contains recursive tail call
+#define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
 
     // clang-format on
 
@@ -7588,6 +7565,16 @@ public:
     void setMethodHasStaticInit()
     {
         optMethodFlags |= OMF_HAS_STATIC_INIT;
+    }
+
+    bool doesMethodHaveExpandableCasts()
+    {
+        return (optMethodFlags & OMF_HAS_EXPANDABLE_CAST) != 0;
+    }
+
+    void setMethodHasExpandableCasts()
+    {
+        optMethodFlags |= OMF_HAS_EXPANDABLE_CAST;
     }
 
     bool doesMethodHaveGuardedDevirtualization() const
@@ -12005,93 +11992,12 @@ public:
 template <typename TVisitor>
 class DomTreeVisitor
 {
-protected:
-    Compiler* const    m_compiler;
-    DomTreeNode* const m_domTree;
-
-    DomTreeVisitor(Compiler* compiler, DomTreeNode* domTree) : m_compiler(compiler), m_domTree(domTree)
-    {
-    }
-
-    void Begin()
-    {
-    }
-
-    void PreOrderVisit(BasicBlock* block)
-    {
-    }
-
-    void PostOrderVisit(BasicBlock* block)
-    {
-    }
-
-    void End()
-    {
-    }
-
-public:
-    //------------------------------------------------------------------------
-    // WalkTree: Walk the dominator tree, starting from fgFirstBB.
-    //
-    // Parameter:
-    //    tree - Dominator tree nodes.
-    //
-    // Notes:
-    //    This performs a non-recursive, non-allocating walk of the tree by using
-    //    DomTreeNode's firstChild and nextSibling links to locate the children of
-    //    a node and BasicBlock's bbIDom parent link to go back up the tree when
-    //    no more children are left.
-    //
-    //    Forests are also supported, provided that all the roots are chained via
-    //    DomTreeNode::nextSibling to fgFirstBB.
-    //
-    void WalkTree()
-    {
-        static_cast<TVisitor*>(this)->Begin();
-
-        for (BasicBlock *next, *block = m_compiler->fgFirstBB; block != nullptr; block = next)
-        {
-            static_cast<TVisitor*>(this)->PreOrderVisit(block);
-
-            next = m_domTree[block->bbNum].firstChild;
-
-            if (next != nullptr)
-            {
-                assert(next->bbIDom == block);
-                continue;
-            }
-
-            do
-            {
-                static_cast<TVisitor*>(this)->PostOrderVisit(block);
-
-                next = m_domTree[block->bbNum].nextSibling;
-
-                if (next != nullptr)
-                {
-                    assert(next->bbIDom == block->bbIDom);
-                    break;
-                }
-
-                block = block->bbIDom;
-
-            } while (block != nullptr);
-        }
-
-        static_cast<TVisitor*>(this)->End();
-    }
-};
-
-// A dominator tree visitor implemented using the curiously-recurring-template pattern, similar to GenTreeVisitor.
-template <typename TVisitor>
-class NewDomTreeVisitor
-{
     friend class FlowGraphDominatorTree;
 
 protected:
     Compiler* m_compiler;
 
-    NewDomTreeVisitor(Compiler* compiler) : m_compiler(compiler)
+    DomTreeVisitor(Compiler* compiler) : m_compiler(compiler)
     {
     }
 
@@ -12120,7 +12026,7 @@ private:
         {
             static_cast<TVisitor*>(this)->PreOrderVisit(block);
 
-            next = tree[block->bbNewPostorderNum].firstChild;
+            next = tree[block->bbPostorderNum].firstChild;
 
             if (next != nullptr)
             {
@@ -12132,7 +12038,7 @@ private:
             {
                 static_cast<TVisitor*>(this)->PostOrderVisit(block);
 
-                next = tree[block->bbNewPostorderNum].nextSibling;
+                next = tree[block->bbPostorderNum].nextSibling;
 
                 if (next != nullptr)
                 {
@@ -12299,9 +12205,7 @@ extern size_t   gcPtrMapNSize;
 #if COUNT_BASIC_BLOCKS
 extern Histogram bbCntTable;
 extern Histogram bbOneBBSizeTable;
-extern Histogram domsChangedIterationTable;
 extern Histogram computeReachabilitySetsIterationTable;
-extern Histogram computeReachabilityIterationTable;
 #endif
 
 /*****************************************************************************

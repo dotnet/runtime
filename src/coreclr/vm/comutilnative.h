@@ -232,12 +232,12 @@ class COMInterlocked
 public:
         static FCDECL2(FC_UINT8_RET, Exchange8, UINT8 *location, UINT8 value);
         static FCDECL2(FC_INT16_RET, Exchange16, INT16 *location, INT16 value);
-        static FCDECL2(INT32, Exchange, INT32 *location, INT32 value);
-        static FCDECL2_IV(INT64,   Exchange64, INT64 *location, INT64 value);
-        static FCDECL3(FC_UINT8_RET, CompareExchange8,        UINT8* location, UINT8 value, UINT8 comparand);
-        static FCDECL3(FC_INT16_RET, CompareExchange16,        INT16* location, INT16 value, INT16 comparand);
-        static FCDECL3(INT32, CompareExchange,        INT32* location, INT32 value, INT32 comparand);
-        static FCDECL3_IVV(INT64, CompareExchange64,        INT64* location, INT64 value, INT64 comparand);
+        static FCDECL2(INT32, Exchange32, INT32 *location, INT32 value);
+        static FCDECL2_IV(INT64, Exchange64, INT64 *location, INT64 value);
+        static FCDECL3(FC_UINT8_RET, CompareExchange8, UINT8* location, UINT8 value, UINT8 comparand);
+        static FCDECL3(FC_INT16_RET, CompareExchange16, INT16* location, INT16 value, INT16 comparand);
+        static FCDECL3(INT32, CompareExchange32, INT32* location, INT32 value, INT32 comparand);
+        static FCDECL3_IVV(INT64, CompareExchange64, INT64* location, INT64 value, INT64 comparand);
         static FCDECL2(LPVOID, ExchangeObject, LPVOID* location, LPVOID value);
         static FCDECL3(LPVOID, CompareExchangeObject, LPVOID* location, LPVOID value, LPVOID comparand);
         static FCDECL2(INT32, ExchangeAdd32, INT32 *location, INT32 value);

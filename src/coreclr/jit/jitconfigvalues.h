@@ -255,8 +255,9 @@ CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // En
 
 CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                // Print codegen for given methods
 CONFIG_INTEGER(JitDisasmTesting, W("JitDisasmTesting"), 0) // Display BEGIN METHOD/END METHOD anchors for disasm testing
-CONFIG_INTEGER(JitDisasmDiffable, W("JitDisasmDiffable"), 0) // Make the disassembly diff-able
-CONFIG_INTEGER(JitDisasmSummary, W("JitDisasmSummary"), 0)   // Prints all jitted methods to the console
+CONFIG_INTEGER(JitDisasmDiffable, W("JitDisasmDiffable"), 0)           // Make the disassembly diff-able
+CONFIG_INTEGER(JitDisasmSummary, W("JitDisasmSummary"), 0)             // Prints all jitted methods to the console
+CONFIG_INTEGER(JitDisasmOnlyOptimized, W("JitDisasmOnlyOptimized"), 0) // Hides disassembly for unoptimized codegen
 CONFIG_INTEGER(JitDisasmWithAlignmentBoundaries, W("JitDisasmWithAlignmentBoundaries"), 0) // Print the alignment
                                                                                            // boundaries.
 CONFIG_INTEGER(JitDisasmWithCodeBytes, W("JitDisasmWithCodeBytes"), 0) // Print the instruction code bytes

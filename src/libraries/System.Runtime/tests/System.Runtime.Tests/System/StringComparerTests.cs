@@ -16,7 +16,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("culture", () => StringComparer.Create(null, ignoreCase: true));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Create_CreatesValidComparer()
         {
             StringComparer c = StringComparer.Create(CultureInfo.InvariantCulture, ignoreCase: true);
@@ -117,7 +117,7 @@ namespace System.Tests
             Assert.Throws<ArgumentNullException>(() => StringComparer.Create(null, CompareOptions.None));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void CreateCultureOptions_CreatesValidComparer()
         {
             StringComparer c = StringComparer.Create(CultureInfo.InvariantCulture, CompareOptions.IgnoreCase);

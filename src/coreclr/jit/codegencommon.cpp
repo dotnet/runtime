@@ -397,7 +397,7 @@ void CodeGen::genMarkLabelsForCodegen()
                 block->GetTrueTarget()->SetFlags(BBF_HAS_LABEL);
 
                 // If we need a jump to the false target, give it a label
-                if (!block->CanRemoveJumpToFalseTarget(compiler))
+                if (!block->CanRemoveJumpToTarget(block->GetFalseTarget(), compiler))
                 {
                     JITDUMP("  " FMT_BB " : branch target\n", block->GetFalseTarget()->bbNum);
                     block->GetFalseTarget()->SetFlags(BBF_HAS_LABEL);
@@ -455,10 +455,13 @@ void CodeGen::genMarkLabelsForCodegen()
     }
 
     // Walk all the exceptional code blocks and mark them, since they don't appear in the normal flow graph.
-    for (Compiler::AddCodeDsc* add = compiler->fgAddCodeList; add; add = add->acdNext)
+    for (Compiler::AddCodeDsc* add = compiler->fgAddCodeList; add != nullptr; add = add->acdNext)
     {
-        JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
-        add->acdDstBlk->SetFlags(BBF_HAS_LABEL);
+        if (add->acdUsed)
+        {
+            JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
+            add->acdDstBlk->SetFlags(BBF_HAS_LABEL);
+        }
     }
 
     for (EHblkDsc* const HBtab : EHClauses(compiler))
@@ -1521,6 +1524,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
 #ifdef DEBUG
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -1533,6 +1537,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -2001,14 +2006,6 @@ void CodeGen::genEmitMachineCode()
     /* We're done generating code for this function */
     compiler->compCodeGenDone = true;
 #endif
-
-#if defined(DEBUG) || defined(LATE_DISASM)
-    // Add code size information into the Perf Score
-    // All compPerfScore calculations must be performed using doubles
-    compiler->info.compPerfScore += ((double)compiler->info.compTotalHotCodeSize * (double)PERFSCORE_CODESIZE_COST_HOT);
-    compiler->info.compPerfScore +=
-        ((double)compiler->info.compTotalColdCodeSize * (double)PERFSCORE_CODESIZE_COST_COLD);
-#endif // DEBUG || LATE_DISASM
 
     if (compiler->opts.disAsm && compiler->opts.disTesting)
     {
