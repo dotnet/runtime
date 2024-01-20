@@ -14140,6 +14140,14 @@ PhaseStatus Compiler::fgMorphBlocks()
         fgEntryBB = nullptr;
     }
 
+    // We don't maintain `genReturnBB` after this point.
+    if (genReturnBB != nullptr)
+    {
+        // It no longer needs special "keep" treatment.
+        genReturnBB->RemoveFlags(BBF_DONT_REMOVE);
+        genReturnBB = nullptr;
+    }
+
     // We are done with the global morphing phase
     //
     fgInvalidateDfsTree();
