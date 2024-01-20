@@ -11240,7 +11240,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>(x * y) + z</summary>
-        internal readonly struct MultiplyAddEstimateOperator<T> : ITernaryOperator<T> where T : IFloatingPointIeee754<T>
+        internal readonly struct FusedMultiplyAddOperator<T> : ITernaryOperator<T> where T : IFloatingPointIeee754<T>
         {
             public static T Invoke(T x, T y, T z) => FusedMultiplyAdd(x, y, z);
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z) => FusedMultiplyAdd(x, y, z);

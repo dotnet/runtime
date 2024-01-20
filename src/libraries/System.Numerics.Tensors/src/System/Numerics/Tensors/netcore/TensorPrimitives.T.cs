@@ -1435,9 +1435,9 @@ namespace System.Numerics.Tensors
         /// If either of the element-wise input values is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
-        public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> addend, Span<T> destination)
+        public static void FusedMultiplyAdd<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> addend, Span<T> destination)
             where T : IFloatingPointIeee754<T> =>
-            InvokeSpanSpanSpanIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
+            InvokeSpanSpanSpanIntoSpan<T, FusedMultiplyAddOperator<T>>(x, y, addend, destination);
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -1457,9 +1457,9 @@ namespace System.Numerics.Tensors
         /// If either of the element-wise input values is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
-        public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T addend, Span<T> destination)
+        public static void FusedMultiplyAdd<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T addend, Span<T> destination)
             where T : IFloatingPointIeee754<T> =>
-            InvokeSpanSpanScalarIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
+            InvokeSpanSpanScalarIntoSpan<T, FusedMultiplyAddOperator<T>>(x, y, addend, destination);
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -1478,9 +1478,9 @@ namespace System.Numerics.Tensors
         /// If either of the element-wise input values is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
-        public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> addend, Span<T> destination)
+        public static void FusedMultiplyAdd<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> addend, Span<T> destination)
             where T : IFloatingPointIeee754<T> =>
-            InvokeSpanScalarSpanIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
+            InvokeSpanScalarSpanIntoSpan<T, FusedMultiplyAddOperator<T>>(x, y, addend, destination);
 
         /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
