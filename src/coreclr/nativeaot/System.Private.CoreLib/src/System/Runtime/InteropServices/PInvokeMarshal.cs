@@ -235,7 +235,7 @@ namespace System.Runtime.InteropServices
             // NativeFunctionPointerWrapper derived class
             //
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly
-            if (delegateType.GetMethodTable()->BaseType != MethodTable.Of<MulticastDelegate>())
+            if (delegateType.ToMethodTable()->BaseType != MethodTable.Of<MulticastDelegate>())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, "t");
 #pragma warning restore CA2208
 
