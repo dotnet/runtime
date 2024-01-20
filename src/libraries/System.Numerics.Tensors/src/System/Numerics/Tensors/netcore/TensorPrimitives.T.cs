@@ -250,7 +250,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Atan2<T>(T y, ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPointIeee754<T> =>
-            InvokeSpanScalarIntoSpan<T, InvertedAtan2Operator<T>>(x, y, destination);
+            InvokeScalarSpanIntoSpan<T, Atan2Operator<T>>(y, x, destination);
 
         /// <summary>Computes the element-wise arc-tangent for the quotient of two values in the specified tensors and divides the result by Pi.</summary>
         /// <param name="y">The first tensor, represented as a span.</param>
@@ -309,7 +309,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Atan2Pi<T>(T y, ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPointIeee754<T> =>
-            InvokeSpanScalarIntoSpan<T, InvertedAtan2PiOperator<T>>(x, y, destination);
+            InvokeScalarSpanIntoSpan<T, Atan2PiOperator<T>>(y, x, destination);
 
         /// <summary>Computes the element-wise addition of numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -733,7 +733,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Divide<T>(T x, ReadOnlySpan<T> y, Span<T> destination)
             where T : IDivisionOperators<T, T, T> =>
-            InvokeSpanScalarIntoSpan<T, InvertedDivideOperator<T>>(y, x, destination);
+            InvokeScalarSpanIntoSpan<T, DivideOperator<T>>(x, y, destination);
 
         /// <summary>Computes the dot product of two tensors containing numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -951,7 +951,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Ieee754Remainder<T>(T x, ReadOnlySpan<T> y, Span<T> destination)
             where T : IFloatingPointIeee754<T> =>
-            InvokeSpanScalarIntoSpan<T, InvertedIeee754RemainderOperator<T>>(y, x, destination);
+            InvokeScalarSpanIntoSpan<T, Ieee754RemainderOperator<T>>(x, y, destination);
 
         /// <summary>Computes the element-wise integer logarithm of numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -1757,7 +1757,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Pow<T>(T x, ReadOnlySpan<T> y, Span<T> destination)
             where T : IPowerFunctions<T> =>
-            InvokeSpanScalarIntoSpan<T, InvertedPowOperator<T>>(y, x, destination);
+            InvokeScalarSpanIntoSpan<T, PowOperator<T>>(x, y, destination);
 
         /// <summary>Computes the product of all elements in the specified non-empty tensor of numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2460,7 +2460,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Subtract<T>(T x, ReadOnlySpan<T> y, Span<T> destination)
             where T : ISubtractionOperators<T, T, T> =>
-            InvokeSpanScalarIntoSpan<T, InvertedSubtractOperator<T>>(y, x, destination);
+            InvokeScalarSpanIntoSpan<T, SubtractOperator<T>>(x, y, destination);
 
         /// <summary>Computes the sum of all elements in the specified tensor of numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>

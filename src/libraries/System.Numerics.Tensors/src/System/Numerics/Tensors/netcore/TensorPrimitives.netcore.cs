@@ -4936,6 +4936,19 @@ namespace System.Numerics.Tensors
         /// <typeparam name="TBinaryOperator">
         /// Specifies the operation to perform on each element loaded from <paramref name="x"/> with <paramref name="y"/>.
         /// </typeparam>
+        private static void InvokeScalarSpanIntoSpan<T, TBinaryOperator>(
+            T x, ReadOnlySpan<T> y, Span<T> destination)
+            where TBinaryOperator : struct, IBinaryOperator<T> =>
+            InvokeSpanScalarIntoSpan<T, IdentityOperator<T>, InvertedBinaryOperator<TBinaryOperator, T>>(y, x, destination);
+
+        /// <summary>
+        /// Performs an element-wise operation on <paramref name="x"/> and <paramref name="y"/>,
+        /// and writes the results to <paramref name="destination"/>.
+        /// </summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <typeparam name="TBinaryOperator">
+        /// Specifies the operation to perform on each element loaded from <paramref name="x"/> with <paramref name="y"/>.
+        /// </typeparam>
         private static void InvokeSpanScalarIntoSpan<T, TBinaryOperator>(
             ReadOnlySpan<T> x, T y, Span<T> destination)
             where TBinaryOperator : struct, IBinaryOperator<T> =>
@@ -9739,6 +9752,16 @@ namespace System.Numerics.Tensors
             public static T IdentityValue => T.AdditiveIdentity;
         }
 
+        private readonly struct InvertedBinaryOperator<TOperator, T> : IBinaryOperator<T>
+            where TOperator : IBinaryOperator<T>
+        {
+            public static bool Vectorizable => TOperator.Vectorizable;
+            public static T Invoke(T x, T y) => TOperator.Invoke(y, x);
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => TOperator.Invoke(y, x);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => TOperator.Invoke(y, x);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => TOperator.Invoke(y, x);
+        }
+
         /// <summary>x - y</summary>
         internal readonly struct SubtractOperator<T> : IBinaryOperator<T> where T : ISubtractionOperators<T, T, T>
         {
@@ -9747,16 +9770,6 @@ namespace System.Numerics.Tensors
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x - y;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x - y;
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x - y;
-        }
-
-        /// <summary>y - x</summary>
-        internal readonly struct InvertedSubtractOperator<T> : IBinaryOperator<T> where T : ISubtractionOperators<T, T, T>
-        {
-            public static bool Vectorizable => true;
-            public static T Invoke(T x, T y) => y - x;
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => y - x;
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => y - x;
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => y - x;
         }
 
         /// <summary>(x - y) * (x - y)</summary>
@@ -9816,20 +9829,6 @@ namespace System.Numerics.Tensors
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x / y;
         }
 
-        /// <summary>y / x</summary>
-        /// <remarks>
-        /// This exists only to enable reusing InvokeSpanScalarIntoDestination. If we ever add an InvokeScalarSpanIntoDestination,
-        /// this can be deleted and the relevant call site can switch to using <see cref="DivideOperator{T}"/>.
-        /// </remarks>
-        internal readonly struct InvertedDivideOperator<T> : IBinaryOperator<T> where T : IDivisionOperators<T, T, T>
-        {
-            public static bool Vectorizable => true;
-            public static T Invoke(T x, T y) => y / x;
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => y / x;
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => y / x;
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => y / x;
-        }
-
         /// <summary>T.Ieee754Remainder(x, y)</summary>
         internal readonly struct Ieee754RemainderOperator<T> : IBinaryOperator<T> where T : IFloatingPointIeee754<T>
         {
@@ -9838,20 +9837,6 @@ namespace System.Numerics.Tensors
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
-        }
-
-        /// <summary>T.Ieee754Remainder(y, x)</summary>
-        /// <remarks>
-        /// This exists only to enable reusing InvokeSpanScalarIntoDestination. If we ever add an InvokeScalarSpanIntoDestination,
-        /// this can be deleted and the relevant call site can switch to using <see cref="Ieee754RemainderOperator{T}"/>.
-        /// </remarks>
-        internal readonly struct InvertedIeee754RemainderOperator<T> : IBinaryOperator<T> where T : IFloatingPointIeee754<T>
-        {
-            public static bool Vectorizable => Ieee754RemainderOperator<T>.Vectorizable;
-            public static T Invoke(T x, T y) => T.Ieee754Remainder(y, x);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => Ieee754RemainderOperator<T>.Invoke(y, x);
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => Ieee754RemainderOperator<T>.Invoke(y, x);
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => Ieee754RemainderOperator<T>.Invoke(y, x);
         }
 
         // Ieee754Remainder
@@ -12029,21 +12014,6 @@ namespace System.Numerics.Tensors
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
         }
 
-        /// <summary>T.Pow(y, x)</summary>
-        /// <remarks>
-        /// This exists only to enable reusing InvokeSpanScalarIntoDestination. If we ever add an InvokeScalarSpanIntoDestination,
-        /// this can be deleted and the relevant call site can switch to using <see cref="PowOperator{T}"/>.
-        /// </remarks>
-        internal readonly struct InvertedPowOperator<T> : IBinaryOperator<T>
-            where T : IPowerFunctions<T>
-        {
-            public static bool Vectorizable => PowOperator<T>.Vectorizable;
-            public static T Invoke(T x, T y) => T.Pow(y, x);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => PowOperator<T>.Invoke(y, x);
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => PowOperator<T>.Invoke(y, x);
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => PowOperator<T>.Invoke(y, x);
-        }
-
         /// <summary>T.Sqrt(x)</summary>
         internal readonly struct SqrtOperator<T> : IUnaryOperator<T>
             where T : IRootFunctions<T>
@@ -12187,21 +12157,6 @@ namespace System.Numerics.Tensors
             public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => throw new NotSupportedException();
         }
 
-        /// <summary>T.Atan2(x, y)</summary>
-        /// <remarks>
-        /// This exists only to enable reusing InvokeSpanScalarIntoDestination. If we ever add an InvokeScalarSpanIntoDestination,
-        /// this can be deleted and the relevant call site can switch to using <see cref="Atan2Operator{T}"/>.
-        /// </remarks>
-        internal readonly struct InvertedAtan2Operator<T> : IBinaryOperator<T>
-            where T : IFloatingPointIeee754<T>
-        {
-            public static bool Vectorizable => Atan2Operator<T>.Vectorizable;
-            public static T Invoke(T y, T x) => T.Atan2(x, y);
-            public static Vector128<T> Invoke(Vector128<T> y, Vector128<T> x) => Atan2Operator<T>.Invoke(x, y);
-            public static Vector256<T> Invoke(Vector256<T> y, Vector256<T> x) => Atan2Operator<T>.Invoke(x, y);
-            public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => Atan2Operator<T>.Invoke(x, y);
-        }
-
         /// <summary>T.Atan2Pi(y, x)</summary>
         internal readonly struct Atan2PiOperator<T> : IBinaryOperator<T>
             where T : IFloatingPointIeee754<T>
@@ -12211,21 +12166,6 @@ namespace System.Numerics.Tensors
             public static Vector128<T> Invoke(Vector128<T> y, Vector128<T> x) => Atan2Operator<T>.Invoke(y, x) / Vector128.Create(T.Pi);
             public static Vector256<T> Invoke(Vector256<T> y, Vector256<T> x) => Atan2Operator<T>.Invoke(y, x) / Vector256.Create(T.Pi);
             public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => Atan2Operator<T>.Invoke(y, x) / Vector512.Create(T.Pi);
-        }
-
-        /// <summary>T.Atan2Pi(x, y)</summary>
-        /// <remarks>
-        /// This exists only to enable reusing InvokeSpanScalarIntoDestination. If we ever add an InvokeScalarSpanIntoDestination,
-        /// this can be deleted and the relevant call site can switch to using <see cref="Atan2PiOperator{T}"/>.
-        /// </remarks>
-        internal readonly struct InvertedAtan2PiOperator<T> : IBinaryOperator<T>
-            where T : IFloatingPointIeee754<T>
-        {
-            public static bool Vectorizable => Atan2PiOperator<T>.Vectorizable;
-            public static T Invoke(T y, T x) => T.Atan2Pi(x, y);
-            public static Vector128<T> Invoke(Vector128<T> y, Vector128<T> x) => Atan2PiOperator<T>.Invoke(x, y);
-            public static Vector256<T> Invoke(Vector256<T> y, Vector256<T> x) => Atan2PiOperator<T>.Invoke(x, y);
-            public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => Atan2PiOperator<T>.Invoke(x, y);
         }
 
         /// <summary>T.Cos(x)</summary>
