@@ -3195,6 +3195,15 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         assert(genReturnBB->KindIs(BBJ_RETURN));
     }
 
+    // Ensure that all throw helper blocks are currently in the block list.
+    for (Compiler::AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    {
+        if (add->acdUsed)
+        {
+            assert(add->acdDstBlk->bbTraversalStamp == curTraversalStamp);
+        }
+    }
+
     // If this is an inlinee, we're done checking.
     if (compIsForInlining())
     {
