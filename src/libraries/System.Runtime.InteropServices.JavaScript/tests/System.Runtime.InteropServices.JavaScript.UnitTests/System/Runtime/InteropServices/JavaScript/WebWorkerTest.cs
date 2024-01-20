@@ -93,7 +93,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             cts.Cancel();
 
-            await Assert.ThrowsAsync<OperationCanceledException>(() => canceledTask);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceledTask);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
@@ -114,7 +114,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             cts.Cancel();
 
-            await Assert.ThrowsAsync<OperationCanceledException>(() => canceledTask);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceledTask);
         }
 
         [Fact]
@@ -181,7 +181,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             // this will unblock the current pending work item
             blocker.Set();
 
-            await Assert.ThrowsAsync<OperationCanceledException>(() => canceledSend);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceledSend);
             await canceledPost; // this shouldn't throw
 
             Assert.False(shouldNotHitSend);
@@ -616,7 +616,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 CancellationTokenSource cts2 = new CancellationTokenSource();
                 var resTask = client.ReceiveAsync(receive, cts2.Token);
                 cts2.Cancel();
-                var ex = await Assert.ThrowsAsync<OperationCanceledException>(() => resTask);
+                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => resTask);
                 Assert.Equal(cts2.Token, ex.CancellationToken);
             };
 
