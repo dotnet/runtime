@@ -2004,7 +2004,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         return false;
     }
 
-    if ((castResult == TypeCompareState::MustNot) && isInstanceOf)
+    if ((castResult == TypeCompareState::MustNot) && !isInstanceOf)
     {
         // Don't expand castclass if likelyclass always fails the type check
         // it's going to throw an exception anyway.
