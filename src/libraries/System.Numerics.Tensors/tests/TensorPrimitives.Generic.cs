@@ -369,6 +369,10 @@ namespace System.Numerics.Tensors.Tests
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Ieee754Remainder), new Func<T, T, T>(T.Ieee754Remainder) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Pow), new Func<T, T, T>(T.Pow) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Log), new Func<T, T, T>(T.Log) };
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Max), new Func<T, T, T>(T.Max) };
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.MaxMagnitude), new Func<T, T, T>(T.MaxMagnitude) };
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Min), new Func<T, T, T>(T.Min) };
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.MinMagnitude), new Func<T, T, T>(T.MinMagnitude) };
         }
 
         [Theory]
@@ -1299,6 +1303,10 @@ namespace System.Numerics.Tensors.Tests
         {
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.BitwiseAnd), new Func<T, T, T>((x, y) => x & y) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.BitwiseOr), new Func<T, T, T>((x, y) => x | y) };
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Max), new Func<T, T, T>(T.Max) };
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.MaxMagnitude), new Func<T, T, T>(T.MaxMagnitude) };
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Min), new Func<T, T, T>(T.Min) };
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.MinMagnitude), new Func<T, T, T>(T.MinMagnitude) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Xor), new Func<T, T, T>((x, y) => x ^ y) };
         }
 
