@@ -113,19 +113,19 @@ namespace System
                 switch (r)
                 {
                     case AssignArrayEnum.AssignUnboxValueClass:
-                        UnBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        CopyImplUnBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
                     case AssignArrayEnum.AssignBoxValueClassOrPrimitive:
-                        BoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        CopyImplBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
                     case AssignArrayEnum.AssignMustCast:
-                        CastCheckEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        CopyImplCastCheckEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
                     case AssignArrayEnum.AssignPrimitiveWiden:
-                        PrimitiveWiden(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                        CopyImplPrimitiveWiden(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
                     default:
@@ -148,7 +148,7 @@ namespace System
         private static unsafe partial AssignArrayEnum CanAssignArrayType(void* srcTH, void* dstTH);
 
         // Unboxes from an Object[] into a value class or primitive array.
-        private static unsafe void UnBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        private static unsafe void CopyImplUnBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             MethodTable* pDestArrayMT = RuntimeHelpers.GetMethodTable(destinationArray);
             TypeHandle destTH = pDestArrayMT->GetArrayElementTypeHandle();
@@ -176,7 +176,7 @@ namespace System
 
         // Will box each element in an array of value classes or primitives into an array of Objects.
         [UnconditionalSuppressMessage("Trimming", "IL2059:The type passed to the RunClassConstructor is not statically known, Trimmer can't make sure that its static constructor is available.", Justification = "The type handle is retrieved from existing array.")]
-        private static unsafe void BoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        private static unsafe void CopyImplBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             MethodTable* pSrcArrayMT = RuntimeHelpers.GetMethodTable(sourceArray);
             TypeHandle srcTH = pSrcArrayMT->GetArrayElementTypeHandle();
@@ -199,7 +199,7 @@ namespace System
         }
 
         // Casts and assigns each element of src array to the dest array type.
-        private static unsafe void CastCheckEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        private static unsafe void CopyImplCastCheckEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
 
@@ -218,7 +218,7 @@ namespace System
         }
 
         // Widen primitive types to another primitive type.
-        private static void PrimitiveWiden(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        private static void CopyImplPrimitiveWiden(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             // Get appropriate sizes, which requires method tables.
 
