@@ -1,0 +1,21 @@
+name: Sync Branch to Daily build
+
+on:
+  push:
+    branches:
+      - riscv-jit-rv64
+
+jobs:
+  sync-branches:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Merge changes from riscv-jit-rv64 into Mono-Daly-Build
+        run: |
+          git checkout Mono-Daly-Build
+          git fetch origin riscv-jit-rv64
+          git merge origin/riscv-jit-rv64 --no-edit
+          git push origin Mono-Daly-Build
