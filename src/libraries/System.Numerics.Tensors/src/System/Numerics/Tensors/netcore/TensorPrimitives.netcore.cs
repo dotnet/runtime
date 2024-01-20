@@ -12029,6 +12029,21 @@ namespace System.Numerics.Tensors
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
         }
 
+        /// <summary>T.Pow(y, x)</summary>
+        /// <remarks>
+        /// This exists only to enable reusing InvokeSpanScalarIntoDestination. If we ever add an InvokeScalarSpanIntoDestination,
+        /// this can be deleted and the relevant call site can switch to using <see cref="PowOperator{T}"/>.
+        /// </remarks>
+        internal readonly struct InvertedPowOperator<T> : IBinaryOperator<T>
+            where T : IPowerFunctions<T>
+        {
+            public static bool Vectorizable => PowOperator<T>.Vectorizable;
+            public static T Invoke(T x, T y) => T.Pow(y, x);
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => PowOperator<T>.Invoke(y, x);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => PowOperator<T>.Invoke(y, x);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => PowOperator<T>.Invoke(y, x);
+        }
+
         /// <summary>T.Sqrt(x)</summary>
         internal readonly struct SqrtOperator<T> : IUnaryOperator<T>
             where T : IRootFunctions<T>

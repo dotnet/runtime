@@ -437,6 +437,7 @@ namespace System.Numerics.Tensors.Tests
         {
             yield return new object[] { new ScalarSpanDestinationDelegate(TensorPrimitives.Atan2), new Func<T, T, T>(T.Atan2) };
             yield return new object[] { new ScalarSpanDestinationDelegate(TensorPrimitives.Atan2Pi), new Func<T, T, T>(T.Atan2Pi) };
+            yield return new object[] { new ScalarSpanDestinationDelegate(TensorPrimitives.Pow), new Func<T, T, T>(T.Pow) };
             yield return new object[] { new ScalarSpanDestinationDelegate(TensorPrimitives.Ieee754Remainder), new Func<T, T, T>(T.Ieee754Remainder) };
         }
 
