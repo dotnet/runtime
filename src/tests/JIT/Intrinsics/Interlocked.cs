@@ -13,7 +13,8 @@ namespace InterlockedTest
     {
         private static int _errors = 0;
 
-        unsafe static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             // use no inline methods to avoid indirect call inlining in the future
             [MethodImpl(MethodImplOptions.NoInlining)]
