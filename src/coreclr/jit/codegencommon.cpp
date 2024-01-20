@@ -7499,6 +7499,7 @@ void CodeGen::genLongReturn(GenTree* treeNode)
 //------------------------------------------------------------------------
 // genReturn: Generates code for return statement.
 //            In case of struct return, delegates to the genStructReturn method.
+//            In case of LONG return on 32-bit, delegates to the genLongReturn method.
 //
 // Arguments:
 //    treeNode - The GT_RETURN or GT_RETFILT tree node.
@@ -7508,7 +7509,8 @@ void CodeGen::genLongReturn(GenTree* treeNode)
 //
 void CodeGen::genReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT));
+
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
 
@@ -7609,9 +7611,9 @@ void CodeGen::genReturn(GenTree* treeNode)
     // maintain such an invariant irrespective of whether profiler hook needed or not.
     // Also, there is not much to be gained by materializing it as an explicit node.
     //
-    // There should be a single return block while generating profiler ELT callbacks,
-    // so we just look for that block to trigger insertion of the profile hook.
-    if ((compiler->compCurBB == compiler->genReturnBB) && compiler->compIsProfilerHookNeeded())
+    // There should be a single GT_RETURN while generating profiler ELT callbacks.
+    //
+    if (treeNode->OperIs(GT_RETURN) && compiler->compIsProfilerHookNeeded())
     {
         // !! NOTE !!
         // Since we are invalidating the assumption that we would slip into the epilog

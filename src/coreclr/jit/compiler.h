@@ -5358,8 +5358,6 @@ public:
     IL_OFFSET fgFindBlockILOffset(BasicBlock* block);
     void fgFixEntryFlowForOSR();
 
-    void fgUpdateSingleReturnBlock(BasicBlock* block);
-
     BasicBlock* fgSplitBlockAtBeginning(BasicBlock* curr);
     BasicBlock* fgSplitBlockAtEnd(BasicBlock* curr);
     BasicBlock* fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt);
@@ -10745,14 +10743,14 @@ public:
     unsigned  compHndBBtabCount;      // element count of used elements in EH data array
     unsigned  compHndBBtabAllocCount; // element count of allocated elements in EH data array
 
-#if defined(TARGET_X86)
+#if !defined(FEATURE_EH_FUNCLETS)
 
     //-------------------------------------------------------------------------
     //  Tracking of region covered by the monitor in synchronized methods
     void* syncStartEmitCookie; // the emitter cookie for first instruction after the call to MON_ENTER
     void* syncEndEmitCookie;   // the emitter cookie for first instruction after the call to MON_EXIT
 
-#endif // !TARGET_X86
+#endif // !FEATURE_EH_FUNCLETS
 
     Phases      mostRecentlyActivePhase; // the most recently active phase
     PhaseChecks activePhaseChecks;       // the currently active phase checks
