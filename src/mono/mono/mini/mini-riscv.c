@@ -196,7 +196,7 @@ get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, i
 	GSList *unwind_ops;
 
 	if (offset / (int)sizeof (target_mgreg_t) > MAX_VIRTUAL_DELEGATE_OFFSET)
-		NOT_IMPLEMENTED;
+		return NULL;
 	
 	MINI_BEGIN_CODEGEN ();
 
