@@ -7186,6 +7186,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
 #ifdef DEBUG
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -7198,6 +7199,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());

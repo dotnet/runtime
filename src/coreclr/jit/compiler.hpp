@@ -3045,7 +3045,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
     // under stress, with implausible flow graph optimizations. So, walk the fgAddCodeList
     // for the final determination.
 
-    for (AddCodeDsc* add = fgAddCodeList; add; add = add->acdNext)
+    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
     {
         if (block == add->acdDstBlk)
         {
@@ -3068,7 +3068,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 
 inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 {
-    for (AddCodeDsc* add = fgAddCodeList; add; add = add->acdNext)
+    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
     {
         if (block == add->acdDstBlk)
         {

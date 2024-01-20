@@ -945,12 +945,6 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         return false;
     }
 
-    // Don't compact away any loop entry blocks that we added in optCanonicalizeLoops
-    if (block->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-    {
-        return false;
-    }
-
     // We don't want to compact blocks that are in different Hot/Cold regions
     //
     if (fgInDifferentRegions(block, bNext))

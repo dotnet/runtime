@@ -5520,7 +5520,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         }
 
         // Check if this cast helper have some profile data
-        if (impIsCastHelperMayHaveProfileData(helper))
+        // "isinst" with profile data is moved to a late phase.
+        // The long-term plan is to move all non-trivial expansions there.
+        if (impIsCastHelperMayHaveProfileData(helper) && isCastClass)
         {
             const int               maxLikelyClasses = 32;
             LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
@@ -5618,6 +5620,13 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 call->gtHandleHistogramProfileCandidateInfo = pInfo;
                 compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
             }
+        }
+        else if (!isCastClass && impIsCastHelperMayHaveProfileData(helper))
+        {
+            // Maybe the late-cast-expand phase will have a better luck expanding this cast.
+            // TODO: enable for cast-class as well.
+            call->gtCallMoreFlags |= GTF_CALL_M_CAST_CAN_BE_EXPANDED;
+            call->gtCastHelperILOffset = ilOffset;
         }
         return call;
     }
