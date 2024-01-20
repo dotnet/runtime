@@ -3160,7 +3160,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				           next_ins->opcode == OP_LOADI8_MEMBASE || next_ins->opcode == OP_ICONST ||
 				           next_ins->opcode == OP_I8CONST || next_ins->opcode == OP_ADD_IMM ||
 						   next_ins->opcode == OP_IXOR || next_ins->opcode == OP_ICOMPARE ||
-						   next_ins->opcode == OP_LCOMPARE || next_ins->opcode == OP_LOADR8_MEMBASE) {
+						   next_ins->opcode == OP_LCOMPARE || next_ins->opcode == OP_LOADR8_MEMBASE ||
+						   next_ins->opcode == OP_CALL) {
 					/**
 					 * there is compare without branch OP followed
 					 *
