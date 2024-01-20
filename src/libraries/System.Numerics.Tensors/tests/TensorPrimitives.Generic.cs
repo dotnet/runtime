@@ -363,6 +363,8 @@ namespace System.Numerics.Tensors.Tests
         #region Span,Scalar -> Destination
         public static IEnumerable<object[]> SpanScalarDestinationFunctionsToTest()
         {
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Atan2), new Func<T, T, T>(T.Atan2) };
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Atan2Pi), new Func<T, T, T>(T.Atan2Pi) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Pow), new Func<T, T, T>(T.Pow) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Log), new Func<T, T, T>(T.Log) };
         }
@@ -425,6 +427,74 @@ namespace System.Numerics.Tensors.Tests
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), default, array.AsSpan(0, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), default, array.AsSpan(2, 2)));
+        }
+        #endregion
+
+        #region Scalar,Span -> Destination
+        public static IEnumerable<object[]> ScalarSpanFloatDestinationFunctionsToTest()
+        {
+            yield return new object[] { new ScalarSpanDestinationDelegate(TensorPrimitives.Atan2), new Func<T, T, T>(T.Atan2) };
+            yield return new object[] { new ScalarSpanDestinationDelegate(TensorPrimitives.Atan2Pi), new Func<T, T, T>(T.Atan2Pi) };
+        }
+
+        [Theory]
+        [MemberData(nameof(ScalarSpanFloatDestinationFunctionsToTest))]
+        public void SpanScalarFloatDestination_AllLengths(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod)
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                T x = NextRandom();
+                using BoundedMemory<T> y = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<T> destination = CreateTensor(tensorLength);
+
+                tensorPrimitivesMethod(x, y, destination);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    AssertEqualTolerance(expectedMethod(x, y[i]), destination[i]);
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ScalarSpanFloatDestinationFunctionsToTest))]
+        public void SpanScalarFloatDestination_InPlace(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> expectedMethod)
+        {
+            Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
+            {
+                T x = NextRandom();
+                using BoundedMemory<T> y = CreateAndFillTensor(tensorLength);
+                T[] yOrig = y.Span.ToArray();
+
+                tensorPrimitivesMethod(x, y, y);
+
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    AssertEqualTolerance(expectedMethod(x, yOrig[i]), y[i]);
+                }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ScalarSpanFloatDestinationFunctionsToTest))]
+        public void SpanScalarFloatDestination_ThrowsForTooShortDestination(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> _)
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                T x = NextRandom();
+                using BoundedMemory<T> y = CreateAndFillTensor(tensorLength);
+                using BoundedMemory<T> destination = CreateTensor(tensorLength - 1);
+
+                AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(x, y, destination));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ScalarSpanFloatDestinationFunctionsToTest))]
+        public void SpanScalarFloatDestination_ThrowsForOverlapppingInputsWithOutputs(ScalarSpanDestinationDelegate tensorPrimitivesMethod, Func<T, T, T> _)
+        {
+            T[] array = new T[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(default, array.AsSpan(1, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(default, array.AsSpan(1, 2), array.AsSpan(2, 2)));
         }
         #endregion
 
@@ -588,7 +658,7 @@ namespace System.Numerics.Tensors.Tests
         }
         #endregion
 
-        #region Span -> Destination, Destination
+        #region Span -> Destination,Destination
         public static IEnumerable<object[]> SpanDestinationDestinationFunctionsToTest()
         {
             yield return new object[] { new SpanDestinationDestinationDelegate(TensorPrimitives.SinCos), new Func<T, (T, T)>(T.SinCos) };

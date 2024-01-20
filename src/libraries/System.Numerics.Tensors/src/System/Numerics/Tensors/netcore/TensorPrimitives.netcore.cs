@@ -12158,6 +12158,21 @@ namespace System.Numerics.Tensors
             public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => throw new NotSupportedException();
         }
 
+        /// <summary>T.Atan2(x, y)</summary>
+        /// <remarks>
+        /// This exists only to enable reusing InvokeSpanScalarIntoDestination. If we ever add an InvokeScalarSpanIntoDestination,
+        /// this can be deleted and the relevant call site can switch to using <see cref="Atan2Operator{T}"/>.
+        /// </remarks>
+        internal readonly struct InvertedAtan2Operator<T> : IBinaryOperator<T>
+            where T : IFloatingPointIeee754<T>
+        {
+            public static bool Vectorizable => Atan2Operator<T>.Vectorizable;
+            public static T Invoke(T y, T x) => T.Atan2(x, y);
+            public static Vector128<T> Invoke(Vector128<T> y, Vector128<T> x) => Atan2Operator<T>.Invoke(x, y);
+            public static Vector256<T> Invoke(Vector256<T> y, Vector256<T> x) => Atan2Operator<T>.Invoke(x, y);
+            public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => Atan2Operator<T>.Invoke(x, y);
+        }
+
         /// <summary>T.Atan2Pi(y, x)</summary>
         internal readonly struct Atan2PiOperator<T> : IBinaryOperator<T>
             where T : IFloatingPointIeee754<T>
@@ -12167,6 +12182,21 @@ namespace System.Numerics.Tensors
             public static Vector128<T> Invoke(Vector128<T> y, Vector128<T> x) => Atan2Operator<T>.Invoke(y, x) / Vector128.Create(T.Pi);
             public static Vector256<T> Invoke(Vector256<T> y, Vector256<T> x) => Atan2Operator<T>.Invoke(y, x) / Vector256.Create(T.Pi);
             public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => Atan2Operator<T>.Invoke(y, x) / Vector512.Create(T.Pi);
+        }
+
+        /// <summary>T.Atan2Pi(x, y)</summary>
+        /// <remarks>
+        /// This exists only to enable reusing InvokeSpanScalarIntoDestination. If we ever add an InvokeScalarSpanIntoDestination,
+        /// this can be deleted and the relevant call site can switch to using <see cref="Atan2PiOperator{T}"/>.
+        /// </remarks>
+        internal readonly struct InvertedAtan2PiOperator<T> : IBinaryOperator<T>
+            where T : IFloatingPointIeee754<T>
+        {
+            public static bool Vectorizable => Atan2PiOperator<T>.Vectorizable;
+            public static T Invoke(T y, T x) => T.Atan2Pi(x, y);
+            public static Vector128<T> Invoke(Vector128<T> y, Vector128<T> x) => Atan2PiOperator<T>.Invoke(x, y);
+            public static Vector256<T> Invoke(Vector256<T> y, Vector256<T> x) => Atan2PiOperator<T>.Invoke(x, y);
+            public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => Atan2PiOperator<T>.Invoke(x, y);
         }
 
         /// <summary>T.Cos(x)</summary>
