@@ -365,6 +365,7 @@ namespace System.Numerics.Tensors.Tests
         {
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Atan2), new Func<T, T, T>(T.Atan2) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Atan2Pi), new Func<T, T, T>(T.Atan2Pi) };
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.CopySign), new Func<T, T, T>(T.CopySign) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Pow), new Func<T, T, T>(T.Pow) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Log), new Func<T, T, T>(T.Log) };
         }
@@ -1435,6 +1436,15 @@ namespace System.Numerics.Tensors.Tests
                 {
                     AssertEqualTolerance(T.CopySign(x[i], y[i]), destination[i]);
                 }
+
+                if (tensorLength > 0)
+                {
+                    TensorPrimitives.CopySign<T>(x, y[0], destination);
+                    for (int i = 0; i < tensorLength; i++)
+                    {
+                        AssertEqualTolerance(T.CopySign(x[i], y[0]), destination[i]);
+                    }
+                }
             });
         }
 
@@ -1481,6 +1491,7 @@ namespace System.Numerics.Tensors.Tests
                 using BoundedMemory<T> destination = CreateTensor(tensorLength - 1);
 
                 AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.CopySign<T>(x, y, destination));
+                AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.CopySign<T>(x, y[0], destination));
             });
         }
 
@@ -1488,10 +1499,14 @@ namespace System.Numerics.Tensors.Tests
         public void CopySign_ThrowsForOverlapppingInputsWithOutputs()
         {
             T[] array = new T[10];
+
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.CopySign(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(0, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.CopySign(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(2, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.CopySign(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(4, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.CopySign(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(6, 2)));
+
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.CopySign(array.AsSpan(1, 2), default(T), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.CopySign(array.AsSpan(1, 2), default(T), array.AsSpan(2, 2)));
         }
         #endregion
     }

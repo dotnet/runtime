@@ -508,6 +508,21 @@ namespace System.Numerics.Tensors
             where T : INumber<T> =>
             InvokeSpanSpanIntoSpan<T, CopySignOperator<T>>(x, sign, destination);
 
+        /// <summary>Computes the element-wise result of copying the sign from one number to another number in the specified tensors.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="sign">The second tensor, represented as a scalar.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = T.CopySign(<paramref name="x" />[i], <paramref name="sign" />[i])</c>.
+        /// </para>
+        /// </remarks>
+        public static void CopySign<T>(ReadOnlySpan<T> x, T sign, Span<T> destination)
+            where T : INumber<T> =>
+            InvokeSpanScalarIntoSpan<T, CopySignOperator<T>>(x, sign, destination);
+
         /// <summary>Computes the element-wise cosine of the value in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
