@@ -9840,6 +9840,20 @@ namespace System.Numerics.Tensors
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
         }
 
+        /// <summary>T.Ieee754Remainder(y, x)</summary>
+        /// <remarks>
+        /// This exists only to enable reusing InvokeSpanScalarIntoDestination. If we ever add an InvokeScalarSpanIntoDestination,
+        /// this can be deleted and the relevant call site can switch to using <see cref="Ieee754RemainderOperator{T}"/>.
+        /// </remarks>
+        internal readonly struct InvertedIeee754RemainderOperator<T> : IBinaryOperator<T> where T : IFloatingPointIeee754<T>
+        {
+            public static bool Vectorizable => Ieee754RemainderOperator<T>.Vectorizable;
+            public static T Invoke(T x, T y) => T.Ieee754Remainder(y, x);
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => Ieee754RemainderOperator<T>.Invoke(y, x);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => Ieee754RemainderOperator<T>.Invoke(y, x);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => Ieee754RemainderOperator<T>.Invoke(y, x);
+        }
+
         // Ieee754Remainder
 
         internal readonly struct ReciprocalOperator<T> : IUnaryOperator<T> where T : IFloatingPoint<T>

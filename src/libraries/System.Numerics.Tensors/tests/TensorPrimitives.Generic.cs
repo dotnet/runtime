@@ -366,6 +366,7 @@ namespace System.Numerics.Tensors.Tests
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Atan2), new Func<T, T, T>(T.Atan2) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Atan2Pi), new Func<T, T, T>(T.Atan2Pi) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.CopySign), new Func<T, T, T>(T.CopySign) };
+            yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Ieee754Remainder), new Func<T, T, T>(T.Ieee754Remainder) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Pow), new Func<T, T, T>(T.Pow) };
             yield return new object[] { new SpanScalarDestinationDelegate<T, T, T>(TensorPrimitives.Log), new Func<T, T, T>(T.Log) };
         }
@@ -436,6 +437,7 @@ namespace System.Numerics.Tensors.Tests
         {
             yield return new object[] { new ScalarSpanDestinationDelegate(TensorPrimitives.Atan2), new Func<T, T, T>(T.Atan2) };
             yield return new object[] { new ScalarSpanDestinationDelegate(TensorPrimitives.Atan2Pi), new Func<T, T, T>(T.Atan2Pi) };
+            yield return new object[] { new ScalarSpanDestinationDelegate(TensorPrimitives.Ieee754Remainder), new Func<T, T, T>(T.Ieee754Remainder) };
         }
 
         [Theory]

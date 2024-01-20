@@ -915,12 +915,43 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = T.Ieee754Remainder(<paramref name="x" />[i], <paramref name="x" />[i])</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = T.Ieee754Remainder(<paramref name="x" />[i], <paramref name="y" />[i])</c>.
         /// </para>
         /// </remarks>
         public static void Ieee754Remainder<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where T : IFloatingPointIeee754<T> =>
             InvokeSpanSpanIntoSpan<T, Ieee754RemainderOperator<T>>(x, y, destination);
+
+        /// <summary>Computes the element-wise remainder of the numbers in the specified tensors.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a scalar.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = T.Ieee754Remainder(<paramref name="x" />[i], <paramref name="y" />)</c>.
+        /// </para>
+        /// </remarks>
+        public static void Ieee754Remainder<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
+            where T : IFloatingPointIeee754<T> =>
+            InvokeSpanScalarIntoSpan<T, Ieee754RemainderOperator<T>>(x, y, destination);
+
+        /// <summary>Computes the element-wise remainder of the numbers in the specified tensors.</summary>
+        /// <param name="x">The first tensor, represented as a scalar.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = T.Ieee754Remainder(<paramref name="x" />, <paramref name="y" />[i])</c>.
+        /// </para>
+        /// </remarks>
+        public static void Ieee754Remainder<T>(T x, ReadOnlySpan<T> y, Span<T> destination)
+            where T : IFloatingPointIeee754<T> =>
+            InvokeSpanScalarIntoSpan<T, InvertedIeee754RemainderOperator<T>>(y, x, destination);
 
         /// <summary>Computes the element-wise integer logarithm of numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
