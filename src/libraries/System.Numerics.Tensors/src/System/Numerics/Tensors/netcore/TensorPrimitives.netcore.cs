@@ -11252,10 +11252,10 @@ namespace System.Numerics.Tensors
         /// <summary>(x * (1 - z)) + (y * z)</summary>
         internal readonly struct LerpOperator<T> : ITernaryOperator<T> where T : IFloatingPointIeee754<T>
         {
-            public static T Invoke(T x, T y, T z) => T.Lerp(x, y, z);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z) => (x * (Vector128<T>.One - z)) + (y * z);
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z) => (x * (Vector256<T>.One - z)) + (y * z);
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z) => (x * (Vector512<T>.One - z)) + (y * z);
+            public static T Invoke(T x, T y, T amount) => T.Lerp(x, y, amount);
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> amount) => (x * (Vector128<T>.One - amount)) + (y * amount);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> amount) => (x * (Vector256<T>.One - amount)) + (y * amount);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> amount) => (x * (Vector512<T>.One - amount)) + (y * amount);
         }
 
         /// <summary>x</summary>
