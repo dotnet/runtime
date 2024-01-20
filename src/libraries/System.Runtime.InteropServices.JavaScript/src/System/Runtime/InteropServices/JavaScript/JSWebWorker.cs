@@ -177,29 +177,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Dispose();
             }
 
-            // TODO use https://github.com/dotnet/runtime/pull/97077
-            private void PropagateCompletion()
-            {
-                if (_resultTask!.IsFaulted)
-                {
-                    if (_resultTask.Exception is AggregateException ag && ag.InnerException != null)
-                    {
-                        _taskCompletionSource.TrySetException(ag.InnerException);
-                    }
-                    else
-                    {
-                        _taskCompletionSource.TrySetException(_resultTask.Exception);
-                    }
-                }
-                else if (_resultTask.IsCanceled)
-                {
-                    _taskCompletionSource.TrySetCanceled(_cancellationToken);
-                }
-                else
-                {
-                    _taskCompletionSource.TrySetResult(_resultTask.Result);
-                }
-            }
+            private void PropagateCompletion() => _taskCompletionSource.TrySetFromTask(_resultTask!);
 
             private void Dispose(bool disposing)
             {
