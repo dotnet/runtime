@@ -2658,12 +2658,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->sreg1 = ins->dreg;
 					next_ins->sreg2 = RISCV_ZERO;
 				} 
-				else if(next_ins->opcode == OP_IL_SEQ_POINT){
-					NULLIFY_INS (ins);
-				}
 				else {
-					g_print ("Unhandaled op %s following after OP_RCOMPARE\n", mono_inst_name (next_ins->opcode));
-					NOT_IMPLEMENTED;
+					if (cfg->verbose_level > 1){
+						g_print ("Unhandaled op %s following after OP_RCOMPARE\n", mono_inst_name (next_ins->opcode));
+					}
+					NULLIFY_INS (ins);
 				}
 			} else {
 				NULLIFY_INS (ins);
@@ -2743,12 +2742,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->opcode = OP_RISCV_BNE;
 					next_ins->sreg1 = ins->dreg;
 					next_ins->sreg2 = RISCV_ZERO;
-				} else if (next_ins->opcode == OP_BR || next_ins->opcode == OP_LOADR4_MEMBASE ||
-							next_ins->opcode == OP_IL_SEQ_POINT) {
-					NULLIFY_INS (ins);
 				} else {
-					g_print ("Unhandaled op %s following after OP_FCOMPARE\n", mono_inst_name (next_ins->opcode));
-					NOT_IMPLEMENTED;
+					if (cfg->verbose_level > 1){
+						g_print ("Unhandaled op %s following after OP_FCOMPARE\n", mono_inst_name (next_ins->opcode));
+					}
+					NULLIFY_INS (ins);
 				}
 			} else {
 				NULLIFY_INS (ins);
@@ -3154,32 +3152,24 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->sreg1 = ins->sreg2;
 					next_ins->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				} else if (next_ins->opcode == OP_IL_SEQ_POINT || next_ins->opcode == OP_MOVE ||
-				           next_ins->opcode == OP_LOAD_MEMBASE || next_ins->opcode == OP_NOP ||
-				           next_ins->opcode == OP_LOADI4_MEMBASE || next_ins->opcode == OP_BR ||
-				           next_ins->opcode == OP_LOADI8_MEMBASE || next_ins->opcode == OP_ICONST ||
-				           next_ins->opcode == OP_I8CONST || next_ins->opcode == OP_ADD_IMM ||
-						   next_ins->opcode == OP_IXOR || next_ins->opcode == OP_ICOMPARE ||
-						   next_ins->opcode == OP_LCOMPARE || next_ins->opcode == OP_LOADR8_MEMBASE ||
-						   next_ins->opcode == OP_CALL) {
+				} else {
 					/**
 					 * there is compare without branch OP followed
 					 *
 					 *  icompare_imm R226
-					 *  il_seq_point il: 0xc6
+					 *  call
 					 *
 					 * what should I do?
 					 */
+					if (cfg->verbose_level > 1){
+						g_print ("Unhandaled op %s following after OP_{I|L}COMPARE{|_IMM}\n",
+					         mono_inst_name (next_ins->opcode));
+					}
 					NULLIFY_INS (ins);
 					break;
-				} else {
-					g_print ("Unhandaled op %s following after OP_{I|L}COMPARE{|_IMM}\n",
-					         mono_inst_name (next_ins->opcode));
-					NOT_IMPLEMENTED;
 				}
 			} else
 				NULLIFY_INS (ins);
-				// g_assert_not_reached ();
 			break;
 		}
 
