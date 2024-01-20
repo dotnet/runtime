@@ -14122,12 +14122,6 @@ namespace System.Numerics.Tensors
 
         private readonly struct CopySignOperator<T> : IBinaryOperator<T> where T : INumber<T>
         {
-            // This method is required to work for all inputs, including NaN, so we operate on the raw bits.
-            // Remove the sign from x, and remove everything but the sign from y.
-            // Then OR them to get the correct sign.
-            private const int SingleSignMask = 1 << 31;
-            private const long DoubleSignMask = 1L << 63;
-
             public static bool Vectorizable => true;
 
             public static T Invoke(T x, T y) => T.CopySign(x, y);
@@ -14136,16 +14130,12 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float))
                 {
-                    return
-                        ((x.AsInt32() & Vector128.Create(~SingleSignMask)) |
-                          y.AsInt32() & Vector128.Create(SingleSignMask)).As<int, T>();
+                    return Vector128.ConditionalSelect(Vector128.Create(-0.0f).As<float, T>(), y, x);
                 }
 
                 if (typeof(T) == typeof(double))
                 {
-                    return
-                        ((x.AsInt64() & Vector128.Create(~DoubleSignMask)) |
-                          y.AsInt64() & Vector128.Create(DoubleSignMask)).As<long, T>();
+                    return Vector128.ConditionalSelect(Vector128.Create(-0.0d).As<double, T>(), y, x);
                 }
 
                 if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(short) || typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(nint))
@@ -14168,16 +14158,12 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float))
                 {
-                    return
-                        ((x.AsInt32() & Vector256.Create(~SingleSignMask)) |
-                          y.AsInt32() & Vector256.Create(SingleSignMask)).As<int, T>();
+                    return Vector256.ConditionalSelect(Vector256.Create(-0.0f).As<float, T>(), y, x);
                 }
 
                 if (typeof(T) == typeof(double))
                 {
-                    return
-                        ((x.AsInt64() & Vector256.Create(~DoubleSignMask)) |
-                          y.AsInt64() & Vector256.Create(DoubleSignMask)).As<long, T>();
+                    return Vector256.ConditionalSelect(Vector256.Create(-0.0d).As<double, T>(), y, x);
                 }
 
                 if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(short) || typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(nint))
@@ -14200,16 +14186,12 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float))
                 {
-                    return
-                        ((x.AsInt32() & Vector512.Create(~SingleSignMask)) |
-                          y.AsInt32() & Vector512.Create(SingleSignMask)).As<int, T>();
+                    return Vector512.ConditionalSelect(Vector512.Create(-0.0f).As<float, T>(), y, x);
                 }
 
                 if (typeof(T) == typeof(double))
                 {
-                    return
-                        ((x.AsInt64() & Vector512.Create(~DoubleSignMask)) |
-                          y.AsInt64() & Vector512.Create(DoubleSignMask)).As<long, T>();
+                    return Vector512.ConditionalSelect(Vector512.Create(-0.0d).As<double, T>(), y, x);
                 }
 
                 if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(short) || typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(nint))
