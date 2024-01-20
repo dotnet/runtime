@@ -2255,10 +2255,10 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         }
     }
 
-    // Indicate if it's the single return block
+    // Indicate if it's the merged return block.
     if (block == genReturnBB)
     {
-        printf(" one-return");
+        printf(" merged-return");
     }
 
     printf("\n");
