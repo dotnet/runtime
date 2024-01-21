@@ -8327,7 +8327,8 @@ bool DebuggerUserBreakpoint::IsFrameInDebuggerNamespace(FrameInfo * pFrame)
         LPCUTF8 szNamespace = NULL;
         LPCUTF8 szClassName = pMT->GetFullyQualifiedNameInfo(&szNamespace);
 
-        if (szClassName != NULL && szNamespace != NULL)
+        if (szClassName != NULL && szNamespace != NULL && 
+            *szClassName != '\0' && *szNamespace != '\0')
         {
             MAKE_WIDEPTR_FROMUTF8(wszNamespace, szNamespace); // throw
             MAKE_WIDEPTR_FROMUTF8(wszClassName, szClassName);
