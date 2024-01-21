@@ -166,10 +166,20 @@ namespace System
                 // Now that we have retrieved the element, we are no longer subject to race
                 // conditions from another array mutator.
 
-                Buffer.Memmove(
-                    ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
-                    ref CastHelpers.Unbox(pDestMT, obj),
-                    destSize);
+                if (pDestMT->ContainsGCPointers)
+                {
+                    Buffer.BulkMoveWithWriteBarrier(
+                        ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
+                        ref CastHelpers.Unbox(pDestMT, obj),
+                        destSize);
+                }
+                else
+                {
+                    Buffer.Memmove(
+                        ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
+                        ref CastHelpers.Unbox(pDestMT, obj),
+                        destSize);
+                }
             }
         }
 
