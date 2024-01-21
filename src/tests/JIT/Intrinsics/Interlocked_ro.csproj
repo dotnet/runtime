@@ -1,8 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
-  <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
