@@ -3,6 +3,9 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <MonoAotIncompatible>true</MonoAotIncompatible>
+
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/97272 -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvokeAssemblyMarshallingEnabled/*.cs" />
