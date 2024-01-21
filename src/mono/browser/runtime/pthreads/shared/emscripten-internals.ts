@@ -15,6 +15,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 // This is what we know about the Emscripten PThread library
 export interface PThreadLibrary {
     unusedWorkers: PThreadWorker[];
+    runningWorkers: PThreadWorker[];
     pthreads: PThreadInfoMap;
     allocateUnusedWorker: () => void;
     loadWasmModuleToWorker: (worker: Worker) => Promise<Worker>;

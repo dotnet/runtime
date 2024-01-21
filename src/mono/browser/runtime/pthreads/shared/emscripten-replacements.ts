@@ -62,7 +62,7 @@ function getNewWorker(modulePThread: PThreadLibrary): PThreadWorker {
     if (!MonoWasmThreads) return null as any;
 
     if (modulePThread.unusedWorkers.length == 0) {
-        mono_log_warn("Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolSize.");
+        mono_log_warn(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
         const worker = allocateUnusedWorker();
         modulePThread.loadWasmModuleToWorker(worker);
         availableThreadCount--;
@@ -83,7 +83,7 @@ function getNewWorker(modulePThread: PThreadLibrary): PThreadWorker {
             return worker;
         }
     }
-    mono_log_warn("Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolSize.");
+    mono_log_warn(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
     availableThreadCount--; // negative value
     return modulePThread.unusedWorkers.pop()!;
 }
