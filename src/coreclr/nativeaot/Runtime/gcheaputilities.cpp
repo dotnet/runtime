@@ -47,20 +47,6 @@ extern "C" HRESULT GC_Initialize(
 
 #ifndef DACCESS_COMPILE
 
-CrstStatic g_eventStashLock;
-
-GCEventLevel g_stashedLevel = GCEventLevel_None;
-GCEventKeyword g_stashedKeyword = GCEventKeyword_None;
-GCEventLevel g_stashedPrivateLevel = GCEventLevel_None;
-GCEventKeyword g_stashedPrivateKeyword = GCEventKeyword_None;
-
-BOOL g_gcEventTracingInitialized = FALSE;
-
-void InitializeGCEventLock()
-{
-    g_eventStashLock.InitNoThrow(CrstGcEvent);
-}
-
 HRESULT InitializeGCSelector();
 
 HRESULT GCHeapUtilities::InitializeGC()
@@ -71,14 +57,6 @@ HRESULT GCHeapUtilities::InitializeGC()
 HRESULT InitializeDefaultGC()
 {
     return GCHeapUtilities::InitializeDefaultGC();
-}
-
-void GCHeapUtilities::InitializeGCWithStashedEventStateChanges(IGCHeap* heap)
-{
-    CrstHolder lh(&g_eventStashLock);
-    heap->ControlEvents(g_stashedKeyword, g_stashedLevel);
-    heap->ControlPrivateEvents(g_stashedPrivateKeyword, g_stashedPrivateLevel);
-    g_gcEventTracingInitialized = TRUE;
 }
 
 // Initializes a non-standalone GC. The protocol for initializing a non-standalone GC
@@ -97,7 +75,6 @@ HRESULT GCHeapUtilities::InitializeDefaultGC()
     if (initResult == S_OK)
     {
         g_pGCHeap = heap;
-        InitializeGCWithStashedEventStateChanges(heap);
         g_pGCHandleManager = manager;
         g_gcDacGlobals = &g_gc_dac_vars;
         LOG((LF_GC, LL_INFO100, "GC load successful\n"));
@@ -108,35 +85,6 @@ HRESULT GCHeapUtilities::InitializeDefaultGC()
     }
 
     return initResult;
-}
-
-void GCHeapUtilities::RecordEventStateChange(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
-{
-    CrstHolder lh(&g_eventStashLock);
-    if (g_gcEventTracingInitialized)
-    {
-        if (isPublicProvider)
-        {
-            g_pGCHeap->ControlEvents(keywords, level);
-        }
-        else
-        {
-            g_pGCHeap->ControlPrivateEvents(keywords, level);
-        }
-    }
-    else
-    {
-        if (isPublicProvider)
-        {
-            g_stashedKeyword = keywords;
-            g_stashedLevel = level;
-        }
-        else
-        {
-            g_stashedPrivateKeyword = keywords;
-            g_stashedPrivateLevel = level;
-        }
-    }
 }
 
 #endif // DACCESS_COMPILE
