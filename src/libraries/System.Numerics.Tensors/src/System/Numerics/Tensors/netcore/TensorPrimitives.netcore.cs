@@ -10266,7 +10266,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
                         Vector128<T> currentNegative = IsNegative(current);
                         Vector128<T> sameSign = Vector128.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector128.ConditionalSelect(sameSign, lessThanIndexMask, currentNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
                     }
                     else
                     {
@@ -10292,7 +10292,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
                         Vector256<T> currentNegative = IsNegative(current);
                         Vector256<T> sameSign = Vector256.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector256.ConditionalSelect(sameSign, lessThanIndexMask, currentNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
                     }
                     else
                     {
@@ -10318,7 +10318,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
                         Vector512<T> currentNegative = IsNegative(current);
                         Vector512<T> sameSign = Vector512.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector512.ConditionalSelect(sameSign, lessThanIndexMask, currentNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
                     }
                     else
                     {
@@ -10369,7 +10369,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
                         Vector128<T> currentNegative = IsNegative(current);
                         Vector128<T> sameSign = Vector128.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector128.ConditionalSelect(sameSign, lessThanIndexMask, currentNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
                     }
                     else
                     {
@@ -10396,7 +10396,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
                         Vector256<T> currentNegative = IsNegative(current);
                         Vector256<T> sameSign = Vector256.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector256.ConditionalSelect(sameSign, lessThanIndexMask, currentNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
                     }
                     else
                     {
@@ -10423,7 +10423,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
                         Vector512<T> currentNegative = IsNegative(current);
                         Vector512<T> sameSign = Vector512.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector512.ConditionalSelect(sameSign, lessThanIndexMask, currentNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
                     }
                     else
                     {
@@ -10477,7 +10477,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
                         Vector128<T> resultNegative = IsNegative(result);
                         Vector128<T> sameSign = Vector128.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector128.ConditionalSelect(sameSign, lessThanIndexMask, resultNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
                     }
                     else
                     {
@@ -10503,7 +10503,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
                         Vector256<T> resultNegative = IsNegative(result);
                         Vector256<T> sameSign = Vector256.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector256.ConditionalSelect(sameSign, lessThanIndexMask, resultNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
                     }
                     else
                     {
@@ -10529,7 +10529,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
                         Vector512<T> resultNegative = IsNegative(result);
                         Vector512<T> sameSign = Vector512.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector512.ConditionalSelect(sameSign, lessThanIndexMask, resultNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
                     }
                     else
                     {
@@ -10580,7 +10580,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
                         Vector128<T> resultNegative = IsNegative(result);
                         Vector128<T> sameSign = Vector128.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector128.ConditionalSelect(sameSign, lessThanIndexMask, resultNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
                     }
                     else
                     {
@@ -10607,7 +10607,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
                         Vector256<T> resultNegative = IsNegative(result);
                         Vector256<T> sameSign = Vector256.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector256.ConditionalSelect(sameSign, lessThanIndexMask, resultNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
                     }
                     else
                     {
@@ -10634,7 +10634,7 @@ namespace System.Numerics.Tensors
                         // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
                         Vector512<T> resultNegative = IsNegative(result);
                         Vector512<T> sameSign = Vector512.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
-                        useResult |= equalMask & Vector512.ConditionalSelect(sameSign, lessThanIndexMask, resultNegative);
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
                     }
                     else
                     {
