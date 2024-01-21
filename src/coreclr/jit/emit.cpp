@@ -2333,15 +2333,10 @@ void emitter::emitGeneratePrologEpilog()
 
 void emitter::emitStartPrologEpilogGeneration()
 {
-    /* Save the current IG if it's non-empty */
-
-    if (emitCurIGnonEmpty())
+    // Save the current IG if we have one. It might be empty if we added an end-of-compilation label.
+    if (emitCurIG != nullptr)
     {
         emitSavIG();
-    }
-    else
-    {
-        assert(emitCurIG == nullptr);
     }
 }
 

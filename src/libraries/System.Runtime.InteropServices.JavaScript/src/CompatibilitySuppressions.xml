@@ -2,12 +2,6 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.InteropServices.JavaScript.SynchronizationContextExtension</Target>
-    <Left>ref/net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
-    <Right>runtimes/browser/lib/net9.0/System.Runtime.InteropServices.JavaScript.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.InteropServices.JavaScript.CancelablePromise</Target>
     <Left>ref/net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
     <Right>runtimes/browser/lib/net9.0/System.Runtime.InteropServices.JavaScript.dll</Right>
@@ -15,12 +9,6 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.InteropServices.JavaScript.JSObject.get_SynchronizationContext</Target>
-    <Left>ref/net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
-    <Right>runtimes/browser/lib/net9.0/System.Runtime.InteropServices.JavaScript.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.InteropServices.JavaScript.JSHost.get_CurrentOrMainJSSynchronizationContext</Target>
     <Left>ref/net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
     <Right>runtimes/browser/lib/net9.0/System.Runtime.InteropServices.JavaScript.dll</Right>
   </Suppression>

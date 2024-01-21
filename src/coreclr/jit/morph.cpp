@@ -7697,10 +7697,18 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         optMethodFlags |= OMF_NEEDS_GCPOLLS;
     }
 
-    if (fgGlobalMorph && IsStaticHelperEligibleForExpansion(call))
+    if (fgGlobalMorph)
     {
-        // Current method has potential candidates for fgExpandStaticInit phase
-        setMethodHasStaticInit();
+        if (IsStaticHelperEligibleForExpansion(call))
+        {
+            // Current method has potential candidates for fgExpandStaticInit phase
+            setMethodHasStaticInit();
+        }
+        else if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) != 0)
+        {
+            // Current method has potential candidates for fgLateCastExpansion phase
+            setMethodHasExpandableCasts();
+        }
     }
 
     // Morph Type.op_Equality, Type.op_Inequality, and Enum.HasFlag
@@ -14070,6 +14078,14 @@ PhaseStatus Compiler::fgMorphBlocks()
 
         // We don't need to remember this block anymore.
         fgEntryBB = nullptr;
+    }
+
+    // We don't maintain `genReturnBB` after this point.
+    if (genReturnBB != nullptr)
+    {
+        // It no longer needs special "keep" treatment.
+        genReturnBB->RemoveFlags(BBF_DONT_REMOVE);
+        genReturnBB = nullptr;
     }
 
     // We are done with the global morphing phase

@@ -3330,6 +3330,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         printf("OPTIONS: compProcedureSplitting   = %s\n", dspBool(opts.compProcedureSplitting));
         printf("OPTIONS: compProcedureSplittingEH = %s\n", dspBool(opts.compProcedureSplittingEH));
 
+        // This is rare; don't clutter up the dump with it normally.
+        if (compProfilerHookNeeded)
+        {
+            printf("OPTIONS: compProfilerHookNeeded   = %s\n", dspBool(compProfilerHookNeeded));
+        }
+
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
         {
             printf("OPTIONS: optimizer should use profile data\n");
@@ -5043,6 +5049,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Expand thread local access
     DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
+
+    // Expand casts
+    DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgLateCastExpansion);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);

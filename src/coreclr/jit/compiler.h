@@ -5307,8 +5307,6 @@ public:
     IL_OFFSET fgFindBlockILOffset(BasicBlock* block);
     void fgFixEntryFlowForOSR();
 
-    void fgUpdateSingleReturnBlock(BasicBlock* block);
-
     BasicBlock* fgSplitBlockAtBeginning(BasicBlock* curr);
     BasicBlock* fgSplitBlockAtEnd(BasicBlock* curr);
     BasicBlock* fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt);
@@ -5781,6 +5779,9 @@ public:
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
     bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
+    PhaseStatus fgLateCastExpansion();
+    bool fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -5874,8 +5875,6 @@ public:
     FlowEdge* fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge = nullptr);
 
     void fgFindBasicBlocks();
-
-    bool fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt);
 
     bool fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionIndex, bool putInTryRegion);
 
@@ -7148,6 +7147,7 @@ public:
 #define OMF_HAS_TLS_FIELD                      0x00010000 // Method contains TLS field access
 #define OMF_HAS_SPECIAL_INTRINSICS             0x00020000 // Method contains special intrinsics expanded in late phases
 #define OMF_HAS_RECURSIVE_TAILCALL             0x00040000 // Method contains recursive tail call
+#define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
 
     // clang-format on
 
@@ -7186,6 +7186,16 @@ public:
     void setMethodHasStaticInit()
     {
         optMethodFlags |= OMF_HAS_STATIC_INIT;
+    }
+
+    bool doesMethodHaveExpandableCasts()
+    {
+        return (optMethodFlags & OMF_HAS_EXPANDABLE_CAST) != 0;
+    }
+
+    void setMethodHasExpandableCasts()
+    {
+        optMethodFlags |= OMF_HAS_EXPANDABLE_CAST;
     }
 
     bool doesMethodHaveGuardedDevirtualization() const
@@ -10356,14 +10366,14 @@ public:
     unsigned  compHndBBtabCount;      // element count of used elements in EH data array
     unsigned  compHndBBtabAllocCount; // element count of allocated elements in EH data array
 
-#if defined(TARGET_X86)
+#if !defined(FEATURE_EH_FUNCLETS)
 
     //-------------------------------------------------------------------------
     //  Tracking of region covered by the monitor in synchronized methods
     void* syncStartEmitCookie; // the emitter cookie for first instruction after the call to MON_ENTER
     void* syncEndEmitCookie;   // the emitter cookie for first instruction after the call to MON_EXIT
 
-#endif // !TARGET_X86
+#endif // !FEATURE_EH_FUNCLETS
 
     Phases      mostRecentlyActivePhase; // the most recently active phase
     PhaseChecks activePhaseChecks;       // the currently active phase checks

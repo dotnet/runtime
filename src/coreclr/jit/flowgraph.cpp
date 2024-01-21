@@ -1842,7 +1842,7 @@ public:
                 return;
             }
 
-            // We'e reached our threshold
+            // We've reached our threshold
             mergingReturns = true;
 
             // Merge any returns we've already identified
@@ -2452,29 +2452,25 @@ PhaseStatus Compiler::fgAddInternal()
 
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
-        GenTree* tree = NULL;
+        GenTree* tree = nullptr;
 
         /* Insert the expression "enterCrit(this)" or "enterCrit(handle)" */
 
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, tree);
         }
         else
         {
             noway_assert(lvaTable[info.compThisArg].lvType == TYP_REF);
-
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
         }
 
         /* Create a new basic block and stick the call in it */
 
         fgEnsureFirstBBisScratch();
-
         fgNewStmtAtEnd(fgFirstBB, tree);
 
 #ifdef DEBUG
@@ -2496,13 +2492,11 @@ PhaseStatus Compiler::fgAddInternal()
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree);
         }
         else
         {
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
         }
 
@@ -2511,15 +2505,16 @@ PhaseStatus Compiler::fgAddInternal()
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nSynchronized method - Add exit expression ");
-            printTreeID(tree);
+            printf("\nSynchronized method - Add exitCrit statement in single return block %s\n",
+                   genReturnBB->dspToString());
+            gtDispTree(tree);
             printf("\n");
         }
 #endif
 
         // Reset cookies used to track start and end of the protected region in synchronized methods
-        syncStartEmitCookie = NULL;
-        syncEndEmitCookie   = NULL;
+        syncStartEmitCookie = nullptr;
+        syncEndEmitCookie   = nullptr;
         madeChanges         = true;
     }
 

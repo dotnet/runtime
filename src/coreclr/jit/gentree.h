@@ -4122,6 +4122,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXPANDED_EARLY          = 0x00800000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x01000000, // this call has late devirtualzation info
     GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x02000000, // ldvirtftn on an interface type
+    GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -5630,8 +5631,9 @@ struct GenTreeCall final : public GenTree
 
     CORINFO_CLASS_HANDLE gtRetClsHnd; // The return type handle of the call if it is a struct; always available
     union {
-        void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
-        CORINFO_CLASS_HANDLE gtInitClsHnd;       // Used by static init helpers, represents a class they init
+        void*                gtStubCallStubAddr;   // GTF_CALL_VIRT_STUB - these are never inlined
+        CORINFO_CLASS_HANDLE gtInitClsHnd;         // Used by static init helpers, represents a class they init
+        IL_OFFSET            gtCastHelperILOffset; // Used by cast helpers to save corresponding IL offset
     };
 
     union {
