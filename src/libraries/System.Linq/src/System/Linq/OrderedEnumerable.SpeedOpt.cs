@@ -58,6 +58,7 @@ namespace System.Linq
 
         internal TElement[] ToArray(int minIdx, int maxIdx)
         {
+            // TODO: Also apply Heap-Sort?
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
             int count = buffer._count;
             if (count <= minIdx)
@@ -84,6 +85,7 @@ namespace System.Linq
 
         internal List<TElement> ToList(int minIdx, int maxIdx)
         {
+            // TODO: Also apply Heap-Sort?
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
             int count = buffer._count;
             if (count <= minIdx)
@@ -140,6 +142,7 @@ namespace System.Linq
 
         public TElement? TryGetElementAt(int index, out bool found)
         {
+            // TODO: Also apply Heap-Sort?
             if (index == 0)
             {
                 return TryGetFirst(out found);
@@ -216,6 +219,7 @@ namespace System.Linq
 
         public TElement? TryGetLast(int minIdx, int maxIdx, out bool found)
         {
+            // TODO: Also apply Heap-Sort?
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
             int count = buffer._count;
             if (minIdx >= count)
