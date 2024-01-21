@@ -5,7 +5,11 @@
 
     <!-- https://github.com/dotnet/runtime/issues/73454;https://github.com/dotnet/runtime/pull/61707#issuecomment-973122341 -->
     <MonoAotIncompatible>true</MonoAotIncompatible>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>  </PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/97272 -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
