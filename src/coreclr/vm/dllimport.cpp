@@ -3672,6 +3672,11 @@ static void CreateNDirectStubWorker(StubState*               pss,
         COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_PRESERVESIG);
     }
 
+    if (runtimeMarshallingEnabled && SF_IsCALLIStub(dwStubFlags) && NDirect::MarshalingRequired(pMD))
+    {
+        COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
+    }
+
     int numArgs = msig.NumFixedArgs();
 
     // thiscall must have at least one parameter (the "this")
