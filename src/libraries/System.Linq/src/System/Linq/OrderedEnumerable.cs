@@ -158,7 +158,8 @@ namespace System.Linq
 
         internal override IEnumerator<TElement> GetEnumerator(int minIdx, int maxIdx)
         {
-            return _parent is null && maxIdx < 1024
+            // TODO: refine & benchmark different heuristics, enable custom comparer support?
+            return _parent is null && _comparer == Comparer<TKey>.Default && maxIdx < 1024
                 ? SelectTopN(minIdx, maxIdx)
                 : base.GetEnumerator(minIdx, maxIdx);
         }
@@ -167,8 +168,8 @@ namespace System.Linq
         {
             int queueSize = maxIdx + 1;
 
-            PriorityQueue<TElement, SortPriority<TKey>> priorityQueue = new(queueSize);
-
+            // TODO: Special casing implicitly stable sort?
+            PriorityQueue<TElement, SortPriority<TKey>> priorityQueue = new(queueSize); // TODO: Pooling / Better preallocation size in case of non-enumerated source count (also maybe shortcircuiting if minIdx>count)
             int pos = 0;
             foreach (TElement element in _source)
             {
@@ -203,10 +204,11 @@ namespace System.Linq
     {
         private readonly TKey _key;
         private readonly int _sourcePos;
-        private readonly int _descending;
+        private readonly int _descending; // int or bool? => aligned as 4 bytes anyway?
 
         public SortPriority(TKey key, int sourcePos, bool descending) : this()
         {
+            // Struct for descending / ascending to remove field?
             _key = key;
             _sourcePos = sourcePos;
             _descending = descending ? 1 : -1;
