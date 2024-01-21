@@ -652,7 +652,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         private Task HttpClient_ActionInDifferentThread(string url, Executor executor1, Executor executor2, Func<HttpResponseMessage, Task> e2Job)
         {
-            using var cts = CreateTestCaseTimeoutSource();
+            var cts = CreateTestCaseTimeoutSource();
 
             var e1Job = async (Task e2done, TaskCompletionSource<HttpResponseMessage> e1State) =>
             {
