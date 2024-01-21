@@ -80,8 +80,14 @@ int main(int argc, char **argv) {
 
 check_cxx_source_compiles("
 int main(int argc, char **argv) {
-  unsigned char c = 0;
-  return __atomic_exchange_n(&c, 1, __ATOMIC_ACQ_REL);
+  unsigned long long u8 = 0;
+  unsigned int u4 = 0;
+  unsigned short u2 = 0;
+  unsigned char u1 = 0;
+  __atomic_exchange_n(&u8, 1, __ATOMIC_ACQ_REL);
+  __atomic_exchange_n(&u4, 1, __ATOMIC_ACQ_REL);
+  __atomic_exchange_n(&u2, 1, __ATOMIC_ACQ_REL);
+  return __atomic_exchange_n(&u1, 1, __ATOMIC_ACQ_REL);
 }" HAVE_BUILTIN_GNUC_ATOMICS)
 
 set(CMAKE_REQUIRED_LIBRARIES)
