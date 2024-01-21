@@ -41,13 +41,13 @@ namespace System.Numerics
             {
                 if (left.Length < right.Length)
                 {
-                    if (right.Slice(left.Length).ContainsAnyExcept(0u))
+                    if (ActualLength(right.Slice(left.Length)) > 0)
                         return -1;
                     right = right.Slice(0, left.Length);
                 }
                 else
                 {
-                    if (left.Slice(right.Length).ContainsAnyExcept(0u))
+                    if (ActualLength(left.Slice(right.Length)) > 0)
                         return +1;
                     left = left.Slice(0, right.Length);
                 }
