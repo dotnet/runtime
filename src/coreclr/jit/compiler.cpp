@@ -5254,7 +5254,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 //   All innermost loops whose block weight meets a threshold are candidates for alignment.
 //   The top block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this.
 //
-//   Depends block weights being set.
+//   Depends on block weights being set.
 //
 bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 {
