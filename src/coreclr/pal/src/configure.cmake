@@ -78,6 +78,12 @@ int main(int argc, char **argv) {
   return 0;
 }" HAVE_LTTNG_TRACEPOINT_H)
 
+check_cxx_source_compiles("
+int main(int argc, char **argv) {
+  unsigned char c = 0;
+  return __atomic_exchange_n(&c, 1, __ATOMIC_ACQ_REL);
+}" HAVE_BUILTIN_GNUC_ATOMICS)
+
 set(CMAKE_REQUIRED_LIBRARIES)
 
 check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)

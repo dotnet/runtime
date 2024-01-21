@@ -347,6 +347,13 @@ if(CLR_CMAKE_TARGET_SUNOS)
   )
 endif(CLR_CMAKE_TARGET_SUNOS)
 
+if (NOT HAVE_BUILTIN_GNUC_ATOMICS)
+  target_link_libraries(coreclrpal
+    PUBLIC
+    atomic
+  )
+endif()
+
 if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)
 endif(FEATURE_EVENT_TRACE)
