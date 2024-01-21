@@ -1824,7 +1824,6 @@ namespace Internal.JitInterface
 
             switch (method.Name)
             {
-                case "EETypePtrOf":
                 case "Of":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
                     pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;

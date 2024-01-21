@@ -3332,6 +3332,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         printf("OPTIONS: compProcedureSplitting   = %s\n", dspBool(opts.compProcedureSplitting));
         printf("OPTIONS: compProcedureSplittingEH = %s\n", dspBool(opts.compProcedureSplittingEH));
 
+        // This is rare; don't clutter up the dump with it normally.
+        if (compProfilerHookNeeded)
+        {
+            printf("OPTIONS: compProfilerHookNeeded   = %s\n", dspBool(compProfilerHookNeeded));
+        }
+
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
         {
             printf("OPTIONS: optimizer should use profile data\n");
