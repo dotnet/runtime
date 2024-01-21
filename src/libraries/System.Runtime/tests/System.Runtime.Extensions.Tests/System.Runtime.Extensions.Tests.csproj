@@ -13,6 +13,10 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">$(DefineConstants);Unix</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <!-- to see timing and which test aborted the runtime -->
+    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\ApplicationIdTests.cs" />
     <Compile Include="System\Convert.cs" />

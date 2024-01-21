@@ -301,7 +301,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task Executor_Propagates(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             bool hit = false;
             var failedTask = executor.Execute(() =>
             {
@@ -321,7 +321,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedConsole(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(() =>
             {
                 Console.WriteLine("C# Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId);
@@ -332,7 +332,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSConsole(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(() =>
             {
                 WebWorkerTestHelper.Log("JS Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
@@ -343,7 +343,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task NativeThreadId(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await executor.StickyAwait(WebWorkerTestHelper.InitializeAsync(), cts.Token);
@@ -367,7 +367,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task ThreadingTimer(Executor executor)
         {
             var hit = false;
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 TaskCompletionSource tcs = new TaskCompletionSource();
@@ -389,7 +389,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSDelay_ContinueWith(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
@@ -405,7 +405,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSDelay_ConfigureAwait_True(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
@@ -420,7 +420,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task ManagedDelay_ContinueWith(Executor executor)
         {
             var hit = false;
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await Task.Delay(10, cts.Token).ContinueWith(_ =>
@@ -434,7 +434,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedDelay_ConfigureAwait_True(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await Task.Delay(10, cts.Token).ConfigureAwait(true);
@@ -446,7 +446,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedYield(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await Task.Yield();
@@ -498,7 +498,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads2x))]
         public async Task JSObject_CapturesAffinity(Executor executor1, Executor executor2)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var e1Job = async (Task e2done, TaskCompletionSource<JSObject> e1State) =>
             {
@@ -533,7 +533,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task WebSocketClient_ContentInSameThread(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
             var message = "hello";
@@ -558,7 +558,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads2x))]
         public Task WebSocketClient_ResponseCloseInDifferentThread(Executor executor1, Executor executor2)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
             var message = "hello";
@@ -630,7 +630,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task HttpClient_ContentInSameThread(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             var uri = WebWorkerTestHelper.GetOriginUrl() + "/_framework/blazor.boot.json";
 
             await executor.Execute(async () =>
@@ -650,7 +650,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         private Task HttpClient_ActionInDifferentThread(string url, Executor executor1, Executor executor2, Func<HttpResponseMessage, Task> e2Job)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var e1Job = async (Task e2done, TaskCompletionSource<HttpResponseMessage> e1State) =>
             {

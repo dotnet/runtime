@@ -6,6 +6,10 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <!-- to see timing and which test aborted the runtime -->
+    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs" Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="BreakTests.cs" />
