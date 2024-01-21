@@ -214,7 +214,7 @@ namespace Internal.Runtime.CompilerServices
 
         public override int GetHashCode()
         {
-            return CalcHashCode(_resolveType, _handle, _methodHandleOrSlotOrCodePointer.GetHashCode(), (int)_declaringType);
+            return CalcHashCode(_resolveType, _handle, _methodHandleOrSlotOrCodePointer.GetHashCode(), _declaringType == null ? 0 : (int)_declaringType->HashCode);
         }
 
         public bool Equals(OpenMethodResolver other)
