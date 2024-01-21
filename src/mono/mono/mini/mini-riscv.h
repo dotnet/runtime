@@ -236,6 +236,8 @@ typedef enum {
 	ArgNone, // only in void return type
 	ArgInIReg = 0x01,
 	ArgInFReg,
+	ArgR4InIReg,
+	ArgR8InIReg,
 #ifdef TARGET_RISCV64
 	ArgInFRegR4,
 #endif

@@ -796,10 +796,17 @@ add_farg (CallInfo *cinfo, ArgInfo *ainfo, gboolean single)
 		NOT_IMPLEMENTED;
 #endif
 	} else {
-		ainfo->storage = single ? ArgOnStackR4 : ArgOnStackR8;
-		ainfo->slot_size = size;
-		ainfo->offset = cinfo->stack_usage;
-		cinfo->stack_usage += size;
+		// As ABI specifed, if there is ireg avaliable, store it into ireg
+		if (cinfo->next_arg <= RISCV_A7) {
+			ainfo->storage = single ? ArgR4InIReg : ArgR8InIReg;
+			ainfo->reg = cinfo->next_arg;
+			cinfo->next_arg++;
+		} else {
+			ainfo->storage = single ? ArgOnStackR4 : ArgOnStackR8;
+			ainfo->slot_size = size;
+			ainfo->offset = cinfo->stack_usage;
+			cinfo->stack_usage += size;
+		}
 	}
 }
 
@@ -1496,6 +1503,24 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int re
 		MONO_ADD_INS (cfg->cbb, ins);
 		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, reg, TRUE);
 		break;
+	case ArgR4InIReg:
+		MONO_INST_NEW (cfg, ins, OP_MOVE_F_TO_I4);
+		ins->dreg = mono_alloc_ireg (cfg);
+		ins->sreg1 = arg->dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, reg, FALSE);
+		break;
+	case ArgR8InIReg:
+#ifdef TARGET_RISCV64
+		MONO_INST_NEW (cfg, ins, OP_MOVE_F_TO_I8);
+		ins->dreg = mono_alloc_ireg (cfg);
+		ins->sreg1 = arg->dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, reg, FALSE);
+#else
+		NOT_IMPLEMENTED;
+#endif
+		break;
 	}
 }
 
@@ -1618,6 +1643,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgInIReg:
 		case ArgInFReg:
 		case ArgInFRegR4:
+		case ArgR4InIReg:
+		case ArgR8InIReg:
 			add_outarg_reg (cfg, call, ainfo->storage, ainfo->reg, arg);
 			break;
 		case ArgOnStack: {
@@ -2126,6 +2153,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		case ArgInIReg:
 		case ArgInFReg:
 		case ArgInFRegR4:
+		case ArgR4InIReg:
+		case ArgR8InIReg:
 			offset += sizeof (host_mgreg_t);
 			ins->inst_offset = -offset;
 			break;
@@ -3972,6 +4001,8 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 
 			switch (ainfo->storage) {
 			case ArgInIReg:
+			case ArgR4InIReg:
+			case ArgR8InIReg:
 				g_assert (ainfo->is_regpair == FALSE);
 				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_basereg, ins->inst_offset, 0);
 				if (i == 0 && sig->hasthis) {
