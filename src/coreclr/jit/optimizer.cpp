@@ -468,8 +468,8 @@ bool Compiler::optExtractInitTestIncr(
     Statement*  phdrStmt  = initBlock->firstStmt();
     if (phdrStmt == nullptr)
     {
-        // When we build the loop table, we canonicalize by introducing loop pre-headers for all loops.
-        // If we are rebuilding the loop table, we would already have the pre-header block introduced
+        // When we build the loops, we canonicalize by introducing loop pre-headers for all loops.
+        // If we are rebuilding the loops, we would already have the pre-header block introduced
         // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
         // little harder for the possible loop initialization statement.
         if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->TargetIs(top) && (initBlock->countOfInEdges() == 1) &&
@@ -2504,8 +2504,8 @@ void Compiler::optMarkLoopHeads()
 }
 
 //-----------------------------------------------------------------------------
-// optResetLoopInfo: reset all loop info in preparation for rebuilding the loop table, or preventing
-// future phases from accessing loop-related data.
+// optResetLoopInfo: reset all loop info in preparation for refinding the loops
+// and scaling blocks based on it.
 //
 void Compiler::optResetLoopInfo()
 {
@@ -2633,7 +2633,7 @@ void Compiler::optFindAndScaleGeneralLoopBlocks()
 // optFindLoops: find loops in the function.
 //
 // The JIT recognizes two types of loops in a function: natural loops and "general" (or "unnatural") loops.
-// Natural loops are those which get added to the loop table. Most downstream optimizations require
+// Natural loops are those which get added to Compiler::m_loops. Most downstream optimizations require
 // using natural loops. See `FlowGraphNaturalLoop` for a definition of the criteria satisfied by a natural loop.
 // A general loop is defined as a lexical (program order) range of blocks where a later block branches to an
 // earlier block (that is, there is a back edge in the flow graph), and the later block is reachable from the earlier
@@ -2667,7 +2667,7 @@ PhaseStatus Compiler::optFindLoopsPhase()
 }
 
 //-----------------------------------------------------------------------------
-// optFindNewLoops: Compute new loops and cross validate with old loop table.
+// optFindLoops: Find, compact and canonicalize natural loops.
 //
 void Compiler::optFindLoops()
 {

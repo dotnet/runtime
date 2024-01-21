@@ -4547,23 +4547,12 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
         return;
     }
 
-    // Display: LOOP# (old LOOP#) / header / parent loop# / blocks / entry edges / exit edges / back edges
+    // Display: LOOP# / header / parent loop# / blocks / entry edges / exit edges / back edges
     // Blocks can compacted be "[top .. bottom]" if lexically adjacent and no non-loop blocks in
     // the range. Otherwise, print a verbose list of blocks.
 
     Compiler* comp = loop->GetDfsTree()->GetCompiler();
     printf(FMT_LP, loop->GetIndex());
-
-    // We might want to print out the old loop number using something like:
-    //
-    // if (comp->m_newToOldLoop[loop->GetIndex()] != nullptr)
-    // {
-    //   printf(" (old: " FMT_LP ")", (unsigned)(comp->m_newToOldLoop[loop->GetIndex()] - comp->optLoopTable));
-    // }
-    //
-    // However, not all callers of FlowGraphNaturalLoops::Find update m_newToOldLoop -- only
-    // Compiler::optFindNewLoops() does that. This dumper should work with any construction of
-    // FlowGraphNaturalLoops.
 
     printf(" header: " FMT_BB, loop->GetHeader()->bbNum);
     if (loop->GetParent() != nullptr)
@@ -4765,7 +4754,7 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
 /* static */
 void FlowGraphNaturalLoops::Dump(FlowGraphNaturalLoops* loops)
 {
-    printf("\n***************  (New) Natural loop graph\n");
+    printf("\n***************  Natural loop graph\n");
 
     if (loops == nullptr)
     {

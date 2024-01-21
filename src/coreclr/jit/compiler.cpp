@@ -305,7 +305,6 @@ Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIteration
 
 unsigned totalLoopMethods;        // counts the total number of methods that have natural loops
 unsigned maxLoopsPerMethod;       // counts the maximum number of loops a method has
-unsigned totalLoopOverflows;      // # of methods that identified more loops than we can represent
 unsigned totalLoopCount;          // counts the total number of natural loops
 unsigned totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
 unsigned totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
@@ -1576,7 +1575,6 @@ void Compiler::compShutdown()
     jitprintf("Total number of methods with loops is %5u\n", totalLoopMethods);
     jitprintf("Total number of              loops is %5u\n", totalLoopCount);
     jitprintf("Maximum number of loops per method is %5u\n", maxLoopsPerMethod);
-    jitprintf("# of methods overflowing nat loop table is %5u\n", totalLoopOverflows);
     jitprintf("Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
     jitprintf("# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
     jitprintf("Total number of loops with an         iterator is %5u\n", iterLoopCount);
@@ -5245,10 +5243,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 //
 // Remarks:
 //   All innermost loops whose block weight meets a threshold are candidates for alignment.
-//   The top block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this
-//   (the loop table itself is not changed).
+//   The top block of the loop is marked with the BBF_LOOP_ALIGN flag to indicate this.
 //
-//   Depends on the loop table, and on block weights being set.
+//   Depends block weights being set.
 //
 bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 {
@@ -9320,9 +9317,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cCVarSet,    dCVarSet       : Display a "converted" VARSET_TP: the varset is assumed to be tracked variable
  *                                    indices. These are converted to variable numbers and sorted. (Calls
  *                                    dumpConvertedVarSet()).
- *      cLoops,      dLoops         : Display the loop table (call FlowGraphNaturalLoops::Dump()) with
+ *      cLoops,      dLoops         : Display the loops (call FlowGraphNaturalLoops::Dump()) with
  *                                    Compiler::m_loops.
- *      cLoopsA,     dLoopsA        : Display the loop table (call FlowGraphNaturalLoops::Dump()) with a given
+ *      cLoopsA,     dLoopsA        : Display the loops (call FlowGraphNaturalLoops::Dump()) with a given
  *                                    loops arg.
  *      cLoop,       dLoop          : Display a single loop (call FlowGraphNaturalLoop::Dump()) with given
  *                                    loop arg.
@@ -9339,7 +9336,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      dFindTree                   : Find a tree in the IR, specifying a tree id. Sets `dbTree` and `dbTreeBlock`.
  *      dFindStmt                   : Find a Statement in the IR, specifying a statement id. Sets `dbStmt`.
  *      dFindBlock                  : Find a block in the IR, specifying a block number. Sets `dbBlock`.
- *      dFindLoop                   : Find a loop in the loop table, specifying a loop index. Sets `dbLoop`.
+ *      dFindLoop                   : Find a loop specifying a loop index. Sets `dbLoop`.
  */
 
 // Make the debug helpers available (under #ifdef DEBUG) even though they are unreferenced. When the Microsoft

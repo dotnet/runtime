@@ -1188,7 +1188,7 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 
 //-----------------------------------------------------------------------------
 // optOptimizeBoolsUpdateTrees: Fold the trees based on fold type and comparison type,
-//                              update the edges, unlink removed blocks and update loop table
+//                              update the edges, and unlink removed blocks
 //
 void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 {

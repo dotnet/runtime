@@ -711,12 +711,9 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     bool dontClose = false;
 
 #ifdef DEBUG
-    const bool createDotFile = JitConfig.JitDumpFgDot() != 0;
-    const bool includeEH     = (JitConfig.JitDumpFgEH() != 0) && !compIsForInlining();
-    const bool includeLoops  = (JitConfig.JitDumpFgLoops() != 0) && !compIsForInlining();
-    // The loop table is not well maintained after the optimization phases, but there is no single point at which
-    // it is declared invalid. For now, refuse to add loop information starting at the rationalize phase, to
-    // avoid asserts.
+    const bool createDotFile     = JitConfig.JitDumpFgDot() != 0;
+    const bool includeEH         = (JitConfig.JitDumpFgEH() != 0) && !compIsForInlining();
+    const bool includeLoops      = (JitConfig.JitDumpFgLoops() != 0) && !compIsForInlining();
     const bool constrained       = JitConfig.JitDumpFgConstrained() != 0;
     const bool useBlockId        = JitConfig.JitDumpFgBlockID() != 0;
     const bool displayBlockFlags = JitConfig.JitDumpFgBlockFlags() != 0;
@@ -4660,22 +4657,9 @@ void Compiler::fgDebugCheckSsa()
 }
 
 //------------------------------------------------------------------------------
-// fgDebugCheckLoopTable: checks that the loop table is valid.
-//    - If the method has natural loops, the loop table is not null
-//    - Loop `top` must come before `bottom`.
-//    - Loop `entry` must be between `top` and `bottom`.
-//    - Children loops of a loop are disjoint.
-//    - All basic blocks with loop numbers set have a corresponding loop in the table
-//    - All basic blocks without a loop number are not in a loop
-//    - All parents of the loop with the block contain that block
-//    - If optLoopsRequirePreHeaders is true, the loop has a pre-header
-//    - If the loop has a pre-header, it is valid
-//    - The loop flags are valid
-//    - no loop shares `top` with any of its children
-//    - no loop shares `bottom` with the header of any of its siblings
-//    - no top-entry loop has a predecessor that comes from outside the loop other than from lpHead
+// fgDebugCheckLoops: Checks that all loops are canonicalized as expected.
 //
-void Compiler::fgDebugCheckLoopTable()
+void Compiler::fgDebugCheckLoops()
 {
     if (m_loops == nullptr)
     {

@@ -1516,7 +1516,7 @@ enum class PhaseChecks : unsigned int
     CHECK_UNIQUE        = 1 << 1, // tree node uniqueness
     CHECK_FG            = 1 << 2, // flow graph integrity
     CHECK_EH            = 1 << 3, // eh table integrity
-    CHECK_LOOPS         = 1 << 4, // loop table integrity
+    CHECK_LOOPS         = 1 << 4, // loop integrity/canonicalization
     CHECK_PROFILE       = 1 << 5, // profile data integrity
     CHECK_LINKED_LOCALS = 1 << 6, // check linked list of locals
 };
@@ -1886,60 +1886,6 @@ typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, TestLabelAndNum> NodeToT
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif // DEBUG
-
-//-------------------------------------------------------------------------
-// LoopFlags: flags for the loop table.
-//
-enum LoopFlags : unsigned short
-{
-    LPFLG_EMPTY = 0,
-
-    // LPFLG_UNUSED  = 0x0001,
-    // LPFLG_UNUSED  = 0x0002,
-    LPFLG_ITER = 0x0004, // loop of form: for (i = icon or expression; test_condition(); i++)
-    // LPFLG_UNUSED    = 0x0008,
-
-    LPFLG_CONTAINS_CALL = 0x0010, // If executing the loop body *may* execute a call
-    // LPFLG_UNUSED     = 0x0020,
-    LPFLG_CONST_INIT = 0x0040, // iterator is initialized with a constant (found in lpConstInit)
-    LPFLG_SIMD_LIMIT = 0x0080, // iterator is compared with vector element count (found in lpConstLimit)
-
-    LPFLG_VAR_LIMIT    = 0x0100, // iterator is compared with a local var (var # found in lpVarLimit)
-    LPFLG_CONST_LIMIT  = 0x0200, // iterator is compared with a constant (found in lpConstLimit)
-    LPFLG_ARRLEN_LIMIT = 0x0400, // iterator is compared with a.len or a[i].len (found in lpArrLenLimit)
-    LPFLG_HAS_PREHEAD  = 0x0800, // lpHead is known to be a preHead for this loop
-
-    LPFLG_REMOVED     = 0x1000, // has been removed from the loop table (unrolled or optimized away)
-    LPFLG_DONT_UNROLL = 0x2000, // do not unroll this loop
-    LPFLG_ASGVARS_YES = 0x4000, // "lpAsgVars" has been computed
-    LPFLG_ASGVARS_INC = 0x8000, // "lpAsgVars" is incomplete -- vars beyond those representable in an AllVarSet
-                                // type are assigned to.
-};
-
-inline constexpr LoopFlags operator~(LoopFlags a)
-{
-    return (LoopFlags)(~(unsigned short)a);
-}
-
-inline constexpr LoopFlags operator|(LoopFlags a, LoopFlags b)
-{
-    return (LoopFlags)((unsigned short)a | (unsigned short)b);
-}
-
-inline constexpr LoopFlags operator&(LoopFlags a, LoopFlags b)
-{
-    return (LoopFlags)((unsigned short)a & (unsigned short)b);
-}
-
-inline LoopFlags& operator|=(LoopFlags& a, LoopFlags b)
-{
-    return a = (LoopFlags)((unsigned short)a | (unsigned short)b);
-}
-
-inline LoopFlags& operator&=(LoopFlags& a, LoopFlags b)
-{
-    return a = (LoopFlags)((unsigned short)a & (unsigned short)b);
-}
 
 // Represents a depth-first search tree of the flow graph.
 class FlowGraphDfsTree
@@ -6109,7 +6055,7 @@ public:
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
     void fgDebugCheckLinkedLocals();
     void fgDebugCheckNodesUniqueness();
-    void fgDebugCheckLoopTable();
+    void fgDebugCheckLoops();
     void fgDebugCheckSsa();
 
     void fgDebugCheckTypes(GenTree* tree);
@@ -11886,7 +11832,6 @@ extern Histogram computeReachabilitySetsIterationTable;
 
 extern unsigned  totalLoopMethods;        // counts the total number of methods that have natural loops
 extern unsigned  maxLoopsPerMethod;       // counts the maximum number of loops a method has
-extern unsigned  totalLoopOverflows;      // # of methods that identified more loops than we can represent
 extern unsigned  totalLoopCount;          // counts the total number of natural loops
 extern unsigned  totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
 extern unsigned  totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
