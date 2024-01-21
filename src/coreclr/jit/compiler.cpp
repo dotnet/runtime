@@ -1866,7 +1866,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         // Initialize all the per-method statistics gathering data structures.
         //
 
-        optLoopsCloned = 0;
+        optFinallyCount  = 0;
+        optFinallyCloned = 0;
+        optLoopsCloned   = 0;
 
 #if LOOP_HOIST_STATS
         m_loopsConsidered             = 0;
@@ -9007,6 +9009,8 @@ void JitTimer::PrintCsvHeader()
             fprintf(s_csvFile, "\"IL Bytes\",");
             fprintf(s_csvFile, "\"Basic Blocks\",");
             fprintf(s_csvFile, "\"Min Opts\",");
+            fprintf(s_csvFile, "\"Finally Clone Candidates\",");
+            fprintf(s_csvFile, "\"Finally Blocks Cloned\",");
             fprintf(s_csvFile, "\"Loops\",");
             fprintf(s_csvFile, "\"Loops Cloned\",");
 #if FEATURE_LOOP_ALIGN
@@ -9084,6 +9088,8 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
     fprintf(s_csvFile, "%u,", comp->fgBBcount);
     fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
+    fprintf(s_csvFile, "%u,", comp->optFinallyCount);
+    fprintf(s_csvFile, "%u,", comp->optFinallyCloned);
     fprintf(s_csvFile, "%u,", comp->optLoopCount);
     fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
 #if FEATURE_LOOP_ALIGN
