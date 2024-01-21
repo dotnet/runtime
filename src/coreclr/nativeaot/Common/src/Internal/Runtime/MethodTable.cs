@@ -190,8 +190,7 @@ namespace Internal.Runtime
         {
             get
             {
-                // For now just key this off of SupportsRelativePointer to avoid this on both CppCodegen and WASM.
-                return SupportsRelativePointers;
+                return true;
             }
         }
 
@@ -1184,7 +1183,7 @@ namespace Internal.Runtime
 
                 uint offset = GetFieldOffset(EETypeField.ETF_WritableData);
 
-                if (!IsDynamicType)
+                if (!IsDynamicType && SupportsRelativePointers)
                     return (void*)GetField<RelativePointer>(offset).Value;
                 else
                     return (void*)GetField<Pointer>(offset).Value;

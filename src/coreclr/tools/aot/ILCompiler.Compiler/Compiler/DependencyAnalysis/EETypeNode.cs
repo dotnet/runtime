@@ -103,8 +103,7 @@ namespace ILCompiler.DependencyAnalysis
             factory.TypeSystemContext.EnsureLoadableType(type);
         }
 
-        public static bool SupportsWritableData(TargetDetails target)
-            => target.SupportsRelativePointers;
+        public static bool SupportsWritableData(TargetDetails target) => true;
 
         public static bool SupportsFrozenRuntimeTypeInstances(TargetDetails target)
             => SupportsWritableData(target);
@@ -1125,11 +1124,17 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_writableDataNode != null)
             {
-                objData.EmitReloc(_writableDataNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(_writableDataNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(_writableDataNode);
             }
             else if (SupportsWritableData(factory.Target))
             {
-                objData.EmitInt(0);
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitInt(0);
+                else
+                    objData.EmitZeroPointer();
             }
         }
 
