@@ -149,6 +149,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             var uniqueRootCerts = new HashSet<X509Certificate2>();
             var uniqueIntermediateCerts = new HashSet<X509Certificate2>();
+            var processedFiles = new HashSet<string>();
             bool firstLoad = (s_nativeCollections == null);
 
             if (firstLoad)
@@ -216,6 +217,12 @@ namespace System.Security.Cryptography.X509Certificates
                     return false;
                 }
 
+                string originalFile = Interop.Sys.ReadLink(file) ?? file;
+                if (processedFiles.Contains(originalFile))
+                {
+                    return true;
+                }
+
                 using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(file, "rb"))
                 {
                     // The handle may be invalid, for example when we don't have read permission for the file.
@@ -279,6 +286,11 @@ namespace System.Security.Cryptography.X509Certificates
                         // and one-big-file trusted certificate stores. Anything that wasn't unique will end up here.
                         cert.Dispose();
                     }
+                }
+
+               if (readData)
+                {
+                    processedFiles.Add(originalFile);
                 }
 
                 return readData;
