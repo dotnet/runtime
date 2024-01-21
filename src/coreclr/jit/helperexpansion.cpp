@@ -2062,12 +2062,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     lastBb->inheritWeight(firstBb);
 
     //
-    // Update bbNatLoopNum for all new blocks and validate EH regions
+    // Validate EH regions
     //
-    nullcheckBb->bbNatLoopNum        = firstBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum         = firstBb->bbNatLoopNum;
-    typeCheckBb->bbNatLoopNum        = firstBb->bbNatLoopNum;
-    typeCheckSucceedBb->bbNatLoopNum = firstBb->bbNatLoopNum;
     assert(BasicBlock::sameEHRegion(firstBb, lastBb));
     assert(BasicBlock::sameEHRegion(firstBb, nullcheckBb));
     assert(BasicBlock::sameEHRegion(firstBb, fallbackBb));
