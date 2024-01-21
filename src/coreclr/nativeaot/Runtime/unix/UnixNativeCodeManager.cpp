@@ -775,13 +775,25 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     // Decode the GC info for the current method to determine its return type
     GcInfoDecoderFlags flags = DECODE_RETURN_KIND;
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    uint32_t codeOffset = 0;
+#if defined(TARGET_ARM)
+    PTR_UInt8 gcInfo;
+    codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
+    flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS | DECODE_INTERRUPTIBILITY);
+#elif defined(TARGET_ARM64)
     flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS);
 #endif // TARGET_ARM || TARGET_ARM64
 
-    GcInfoDecoder decoder(GCInfoToken(p), flags);
+    GcInfoDecoder decoder(GCInfoToken(p), flags, codeOffset);
     *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
 
+#if defined(TARGET_ARM)
+    // FIXME: Figure out how to encode this correctly or implement TrailingEpilogueInstructionsCount
+    if (!decoder.IsInterruptible())
+    {
+        return false;
+    }
+#else
     int epilogueInstructions = TrailingEpilogueInstructionsCount(pMethodInfo, (PTR_VOID)pRegisterSet->IP);
     if (epilogueInstructions < 0)
     {
@@ -793,6 +805,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() + (sizeof(TADDR) * (epilogueInstructions - 1)));
         return true;
     }
+#endif
 
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     // If we are inside a prolog without a saved frame then we cannot safely unwind.
@@ -822,7 +835,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() - sizeof(TADDR));
     return true;
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_ARM)
 
     if (decoder.HasTailCalls())
     {

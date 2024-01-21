@@ -126,6 +126,8 @@ struct UNIX_CONTEXT
     uint64_t& Lr();
     uint64_t& R0();
     uint64_t& R1();
+    uint64_t& R2();
+    uint64_t& R3();
     uint64_t& R4();
     uint64_t& R5();
     uint64_t& R6();

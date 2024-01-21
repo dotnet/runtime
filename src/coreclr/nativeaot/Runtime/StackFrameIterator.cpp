@@ -609,6 +609,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 
     m_RegDisplay.pR0 = (PTR_UIntNative)PTR_TO_REG(pCtx, R0);
     m_RegDisplay.pR1 = (PTR_UIntNative)PTR_TO_REG(pCtx, R1);
+    m_RegDisplay.pR2 = (PTR_UIntNative)PTR_TO_REG(pCtx, R2);
+    m_RegDisplay.pR3 = (PTR_UIntNative)PTR_TO_REG(pCtx, R3);
     m_RegDisplay.pR4 = (PTR_UIntNative)PTR_TO_REG(pCtx, R4);
     m_RegDisplay.pR5 = (PTR_UIntNative)PTR_TO_REG(pCtx, R5);
     m_RegDisplay.pR6 = (PTR_UIntNative)PTR_TO_REG(pCtx, R6);

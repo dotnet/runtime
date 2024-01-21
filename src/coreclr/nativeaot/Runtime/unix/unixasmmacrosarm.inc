@@ -17,6 +17,8 @@
 #define PTFF_SAVE_ALL_PRESERVED 0x0000007F  // NOTE: R11 is not included in this set!
 #define PTFF_SAVE_SP 0x00000100
 #define PTFF_SAVE_R0 0x00000200
+#define PTFF_THREAD_ABORT 0x00100000
+
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
 // These must match the TrapThreadsFlags enum
