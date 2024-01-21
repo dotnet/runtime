@@ -165,3 +165,12 @@ export async function instantiateWasmPThreadWorkerPool(): Promise<void> {
         await Promise.all(promises);
     }
 }
+
+export function cancelThreads() {
+    const workers: PThreadWorker[] = Internals.getRunningWorkers();
+    for (const worker of workers) {
+        if (worker.interopInstalled) {
+            worker.postMessage({ cmd: "cancel" });
+        }
+    }
+}

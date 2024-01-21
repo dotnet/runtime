@@ -248,6 +248,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        // this will say something like `JSSynchronizationContext is still installed on worker 0x4ff0030.` in the console during shutdown.
         public async Task JSWebWorker_Abandon_Running()
         {
             var cts = new CancellationTokenSource();
@@ -273,6 +274,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        // this will say something like `JSSynchronizationContext is still installed on worker 0x4ff0030.` in the console during shutdown.
         public async Task JSWebWorker_Abandon_Running_JS()
         {
             var cts = new CancellationTokenSource();

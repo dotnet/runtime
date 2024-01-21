@@ -25,9 +25,9 @@ import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
 import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_name } from "./logging";
 
 // threads
-import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
+import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool, cancelThreads } from "./pthreads/browser";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents } from "./pthreads/worker";
-import { mono_wasm_main_thread_ptr } from "./pthreads/shared";
+import { mono_wasm_main_thread_ptr, mono_wasm_pthread_ptr } from "./pthreads/shared";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 import { localHeapViewU8 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
@@ -216,7 +216,10 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         await runtimeHelpers.afterPreRun.promise;
         mono_log_debug("onRuntimeInitialized");
 
-        runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
+        runtimeHelpers.mono_wasm_exit = !MonoWasmThreads ? cwraps.mono_wasm_exit : (code) => {
+            cancelThreads();
+            cwraps.mono_wasm_exit(code);
+        };
         runtimeHelpers.abort = (reason: any) => {
             loaderHelpers.exitReason = reason;
             if (!loaderHelpers.is_exited()) {
@@ -344,7 +347,13 @@ async function postRunAsync(userpostRun: (() => void)[]) {
 }
 
 export function postRunWorker() {
-    assertNoProxies();
+    if (runtimeHelpers.proxy_context_gc_handle) {
+        const pthread_ptr = mono_wasm_pthread_ptr();
+        mono_log_warn(`JSSynchronizationContext is still installed on worker 0x${pthread_ptr.toString(16)}.`);
+    } else {
+        assertNoProxies();
+    }
+
     // signal next stage
     runtimeHelpers.runtimeReady = false;
     runtimeHelpers.afterPreRun = createPromiseController<void>();
