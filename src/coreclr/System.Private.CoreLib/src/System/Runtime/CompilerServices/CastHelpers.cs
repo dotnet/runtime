@@ -24,6 +24,9 @@ namespace System.Runtime.CompilerServices
         private static extern ref byte Unbox_Helper(void* toTypeHnd, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void Unbox_Nullable(ref byte destination, void* toTypeHnd, object? obj);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object obj);
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
