@@ -113,11 +113,9 @@ namespace System.Buffers
             // IndexOfAnyAsciiSearcher for chars is slower than Any3CharSearchValues, but faster than Any4SearchValues
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
-                IndexOfAnyAsciiSearcher.ComputeBitmap(values, out Vector256<byte> bitmap, out BitVector256 lookup);
-
-                return (Ssse3.IsSupported || PackedSimd.IsSupported) && lookup.Contains(0)
-                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(bitmap, lookup)
-                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(bitmap, lookup);
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
+                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values)
+                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values);
             }
 
             // Vector128<char> isn't valid. Treat the values as shorts instead.

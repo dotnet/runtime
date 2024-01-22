@@ -10,6 +10,7 @@
 
 using System;
 using System.Linq.Expressions;
+using Xunit;
 
 namespace StaticFieldBug
 {
@@ -26,14 +27,14 @@ namespace StaticFieldBug
         }
     }
         
-    class Program
+    public class Program
     {
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Foo<string>("Run me to crash LINQ...");
             
             Console.WriteLine("PASS (we didn't crash)!");
-            return 100;
         }
         public static void Foo<T>(T value)
         {

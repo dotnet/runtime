@@ -1974,20 +1974,6 @@ HRESULT Cordb::EnumerateProcesses(ICorDebugProcessEnum **ppProcesses)
     return hr;
 }
 
-
-//
-// Note: the following defs and structs are copied from various NT headers. I wasn't able to include those headers (like
-// ntexapi.h) due to loads of redef problems and other conflicts with headers that we already pull in.
-//
-typedef LONG NTSTATUS;
-
-#ifndef TARGET_UNIX
-typedef BOOL (*NTQUERYSYSTEMINFORMATION)(SYSTEM_INFORMATION_CLASS SystemInformationClass,
-                                         PVOID SystemInformation,
-                                         ULONG SystemInformationLength,
-                                         PULONG ReturnLength);
-#endif
-
 // Implementation of ICorDebug::CanLaunchOrAttach
 // @dbgtodo-  this all goes away in V3.
 // @dbgtodo-  this should go away in Dev11.

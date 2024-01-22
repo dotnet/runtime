@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Runtime
 {
@@ -26,7 +27,7 @@ namespace System.Runtime
     /// properties are instead thread-safe, and safe to use if <see cref="Dispose"/> is not concurrently invoked as well.
     /// </para>
     /// </remarks>
-    public struct DependentHandle : IDisposable
+    public partial struct DependentHandle : IDisposable
     {
         // =========================================================================================
         // This struct collects all operations on native DependentHandles. The DependentHandle
@@ -62,8 +63,10 @@ namespace System.Runtime
         /// <param name="dependent">The dependent object instance to associate with <paramref name="target"/>.</param>
         public DependentHandle(object? target, object? dependent)
         {
-            // no need to check for null result: InternalInitialize expected to throw OOM.
-            _handle = InternalInitialize(target, dependent);
+            IntPtr handle = InternalAlloc(target, dependent);
+            if (handle == 0)
+                handle = InternalAllocWithGCTransition(target, dependent);
+            _handle = handle;
         }
 
         /// <summary>
@@ -71,7 +74,7 @@ namespace System.Runtime
         /// <see cref="DependentHandle(object?, object?)"/> and has not yet been disposed.
         /// </summary>
         /// <remarks>This property is thread-safe.</remarks>
-        public bool IsAllocated => (nint)_handle != 0;
+        public readonly bool IsAllocated => _handle != 0;
 
         /// <summary>
         /// Gets or sets the target object instance for the current handle. The target can only be set to a <see langword="null"/> value
@@ -83,11 +86,11 @@ namespace System.Runtime
         /// <remarks>This property is thread-safe.</remarks>
         public object? Target
         {
-            get
+            readonly get
             {
                 IntPtr handle = _handle;
 
-                if ((nint)handle == 0)
+                if (handle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -98,7 +101,7 @@ namespace System.Runtime
             {
                 IntPtr handle = _handle;
 
-                if ((nint)handle == 0 || value is not null)
+                if (handle == 0 || value is not null)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -120,11 +123,11 @@ namespace System.Runtime
         /// <remarks>This property is thread-safe.</remarks>
         public object? Dependent
         {
-            get
+            readonly get
             {
                 IntPtr handle = _handle;
 
-                if ((nint)handle == 0)
+                if (handle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -135,7 +138,7 @@ namespace System.Runtime
             {
                 IntPtr handle = _handle;
 
-                if ((nint)handle == 0)
+                if (handle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -154,13 +157,13 @@ namespace System.Runtime
         /// <returns>The values of <see cref="Target"/> and <see cref="Dependent"/>.</returns>
         /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
         /// <remarks>This property is thread-safe.</remarks>
-        public (object? Target, object? Dependent) TargetAndDependent
+        public readonly (object? Target, object? Dependent) TargetAndDependent
         {
             get
             {
                 IntPtr handle = _handle;
 
-                if ((nint)handle == 0)
+                if (handle == 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException();
                 }
@@ -176,7 +179,7 @@ namespace System.Runtime
         /// </summary>
         /// <returns>The target object instance, if present.</returns>
         /// <remarks>This method mirrors <see cref="Target"/>, but without the allocation check.</remarks>
-        internal object? UnsafeGetTarget()
+        internal readonly object? UnsafeGetTarget()
         {
             return InternalGetTarget(_handle);
         }
@@ -191,7 +194,7 @@ namespace System.Runtime
         /// The signature is also kept the same as the one for the internal call, to improve the codegen.
         /// Note that <paramref name="dependent"/> is required to be on the stack (or it might not be tracked).
         /// </remarks>
-        internal object? UnsafeGetTargetAndDependent(out object? dependent)
+        internal readonly object? UnsafeGetTargetAndDependent(out object? dependent)
         {
             return InternalGetTargetAndDependent(_handle, out dependent);
         }
@@ -200,7 +203,7 @@ namespace System.Runtime
         /// Sets the dependent object instance for the current handle to <see langword="null"/>.
         /// </summary>
         /// <remarks>This method mirrors the <see cref="Target"/> setter, but without allocation and input checks.</remarks>
-        internal void UnsafeSetTargetToNull()
+        internal readonly void UnsafeSetTargetToNull()
         {
             InternalSetTargetToNull(_handle);
         }
@@ -209,7 +212,7 @@ namespace System.Runtime
         /// Sets the dependent object instance for the current handle.
         /// </summary>
         /// <remarks>This method mirrors <see cref="Dependent"/>, but without the allocation check.</remarks>
-        internal void UnsafeSetDependent(object? dependent)
+        internal readonly void UnsafeSetDependent(object? dependent)
         {
             InternalSetDependent(_handle, dependent);
         }
@@ -222,16 +225,26 @@ namespace System.Runtime
             // (if not already there) and frees the handle if needed.
             IntPtr handle = _handle;
 
-            if ((nint)handle != 0)
+            if (handle != 0)
             {
-                _handle = IntPtr.Zero;
+                _handle = 0;
 
-                InternalFree(handle);
+                if (!InternalFree(handle))
+                {
+                    InternalFreeWithGCTransition(handle);
+                }
             }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalInitialize(object? target, object? dependent);
+        private static extern IntPtr InternalAlloc(object? target, object? dependent);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static IntPtr InternalAllocWithGCTransition(object? target, object? dependent)
+            => _InternalAllocWithGCTransition(ObjectHandleOnStack.Create(ref target), ObjectHandleOnStack.Create(ref dependent));
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DependentHandle_InternalAllocWithGCTransition")]
+        private static partial IntPtr _InternalAllocWithGCTransition(ObjectHandleOnStack target, ObjectHandleOnStack dependent);
 
 #if DEBUG
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -258,6 +271,13 @@ namespace System.Runtime
         private static extern void InternalSetTargetToNull(IntPtr dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void InternalFree(IntPtr dependentHandle);
+        private static extern bool InternalFree(IntPtr dependentHandle);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void InternalFreeWithGCTransition(IntPtr dependentHandle)
+            => _InternalFreeWithGCTransition(dependentHandle);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DependentHandle_InternalFreeWithGCTransition")]
+        private static partial void _InternalFreeWithGCTransition(IntPtr dependentHandle);
     }
 }

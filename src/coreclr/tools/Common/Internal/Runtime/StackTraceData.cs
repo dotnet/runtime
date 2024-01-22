@@ -9,5 +9,7 @@ namespace Internal.Runtime
         public const byte UpdateName = 0x02;
         public const byte UpdateSignature = 0x04;
         public const byte UpdateGenericSignature = 0x08; // Just a shortcut - sig metadata has the info
+
+        public const byte IsStackTraceHidden = 0x10;
     }
 }

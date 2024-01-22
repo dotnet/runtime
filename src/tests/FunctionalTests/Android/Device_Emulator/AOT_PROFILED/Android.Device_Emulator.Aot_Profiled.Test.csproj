@@ -13,9 +13,12 @@
 
   <!-- Tracing -->
   <PropertyGroup>
-    <!-- <RuntimeComponents>diagnostics_tracing</RuntimeComponents> -->
     <!-- <DiagnosticPorts>127.0.0.1:9000,suspend</DiagnosticPorts> -->
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- <RuntimeComponents Include="diagnostics_tracing" /> -->
+  </ItemGroup>
 
   <!-- Profiled AOT with .nettrace -->
   <PropertyGroup>

@@ -84,7 +84,7 @@ namespace System.Net.Http.Json
         /// <param name="client">The client used to send the request.</param>
         /// <param name="requestUri">The Uri the request is sent to.</param>
         /// <param name="type">The type of the object to deserialize to and return.</param>
-        /// <param name="context">Source generated JsonSerializerContext used to control the deserialization behavior.</param>
+        /// <param name="context">The JsonSerializerContext used to control the deserialization behavior.</param>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="client"/> is <see langword="null"/>.</exception>
@@ -97,7 +97,7 @@ namespace System.Net.Http.Json
         /// <param name="client">The client used to send the request.</param>
         /// <param name="requestUri">The Uri the request is sent to.</param>
         /// <param name="type">The type of the object to deserialize to and return.</param>
-        /// <param name="context">Source generated JsonSerializerContext used to control the deserialization behavior.</param>
+        /// <param name="context">The JsonSerializerContext used to control the deserialization behavior.</param>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="client"/> is <see langword="null"/>.</exception>
@@ -110,7 +110,7 @@ namespace System.Net.Http.Json
         /// <typeparam name="TValue">The target type to deserialize to.</typeparam>
         /// <param name="client">The client used to send the request.</param>
         /// <param name="requestUri">The Uri the request is sent to.</param>
-        /// <param name="jsonTypeInfo">Source generated JsonTypeInfo to control the behavior during deserialization.</param>
+        /// <param name="jsonTypeInfo">The JsonTypeInfo used to control the deserialization behavior.</param>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="client"/> is <see langword="null"/>.</exception>
@@ -123,7 +123,7 @@ namespace System.Net.Http.Json
         /// <typeparam name="TValue">The target type to deserialize to.</typeparam>
         /// <param name="client">The client used to send the request.</param>
         /// <param name="requestUri">The Uri the request is sent to.</param>
-        /// <param name="jsonTypeInfo">Source generated JsonTypeInfo to control the behavior during deserialization.</param>
+        /// <param name="jsonTypeInfo">The JsonTypeInfo used to control the deserialization behavior.</param>
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="client"/> is <see langword="null"/>.</exception>

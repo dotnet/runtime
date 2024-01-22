@@ -114,6 +114,32 @@ inline SBuffer::SBuffer(const SBuffer &buffer)
     RETURN;
 }
 
+inline SBuffer::SBuffer(SBuffer &&buffer)
+{
+    CONTRACT_VOID
+    {
+        CONSTRUCTOR_CHECK;
+        PRECONDITION(buffer.Check());
+        POSTCONDITION(Check());
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACT_END;
+
+    m_size = buffer.m_size;
+    m_allocation = buffer.m_allocation;
+    m_flags = buffer.m_flags;
+    m_buffer = buffer.m_buffer;
+
+#ifdef _DEBUG
+    m_revision = buffer.m_revision;
+#endif
+
+    buffer.InitializeInstance();
+
+    RETURN;
+}
+
 inline SBuffer::SBuffer(const BYTE *buffer, COUNT_T size)
   : m_size(0),
     m_allocation(0),
@@ -187,6 +213,18 @@ inline SBuffer::~SBuffer()
 #endif
 
     RETURN;
+}
+
+inline void SBuffer::InitializeInstance()
+{
+    m_size = 0;
+    m_allocation = 0;
+    m_flags = 0;
+    m_buffer = NULL;
+
+#ifdef _DEBUG
+    m_revision = 0;
+#endif
 }
 
 inline void SBuffer::Set(const SBuffer &buffer)
@@ -344,7 +382,7 @@ inline COUNT_T SBuffer::GetAllocation() const
     RETURN m_allocation;
 }
 
-inline void SBuffer::Preallocate(COUNT_T allocation) const
+inline void SBuffer::Preallocate(COUNT_T allocation)
 {
     CONTRACT_VOID
     {
@@ -358,12 +396,12 @@ inline void SBuffer::Preallocate(COUNT_T allocation) const
     CONTRACT_END;
 
     if (allocation > m_allocation)
-        const_cast<SBuffer *>(this)->ReallocateBuffer(allocation, PRESERVE);
+        ReallocateBuffer(allocation, PRESERVE);
 
     RETURN;
 }
 
-inline void SBuffer::Trim() const
+inline void SBuffer::Trim()
 {
     CONTRACT_VOID
     {
@@ -374,7 +412,7 @@ inline void SBuffer::Trim() const
     CONTRACT_END;
 
     if (!IsImmutable())
-        const_cast<SBuffer *>(this)->ReallocateBuffer(m_size, PRESERVE);
+        ReallocateBuffer(m_size, PRESERVE);
 
     RETURN;
 }

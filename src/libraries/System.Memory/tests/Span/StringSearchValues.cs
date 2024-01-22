@@ -27,6 +27,7 @@ namespace System.Memory.Tests.Span
         [InlineData(StringComparison.OrdinalIgnoreCase, "a")]
         [InlineData(StringComparison.OrdinalIgnoreCase, "A")]
         [InlineData(StringComparison.OrdinalIgnoreCase, "A", "a")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, "Ab", "Abc")]
         [InlineData(StringComparison.OrdinalIgnoreCase, "a", "Ab", "abc", "bC")]
         public static void Values_ImplementsSearchValuesBase(StringComparison comparisonType, params string[] values)
         {
@@ -502,7 +503,7 @@ namespace System.Memory.Tests.Span
                 string readableHaystack = ReadableAsciiOrSerialized(haystack.ToString());
                 string readableNeedle = string.Join(", ", needle.Select(ReadableAsciiOrSerialized));
 
-                Assert.True(false, $"Expected {expected}, got {actual} for impl='{impl}' comparison={comparisonType} needle='{readableNeedle}', haystack='{readableHaystack}'");
+                Assert.Fail($"Expected {expected}, got {actual} for impl='{impl}' comparison={comparisonType} needle='{readableNeedle}', haystack='{readableHaystack}'");
 
                 static string ReadableAsciiOrSerialized(string value)
                 {

@@ -43,13 +43,11 @@ namespace Microsoft.Interop
         private readonly ManagedToNativeStubCodeContext _context;
 
         public ManagedToNativeVTableMethodGenerator(
-            TargetFramework targetFramework,
-            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
             bool implicitThis,
             GeneratorDiagnosticsBag diagnosticsBag,
-            IMarshallingGeneratorFactory generatorFactory)
+            IMarshallingGeneratorResolver generatorResolver)
         {
             _setLastError = setLastError;
             if (implicitThis)
@@ -74,15 +72,15 @@ namespace Microsoft.Interop
                 argTypes = newArgTypes.ToImmutableArray();
             }
 
-            _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingFailures);
+            _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new Forwarder(), out var bindingFailures);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
             }
         }
 

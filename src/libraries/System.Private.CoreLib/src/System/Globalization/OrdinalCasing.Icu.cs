@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
 using System.Diagnostics;
-using System.Threading;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 
 namespace System.Globalization
 {
@@ -85,8 +85,8 @@ namespace System.Globalization
         // 1 - NoCasingPage
         // The bits are in reverse order for readability, i.e. the highest order bit refers to
         // the lowest index.
-        private static ReadOnlySpan<byte> s_casingTableInit => new byte[32]
-        {
+        private static ReadOnlySpan<byte> s_casingTableInit => // 32
+        [
             /* 0000-07FF */    0b00000000,
             /* 0800-0FFF */    0b00000000,
             /* 1000-17FF */    0b01001100,
@@ -119,7 +119,7 @@ namespace System.Globalization
             /* E800-EFFF */    0b11111111,
             /* F000-F7FF */    0b11111111,
             /* F800-FFFF */    0b11001000,
-        };
+        ];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToUpper(char c)
@@ -127,7 +127,7 @@ namespace System.Globalization
             int pageNumber = ((int)c) >> 8;
             if (pageNumber == 0) // optimize for ASCII range
             {
-                return (char) s_basicLatin[(int)c];
+                return (char)s_basicLatin[(int)c];
             }
 
             ushort[]? casingTable = s_casingTable[pageNumber];
@@ -139,11 +139,11 @@ namespace System.Globalization
 
             casingTable ??= InitOrdinalCasingPage(pageNumber);
 
-            return (char) casingTable[((int)c) & 0xFF];
+            return (char)casingTable[((int)c) & 0xFF];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static char ToUpperInvariantMode(char c) => c <= '\u00FF' ? (char) s_basicLatin[(int)c] : c;
+        internal static char ToUpperInvariantMode(char c) => c <= '\u00FF' ? (char)s_basicLatin[(int)c] : c;
 
         public static void ToUpperInvariantMode(this ReadOnlySpan<char> source, Span<char> destination)
         {
@@ -173,7 +173,7 @@ namespace System.Globalization
                     if (char.IsLowSurrogate(cl))
                     {
                         // well formed surrogates
-                        SurrogateCasing.ToUpper(c, cl, out destination[i], out destination[i+1]);
+                        SurrogateCasing.ToUpper(c, cl, out destination[i], out destination[i + 1]);
                         i++; // skip the low surrogate
                         continue;
                     }
@@ -402,7 +402,7 @@ namespace System.Globalization
                     if (pVal > pValueLimit)
                     {
                         // Found match.
-                        return (int) (pCurrentSource - pSource);
+                        return (int)(pCurrentSource - pSource);
                     }
 
                     pCurrentSource--;
@@ -426,7 +426,7 @@ namespace System.Globalization
             return table;
         }
 
-        private static unsafe ushort [] InitOrdinalCasingPage(int pageNumber)
+        private static unsafe ushort[] InitOrdinalCasingPage(int pageNumber)
         {
             Debug.Assert(pageNumber >= 0 && pageNumber < 256);
 

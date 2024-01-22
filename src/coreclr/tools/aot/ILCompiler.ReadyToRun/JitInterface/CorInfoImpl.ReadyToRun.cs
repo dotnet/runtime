@@ -1257,6 +1257,8 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
+                case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
+                case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
@@ -1887,7 +1889,7 @@ namespace Internal.JitInterface
             // a static method would have never found an instance method.
             if (originalMethod.Signature.IsStatic && isCallVirt)
             {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
+                ThrowHelper.ThrowMissingMethodException("?");
             }
 
             exactType = type;
@@ -2093,7 +2095,7 @@ namespace Internal.JitInterface
                     // Compensate for always treating delegates as direct calls above
                     !(isLdftn && isVirtualBehaviorUnresolved))
                 {
-                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallAbstractMethod, targetMethod);
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, targetMethod);
                 }
 
                 bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
@@ -3355,5 +3357,21 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException($"Type equivalent valuetype '{type}' not directly referenced from member reference");
             }
         }
+
+        private bool notifyMethodInfoUsage(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            MethodDesc method = HandleToObject(ftn);
+            Debug.Assert(method != null);
+            // If ftn isn't within the current version bubble we can't rely on methodInfo being
+            // stable e.g. mark calls as no-return if their IL has no rets.
+            return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+        {
+            // Implemented for NativeAOT only for now.
+        }
+#pragma warning restore CA1822 // Mark members as static
     }
 }

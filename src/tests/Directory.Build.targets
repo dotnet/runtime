@@ -35,7 +35,7 @@
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>
-    <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)) or '$(RequiresProcessIsolation)' == 'true'">Exe</OutputType>
+    <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)) or ('$(RequiresProcessIsolation)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary')">Exe</OutputType>
 
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">SharedLibrary</CLRTestKind>
@@ -153,6 +153,7 @@
   <Target Name="CheckForTestOutsideOfGroup" BeforeTargets="Build">
     <Error Condition="'$(InMergedTestDirectory)' == 'true'
       and '$(OutputType)' == 'Exe'
+      and '$(_CLRTestNeedsToRun)' == 'true'
       and '$(RequiresProcessIsolation)' != 'true'
       and '$(BuildAsStandalone)' != 'true'
       and '$(IsMergedTestRunnerAssembly)' != 'true'"
@@ -263,6 +264,7 @@
     <MSBuild Projects="@(ProjectReference)"
         Targets="CopyAllNativeProjectReferenceBinaries"
         Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
+        SkipNonexistentTargets="true"
         BuildInParallel="true" />
   </Target>
 
@@ -506,11 +508,11 @@
 
     <ItemGroup>
       <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" />
-      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" />
+      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" Private="False" />
     </ItemGroup>
   </Target>
 
-  <PropertyGroup Condition="'$(Language)' == 'C#' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(InMergedTestDirectory)' == 'true' or '$(IsMergedTestRunnerAssembly)' == 'true')">
+  <PropertyGroup Condition="'$(Language)' == 'C#' and '$(_CLRTestNeedsToRun)' == 'true' and ('$(BuildAsStandalone)' == 'true' or '$(RequiresProcessIsolation)' == 'true' or '$(InMergedTestDirectory)' == 'true' or '$(IsMergedTestRunnerAssembly)' == 'true')">
     <ReferenceXUnitWrapperGenerator Condition="'$(ReferenceXUnitWrapperGenerator)' == ''">true</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
 
@@ -553,6 +555,8 @@
          so the default for the test tree is partial. -->
     <TrimMode Condition="'$(EnableAggressiveTrimming)' != 'true'">partial</TrimMode>
 
+    <IlcTreatWarningsAsErrors>false</IlcTreatWarningsAsErrors>
+
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(TargetOS)' != '$(HostOS)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
@@ -565,6 +569,11 @@
     <BuildNativeAotFrameworkObjects Condition="'$(IlcMultiModule)' == 'true'">true</BuildNativeAotFrameworkObjects>
     <DisableFrameworkLibGeneration Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">true</DisableFrameworkLibGeneration>
     <FrameworkLibPath Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(IlcSdkPath)</FrameworkLibPath>
+
+    <!-- Forced by ILLink targets -->
+    <SelfContained>true</SelfContained>
+    <HasRuntimeOutput>false</HasRuntimeOutput>
+    <_UsingDefaultForHasRuntimeOutput>false</_UsingDefaultForHasRuntimeOutput>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
@@ -591,6 +600,7 @@
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+  <Import Project="$(RepoRoot)eng/liveILLink.targets" />
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <Content Include="@(SanitizerRuntimeToCopy->'$(CoreCLRArtifactsPath)/%(Identity)')" CopyToOutputDirectory="PreserveNewest" />

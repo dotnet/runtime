@@ -107,7 +107,7 @@ struct CalleeSavedRegisters {
 #define NUM_ARGUMENT_REGISTERS 8
 typedef DPTR(struct ArgumentRegisters) PTR_ArgumentRegisters;
 struct ArgumentRegisters {
-    INT64 a[8]; // a0 ....a7
+    INT64 a[NUM_ARGUMENT_REGISTERS]; // a0 ....a7
 };
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
@@ -124,9 +124,30 @@ struct ArgumentRegisters {
 typedef DPTR(struct FloatArgumentRegisters) PTR_FloatArgumentRegisters;
 struct FloatArgumentRegisters {
     //TODO: not supports RISCV64-SIMD.
-    double  f[8];  // f0-f7
+    double  f[NUM_FLOAT_ARGUMENT_REGISTERS];  // f0-f7
 };
 
+//**********************************************************************
+// Profiling
+//**********************************************************************
+
+#ifdef PROFILING_SUPPORTED
+
+struct PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    void*                  Fp;
+    void*                  Pc;
+    ArgumentRegisters      argumentRegisters;
+    FunctionID             functionId;
+    FloatArgumentRegisters floatArgumentRegisters;
+    void*                  probeSp;
+    void*                  profiledSp;
+    void*                  hiddenArg;
+    UINT64                 flags;
+    // Scratch space to reconstruct struct passed in two registers
+    BYTE                   buffer[sizeof(ArgumentRegisters) + sizeof(FloatArgumentRegisters)];
+};
+#endif  // PROFILING_SUPPORTED
 
 //**********************************************************************
 // Exception handling
@@ -334,7 +355,12 @@ public:
     static bool isValidSimm12(int value) {
         return -( ((int)1) << 11 ) <= value && value < ( ((int)1) << 11 );
     }
-
+    static bool isValidSimm13(int value) {
+        return -(((int)1) << 12) <= value && value < (((int)1) << 12);
+    }
+    static bool isValidUimm20(int value) {
+        return (0 == (value >> 20));
+    }
     void EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall);
     void EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect);
 
@@ -344,7 +370,6 @@ public:
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 #endif // FEATURE_SHARE_GENERIC_CODE
 
-private:
     void EmitMovConstant(IntReg target, UINT64 constant);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
@@ -360,7 +385,8 @@ private:
     void EmitStore(IntReg src, IntReg destAddr, int offset = 0);
     void EmitStore(FloatReg src, IntReg destAddr, int offset = 0);
 
-    void EmitRet(IntReg reg);
+    void EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace = 0);
+    void EmitEpilog();
 };
 
 extern "C" void SinglecastDelegateInvokeStub();
@@ -425,7 +451,7 @@ struct HijackArgs
 // Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
 struct ThisPtrRetBufPrecode {
 
-    static const int Type = 0x2;
+    static const int Type = 0x93;
 
     UINT32  m_rgCode[6];
     TADDR   m_pTarget;

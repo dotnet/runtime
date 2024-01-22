@@ -39,7 +39,7 @@ namespace System.IO.Enumeration
             if (Path.EndsInDirectorySeparator(OriginalRootDirectory) && PathInternal.StartsWithDirectorySeparator(relativePath))
                 relativePath = relativePath.Slice(1);
 
-            return Path.Join(OriginalRootDirectory, relativePath, FileName);
+            return Join(OriginalRootDirectory, relativePath, FileName);
         }
     }
 }

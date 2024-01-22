@@ -14,11 +14,11 @@ namespace ILLink.Shared.TrimAnalysis
 	/// <summary>
 	/// Return value from a method
 	/// </summary>
-	internal partial record MethodReturnValue : IValueWithStaticType
+	internal partial record MethodReturnValue
 	{
 		public MethodReturnValue (TypeDefinition? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
-			StaticType = staticType;
+			StaticType = staticType == null ? null : new (staticType);
 			Method = method;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
@@ -29,8 +29,6 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
 			=> new string[] { DiagnosticUtilities.GetMethodSignatureDisplayName (Method) };
-
-		public TypeDefinition? StaticType { get; }
 
 		public override SingleValue DeepCopy () => this; // This value is immutable
 

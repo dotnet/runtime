@@ -2,9 +2,10 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>DISABLE_RUNTIME_MARSHALLING;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="DisabledRuntimeMarshallingNative.cs" />
+    <Compile Include="../DisabledRuntimeMarshallingNative.cs" />
     <Compile Include="../RuntimeMarshallingDisabledAttribute.cs" />
   </ItemGroup>
 </Project>

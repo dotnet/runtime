@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -474,7 +475,7 @@ namespace System.IO
             /// <param name="removeInotify">true to remove the inotify watch; otherwise, false.  The default is true.</param>
             private void RemoveWatchedDirectory(WatchedDirectory directoryEntry, bool removeInotify = true)
             {
-                Debug.Assert (_includeSubdirectories);
+                Debug.Assert(_includeSubdirectories);
                 lock (SyncObj)
                 {
                     // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
@@ -483,7 +484,7 @@ namespace System.IO
                         directoryEntry.Parent.Children!.Remove(directoryEntry);
                     }
 
-                    RemoveWatchedDirectoryUnlocked (directoryEntry, removeInotify);
+                    RemoveWatchedDirectoryUnlocked(directoryEntry, removeInotify);
                 }
             }
 
@@ -497,7 +498,7 @@ namespace System.IO
                 {
                     foreach (WatchedDirectory child in directoryEntry.Children)
                     {
-                        RemoveWatchedDirectoryUnlocked (child, removeInotify);
+                        RemoveWatchedDirectoryUnlocked(child, removeInotify);
                     }
                     directoryEntry.Children = null;
                 }
@@ -537,6 +538,209 @@ namespace System.IO
             }
 
             /// <summary>
+            /// Processes the next event. Method does not inline to prevent a strong reference to the watcher.
+            /// </summary>
+            /// <param name="nextEvent">The next event.</param>
+            /// <param name="previousEventName">The previous event's name.</param>
+            /// <param name="previousEventParent">The previous event's parent.</param>
+            /// <param name="previousEventCookie">The previous event's cookie.</param>
+            /// <returns><see langword="true"/> if we can continue processing events, <see langword="false"/> otherwise.</returns>
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private bool ProcessEvent(NotifyEvent nextEvent, ref ReadOnlySpan<char> previousEventName, ref WatchedDirectory? previousEventParent, ref uint previousEventCookie)
+            {
+                // Try to get the actual watcher from our weak reference.  We maintain a weak reference most of the time
+                // so as to avoid a rooted cycle that would prevent our processing loop from ever ending
+                // if the watcher is dropped by the user without being disposed. If we can't get the watcher,
+                // there's nothing more to do (we can't raise events), so bail.
+                FileSystemWatcher? watcher;
+                if (!_weakWatcher.TryGetTarget(out watcher))
+                {
+                    return false;
+                }
+
+                uint mask = nextEvent.mask;
+
+                // An overflow event means that we can't trust our state without restarting since we missed events and
+                // some of those events could be a directory create, meaning we wouldn't have added the directory to the
+                // watch and would not provide correct data to the caller.
+                if ((mask & (uint)Interop.Sys.NotifyEvents.IN_Q_OVERFLOW) != 0)
+                {
+                    // Notify the caller of the error and, if the includeSubdirectories flag is set, restart to pick up any
+                    // potential directories we missed due to the overflow.
+                    watcher.NotifyInternalBufferOverflowEvent();
+                    if (_includeSubdirectories)
+                    {
+                        watcher.Restart();
+                    }
+                    return false;
+                }
+
+                // Look up the directory information for the supplied wd
+                WatchedDirectory? associatedDirectoryEntry = null;
+                lock (SyncObj)
+                {
+                    if (!_wdToPathMap.TryGetValue(nextEvent.wd, out associatedDirectoryEntry))
+                    {
+                        // The watch descriptor could be missing from our dictionary if it was removed
+                        // due to cancellation, or if we already removed it and this is a related event
+                        // like IN_IGNORED.  In any case, just ignore it... even if for some reason we
+                        // should have the value, there's little we can do about it at this point,
+                        // and there's no more processing of this event we can do without it.
+                        return true;
+                    }
+                }
+
+                ReadOnlySpan<char> expandedName = associatedDirectoryEntry.GetPath(true, nextEvent.name);
+
+                // To match Windows, ignore all changes that happen on the root folder itself
+                if (expandedName.IsEmpty)
+                {
+                    return true;
+                }
+
+                // Determine whether the affected object is a directory (rather than a file).
+                // If it is, we may need to do special processing, such as adding a watch for new
+                // directories if IncludeSubdirectories is enabled.  Since we're only watching
+                // directories, any IN_IGNORED event is also for a directory.
+                bool isDir = (mask & (uint)(Interop.Sys.NotifyEvents.IN_ISDIR | Interop.Sys.NotifyEvents.IN_IGNORED)) != 0;
+
+                // Renames come in the form of two events: IN_MOVED_FROM and IN_MOVED_TO.
+                // In general, these should come as a sequence, one immediately after the other.
+                // So, we delay raising an event for IN_MOVED_FROM until we see what comes next.
+                if (!previousEventName.IsEmpty && ((mask & (uint)Interop.Sys.NotifyEvents.IN_MOVED_TO) == 0 || previousEventCookie != nextEvent.cookie))
+                {
+                    // IN_MOVED_FROM without an immediately-following corresponding IN_MOVED_TO.
+                    // We have to assume that it was moved outside of our root watch path, which
+                    // should be considered a deletion to match Win32 behavior.
+                    // But since we explicitly added watches on directories, if it's a directory it'll
+                    // still be watched, so we need to explicitly remove the watch.
+                    if (previousEventParent != null && previousEventParent.Children != null)
+                    {
+                        // previousEventParent will be non-null iff the IN_MOVED_FROM
+                        // was for a directory, in which case previousEventParent is that directory's
+                        // parent and previousEventName is the name of the directory to be removed.
+                        foreach (WatchedDirectory child in previousEventParent.Children)
+                        {
+                            if (previousEventName.Equals(child.Name, StringComparison.Ordinal))
+                            {
+                                RemoveWatchedDirectory(child);
+                                return false;
+                            }
+                        }
+                    }
+
+                    // Then fire the deletion event, even though the event was IN_MOVED_FROM.
+                    watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, previousEventName);
+
+                    previousEventName = null;
+                    previousEventParent = null;
+                    previousEventCookie = 0;
+                }
+
+                // If the event signaled that there's a new subdirectory and if we're monitoring subdirectories,
+                // add a watch for it.
+                const Interop.Sys.NotifyEvents AddMaskFilters = Interop.Sys.NotifyEvents.IN_CREATE | Interop.Sys.NotifyEvents.IN_MOVED_TO;
+                bool addWatch = ((mask & (uint)AddMaskFilters) != 0);
+                if (addWatch && isDir && _includeSubdirectories)
+                {
+                    AddDirectoryWatch(associatedDirectoryEntry, nextEvent.name);
+                }
+
+                // Check if the event should have been filtered but was unable because of inotify's inability
+                // to filter files vs directories.
+                const Interop.Sys.NotifyEvents fileDirEvents = Interop.Sys.NotifyEvents.IN_CREATE |
+                        Interop.Sys.NotifyEvents.IN_DELETE |
+                        Interop.Sys.NotifyEvents.IN_MOVED_FROM |
+                        Interop.Sys.NotifyEvents.IN_MOVED_TO;
+                if ((((uint)fileDirEvents & mask) > 0) &&
+                    (isDir && ((_notifyFilters & NotifyFilters.DirectoryName) == 0) ||
+                    (!isDir && ((_notifyFilters & NotifyFilters.FileName) == 0))))
+                {
+                    return true;
+                }
+
+                const Interop.Sys.NotifyEvents switchMask = fileDirEvents | Interop.Sys.NotifyEvents.IN_IGNORED |
+                    Interop.Sys.NotifyEvents.IN_ACCESS | Interop.Sys.NotifyEvents.IN_MODIFY | Interop.Sys.NotifyEvents.IN_ATTRIB;
+                switch ((Interop.Sys.NotifyEvents)(mask & (uint)switchMask))
+                {
+                    case Interop.Sys.NotifyEvents.IN_CREATE:
+                        watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, expandedName);
+                        break;
+                    case Interop.Sys.NotifyEvents.IN_IGNORED:
+                        // We're getting an IN_IGNORED because a directory watch was removed.
+                        // and we're getting this far in our code because we still have an entry for it
+                        // in our dictionary.  So we want to clean up the relevant state, but not clean
+                        // attempt to call back to inotify to remove the watches.
+                        RemoveWatchedDirectory(associatedDirectoryEntry, removeInotify: false);
+                        break;
+                    case Interop.Sys.NotifyEvents.IN_DELETE:
+                        watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);
+                        // We don't explicitly RemoveWatchedDirectory here, as that'll be handled
+                        // by IN_IGNORED processing if this is a directory.
+                        break;
+                    case Interop.Sys.NotifyEvents.IN_ACCESS:
+                    case Interop.Sys.NotifyEvents.IN_MODIFY:
+                    case Interop.Sys.NotifyEvents.IN_ATTRIB:
+                        watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Changed, expandedName);
+                        break;
+                    case Interop.Sys.NotifyEvents.IN_MOVED_FROM:
+                        // We need to check if this MOVED_FROM event is standalone - meaning the item was moved out
+                        // of scope. We do this by checking if we are at the end of our buffer (meaning no more events)
+                        // and if there is data to be read by polling the fd. If there aren't any more events, fire the
+                        // deleted event; if there are more events, handle it via next pass. This adds an additional
+                        // edge case where we get the MOVED_FROM event and the MOVED_TO event hasn't been generated yet
+                        // so we will send a DELETE for this event and a CREATE when the MOVED_TO is eventually processed.
+                        if (_bufferPos == _bufferAvailable)
+                        {
+                            // Do the poll with a small timeout value.  Community research showed that a few milliseconds
+                            // was enough to allow the vast majority of MOVED_TO events that were going to show
+                            // up to actually arrive.  This doesn't need to be perfect; there's always the chance
+                            // that a MOVED_TO could show up after whatever timeout is specified, in which case
+                            // it'll just result in a delete + create instead of a rename.  We need the value to be
+                            // small so that we don't significantly delay the delivery of the deleted event in case
+                            // that's actually what's needed (otherwise it'd be fine to block indefinitely waiting
+                            // for the next event to arrive).
+                            const int MillisecondsTimeout = 2;
+                            Interop.PollEvents events;
+                            Interop.Sys.Poll(_inotifyHandle, Interop.PollEvents.POLLIN, MillisecondsTimeout, out events);
+
+                            // If we error or don't have any signaled handles, send the deleted event
+                            if (events == Interop.PollEvents.POLLNONE)
+                            {
+                                // There isn't any more data in the queue so this is a deleted event
+                                watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);
+                                break;
+                            }
+                        }
+
+                        // We will set these values if the buffer has more data OR if the poll call tells us that more data is available.
+                        previousEventName = expandedName;
+                        previousEventParent = isDir ? associatedDirectoryEntry : null;
+                        previousEventCookie = nextEvent.cookie;
+
+                        break;
+                    case Interop.Sys.NotifyEvents.IN_MOVED_TO:
+                        if (previousEventName != null)
+                        {
+                            // If the previous name from IN_MOVED_FROM is non-null, then this is a rename.
+                            watcher.NotifyRenameEventArgs(WatcherChangeTypes.Renamed, expandedName, previousEventName);
+                        }
+                        else
+                        {
+                            // If it is null, then we didn't get an IN_MOVED_FROM (or we got it a long time
+                            // ago and treated it as a deletion), in which case this is considered a creation.
+                            watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, expandedName);
+                        }
+                        previousEventName = ReadOnlySpan<char>.Empty;
+                        previousEventParent = null;
+                        previousEventCookie = 0;
+                        break;
+                }
+
+                return true;
+            }
+
+            /// <summary>
             /// Main processing loop.  This is currently implemented as a synchronous operation that continually
             /// reads events and processes them... in the future, this could be changed to use asynchronous processing
             /// if the impact of using a thread-per-FileSystemWatcher is too high.
@@ -558,200 +762,8 @@ namespace System.IO
                     NotifyEvent nextEvent;
                     while (!_cancellationToken.IsCancellationRequested && TryReadEvent(out nextEvent))
                     {
-                        // Try to get the actual watcher from our weak reference.  We maintain a weak reference most of the time
-                        // so as to avoid a rooted cycle that would prevent our processing loop from ever ending
-                        // if the watcher is dropped by the user without being disposed. If we can't get the watcher,
-                        // there's nothing more to do (we can't raise events), so bail.
-                        FileSystemWatcher? watcher;
-                        if (!_weakWatcher.TryGetTarget(out watcher))
-                        {
+                        if (!ProcessEvent(nextEvent, ref previousEventName, ref previousEventParent, ref previousEventCookie))
                             break;
-                        }
-
-                        uint mask = nextEvent.mask;
-
-                        // An overflow event means that we can't trust our state without restarting since we missed events and
-                        // some of those events could be a directory create, meaning we wouldn't have added the directory to the
-                        // watch and would not provide correct data to the caller.
-                        if ((mask & (uint)Interop.Sys.NotifyEvents.IN_Q_OVERFLOW) != 0)
-                        {
-                            // Notify the caller of the error and, if the includeSubdirectories flag is set, restart to pick up any
-                            // potential directories we missed due to the overflow.
-                            watcher.NotifyInternalBufferOverflowEvent();
-                            if (_includeSubdirectories)
-                            {
-                                watcher.Restart();
-                            }
-                            break;
-                        }
-
-                        // Look up the directory information for the supplied wd
-                        WatchedDirectory? associatedDirectoryEntry = null;
-                        lock (SyncObj)
-                        {
-                            if (!_wdToPathMap.TryGetValue(nextEvent.wd, out associatedDirectoryEntry))
-                            {
-                                // The watch descriptor could be missing from our dictionary if it was removed
-                                // due to cancellation, or if we already removed it and this is a related event
-                                // like IN_IGNORED.  In any case, just ignore it... even if for some reason we
-                                // should have the value, there's little we can do about it at this point,
-                                // and there's no more processing of this event we can do without it.
-                                watcher = null;
-                                continue;
-                            }
-                        }
-
-                        ReadOnlySpan<char> expandedName = associatedDirectoryEntry.GetPath(true, nextEvent.name);
-
-                        // To match Windows, ignore all changes that happen on the root folder itself
-                        if (expandedName.IsEmpty)
-                        {
-                            watcher = null;
-                            continue;
-                        }
-
-                        // Determine whether the affected object is a directory (rather than a file).
-                        // If it is, we may need to do special processing, such as adding a watch for new
-                        // directories if IncludeSubdirectories is enabled.  Since we're only watching
-                        // directories, any IN_IGNORED event is also for a directory.
-                        bool isDir = (mask & (uint)(Interop.Sys.NotifyEvents.IN_ISDIR | Interop.Sys.NotifyEvents.IN_IGNORED)) != 0;
-
-                        // Renames come in the form of two events: IN_MOVED_FROM and IN_MOVED_TO.
-                        // In general, these should come as a sequence, one immediately after the other.
-                        // So, we delay raising an event for IN_MOVED_FROM until we see what comes next.
-                        if (!previousEventName.IsEmpty && ((mask & (uint)Interop.Sys.NotifyEvents.IN_MOVED_TO) == 0 || previousEventCookie != nextEvent.cookie))
-                        {
-                            // IN_MOVED_FROM without an immediately-following corresponding IN_MOVED_TO.
-                            // We have to assume that it was moved outside of our root watch path, which
-                            // should be considered a deletion to match Win32 behavior.
-                            // But since we explicitly added watches on directories, if it's a directory it'll
-                            // still be watched, so we need to explicitly remove the watch.
-                            if (previousEventParent != null && previousEventParent.Children != null)
-                            {
-                                // previousEventParent will be non-null iff the IN_MOVED_FROM
-                                // was for a directory, in which case previousEventParent is that directory's
-                                // parent and previousEventName is the name of the directory to be removed.
-                                foreach (WatchedDirectory child in previousEventParent.Children)
-                                {
-                                    if (previousEventName.Equals(child.Name, StringComparison.Ordinal))
-                                    {
-                                        RemoveWatchedDirectory(child);
-                                        break;
-                                    }
-                                }
-                            }
-
-                            // Then fire the deletion event, even though the event was IN_MOVED_FROM.
-                            watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, previousEventName);
-
-                            previousEventName = null;
-                            previousEventParent = null;
-                            previousEventCookie = 0;
-                        }
-
-                        // If the event signaled that there's a new subdirectory and if we're monitoring subdirectories,
-                        // add a watch for it.
-                        const Interop.Sys.NotifyEvents AddMaskFilters = Interop.Sys.NotifyEvents.IN_CREATE | Interop.Sys.NotifyEvents.IN_MOVED_TO;
-                        bool addWatch = ((mask & (uint)AddMaskFilters) != 0);
-                        if (addWatch && isDir && _includeSubdirectories)
-                        {
-                            AddDirectoryWatch(associatedDirectoryEntry, nextEvent.name);
-                        }
-
-                        // Check if the event should have been filtered but was unable because of inotify's inability
-                        // to filter files vs directories.
-                        const Interop.Sys.NotifyEvents fileDirEvents = Interop.Sys.NotifyEvents.IN_CREATE |
-                                Interop.Sys.NotifyEvents.IN_DELETE |
-                                Interop.Sys.NotifyEvents.IN_MOVED_FROM |
-                                Interop.Sys.NotifyEvents.IN_MOVED_TO;
-                        if ((((uint)fileDirEvents & mask) > 0) &&
-                            (isDir && ((_notifyFilters & NotifyFilters.DirectoryName) == 0) ||
-                            (!isDir && ((_notifyFilters & NotifyFilters.FileName) == 0))))
-                        {
-                            watcher = null;
-                            continue;
-                        }
-
-                        const Interop.Sys.NotifyEvents switchMask = fileDirEvents | Interop.Sys.NotifyEvents.IN_IGNORED |
-                            Interop.Sys.NotifyEvents.IN_ACCESS | Interop.Sys.NotifyEvents.IN_MODIFY | Interop.Sys.NotifyEvents.IN_ATTRIB;
-                        switch ((Interop.Sys.NotifyEvents)(mask & (uint)switchMask))
-                        {
-                            case Interop.Sys.NotifyEvents.IN_CREATE:
-                                watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, expandedName);
-                                break;
-                            case Interop.Sys.NotifyEvents.IN_IGNORED:
-                                // We're getting an IN_IGNORED because a directory watch was removed.
-                                // and we're getting this far in our code because we still have an entry for it
-                                // in our dictionary.  So we want to clean up the relevant state, but not clean
-                                // attempt to call back to inotify to remove the watches.
-                                RemoveWatchedDirectory(associatedDirectoryEntry, removeInotify:false);
-                                break;
-                            case Interop.Sys.NotifyEvents.IN_DELETE:
-                                watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);
-                                // We don't explicitly RemoveWatchedDirectory here, as that'll be handled
-                                // by IN_IGNORED processing if this is a directory.
-                                break;
-                            case Interop.Sys.NotifyEvents.IN_ACCESS:
-                            case Interop.Sys.NotifyEvents.IN_MODIFY:
-                            case Interop.Sys.NotifyEvents.IN_ATTRIB:
-                                watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Changed, expandedName);
-                                break;
-                            case Interop.Sys.NotifyEvents.IN_MOVED_FROM:
-                                // We need to check if this MOVED_FROM event is standalone - meaning the item was moved out
-                                // of scope. We do this by checking if we are at the end of our buffer (meaning no more events)
-                                // and if there is data to be read by polling the fd. If there aren't any more events, fire the
-                                // deleted event; if there are more events, handle it via next pass. This adds an additional
-                                // edge case where we get the MOVED_FROM event and the MOVED_TO event hasn't been generated yet
-                                // so we will send a DELETE for this event and a CREATE when the MOVED_TO is eventually processed.
-                                if (_bufferPos == _bufferAvailable)
-                                {
-                                    // Do the poll with a small timeout value.  Community research showed that a few milliseconds
-                                    // was enough to allow the vast majority of MOVED_TO events that were going to show
-                                    // up to actually arrive.  This doesn't need to be perfect; there's always the chance
-                                    // that a MOVED_TO could show up after whatever timeout is specified, in which case
-                                    // it'll just result in a delete + create instead of a rename.  We need the value to be
-                                    // small so that we don't significantly delay the delivery of the deleted event in case
-                                    // that's actually what's needed (otherwise it'd be fine to block indefinitely waiting
-                                    // for the next event to arrive).
-                                    const int MillisecondsTimeout = 2;
-                                    Interop.PollEvents events;
-                                    Interop.Sys.Poll(_inotifyHandle, Interop.PollEvents.POLLIN, MillisecondsTimeout, out events);
-
-                                    // If we error or don't have any signaled handles, send the deleted event
-                                    if (events == Interop.PollEvents.POLLNONE)
-                                    {
-                                        // There isn't any more data in the queue so this is a deleted event
-                                        watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);
-                                        break;
-                                    }
-                                }
-
-                                // We will set these values if the buffer has more data OR if the poll call tells us that more data is available.
-                                previousEventName = expandedName;
-                                previousEventParent = isDir ? associatedDirectoryEntry : null;
-                                previousEventCookie = nextEvent.cookie;
-
-                                break;
-                            case Interop.Sys.NotifyEvents.IN_MOVED_TO:
-                                if (previousEventName != null)
-                                {
-                                    // If the previous name from IN_MOVED_FROM is non-null, then this is a rename.
-                                    watcher.NotifyRenameEventArgs(WatcherChangeTypes.Renamed, expandedName, previousEventName);
-                                }
-                                else
-                                {
-                                    // If it is null, then we didn't get an IN_MOVED_FROM (or we got it a long time
-                                    // ago and treated it as a deletion), in which case this is considered a creation.
-                                    watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, expandedName);
-                                }
-                                previousEventName = ReadOnlySpan<char>.Empty;
-                                previousEventParent = null;
-                                previousEventCookie = 0;
-                                break;
-                        }
-
-                        // Drop our strong reference to the watcher now that we're potentially going to block again for another read
-                        watcher = null;
                     }
                 }
                 catch (Exception exc)

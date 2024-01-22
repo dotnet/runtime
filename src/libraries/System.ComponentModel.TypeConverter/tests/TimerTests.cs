@@ -94,6 +94,14 @@ namespace System.Timers.Tests
             }
         }
 
+        [Fact]
+        public void ElapsedEventArgs_Ctor_SignalTime()
+        {
+            DateTime now = DateTime.Now;
+            ElapsedEventArgs args = new ElapsedEventArgs(now);
+            Assert.Equal(now, args.SignalTime);
+        }
+
         [Theory]
         [InlineData(int.MaxValue)]
         [InlineData(0.5D)]

@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Diagnostics;
+using Xunit;
 
 public class SharedExceptions
 {
     public int retVal =0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("Test that StackTrace for OOM is proper if memory is available");
         SharedExceptions test = new SharedExceptions();

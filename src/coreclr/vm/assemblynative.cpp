@@ -137,8 +137,6 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     Assembly *pLoadedAssembly = NULL;
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
 
-    DWORD dwMessageID = IDS_EE_FILELOAD_ERROR_GENERIC;
-
     // Set the caller's assembly to be CoreLib
     DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
 
@@ -155,15 +153,22 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     if (hr != S_OK)
     {
-        // Give a more specific message for the case when we found the assembly with the same name already loaded.
-        if (hr == COR_E_FILELOAD)
-        {
-            dwMessageID = IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT;
-        }
-
         StackSString name;
         spec.GetDisplayName(0, name);
-        COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
+        if (hr == COR_E_FILELOAD)
+        {
+            // Give a more specific message for the case when we found the assembly with the same name already loaded.
+            // Show the assembly name, since we know the error is about the assembly name.
+            StackSString errorString;
+            errorString.LoadResource(CCompRC::Error, IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+            COMPlusThrow(kFileLoadException, IDS_EE_FILELOAD_ERROR_GENERIC, name, errorString);
+        }
+        else
+        {
+            // Propagate the actual HResult to the FileLoadException
+            // Use the path if this load request was for a file path, display name otherwise
+            EEFileLoadException::Throw(pImage->GetPath().IsEmpty() ? name : pImage->GetPath(), hr);
+        }
     }
 
     PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
@@ -357,10 +362,27 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCore(QCall::AssemblyHandle assem
     ClassLoader* pClassLoader = pAssembly->GetLoader();
 
     NameHandle typeName(pManifestModule, mdtBaseType);
+    CQuickBytes qbszNamespace;
 
     for (int32_t i = -1; i < cNestedTypeNamesLength; i++)
     {
-        typeName.SetName((i == -1) ? szTypeName : rgszNestedTypeNames[i]);
+        LPCUTF8 szFullyQualifiedName = (i == -1) ? szTypeName : rgszNestedTypeNames[i];
+
+        LPCUTF8 szNameSpace = "";
+        LPCUTF8 szName = "";
+
+        if ((szName = ns::FindSep(szFullyQualifiedName)) != NULL)
+        {
+            SIZE_T d = szName - szFullyQualifiedName;
+            szNameSpace = qbszNamespace.SetString(szFullyQualifiedName, d);
+            szName++;
+        }
+        else
+        {
+            szName = szFullyQualifiedName;
+        }
+
+        typeName.SetName(szNameSpace, szName);
 
         // typeName.m_pBucket gets set here if the type is found
         // it will be used in the next iteration to look up the nested type
@@ -410,6 +432,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHa
     ClassLoader* pClassLoader = pAssembly->GetLoader();
 
     NameHandle typeName(pManifestModule, mdtBaseType);
+    CQuickBytes qbszNamespace;
 
     // Set up the name handle
     typeName.SetCaseInsensitive();
@@ -422,7 +445,23 @@ extern "C" void QCALLTYPE AssemblyNative_GetTypeCoreIgnoreCase(QCall::AssemblyHa
         // The type name is expected to be lower-cased by the caller for case-insensitive lookups
         name.LowerCase();
 
-        typeName.SetName(name.GetUTF8());
+        LPCUTF8 szFullyQualifiedName = name.GetUTF8();
+
+        LPCUTF8 szNameSpace = "";
+        LPCUTF8 szName = "";
+
+        if ((szName = ns::FindSep(szFullyQualifiedName)) != NULL)
+        {
+            SIZE_T d = szName - szFullyQualifiedName;
+            szNameSpace = qbszNamespace.SetString(szFullyQualifiedName, d);
+            szName++;
+        }
+        else
+        {
+            szName = szFullyQualifiedName;
+        }
+
+        typeName.SetName(szNameSpace, szName);
 
         // typeName.m_pBucket gets set here if the type is found
         // it will be used in the next iteration to look up the nested type
@@ -479,8 +518,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedType(QCall::AssemblyHandle 
     }
 
     END_QCALL;
-
-    return;
 }
 
 FCIMPL1(FC_BOOL_RET, AssemblyNative::IsDynamic, AssemblyBaseObject* pAssemblyUNSAFE)
@@ -773,8 +810,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetModule(QCall::AssemblyHandle pAssemb
     }
 
     END_QCALL;
-
-    return;
 }
 
 extern "C" void QCALLTYPE AssemblyNative_GetExportedTypes(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retTypes)
@@ -968,37 +1003,33 @@ extern "C" void QCALLTYPE AssemblyNative_GetForwardedTypes(QCall::AssemblyHandle
     END_QCALL;
 }
 
-FCIMPL1(Object*, AssemblyNative::GetManifestResourceNames, AssemblyBaseObject * pAssemblyUNSAFE)
+extern "C" void QCALLTYPE AssemblyNative_GetManifestResourceNames(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retResourceNames)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
+    BEGIN_QCALL;
 
-    if (refAssembly == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    Assembly * pAsm = pAssembly->GetAssembly();
 
-    DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
-    PTRARRAYREF rv = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(rv, refAssembly);
-
-    IMDInternalImport *pImport = pAssembly->GetMDImport();
+    IMDInternalImport *pImport = pAsm->GetMDImport();
 
     HENUMInternalHolder phEnum(pImport);
-    DWORD dwCount;
-
     phEnum.EnumInit(mdtManifestResource, mdTokenNil);
-        dwCount = pImport->EnumGetCount(&phEnum);
+
+    DWORD dwCount = pImport->EnumGetCount(&phEnum);
+
+    GCX_COOP();
 
     PTRARRAYREF ItemArray = (PTRARRAYREF) AllocateObjectArray(dwCount, g_pStringClass);
 
-    mdManifestResource mdResource;
-
     GCPROTECT_BEGIN(ItemArray);
-    for(DWORD i = 0;  i < dwCount; i++) {
-        pImport->EnumNext(&phEnum, &mdResource);
-        LPCSTR pszName = NULL;
 
+    for(DWORD i = 0;  i < dwCount; i++)
+    {
+        mdManifestResource mdResource;
+        pImport->EnumNext(&phEnum, &mdResource);
+
+        LPCSTR pszName = NULL;
         IfFailThrow(pImport->GetManifestResourceProps(
             mdResource,
             &pszName,   // name
@@ -1010,52 +1041,43 @@ FCIMPL1(Object*, AssemblyNative::GetManifestResourceNames, AssemblyBaseObject * 
         ItemArray->SetAt(i, o);
     }
 
-    rv = ItemArray;
+    retResourceNames.Set(ItemArray);
     GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(rv);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * pAssemblyUNSAFE)
+extern "C" void QCALLTYPE AssemblyNative_GetReferencedAssemblies(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retReferencedAssemblies)
 {
-    FCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    Assembly * pAsm = pAssembly->GetAssembly();
+
+    IMDInternalImport *pImport = pAsm->GetMDImport();
+
+    HENUMInternalHolder phEnum(pImport);
+    phEnum.EnumInit(mdtAssemblyRef, mdTokenNil);
+
+    DWORD dwCount = pImport->EnumGetCount(&phEnum);
+
+    MethodTable* pAsmNameClass = CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME);
+
+    GCX_COOP();
 
     struct {
         PTRARRAYREF ItemArray;
         ASSEMBLYNAMEREF pObj;
-        ASSEMBLYREF refAssembly;
     } gc;
     gc.ItemArray = NULL;
     gc.pObj = NULL;
-    gc.refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
 
-    if (gc.refAssembly == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    DomainAssembly *pAssembly = gc.refAssembly->GetDomainAssembly();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    IMDInternalImport *pImport = pAssembly->GetAssembly()->GetMDImport();
-
-    MethodTable* pAsmNameClass = CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME);
-
-    HENUMInternalHolder phEnum(pImport);
-    DWORD dwCount = 0;
-
-    phEnum.EnumInit(mdtAssemblyRef, mdTokenNil);
-
-    dwCount = pImport->EnumGetCount(&phEnum);
-
-    mdAssemblyRef mdAssemblyRef;
+    GCPROTECT_BEGIN(gc);
 
     gc.ItemArray = (PTRARRAYREF) AllocateObjectArray(dwCount, pAsmNameClass);
 
     for(DWORD i = 0; i < dwCount; i++)
     {
+        mdAssemblyRef mdAssemblyRef;
         pImport->EnumNext(&phEnum, &mdAssemblyRef);
 
         AssemblySpec spec;
@@ -1067,11 +1089,11 @@ FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * p
         gc.ItemArray->SetAt(i, (OBJECTREF) gc.pObj);
     }
 
-    HELPER_METHOD_FRAME_END();
+    retReferencedAssemblies.Set(gc.ItemArray);
+    GCPROTECT_END();
 
-    return OBJECTREFToObject(gc.ItemArray);
+    END_QCALL;
 }
-FCIMPLEND
 
 extern "C" void QCALLTYPE AssemblyNative_GetEntryPoint(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retMethod)
 {
@@ -1089,8 +1111,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryPoint(QCall::AssemblyHandle pAs
     }
 
     END_QCALL;
-
-    return;
 }
 
 //---------------------------------------------------------------------------------------
@@ -1129,7 +1149,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlM
     }
 
     END_QCALL;
-    return;
 }
 
 extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnStack retAssembly)
@@ -1149,8 +1168,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
     }
 
     END_QCALL;
-
-    return;
 }
 
 extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)

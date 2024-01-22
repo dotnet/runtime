@@ -1,20 +1,15 @@
-<Project>
-
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputPath>$(RuntimeBinDir)crossgen2</OutputPath>
-    <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
-    <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
-    <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
-    <!-- Trimming is not currently working, but set the appropriate feature flags for NativeAOT -->
-    <PublishTrimmed Condition="'$(NativeAotSupported)' == 'true'">true</PublishTrimmed>
-    <RuntimeIdentifiers Condition="'$(_IsPublishing)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;freebsd-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(PackageRID)</RuntimeIdentifiers>
-    <SelfContained>false</SelfContained>
-    <SelfContained Condition="'$(_IsPublishing)' == 'true'">true</SelfContained>
+    <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
+    <UseAppHost>false</UseAppHost>
+    <!--
+      When building crossgen2, we don't have the live ref and runtime packs.
+      So even though we'll run against the live-built runtime,
+      we need to compile against the "Tool Current" runtime, which is the latest
+      that ships with the SDK that we build with.
+    -->
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
-
   <Import Project="crossgen2.props" />
 
   <PropertyGroup Condition="'$(NativeAotSupported)' != 'true'">

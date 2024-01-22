@@ -13,8 +13,8 @@ namespace System.Buffers
     internal sealed class ProbabilisticWithAsciiCharSearchValues<TOptimizations> : SearchValues<char>
         where TOptimizations : struct, IndexOfAnyAsciiSearcher.IOptimizations
     {
-        private Vector256<byte> _asciiBitmap;
-        private Vector256<byte> _inverseAsciiBitmap;
+        private IndexOfAnyAsciiSearcher.AsciiState _asciiState;
+        private IndexOfAnyAsciiSearcher.AsciiState _inverseAsciiState;
         private ProbabilisticMap _map;
         private readonly string _values;
 
@@ -23,8 +23,8 @@ namespace System.Buffers
             Debug.Assert(IndexOfAnyAsciiSearcher.IsVectorizationSupported);
             Debug.Assert(values.ContainsAnyInRange((char)0, (char)127));
 
-            IndexOfAnyAsciiSearcher.ComputeBitmap(values, out _asciiBitmap, out _);
-            _inverseAsciiBitmap = ~_asciiBitmap;
+            IndexOfAnyAsciiSearcher.ComputeAsciiState(values, out _asciiState);
+            _inverseAsciiState = _asciiState.CreateInverse();
 
             _values = new string(values);
             _map = new ProbabilisticMap(_values);
@@ -48,29 +48,29 @@ namespace System.Buffers
                 // We do this by inverting the bitmap and using the opposite search function (Negate instead of DontNegate).
 
                 // If the bitmap we're using contains a 0, we have to use 'Ssse3AndWasmHandleZeroInNeedle' when running on X86 and WASM.
-                // Everything else should use 'Default'. 'TOptimizations' specifies whether '_asciiBitmap' contains a 0.
+                // Everything else should use 'Default'. 'TOptimizations' specifies whether '_asciiState' contains a 0.
                 // Since we're using the inverse bitmap in this case, we have to use 'Ssse3AndWasmHandleZeroInNeedle' iff we're
                 // running on X86/WASM and 'TOptimizations' is 'Default' (as that means that the inverse bitmap definitely has a 0).
-                Debug.Assert((_asciiBitmap[0] & 1) != (_inverseAsciiBitmap[0] & 1));
+                Debug.Assert(_asciiState.Lookup.Contains(0) != _inverseAsciiState.Lookup.Contains(0));
 
                 if ((Ssse3.IsSupported || PackedSimd.IsSupported) && typeof(TOptimizations) == typeof(IndexOfAnyAsciiSearcher.Default))
                 {
-                    Debug.Assert((_inverseAsciiBitmap[0] & 1) == 1, "The inverse bitmap did not contain a 0.");
+                    Debug.Assert(_inverseAsciiState.Lookup.Contains(0), "The inverse bitmap did not contain a 0.");
 
-                    offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(
+                    offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
-                        ref _inverseAsciiBitmap);
+                        ref _inverseAsciiState);
                 }
                 else
                 {
-                    Debug.Assert(!(Ssse3.IsSupported || PackedSimd.IsSupported) || (_inverseAsciiBitmap[0] & 1) == 0,
+                    Debug.Assert(!(Ssse3.IsSupported || PackedSimd.IsSupported) || !_inverseAsciiState.Lookup.Contains(0),
                         "The inverse bitmap contained a 0, but we're not using Ssse3AndWasmHandleZeroInNeedle.");
 
-                    offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default>(
+                    offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
-                        ref _inverseAsciiBitmap);
+                        ref _inverseAsciiState);
                 }
 
                 // If we've reached the end of the span or stopped at an ASCII character, we've found the result.
@@ -107,10 +107,10 @@ namespace System.Buffers
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && span.Length >= Vector128<short>.Count && char.IsAscii(span[0]))
             {
                 // Do a regular IndexOfAnyExcept for the ASCII characters. The search will stop if we encounter a non-ASCII char.
-                offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(
+                offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(
                     ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
-                    ref _asciiBitmap);
+                    ref _asciiState);
 
                 // If we've reached the end of the span or stopped at an ASCII character, we've found the result.
                 if ((uint)offset >= (uint)span.Length || char.IsAscii(span[offset]))
@@ -146,31 +146,31 @@ namespace System.Buffers
                 // We do this by inverting the bitmap and using the opposite search function (Negate instead of DontNegate).
 
                 // If the bitmap we're using contains a 0, we have to use 'Ssse3AndWasmHandleZeroInNeedle' when running on X86 and WASM.
-                // Everything else should use 'Default'. 'TOptimizations' specifies whether '_asciiBitmap' contains a 0.
+                // Everything else should use 'Default'. 'TOptimizations' specifies whether '_asciiState' contains a 0.
                 // Since we're using the inverse bitmap in this case, we have to use 'Ssse3AndWasmHandleZeroInNeedle' iff we're
                 // running on X86/WASM and 'TOptimizations' is 'Default' (as that means that the inverse bitmap definitely has a 0).
-                Debug.Assert((_asciiBitmap[0] & 1) != (_inverseAsciiBitmap[0] & 1));
+                Debug.Assert(_asciiState.Lookup.Contains(0) != _inverseAsciiState.Lookup.Contains(0));
 
                 int offset;
 
                 if ((Ssse3.IsSupported || PackedSimd.IsSupported) && typeof(TOptimizations) == typeof(IndexOfAnyAsciiSearcher.Default))
                 {
-                    Debug.Assert((_inverseAsciiBitmap[0] & 1) == 1, "The inverse bitmap did not contain a 0.");
+                    Debug.Assert(_inverseAsciiState.Lookup.Contains(0), "The inverse bitmap did not contain a 0.");
 
-                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(
+                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
-                        ref _inverseAsciiBitmap);
+                        ref _inverseAsciiState);
                 }
                 else
                 {
-                    Debug.Assert(!(Ssse3.IsSupported || PackedSimd.IsSupported) || (_inverseAsciiBitmap[0] & 1) == 0,
+                    Debug.Assert(!(Ssse3.IsSupported || PackedSimd.IsSupported) || !_inverseAsciiState.Lookup.Contains(0),
                         "The inverse bitmap contained a 0, but we're not using Ssse3AndWasmHandleZeroInNeedle.");
 
-                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default>(
+                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
-                        ref _inverseAsciiBitmap);
+                        ref _inverseAsciiState);
                 }
 
                 // If we've reached the end of the span or stopped at an ASCII character, we've found the result.
@@ -197,10 +197,10 @@ namespace System.Buffers
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && span.Length >= Vector128<short>.Count && char.IsAscii(span[^1]))
             {
                 // Do a regular LastIndexOfAnyExcept for the ASCII characters. The search will stop if we encounter a non-ASCII char.
-                int offset = IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(
+                int offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(
                     ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
-                    ref _asciiBitmap);
+                    ref _asciiState);
 
                 // If we've reached the end of the span or stopped at an ASCII character, we've found the result.
                 if ((uint)offset >= (uint)span.Length || char.IsAscii(span[offset]))

@@ -13,6 +13,7 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | EnableUnsafeBinaryFormatterSerialization | System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization | BinaryFormatter serialization support is trimmed when set to false |
 | EventSourceSupport | System.Diagnostics.Tracing.EventSource.IsSupported | Any EventSource related code or logic is trimmed when set to false |
 | InvariantGlobalization | System.Globalization.Invariant | All globalization specific code and data is trimmed when set to true |
+| MetricsSupport | System.Diagnostics.Metrics.Meter.IsSupported | Any Metrics related code or logic is trimmed when set to false |
 | PredefinedCulturesOnly | System.Globalization.PredefinedCulturesOnly |  Don't allow creating a culture for which the platform does not have data |
 | HybridGlobalization | System.Globalization.Hybrid |  Properties connected with the mixed: platform-specific + icu-based globalization will be trimmed  |
 | UseSystemResourceKeys | System.Resources.UseSystemResourceKeys |  Any localizable resources for system assemblies is trimmed when set to true |
@@ -27,6 +28,7 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | MetadataUpdaterSupport | System.Reflection.Metadata.MetadataUpdater.IsSupported | Metadata update related code to be trimmed when set to false |
 | _EnableConsumingManagedCodeFromNativeHosting | System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting | Getting a managed function from native hosting is disabled when set to false and related functionality can be trimmed. |
 | VerifyDependencyInjectionOpenGenericServiceTrimmability | Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability | When set to true, DependencyInjection will verify trimming annotations applied to open generic services are correct |
+| DisableDependencyInjectionDynamicEngine | Microsoft.Extensions.DependencyInjection.DisableDynamicEngine | When set to true, DependencyInjection will avoid using System.Reflection.Emit when realizing services |
 | NullabilityInfoContextSupport | System.Reflection.NullabilityInfoContext.IsSupported | Nullable attributes can be trimmed when set to false |
 | DynamicCodeSupport | System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported | Changes RuntimeFeature.IsDynamicCodeSupported to false to allow testing AOT-safe fallback code without publishing for Native AOT. |
 | _AggressiveAttributeTrimming | System.AggressiveAttributeTrimming | When set to true, aggressively trims attributes to allow for the most size savings possible, even if it could result in runtime behavior changes |

@@ -67,6 +67,9 @@ MINI_OP(OP_LCALL_MEMBASE,	"lcall_membase", LREG, IREG, NONE)
 MINI_OP(OP_VCALL, 	"vcall", VREG, NONE, NONE)
 MINI_OP(OP_VCALL_REG,	"vcall_reg", VREG, IREG, NONE)
 MINI_OP(OP_VCALL_MEMBASE,	"vcall_membase", VREG, IREG, NONE)
+MINI_OP(OP_XCALL, 	"xcall", XREG, NONE, NONE)
+MINI_OP(OP_XCALL_REG,	"xcall_reg", XREG, IREG, NONE)
+MINI_OP(OP_XCALL_MEMBASE,	"xcall_membase", XREG, IREG, NONE)
 /* Represents the decomposed vcall which doesn't return a vtype no more */
 MINI_OP(OP_VCALL2, 	"vcall2", NONE, NONE, NONE)
 MINI_OP(OP_VCALL2_REG,	"vcall2_reg", NONE, IREG, NONE)
@@ -1184,6 +1187,28 @@ MINI_OP3(OP_MULX_HL64, "mulxhl64", LREG, LREG, LREG, LREG)
 
 #endif
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+/*
+ * These operations exist to facilitate simultaneous int/uint division
+ * and remainder on x86/x86-64. On that platform the DIV/IDIV instructions
+ * operate as follows edx:eax/reg32 -> (eax=quotient,edx=remainder). Mono
+ * ops only support one destination register, so two operations are needed
+ * to obtain two result values. One would use {long,int}_divrem[_un] first,
+ * and the corresponding {long_int}_divrem2 immediately afterwards. The
+ * first instruction returns the quotient and leaves the remainder in the
+ * edx(rdx) register. The second instruction puts a virtual register over
+ * edx, so that its value can be used. Note that if the first instruction
+ * is emitted, the second must be also (there is an assert). This works
+ * both in LLVM and mini.
+ */
+MINI_OP3(OP_X86_LDIVREM, "long_divrem", LREG, LREG, LREG, LREG)
+MINI_OP3(OP_X86_LDIVREMU, "long_divrem_un", LREG, LREG, LREG, LREG)
+MINI_OP3(OP_X86_LDIVREM2, "long_divrem2", LREG, NONE, NONE, NONE)
+MINI_OP3(OP_X86_IDIVREM, "int_divrem", IREG, IREG, IREG, IREG)
+MINI_OP3(OP_X86_IDIVREMU, "int_divrem_un", IREG, IREG, IREG, IREG)
+MINI_OP3(OP_X86_IDIVREM2, "int_divrem2", IREG, NONE, NONE, NONE)
+#endif
+
 MINI_OP(OP_CREATE_SCALAR_UNSAFE, "create_scalar_unsafe", XREG, XREG, NONE)
 MINI_OP(OP_CREATE_SCALAR, "create_scalar", XREG, XREG, NONE)
 
@@ -1864,6 +1889,8 @@ MINI_OP(OP_RISCV_BGE, "riscv_bge", NONE, IREG, IREG)
 MINI_OP(OP_RISCV_BGEU, "riscv_bgeu", NONE, IREG, IREG)
 MINI_OP(OP_RISCV_BLT, "riscv_blt", NONE, IREG, IREG)
 MINI_OP(OP_RISCV_BLTU, "riscv_bltu", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_RBNAN, "riscv_r4_bnan", NONE, FREG, NONE)
+MINI_OP(OP_RISCV_FBNAN, "riscv_float_bnan", NONE, FREG, NONE)
 
 MINI_OP(OP_RISCV_ADDIW, "riscv_addiw", IREG, IREG, NONE)
 

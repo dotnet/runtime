@@ -509,7 +509,7 @@ namespace System.Threading
             bool threadTrackingEnabled = (_owner & LOCK_ID_DISABLE_MASK) == 0;
             if (threadTrackingEnabled && !IsHeldByCurrentThread)
             {
-                throw new SynchronizationLockException(SR.SpinLock_Exit_SynchronizationLockException);
+                ThrowHelper.ThrowSynchronizationLockException_LockExit();
             }
 
             if (useMemoryBarrier)

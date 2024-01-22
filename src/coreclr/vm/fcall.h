@@ -1289,11 +1289,11 @@ public:
 
 
 
-// The x86 JIT calling convention expects returned small types (e.g. bool) to be
-// widened on return. The C/C++ calling convention does not guarantee returned
-// small types to be widened. The small types has to be artificially widened on return
-// to fit x86 JIT calling convention. Thus fcalls returning small types has to
-// use the FC_XXX_RET types to force C/C++ compiler to do the widening.
+// The managed calling convention expects returned small types (e.g. bool) to be
+// widened to 32-bit on return. The C/C++ calling convention does not guarantee returned
+// small types to be widened on most platforms. The small types have to be artificially
+// widened on return to fit the managed calling convention. Thus fcalls returning small
+// types have to use the FC_XXX_RET types to force C/C++ compiler to do the widening.
 //
 // The most common small return type of FCALLs is bool. The widening of bool is
 // especially tricky since the value has to be also normalized. FC_BOOL_RET and
@@ -1306,7 +1306,7 @@ public:
 //      FC_RETURN_BOOL(ret);    // return statements should be FC_RETURN_BOOL
 // FCIMPLEND
 
-// This rules are verified in binder.cpp if DOTNET_ConsistencyCheck is set.
+// This rule is verified in corelib.cpp if DOTNET_ConsistencyCheck is set.
 
 #ifdef _PREFAST_
 
@@ -1320,37 +1320,21 @@ typedef LPVOID FC_BOOL_RET;
 
 #else
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-// The return value is artificially widened on x86 and amd64
+// The return value is artificially widened in managed calling convention
 typedef INT32 FC_BOOL_RET;
-#else
-typedef CLR_BOOL FC_BOOL_RET;
-#endif
 
 #define FC_RETURN_BOOL(x)   do { return !!(x); } while(0)
 
 #endif
 
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-// The return value is artificially widened on x86 and amd64
+// Small primitive return values are artificially widened in managed calling convention
 typedef UINT32 FC_CHAR_RET;
 typedef INT32 FC_INT8_RET;
 typedef UINT32 FC_UINT8_RET;
 typedef INT32 FC_INT16_RET;
 typedef UINT32 FC_UINT16_RET;
-#else
-typedef CLR_CHAR FC_CHAR_RET;
-typedef INT8 FC_INT8_RET;
-typedef UINT8 FC_UINT8_RET;
-typedef INT16 FC_INT16_RET;
-typedef UINT16 FC_UINT16_RET;
-#endif
 
-
-// FC_TypedByRef should be used for TypedReferences in FCall signatures
-#define FC_TypedByRef   TypedByRef
-#define FC_DECIMAL      DECIMAL
 
 
 // The fcall entrypoints has to be at unique addresses. Use this helper macro to make

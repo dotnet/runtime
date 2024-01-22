@@ -295,92 +295,9 @@ void MethodDataCache::Clear()
 
 
 //==========================================================================================
-//
-// Initialize the offsets of multipurpose slots at compile time using template metaprogramming
-//
-
-template<int N>
-struct CountBitsAtCompileTime
-{
-    enum { value = (N & 1) + CountBitsAtCompileTime<(N >> 1)>::value };
-};
-
-template<>
-struct CountBitsAtCompileTime<0>
-{
-    enum { value = 0 };
-};
-
-// "mask" is mask of used slots.
-template<int mask>
-struct MethodTable::MultipurposeSlotOffset
-{
-    // This is raw index of the slot assigned on first come first served basis
-    enum { raw = CountBitsAtCompileTime<mask>::value };
-
-    // This is actual index of the slot. It is equal to raw index except for the case
-    // where the first fixed slot is not used, but the second one is. The first fixed
-    // slot has to be assigned instead of the second one in this case. This assumes that
-    // there are exactly two fixed slots.
-    enum { index = (((mask & 3) == 2) && (raw == 1)) ? 0 : raw };
-
-    // Offset of slot
-    enum { slotOffset = (index == 0) ? offsetof(MethodTable, m_pMultipurposeSlot1) :
-                        (index == 1) ? offsetof(MethodTable, m_pMultipurposeSlot2) :
-                        (sizeof(MethodTable) + index * sizeof(TADDR) - 2 * sizeof(TADDR)) };
-
-    // Size of methodtable with overflow slots. It is used to compute start offset of optional members.
-    enum { totalSize = (slotOffset >= sizeof(MethodTable)) ? slotOffset : sizeof(MethodTable) };
-};
-
-//
-// These macros recursively expand to create 2^N values for the offset arrays
-//
-#define MULTIPURPOSE_SLOT_OFFSET_1(mask) MULTIPURPOSE_SLOT_OFFSET  (mask) MULTIPURPOSE_SLOT_OFFSET  (mask | 0x01)
-#define MULTIPURPOSE_SLOT_OFFSET_2(mask) MULTIPURPOSE_SLOT_OFFSET_1(mask) MULTIPURPOSE_SLOT_OFFSET_1(mask | 0x02)
-#define MULTIPURPOSE_SLOT_OFFSET_3(mask) MULTIPURPOSE_SLOT_OFFSET_2(mask) MULTIPURPOSE_SLOT_OFFSET_2(mask | 0x04)
-#define MULTIPURPOSE_SLOT_OFFSET_4(mask) MULTIPURPOSE_SLOT_OFFSET_3(mask) MULTIPURPOSE_SLOT_OFFSET_3(mask | 0x08)
-#define MULTIPURPOSE_SLOT_OFFSET_5(mask) MULTIPURPOSE_SLOT_OFFSET_4(mask) MULTIPURPOSE_SLOT_OFFSET_4(mask | 0x10)
-
-#define MULTIPURPOSE_SLOT_OFFSET(mask) MultipurposeSlotOffset<mask>::slotOffset,
-const BYTE MethodTable::c_DispatchMapSlotOffsets[] = {
-    MULTIPURPOSE_SLOT_OFFSET_2(0)
-};
-const BYTE MethodTable::c_NonVirtualSlotsOffsets[] = {
-    MULTIPURPOSE_SLOT_OFFSET_3(0)
-};
-const BYTE MethodTable::c_ModuleOverrideOffsets[] = {
-    MULTIPURPOSE_SLOT_OFFSET_4(0)
-};
-#undef MULTIPURPOSE_SLOT_OFFSET
-
-#define MULTIPURPOSE_SLOT_OFFSET(mask) MultipurposeSlotOffset<mask>::totalSize,
-const BYTE MethodTable::c_OptionalMembersStartOffsets[] = {
-    MULTIPURPOSE_SLOT_OFFSET_5(0)
-};
-#undef MULTIPURPOSE_SLOT_OFFSET
-
-
-//==========================================================================================
-// Optimization intended for MethodTable::GetModule, MethodTable::GetDispatchMap and MethodTable::GetNonVirtualSlotsPtr
+// Optimization intended for MethodTable::GetDispatchMap
 
 #include <optsmallperfcritical.h>
-
-PTR_Module MethodTable::GetModule()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // Fast path for non-generic non-array case
-    if ((m_dwFlags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == 0)
-        return GetLoaderModule();
-
-    MethodTable * pMTForModule = IsArray() ? this : GetCanonicalMethodTable();
-    if (!pMTForModule->HasModuleOverride())
-        return pMTForModule->GetLoaderModule();
-
-    TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return *dac_cast<DPTR(PTR_Module)>(pSlot);
-}
 
 //==========================================================================================
 PTR_DispatchMap MethodTable::GetDispatchMap()
@@ -396,17 +313,7 @@ PTR_DispatchMap MethodTable::GetDispatchMap()
             return NULL;
     }
 
-    TADDR pSlot = pMT->GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
-    return *dac_cast<DPTR(PTR_DispatchMap)>(pSlot);
-}
-
-//==========================================================================================
-TADDR MethodTable::GetNonVirtualSlotsPtr()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE(GetFlag(enum_flag_HasNonVirtualSlots));
-    return GetMultipurposeSlotPtr(enum_flag_HasNonVirtualSlots, c_NonVirtualSlotsOffsets);
+    return dac_cast<PTR_DispatchMap>((pMT->GetAuxiliaryData() + 1));
 }
 
 #include <optdefault.h>
@@ -427,21 +334,6 @@ PTR_Module MethodTable::GetModuleIfLoaded()
 
     return GetModule();
 }
-
-#ifndef DACCESS_COMPILE
-//==========================================================================================
-void MethodTable::SetModule(Module * pModule)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (HasModuleOverride())
-    {
-        *GetModuleOverridePtr() = pModule;
-    }
-
-    _ASSERTE(GetModule() == pModule);
-}
-#endif // DACCESS_COMPILE
 
 //==========================================================================================
 BOOL MethodTable::ValidateWithPossibleAV()
@@ -536,7 +428,7 @@ void MethodTable::SetIsRestored()
 
     PRECONDITION(!IsFullyLoaded());
 
-    InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_Unrestored);
+    InterlockedAnd((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, ~MethodTableAuxiliaryData::enum_flag_Unrestored);
 
 #ifndef DACCESS_COMPILE
     if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
@@ -621,11 +513,13 @@ BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
         return TRUE;
 
     // optimize for the negative case where we expect RID mismatch
-    if (GetTypeDefRid() != pMT->GetTypeDefRid())
+    DWORD rid = GetTypeDefRid();
+    if (rid != pMT->GetTypeDefRid())
         return FALSE;
 
-    if (GetCanonicalMethodTable() == pMT->GetCanonicalMethodTable())
-        return TRUE;
+    // Types without RIDs are unrelated to each other. This case is taken for arrays. 
+    if (rid == 0)
+        return FALSE;
 
     return (GetModule() == pMT->GetModule());
 }
@@ -809,11 +703,38 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 }
 #endif // FEATURE_COMINTEROP
 
+void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics, WORD nonVirtualSlots, S_SIZE_T extraAllocation)
+{
+    S_SIZE_T cbAuxiliaryData = S_SIZE_T(sizeof(MethodTableAuxiliaryData));
+
+    size_t prependedAllocationSpace = 0;
+
+    prependedAllocationSpace = nonVirtualSlots * sizeof(TADDR);
+
+    if (hasGenericStatics)
+        prependedAllocationSpace = prependedAllocationSpace + sizeof(GenericsStaticsInfo);
+    
+    cbAuxiliaryData = cbAuxiliaryData + S_SIZE_T(prependedAllocationSpace) + extraAllocation;
+    if (cbAuxiliaryData.IsOverflow())
+        ThrowHR(COR_E_OVERFLOW);
+
+    BYTE* pAuxiliaryDataRegion = (BYTE *)
+        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(cbAuxiliaryData));
+    
+    MethodTableAuxiliaryData * pMTAuxiliaryData;
+    pMTAuxiliaryData = (MethodTableAuxiliaryData *)(pAuxiliaryDataRegion + prependedAllocationSpace);
+
+    pMTAuxiliaryData->SetLoaderModule(pLoaderModule);
+    pMTAuxiliaryData->SetOffsetToNonVirtualSlots(hasGenericStatics ? -(int16_t)sizeof(GenericsStaticsInfo) : 0);
+    m_pAuxiliaryData = pMTAuxiliaryData;
+}
+
+
 
 //---------------------------------------------------------------------------------------
 //
 MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
-                                      LoaderHeap* pCreationHeap,
+                                      LoaderAllocator* pLoaderAllocator,
                                       AllocMemTracker* pamTracker)
 {
     CONTRACTL
@@ -825,19 +746,19 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
     }
     CONTRACTL_END;
 
-    EEClass* pClass = EEClass::CreateMinimalClass(pCreationHeap, pamTracker);
+    EEClass* pClass = EEClass::CreateMinimalClass(pLoaderAllocator->GetHighFrequencyHeap(), pamTracker);
 
     LOG((LF_BCL, LL_INFO100, "Level2 - Creating MethodTable {0x%p}...\n", pClass));
 
-    MethodTable* pMT = (MethodTable *)(void *)pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(sizeof(MethodTable))));
+    MethodTable* pMT = (MethodTable *)(void *)pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTable))));
 
     // Note: Memory allocated on loader heap is zero filled
     // memset(pMT, 0, sizeof(MethodTable));
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    BYTE* pMTWriteableData = (BYTE *)
-        pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
-    pMT->SetWriteableData((PTR_MethodTableWriteableData)pMTWriteableData);
+    pMT->AllocateAuxiliaryData(pLoaderAllocator, pContainingModule, pamTracker);
+    pMT->SetModule(pContainingModule);
+    pMT->SetLoaderAllocator(pLoaderAllocator);
 
     //
     // Set up the EEClass
@@ -852,8 +773,6 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
     // so the system has to be wired for dealing with no parent anyway.
     pMT->SetParentMethodTable(NULL);
     pMT->SetClass(pClass);
-    pMT->SetLoaderModule(pContainingModule);
-    pMT->SetLoaderAllocator(pContainingModule->GetLoaderAllocator());
     pMT->SetInternalCorElementType(ELEMENT_TYPE_CLASS);
     pMT->SetBaseSize(OBJECT_BASESIZE);
 
@@ -3405,7 +3324,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         }
                         else if (pFieldStart[0].GetSize() == 8)
                         {
-                            _ASSERTE(pMethodTable->GetNativeSize() == 8);
+                            _ASSERTE((pMethodTable->GetNativeSize() == 8) || (pMethodTable->GetNativeSize() == 16));
                             size = STRUCT_FIRST_FIELD_DOUBLE;
                         }
                     }
@@ -3534,7 +3453,7 @@ _End_arg:
 
 #if defined(TARGET_RISCV64)
 
-bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
+bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
 {
     TypeHandle th(pMT);
 
@@ -3568,7 +3487,7 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
                     pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
-                        ret = IsRiscv64OnlyOneField(pMethodTable);
+                        ret = IsRiscV64OnlyOneField(pMethodTable);
                     }
                 }
             }
@@ -3621,7 +3540,7 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
                     if (nfc == NativeFieldCategory::NESTED)
                     {
                         pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
-                        ret = IsRiscv64OnlyOneField(pMethodTable);
+                        ret = IsRiscV64OnlyOneField(pMethodTable);
                     }
                     else if (nfc != NativeFieldCategory::ILLEGAL)
                     {
@@ -3640,7 +3559,7 @@ _End_arg:
     return ret;
 }
 
-int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
     TypeHandle th(cls);
 
@@ -3679,7 +3598,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                    size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                 }
             }
             else if (numIntroducedFields == 2)
@@ -3722,9 +3641,9 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldFirst->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    if (IsRiscv64OnlyOneField(pMethodTable))
+                    if (IsRiscV64OnlyOneField(pMethodTable))
                     {
-                        size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             size = pFieldFirst[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
@@ -3778,9 +3697,9 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldSecond[0].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    if (IsRiscv64OnlyOneField(pMethodTable))
+                    if (IsRiscV64OnlyOneField(pMethodTable))
                     {
-                        int size2 = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        int size2 = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size2 & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             if (pFieldSecond[0].GetSize() == 8)
@@ -3901,7 +3820,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                     if (nfc == NativeFieldCategory::NESTED)
                     {
                         pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
-                        size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         return size;
                     }
                     else if (nfc == NativeFieldCategory::FLOAT)
@@ -3985,13 +3904,13 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                         MethodTable* pMethodTable2 = pNativeFieldDescs->GetNestedNativeMethodTable();
 
-                        if (!IsRiscv64OnlyOneField(pMethodTable2))
+                        if (!IsRiscV64OnlyOneField(pMethodTable2))
                         {
                             size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
                         }
 
-                        size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
+                        size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
                         if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             if (pFieldStart->GetSize() == 8)
@@ -4021,7 +3940,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                         }
                         else if (pFieldStart[0].GetSize() == 8)
                         {
-                            _ASSERTE(pMethodTable->GetNativeSize() == 8);
+                            _ASSERTE((pMethodTable->GetNativeSize() == 8) || (pMethodTable->GetNativeSize() == 16));
                             size = STRUCT_FIRST_FIELD_DOUBLE;
                         }
                     }
@@ -4081,13 +4000,13 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                         MethodTable* pMethodTable2 = pNativeFieldDescs[1].GetNestedNativeMethodTable();
 
-                        if (!IsRiscv64OnlyOneField(pMethodTable2))
+                        if (!IsRiscV64OnlyOneField(pMethodTable2))
                         {
                             size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
                         }
 
-                        if ((GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2) & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+                        if ((GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2) & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             if (pFieldStart[1].GetSize() == 4)
                             {
@@ -4214,7 +4133,7 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
         {
             LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
             const bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
-            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, canBeFrozen);
+            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, canBeFrozen);
             SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
         }
     }
@@ -4222,7 +4141,7 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
 }
 
 //==========================================================================================
-OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle, bool canBeFrozen)
+OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, bool canBeFrozen)
 {
     CONTRACTL
     {
@@ -4242,7 +4161,6 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
     {
         // In case if we don't plan to collect this handle we may try to allocate it on FOH
         _ASSERT(!pFieldMT->ContainsPointers());
-        _ASSERT(pHandle == nullptr);
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
         obj = ObjectToOBJECTREF(foh->TryAllocateObject(pFieldMT, pFieldMT->GetBaseSize()));
         // obj can be null in case if struct is huge (>64kb)
@@ -4252,25 +4170,7 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
         }
     }
 
-    obj = AllocateObject(pFieldMT);
-
-    // Pin the object if necessary
-    if (fPinned)
-    {
-        LOG((LF_CLASSLOADER, LL_INFO10000, "\tSTATICS:Pinning static (VT fixed address attribute) of type %s\n", pFieldMT->GetDebugClassName()));
-        OBJECTHANDLE oh = GetAppDomain()->CreatePinningHandle(obj);
-        if (pHandle)
-        {
-            *pHandle = oh;
-        }
-    }
-    else
-    {
-        if (pHandle)
-        {
-            *pHandle = NULL;
-        }
-    }
+    obj = AllocateObject(pFieldMT, fPinned ? GC_ALLOC_PINNED_OBJECT_HEAP : GC_ALLOC_NO_FLAGS);
 
     return obj;
 }
@@ -4931,7 +4831,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(GetWriteableData()->m_hExposedClassObject != 0);
+        POSTCONDITION(GetAuxiliaryData()->m_hExposedClassObject != 0);
         //REENTRANT
     }
     CONTRACT_END;
@@ -4941,11 +4841,11 @@ OBJECTREF MethodTable::GetManagedClassObject()
     GCStress<cfg_any, PulseGcTriggerPolicy>::MaybeTrigger();
 #endif // _DEBUG
 
-    if (GetWriteableData()->m_hExposedClassObject == NULL)
+    if (GetAuxiliaryData()->m_hExposedClassObject == NULL)
     {
         // Make sure that we have been restored
         CheckRestore();
-        TypeHandle(this).AllocateManagedClassObject(&GetWriteableDataForWrite()->m_hExposedClassObject);
+        TypeHandle(this).AllocateManagedClassObject(&GetAuxiliaryDataForWrite()->m_hExposedClassObject);
     }
     RETURN(GetManagedClassObjectIfExists());
 }
@@ -6773,70 +6673,6 @@ BOOL MethodTable::ImplementsInterfaceWithSameSlotsAsParent(MethodTable *pItfMT, 
     return TRUE;
 }
 
-//==========================================================================================
-BOOL MethodTable::HasSameInterfaceImplementationAsParent(MethodTable *pItfMT, MethodTable *pParentMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(!IsInterface() && !pParentMT->IsInterface());
-        PRECONDITION(pItfMT->IsInterface());
-    } CONTRACTL_END;
-
-    if (!ImplementsInterfaceWithSameSlotsAsParent(pItfMT, pParentMT))
-    {
-        // if the slots are not same, this class reimplements the interface
-        return FALSE;
-    }
-
-    // The target slots are the same, but they can still be overridden. We'll iterate
-    // the dispatch map beginning with pParentMT up the hierarchy and for each pItfMT
-    // entry check the target slot contents (pParentMT vs. this class). A mismatch
-    // means that there is an override. We'll keep track of source (interface) slots
-    // we have seen so that we can ignore entries higher in the hierarchy that are no
-    // longer in effect at pParentMT level.
-    BitMask bitMask;
-
-    WORD wSeenSlots = 0;
-    WORD wTotalSlots = pItfMT->GetNumVtableSlots();
-
-    MethodTable *pMT = pParentMT;
-    do
-    {
-        DispatchMap::EncodedMapIterator it(pMT);
-        for (; it.IsValid(); it.Next())
-        {
-            DispatchMapEntry *pCurEntry = it.Entry();
-            if (DispatchMapTypeMatchesMethodTable(pCurEntry->GetTypeID(), pItfMT))
-            {
-                UINT32 ifaceSlot = pCurEntry->GetSlotNumber();
-                if (!bitMask.TestBit(ifaceSlot))
-                {
-                    bitMask.SetBit(ifaceSlot);
-
-                    UINT32 targetSlot = pCurEntry->GetTargetSlotNumber();
-                    if (GetRestoredSlot(targetSlot) != pParentMT->GetRestoredSlot(targetSlot))
-                    {
-                        // the target slot is overridden
-                        return FALSE;
-                    }
-
-                    if (++wSeenSlots == wTotalSlots)
-                    {
-                        // we've resolved all slots, no reason to continue
-                        break;
-                    }
-                }
-            }
-        }
-        pMT = pMT->GetParentMethodTable();
-    }
-    while (pMT != NULL);
-
-    return TRUE;
-}
-
 #endif // !DACCESS_COMPILE
 
 //==========================================================================================
@@ -7275,18 +7111,6 @@ BOOL MethodTable::SanityCheck()
         return (pCanonMT == this) || IsArray();
 }
 
-//==========================================================================================
-unsigned MethodTable::GetTypeDefRid()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    WORD token = m_wToken;
-
-    if (token == METHODTABLE_TOKEN_OVERFLOW)
-        return (unsigned)*GetTokenOverflowPtr();
-
-    return token;
-}
 
 //==========================================================================================
 void MethodTable::SetCl(mdTypeDef token)
@@ -7294,17 +7118,7 @@ void MethodTable::SetCl(mdTypeDef token)
     LIMITED_METHOD_CONTRACT;
 
     unsigned rid = RidFromToken(token);
-    if (rid >= METHODTABLE_TOKEN_OVERFLOW)
-    {
-        m_wToken = METHODTABLE_TOKEN_OVERFLOW;
-        *GetTokenOverflowPtr() = rid;
-    }
-    else
-    {
-        _ASSERTE(FitsIn<WORD>(rid));
-        m_wToken = (WORD)rid;
-    }
-
+    m_dwFlags2 = (rid << 8) | (m_dwFlags2 & 0xFF);
     _ASSERTE(GetCl() == token);
 }
 
@@ -7369,9 +7183,8 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    // workaround: Type loader accesses partially initialized datastructures that interferes with IBC logging.
-    // Once type loader is fixed to do not access partially  initialized datastructures, this can go away.
-    if (!GetWriteableData()->IsParentMethodTablePointerValid())
+    // workaround: Type loader accesses partially initialized datastructures
+    if (!GetAuxiliaryData()->IsParentMethodTablePointerValid())
         return FALSE;
 
     return TRUE;
@@ -8571,9 +8384,14 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pMTParent->EnumMemoryRegions(flags);
     }
 
-    if (HasNonVirtualSlotsArray())
+    if (HasNonVirtualSlots())
     {
-        DacEnumMemoryRegion(dac_cast<TADDR>(GetNonVirtualSlotsArray()), GetNonVirtualSlotsArraySize());
+        DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableAuxiliaryData::GetNonVirtualSlotsArray(GetAuxiliaryData())) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
+    }
+
+    if (HasGenericsStaticsInfo())
+    {
+        DacEnumMemoryRegion(dac_cast<TADDR>(GetGenericsStaticsInfo()), sizeof(GenericsStaticsInfo));
     }
 
     if (HasInterfaceMap())
@@ -8606,10 +8424,10 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         DacEnumMemoryRegion(dac_cast<TADDR>(it.GetIndirectionSlot()), it.GetSize());
     }
 
-    PTR_MethodTableWriteableData pWriteableData = m_pWriteableData;
-    if (pWriteableData.IsValid())
+    PTR_MethodTableAuxiliaryData pAuxiliaryData = m_pAuxiliaryData;
+    if (pAuxiliaryData.IsValid())
     {
-        pWriteableData.EnumMem();
+        pAuxiliaryData.EnumMem();
     }
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
@@ -8807,8 +8625,6 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
         }
     }
 #endif
-
-    // IBC logging is not needed here - slots in ngen images are immutable.
 
 #ifdef TARGET_ARM
     // Ensure on ARM that all target addresses are marked as thumb code.
@@ -9454,10 +9270,10 @@ BOOL MethodTable::Validate()
     ASSERT_AND_CHECK(SanityCheck());
 
 #ifdef _DEBUG
-    ASSERT_AND_CHECK(m_pWriteableData != NULL);
+    ASSERT_AND_CHECK(m_pAuxiliaryData != NULL);
 
-    MethodTableWriteableData *pWriteableData = m_pWriteableData;
-    DWORD dwLastVerifiedGCCnt = pWriteableData->m_dwLastVerifedGCCnt;
+    MethodTableAuxiliaryData *pAuxiliaryData = m_pAuxiliaryData;
+    DWORD dwLastVerifiedGCCnt = pAuxiliaryData->m_dwLastVerifedGCCnt;
     // Here we used to assert that (dwLastVerifiedGCCnt <= GCHeapUtilities::GetGCHeap()->GetGcCount()) but
     // this is no longer true because with background gc. Since the purpose of having
     // m_dwLastVerifedGCCnt is just to only verify the same method table once for each GC
@@ -9483,7 +9299,7 @@ BOOL MethodTable::Validate()
     }
 
 #ifdef _DEBUG
-    pWriteableData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
+    pAuxiliaryData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
 #endif //_DEBUG
 
     return TRUE;

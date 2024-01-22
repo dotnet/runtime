@@ -13,7 +13,7 @@ set(ASM_OFFSETS_CSPP ${RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.cspp)
 
 if(WIN32)
     set(COMPILER_LANGUAGE "")
-    set(PREPROCESSOR_FLAGS -EP)
+    set(PREPROCESSOR_FLAGS -EP -nologo)
     set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/windows/AsmOffsets.cpp)
 else()
     set(COMPILER_LANGUAGE -x c++)

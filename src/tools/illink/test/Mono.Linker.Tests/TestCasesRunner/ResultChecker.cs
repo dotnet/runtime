@@ -79,7 +79,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		public virtual void Check (LinkedTestCaseResult linkResult)
+		public virtual void Check (TrimmedTestCaseResult linkResult)
 		{
 			InitializeResolvers (linkResult);
 
@@ -122,7 +122,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyILOfOtherAssemblies (LinkedTestCaseResult linkResult)
+		void VerifyILOfOtherAssemblies (TrimmedTestCaseResult linkResult)
 		{
 			foreach (var linkedAssemblyPath in linkResult.Sandbox.OutputDirectory.Files ("*.dll")) {
 				if (linkedAssemblyPath == linkResult.OutputAssemblyPath)
@@ -135,12 +135,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual ILChecker CreateILChecker () => new ();
 
-		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, LinkedTestCaseResult linkedTestCase)
+		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase)
 		{
 			return new AssemblyChecker (original, linked, linkedTestCase);
 		}
 
-		void InitializeResolvers (LinkedTestCaseResult linkedResult)
+		void InitializeResolvers (TrimmedTestCaseResult linkedResult)
 		{
 			_originalsResolver.AddSearchDirectory (linkedResult.ExpectationsAssemblyPath.Parent.ToString ());
 			_linkedResolver.AddSearchDirectory (linkedResult.OutputAssemblyPath.Parent.ToString ());
@@ -215,7 +215,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyExitCode (LinkedTestCaseResult linkResult, AssemblyDefinition original)
+		void VerifyExitCode (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 		{
 			if (TryGetCustomAttribute (original, nameof(ExpectNonZeroExitCodeAttribute), out var attr)) {
 				var expectedExitCode = (int) attr.ConstructorArguments[0].Value;
@@ -270,14 +270,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		protected virtual void AdditionalChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original)
+		protected virtual void AdditionalChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 		{
 			bool checkRemainingErrors = !HasAttribute (linkResult.TestCase.FindTypeDefinition (original), nameof (SkipRemainingErrorsValidationAttribute));
 			VerifyLoggedMessages (original, linkResult.Logger, checkRemainingErrors);
 			VerifyRecordedDependencies (original, linkResult.Customizations.DependencyRecorder);
 		}
 
-		protected virtual void InitialChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
+		protected virtual void InitialChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
 		{
 			CreateILChecker ().Check(linkResult, original);
 			ValidateTypeRefsHaveValidAssemblyRefs (linked);
@@ -718,7 +718,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			var missingInLinked = originalTypes.Keys.Except (linkedTypes.Keys);
 
-			Assert.That (missingInLinked, Is.Empty, $"Expected all types to exist in the linked assembly, but one or more were missing");
+			Assert.That (missingInLinked, Is.Empty, $"Expected all types to exist in the linked assembly {linked.Name}, but one or more were missing");
 
 			foreach (var originalKvp in originalTypes) {
 				var linkedType = linkedTypes[originalKvp.Key];
@@ -753,7 +753,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			yield return assembly;
 		}
 
-		void VerifyLoggedMessages (AssemblyDefinition original, LinkerTestLogger logger, bool checkRemainingErrors)
+		void VerifyLoggedMessages (AssemblyDefinition original, TrimmingTestLogger logger, bool checkRemainingErrors)
 		{
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new ();
@@ -873,17 +873,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										}
 										if (memberDefinition is not MethodDefinition)
 											continue;
-										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
-										}
-										if (memberDefinition.Name == ".ctor" &&
-											memberDefinition.DeclaringType.FullName == expectedMember.FullName) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
+										if (actualName.StartsWith (expectedMember.DeclaringType.FullName)) {
+											if (memberDefinition.Name == ".cctor" &&
+												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
+												expectedWarningFound = true;
+												loggedMessages.Remove (loggedMessage);
+												break;
+											}
+											if (memberDefinition.Name == ".ctor" &&
+												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition || memberDefinition.DeclaringType.FullName == expectedMember.FullName)) {
+												expectedWarningFound = true;
+												loggedMessages.Remove (loggedMessage);
+												break;
+											}
 										}
 									} else if (attrProvider is AssemblyDefinition expectedAssembly) {
 										// Allow assembly-level attributes to match warnings from compiler-generated Main
@@ -1134,6 +1136,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
 				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes.Where (IsTypeInOtherAssemblyAssertion)) {
 					var assemblyName = (string) attr.ConstructorArguments[0].Value;
+
+					Tool? toolTarget = (Tool?) (int?) attr.GetPropertyValue ("Tool");
+					if (toolTarget is not null && !toolTarget.Value.HasFlag (Tool.Trimmer))
+						continue;
+
 					if (!checks.TryGetValue (assemblyName, out List<CustomAttribute> checksForAssembly))
 						checks[assemblyName] = checksForAssembly = new List<CustomAttribute> ();
 

@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Collections.Generic;
+using Xunit;
 
 // UTF8
 class UTF8StringTests
@@ -222,7 +223,7 @@ class UTF8DelegateMarshalling
 }
 
 
-class Test
+public class Test
 {
     //test strings
     public static string[] utf8Strings = {
@@ -235,7 +236,10 @@ class Test
                                  null,
                                };
 
-    public static int Main()
+    [Fact]
+    [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static void TestEntryPoint()
     {
         // Test string as [In,Out] parameter
         for (int i = 0; i < utf8Strings.Length; i++)
@@ -272,8 +276,5 @@ class Test
 
         // String.Empty tests
         UTF8StringTests.EmptyStringTest();
-
-
-        return 100;
     }
 }

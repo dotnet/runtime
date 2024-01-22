@@ -37,7 +37,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -145,7 +145,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -168,7 +168,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 }

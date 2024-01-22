@@ -10,6 +10,7 @@
 
     <LibraryBuilderTasksAssemblyPath>$(_TasksDir)LibraryBuilder.dll</LibraryBuilderTasksAssemblyPath>
     <MobileBuildTasksAssemblyPath>$(_TasksDir)MobileBuildTasks.dll</MobileBuildTasksAssemblyPath>
+    <_CommonTargetsDir>$(MSBuildThisFileDirectory)</_CommonTargetsDir>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\LibraryBuilder.props" />

@@ -38,11 +38,12 @@ jobs:
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true
       timeoutInMinutes: 480
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # iOS/tvOS devices
@@ -80,14 +81,15 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
             testGroup: innerloop
-      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        compileOnHelix: true
-        interpreter: true
-        testBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            compileOnHelix: true
+            interpreter: true
+            testBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # iOS/tvOS devices
@@ -116,11 +118,12 @@ jobs:
       buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
       timeoutInMinutes: 180
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-        extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # Build the whole product using NativeAOT for iOS/tvOS and run runtime tests with iOS/tvOS devices
@@ -151,8 +154,9 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
             testGroup: innerloop
-      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
-        testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)

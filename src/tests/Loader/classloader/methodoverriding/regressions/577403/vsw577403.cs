@@ -16,28 +16,30 @@ After the fix, the Whidbey behavior is correct as well.
 */
 
 using System; 
+using Xunit;
 
 
-class Program 
+public class Program 
 { 
-	static int Main() 
-       { 
-       	ITest test = new Level3();
+    [Fact]
+    public static int TestEntryPoint() 
+    { 
+        ITest test = new Level3();
         ITest gen_test = new GenericLevel4();
 
-		int ret1 = test.Test;
-		int ret2 = test.Test2;
+        int ret1 = test.Test;
+        int ret2 = test.Test2;
 
         int gen_ret1 = gen_test.Test;
         int gen_ret2 = gen_test.Test2;
         
         if (ret1 != 21 || ret2 != 32)
-		{ 
-			Console.WriteLine("FAIL");
-			Console.WriteLine("EXPECTED: '21' and '32' when invoking test.Test and test.Test2 on an instance of Level3"); 
-			Console.WriteLine("ACTUAL: '" + ret1 + "' and '" + ret2 + "'");
-			return 101;
-		}
+        { 
+            Console.WriteLine("FAIL");
+            Console.WriteLine("EXPECTED: '21' and '32' when invoking test.Test and test.Test2 on an instance of Level3"); 
+            Console.WriteLine("ACTUAL: '" + ret1 + "' and '" + ret2 + "'");
+            return 101;
+        }
 
         if (gen_ret1 != 21 || gen_ret2 != 32)
         {
@@ -48,33 +50,33 @@ class Program
         }
         
         Console.WriteLine("PASS");
-		return 100;
+        return 100;
 
-		
-       } 
+        
+    } 
 } 
 
 interface ITest 
 { 
-	int Test { get; } 
+    int Test { get; } 
        int Test2 { get; } 
 } 
 
 class Level1 : ITest 
 { 
        public int Test { get { return 11; } } 
-	public int Test2 { get { return 12; } } 
+    public int Test2 { get { return 12; } } 
 } 
 
 class Level2 : Level1, ITest 
 { 
        int ITest.Test { get { return 21; } } 
-	int ITest.Test2 { get { return 22; } } 
+    int ITest.Test2 { get { return 22; } } 
 } 
 
 class Level3 : Level2, ITest 
 { 
-	int ITest.Test2 { get { return 32; } } 
+    int ITest.Test2 { get { return 32; } } 
 }
 
 //Generics

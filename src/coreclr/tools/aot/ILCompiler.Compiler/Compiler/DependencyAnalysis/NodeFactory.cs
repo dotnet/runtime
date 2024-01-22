@@ -304,6 +304,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelegateTargetVirtualMethodNode(method);
             });
 
+            _reflectedDelegates = new NodeCache<TypeDesc, ReflectedDelegateNode>(type =>
+            {
+                return new ReflectedDelegateNode(type);
+            });
+
             _reflectedMethods = new NodeCache<MethodDesc, ReflectedMethodNode>(method =>
             {
                 return new ReflectedMethodNode(method);
@@ -316,7 +321,13 @@ namespace ILCompiler.DependencyAnalysis
 
             _reflectedTypes = new NodeCache<TypeDesc, ReflectedTypeNode>(type =>
             {
+                TypeSystemContext.EnsureLoadableType(type);
                 return new ReflectedTypeNode(type);
+            });
+
+            _notReadOnlyFields = new NodeCache<FieldDesc, NotReadOnlyFieldNode>(field =>
+            {
+                return new NotReadOnlyFieldNode(field);
             });
 
             _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
@@ -355,12 +366,22 @@ namespace ILCompiler.DependencyAnalysis
 
             _frozenStringNodes = new NodeCache<string, FrozenStringNode>((string data) =>
             {
-                return new FrozenStringNode(data, Target);
+                return new FrozenStringNode(data, TypeSystemContext);
             });
 
-            _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, FrozenObjectNode>(key =>
+            _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode>(key =>
             {
-                return new FrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
+                return new SerializedFrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
+            });
+
+            _frozenConstructedRuntimeTypeNodes = new NodeCache<TypeDesc, FrozenRuntimeTypeNode>(key =>
+            {
+                return new FrozenRuntimeTypeNode(key, constructed: true);
+            });
+
+            _frozenNecessaryRuntimeTypeNodes = new NodeCache<TypeDesc, FrozenRuntimeTypeNode>(key =>
+            {
+                return new FrozenRuntimeTypeNode(key, constructed: false);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -980,6 +1001,16 @@ namespace ILCompiler.DependencyAnalysis
             return _delegateTargetMethods.GetOrAdd(method);
         }
 
+        private ReflectedDelegateNode _unknownReflectedDelegate = new ReflectedDelegateNode(null);
+        private NodeCache<TypeDesc, ReflectedDelegateNode> _reflectedDelegates;
+        public ReflectedDelegateNode ReflectedDelegate(TypeDesc type)
+        {
+            if (type == null)
+                return _unknownReflectedDelegate;
+
+            return _reflectedDelegates.GetOrAdd(type);
+        }
+
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
         public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
@@ -996,6 +1027,12 @@ namespace ILCompiler.DependencyAnalysis
         public ReflectedTypeNode ReflectedType(TypeDesc type)
         {
             return _reflectedTypes.GetOrAdd(type);
+        }
+
+        private NodeCache<FieldDesc, NotReadOnlyFieldNode> _notReadOnlyFields;
+        public NotReadOnlyFieldNode NotReadOnlyField(FieldDesc field)
+        {
+            return _notReadOnlyFields.GetOrAdd(field);
         }
 
         private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;
@@ -1209,11 +1246,32 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenStringNodes.GetOrAdd(data);
         }
 
-        private NodeCache<SerializedFrozenObjectKey, FrozenObjectNode> _frozenObjectNodes;
+        private NodeCache<SerializedFrozenObjectKey, SerializedFrozenObjectNode> _frozenObjectNodes;
 
-        public FrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
+        public SerializedFrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
             return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningType, allocationSiteId, data));
+        }
+
+        public FrozenRuntimeTypeNode SerializedMaximallyConstructableRuntimeTypeObject(TypeDesc type)
+        {
+            if (ConstructedEETypeNode.CreationAllowed(type))
+                return SerializedConstructedRuntimeTypeObject(type);
+            return SerializedNecessaryRuntimeTypeObject(type);
+        }
+
+        private NodeCache<TypeDesc, FrozenRuntimeTypeNode> _frozenConstructedRuntimeTypeNodes;
+
+        public FrozenRuntimeTypeNode SerializedConstructedRuntimeTypeObject(TypeDesc type)
+        {
+            return _frozenConstructedRuntimeTypeNodes.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeDesc, FrozenRuntimeTypeNode> _frozenNecessaryRuntimeTypeNodes;
+
+        public FrozenRuntimeTypeNode SerializedNecessaryRuntimeTypeObject(TypeDesc type)
+        {
+            return _frozenNecessaryRuntimeTypeNodes.GetOrAdd(type);
         }
 
         private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;
@@ -1284,7 +1342,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 
-        protected internal TlsRootNode TlsRoot = new TlsRootNode();
+        public TlsRootNode TlsRoot = new TlsRootNode();
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {

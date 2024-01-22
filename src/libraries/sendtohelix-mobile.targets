@@ -53,21 +53,23 @@
       <iOSLikeLibraryBuilderTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'common'))</iOSLikeLibraryBuilderTargetsDir>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildiOSApps' and '$(TestUsingWorkloads)' != 'true'">$(TargetOS)-</WorkItemPrefix>
 
-      <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.16.4-Darwin-x86_64.tar.gz</CMakeUrl>
+      <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.28.0-macos-universal.tar.gz</CMakeUrl>
 
       <_XHarnessAppleCustomCommand Condition="'$(NeedsiOSSDK)' == 'true'">
         source build-apple-app.sh
       </_XHarnessAppleCustomCommand>
-      <!-- Use ILLink.Tasks version matching the SDK used to build. See comment about _RequiresILLinkPack in eng/illink.targets -->
-      <ILLinkDir>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.net.illink.tasks', '$(BundledNETCoreAppPackageVersion)'))</ILLinkDir>
+      <_RuntimeComponentManifestDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'build'))</_RuntimeComponentManifestDir>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
       <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
       <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
+      <HelixCorrelationPayload Include="$(LibraryBuilderDir)"                    Destination="build/LibraryBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Condition="'$(RuntimeFlavor)' == 'mono'"
                                                                                  Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())" />
+      <HelixCorrelationPayload Include="$(_RuntimeComponentManifestDir)"         Condition="'$(RuntimeFlavor)' == 'mono'"
+                                                                                 Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())/runtimes/$(TargetOS)-$(TargetArchitecture.ToLower())/build" />
       <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"               Destination="build/apple" />
       <HelixCorrelationPayload Include="$(iOSLikeLibraryBuilderTargetsDir)"      Destination="build/common" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Condition="'$(RuntimeFlavor)' == 'mono'"
@@ -79,7 +81,7 @@
                                                                                  Destination="build/BuildIntegration" />
       <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Condition="'$(RuntimeFlavor)' == 'coreclr'"
                                                                                  Destination="build/aotsdk" />
-      <HelixCorrelationPayload Include="$(ILLinkDir)"                            Destination="build/microsoft.net.illink.tasks" />
+      <HelixCorrelationPayload Include="$(ToolsILLinkDir)"                       Destination="build/microsoft.net.illink.tasks" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
@@ -140,7 +142,6 @@
   </Target>
 
   <Target Name="AfterBuildHelixWorkItems_Mobile" AfterTargets="BuildHelixWorkItems">
-    <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
 
     <PropertyGroup>
       <_TestPath Condition="'%(XHarnessAppBundleToTest.CustomCommands)' != ''">$([System.IO.Path]::GetDirectoryName('%(XHarnessAppBundleToTest.Identity)'))</_TestPath>

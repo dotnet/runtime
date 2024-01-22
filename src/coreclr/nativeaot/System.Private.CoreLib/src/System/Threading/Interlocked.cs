@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -24,8 +24,8 @@ namespace System.Threading
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NotNullIfNotNull(nameof(location1))]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class?
         {
             return Unsafe.As<T>(RuntimeImports.InterlockedCompareExchange(ref Unsafe.As<T, object?>(ref location1), value, comparand));
@@ -69,8 +69,8 @@ namespace System.Threading
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NotNullIfNotNull(nameof(location1))]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value) where T : class?
         {
             return Unsafe.As<T>(RuntimeImports.InterlockedExchange(ref Unsafe.As<T, object?>(ref location1), value));

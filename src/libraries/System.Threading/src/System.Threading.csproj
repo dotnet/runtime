@@ -1,10 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <FeatureWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Threading\Barrier.cs" />
     <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
@@ -18,7 +23,10 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
   <ItemGroup>
+    <ApiCompatSuppressionFile Include="$(MSBuildThisFileDirectory)CompatibilitySuppressions.Threading.xml" Condition="'$(MonoWasmBuildVariant)' == 'multithread'" />
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
+
 </Project>

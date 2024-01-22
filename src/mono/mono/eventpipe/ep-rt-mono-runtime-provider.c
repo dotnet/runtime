@@ -2785,6 +2785,30 @@ ep_rt_write_event_contention_stop (
 		NULL) == 0 ? true : false;
 }
 
+bool
+ep_rt_write_event_wait_handle_wait_start (
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	return FireEtwWaitHandleWaitStart (
+		wait_source,
+		(const void *)associated_object_id,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_wait_handle_wait_stop (
+	uint16_t clr_instance_id)
+{
+	return FireEtwWaitHandleWaitStop (
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
 static
 void
 jit_begin_callback (
@@ -3729,7 +3753,7 @@ buffer_gc_event_object_reference_callback (
 		sizeof (object_size) +
 		sizeof (object_type) +
 		sizeof (edge_count) +
-		(edge_count * sizeof (uintptr_t));
+		GUINT64_TO_UINT32 (edge_count * sizeof (uintptr_t));
 
 	EP_ASSERT (context->buffer);
 	EP_ASSERT (context->buffer->context);
@@ -3775,7 +3799,7 @@ flush_gc_event_bulk_root_static_vars (GCHeapDumpContext *context)
 		context->bulk_root_static_vars.count,
 		(uint64_t)mono_get_root_domain (),
 		clr_instance_get_id (),
-		context->bulk_root_static_vars.data_current - context->bulk_root_static_vars.data_start,
+		GPTRDIFF_TO_INT (context->bulk_root_static_vars.data_current - context->bulk_root_static_vars.data_start),
 		context->bulk_root_static_vars.data_start,
 		NULL,
 		NULL);
@@ -3979,7 +4003,7 @@ fire_gc_event_bulk_root_edge (
 			break;
 		case MONO_ROOT_SOURCE_GC_HANDLE :
 			root_kind = GC_ROOT_KIND_HANDLE;
-			root_flags = GPOINTER_TO_INT (gc_root->key) != 0 ? GC_ROOT_FLAGS_PINNING : GC_ROOT_FLAGS_NONE;
+			root_flags = GCONSTPOINTER_TO_INT (gc_root->key) != 0 ? GC_ROOT_FLAGS_PINNING : GC_ROOT_FLAGS_NONE;
 			root_id = address;
 			break;
 		case MONO_ROOT_SOURCE_HANDLE :

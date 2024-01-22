@@ -48,7 +48,7 @@ namespace System
             try
             {
                 action(span);
-                Assert.False(true, $"Expected exception: {typeof(E)}");
+                Assert.Fail($"Expected exception: {typeof(E)}");
             }
             catch (Exception ex)
             {
@@ -109,7 +109,7 @@ namespace System
             try
             {
                 action(span);
-                Assert.False(true, $"Expected exception: {typeof(E)}");
+                Assert.Fail($"Expected exception: {typeof(E)}");
             }
             catch (Exception ex)
             {

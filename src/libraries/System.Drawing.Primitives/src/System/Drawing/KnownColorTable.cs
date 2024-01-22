@@ -12,8 +12,8 @@ namespace System.Drawing
         public const byte KnownColorKindUnknown = 2;
 
         // All known color values (in order of definition in the KnownColor enum).
-        public static ReadOnlySpan<uint> ColorValueTable => new uint[]
-        {
+        public static ReadOnlySpan<uint> ColorValueTable =>
+        [
             // "not a known color"
             0,
             // "System" colors, Part 1
@@ -235,11 +235,11 @@ namespace System.Drawing
 #endif
             // "Web" colors, Part 2
             0xFF663399,     // RebeccaPurple
-        };
+        ];
 
         // All known color kinds (in order of definition in the KnownColor enum).
-        public static ReadOnlySpan<byte> ColorKindTable => new byte[]
-        {
+        public static ReadOnlySpan<byte> ColorKindTable =>
+        [
             // "not a known color"
             KnownColorKindUnknown,
             // "System" colors, Part 1
@@ -461,7 +461,7 @@ namespace System.Drawing
 #endif
             // "Web" colors, Part 2
             KnownColorKindWeb,      // RebeccaPurple
-        };
+        ];
 
         internal static Color ArgbToKnownColor(uint argb)
         {

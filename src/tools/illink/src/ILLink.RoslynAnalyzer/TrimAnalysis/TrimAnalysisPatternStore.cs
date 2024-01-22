@@ -2,22 +2,33 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	public readonly struct TrimAnalysisPatternStore
 	{
 		readonly Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
+		readonly Dictionary<IOperation, TrimAnalysisFieldAccessPattern> FieldAccessPatterns;
+		readonly Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> GenericInstantiationPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
+		readonly Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
+		readonly FeatureContextLattice FeatureContextLattice;
 
-		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice)
+		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice, FeatureContextLattice featureContextLattice)
 		{
 			AssignmentPatterns = new Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> ();
+			FieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisFieldAccessPattern> ();
+			GenericInstantiationPatterns = new Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> ();
 			MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern> ();
+			ReflectionAccessPatterns = new Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ();
 			Lattice = lattice;
+			FeatureContextLattice = featureContextLattice;
 		}
 
 		public void Add (TrimAnalysisAssignmentPattern trimAnalysisPattern, bool isReturnValue)
@@ -35,7 +46,27 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 			}
 
-			AssignmentPatterns[(trimAnalysisPattern.Operation, isReturnValue)] = trimAnalysisPattern.Merge (Lattice, existingPattern);
+			AssignmentPatterns[(trimAnalysisPattern.Operation, isReturnValue)] = trimAnalysisPattern.Merge (Lattice, FeatureContextLattice, existingPattern);
+		}
+
+		public void Add (TrimAnalysisFieldAccessPattern pattern)
+		{
+			if (!FieldAccessPatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
+				FieldAccessPatterns.Add (pattern.Operation, pattern);
+				return;
+			}
+
+			FieldAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
+		}
+
+		public void Add (TrimAnalysisGenericInstantiationPattern pattern)
+		{
+			if (!GenericInstantiationPatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
+				GenericInstantiationPatterns.Add (pattern.Operation, pattern);
+				return;
+			}
+
+			GenericInstantiationPatterns[pattern.Operation] = pattern.Merge (FeatureContextLattice, existingPattern);
 		}
 
 		public void Add (TrimAnalysisMethodCallPattern pattern)
@@ -45,18 +76,43 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 			}
 
-			MethodCallPatterns[pattern.Operation] = pattern.Merge (Lattice, existingPattern);
+			MethodCallPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics ()
+		public void Add (TrimAnalysisReflectionAccessPattern pattern)
+		{
+			if (!ReflectionAccessPatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
+				ReflectionAccessPatterns.Add (pattern.Operation, pattern);
+				return;
+			}
+
+			ReflectionAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
+		}
+
+		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			foreach (var assignmentPattern in AssignmentPatterns.Values) {
-				foreach (var diagnostic in assignmentPattern.CollectDiagnostics ())
+				foreach (var diagnostic in assignmentPattern.CollectDiagnostics (context))
+					yield return diagnostic;
+			}
+
+			foreach (var fieldAccessPattern in FieldAccessPatterns.Values) {
+				foreach (var diagnostic in fieldAccessPattern.CollectDiagnostics (context))
+					yield return diagnostic;
+			}
+
+			foreach (var genericInstantiationPattern in GenericInstantiationPatterns.Values) {
+				foreach (var diagnostic in genericInstantiationPattern.CollectDiagnostics (context))
 					yield return diagnostic;
 			}
 
 			foreach (var methodCallPattern in MethodCallPatterns.Values) {
-				foreach (var diagnostic in methodCallPattern.CollectDiagnostics ())
+				foreach (var diagnostic in methodCallPattern.CollectDiagnostics (context))
+					yield return diagnostic;
+			}
+
+			foreach (var reflectionAccessPattern in ReflectionAccessPatterns.Values) {
+				foreach (var diagnostic in reflectionAccessPattern.CollectDiagnostics (context))
 					yield return diagnostic;
 			}
 		}

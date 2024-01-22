@@ -10,11 +10,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Remoting;
-using System.Runtime;
 
 using Internal.Reflection.Augments;
+using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -32,7 +33,7 @@ namespace System
         // This method is intrinsic. The compiler might replace it with more efficient implementation.
         [DebuggerGuidedStepThrough]
         [Intrinsic]
-        public static unsafe T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
+        public static unsafe T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>()
         {
             // Grab the pointer to the default constructor of the type. If T doesn't have a default
             // constructor, the intrinsic returns a marker pointer that we check for.
@@ -52,7 +53,7 @@ namespace System
                 {
                     // Grab a pointer to the optimized allocator for the type and call it.
                     IntPtr allocator = AllocatorOf<T>();
-                    t = RawCalliHelper.Call<T>(allocator, EETypePtr.EETypePtrOf<T>().RawValue);
+                    t = RawCalliHelper.Call<T>(allocator, (nint)MethodTable.Of<T>());
                     RawCalliHelper.Call(defaultConstructor, t);
 
                     // Debugger goo so that stepping in works. Only affects debug info generation.
@@ -103,7 +104,7 @@ namespace System
         // and under no circumstances gets folded.
         private static Guid MissingConstructorMethod() => new Guid(0x68be9718, 0xf787, 0x45ab, 0x84, 0x3b, 0x1f, 0x31, 0xb6, 0x12, 0x65, 0xeb);
         // The constructor of this struct is used when there's no constructor
-        struct StructWithNoConstructor { public StructWithNoConstructor() { } }
+        private struct StructWithNoConstructor { public StructWithNoConstructor() { } }
 
         [DebuggerHidden]
         [DebuggerStepThrough]

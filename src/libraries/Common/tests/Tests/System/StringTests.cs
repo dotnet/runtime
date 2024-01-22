@@ -1009,6 +1009,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void CompareToNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1283,6 +1284,8 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void ContainsNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1660,7 +1663,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCulture, true };
             yield return new object[] { "", "a", StringComparison.CurrentCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.CurrentCulture, true };
 
             // CurrentCultureIgnoreCase
@@ -1672,7 +1675,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCultureIgnoreCase, true };
             yield return new object[] { "", "a", StringComparison.CurrentCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true };
 
             // InvariantCulture
@@ -1685,7 +1688,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCulture, true };
             yield return new object[] { "", "a", StringComparison.InvariantCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.InvariantCulture, true };
 
             // InvariantCultureIgnoreCase
@@ -1697,7 +1700,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCultureIgnoreCase, true };
             yield return new object[] { "", "a", StringComparison.InvariantCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.InvariantCultureIgnoreCase, true };
 
             // Ordinal
@@ -1726,6 +1729,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(EndsWith_StringComparison_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void EndsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
@@ -2109,6 +2113,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void EndsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -3194,7 +3199,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void IndexOf_HungarianDoubleCompression_HungarianCulture()
         {
@@ -3213,7 +3218,8 @@ namespace System.Tests
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target));
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
 
-                Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+                    Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
 
@@ -3221,7 +3227,8 @@ namespace System.Tests
 
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
 
-                Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+                    Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.Ordinal));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.OrdinalIgnoreCase));
             }
@@ -4849,8 +4856,12 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCulture, true };
             yield return new object[] { "", "hello", StringComparison.CurrentCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
-                yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCulture, true };
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+            {
+                // "https://github.com/dotnet/runtime/issues/95473"
+                if (PlatformDetection.IsNotHybridGlobalizationOnBrowser)
+                    yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCulture, true };
+            }
 
             // CurrentCultureIgnoreCase
             yield return new object[] { "Hello", "Hel", StringComparison.CurrentCultureIgnoreCase, true };
@@ -4861,7 +4872,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCultureIgnoreCase, true };
             yield return new object[] { "", "hello", StringComparison.CurrentCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCultureIgnoreCase, true };
 
             // InvariantCulture
@@ -4873,7 +4884,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCulture, true };
             yield return new object[] { "", "hello", StringComparison.InvariantCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.InvariantCulture, true };
 
             // InvariantCultureIgnoreCase
@@ -4885,7 +4896,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCultureIgnoreCase, true };
             yield return new object[] { "", "hello", StringComparison.InvariantCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.InvariantCultureIgnoreCase, true };
 
             // Ordinal
@@ -4921,6 +4932,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(StartsWith_StringComparison_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void StartsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
@@ -5342,6 +5354,8 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Test_ToLower_Culture()
         {
             foreach (object[] testdata in ToLower_Culture_TestData())
@@ -5857,7 +5871,9 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         [MemberData(nameof(ToUpper_Culture_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Test_ToUpper_Culture(string actual, string expected, CultureInfo culture)
         {
             Assert.Equal(expected, actual.ToUpper(culture));
@@ -5955,13 +5971,14 @@ namespace System.Tests
                 new KeyValuePair<char, char>('\u0130', '\u0130'),
                 new KeyValuePair<char, char>('\u0131', '\u0131'));
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         [MemberData(nameof(ToUpper_TurkishI_InvariantCulture_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void ToUpper_TurkishI_InvariantCulture(string s, string expected)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                Assert.True(s.ToUpper().Equals(expected, StringComparison.Ordinal));
+                Assert.Equal(s.ToUpper(), expected);
 
                 Span<char> destination = new char[s.Length];
                 Assert.Equal(s.Length, s.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
@@ -7225,6 +7242,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void StartsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)

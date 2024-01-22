@@ -40,9 +40,9 @@
     <!-- Publish crossgen2 on supported platforms. -->
 
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
-      Targets="Restore;Publish"
+      Targets="PublishToDisk"
       BuildInParallel="true"
-      Properties="PublishDir=$(CORE_ROOT)\crossgen2;DisableSourceLink=true"
+      Properties="OutputPath=$(CORE_ROOT)\crossgen2"
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <ItemGroup>
@@ -99,6 +99,11 @@
 
       <!-- Used by disasm output verification tests -->
       <RunTimeArtifactsIncludeFolders Include="SuperFileCheck/" TargetDir="SuperFileCheck/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
+      <!-- Used to determine if a file is a managed assembly or a managed assembly built with DEBUG -->
+      <RunTimeArtifactsIncludeFolders Include="AssemblyChecker/" TargetDir="AssemblyChecker/">
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 
@@ -180,6 +185,9 @@
 
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
+          TargetDir="build/"/>
+        <RunTimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\browser\build\*"
           TargetDir="build/"/>
     </ItemGroup>
 

@@ -3,10 +3,10 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Principal;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.Versioning;
 
 namespace System.IO.Pipes
 {

@@ -357,7 +357,7 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 		g_assert(info);
 		for (guint32 i = 0; i < info->num_fields; ++i) {
 			if (MONO_TYPE_ISSTRUCT (info->fields [i].field->type)) {
-				collect_field_info_nested (mono_class_from_mono_type_internal (info->fields [i].field->type), fields_array, info->fields [i].offset, pinvoke, unicode);
+				collect_field_info_nested (mono_class_from_mono_type_internal (info->fields [i].field->type), fields_array, (offset + info->fields [i].offset), pinvoke, unicode);
 			} else {
 				guint32 align;
 				StructFieldInfo f;
@@ -367,7 +367,7 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 															   info->fields [i].mspec,
 															   &align, TRUE, unicode);
 				f.offset = offset + info->fields [i].offset;
-				if (i == info->num_fields - 1 && f.size + f.offset < info->native_size) {
+				if ((i == info->num_fields - 1) && ((f.size + f.offset) < info->native_size)) {
 					/* This can happen with .pack directives eg. 'fixed' arrays */
 					if (MONO_TYPE_IS_PRIMITIVE (f.type)) {
 						/* Replicate the last field to fill out the remaining place, since the code in add_valuetype () needs type information */
@@ -2761,6 +2761,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		switch (t->type) {
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 #if !defined(MONO_ARCH_ILP32)
@@ -3414,9 +3415,9 @@ simd_type_to_shl_op (int t)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 #if TARGET_SIZEOF_VOID_P == 8
-		return OP_PSHLD;
-#else
 		return OP_PSHLQ;
+#else
+		return OP_PSHLD;
 #endif
 	default:
 		g_assert_not_reached ();
@@ -5126,6 +5127,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_div_reg_size (code, ins->sreg2, FALSE, 4);
 			}
 			break;
+		case OP_X86_LDIVREM:
+			amd64_div_reg (code, ins->sreg3, TRUE);
+			break;
+		case OP_X86_IDIVREM:
+			amd64_div_reg_size (code, ins->sreg3, TRUE, 4);
+			break;
+		case OP_X86_LDIVREMU:
+			amd64_div_reg (code, ins->sreg3, FALSE);
+			break;
+		case OP_X86_IDIVREMU:
+			amd64_div_reg_size (code, ins->sreg3, FALSE, 4);
+			break;
+		case OP_X86_IDIVREM2:
+			if (ins->dreg != AMD64_RDX) 
+				amd64_mov_reg_reg (code, ins->dreg, AMD64_RDX, 4);
+			break;
+		case OP_X86_LDIVREM2:
+			if (ins->dreg != AMD64_RDX) 
+				amd64_mov_reg_reg (code, ins->dreg, AMD64_RDX, 8);
+			break;
+
 		case OP_LMUL_OVF:
 			amd64_imul_reg_reg (code, ins->sreg1, ins->sreg2);
 			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_O, FALSE, "OverflowException");
@@ -5672,6 +5694,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_patch (jump, code);
 			break;
 		}
+		case OP_INIT_MRGCTX: {
+			int field_offset;
+			guint8 *jump;
+
+			field_offset = MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, entries);
+
+			g_assert (ins->sreg1 == MONO_AMD64_ARG_REG1);
+
+			amd64_mov_reg_membase (code, GP_SCRATCH_REG, ins->sreg1, field_offset, sizeof (gpointer));
+			amd64_test_reg_reg (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
+			jump = code;
+			amd64_branch8 (code, X86_CC_NZ, -1, 1);
+
+			/* Slowpath */
+			if (ins->sreg2 != MONO_AMD64_ARG_REG2)
+				amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG2, ins->sreg2, sizeof (target_mgreg_t));
+			code = emit_call (cfg, NULL, code, MONO_JIT_ICALL_mini_init_method_rgctx);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = GPTRDIFF_TO_INT (code - cfg->native_code);
+
+			x86_patch (jump, code);
+			break;
+		}
 
 		case OP_X86_LEA:
 			amd64_lea_memindex (code, ins->dreg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->backend.shift_amount);
@@ -5685,6 +5730,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_X86_XCHG:
 			amd64_xchg_reg_reg (code, ins->sreg1, ins->sreg2, 4);
 			break;
+		case OP_X86_BSF32:
+			amd64_bsf_size (code, ins->dreg, ins->sreg1, 4);
+			break;
+		case OP_X86_BSF64:
+			amd64_bsf_size (code, ins->dreg, ins->sreg1, 8);
+			break;
+		case OP_X86_BSR32:
+			amd64_bsr_size (code, ins->dreg, ins->sreg1, 4);
+			break;
+		case OP_X86_BSR64:
+			amd64_bsr_size (code, ins->dreg, ins->sreg1, 8);
+			break;
+
 		case OP_LOCALLOC:
 			/* keep alignment */
 			amd64_alu_reg_imm (code, X86_ADD, ins->sreg1, MONO_ARCH_FRAME_ALIGNMENT - 1);
@@ -6736,6 +6794,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_XOP: {
+			switch (ins->inst_c0) {
+			case INTRINS_SSE_PAUSE:
+				amd64_pause (code);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
 		case OP_XOP_X_X_X: {
 			switch (ins->inst_c0) {
 			case INTRINS_SSE_PHADDW:
@@ -7305,7 +7374,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->inst_c0 == 0) {
 				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
 			} else {
-				int imm = ins->inst_c0;
+				int imm = GTMREG_TO_INT (ins->inst_c0);
 				amd64_sse_movaps_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
 				amd64_sse_shufps_reg_reg_imm (code, SIMD_TEMP_REG, ins->sreg1, imm);
 				amd64_sse_pxor_reg_reg (code, ins->dreg, ins->dreg);
@@ -7326,7 +7395,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_pinsrq_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
 			break;
 		case OP_INSERT_R4: {
-			guint8 imm = (0 << 6) | (ins->inst_c0 << 4);
+			guint8 imm = (0 << 6) | (GTMREG_TO_UINT8 (ins->inst_c0 << 4));
 			amd64_sse_insertps_reg_reg (code, ins->sreg1, ins->sreg2, imm);
 			break;
 		}
@@ -7538,6 +7607,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SSSE3_SHUFFLE:
 			amd64_sse_pshufb_reg_reg (code, ins->dreg, ins->sreg2);
 			break;
+		case OP_VECTOR_IABS:
+			switch (ins->inst_c1) {
+			case MONO_TYPE_I1:
+				amd64_ssse3_pabsb_reg_reg(code, ins->dreg, ins->sreg1);
+				break;
+			case MONO_TYPE_I2:
+				amd64_ssse3_pabsw_reg_reg(code, ins->dreg, ins->sreg1);
+				break;
+			case MONO_TYPE_I4:
+#if TARGET_SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+#endif
+				amd64_ssse3_pabsd_reg_reg(code, ins->dreg, ins->sreg1);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
 		case OP_SSE41_ROUNDP: {
 			if (ins->inst_c1 == MONO_TYPE_R8)
 				amd64_sse_roundpd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
@@ -7627,9 +7715,9 @@ mono_arch_register_lowlevel_calls (void)
 
 #if defined(TARGET_WIN32) || defined(HOST_WIN32)
 #if _MSC_VER
-	mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_chkstk_win64, __chkstk, "mono_chkstk_win64", NULL, TRUE, "__chkstk");
+	mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_chkstk_win64, (gconstpointer)__chkstk, "mono_chkstk_win64", NULL, TRUE, "__chkstk");
 #else
-	mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_chkstk_win64, ___chkstk_ms, "mono_chkstk_win64", NULL, TRUE, "___chkstk_ms");
+	mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_chkstk_win64, (gconstpointer)___chkstk_ms, "mono_chkstk_win64", NULL, TRUE, "___chkstk_ms");
 #endif
 #endif
 }

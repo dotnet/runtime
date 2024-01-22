@@ -6,9 +6,13 @@ using System.Text;
 using System.Runtime.InteropServices;
 using Xunit;
 
-unsafe class ArrayWithOffsetTest
+public unsafe class ArrayWithOffsetTest
 {
-    public static int Main()
+    [Fact]
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/170", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static int TestEntryPoint()
     {
         try
         {

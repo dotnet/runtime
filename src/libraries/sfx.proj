@@ -7,6 +7,8 @@
     <BuildInParallel>false</BuildInParallel>
     <IsPackable>false</IsPackable>
     <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
+    <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
+    <ExplicitlyImportCustomILLinkTargets>true</ExplicitlyImportCustomILLinkTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -71,9 +73,6 @@
           UseHardlinksIfPossible="true" />
   </Target>
 
-  <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
-
   <Target Name="GetTrimSharedFrameworkAssembliesInputs"
           DependsOnTargets="ResolveProjectReferences">
     <PropertyGroup>
@@ -99,7 +98,7 @@
       <SharedFrameworkILLinkArgs>$(ILLinkArgs)</SharedFrameworkILLinkArgs>
       <!-- update debug symbols -->
       <SharedFrameworkILLinkArgs>$(SharedFrameworkILLinkArgs) -b true</SharedFrameworkILLinkArgs>
-      <SharedFrameworkILLinkArgs Condition="'@(SharedFrameworkSuppressionsXml)' != ''" >$(SharedFrameworkILLinkArgs) --link-attributes &quot;@(SharedFrameworkSuppressionsXml, '&quot; --link-attributes &quot;')&quot;</SharedFrameworkILLinkArgs>
+      <SharedFrameworkILLinkArgs Condition="'@(SharedFrameworkSuppressionsXml)' != ''" >$(SharedFrameworkILLinkArgs) --link-attributes "@(SharedFrameworkSuppressionsXml, '" --link-attributes "')"</SharedFrameworkILLinkArgs>
     </PropertyGroup>
 
     <ItemGroup>

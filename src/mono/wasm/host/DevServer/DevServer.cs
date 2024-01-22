@@ -46,7 +46,8 @@ internal static class DevServer
                 services.AddSingleton(Options.Create(options));
                 services.AddSingleton(realUrlsAvailableTcs);
                 services.AddRouting();
-            });
+            })
+            .UseUrls(options.Urls);
 
 
         IWebHost? host = builder.Build();

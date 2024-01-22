@@ -6,8 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using Internal.Runtime.Augments;
 using Internal.Metadata.NativeFormat;
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.TypeLoader
 {

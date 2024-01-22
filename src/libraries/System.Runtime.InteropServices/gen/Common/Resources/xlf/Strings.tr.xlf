@@ -149,12 +149,12 @@
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
         <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
-        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</target>
+        <target state="translated">'GeneratedComInterfaceAttribute' kullanımı önerilere uygun değil. {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
         <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
-        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</target>
+        <target state="translated">'GeneratedComInterfaceAttribute' kullanımı önerilere uygun değil.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
@@ -449,17 +449,17 @@
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
         <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
-        <target state="new">The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</target>
+        <target state="translated">'{0}' türü, yerel HRESULT olarak değil, yerel imzada bir yapı olarak değerlendirilir. Bunu bir HRESULT olarak değerlendirmek için yönteme '[return:MarshalAs(UnmanagedType.Error)]' ekleyin.</target>
         <note />
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
         <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
-        <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
+        <target state="translated">Bu tür, yerel HRESULT olarak değil, yerel imzada bir yapı olarak değerlendirilir</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
-        <target state="new">The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</target>
+        <target state="translated">'[In]' özniteliği yalnızca dizi parametrelerinde desteklenir. Değere göre parametreleri, varsayılan olarak salt okunur kabul edilir.</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
@@ -484,12 +484,17 @@
       </trans-unit>
       <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
-        <target state="new">The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</target>
+        <target state="translated">'[In]' ve '[Out]' öznitelikleri yalnızca dizi parametrelerinde desteklenir. Parametreyi değiştirilebilir yapmak için 'ref' anahtar sözcüğünü kullanmayı düşünün.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">[In] ve [Out] öznitelikleri</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InVariantShouldBeRef">
+        <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
+        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -724,12 +729,12 @@
       </trans-unit>
       <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
         <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
-        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</target>
+        <target state="translated">'LibraryImportAttribute' kullanımı önerilere uygun değil. {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
         <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
-        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations.</target>
+        <target state="translated">'LibraryImportAttribute' kullanımı önerilere uygun değil.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
@@ -934,7 +939,7 @@
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
         <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="needs-review-translation">'[Out]' özniteliği yalnızca dizi parametrelerinde desteklenir. Parametreyi değiştirilebilir yapmak için 'out' veya 'ref' anahtar sözcükleri kullanmayı düşünün.</target>
+        <target state="translated">'[Out]' özniteliği yalnızca dizi parametrelerinde desteklenir. Parametreyi değiştirilebilir yapmak için 'out' veya 'ref' anahtar sözcükleri kullanmayı düşünün.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -949,7 +954,7 @@
       </trans-unit>
       <trans-unit id="PreferExplicitInOutAttributesOnArrays">
         <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
-        <target state="new">It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</target>
+        <target state="translated">Dizi parametrelerinde açık '[In]' ve '[Out]' özniteliklerinin kullanılması önerilir.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -1020,11 +1025,6 @@
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">Bu türü sıralamayı etkinleştirmek için derlemeye 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' uygulanarak bu projede çalışma zamanı sıralaması devre dışı bırakılmalıdır.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">'SafeHandle' özelliğinden türetilen soyut türler, başvuruya göre sıralanamaz. Sağlanan tür somut olmalıdır.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">

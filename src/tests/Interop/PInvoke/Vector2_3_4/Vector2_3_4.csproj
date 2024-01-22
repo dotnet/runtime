@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <Compile Include="*.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <CMakeProjectReference Include="CMakeLists.txt" />
-  </ItemGroup>
-</Project>

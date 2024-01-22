@@ -24,7 +24,7 @@ static void SetTmpDir(CHAR path[])
 
 static void SetAndCompare(CHAR tmpDirPath[], CHAR expected[])
 {
-    DWORD dwBufferLength = _MAX_DIR;
+    const DWORD dwBufferLength = _MAX_DIR;
     CHAR  path[dwBufferLength];
     
     SetTmpDir(tmpDirPath);
@@ -50,7 +50,7 @@ static void SetAndCompare(CHAR tmpDirPath[], CHAR expected[])
 
 static void SetAndCheckLength(CHAR tmpDirPath[], int bufferLength, int expectedResultLength)
 {
-    CHAR  path[bufferLength];
+    CHAR* path = (CHAR*)alloca(bufferLength);
 
     SetTmpDir(tmpDirPath);
     DWORD dwResultLen = GetTempPathA(bufferLength, path);

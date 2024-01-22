@@ -10,11 +10,13 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 
 public class Test_repro237932
 {
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		C1<System.OverflowException> cOverflow = new C1<System.OverflowException>();
 		C1<System.InvalidCastException> cCast = new C1<System.InvalidCastException>();

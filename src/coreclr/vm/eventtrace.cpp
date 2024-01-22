@@ -2764,7 +2764,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
 #ifndef FEATURE_EH_FUNCLETS
         PTR_ExInfo pExInfo = NULL;
 #else
-        PTR_ExceptionTracker pExInfo = NULL;
+        PTR_ExceptionTrackerBase pExInfo = NULL;
 #endif //!FEATURE_EH_FUNCLETS
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);
@@ -4359,7 +4359,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
 
     LPCWSTR pEmptyString = W("");
-    SString moduleName = SString::Empty();
+    SString moduleName{ SString::Empty() };
 
     if(!bIsDynamicAssembly)
     {

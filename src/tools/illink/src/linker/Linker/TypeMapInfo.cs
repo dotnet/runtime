@@ -150,22 +150,25 @@ namespace Mono.Linker
 					// keeping more methods than needed.
 
 					if (!resolvedInterfaceMethod.IsVirtual
-						|| resolvedInterfaceMethod.IsFinal
-						|| !resolvedInterfaceMethod.IsNewSlot)
+						|| resolvedInterfaceMethod.IsFinal)
 						continue;
 
-					// Try to find an implementation with a name/sig match on the current type
-					MethodDefinition? exactMatchOnType = TryMatchMethod (type, interfaceMethod);
-					if (exactMatchOnType != null) {
-						AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType);
-						continue;
-					}
+					// Static methods on interfaces must be implemented only via explicit method-impl record
+					// not by a signature match. So there's no point in running this logic for static methods.
+					if (!resolvedInterfaceMethod.IsStatic) {
+						// Try to find an implementation with a name/sig match on the current type
+						MethodDefinition? exactMatchOnType = TryMatchMethod (type, interfaceMethod);
+						if (exactMatchOnType != null) {
+							AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType);
+							continue;
+						}
 
-					// Next try to find an implementation with a name/sig match in the base hierarchy
-					var @base = GetBaseMethodInTypeHierarchy (type, interfaceMethod);
-					if (@base != null) {
-						AnnotateMethods (resolvedInterfaceMethod, @base, interfaceImpl.OriginalImpl);
-						continue;
+						// Next try to find an implementation with a name/sig match in the base hierarchy
+						var @base = GetBaseMethodInTypeHierarchy (type, interfaceMethod);
+						if (@base != null) {
+							AnnotateMethods (resolvedInterfaceMethod, @base, interfaceImpl.OriginalImpl);
+							continue;
+						}
 					}
 
 					// Look for a default implementation last.

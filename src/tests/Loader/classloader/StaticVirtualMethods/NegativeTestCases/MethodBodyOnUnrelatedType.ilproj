@@ -1,9 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CrossGenTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
 
     <!-- Crossgen2 currently doesn't support this negative check - that should be fine as runtime behavior is undefined in the presence of invalid IL. -->
     <CrossGenTest>false</CrossGenTest>
+
+    <!-- Testing TypeLoad/MissingMethod exceptions in situations that are expensive to detect -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

@@ -286,26 +286,23 @@ struct insGroup
     insGroup* igLoopBackEdge; // "last" back-edge that branches back to an aligned loop head.
 #endif
 
-#define IGF_GC_VARS 0x0001    // new set of live GC ref variables
-#define IGF_BYREF_REGS 0x0002 // new set of live by-ref registers
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-#define IGF_FINALLY_TARGET 0x0004 // this group is the start of a basic block that is returned to after a finally.
-#endif                            // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-#define IGF_FUNCLET_PROLOG 0x0008 // this group belongs to a funclet prolog
-#define IGF_FUNCLET_EPILOG 0x0010 // this group belongs to a funclet epilog.
-#define IGF_EPILOG 0x0020         // this group belongs to a main function epilog
-#define IGF_NOGCINTERRUPT 0x0040  // this IG is in a no-interrupt region (prolog, epilog, etc.)
-#define IGF_UPD_ISZ 0x0080        // some instruction sizes updated
-#define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
-#define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
+#define IGF_GC_VARS 0x0001        // new set of live GC ref variables
+#define IGF_BYREF_REGS 0x0002     // new set of live by-ref registers
+#define IGF_FUNCLET_PROLOG 0x0004 // this group belongs to a funclet prolog
+#define IGF_FUNCLET_EPILOG 0x0008 // this group belongs to a funclet epilog.
+#define IGF_EPILOG 0x0010         // this group belongs to a main function epilog
+#define IGF_NOGCINTERRUPT 0x0020  // this IG is in a no-interrupt region (prolog, epilog, etc.)
+#define IGF_UPD_ISZ 0x0040        // some instruction sizes updated
+#define IGF_PLACEHOLDER 0x0080    // this is a placeholder group, to be filled in later
+#define IGF_EXTEND 0x0100         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) at the end to align either the next
+#define IGF_HAS_ALIGN 0x0200      // this group contains an alignment instruction(s) at the end to align either the next
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
-#define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
+#define IGF_REMOVED_ALIGN 0x0400  // IG was marked as having an alignment instruction(s), but was later unmarked
                                   // without updating the IG's size/offsets.
-#define IGF_HAS_REMOVABLE_JMP 0x1000 // this group ends with an unconditional jump which is a candidate for removal
+#define IGF_HAS_REMOVABLE_JMP 0x0800 // this group ends with an unconditional jump which is a candidate for removal
 #ifdef TARGET_ARM64
-#define IGF_HAS_REMOVED_INSTR 0x2000 // this group has an instruction that was removed.
+#define IGF_HAS_REMOVED_INSTR 0x1000 // this group has an instruction that was removed.
 #endif
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
@@ -505,6 +502,9 @@ protected:
         OPSZ32     = 5,
         OPSZ64     = 6,
         OPSZ_COUNT = 7,
+#elif defined(TARGET_ARM64)
+        OPSZ_SCALABLE = 5,
+        OPSZ_COUNT    = 6,
 #else
         OPSZ_COUNT = 5,
 #endif
@@ -512,7 +512,7 @@ protected:
 #ifdef TARGET_AMD64
         OPSZP = OPSZ8,
 #else
-        OPSZP      = OPSZ4,
+        OPSZP         = OPSZ4,
 #endif
     };
 
@@ -548,11 +548,6 @@ protected:
 
 #endif // FEATURE_EH_FUNCLETS
 
-    // If "ig" corresponds to the start of a basic block that is the
-    // target of a funclet return, generate GC information for it's start
-    // address "cp", as if it were the return address of a call.
-    void emitGenGCInfoIfFuncletRetTarget(insGroup* ig, BYTE* cp);
-
     void emitRecomputeIGoffsets();
 
     void emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flags);
@@ -565,7 +560,10 @@ protected:
     {
 #define IF_DEF(en, op1, op2) IF_##en,
 #include "emitfmts.h"
-
+#if defined(TARGET_ARM64)
+#define IF_DEF(en, op1, op2) IF_##en,
+#include "emitfmtsarm64sve.h"
+#endif
         IF_COUNT
     };
 
@@ -628,8 +626,8 @@ protected:
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
-        static_assert_no_msg(INS_count <= 512);
-        instruction _idIns : 9;
+        static_assert_no_msg(INS_count <= 2048);
+        instruction _idIns : 11;
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert_no_msg(INS_count <= 512);
@@ -647,6 +645,9 @@ protected:
         unsigned    _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_RISCV64)
         unsigned    _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
+#elif defined(TARGET_ARM64)
+        static_assert_no_msg(IF_COUNT <= 1024);
+        insFormat _idInsFmt : 10;
 #else
         static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
@@ -712,7 +713,7 @@ protected:
         // x86:         17 bits
         // amd64:       17 bits
         // arm:         16 bits
-        // arm64:       17 bits
+        // arm64:       21 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
 
@@ -722,10 +723,13 @@ protected:
         opSize   _idOpSize : 3;   // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM64)
+        opSize  _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts _idInsOpt : 6; // options for instructions
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /* _idOpSize defined below. */
 #else
-        opSize _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
+        opSize    _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // On Amd64, this is where the second DWORD begins
@@ -754,7 +758,7 @@ protected:
         // x86:         38 bits
         // amd64:       38 bits
         // arm:         32 bits
-        // arm64:       31 bits
+        // arm64:       44 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
 
@@ -763,17 +767,22 @@ protected:
         unsigned _idLargeDsp : 1;  // does a large displacement follow?
         unsigned _idLargeCall : 1; // large call descriptor used
 
-        unsigned _idBound : 1;      // jump target / frame offset bound
+        unsigned _idBound : 1; // jump target / frame offset bound
+#ifndef TARGET_ARMARCH
         unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
-        unsigned _idCallAddr : 1;   // IL indirect calls: can make a direct call to iiaAddr
-        unsigned _idNoGC : 1;       // Some helpers don't get recorded in GC tables
+#endif
+        unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
+        unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
-        unsigned _idEvexbContext : 1; // does EVEX.b need to be set.
-#endif                                //  TARGET_XARCH
+        // EVEX.b can indicate several context: embedded broadcast, embedded rounding.
+        // For normal and embedded broadcast intrinsics, EVEX.L'L has the same semantic, vector length.
+        // For embedded rounding, EVEX.L'L semantic changes to indicate the rounding mode.
+        // Multiple bits in _idEvexbContext are used to inform emitter to specially handle the EVEX.L'L bits.
+        unsigned _idEvexbContext : 2;
+#endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
-        opSize   _idOpSize : 3;    // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts  _idInsOpt : 6;    // options for instructions
+
         unsigned _idLclVar : 1;    // access a local on stack
         unsigned _idLclVarPair : 1 // carries information for 2 GC lcl vars.
 #endif
@@ -803,10 +812,10 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         47 bits
-        // amd64:       47 bits
+        // x86:         48 bits
+        // amd64:       48 bits
         // arm:         48 bits
-        // arm64:       50 bits
+        // arm64:       53 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
 
@@ -819,11 +828,11 @@ protected:
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
-#define ID_EXTRA_BITFIELD_BITS (18)
+#define ID_EXTRA_BITFIELD_BITS (21)
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (15)
+#define ID_EXTRA_BITFIELD_BITS (16)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -858,10 +867,10 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:         53/49 bits
-        // amd64:       54/49 bits
+        // x86:         54/50 bits
+        // amd64:       55/50 bits
         // arm:         54/50 bits
-        // arm64:       57/52 bits
+        // arm64:       60/55 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
@@ -875,10 +884,10 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:         11/15 bits
-        // amd64:       10/15 bits
+        // x86:         10/14 bits
+        // amd64:       9/14 bits
         // arm:         10/14 bits
-        // arm64:        7/12 bits
+        // arm64:        4/9 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
@@ -931,7 +940,7 @@ protected:
 // TODO-Cleanup: We should really add a DEBUG-only tag to this union so we can add asserts
 // about reading what we think is here, to avoid unexpected corruption issues.
 
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
             emitLclVarAddr iiaLclVar;
 #endif
             BasicBlock* iiaBBlabel;
@@ -973,7 +982,7 @@ protected:
 #ifdef TARGET_ARM64
                 // For 64-bit architecture this 32-bit structure can pack with these unsigned bit fields
                 emitLclVarAddr iiaLclVar;
-                unsigned       _idReg3Scaled : 1; // Reg3 is scaled by idOpSize bits
+                unsigned       _idRegBit : 1; // Reg3 is scaled by idOpSize bits
                 GCtype         _idGCref2 : 2;
 #endif
                 regNumber _idReg3 : REGNUM_BITS;
@@ -985,7 +994,7 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_LOONGARCH64)
             struct
             {
                 unsigned int iiaEncodedInstr; // instruction's binary encoding.
@@ -1016,7 +1025,27 @@ protected:
             {
                 return iiaJmpOffset;
             }
-#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
+#elif defined(TARGET_RISCV64)
+            struct
+            {
+                regNumber    _idReg3 : REGNUM_BITS;
+                regNumber    _idReg4 : REGNUM_BITS;
+                unsigned int iiaEncodedInstr; // instruction's binary encoding.
+            };
+
+            void iiaSetInstrEncode(unsigned int encode)
+            {
+                iiaEncodedInstr = encode;
+            }
+            unsigned int iiaGetInstrEncode() const
+            {
+                return iiaEncodedInstr;
+            }
+#endif // defined(TARGET_RISCV64)
+
+            // Used for instrDesc that has relocatable immediate offset
+            bool iiaSecRel;
 
         } _idAddrUnion;
 
@@ -1118,7 +1147,7 @@ protected:
         }
 
 #elif defined(TARGET_LOONGARCH64)
-        unsigned  idCodeSize() const
+        unsigned idCodeSize() const
         {
             return _idCodeSize;
         }
@@ -1130,7 +1159,7 @@ protected:
             _idCodeSize = sz;
         }
 #elif defined(TARGET_RISCV64)
-        unsigned idCodeSize() const
+        unsigned  idCodeSize() const
         {
             return _idCodeSize;
         }
@@ -1381,12 +1410,32 @@ protected:
         bool idReg3Scaled() const
         {
             assert(!idIsSmallDsc());
-            return (idAddr()->_idReg3Scaled == 1);
+            return (idAddr()->_idRegBit == 1);
         }
         void idReg3Scaled(bool val)
         {
             assert(!idIsSmallDsc());
-            idAddr()->_idReg3Scaled = val ? 1 : 0;
+            idAddr()->_idRegBit = val ? 1 : 0;
+        }
+        bool idPredicateReg2Merge() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idRegBit == 1);
+        }
+        void idPredicateReg2Merge(bool val)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idRegBit = val ? 1 : 0;
+        }
+        bool idVectorLength4x() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idRegBit == 1);
+        }
+        void idVectorLength4x(bool val)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idRegBit = val ? 1 : 0;
         }
 #endif // TARGET_ARM64
 
@@ -1509,6 +1558,7 @@ protected:
             _idBound = 1;
         }
 
+#ifndef TARGET_ARMARCH
         bool idIsCallRegPtr() const
         {
             return _idCallRegPtr != 0;
@@ -1517,6 +1567,7 @@ protected:
         {
             _idCallRegPtr = 1;
         }
+#endif
 
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
@@ -1531,15 +1582,35 @@ protected:
         }
 
 #ifdef TARGET_XARCH
-        bool idIsEvexbContext() const
+        bool idIsEvexbContextSet() const
         {
             return _idEvexbContext != 0;
         }
-        void idSetEvexbContext()
+
+        void idSetEvexbContext(insOpts instOptions)
         {
             assert(_idEvexbContext == 0);
-            _idEvexbContext = 1;
-            assert(_idEvexbContext == 1);
+            if (instOptions == INS_OPTS_EVEX_eb_er_rd)
+            {
+                _idEvexbContext = 1;
+            }
+            else if (instOptions == INS_OPTS_EVEX_er_ru)
+            {
+                _idEvexbContext = 2;
+            }
+            else if (instOptions == INS_OPTS_EVEX_er_rz)
+            {
+                _idEvexbContext = 3;
+            }
+            else
+            {
+                unreached();
+            }
+        }
+
+        unsigned idGetEvexbContext() const
+        {
+            return _idEvexbContext;
         }
 #endif
 
@@ -1696,7 +1767,10 @@ protected:
 #define PERFSCORE_THROUGHPUT_8C 8.0f     // slower - 8 cycles
 #define PERFSCORE_THROUGHPUT_9C 9.0f     // slower - 9 cycles
 #define PERFSCORE_THROUGHPUT_10C 10.0f   // slower - 10 cycles
+#define PERFSCORE_THROUGHPUT_11C 10.0f   // slower - 10 cycles
 #define PERFSCORE_THROUGHPUT_13C 13.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_14C 14.0f   // slower - 13 cycles
+#define PERFSCORE_THROUGHPUT_16C 16.0f   // slower - 13 cycles
 #define PERFSCORE_THROUGHPUT_19C 19.0f   // slower - 19 cycles
 #define PERFSCORE_THROUGHPUT_25C 25.0f   // slower - 25 cycles
 #define PERFSCORE_THROUGHPUT_33C 33.0f   // slower - 33 cycles
@@ -1721,6 +1795,7 @@ protected:
 #define PERFSCORE_LATENCY_11C 11.0f
 #define PERFSCORE_LATENCY_12C 12.0f
 #define PERFSCORE_LATENCY_13C 13.0f
+#define PERFSCORE_LATENCY_14C 14.0f
 #define PERFSCORE_LATENCY_15C 15.0f
 #define PERFSCORE_LATENCY_16C 16.0f
 #define PERFSCORE_LATENCY_18C 18.0f
@@ -1816,11 +1891,6 @@ protected:
 #define PERFSCORE_MEMORY_WRITE 2
 #define PERFSCORE_MEMORY_READ_WRITE 3
 
-#define PERFSCORE_CODESIZE_COST_HOT 0.10f
-#define PERFSCORE_CODESIZE_COST_COLD 0.01f
-
-#define PERFSCORE_CALLEE_SPILL_COST 0.75f
-
     struct insExecutionCharacteristics
     {
         float    insThroughput;
@@ -1860,10 +1930,16 @@ protected:
         // beginning of the function -- of the target instruction of the jump, used to
         // determine if this jump needs to be patched.
         unsigned idjOffs :
-#if defined(TARGET_XARCH)
-            29;
-        // indicates that the jump was added at the end of a BBJ_ALWAYS basic block and is
+#if defined(TARGET_AMD64)
+            28;
+        // Indicates the jump was added at the end of a BBJ_ALWAYS basic block and is
         // a candidate for being removed if it jumps to the next instruction
+        unsigned idjIsRemovableJmpCandidate : 1;
+        // Indicates the jump follows a call instruction and precedes an OS epilog.
+        // If this jump is removed, a nop will need to be emitted instead (see clr-abi.md for details).
+        unsigned idjIsAfterCallBeforeEpilog : 1;
+#elif defined(TARGET_X86)
+            29;
         unsigned idjIsRemovableJmpCandidate : 1;
 #else
             30;
@@ -2105,10 +2181,11 @@ protected:
     void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
     void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
-    void emitDispInsAddr(BYTE* code);
+    void emitDispInsAddr(const BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
     void emitDispEmbBroadcastCount(instrDesc* id);
+    void emitDispEmbRounding(instrDesc* id);
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -2185,8 +2262,8 @@ public:
     /*    Methods to record a code position and later convert to offset     */
     /************************************************************************/
 
-    unsigned emitFindInsNum(insGroup* ig, instrDesc* id);
-    UNATIVE_OFFSET emitFindOffset(insGroup* ig, unsigned insNum);
+    unsigned emitFindInsNum(const insGroup* ig, const instrDesc* id) const;
+    UNATIVE_OFFSET emitFindOffset(const insGroup* ig, unsigned insNum) const;
 
 /************************************************************************/
 /*        Members and methods used to issue (encode) instructions.      */
@@ -2205,7 +2282,7 @@ public:
     UNATIVE_OFFSET emitTotalHotCodeSize;
     UNATIVE_OFFSET emitTotalColdCodeSize;
 
-    UNATIVE_OFFSET emitCurCodeOffs(BYTE* dst)
+    UNATIVE_OFFSET emitCurCodeOffs(const BYTE* dst) const
     {
         size_t distance;
         if ((dst >= emitCodeBlock) && (dst <= (emitCodeBlock + emitTotalHotCodeSize)))
@@ -2224,7 +2301,7 @@ public:
         return (UNATIVE_OFFSET)distance;
     }
 
-    BYTE* emitOffsetToPtr(UNATIVE_OFFSET offset)
+    BYTE* emitOffsetToPtr(UNATIVE_OFFSET offset) const
     {
         if (offset < emitTotalHotCodeSize)
         {
@@ -2280,8 +2357,8 @@ public:
     unsigned int emitCounts_INS_OPTS_J;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
-    instrDesc* emitFirstInstrDesc(BYTE* idData);
-    void emitAdvanceInstrDesc(instrDesc** id, size_t idSize);
+    instrDesc* emitFirstInstrDesc(BYTE* idData) const;
+    void emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
 
@@ -2685,20 +2762,18 @@ private:
     // Terminates any in-progress instruction group, making the current IG a new empty one.
     // Mark this instruction group as having a label; return the new instruction group.
     // Sets the emitter's record of the currently live GC variables
-    // and registers.  The "isFinallyTarget" parameter indicates that the current location is
-    // the start of a basic block that is returned to after a finally clause in non-exceptional execution.
+    // and registers.
     void* emitAddLabel(VARSET_VALARG_TP GCvars,
                        regMaskTP        gcrefRegs,
-                       regMaskTP        byrefRegs,
-                       bool             isFinallyTarget = false DEBUG_ARG(BasicBlock* block = nullptr));
+                       regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block = nullptr));
 
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
 
-    void emitPrintLabel(insGroup* ig);
-    const char* emitLabelString(insGroup* ig);
+    void emitPrintLabel(const insGroup* ig) const;
+    const char* emitLabelString(const insGroup* ig) const;
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
@@ -2988,8 +3063,8 @@ public:
     union {
         struct // if emitSimpleStkUsed==true
         {
-#define BITS_IN_BYTE (8)
-#define MAX_SIMPLE_STK_DEPTH (BITS_IN_BYTE * sizeof(unsigned))
+
+#define MAX_SIMPLE_STK_DEPTH (BITS_PER_BYTE * sizeof(unsigned))
 
             unsigned emitSimpleStkMask;      // bit per pushed dword (if it fits. Lowest bit <==> last pushed arg)
             unsigned emitSimpleByrefStkMask; // byref qualifier for emitSimpleStkMask
@@ -3759,7 +3834,7 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
-    if (id->idIsEvexbContext())
+    if (id->idIsEvexbContextSet())
     {
         // should have the assumption that Evex.b now stands for the embedded broadcast context.
         // reference: Section 2.7.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.
@@ -3924,6 +3999,19 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
                 assert(defaultSize == 16);
                 return EA_8BYTE;
             }
+        }
+
+        case INS_psrlw:
+        case INS_psrld:
+        case INS_psrlq:
+        case INS_psraw:
+        case INS_psrad:
+        case INS_psllw:
+        case INS_pslld:
+        case INS_psllq:
+        {
+            // These always have 16-byte memory loads
+            return EA_16BYTE;
         }
 
         case INS_vpmovdb:

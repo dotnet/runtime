@@ -10,8 +10,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -32,10 +32,11 @@ namespace System
         private const double doubleRoundLimit = 1e16d;
 
         // This table is required for the Round function which can specify the number of digits to round to
-        private static ReadOnlySpan<double> RoundPower10Double => new double[] {
-          1E0, 1E1, 1E2, 1E3, 1E4, 1E5, 1E6, 1E7, 1E8,
-          1E9, 1E10, 1E11, 1E12, 1E13, 1E14, 1E15
-        };
+        private static ReadOnlySpan<double> RoundPower10Double =>
+        [
+            1E0, 1E1, 1E2, 1E3, 1E4, 1E5, 1E6, 1E7, 1E8,
+            1E9, 1E10, 1E11, 1E12, 1E13, 1E14, 1E15
+        ];
 
         private const double SCALEB_C1 = 8.98846567431158E+307; // 0x1p1023
 
@@ -152,6 +153,19 @@ namespace System
         internal static void ThrowNegateTwosCompOverflow()
         {
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
+        }
+
+        internal static unsafe ulong BigMul(uint a, uint b)
+        {
+#if TARGET_32BIT
+            if (Bmi2.IsSupported)
+            {
+                uint low;
+                uint high = Bmi2.MultiplyNoFlags(a, b, &low);
+                return ((ulong)high << 32) | low;
+            }
+#endif
+            return ((ulong)a) * b;
         }
 
         public static long BigMul(int a, int b)
@@ -278,9 +292,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double CopySign(double x, double y)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
-                return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
+                return Vector128.ConditionalSelect(Vector128.CreateScalarUnsafe(-0.0), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
             }
             else
             {
@@ -1033,7 +1047,7 @@ namespace System
             //
             // It propagates NaN inputs back to the caller and
             // otherwise returns the lesser of the inputs. It
-            // treats +0 as lesser than -0 as per the specification.
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -1091,7 +1105,7 @@ namespace System
             //
             // It propagates NaN inputs back to the caller and
             // otherwise returns the lesser of the inputs. It
-            // treats +0 as lesser than -0 as per the specification.
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -1145,7 +1159,7 @@ namespace System
             //
             // It propagates NaN inputs back to the caller and
             // otherwise returns the input with a lesser magnitude.
-            // It treats +0 as lesser than -0 as per the specification.
+            // It treats +0 as greater than -0 as per the specification.
 
             double ax = Abs(x);
             double ay = Abs(y);

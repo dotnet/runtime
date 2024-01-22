@@ -6,6 +6,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 public class Interfaces
 {
@@ -40,6 +41,7 @@ public class Interfaces
         TestDefaultInterfaceVariance.Run();
         TestVariantInterfaceOptimizations.Run();
         TestSharedInterfaceMethods.Run();
+        TestGenericAnalysis.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
@@ -52,6 +54,8 @@ public class Interfaces
         TestMoreConstraints.Run();
         TestSimpleNonGeneric.Run();
         TestSimpleGeneric.Run();
+        TestDefaultDynamicStaticNonGeneric.Run();
+        TestDefaultDynamicStaticGeneric.Run();
         TestDynamicStaticGenericVirtualMethods.Run();
 
         return Pass;
@@ -651,6 +655,56 @@ public class Interfaces
         }
     }
 
+    class TestGenericAnalysis
+    {
+        interface IInterface
+        {
+            string Method(object p);
+        }
+
+        interface IInterface<T>
+        {
+            string Method(T p);
+        }
+
+        class C1<T> : IInterface, IInterface<T>
+        {
+            public string Method(object p) => "Method(object)";
+            public string Method(T p) => "Method(T)";
+        }
+
+        class C2<T> : IInterface, IInterface<T>
+        {
+            public string Method(object p) => "Method(object)";
+            public string Method(T p) => "Method(T)";
+        }
+
+        class C3<T> : IInterface, IInterface<T>
+        {
+            public string Method(object p) => "Method(object)";
+            public string Method(T p) => "Method(T)";
+        }
+
+        static IInterface s_c1 = new C1<object>();
+        static IInterface<object> s_c2 = new C2<object>();
+        static IInterface<object> s_c3a = new C3<object>();
+        static IInterface s_c3b = new C3<object>();
+
+        // Works around https://github.com/dotnet/runtime/issues/94399
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+        public static void Run()
+        {
+            if (s_c1.Method(null) != "Method(object)")
+                throw new Exception();
+            if (s_c2.Method(null) != "Method(T)")
+                throw new Exception();
+            if (s_c3a.Method(null) != "Method(T)")
+                throw new Exception();
+            if (s_c3b.Method(null) != "Method(object)")
+                throw new Exception();
+        }
+    }
+
     class TestCovariantReturns
     {
         interface IFoo
@@ -1172,6 +1226,7 @@ public class Interfaces
 
         static Type s_fooType = typeof(Foo);
 
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
             Type t = typeof(FrobCaller<>).MakeGenericType(s_fooType);
@@ -1236,6 +1291,7 @@ public class Interfaces
 
         static Type s_atomType = typeof(Atom);
 
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
             Type t = typeof(Wrapper<>).MakeGenericType(s_atomType);
@@ -1301,6 +1357,7 @@ public class Interfaces
         static Type s_atomType = typeof(Atom);
         static Type s_atomBaseType = typeof(AtomBase);
 
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
             Type t = typeof(FrobCaller<,>).MakeGenericType(typeof(AbjectFail<AtomBase>), s_atomType);
@@ -1499,6 +1556,79 @@ public class Interfaces
                 throw new Exception();
             if (CallIndirect<SimpleStruct>(2) != (1236, typeof(IBar<Atom2>)))
                 throw new Exception();
+        }
+    }
+
+    class TestDefaultDynamicStaticNonGeneric
+    {
+        interface IFoo
+        {
+            abstract static string ImHungryGiveMeCookie();
+        }
+
+        interface IBar : IFoo
+        {
+            static string IFoo.ImHungryGiveMeCookie() => "IBar";
+        }
+
+        class Baz : IBar
+        {
+        }
+
+        class Gen<T> where T : IFoo
+        {
+            public static string GrabCookie() => T.ImHungryGiveMeCookie();
+        }
+
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
+        public static void Run()
+        {
+            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz)).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            if (r != "IBar")
+                throw new Exception(r);
+
+            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar)).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            if (r != "IBar")
+                throw new Exception(r);
+        }
+    }
+
+    class TestDefaultDynamicStaticGeneric
+    {
+        class Atom1 { }
+        class Atom2 { }
+
+        interface IFoo
+        {
+            abstract static string ImHungryGiveMeCookie();
+        }
+
+        interface IBar<T> : IFoo
+        {
+            static string IFoo.ImHungryGiveMeCookie() => $"IBar<{typeof(T).Name}>";
+        }
+
+        class Baz<T> : IBar<T>
+        {
+        }
+
+        class Gen<T> where T : IFoo
+        {
+            public static string GrabCookie() => T.ImHungryGiveMeCookie();
+        }
+
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
+        public static void Run()
+        {
+            Activator.CreateInstance(typeof(Baz<>).MakeGenericType(typeof(Atom1)));
+
+            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz<>).MakeGenericType(typeof(Atom1))).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            if (r != "IBar<Atom1>")
+                throw new Exception(r);
+
+            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar<>).MakeGenericType(typeof(Atom2))).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            if (r != "IBar<Atom2>")
+                throw new Exception(r);
         }
     }
 

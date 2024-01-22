@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Threading;
 using System.Diagnostics;
+using System.Threading;
 
 namespace System.ComponentModel
 {

@@ -112,5 +112,12 @@ namespace Microsoft.Extensions.Options.Generators
             messageFormat: SR.OptionsUnsupportedLanguageVersionMessage,
             category: Category,
             defaultSeverity: DiagnosticSeverity.Error);
+
+        public static DiagnosticDescriptor IncompatibleWithTypeForValidationAttribute { get; } = Make(
+            id: "SYSLIB1217",
+            title: SR.TypeCannotBeUsedWithTheValidationAttributeTitle,
+            messageFormat: SR.TypeCannotBeUsedWithTheValidationAttributeMessage,
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Warning);
     }
 }

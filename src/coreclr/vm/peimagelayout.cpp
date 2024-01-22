@@ -462,7 +462,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
 
     IfFailThrow(Init(loadedImage));
 
-    if (m_pOwner->IsFile() && IsNativeMachineFormat() && g_fAllowNativeImages)
+    if (m_pOwner->IsFile() && IsNativeMachineFormat())
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.
@@ -566,7 +566,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         return;
     }
 
-    if (HasReadyToRunHeader() && g_fAllowNativeImages)
+    if (HasReadyToRunHeader())
     {
         //Do base relocation for PE, if necessary.
         if (!IsNativeMachineFormat())
@@ -871,7 +871,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     return base;
 }
 
-#if TARGET_WINDOWS
+#ifdef TARGET_WINDOWS
 
 // VirtualAlloc2
 typedef PVOID(WINAPI* VirtualAlloc2Fn)(
@@ -909,7 +909,7 @@ static bool HavePlaceholderAPI()
 
     if (pMapViewOfFile3 == NULL)
     {
-        HMODULE hm = LoadLibraryW(_T("kernelbase.dll"));
+        HMODULE hm = WszLoadLibrary(W("kernelbase.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (hm != NULL)
         {
             pVirtualAlloc2 = (VirtualAlloc2Fn)GetProcAddress(hm, "VirtualAlloc2");

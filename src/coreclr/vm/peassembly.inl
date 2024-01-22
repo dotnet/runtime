@@ -78,23 +78,6 @@ inline ULONG PEAssembly::Release()
     RETURN result;
 }
 
-// ------------------------------------------------------------
-// Identity
-// ------------------------------------------------------------
-
-inline ULONG PEAssembly::HashIdentity()
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckPointer(m_PEImage));
-        MODE_ANY;
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-    return m_pHostAssembly->GetAssemblyName()->Hash(BINDER_SPACE::AssemblyName::INCLUDE_VERSION);
-}
-
 inline void PEAssembly::ValidateForExecution()
 {
     CONTRACTL

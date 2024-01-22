@@ -153,6 +153,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.InterfaceImplementationInterfaceType,
 			DependencyKind.Ldtoken,
 			DependencyKind.ModifierType,
+			DependencyKind.NestedType,
 			DependencyKind.InstructionTypeRef,
 			DependencyKind.ParameterType,
 			DependencyKind.ReferencedBySpecialAttribute,
@@ -373,7 +374,7 @@ namespace Mono.Linker.Steps
 					MarkEntireType (nested, new DependencyInfo (DependencyKind.NestedType, type));
 			}
 
-			Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
+			MarkTypeVisibleToReflection (type, type, reason, ScopeStack.CurrentScope.Origin);
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 			MarkTypeSpecialCustomAttributes (type);
 
@@ -386,26 +387,27 @@ namespace Mono.Linker.Steps
 
 			if (type.HasFields) {
 				foreach (FieldDefinition field in type.Fields) {
-					MarkField (field, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
+					MarkFieldVisibleToReflection (field, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 
 			if (type.HasMethods) {
 				foreach (MethodDefinition method in type.Methods) {
-					Annotations.SetAction (method, MethodAction.ForceParse);
-					MarkMethod (method, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
+					if (IsFullyPreservedAction (Annotations.GetAction (type.Module.Assembly)))
+						Annotations.SetAction (method, MethodAction.ForceParse);
+					MarkMethodVisibleToReflection (method, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 
 			if (type.HasProperties) {
 				foreach (var property in type.Properties) {
-					MarkProperty (property, new DependencyInfo (DependencyKind.MemberOfType, type));
+					MarkPropertyVisibleToReflection (property, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 
 			if (type.HasEvents) {
 				foreach (var ev in type.Events) {
-					MarkEvent (ev, new DependencyInfo (DependencyKind.MemberOfType, type));
+					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 		}
@@ -1422,6 +1424,8 @@ namespace Mono.Linker.Steps
 					MarkEntireAssembly (assembly);
 				}
 				return;
+			} else if (Annotations.IsRootAssembly (assembly)) {
+				MarkEntireAssembly (assembly);
 			}
 
 			ProcessModuleType (assembly);
@@ -1805,7 +1809,7 @@ namespace Mono.Linker.Steps
 			}
 
 			var parent = field.DeclaringType;
-			if (!Annotations.HasPreservedStaticCtor (parent)) {
+			if (field.IsStatic && !Annotations.HasPreservedStaticCtor (parent)) {
 				var cctorReason = reason.Kind switch {
 					// Report an edge directly from the method accessing the field to the static ctor it triggers
 					DependencyKind.FieldAccess => new DependencyInfo (DependencyKind.TriggersCctorThroughFieldAccess, reason.Source),
@@ -2033,7 +2037,9 @@ namespace Mono.Linker.Steps
 				// will call MarkType on the attribute type itself).
 				// If for some reason we do keep the attribute type (could be because of previous reference which would cause IL2045
 				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
-				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type))
+				// Also don't warn when the type is marked due to an assembly being rooted.
+				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
+					reason.Kind is not DependencyKind.TypeInAssembly)
 					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
 			}
 
@@ -2265,70 +2271,80 @@ namespace Mono.Linker.Steps
 		void MarkTypeWithDebuggerDisplayAttribute (TypeDefinition type, CustomAttribute attribute)
 		{
 			if (Context.KeepMembersForDebugger) {
-
 				// Members referenced by the DebuggerDisplayAttribute are kept even if the attribute may not be.
 				// Record a logical dependency on the attribute so that we can blame it for the kept members below.
 				Tracer.AddDirectDependency (attribute, new DependencyInfo (DependencyKind.CustomAttribute, type), marked: false);
 
-				string displayString = (string) attribute.ConstructorArguments[0].Value;
-				if (string.IsNullOrEmpty (displayString))
-					return;
-
-				foreach (Match match in DebuggerDisplayAttributeValueRegex ().Matches (displayString)) {
-					// Remove '{' and '}'
-					string realMatch = match.Value.Substring (1, match.Value.Length - 2);
-
-					// Remove ",nq" suffix if present
-					// (it asks the expression evaluator to remove the quotes when displaying the final value)
-					if (ContainsNqSuffixRegex ().IsMatch (realMatch)) {
-						realMatch = realMatch.Substring (0, realMatch.LastIndexOf (','));
-					}
-
-					if (realMatch.EndsWith ("()")) {
-						string methodName = realMatch.Substring (0, realMatch.Length - 2);
-
-						// It's a call to a method on some member.  Handling this scenario robustly would be complicated and a decent bit of work.
-						//
-						// We could implement support for this at some point, but for now it's important to make sure at least we don't crash trying to find some
-						// method on the current type when it exists on some other type
-						if (methodName.Contains ('.'))
-							continue;
-
-						MethodDefinition? method = GetMethodWithNoParameters (type, methodName);
-						if (method != null) {
-							MarkMethod (method, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
-							continue;
-						}
-					} else {
-						FieldDefinition? field = GetField (type, realMatch);
-						if (field != null) {
-							MarkField (field, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
-							continue;
-						}
-
-						PropertyDefinition? property = GetProperty (type, realMatch);
-						if (property != null) {
-							if (property.GetMethod != null) {
-								MarkMethod (property.GetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
-							}
-							if (property.SetMethod != null) {
-								MarkMethod (property.SetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
-							}
-							continue;
+				MarkTypeWithDebuggerDisplayAttributeValue(type, attribute, (string) attribute.ConstructorArguments[0].Value);
+				if (attribute.HasProperties) {
+					foreach (var  property in attribute.Properties) {
+						if (property.Name is "Name" or "Type") {
+							MarkTypeWithDebuggerDisplayAttributeValue (type, attribute, (string) property.Argument.Value);
 						}
 					}
-
-					while (true) {
-						// Currently if we don't understand the DebuggerDisplayAttribute we mark everything on the type
-						// This can be improved: dotnet/linker/issues/1873
-						MarkMethods (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute));
-						MarkFields (type, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
-						if (Context.TryResolve (type.BaseType) is not TypeDefinition baseType)
-							break;
-						type = baseType;
-					}
-					return;
 				}
+			}
+		}
+
+		void MarkTypeWithDebuggerDisplayAttributeValue (TypeDefinition type, CustomAttribute attribute, string? displayString)
+		{
+			if (string.IsNullOrEmpty (displayString))
+				return;
+
+			foreach (Match match in DebuggerDisplayAttributeValueRegex ().Matches (displayString)) {
+				// Remove '{' and '}'
+				string realMatch = match.Value.Substring (1, match.Value.Length - 2);
+
+				// Remove ",nq" suffix if present
+				// (it asks the expression evaluator to remove the quotes when displaying the final value)
+				if (ContainsNqSuffixRegex ().IsMatch (realMatch)) {
+					realMatch = realMatch.Substring (0, realMatch.LastIndexOf (','));
+				}
+
+				if (realMatch.EndsWith ("()")) {
+					string methodName = realMatch.Substring (0, realMatch.Length - 2);
+
+					// It's a call to a method on some member.  Handling this scenario robustly would be complicated and a decent bit of work.
+					//
+					// We could implement support for this at some point, but for now it's important to make sure at least we don't crash trying to find some
+					// method on the current type when it exists on some other type
+					if (methodName.Contains ('.'))
+						continue;
+
+					MethodDefinition? method = GetMethodWithNoParameters (type, methodName);
+					if (method != null) {
+						MarkMethod (method, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
+						continue;
+					}
+				} else {
+					FieldDefinition? field = GetField (type, realMatch);
+					if (field != null) {
+						MarkField (field, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
+						continue;
+					}
+
+					PropertyDefinition? property = GetProperty (type, realMatch);
+					if (property != null) {
+						if (property.GetMethod != null) {
+							MarkMethod (property.GetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
+						}
+						if (property.SetMethod != null) {
+							MarkMethod (property.SetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
+						}
+						continue;
+					}
+				}
+
+				while (true) {
+					// Currently if we don't understand the DebuggerDisplayAttribute we mark everything on the type
+					// This can be improved: dotnet/linker/issues/1873
+					MarkMethods (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute));
+					MarkFields (type, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
+					if (Context.TryResolve (type.BaseType) is not TypeDefinition baseType)
+						break;
+					type = baseType;
+				}
+				return;
 			}
 		}
 
@@ -3318,9 +3334,21 @@ namespace Mono.Linker.Steps
 			if (type?.HasFields != true)
 				return;
 
-			// keep fields for types with explicit layout and for enums
-			if (!type.IsAutoLayout || type.IsEnum)
+			// keep fields for types with explicit layout, for enums and for InlineArray types
+			if (!type.IsAutoLayout || type.IsEnum || TypeIsInlineArrayType(type))
 				MarkFields (type, includeStatic: type.IsEnum, reason: new DependencyInfo (DependencyKind.MemberOfType, type));
+		}
+
+		static bool TypeIsInlineArrayType(TypeDefinition type)
+		{
+			if (!type.IsValueType)
+				return false;
+
+			foreach (var customAttribute in type.CustomAttributes)
+				if (customAttribute.AttributeType.IsTypeOf ("System.Runtime.CompilerServices", "InlineArrayAttribute"))
+					return true;
+
+			return false;
 		}
 
 		protected virtual void MarkRequirementsForInstantiatedTypes (TypeDefinition type)
@@ -3537,7 +3565,8 @@ namespace Mono.Linker.Steps
 
 		protected internal void MarkProperty (PropertyDefinition prop, in DependencyInfo reason)
 		{
-			Tracer.AddDirectDependency (prop, reason, marked: false);
+			if (!Annotations.MarkProcessed (prop, reason))
+				return;
 
 			using var propertyScope = ScopeStack.PushScope (new MessageOrigin (prop));
 
@@ -3548,8 +3577,8 @@ namespace Mono.Linker.Steps
 
 		protected internal virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason)
 		{
-			// Record the event without marking it in Annotations.
-			Tracer.AddDirectDependency (evt, reason, marked: false);
+			if (!Annotations.MarkProcessed (evt, reason))
+				return;
 
 			using var eventScope = ScopeStack.PushScope (new MessageOrigin (evt));
 

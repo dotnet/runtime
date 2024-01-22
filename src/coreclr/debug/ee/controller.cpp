@@ -3202,7 +3202,7 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
     g_pEEInterface->MarkThreadForDebugStepping(thread, true);
     LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag marked thread for debug stepping\n"));
 
-    SetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread));
+    SetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread));
 }
 
 //
@@ -3239,7 +3239,7 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
 
     // Always need to unmark for stepping
     g_pEEInterface->MarkThreadForDebugStepping(thread, false);
-    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread));
+    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread));
 }
 
 void DebuggerController::EnableExceptionHook()
@@ -4724,43 +4724,6 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
 
         if (IsSingleStep(exception->ExceptionCode))
         {
-#ifndef TARGET_UNIX
-            // Check if the current IP is anywhere near the exception dispatcher logic.
-            // If it is, ignore the exception, as the real exception is coming next.
-            static FARPROC pExcepDispProc = NULL;
-
-            if (!pExcepDispProc)
-            {
-                HMODULE hNtDll = WszGetModuleHandle(W("ntdll.dll"));
-
-                if (hNtDll != NULL)
-                {
-                    pExcepDispProc = GetProcAddress(hNtDll, "KiUserExceptionDispatcher");
-
-                    if (!pExcepDispProc)
-                        pExcepDispProc = (FARPROC)(size_t)(-1);
-                }
-                else
-                    pExcepDispProc = (FARPROC)(size_t)(-1);
-            }
-
-            _ASSERTE(pExcepDispProc != NULL);
-
-            if ((size_t)pExcepDispProc != (size_t)(-1))
-            {
-                LPVOID pExcepDispEntryPoint = pExcepDispProc;
-
-                if ((size_t)GetIP(context) > (size_t)pExcepDispEntryPoint &&
-                    (size_t)GetIP(context) <= ((size_t)pExcepDispEntryPoint + MAX_INSTRUCTION_LENGTH * 2 + 1))
-                {
-                    LOG((LF_CORDB, LL_INFO10000,
-                         "Bypass instruction not redirected. Landed in exception dispatcher.\n"));
-
-                    return (TPR_IGNORE_AND_STOP);
-                }
-            }
-#endif // TARGET_UNIX
-
             // If the IP is close to the skip patch start, or if we were skipping over a call, then assume the IP needs
             // adjusting.
             if (m_instrAttrib.m_fIsCall ||
@@ -6178,6 +6141,18 @@ void DebuggerStepper::TrapStepNext(ControllerStackInfo *info)
 bool DebuggerStepper::IsInterestingFrame(FrameInfo * pFrame)
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifdef FEATURE_EH_FUNCLETS
+    // Ignore managed exception handling frames
+    if (pFrame->md != NULL)
+    {
+        MethodTable *pMT = pFrame->md->GetMethodTable();
+        if ((pMT == g_pEHClass) || (pMT == g_pExceptionServicesInternalCallsClass))
+        {
+            return false;
+        }
+    }
+#endif // FEATURE_EH_FUNCLETS
 
     return true;
 }

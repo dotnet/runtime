@@ -297,6 +297,7 @@ namespace System.Tests
         [InlineData(-1.41421356f, -1.0f, 0.0f)]     // value: -(sqrt(2))
         [InlineData(-1.12837917f, -1.0f, 0.0f)]     // value: -(2 / sqrt(pi))
         [InlineData(-1.0f, -1.0f, 0.0f)]
+#if NETFRAMEWORK
         [InlineData(-0.785398163f, 0.0f, 0.0f)]  // value: (pi / 4)
         [InlineData(-0.707106781f, 0.0f, 0.0f)]  // value: (1 / sqrt(2))
         [InlineData(-0.693147181f, 0.0f, 0.0f)]  // value: (ln(2))
@@ -304,6 +305,15 @@ namespace System.Tests
         [InlineData(-0.434294482f, 0.0f, 0.0f)]  // value: (log10(e))
         [InlineData(-0.318309886f, 0.0f, 0.0f)]  // value: (1 / pi)
         [InlineData(-0.0f, -0.0f, 0.0f)]
+#else
+        [InlineData(-0.785398163f, -0.0f, 0.0f)]  // value: (pi / 4)
+        [InlineData(-0.707106781f, -0.0f, 0.0f)]  // value: (1 / sqrt(2))
+        [InlineData(-0.693147181f, -0.0f, 0.0f)]  // value: (ln(2))
+        [InlineData(-0.636619772f, -0.0f, 0.0f)]  // value: (2 / pi)
+        [InlineData(-0.434294482f, -0.0f, 0.0f)]  // value: (log10(e))
+        [InlineData(-0.318309886f, -0.0f, 0.0f)]  // value: (1 / pi)
+        [InlineData(-0.0f, -0.0f, 0.0f)]
+#endif
         [InlineData(float.NaN, float.NaN, 0.0f)]
         [InlineData(0.0f, 0.0f, 0.0f)]
         [InlineData(0.318309886f, 1.0f, 0.0f)]     // value:  (1 / pi)
@@ -614,7 +624,11 @@ namespace System.Tests
         [InlineData(float.NaN, float.PositiveInfinity, float.NaN)]
         [InlineData(float.NaN, float.NegativeInfinity, float.NaN)]
         [InlineData(-0.0f, 0.0f, 0.0f)]
+#if NETFRAMEWORK
         [InlineData(0.0f, -0.0f, -0.0f)]
+#else
+        [InlineData(0.0f, -0.0f, 0.0f)]
+#endif
         [InlineData(2.0f, -3.0f, 2.0f)]
         [InlineData(-3.0f, 2.0f, 2.0f)]
         [InlineData(3.0f, -2.0f, 3.0f)]
@@ -636,7 +650,11 @@ namespace System.Tests
         [InlineData(float.NegativeInfinity, float.NaN, float.NaN)]
         [InlineData(float.NaN, float.PositiveInfinity, float.NaN)]
         [InlineData(float.NaN, float.NegativeInfinity, float.NaN)]
+#if NETFRAMEWORK
         [InlineData(-0.0f, 0.0f, 0.0f)]
+#else
+        [InlineData(-0.0f, 0.0f, -0.0f)]
+#endif
         [InlineData(0.0f, -0.0f, -0.0f)]
         [InlineData(2.0f, -3.0f, -3.0f)]
         [InlineData(-3.0f, 2.0f, -3.0f)]

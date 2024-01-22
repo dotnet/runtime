@@ -37,18 +37,10 @@ try {
         })
         .withModuleConfig({
             printErr: () => undefined,
-            print: () => undefined,
-            onConfigLoaded: (config) => {
-                if (window.parent != window) {
-                    window.parent.resolveAppStartEvent("onConfigLoaded");
-                }
-            }
+            print: () => undefined
         })
         .create();
 
-    if (window.parent != window) {
-        window.parent.resolveAppStartEvent("onDotnetReady");
-    }
     await frameApp.init(runtime);
 }
 catch (err) {

@@ -283,7 +283,7 @@ MONO_RESTORE_WARNING
 	ARM_STR_IMM (code, ARMREG_IP, ARMREG_SP, 4);
 	/* Make the call */
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arm_start_gsharedvt_call));
+		ji = mono_patch_info_list_prepend (ji, GPTRDIFF_TO_INT (code - buf), MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arm_start_gsharedvt_call));
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)code = NULL;
@@ -543,9 +543,9 @@ MONO_RESTORE_WARNING
 	g_assert ((code - buf) < buf_len);
 
 	if (info)
-		*info = mono_tramp_info_create ("gsharedvt_trampoline", buf, code - buf, ji, unwind_ops);
+		*info = mono_tramp_info_create ("gsharedvt_trampoline", buf, GPTRDIFF_TO_UINT32 (code - buf), ji, unwind_ops);
 
-	mono_arch_flush_icache (buf, code - buf);
+	mono_arch_flush_icache (buf, GPTRDIFF_TO_INT (code - buf));
 	return buf;
 }
 

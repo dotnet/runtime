@@ -3,7 +3,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <!-- Checked in test binaries for FileVersionInfoTest -->
@@ -28,7 +27,7 @@
   <ItemGroup>
     <Compile Include="FileVersionInfoTest.cs" />
     <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs" 
+    <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs"
              Link="Common\System\IO\ReparsePointUtilities.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

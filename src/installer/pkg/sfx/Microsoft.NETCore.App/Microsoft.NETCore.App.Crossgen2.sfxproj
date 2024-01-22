@@ -28,6 +28,13 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference
+      Include="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_publish.csproj"
+      OutputItemType="_RawCrossgenPublishFiles"
+      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
   <Target Name="PublishCrossgen"
           BeforeTargets="GetFilesToPackage">
 

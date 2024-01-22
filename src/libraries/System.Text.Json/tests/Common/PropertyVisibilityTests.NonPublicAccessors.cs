@@ -210,7 +210,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task HonorNamingPolicy()
         {
-            var options = new JsonSerializerOptions { PropertyNamingPolicy = new SimpleSnakeCasePolicy() };
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
 
             string json = @"{""my_string"":""Hello""}";
             Assert.Null((await Serializer.DeserializeWrapper<MyStruct_WithNonPublicAccessors_WithTypeAttribute>(json)).MyString);

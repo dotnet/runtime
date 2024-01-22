@@ -1,8 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Converters;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Nodes
 {
@@ -131,19 +132,13 @@ namespace System.Text.Json.Nodes
                 return "$";
             }
 
-            var path = new List<string>();
-            GetPath(path, null);
-
-            var sb = new StringBuilder("$");
-            for (int i = path.Count - 1; i >= 0; i--)
-            {
-                sb.Append(path[i]);
-            }
-
-            return sb.ToString();
+            var path = new ValueStringBuilder(stackalloc char[JsonConstants.StackallocCharThreshold]);
+            path.Append('$');
+            GetPath(ref path, null);
+            return path.ToString();
         }
 
-        internal abstract void GetPath(List<string> path, JsonNode? child);
+        internal abstract void GetPath(ref ValueStringBuilder path, JsonNode? child);
 
         /// <summary>
         ///   Gets the root <see cref="JsonNode"/>.
@@ -242,6 +237,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         /// Creates a new instance of the <see cref="JsonNode"/>. All children nodes are recursively cloned.
         /// </summary>
+        /// <returns>A new cloned instance of the current node.</returns>
         public JsonNode DeepClone() => DeepCloneCore();
 
         internal abstract JsonNode DeepCloneCore();
@@ -316,17 +312,16 @@ namespace System.Text.Json.Nodes
         [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void ReplaceWith<T>(T value)
         {
+            JsonNode? node;
             switch (_parent)
             {
-                case null:
-                    return;
                 case JsonObject jsonObject:
-                    JsonValue? jsonValue = JsonValue.Create(value);
-                    jsonObject.SetItem(GetPropertyName(), jsonValue);
+                    node = ConvertFromValue(value);
+                    jsonObject.SetItem(GetPropertyName(), node);
                     return;
                 case JsonArray jsonArray:
-                    JsonValue? jValue = JsonValue.Create(value);
-                    jsonArray.SetItem(GetElementIndex(), jValue);
+                    node = ConvertFromValue(value);
+                    jsonArray.SetItem(GetElementIndex(), node);
                     return;
             }
         }
@@ -350,6 +345,34 @@ namespace System.Text.Json.Nodes
             }
 
             Parent = parent;
+        }
+
+        /// <summary>
+        /// Adaptation of the equivalent JsonValue.Create factory method extended
+        /// to support arbitrary <see cref="JsonElement"/> and <see cref="JsonNode"/> values.
+        /// TODO consider making public cf. https://github.com/dotnet/runtime/issues/70427
+        /// </summary>
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        internal static JsonNode? ConvertFromValue<T>(T? value, JsonNodeOptions? options = null)
+        {
+            if (value is null)
+            {
+                return null;
+            }
+
+            if (value is JsonNode node)
+            {
+                return node;
+            }
+
+            if (value is JsonElement element)
+            {
+                return JsonNodeConverter.Create(element, options);
+            }
+
+            var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
+            return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
         }
     }
 }

@@ -10,16 +10,9 @@ using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
-    internal sealed class StructAsHResultMarshallerFactory : IMarshallingGeneratorFactory
+    internal sealed class StructAsHResultMarshallerFactory : IMarshallingGeneratorResolver
     {
         private static readonly Marshaller s_marshaller = new();
-
-        private readonly IMarshallingGeneratorFactory _inner;
-
-        public StructAsHResultMarshallerFactory(IMarshallingGeneratorFactory inner)
-        {
-            _inner = inner;
-        }
 
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
@@ -29,7 +22,7 @@ namespace Microsoft.Interop
                 return ResolvedGenerator.Resolved(s_marshaller);
             }
 
-            return _inner.Create(info, context);
+            return ResolvedGenerator.UnresolvedGenerator;
         }
 
         private sealed class Marshaller : IMarshallingGenerator
@@ -97,8 +90,6 @@ namespace Microsoft.Interop
 
                 return ValueBoundaryBehavior.NativeIdentifier;
             }
-
-            public bool IsSupported(TargetFramework target, Version version) => target == TargetFramework.Net && version.Major >= 8;
 
             public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
                 => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);

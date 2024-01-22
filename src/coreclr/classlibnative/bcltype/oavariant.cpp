@@ -4,13 +4,6 @@
 // File: OAVariant.cpp
 //
 
-//
-// Purpose: Wrapper for Ole Automation compatible math ops.
-// Calls through to OleAut.dll
-//
-
-//
-
 #include <common.h>
 
 #ifdef FEATURE_COMINTEROP
@@ -86,10 +79,10 @@ static const BYTE VTtoCVTable[] =
 };
 
 // Need translations from CVType to VARENUM and vice versa.  CVTypes
-// is defined in COMVariant.h.  VARENUM is defined in OleAut's variant.h
+// is defined in olevariant.h.  VARENUM is defined in OleAut's variant.h
 // Assumption here is we will only deal with VARIANTs and not other OLE
 // constructs such as property sets or safe arrays.
-VARENUM COMOAVariant::CVtoVT(const CVTypes cv)
+static VARENUM CVtoVT(const CVTypes cv)
 {
     CONTRACTL
     {
@@ -107,8 +100,8 @@ VARENUM COMOAVariant::CVtoVT(const CVTypes cv)
 }
 
 // Need translations from CVType to VARENUM and vice versa.  CVTypes
-// is defined in COMVariant.h.  VARENUM is defined in OleAut's variant.h
-CVTypes COMOAVariant::VTtoCV(const VARENUM vt)
+// is defined in olevariant.h.  VARENUM is defined in OleAut's variant.h
+static CVTypes VTtoCV(const VARENUM vt)
 {
     CONTRACTL
     {
@@ -129,7 +122,7 @@ CVTypes COMOAVariant::VTtoCV(const VARENUM vt)
 // Converts a COM+ Variant to an OleAut Variant.  Returns true if
 // there was a native object allocated by this method that must be freed,
 // else false.
-bool COMOAVariant::ToOAVariant(const VariantData * const var, VARIANT * oa)
+static bool ToOAVariant(VariantData const* src, VARIANT* oa)
 {
     CONTRACTL
     {
@@ -137,7 +130,7 @@ bool COMOAVariant::ToOAVariant(const VariantData * const var, VARIANT * oa)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(var));
+        PRECONDITION(CheckPointer(src));
         PRECONDITION(CheckPointer(oa));
     }
     CONTRACTL_END;
@@ -152,29 +145,29 @@ bool COMOAVariant::ToOAVariant(const VariantData * const var, VARIANT * oa)
     // Set the data field of the OA Variant to be either the object reference
     // or the data (ie int) that it needs.
 
-    switch (var->GetType())
+    switch (src->GetType())
     {
         case CV_STRING:
-            if (var->GetObjRef() == NULL)
+            if (src->GetObjRef() == NULL)
             {
                 V_BSTR(oa) = NULL;
-                V_VT(oa) = static_cast<VARTYPE>(CVtoVT(var->GetType()));
+                V_VT(oa) = static_cast<VARTYPE>(CVtoVT(src->GetType()));
 
                 // OA perf feature: VarClear calls SysFreeString(null), which access violates.
                 return false;
             }
 
-            ((STRINGREF) (var->GetObjRef()))->RefInterpretGetStringValuesDangerousForGC(&chars, &strLen);
+            ((STRINGREF) (src->GetObjRef()))->RefInterpretGetStringValuesDangerousForGC(&chars, &strLen);
             V_BSTR(oa) = SysAllocStringLen(chars, strLen);
             if (V_BSTR(oa) == NULL)
                 COMPlusThrowOM();
 
-            V_VT(oa) = static_cast<VARTYPE>(CVtoVT(var->GetType()));
+            V_VT(oa) = static_cast<VARTYPE>(CVtoVT(src->GetType()));
 
             return true;
 
         case CV_CHAR:
-            chars = (WCHAR*) var->GetData();
+            chars = (WCHAR*)src->GetData();
             V_BSTR(oa) = SysAllocStringLen(chars, 1);
             if (V_BSTR(oa) == NULL)
                 COMPlusThrowOM();
@@ -185,18 +178,18 @@ bool COMOAVariant::ToOAVariant(const VariantData * const var, VARIANT * oa)
             return true;
 
         case CV_DATETIME:
-            V_DATE(oa) = COMDateTime::TicksToDoubleDate(var->GetDataAsInt64());
-            V_VT(oa) = static_cast<VARTYPE>(CVtoVT(var->GetType()));
+            V_DATE(oa) = COMDateTime::TicksToDoubleDate(src->GetDataAsInt64());
+            V_VT(oa) = static_cast<VARTYPE>(CVtoVT(src->GetType()));
            return false;
 
         case CV_BOOLEAN:
-            V_BOOL(oa) = (var->GetDataAsInt64()==0 ? VARIANT_FALSE : VARIANT_TRUE);
-            V_VT(oa) = static_cast<VARTYPE>(CVtoVT(var->GetType()));
+            V_BOOL(oa) = (src->GetDataAsInt64()==0 ? VARIANT_FALSE : VARIANT_TRUE);
+            V_VT(oa) = static_cast<VARTYPE>(CVtoVT(src->GetType()));
             return false;
 
         case CV_DECIMAL:
         {
-            OBJECTREF obj = var->GetObjRef();
+            OBJECTREF obj = src->GetObjRef();
             DECIMAL * d = (DECIMAL*) obj->GetData();
             // DECIMALs and Variants are the same size.  Variants are a union between
             // all the normal Variant fields (vt, bval, etc) and a Decimal.  Decimals
@@ -209,7 +202,7 @@ bool COMOAVariant::ToOAVariant(const VariantData * const var, VARIANT * oa)
 
         case CV_OBJECT:
         {
-            OBJECTREF obj = var->GetObjRef();
+            OBJECTREF obj = src->GetObjRef();
             GCPROTECT_BEGIN(obj)
             {
                 IUnknown *pUnk = NULL;
@@ -225,15 +218,15 @@ bool COMOAVariant::ToOAVariant(const VariantData * const var, VARIANT * oa)
         }
 
         default:
-            *dest = var->GetDataAsInt64();
-            V_VT(oa) = static_cast<VARTYPE>(CVtoVT(var->GetType()));
+            *dest = src->GetDataAsInt64();
+            V_VT(oa) = static_cast<VARTYPE>(CVtoVT(src->GetType()));
             return false;
     }
 }
 
 // Converts an OleAut Variant into a COM+ Variant.
-// NOte that we pass the VariantData Byref so that if GC happens, 'var' gets updated
-void COMOAVariant::FromOAVariant(const VARIANT * const oa, VariantData * const& var)
+// Note that we pass the VariantData Byref so that if GC happens, 'var' gets updated
+static void FromOAVariant(VARIANT const* src, VariantData*& var)
 {
     CONTRACTL
     {
@@ -241,7 +234,7 @@ void COMOAVariant::FromOAVariant(const VARIANT * const oa, VariantData * const& 
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(oa));
+        PRECONDITION(CheckPointer(src));
     }
     CONTRACTL_END;
 
@@ -249,7 +242,7 @@ void COMOAVariant::FromOAVariant(const VARIANT * const oa, VariantData * const& 
     // the stack and we only want valid state data in there.
     memset(var, 0, sizeof(VariantData));
 
-    CVTypes type = VTtoCV((VARENUM) V_VT(oa));
+    CVTypes type = VTtoCV((VARENUM) V_VT(src));
     var->SetType(type);
 
     switch (type)
@@ -259,18 +252,18 @@ void COMOAVariant::FromOAVariant(const VARIANT * const oa, VariantData * const& 
             // BSTRs have an int with the string buffer length (not the string length)
             // followed by the data.  The pointer to the BSTR points to the start of the
             // characters, NOT the start of the BSTR.
-            WCHAR * chars = V_BSTR(oa);
-            int strLen = SysStringLen(V_BSTR(oa));
+            WCHAR* chars = V_BSTR(src);
+            int strLen = SysStringLen(V_BSTR(src));
             STRINGREF str = StringObject::NewString(chars, strLen);
             var->SetObjRef((OBJECTREF)str);
             break;
         }
         case CV_DATETIME:
-            var->SetDataAsInt64(COMDateTime::DoubleDateToTicks(V_DATE(oa)));
+            var->SetDataAsInt64(COMDateTime::DoubleDateToTicks(V_DATE(src)));
             break;
 
         case CV_BOOLEAN:
-            var->SetDataAsInt64(V_BOOL(oa)==VARIANT_FALSE ? 0 : 1);
+            var->SetDataAsInt64(V_BOOL(src) == VARIANT_FALSE ? FALSE : TRUE);
             break;
 
         case CV_DECIMAL:
@@ -279,37 +272,35 @@ void COMOAVariant::FromOAVariant(const VARIANT * const oa, VariantData * const& 
             _ASSERTE(pDecimalMT);
             OBJECTREF pDecimalRef = AllocateObject(pDecimalMT);
 
-            *(DECIMAL *) pDecimalRef->GetData() = V_DECIMAL(oa);
+            *(DECIMAL *) pDecimalRef->GetData() = V_DECIMAL(src);
             var->SetObjRef(pDecimalRef);
-                break;
+            break;
         }
-
 
         // All types less than 4 bytes need an explicit cast from their original
         // type to be sign extended to 8 bytes.  This makes Variant's ToInt32
         // function simpler for these types.
         case CV_I1:
-            var->SetDataAsInt64(V_I1(oa));
+            var->SetDataAsInt64(V_I1(src));
             break;
 
         case CV_U1:
-            var->SetDataAsInt64(V_UI1(oa));
+            var->SetDataAsInt64(V_UI1(src));
             break;
 
         case CV_I2:
-            var->SetDataAsInt64(V_I2(oa));
+            var->SetDataAsInt64(V_I2(src));
             break;
 
         case CV_U2:
-            var->SetDataAsInt64(V_UI2(oa));
+            var->SetDataAsInt64(V_UI2(src));
             break;
 
         case CV_EMPTY:
         case CV_NULL:
             // Must set up the Variant's m_or to the appropriate classes.
             // Note that OleAut doesn't have any VT_MISSING.
-            VariantData::NewVariant(var, type, NULL
-                                                DEBUG_ARG(TRUE));
+            VariantData::NewVariant(var, type, NULL DEBUG_ARG(TRUE));
             break;
 
         case CV_OBJECT:
@@ -317,19 +308,20 @@ void COMOAVariant::FromOAVariant(const VARIANT * const oa, VariantData * const& 
             // Convert the IUnknown pointer to an OBJECTREF.
             OBJECTREF oref = NULL;
             GCPROTECT_BEGIN(oref);
-            GetObjectRefFromComIP(&oref, V_UNKNOWN(oa));
+            GetObjectRefFromComIP(&oref, V_UNKNOWN(src));
             var->SetObjRef(oref);
             GCPROTECT_END();
             break;
         }
         default:
             // Copy all the bits there, and make sure we don't do any float to int conversions.
-            void * src = (void*) &(V_UI1(oa));
-            var->SetData(src);
+            void* data = (void*)&(V_UI1(src));
+            var->SetData(data);
+            break;
     }
 }
 
-void COMOAVariant::OAFailed(const HRESULT hr)
+static void OAFailed(HRESULT hr)
 {
     CONTRACTL
     {
@@ -359,7 +351,6 @@ void COMOAVariant::OAFailed(const HRESULT hr)
 
         case E_INVALIDARG:
             COMPlusThrow(kArgumentException);
-            break;
 
         default:
             _ASSERTE(!"Unrecognized HResult - OAVariantLib routine failed in an unexpected way!");
@@ -367,43 +358,45 @@ void COMOAVariant::OAFailed(const HRESULT hr)
     }
 }
 
-FCIMPL6(void, COMOAVariant::ChangeTypeEx, VariantData *result, VariantData *op, LCID lcid, void *targetType, int cvType, INT16 flags)
+extern "C" void QCALLTYPE OAVariant_ChangeType(VariantData* result, VariantData* source, LCID lcid, void* targetType, int cvType, INT16 flags)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(CheckPointer(result));
     }
     CONTRACTL_END;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
-    GCPROTECT_BEGININTERIOR (result);
+    BEGIN_QCALL;
 
-    BOOL fConverted = FALSE;
+    GCX_COOP();
+
+    bool converted = false;
 
     TypeHandle thTarget = TypeHandle::FromPtr(targetType);
     if (cvType == CV_OBJECT && IsTypeRefOrDef(g_ColorClassName, thTarget.GetModule(), thTarget.GetCl()))
     {
-        if (op->GetType() == CV_I4 || op->GetType() == CV_U4)
+        CVTypes sourceType = source->GetType();
+        if (sourceType == CV_I4 || sourceType == CV_U4)
         {
             // Int32/UInt32 can be converted to System.Drawing.Color
             SYSTEMCOLOR SystemColor;
-            ConvertOleColorToSystemColor(op->GetDataAsUInt32(), &SystemColor);
+            ConvertOleColorToSystemColor(source->GetDataAsUInt32(), &SystemColor);
 
             result->SetObjRef(thTarget.AsMethodTable()->Box(&SystemColor));
             result->SetType(CV_OBJECT);
 
-            fConverted = TRUE;
+            converted = true;
         }
     }
 
-    if (!fConverted)
+    if (!converted)
     {
         VariantHolder ret;
         VariantHolder vOp;
 
         VARENUM vt = CVtoVT((CVTypes) cvType);
-        ToOAVariant(op, &vOp);
+        ToOAVariant(source, &vOp);
 
         HRESULT hr = SafeVariantChangeTypeEx(&ret, &vOp, lcid, flags, static_cast<VARTYPE>(vt));
 
@@ -421,9 +414,7 @@ FCIMPL6(void, COMOAVariant::ChangeTypeEx, VariantData *result, VariantData *op, 
         }
     }
 
-    GCPROTECT_END ();
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 #endif // FEATURE_COMINTEROP

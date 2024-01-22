@@ -313,7 +313,7 @@ namespace Tests.System
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("RunDelayTests:    > FAILED.  Unexpected exception on WaitAll(simple tasks): {0}", e));
+                Assert.Fail(string.Format("RunDelayTests:    > FAILED.  Unexpected exception on WaitAll(simple tasks): {0}", e));
             }
 
             Assert.True(task1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Expected Delay(TimeSpan(0), timeProvider) to run to completion");
@@ -357,6 +357,12 @@ namespace Tests.System
             tcs4.SetResult(42);
             Assert.Equal(42, await task4);
 
+            var tcs5 = new TaskCompletionSource<bool>();
+            await Assert.ThrowsAsync<TimeoutException>(() => taskFactory.WaitAsync(tcs5.Task, TimeSpan.Zero, provider, cts.Token));
+
+            cts.Cancel();
+            await Assert.ThrowsAsync<TaskCanceledException>(() => taskFactory.WaitAsync(tcs5.Task, TimeSpan.FromMilliseconds(10), provider, cts.Token));
+
             using CancellationTokenSource cts1 = new CancellationTokenSource();
             Task task5 = Task.Run(() => { while (!cts1.Token.IsCancellationRequested) { Thread.Sleep(10); } });
             await Assert.ThrowsAsync<TimeoutException>(() => taskFactory.WaitAsync(task5, TimeSpan.FromMilliseconds(10), provider));
@@ -366,8 +372,8 @@ namespace Tests.System
             using CancellationTokenSource cts2 = new CancellationTokenSource();
             Task task6 = Task.Run(() => { while (!cts2.Token.IsCancellationRequested) { Thread.Sleep(10); } });
             await Assert.ThrowsAsync<TimeoutException>(() => taskFactory.WaitAsync(task6, TimeSpan.FromMilliseconds(10), provider, cts2.Token));
-            cts1.Cancel();
-            await task5;
+            cts2.Cancel();
+            await task6;
 
             using CancellationTokenSource cts3 = new CancellationTokenSource();
             Task<int> task7 = Task<int>.Run(() => { while (!cts3.Token.IsCancellationRequested) { Thread.Sleep(10); } return 100; });

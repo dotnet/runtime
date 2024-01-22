@@ -298,7 +298,7 @@ inline void LogCallstackForLogWorker(Thread* pThread)
     {
         WordAt.Insert(WordAt.Begin(), W("   "));
     }
-    WordAt += W(" ");
+    WordAt.Append(W(" "));
 
     CallStackLogger logger;
 
@@ -484,8 +484,10 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
 
                 // Format the string
                 InlineSString<80> ssMessage;
-                ssMessage.FormatMessage(FORMAT_MESSAGE_FROM_STRING, W("at IP 0x%1 (0x%2) with exit code 0x%3."), 0, 0, addressString, runtimeBaseAddressString,
-                    exitCodeString);
+                ssMessage.FormatMessage(FORMAT_MESSAGE_FROM_STRING, W("at IP 0x%1 (0x%2) with exit code 0x%3."), 0, 0,
+                    SString{ SString::Literal, addressString },
+                    SString{ SString::Literal, runtimeBaseAddressString },
+                    SString{ SString::Literal, exitCodeString });
                 reporter.AddDescription(ssMessage);
             }
 
@@ -624,7 +626,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         // 2. In native code with no explicit frame above the topmost managed frame
         // 3. In native code with a explicit frame(s) above the topmost managed frame
         // The FaultingExceptionFrame's context needs to point to the topmost managed code frame except for the case 3.
-        // In that case, it needs to point to the actual frame where the stack overflow happened, otherwise the stack 
+        // In that case, it needs to point to the actual frame where the stack overflow happened, otherwise the stack
         // walker would skip the explicit frame(s) and misbehave.
         Thread *pThread = GetThreadNULLOk();
         if (pThread)

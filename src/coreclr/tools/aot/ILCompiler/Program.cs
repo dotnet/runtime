@@ -20,6 +20,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Dataflow;
+using ILCompiler.DependencyAnalysis;
 using ILLink.Shared;
 
 using Debug = System.Diagnostics.Debug;
@@ -74,8 +75,18 @@ namespace ILCompiler
 
             ILProvider ilProvider = new NativeAotILProvider();
 
+            Dictionary<int, bool> warningsAsErrors = new Dictionary<int, bool>();
+            foreach (int warning in ProcessWarningCodes(Get(_command.WarningsAsErrorsEnable)))
+            {
+                warningsAsErrors[warning] = true;
+            }
+            foreach (int warning in ProcessWarningCodes(Get(_command.WarningsAsErrorsDisable)))
+            {
+                warningsAsErrors[warning] = false;
+            }
             var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
-                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
+                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories,
+                Get(_command.TreatWarningsAsErrors), warningsAsErrors);
 
             // NativeAOT is full AOT and its pre-compiled methods can not be
             // thrown away at runtime if they mismatch in required ISAs or
@@ -142,6 +153,11 @@ namespace ILCompiler
 
             if (typeSystemContext.InputFilePaths.Count == 0)
                 throw new CommandLineException("No input files specified");
+
+            ilProvider = new HardwareIntrinsicILProvider(
+                instructionSetSupport,
+                new ExternSymbolMappedField(typeSystemContext.GetWellKnownType(WellKnownType.Int32), "g_cpuFeatures"),
+                ilProvider);
 
             SecurityMitigationOptions securityMitigationOptions = 0;
             string guard = Get(_command.Guard);
@@ -430,7 +446,7 @@ namespace ILCompiler
             TypePreinit.TypePreinitializationPolicy preinitPolicy = preinitStatics ?
                 new TypePreinit.TypeLoaderAwarePreinitializationPolicy() : new TypePreinit.DisabledPreinitializationPolicy();
 
-            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy);
+            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy, new StaticReadOnlyFieldPolicy());
             builder
                 .UseILProvider(ilProvider)
                 .UsePreinitializationManager(preinitManager);
@@ -507,8 +523,11 @@ namespace ILCompiler
                 // has the whole program view.
                 if (preinitStatics)
                 {
-                    preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy());
-                    builder.UsePreinitializationManager(preinitManager);
+                    var readOnlyFieldPolicy = scanResults.GetReadOnlyFieldPolicy();
+                    preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy(),
+                        readOnlyFieldPolicy);
+                    builder.UsePreinitializationManager(preinitManager)
+                        .UseReadOnlyFieldPolicy(readOnlyFieldPolicy);
                 }
 
                 // If we have a scanner, we can inline threadstatics storage using the information we collected at scanning time.
@@ -565,11 +584,15 @@ namespace ILCompiler
             string exportsFile = Get(_command.ExportsFile);
             if (exportsFile != null)
             {
-                ExportsFileWriter defFileWriter = new ExportsFileWriter(typeSystemContext, exportsFile);
-                foreach (var compilationRoot in compilationRoots)
+                ExportsFileWriter defFileWriter = new ExportsFileWriter(typeSystemContext, exportsFile, Get(_command.ExportDynamicSymbols));
+
+                if (Get(_command.ExportUnmanagedEntryPoints))
                 {
-                    if (compilationRoot is UnmanagedEntryPointsRootProvider provider)
-                        defFileWriter.AddExportedMethods(provider.ExportedMethods);
+                    foreach (var compilationRoot in compilationRoots)
+                    {
+                        if (compilationRoot is UnmanagedEntryPointsRootProvider provider)
+                            defFileWriter.AddExportedMethods(provider.ExportedMethods);
+                    }
                 }
 
                 defFileWriter.EmitExportedMethods();
@@ -729,8 +752,7 @@ namespace ILCompiler
                 .UseVersion()
                 .UseExtendedHelp(ILCompilerRootCommand.GetExtendedHelp))
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableParseErrorReporting = true
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
             }.Invoke(args);
     }
 }

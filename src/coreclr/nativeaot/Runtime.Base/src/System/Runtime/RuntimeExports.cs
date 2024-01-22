@@ -6,8 +6,8 @@
 //
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 
@@ -30,8 +30,8 @@ namespace System.Runtime
                 !pEEType->IsInterface &&
                 !pEEType->IsArray &&
                 !pEEType->IsString &&
-                !pEEType->IsPointerType &&
-                !pEEType->IsFunctionPointerType &&
+                !pEEType->IsPointer &&
+                !pEEType->IsFunctionPointer &&
                 !pEEType->IsByRefLike;
             if (!isValid)
                 Debug.Assert(false);
@@ -164,20 +164,19 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhUnboxAny")]
-        public static unsafe void RhUnboxAny(object? o, ref byte data, EETypePtr pUnboxToEEType)
+        public static unsafe void RhUnboxAny(object? o, ref byte data, MethodTable* pUnboxToEEType)
         {
-            MethodTable* ptrUnboxToEEType = (MethodTable*)pUnboxToEEType.ToPointer();
-            if (ptrUnboxToEEType->IsValueType)
+            if (pUnboxToEEType->IsValueType)
             {
                 bool isValid = false;
 
-                if (ptrUnboxToEEType->IsNullable)
+                if (pUnboxToEEType->IsNullable)
                 {
-                    isValid = (o == null) || o.GetMethodTable() == ptrUnboxToEEType->NullableType;
+                    isValid = (o == null) || o.GetMethodTable() == pUnboxToEEType->NullableType;
                 }
                 else
                 {
-                    isValid = (o != null) && UnboxAnyTypeCompare(o.GetMethodTable(), ptrUnboxToEEType);
+                    isValid = (o != null) && UnboxAnyTypeCompare(o.GetMethodTable(), pUnboxToEEType);
                 }
 
                 if (!isValid)
@@ -187,16 +186,16 @@ namespace System.Runtime
 
                     ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
 
-                    throw ptrUnboxToEEType->GetClasslibException(exID);
+                    throw pUnboxToEEType->GetClasslibException(exID);
                 }
 
-                RhUnbox(o, ref data, ptrUnboxToEEType);
+                RhUnbox(o, ref data, pUnboxToEEType);
             }
             else
             {
-                if (o != null && (TypeCast.IsInstanceOfAny(ptrUnboxToEEType, o) == null))
+                if (o != null && (TypeCast.IsInstanceOfAny(pUnboxToEEType, o) == null))
                 {
-                    throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
+                    throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
                 }
 
                 Unsafe.As<byte, object?>(ref data) = o;
@@ -253,7 +252,7 @@ namespace System.Runtime
             Debug.Assert((pUnboxToEEType == null) || UnboxAnyTypeCompare(pEEType, pUnboxToEEType) || pUnboxToEEType->IsNullable);
             if (pUnboxToEEType != null && pUnboxToEEType->IsNullable)
             {
-                Debug.Assert(pUnboxToEEType->NullableType->IsEquivalentTo(pEEType));
+                Debug.Assert(pUnboxToEEType->NullableType == pEEType);
 
                 // Set the first field of the Nullable to true to indicate the value is present.
                 Unsafe.As<byte, bool>(ref data) = true;
@@ -288,7 +287,7 @@ namespace System.Runtime
 
 #pragma warning disable SYSLIB1054 // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib.
         [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern unsafe int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
 #pragma warning restore SYSLIB1054
 
@@ -356,7 +355,7 @@ namespace System.Runtime
                         return (IntPtr)(delegate*<MethodTable*, object>)&InternalCalls.RhpNewFast;
 
                 case RuntimeHelperKind.IsInst:
-                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
+                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointer)
                         return (IntPtr)(delegate*<MethodTable*, object, object?>)&TypeCast.IsInstanceOfAny;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfInterface;
@@ -364,7 +363,7 @@ namespace System.Runtime
                         return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfClass;
 
                 case RuntimeHelperKind.CastClass:
-                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
+                    if (pEEType->HasGenericVariance || pEEType->IsParameterizedType || pEEType->IsFunctionPointer)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastAny;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastInterface;

@@ -137,7 +137,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Regardless of the source generator we need to re-run the naming conflict resolution algorithm
             // at run time since it is possible that the naming policy or other configs can be different then.
-            JsonTypeInfo.PropertyHierarchyResolutionState state = new();
+            JsonTypeInfo.PropertyHierarchyResolutionState state = new(typeInfo.Options);
 
             foreach (JsonPropertyInfo jsonPropertyInfo in properties)
             {

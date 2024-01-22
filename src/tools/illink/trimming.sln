@@ -55,7 +55,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ILLink", "ILLink", "{FB2379
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ilc", "ilc", "{BC94A262-6D89-4432-AC11-22FE75FBC91F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Linker.Tests", "..\..\coreclr\tools\aot\Mono.Linker.Tests\Mono.Linker.Tests.csproj", "{CBB22C4F-0271-48A4-8301-27D0E4B26C02}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.Trimming.Tests", "..\..\coreclr\tools\aot\ILCompiler.Trimming.Tests\ILCompiler.Trimming.Tests.csproj", "{4604F088-6A78-4D8F-96AC-EE8F8301BA33}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -394,24 +394,24 @@ Global
 		{D3CC100A-D02B-492C-A072-FF0FA41B4A4A}.Release|x64.Build.0 = Release|x64
 		{D3CC100A-D02B-492C-A072-FF0FA41B4A4A}.Release|x86.ActiveCfg = Release|x86
 		{D3CC100A-D02B-492C-A072-FF0FA41B4A4A}.Release|x86.Build.0 = Release|x86
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Checked|Any CPU.ActiveCfg = Checked|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Checked|Any CPU.Build.0 = Checked|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Checked|x64.ActiveCfg = Checked|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Checked|x64.Build.0 = Checked|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Checked|x86.ActiveCfg = Checked|x86
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Checked|x86.Build.0 = Checked|x86
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Debug|Any CPU.Build.0 = Debug|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Debug|x64.ActiveCfg = Debug|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Debug|x64.Build.0 = Debug|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Debug|x86.ActiveCfg = Debug|x86
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Debug|x86.Build.0 = Debug|x86
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Release|Any CPU.ActiveCfg = Release|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Release|Any CPU.Build.0 = Release|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Release|x64.ActiveCfg = Release|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Release|x64.Build.0 = Release|x64
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Release|x86.ActiveCfg = Release|x86
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02}.Release|x86.Build.0 = Release|x86
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Checked|Any CPU.ActiveCfg = Checked|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Checked|Any CPU.Build.0 = Checked|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Checked|x64.ActiveCfg = Checked|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Checked|x64.Build.0 = Checked|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Checked|x86.ActiveCfg = Checked|x86
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Checked|x86.Build.0 = Checked|x86
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Debug|Any CPU.Build.0 = Debug|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Debug|x64.ActiveCfg = Debug|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Debug|x64.Build.0 = Debug|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Debug|x86.ActiveCfg = Debug|x86
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Debug|x86.Build.0 = Debug|x86
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Release|Any CPU.ActiveCfg = Release|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Release|Any CPU.Build.0 = Release|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Release|x64.ActiveCfg = Release|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Release|x64.Build.0 = Release|x64
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Release|x86.ActiveCfg = Release|x86
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -437,12 +437,14 @@ Global
 		{D3CC100A-D02B-492C-A072-FF0FA41B4A4A} = {9E9B5684-2EDC-4E8C-AED0-D1B78C0EE706}
 		{FB237949-3F88-4E16-A770-8D13E48B84AF} = {C2969923-7BAA-4FE4-853C-F670B0D3C6C8}
 		{BC94A262-6D89-4432-AC11-22FE75FBC91F} = {C2969923-7BAA-4FE4-853C-F670B0D3C6C8}
-		{CBB22C4F-0271-48A4-8301-27D0E4B26C02} = {BC94A262-6D89-4432-AC11-22FE75FBC91F}
+		{4604F088-6A78-4D8F-96AC-EE8F8301BA33} = {BC94A262-6D89-4432-AC11-22FE75FBC91F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E43A3901-42B0-48CA-BB36-5CD40A99A6EE}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		test\Trimming.Tests.Shared\Trimming.Tests.Shared.projitems*{400a1561-b6b6-482d-9e4c-3ddaede5bd07}*SharedItemsImports = 5
+		test\Trimming.Tests.Shared\Trimming.Tests.Shared.projitems*{4604f088-6a78-4d8f-96ac-ee8f8301ba33}*SharedItemsImports = 5
 		src\ILLink.Shared\ILLink.Shared.projitems*{6f771650-ec13-4fd5-909a-ec1a5d4fbc20}*SharedItemsImports = 5
 		src\ILLink.Shared\ILLink.Shared.projitems*{dd28e2b1-057b-4b4d-a04d-b2ebd9e76e46}*SharedItemsImports = 5
 		src\ILLink.Shared\ILLink.Shared.projitems*{f1a44a78-34ee-408b-8285-9a26f0e7d4f2}*SharedItemsImports = 5

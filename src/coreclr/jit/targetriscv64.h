@@ -192,18 +192,18 @@
   #define REG_PREV(reg)           ((regNumber)((unsigned)(reg) - 1))
 
   // The following registers are used in emitting Enter/Leave/Tailcall profiler callbacks
-  #define REG_PROFILER_ENTER_ARG_FUNC_ID    REG_R16
-  #define RBM_PROFILER_ENTER_ARG_FUNC_ID    RBM_R16
-  #define REG_PROFILER_ENTER_ARG_CALLER_SP  REG_R17
-  #define RBM_PROFILER_ENTER_ARG_CALLER_SP  RBM_R17
-  #define REG_PROFILER_LEAVE_ARG_FUNC_ID    REG_R16
-  #define RBM_PROFILER_LEAVE_ARG_FUNC_ID    RBM_R16
-  #define REG_PROFILER_LEAVE_ARG_CALLER_SP  REG_R17
-  #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_R17
+  #define REG_PROFILER_ENTER_ARG_FUNC_ID    REG_T0
+  #define RBM_PROFILER_ENTER_ARG_FUNC_ID    RBM_T0
+  #define REG_PROFILER_ENTER_ARG_CALLER_SP  REG_T1
+  #define RBM_PROFILER_ENTER_ARG_CALLER_SP  RBM_T1
+  #define REG_PROFILER_LEAVE_ARG_FUNC_ID    REG_PROFILER_ENTER_ARG_FUNC_ID
+  #define RBM_PROFILER_LEAVE_ARG_FUNC_ID    RBM_PROFILER_ENTER_ARG_FUNC_ID
+  #define REG_PROFILER_LEAVE_ARG_CALLER_SP  REG_PROFILER_ENTER_ARG_CALLER_SP
+  #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_PROFILER_ENTER_ARG_CALLER_SP
 
   // The registers trashed by profiler enter/leave/tailcall hook
   #define RBM_PROFILER_ENTER_TRASH     (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_FLTARG_REGS|RBM_FP))
-  #define RBM_PROFILER_LEAVE_TRASH     (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_FLTARG_REGS|RBM_FP))
+  #define RBM_PROFILER_LEAVE_TRASH     RBM_PROFILER_ENTER_TRASH
   #define RBM_PROFILER_TAILCALL_TRASH  RBM_PROFILER_LEAVE_TRASH
 
   // Which register are int and long values returned in ?
@@ -298,6 +298,9 @@
   #define B_DIST_SMALL_MAX_NEG  (-4096)
   #define B_DIST_SMALL_MAX_POS  (+4095)
 
+  // The number of bytes from the end the last probed page that must also be probed, to allow for some
+  // small SP adjustments without probes. If zero, then the stack pointer can point to the last byte/word
+  // on the stack guard page, and must be touched before any further "SUB SP".
   #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 0
 
 // clang-format on

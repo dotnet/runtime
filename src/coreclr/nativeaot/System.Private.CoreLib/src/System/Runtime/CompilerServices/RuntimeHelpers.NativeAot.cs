@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Threading;
+
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -46,14 +47,7 @@ namespace System.Runtime.CompilerServices
             if (type.IsNull)
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
 
-            IntPtr pStaticClassConstructionContext = RuntimeAugments.Callbacks.TryGetStaticClassConstructionContext(type);
-            if (pStaticClassConstructionContext == IntPtr.Zero)
-                return;
-
-            unsafe
-            {
-                ClassConstructorRunner.EnsureClassConstructorRun((StaticClassConstructionContext*)pStaticClassConstructionContext);
-            }
+            ReflectionAugments.ReflectionCoreCallbacks.RunClassConstructor(type);
         }
 
         public static void RunModuleConstructor(ModuleHandle module)
@@ -61,22 +55,23 @@ namespace System.Runtime.CompilerServices
             if (module.AssociatedModule == null)
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
 
-            ReflectionAugments.ReflectionCoreCallbacks.RunModuleConstructor(module.AssociatedModule);
+            // Nothing to do for the native AOT. All module cctors execute eagerly.
         }
 
-        public static object GetObjectValue(object? obj)
+        [return: NotNullIfNotNull(nameof(obj))]
+        public static unsafe object? GetObjectValue(object? obj)
         {
             if (obj == null)
                 return null;
 
-            EETypePtr eeType = obj.GetEETypePtr();
-            if ((!eeType.IsValueType) || eeType.IsPrimitive)
+            MethodTable* eeType = obj.GetMethodTable();
+            if ((!eeType->IsValueType) || eeType->IsPrimitive)
                 return obj;
 
             return obj.MemberwiseClone();
         }
 
-        public static new bool Equals(object? o1, object? o2)
+        public static new unsafe bool Equals(object? o1, object? o2)
         {
             if (o1 == o2)
                 return true;
@@ -85,11 +80,11 @@ namespace System.Runtime.CompilerServices
                 return false;
 
             // If it's not a value class, don't compare by value
-            if (!o1.GetEETypePtr().IsValueType)
+            if (!o1.GetMethodTable()->IsValueType)
                 return false;
 
             // Make sure they are the same type.
-            if (o1.GetEETypePtr() != o2.GetEETypePtr())
+            if (o1.GetMethodTable() != o2.GetMethodTable())
                 return false;
 
             return RuntimeImports.RhCompareObjectContentsAndPadding(o1, o2);
@@ -187,17 +182,16 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>()
+        public static unsafe bool IsReferenceOrContainsReferences<T>()
         {
-            var pEEType = EETypePtr.EETypePtrOf<T>();
-            return !pEEType.IsValueType || pEEType.ContainsGCPointers;
+            MethodTable* pEEType = MethodTable.Of<T>();
+            return !pEEType->IsValueType || pEEType->ContainsGCPointers;
         }
 
         [Intrinsic]
-        internal static bool IsReference<T>()
+        internal static unsafe bool IsReference<T>()
         {
-            var pEEType = EETypePtr.EETypePtrOf<T>();
-            return !pEEType.IsValueType;
+            return !MethodTable.Of<T>()->IsValueType;
         }
 
         [Intrinsic]
@@ -236,9 +230,6 @@ namespace System.Runtime.CompilerServices
 
         internal static unsafe ref MethodTable* GetMethodTableRef(this object obj)
             => ref obj.m_pEEType;
-
-        internal static unsafe EETypePtr GetEETypePtr(this object obj)
-            => new EETypePtr(obj.m_pEEType);
 
         // Returns true iff the object has a component size;
         // i.e., is variable length like System.String or Array.
@@ -352,10 +343,10 @@ namespace System.Runtime.CompilerServices
             if (mt->NumVtableSlots == 0)
             {
                 // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(type);
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(type);
             }
             // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
-            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(new EETypePtr(mt)) != 0);
+            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(mt) != 0);
 
             if (mt->IsNullable)
             {

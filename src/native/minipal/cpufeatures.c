@@ -8,11 +8,11 @@
 #include "cpufeatures.h"
 #include "cpuid.h"
 
-#if TARGET_WINDOWS
+#if HOST_WINDOWS
 
 #include <Windows.h>
 
-#else // TARGET_WINDOWS
+#else // HOST_WINDOWS
 
 #include "minipalconfig.h"
 
@@ -28,8 +28,14 @@
 #ifndef HWCAP_LRCPC
 #define HWCAP_LRCPC     (1 << 15)
 #endif
+#ifndef HWCAP_ILRCPC
+#define HWCAP_ILRCPC    (1 << 26)
+#endif
 #ifndef HWCAP_ASIMDDP
 #define HWCAP_ASIMDDP   (1 << 20)
+#endif
+#ifndef HWCAP_SVE
+#define HWCAP_SVE   (1 << 22)
 #endif
 
 #endif
@@ -38,10 +44,10 @@
 #include <sys/sysctl.h>
 #endif
 
-#endif // !TARGET_WINDOWS
+#endif // !HOST_WINDOWS
 
-#if defined(TARGET_UNIX)
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_UNIX)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 
 static uint32_t xmmYmmStateSupport()
 {
@@ -61,7 +67,7 @@ static uint32_t xmmYmmStateSupport()
 
 static uint32_t avx512StateSupport()
 {
-#if defined(TARGET_APPLE)
+#if defined(HOST_APPLE)
     // MacOS has specialized behavior where it reports AVX512 support but doesnt
     // actually enable AVX512 until the first instruction is executed and does so
     // on a per thread basis. It does this by catching the faulting instruction and
@@ -95,11 +101,11 @@ static bool IsAvx512Enabled()
 {
     return true;
 }
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-#endif // TARGET_UNIX
+#endif // defined(HOST_X86) || defined(HOST_AMD64)
+#endif // HOST_UNIX
 
-#if defined(TARGET_WINDOWS)
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_WINDOWS)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 static uint32_t xmmYmmStateSupport()
 {
     // check OS has enabled both XMM and YMM state support
@@ -124,14 +130,14 @@ static bool IsAvx512Enabled()
     return ((FeatureMask & XSTATE_MASK_AVX512) != 0);
 }
 
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-#endif // TARGET_WINDOWS
+#endif // defined(HOST_X86) || defined(HOST_AMD64)
+#endif // HOST_WINDOWS
 
 int minipal_getcpufeatures(void)
 {
     int result = 0;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 
     int cpuidInfo[4];
 
@@ -315,10 +321,10 @@ int minipal_getcpufeatures(void)
         }
 
     }
-#endif // TARGET_X86 || TARGET_AMD64
+#endif // HOST_X86 || HOST_AMD64
 
-#if defined(TARGET_ARM64)
-#if defined(TARGET_UNIX)
+#if defined(HOST_ARM64)
+#if defined(HOST_UNIX)
 
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
@@ -335,8 +341,11 @@ int minipal_getcpufeatures(void)
     if (hwCap & HWCAP_ASIMDDP)
         result |= ARM64IntrinsicConstants_Dp;
 
-      if (hwCap & HWCAP_LRCPC)
-          result |= ARM64IntrinsicConstants_Rcpc;
+    if (hwCap & HWCAP_LRCPC)
+        result |= ARM64IntrinsicConstants_Rcpc;
+
+    if (hwCap & HWCAP_ILRCPC)
+        result |= ARM64IntrinsicConstants_Rcpc2;
 
     if (hwCap & HWCAP_SHA1)
         result |= ARM64IntrinsicConstants_Sha1;
@@ -349,6 +358,9 @@ int minipal_getcpufeatures(void)
 
     if (hwCap & HWCAP_ASIMDRDM)
         result |= ARM64IntrinsicConstants_Rdm;
+
+    if (hwCap & HWCAP_SVE)
+        result |= ARM64IntrinsicConstants_Sve;
 
 #else // !HAVE_AUXV_HWCAP_H
 
@@ -379,6 +391,9 @@ int minipal_getcpufeatures(void)
 
     if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Rcpc;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC2", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Rcpc2;
 #endif // HAVE_SYSCTLBYNAME
 
     // Every ARM64 CPU should support SIMD and FP
@@ -386,9 +401,9 @@ int minipal_getcpufeatures(void)
 
     result |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 #endif // HAVE_AUXV_HWCAP_H
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 
-#if defined(TARGET_WINDOWS)
+#if defined(HOST_WINDOWS)
     // FP and SIMD support are enabled by default
     result |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 
@@ -418,9 +433,12 @@ int minipal_getcpufeatures(void)
     {
         result |= ARM64IntrinsicConstants_Rcpc;
     }
-#endif // TARGET_WINDOWS
 
-#endif // TARGET_ARM64
+    // TODO: IsProcessorFeaturePresent doesn't support LRCPC2 yet.
+
+#endif // HOST_WINDOWS
+
+#endif // HOST_ARM64
 
     return result;
 }

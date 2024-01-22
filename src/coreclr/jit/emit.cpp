@@ -130,6 +130,10 @@ const char* emitter::emitIfName(unsigned f)
     static const char* const ifNames[] = {
 #define IF_DEF(en, op1, op2) "IF_" #en,
 #include "emitfmts.h"
+#if defined(TARGET_ARM64)
+#define IF_DEF(en, op1, op2) "IF_" #en,
+#include "emitfmtsarm64sve.h"
+#endif
     };
 
     static char errBuff[32];
@@ -215,7 +219,7 @@ unsigned emitter::emitInt32CnsCnt;
 unsigned emitter::emitNegCnsCnt;
 unsigned emitter::emitPow2CnsCnt;
 
-void emitterStaticStats(FILE* fout)
+void emitterStaticStats()
 {
     // The IG buffer size depends on whether we are storing a debug info pointer or not. For our purposes
     // here, do not include that.
@@ -226,6 +230,8 @@ void emitterStaticStats(FILE* fout)
     // insGroup members
 
     insGroup* igDummy = nullptr;
+
+    FILE* fout = jitstdout();
 
     fprintf(fout, "\n");
     fprintf(fout, "insGroup:\n");
@@ -1536,7 +1542,7 @@ void emitter::appendToCurIG(instrDesc* id)
  *  Display (optionally) an instruction offset.
  */
 
-void emitter::emitDispInsAddr(BYTE* code)
+void emitter::emitDispInsAddr(const BYTE* code)
 {
 #ifdef DEBUG
     if (emitComp->opts.disAddr)
@@ -1858,11 +1864,6 @@ void emitter::emitCheckIGList()
         {
             // Extension groups don't store GC info.
             assert((currIG->igFlags & (IGF_GC_VARS | IGF_BYREF_REGS)) == 0);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            // Extension groups can't be branch targets.
-            assert((currIG->igFlags & IGF_FINALLY_TARGET) == 0);
-#endif
 
             // TODO: It would be nice if we could assert that a funclet prolog, funclet epilog, or
             // function epilog could only extend one of the same type. However, epilogs are created
@@ -2332,15 +2333,10 @@ void emitter::emitGeneratePrologEpilog()
 
 void emitter::emitStartPrologEpilogGeneration()
 {
-    /* Save the current IG if it's non-empty */
-
-    if (emitCurIGnonEmpty())
+    // Save the current IG if we have one. It might be empty if we added an end-of-compilation label.
+    if (emitCurIG != nullptr)
     {
         emitSavIG();
-    }
-    else
-    {
-        assert(emitCurIG == nullptr);
     }
 }
 
@@ -2724,6 +2720,8 @@ const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {
     EA_1BYTE,  EA_2BYTE,  EA_4BYTE, EA_8BYTE, EA_16BYTE,
 #if defined(TARGET_XARCH)
     EA_32BYTE, EA_64BYTE,
+#elif defined(TARGET_ARM64)
+    EA_SCALABLE,
 #endif // TARGET_XARCH
 };
 
@@ -2894,8 +2892,7 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
                             regMaskTP        gcrefRegs,
-                            regMaskTP        byrefRegs,
-                            bool isFinallyTarget DEBUG_ARG(BasicBlock* block))
+                            regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block))
 {
     /* Create a new IG if the current one is non-empty */
 
@@ -2918,13 +2915,6 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
     VarSetOps::Assign(emitComp, emitInitGCrefVars, GCvars);
     emitThisGCrefRegs = emitInitGCrefRegs = gcrefRegs;
     emitThisByrefRegs = emitInitByrefRegs = byrefRegs;
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (isFinallyTarget)
-    {
-        emitCurIG->igFlags |= IGF_FINALLY_TARGET;
-    }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
@@ -2958,7 +2948,7 @@ void* emitter::emitAddInlineLabel()
 // emitPrintLabel: Print the assembly label for an insGroup. We could use emitter::emitLabelString()
 // to be consistent, but that seems silly.
 //
-void emitter::emitPrintLabel(insGroup* ig)
+void emitter::emitPrintLabel(const insGroup* ig) const
 {
     printf("G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
 }
@@ -2971,7 +2961,7 @@ void emitter::emitPrintLabel(insGroup* ig)
 // Returns:
 //    String with insGroup label
 //
-const char* emitter::emitLabelString(insGroup* ig)
+const char* emitter::emitLabelString(const insGroup* ig) const
 {
     const int       TEMP_BUFFER_LEN = 40;
     static unsigned curBuf          = 0;
@@ -3143,7 +3133,7 @@ void emitter::emitSplit(emitLocation*         startLoc,
     } // end for loop
 
     splitIfNecessary();
-    assert(curSize < maxSplitSize);
+    assert(curSize < UW_MAX_FRAGMENT_SIZE_BYTES);
 }
 
 /*****************************************************************************
@@ -3765,6 +3755,10 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
 const BYTE emitter::emitFmtToOps[] = {
 #define IF_DEF(en, op1, op2) ID_OP_##op2,
 #include "emitfmts.h"
+#if defined(TARGET_ARM64)
+#define IF_DEF(en, op1, op2) ID_OP_##op2,
+#include "emitfmtsarm64sve.h"
+#endif
 };
 
 #ifdef DEBUG
@@ -3987,12 +3981,6 @@ void emitter::emitDispIGflags(unsigned flags)
     {
         printf(", byref");
     }
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (flags & IGF_FINALLY_TARGET)
-    {
-        printf(", ftarget");
-    }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (flags & IGF_FUNCLET_PROLOG)
     {
         printf(", funclet prolog");
@@ -4201,8 +4189,6 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
 
         printf("\n");
 
-#if !defined(TARGET_RISCV64)
-        // TODO-RISCV64-Bug: When JitDump is on, it asserts in emitDispIns which is not implemented.
         if (displayInstructions)
         {
             instrDesc*     id  = emitFirstInstrDesc(ig->igData);
@@ -4235,7 +4221,6 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
                 printf("\n");
             }
         }
-#endif // !TARGET_RISCV64
     }
 }
 
@@ -4307,11 +4292,28 @@ void emitter::emitDispJumpList()
                 printf(" -> %s", getRegName(jmp->idReg1()));
             }
             else
+#endif // TARGET_ARM64
             {
-                printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
+                insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
+                if (targetGroup == nullptr)
+                {
+                    printf(" -> ILLEGAL");
+                }
+                else
+                {
+                    printf(" -> IG%02u", targetGroup->igNum);
+                }
             }
-#else
-            printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
+
+            if (jmp->idjShort)
+            {
+                printf(" (short)");
+            }
+
+            if (jmp->idjKeepLong)
+            {
+                printf(" (long)");
+            }
 
 #if defined(TARGET_XARCH)
             if (jmp->idjIsRemovableJmpCandidate)
@@ -4319,7 +4321,13 @@ void emitter::emitDispJumpList()
                 printf(" ; removal candidate");
             }
 #endif // TARGET_XARCH
-#endif // !TARGET_ARM64
+
+#if defined(TARGET_AMD64)
+            if (jmp->idjIsAfterCallBeforeEpilog)
+            {
+                printf(" ; after call before epilog");
+            }
+#endif // TARGET_AMD64
         }
         printf("\n");
         jmpCount += 1;
@@ -4338,7 +4346,7 @@ void emitter::emitDispJumpList()
 //   id - the pointer to the current instrDesc
 //   idSize - the size of the current instrDesc
 //
-void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
+void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const
 {
     assert(idSize == emitSizeOfInsDsc(*id));
     char* idData = reinterpret_cast<char*>(*id);
@@ -4356,7 +4364,7 @@ void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
 // Returns:
 //   A pointer to the first instrDesc.
 //
-emitter::instrDesc* emitter::emitFirstInstrDesc(BYTE* idData)
+emitter::instrDesc* emitter::emitFirstInstrDesc(BYTE* idData) const
 {
     return reinterpret_cast<instrDesc*>(idData + m_debugInfoSize);
 }
@@ -4637,10 +4645,11 @@ void emitter::emitRemoveJumpToNextInst()
         insGroup*     jmpGroup = jmp->idjIG;
         instrDescJmp* nextJmp  = jmp->idjNext;
 
-        if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && jmp->idjIsRemovableJmpCandidate)
+        if (jmp->idjIsRemovableJmpCandidate)
         {
 #if DEBUG
-            assert((jmpGroup->igFlags & IGF_HAS_ALIGN) == 0);
+            assert(jmp->idInsFmt() == IF_LABEL);
+            assert(emitIsUncondJump(jmp));
             assert((jmpGroup->igNum > previousJumpIgNum) || (previousJumpIgNum == (UNATIVE_OFFSET)-1) ||
                    ((jmpGroup->igNum == previousJumpIgNum) && (jmp->idDebugOnlyInfo()->idNum > previousJumpInsNum)));
             previousJumpIgNum  = jmpGroup->igNum;
@@ -4654,6 +4663,8 @@ void emitter::emitRemoveJumpToNextInst()
 
             if ((jmpGroup->igNext == targetGroup) && ((jmpGroup->igFlags & IGF_HAS_REMOVABLE_JMP) != 0))
             {
+                assert(!jmpGroup->endsWithAlignInstr());
+
                 // the last instruction in the group is the jmp we're looking for
                 // and it jumps to the next instruction group so we don't need it
                 CLANG_FORMAT_COMMENT_ANCHOR
@@ -4706,6 +4717,25 @@ void emitter::emitRemoveJumpToNextInst()
                 UNATIVE_OFFSET codeSize = jmp->idCodeSize();
                 jmp->idCodeSize(0);
 
+#ifdef TARGET_AMD64
+                // If the removed jump is after a call and before an OS epilog, it needs to be replaced by a nop
+                if (jmp->idjIsAfterCallBeforeEpilog)
+                {
+                    if ((targetGroup->igFlags & IGF_EPILOG) != 0)
+                    {
+                        // This jump will become a nop, so set its size now to ensure below calculations are correct
+                        jmp->idCodeSize(1);
+                        codeSize--;
+                    }
+                    else
+                    {
+                        // We don't need a nop if the removed jump isn't before an OS epilog,
+                        // so zero jmp->idjIsAfterCallBeforeEpilog to avoid emitting a nop
+                        jmp->idjIsAfterCallBeforeEpilog = 0;
+                    }
+                }
+#endif // TARGET_AMD64
+
                 jmpGroup->igSize -= (unsigned short)codeSize;
                 jmpGroup->igFlags |= IGF_UPD_ISZ;
 
@@ -4714,17 +4744,15 @@ void emitter::emitRemoveJumpToNextInst()
             }
             else
             {
+                // The jump was not removed; make sure idjIsRemovableJmpCandidate reflects this
+                jmp->idjIsRemovableJmpCandidate = 0;
+
                 // Update the previousJmp
                 previousJmp = jmp;
 #if DEBUG
                 if (targetGroup == nullptr)
                 {
                     JITDUMP("IG%02u IN%04x jump target is not set!, keeping.\n", jmpGroup->igNum,
-                            jmp->idDebugOnlyInfo()->idNum);
-                }
-                else if ((jmpGroup->igFlags & IGF_HAS_ALIGN) != 0)
-                {
-                    JITDUMP("IG%02u IN%04x containing instruction group has alignment, keeping.\n", jmpGroup->igNum,
                             jmp->idDebugOnlyInfo()->idNum);
                 }
                 else if (jmpGroup->igNext != targetGroup)
@@ -4737,6 +4765,11 @@ void emitter::emitRemoveJumpToNextInst()
                     JITDUMP("IG%02u IN%04x containing instruction group is not marked with IGF_HAS_REMOVABLE_JMP, "
                             "keeping.\n",
                             jmpGroup->igNum, jmp->idDebugOnlyInfo()->idNum);
+                }
+                else if (jmpGroup->endsWithAlignInstr())
+                {
+                    JITDUMP("IG%02u IN%04x containing instruction group has alignment, keeping.\n", jmpGroup->igNum,
+                            jmp->idDebugOnlyInfo()->idNum);
                 }
 #endif // DEBUG
             }
@@ -5140,7 +5173,7 @@ AGAIN:
             }
 #endif // DEBUG
 
-            assert(jmp->idAddr()->iiaBBlabel->bbFlags & BBF_HAS_LABEL);
+            assert(jmp->idAddr()->iiaBBlabel->HasFlag(BBF_HAS_LABEL));
             assert(tgtIG);
 
             /* Record the bound target */
@@ -5970,7 +6003,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
     //
-    // We don't rely on (block->bbJumpDest->bbNum <= block->bbNum) because the basic
+    // We don't rely on (block->GetTarget()->bbNum <= block->bbNum) because the basic
     // block numbering is not guaranteed to be sequential.
     if ((dstIG != nullptr) && (dstIG->igNum <= emitCurIG->igNum))
     {
@@ -6497,7 +6530,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 
             // Only to the first block of the finally (which is properly marked)
             BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
-            assert(tgtBlk->bbFlags & BBF_FUNCLET_BEG);
+            assert(tgtBlk->HasFlag(BBF_FUNCLET_BEG));
 
             // And now we made it back to where we started
             assert(tgtIG == emitCodeGetCookie(tgtBlk));
@@ -6582,19 +6615,23 @@ void emitter::emitComputeCodeSizes()
 }
 
 //------------------------------------------------------------------------
-// emitEndCodeGen: called at end of code generation to create code, data, and gc info
+// emitEndCodeGen: called at end of code generation to create code, data, and GC info
 //
 // Arguments:
-//    comp - compiler instance
+//    comp           - compiler instance
 //    contTrkPtrLcls - true if tracked stack pointers are contiguous on the stack
-//    fullInt - true if method has fully interruptible gc reporting
-//    fullPtrMap - true if gc reporting should use full register pointer map
-//    xcptnsCount - number of EH clauses to report for the method
-//    prologSize [OUT] - prolog size in bytes
-//    epilogSize [OUT] - epilog size in bytes (see notes)
-//    codeAddr [OUT] - address of the code buffer
-//    coldCodeAddr [OUT] - address of the cold code buffer (if any)
-//    consAddr [OUT] - address of the read only constant buffer (if any)
+//    fullyInt       - true if method has fully interruptible GC reporting
+//    fullPtrMap     - true if gc reporting should use full register pointer map
+//    xcptnsCount    - number of EH clauses to report for the method
+//    prologSize     - [OUT] prolog size in bytes
+//    epilogSize     - [OUT] epilog size in bytes (see notes)
+//    codeAddr       - [OUT] address of the code buffer
+//    codeAddrRW     - [OUT] Read/write address of the code buffer
+//    coldCodeAddr   - [OUT] address of the cold code buffer (if any)
+//    coldCodeAddrRW - [OUT] Read/write address of the cold code buffer (if any)
+//    consAddr       - [OUT] address of the read only constant buffer (if any)
+//    consAddrRW     - [OUT] Read/write address of the read only constant buffer (if any)
+//    instrCount     - [OUT] [DEBUG ONLY] number of instructions generated.
 //
 // Notes:
 //    Currently, in methods with multiple epilogs, all epilogs must have the same
@@ -6612,8 +6649,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                                  unsigned* prologSize,
                                  unsigned* epilogSize,
                                  void**    codeAddr,
+                                 void**    codeAddrRW,
                                  void**    coldCodeAddr,
-                                 void** consAddr DEBUGARG(unsigned* instrCount))
+                                 void**    coldCodeAddrRW,
+                                 void**    consAddr,
+                                 void** consAddrRW DEBUGARG(unsigned* instrCount))
 {
 #ifdef DEBUG
     if (emitComp->verbose)
@@ -6870,8 +6910,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     /* Give the block addresses to the caller and other functions here */
 
     *codeAddr = emitCodeBlock = codeBlock;
+    *codeAddrRW               = codeBlockRW;
     *coldCodeAddr = emitColdCodeBlock = coldCodeBlock;
+    *coldCodeAddrRW                   = coldCodeBlockRW;
     *consAddr = emitConsBlock = consBlock;
+    *consAddrRW               = consBlockRW;
 
     /* Nothing has been pushed on the stack */
     CLANG_FORMAT_COMMENT_ANCHOR;
@@ -7115,11 +7158,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             NO_WAY("Too many instruction groups");
         }
 
-        // If this instruction group is returned to from a funclet implementing a finally,
-        // on architectures where it is necessary generate GC info for the current instruction as
-        // if it were the instruction following a call.
-        emitGenGCInfoIfFuncletRetTarget(ig, cp);
-
         instrDesc* id = emitFirstInstrDesc(ig->igData);
 
 #ifdef DEBUG
@@ -7137,16 +7175,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 printf("\n%s:", emitLabelString(ig));
                 if (!emitComp->opts.disDiffable)
                 {
-#ifdef DEBUG
                     if (emitComp->opts.disAddr)
-                    {
-                        printf("              ;; offset=0x%04X", emitCurCodeOffs(cp));
-                    }
-                    else
-#endif // DEBUG
-                    {
-                        printf("  ;; offset=0x%04X", emitCurCodeOffs(cp));
-                    }
+                        printf("            ");
+                    printf("  ;; offset=0x%04X", emitCurCodeOffs(cp));
                 }
                 printf("\n");
             }
@@ -7560,7 +7591,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    // For LoongArch64 and Riscv64 `emitFwdJumps` is always false.
+                    // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7576,7 +7607,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    // For LoongArch64 and Riscv64 `emitFwdJumps` is always false.
+                    // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7611,7 +7642,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // emit offsets after the loop with wrong value (for example for GC ref variables).
     unsigned unusedSize = emitTotalCodeSize - actualCodeSize;
 
-    JITDUMP("Allocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
+    JITDUMP("\n\nAllocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
             actualCodeSize, unusedSize);
 
     BYTE* cpRW = cp + writeableOffset;
@@ -7655,36 +7686,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     return actualCodeSize;
 }
 
-// See specification comment at the declaration.
-void emitter::emitGenGCInfoIfFuncletRetTarget(insGroup* ig, BYTE* cp)
-{
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // We only emit this GC information on targets where finally's are implemented via funclets,
-    // and the finally is invoked, during non-exceptional execution, via a branch with a predefined
-    // link register, rather than a "true call" for which we would already generate GC info.  Currently,
-    // this means precisely ARM.
-    if (ig->igFlags & IGF_FINALLY_TARGET)
-    {
-        // We don't actually have a call instruction in this case, so we don't have
-        // a real size for that instruction.  We'll use 1.
-        emitStackPop(cp, /*isCall*/ true, /*callInstrSize*/ 1, /*args*/ 0);
-
-        /* Do we need to record a call location for GC purposes? */
-        if (!emitFullGCinfo)
-        {
-            emitRecordGCcall(cp, /*callInstrSize*/ 1);
-        }
-    }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-}
-
 /*****************************************************************************
  *
  *  We have an instruction in an insGroup and we need to know the
  *  instruction number for this instruction
  */
 
-unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
+unsigned emitter::emitFindInsNum(const insGroup* ig, const instrDesc* idMatch) const
 {
     instrDesc* id = emitFirstInstrDesc(ig->igData);
 
@@ -7720,7 +7728,7 @@ unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
  *  to find the true offset by looking for the instruction within the group.
  */
 
-UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
+UNATIVE_OFFSET emitter::emitFindOffset(const insGroup* ig, unsigned insNum) const
 {
     instrDesc*     id = emitFirstInstrDesc(ig->igData);
     UNATIVE_OFFSET of = 0;
@@ -8308,7 +8316,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 switch (dsc->dsDataType)
                 {
                     case TYP_FLOAT:
-                        printf(" ; float  %9.6g", (double)*reinterpret_cast<float*>(&dsc->dsCont));
+                        printf(" ; float  %9.6g",
+                               FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&dsc->dsCont)));
                         break;
                     case TYP_DOUBLE:
                         printf(" ; double %12.9g", *reinterpret_cast<double*>(&dsc->dsCont));
@@ -8454,7 +8463,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                     case TYP_FLOAT:
                         assert(data->dsSize >= 4);
                         printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
-                        printf("\t; %9.6g", *reinterpret_cast<float*>(&data->dsCont[i]));
+                        printf("\t; %9.6g",
+                               FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->dsCont[i])));
                         i += 4;
                         break;
 
@@ -9879,7 +9889,7 @@ void emitter::emitStackPop(BYTE* addr, bool isCall, unsigned char callInstrSize,
         // recorded (when we're doing the ptr reg map for a non-fully-interruptible method).
         if (emitFullGCinfo
 #ifndef JIT32_GCENCODER
-            || (emitComp->IsFullPtrRegMapRequired() && (!emitComp->GetInterruptible()) && isCall)
+            || (emitComp->IsFullPtrRegMapRequired() && !emitComp->GetInterruptible() && isCall)
 #endif // JIT32_GCENCODER
                 )
         {

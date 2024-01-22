@@ -197,7 +197,7 @@ namespace System.Reflection
             RuntimeType fieldType = (RuntimeType)FieldType;
             if (value is null)
             {
-                if (RuntimeTypeHandle.IsValueType(fieldType))
+                if (fieldType.IsActualValueType)
                 {
                     fieldType.CheckValue(ref value, binder, culture, invokeAttr);
                 }
@@ -256,12 +256,12 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return GetSignature().GetCustomModifiers(1, true);
+            return GetSignature().GetCustomModifiers(0, true);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return GetSignature().GetCustomModifiers(1, false);
+            return GetSignature().GetCustomModifiers(0, false);
         }
 
         internal Signature GetSignature() => new Signature(this, m_declaringType);

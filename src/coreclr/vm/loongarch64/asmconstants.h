@@ -157,7 +157,7 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags)
 ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
 
 #define MethodTable__m_ElementType     DBG_FRE(0x38, 0x30)
-ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_pMultipurposeSlot1));
+ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));
 
 #define ArrayBase__m_NumComponents     0x8
 ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));
@@ -253,6 +253,41 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x10
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+
+#ifdef PROFILING_SUPPORTED
+#define PROFILE_ENTER    1
+#define PROFILE_LEAVE    2
+#define PROFILE_TAILCALL 4
+
+// NOTE: this should be 16-byte aligned as stack size.
+#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 0x140
+ASMCONSTANTS_C_ASSERT(SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA == (sizeof(PROFILE_PLATFORM_SPECIFIC_DATA)+8))
+ASMCONSTANTS_C_ASSERT((SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA & 0xf) == 0)
+
+#define PROFILE_PLATFORM_SPECIFIC_DATA__Fp         0
+#define PROFILE_PLATFORM_SPECIFIC_DATA__Pc         8
+#define PROFILE_PLATFORM_SPECIFIC_DATA__probeSp    16
+#define PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp 24
+#define PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg  32
+#define PROFILE_PLATFORM_SPECIFIC_DATA__functionId 40
+#define PROFILE_PLATFORM_SPECIFIC_DATA__flags      48
+#define PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters      56
+#define PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters 120
+
+#define ASMCONSTANTS_C_ASSERT_OFFSET(type, field) \
+    ASMCONSTANTS_C_ASSERT(type##__##field == offsetof(type, field))
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, Fp)
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, Pc)
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, probeSp)
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, profiledSp)
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, hiddenArg)
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, functionId)
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, flags)
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, argumentRegisters)
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, floatArgumentRegisters)
+#undef ASMCONSTANTS_C_ASSERT_OFFSET
+
+#endif // PROFILING_SUPPORTED
 
 #undef ASMCONSTANTS_RUNTIME_ASSERT
 #undef ASMCONSTANTS_C_ASSERT
