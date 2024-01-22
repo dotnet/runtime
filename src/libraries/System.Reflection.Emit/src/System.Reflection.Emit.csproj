@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Reflection\Emit\MethodBuilderInstantiation.cs" Link="System\Reflection\Emit\MethodBuilderInstantiation.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Reflection\Emit\SymbolType.cs" Link="System\Reflection\Emit\SymbolType.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Reflection\Emit\TypeNameBuilder.cs" Link="System\Reflection\Emit\TypeNameBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ConstructorBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\CustomAttributeWrapper.cs" />

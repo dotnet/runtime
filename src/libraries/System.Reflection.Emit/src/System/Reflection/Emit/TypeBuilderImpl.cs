@@ -945,7 +945,49 @@ namespace System.Reflection.Emit
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo? GetField(string name, BindingFlags bindingAttr) => throw new NotSupportedException();
+        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
+        {
+            ArgumentNullException.ThrowIfNull(name);
+
+            FieldInfo? match = null;
+
+            BindingFlags matchBindingAttr = bindingAttr ^ BindingFlags.DeclaredOnly;
+            matchBindingAttr ^= BindingFlags.IgnoreCase;
+            StringComparison compare = (bindingAttr & BindingFlags.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            foreach (FieldBuilderImpl fieldInfo in _fieldDefinitions)
+            {
+                BindingFlags fieldBFlags = GetBindingFlags(fieldInfo);
+                if (name.Equals(fieldInfo.Name, compare) && (matchBindingAttr & fieldBFlags) == fieldBFlags)
+                {
+                    if (match != null)
+                    {
+                        if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
+                        {
+                            throw new AmbiguousMatchException(SR.Format(SR.AmbiguousMatch_MemberInfo, fieldInfo.DeclaringType, fieldInfo.Name));
+                        }
+                    }
+
+                    match = fieldInfo;
+                }
+            }
+
+            if (match == null && !bindingAttr.HasFlag(BindingFlags.DeclaredOnly) && _typeParent != null)
+            {
+                match = _typeParent.GetField(name, bindingAttr);
+            }
+
+            return match;
+        }
+
+        private static BindingFlags GetBindingFlags(FieldBuilderImpl field)
+        {
+            BindingFlags bindingFlags = (field.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public ?
+                BindingFlags.Public : BindingFlags.NonPublic;
+
+            bindingFlags |= (field.Attributes & FieldAttributes.Static) != 0 ? BindingFlags.Static : BindingFlags.Instance;
+
+            return bindingFlags;
+        }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr) => throw new NotSupportedException();

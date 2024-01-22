@@ -16,7 +16,6 @@ namespace System.Reflection.Emit
         private GenericParameterAttributes _genParamAttributes;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _parent;
-
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal List<Type>? _interfaces;
         private MethodBuilderImpl? _methodBuilder;
@@ -75,7 +74,7 @@ namespace System.Reflection.Emit
         public override string Name => _name;
         public override Module Module => _type.Module;
         public override Assembly Assembly => _type.Assembly;
-        public override string? FullName => null;
+        public override string? FullName => _name;
         public override string? Namespace => null;
         public override string? AssemblyQualifiedName => null;
         public override Type UnderlyingSystemType => this;
@@ -137,5 +136,19 @@ namespace System.Reflection.Emit
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotSupportedException();
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotSupportedException();
+
+        public override Type MakePointerType() =>
+            SymbolType.FormCompoundType("*", this, 0)!;
+
+        public override Type MakeByRefType() =>
+            SymbolType.FormCompoundType("&", this, 0)!;
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType() =>
+            SymbolType.FormCompoundType("[]", this, 0)!;
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType(int rank) =>
+            SymbolType.FormCompoundType(SymbolType.GetRank(rank), this, 0)!;
     }
 }

@@ -379,6 +379,36 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal("TestInterface*", testType.Name);
         }
 
+        [Fact]
+        public void GenericTypeParameter_MakePointerType_MakeByRefType_MakeArrayType()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters("T");
+            Type pointerType = typeParams[0].MakePointerType();
+            Type byrefType = typeParams[0].MakeByRefType();
+            Type arrayType = typeParams[0].MakeArrayType();
+            Type arrayType2 = typeParams[0].MakeArrayType(3);
+            FieldBuilder field = type.DefineField("Field", pointerType, FieldAttributes.Public);
+            FieldBuilder fieldArray = type.DefineField("FieldArray", arrayType2, FieldAttributes.Public);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
+            method.SetSignature(arrayType, null, null, [byrefType], null, null);
+            method.GetILGenerator().Emit(OpCodes.Ret);
+            Type genericIntType = type.MakeGenericType(typeof(int));
+            type.CreateType();
+
+            Assert.Equal(pointerType, type.GetField("Field").FieldType);
+            Assert.True(type.GetField("Field").FieldType.IsPointer);
+            Assert.Equal(arrayType2, type.GetField("FieldArray").FieldType);
+            Assert.True(type.GetField("FieldArray").FieldType.IsArray);
+            Assert.Equal(3, type.GetField("FieldArray").FieldType.GetArrayRank());
+            MethodInfo testMethod = type.GetMethod("TestMethod");
+            Assert.Equal(arrayType, testMethod.ReturnType);
+            Assert.True(testMethod.ReturnType.IsArray);
+            Assert.Equal(1, testMethod.GetParameters().Length);
+            Assert.Equal(byrefType, testMethod.GetParameters()[0].ParameterType);
+            Assert.True(testMethod.GetParameters()[0].ParameterType.IsByRef);
+        }
+
         public static IEnumerable<object[]> SaveGenericType_TestData()
         {
             yield return new object[] { new string[] { "U", "T" }, new Type[] { typeof(string), typeof(int) }, "TestInterface[System.String,System.Int32]" };
