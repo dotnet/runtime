@@ -2004,8 +2004,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // ...
     // slow preheader --> slow header
 
-    assert(preheader->HasFlag(BBF_LOOP_PREHEADER));
-
     // Make a new pre-header block for the fast loop.
     JITDUMP("Create new preheader block for fast loop\n");
 
@@ -2013,7 +2011,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true, /*jumpDest*/ loop->GetHeader());
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
     fastPreheader->bbWeight = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    fastPreheader->SetFlags(BBF_LOOP_PREHEADER);
 
     if (fastPreheader->JumpsToNext())
     {
@@ -2026,9 +2023,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     fgReplacePred(loop->GetHeader(), preheader, fastPreheader);
     JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", preheader->bbNum,
             loop->GetHeader()->bbNum, fastPreheader->bbNum, loop->GetHeader()->bbNum);
-
-    // 'preheader' is no longer the loop preheader; 'fastPreheader' is!
-    preheader->RemoveFlags(BBF_LOOP_PREHEADER);
 
     // We are going to create blocks after the lexical last block. If it falls
     // out of the loop then insert an explicit jump and insert after that
@@ -2094,20 +2088,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         blk->scaleBBWeight(fastPathWeightScaleFactor);
 
         // TODO: scale the pred edges of `blk`?
-
-        // If the loop we're cloning contains nested loops, we need to clear the pre-header bit on
-        // any nested loop pre-header blocks, since they will no longer be loop pre-headers.
-        //
-        // TODO-Cleanup: BBF_LOOP_PREHEADER can be removed; we do not attempt
-        // to keep it up to date anymore when we do FG changes.
-        //
-        if (newBlk->HasFlag(BBF_LOOP_PREHEADER))
-        {
-            JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);
-            newBlk->RemoveFlags(BBF_LOOP_PREHEADER);
-        }
-
-        newBlk->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
 
         newPred = newBlk;
         blockMap->Set(blk, newBlk);

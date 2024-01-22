@@ -1621,8 +1621,6 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
             //
             BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval);
 
-            newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
-
             // Block weight should no longer have the loop multiplier
             //
             // Note this is not quite right, as we may not have upscaled by this amount
@@ -2525,7 +2523,7 @@ void Compiler::optResetLoopInfo()
             block->RemoveFlags(BBF_RUN_RARELY);
         }
 
-        block->RemoveFlags(BBF_LOOP_FLAGS);
+        block->RemoveFlags(BBF_LOOP_HEAD);
     }
 }
 
@@ -3063,7 +3061,6 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         {
             JITDUMP("Natural loop " FMT_LP " already has preheader " FMT_BB "\n", loop->GetIndex(),
                     preheaderCandidate->bbNum);
-            preheaderCandidate->SetFlags(BBF_LOOP_PREHEADER);
             return false;
         }
     }
@@ -3075,7 +3072,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     }
 
     BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false, header);
-    preheader->SetFlags(BBF_INTERNAL | BBF_LOOP_PREHEADER);
+    preheader->SetFlags(BBF_INTERNAL);
     fgSetEHRegionForNewPreheader(preheader);
 
     if (preheader->NextIs(header))
