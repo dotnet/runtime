@@ -234,7 +234,6 @@ namespace System.Globalization.Tests
         {
             SortKeyTest(compareInfo, string1, string2, options, expected);
         }
-
         
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(SortKey_TestData))]
