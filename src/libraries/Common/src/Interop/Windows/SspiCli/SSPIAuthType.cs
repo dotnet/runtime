@@ -115,10 +115,6 @@ namespace System.Net
                 {
                     refHandle = SafeFreeContextBuffer.CreateEmptyHandle();
                 }
-                else if (handleType == typeof(SafeFreeCertContext))
-                {
-                    refHandle = new SafeFreeCertContext();
-                }
                 else
                 {
                     throw new ArgumentException(SR.Format(SR.SSPIInvalidHandleType, handleType.FullName), nameof(handleType));
