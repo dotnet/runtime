@@ -151,8 +151,9 @@ namespace System
         {
             MethodTable* pDestArrayMT = RuntimeHelpers.GetMethodTable(destinationArray);
             TypeHandle destTH = pDestArrayMT->GetArrayElementTypeHandle();
-            // _ASSERTE(destTH.GetSignatureCorElementType() == ELEMENT_TYPE_CLASS || destTH.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE || CorTypeInfo::IsPrimitiveType(pDest->GetArrayElementType()));
-            // Debug.Assert(!RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle().IsValueType);
+
+            Debug.Assert(!destTH.IsTypeDesc && destTH.AsMethodTable()->IsValueType);
+            Debug.Assert(!RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle().AsMethodTable()->IsValueType);
 
             MethodTable* pDestMT = destTH.AsMethodTable();
             nuint destSize = pDestArrayMT->ComponentSize;
@@ -202,8 +203,9 @@ namespace System
         {
             MethodTable* pSrcArrayMT = RuntimeHelpers.GetMethodTable(sourceArray);
             TypeHandle srcTH = pSrcArrayMT->GetArrayElementTypeHandle();
-            // _ASSERTE(destTH.GetSignatureCorElementType() == ELEMENT_TYPE_CLASS || destTH.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE || CorTypeInfo::IsPrimitiveType(pDest->GetArrayElementType()));
-            // Debug.Assert(!RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle().IsValueType);
+
+            Debug.Assert(!srcTH.IsTypeDesc && srcTH.AsMethodTable()->IsValueType);
+            Debug.Assert(!RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle().AsMethodTable()->IsValueType);
 
             MethodTable* pSrcMT = srcTH.AsMethodTable();
 
