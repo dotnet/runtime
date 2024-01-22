@@ -66,24 +66,25 @@
 //
 // Register state on exit:
 //  r2: thread pointer
-//  r12: trashed
+//  r3: trashed
 //
 .macro FixupHijackedCallstack
-    mov         r12, r0
+    push        {r0, r1}
 
     // r0 <- GetThread()
     INLINE_GETTHREAD
 
     mov         r2, r0
-    mov         r0, r12
+    pop         {r0, r1}
 
     // Fix the stack by restoring the original return address
     ldr         lr, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
     // Clear hijack state
-    mov         r12, #0
-    str         r12, [r2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-    str         r12, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    mov         r3, #0
+    str         r3, [r2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+    str         r3, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    str         r3, [r2, #OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 .endm
 
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
