@@ -131,7 +131,7 @@ if ($help) {
 }
 
 # check the first argument if subset is not explicitly passed in
-if (-not $PSBoundParameters.ContainsKey("subset") -and $properties.Length -gt 0 -and $properties[0] -match '^[a-zA-Z.+]+$') {
+if (-not $PSBoundParameters.ContainsKey("subset") -and $properties.Length -gt 0 -and $properties[0] -match '^[a-zA-Z\.\+]+$') {
   $subset = $properties[0]
   $PSBoundParameters.Add("subset", $subset)
   $properties = $properties | Select-Object -Skip 1
