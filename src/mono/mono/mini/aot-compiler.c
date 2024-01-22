@@ -10979,7 +10979,7 @@ execute_compiler_command (const char *command, GString *compiler_execute_command
 	if (line && stream) {
 		size_t read = 0;
 		while ((read = fread (buffer, sizeof (buffer [0]), G_N_ELEMENTS (buffer), stream)) > 0) {
-			for (int i = 0; i < read; i++) {
+			for (size_t i = 0; i < read; i++) {
 				g_string_append_c (line, buffer [i]);
 				if (buffer [i] == '\n') {
 					if (compiler_execute_command_log && get_execute_command (line->str, NULL)) {
@@ -11059,7 +11059,7 @@ create_tool_path (const char *base_path, const char *binary_name)
 {
 	GString *path = g_string_sized_new (strlen (base_path) + strlen (binary_name) + 1 + 2);
 	gboolean needs_wrap = strstr (base_path, " ") || strstr (binary_name, " ");
-	gboolean needs_dir_sep = !g_str_has_suffix (base_path, G_DIR_SEPARATOR_S);
+	gboolean needs_dir_sep = (base_path [0] != '\0' && !g_str_has_suffix (base_path, G_DIR_SEPARATOR_S));
 
 	if (needs_wrap)
 		g_string_append_c (path, '\"');
