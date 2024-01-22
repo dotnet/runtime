@@ -16,7 +16,7 @@
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != ''">
     <_WasmTargetsDir Condition="'$(_WasmTargetsDir)' == '' and '$(RuntimeSrcDir)' != '' and '$(RuntimeIdentifier)' == 'browser-wasm'">$(RuntimeSrcDir)\src\mono\browser\build\</_WasmTargetsDir>
     <_WasmTargetsDir Condition="'$(_WasmTargetsDir)' == '' and '$(RuntimeSrcDir)' != '' and '$(RuntimeIdentifier)' == 'wasi-wasm'">$(RuntimeSrcDir)\src\mono\wasi\build\</_WasmTargetsDir>
-    <_WasmSharedDir Condition="'$(_WasmSharedDir)' == '' and '$(RuntimeSrcDir)' != ''">$(RuntimeSrcDir)\src\mono\browser\build\</_WasmSharedDir>
+    <_WasmSharedDir Condition="'$(_WasmSharedDir)' == '' and '$(RuntimeSrcDir)' != ''">$(RuntimeSrcDir)\src\mono\wasm\build\</_WasmSharedDir>
   </PropertyGroup>
 
   <PropertyGroup>
