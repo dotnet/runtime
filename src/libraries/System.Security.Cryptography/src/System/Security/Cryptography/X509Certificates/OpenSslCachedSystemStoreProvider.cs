@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (s_rootStoreFile != null)
             {
-                _ = TryStatFile(s_rootStoreFile, out DateTime lastModified);
+                _ = TryStatFile(s_rootStoreFile, out DateTime lastModified, out _);
                 if (lastModified != s_fileLastWrite)
                 {
                     return true;
@@ -366,16 +366,13 @@ namespace System.Security.Cryptography.X509Certificates
             return directories;
         }
 
-        private static bool TryStatFile(string path, out DateTime lastModified)
-            => CallStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified, out _);
-
         private static bool TryStatDirectory(string path, out DateTime lastModified)
-            => CallStat(path, Interop.Sys.FileTypes.S_IFDIR, out lastModified, out _);
+            => TryStat(path, Interop.Sys.FileTypes.S_IFDIR, out lastModified, out _);
 
         private static bool TryStatFile(string path, out DateTime lastModified, out (long, long) fileId)
-            => CallStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified, out fileId);
+            => TryStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified, out fileId);
 
-        private static bool CallStat(string path, int fileType, out DateTime lastModified, out (long, long) fileId)
+        private static bool TryStat(string path, int fileType, out DateTime lastModified, out (long, long) fileId)
         {
             lastModified = default;
             fileId = default;
