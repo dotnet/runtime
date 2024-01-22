@@ -94,8 +94,38 @@ namespace System.Runtime.Tests
             Assert.Equal(result, Math.Sign(comparer.Compare(x, y)));
         }
 
+        public static IEnumerable<object[]> NFloatTestData
+        {
+            get
+            {
+                yield return new object[] { 0.0f, 0.0f, 0 };
+                yield return new object[] { -0.0f, -0.0f, 0 };
+                yield return new object[] { 0.0f, -0.0f, 1 };
+                yield return new object[] { -0.0f, 0.0f, -1 };
+                yield return new object[] { 0.0f, 1.0f, -1 };
+                yield return new object[] { float.PositiveInfinity, 1.0f, 1 };
+                yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), 1.0f, 1 };
+                yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), float.PositiveInfinity, 1 };
+                yield return new object[] { float.NaN, float.NaN, 0 };
+                if (PlatformDetection.IsRiscV64Process) // float->double cast does not preserve payload and sign on RISC-V
+                {
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), float.NegativeInfinity, 1 };
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), -1.0f, 1 };
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), BitConverter.UInt32BitsToSingle(0x7FC00000), 0 };
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt32BitsToSingle(0x7FC00001), 0 }; // implementation defined, not part of IEEE 754 totalOrder                    
+                }
+                else
+                {
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), float.NegativeInfinity, -1 };
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), -1.0f, -1 };
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), BitConverter.UInt32BitsToSingle(0x7FC00000), -1 };
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt32BitsToSingle(0x7FC00001), -1 }; // implementation defined, not part of IEEE 754 totalOrder
+                }
+           }
+        }
+
         [Theory]
-        [MemberData(nameof(SingleTestData))]
+        [MemberData(nameof(NFloatTestData))]
         public void TotalOrderTestNFloat(float x, float y, int result)
         {
             var comparer = new TotalOrderIeee754Comparer<NFloat>();
