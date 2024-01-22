@@ -6353,20 +6353,24 @@ void emitter::emitIns_R_I(instruction     ins,
     assert(canEncode);
     assert(fmt != IF_NONE);
 
-    // Instructions with optional shifts need larger instrDesc to store state
-    instrDesc* id = optionalShift ? emitNewInstrCns(attr, imm) : emitNewInstrSC(attr, imm);
+    instrDesc* id;
+
+    if (!optionalShift)
+    {
+        id = emitNewInstrSC(attr, imm);
+    }
+    else
+    {
+        // Instructions with optional shifts (MOV, DUP, etc.) need larger instrDesc to store state
+        id = emitNewInstrCns(attr, imm);
+        id->idOptionalShift(hasShift);
+    }
 
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idInsOpt(opt);
 
     id->idReg1(reg);
-
-    // For instructions with optional shifts (MOV, DUP, etc.)
-    if (optionalShift)
-    {
-        id->idOptionalShift(hasShift);
-    }
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
