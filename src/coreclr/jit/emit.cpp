@@ -2333,15 +2333,10 @@ void emitter::emitGeneratePrologEpilog()
 
 void emitter::emitStartPrologEpilogGeneration()
 {
-    /* Save the current IG if it's non-empty */
-
-    if (emitCurIGnonEmpty())
+    // Save the current IG if we have one. It might be empty if we added an end-of-compilation label.
+    if (emitCurIG != nullptr)
     {
         emitSavIG();
-    }
-    else
-    {
-        assert(emitCurIG == nullptr);
     }
 }
 
@@ -4299,7 +4294,15 @@ void emitter::emitDispJumpList()
             else
 #endif // TARGET_ARM64
             {
-                printf(" -> IG%02u", ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel))->igNum);
+                insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
+                if (targetGroup == nullptr)
+                {
+                    printf(" -> ILLEGAL");
+                }
+                else
+                {
+                    printf(" -> IG%02u", targetGroup->igNum);
+                }
             }
 
             if (jmp->idjShort)

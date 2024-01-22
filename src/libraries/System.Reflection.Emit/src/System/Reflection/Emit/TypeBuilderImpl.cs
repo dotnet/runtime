@@ -26,6 +26,7 @@ namespace System.Reflection.Emit
         private Type? _enumUnderlyingType;
         private bool _isCreated;
 
+        internal bool _isHiddenGlobalType;
         internal TypeDefinitionHandle _handle;
         internal int _firstFieldToken;
         internal int _firstMethodToken;
@@ -39,6 +40,15 @@ namespace System.Reflection.Emit
         internal readonly List<EventBuilderImpl> _eventDefinitions = new();
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal Dictionary<Type, List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>>? _methodOverrides;
+
+        // Only for creating the global type
+        internal TypeBuilderImpl(ModuleBuilderImpl module)
+        {
+            _name = "<Module>"; // Defined in ECMA-335 II.10.8
+            _module = module;
+            _isHiddenGlobalType = true;
+            _handle = MetadataTokens.TypeDefinitionHandle(1);
+        }
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module,
@@ -94,6 +104,12 @@ namespace System.Reflection.Emit
                 return this;
             }
 
+            if (_isHiddenGlobalType)
+            {
+                _isCreated = true;
+                return null!;
+            }
+
             // Create a public default constructor if this class has no constructor. Except the type is Interface, ValueType, Enum, or a static class.
             // (TypeAttributes.Abstract | TypeAttributes.Sealed) determines if the type is static
             if (_constructorDefinitions.Count == 0 && (_attributes & TypeAttributes.Interface) == 0 && !IsValueType &&
@@ -102,7 +118,6 @@ namespace System.Reflection.Emit
                 DefineDefaultConstructor(MethodAttributes.Public);
             }
 
-            _module.PopulateTypeAndItsMembersTokens(this);
             ValidateMethods();
             _isCreated = true;
 
@@ -176,16 +191,22 @@ namespace System.Reflection.Emit
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder. The interface methods should be available at this point")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:DynamicallyAccessedMembers", Justification = "The interface methods should be available at this point")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder")]
         private void CheckInterfaces(Type[] _interfaces)
         {
             foreach (Type interfaceType in _interfaces)
             {
-                MethodInfo[] interfaceMethods = interfaceType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+#pragma warning disable IL2075 // Analyzer produces a different warning code than illink. The IL2065 suppression takes care of illink: https://github.com/dotnet/runtime/issues/96646
+                MethodInfo[] interfaceMethods = interfaceType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+#pragma warning restore IL2075
                 for (int i = 0; i < interfaceMethods.Length; i++)
                 {
                     MethodInfo interfaceMethod = interfaceMethods[i];
+                    if (!interfaceMethod.IsAbstract)
+                    {
+                        continue;
+                    }
+
                     MethodInfo? implementedMethod = GetMethodImpl(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, GetParameterTypes(interfaceMethod.GetParameters()), null);
 
                     if ((implementedMethod == null || implementedMethod.IsAbstract) && !FoundInInterfaceMapping(interfaceMethod))
@@ -195,7 +216,9 @@ namespace System.Reflection.Emit
                 }
 
                 // Check parent interfaces too
+#pragma warning disable IL2075 // Analyzer produces a different warning code than illink. The IL2065 suppression takes care of illink: https://github.com/dotnet/runtime/issues/96646
                 CheckInterfaces(interfaceType.GetInterfaces());
+#pragma warning restore IL2075
             }
         }
 
@@ -228,7 +251,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        protected override ConstructorBuilder DefineConstructorCore(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
+        protected override ConstructorBuilder DefineConstructorCore(MethodAttributes attributes, CallingConventions callingConvention,
+            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
         {
             if ((_attributes & TypeAttributes.Interface) == TypeAttributes.Interface && (attributes & MethodAttributes.Static) != MethodAttributes.Static)
             {
@@ -248,7 +272,8 @@ namespace System.Reflection.Emit
             }
 
             attributes |= MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;
-            ConstructorBuilderImpl constBuilder = new ConstructorBuilderImpl(name, attributes, callingConvention, parameterTypes, _module, this);
+            ConstructorBuilderImpl constBuilder = new ConstructorBuilderImpl(name, attributes, callingConvention,
+                parameterTypes, requiredCustomModifiers, optionalCustomModifiers, _module, this);
             _constructorDefinitions.Add(constBuilder);
             return constBuilder;
         }
@@ -319,7 +344,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            var field = new FieldBuilderImpl(this, fieldName, type, attributes);
+            var field = new FieldBuilderImpl(this, fieldName, type, attributes, requiredCustomModifiers, optionalCustomModifiers);
             _fieldDefinitions.Add(field);
             return field;
         }
@@ -342,13 +367,28 @@ namespace System.Reflection.Emit
             return _typeParameters = typeParameters;
         }
 
-        protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();
+        protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes)
+        {
+            if (data.Length <= 0 || data.Length >= 0x003f0000)
+            {
+                throw new ArgumentException(SR.Argument_BadSizeForData, nameof(data.Length));
+            }
 
-        protected override MethodBuilder DefineMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
+            // This method will define an initialized Data in .sdata.
+            // We will create a fake TypeDef to represent the data with size. This TypeDef
+            // will be the signature for the Field.
+            return DefineDataHelper(name, data, data.Length, attributes);
+        }
+
+        protected override MethodBuilder DefineMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention,
+            Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
+            Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             ThrowIfCreated();
 
-            MethodBuilderImpl methodBuilder = new(name, attributes, callingConvention, returnType, parameterTypes, _module, this);
+
+            MethodBuilderImpl methodBuilder = new(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
+                returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, _module, this);
             _methodDefinitions.Add(methodBuilder);
             return methodBuilder;
         }
@@ -463,19 +503,98 @@ namespace System.Reflection.Emit
         }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
-
-        protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers,
-            Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
+        protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes,
+            CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
+            Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
-            PropertyBuilderImpl property = new PropertyBuilderImpl(name, attributes, callingConvention, returnType, parameterTypes, this);
+            if ((attributes & MethodAttributes.Abstract) != 0)
+            {
+                throw new ArgumentException(SR.Argument_BadPInvokeMethod);
+            }
+
+            if ((_attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface)
+            {
+                throw new ArgumentException(SR.Argument_BadPInvokeOnInterface);
+            }
+
+            ThrowIfCreated();
+
+            attributes |= MethodAttributes.PinvokeImpl;
+            MethodBuilderImpl method = new MethodBuilderImpl(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
+                returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, _module, this);
+            method.CreateDllImportData(dllName, entryName, nativeCallConv, nativeCharSet);
+
+            if (_methodDefinitions.Contains(method))
+            {
+                throw new ArgumentException(SR.Argument_MethodRedefined);
+            }
+            _methodDefinitions.Add(method);
+
+            return method;
+        }
+
+        protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention,
+            Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
+            Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
+        {
+            PropertyBuilderImpl property = new PropertyBuilderImpl(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
+                returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, this);
             _propertyDefinitions.Add(property);
             return property;
         }
 
-        protected override ConstructorBuilder DefineTypeInitializerCore() => throw new NotImplementedException();
-        protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
+        protected override ConstructorBuilder DefineTypeInitializerCore()
+        {
+            ThrowIfCreated();
+
+            const MethodAttributes attr = MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;
+
+            return new ConstructorBuilderImpl(ConstructorInfo.TypeConstructorName, attr, CallingConventions.Standard, null, null, null, _module, this);
+        }
+
+        protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes)
+        {
+            if (size <= 0 || size >= 0x003f0000)
+            {
+                throw new ArgumentException(SR.Argument_BadSizeForData, nameof(size));
+            }
+
+            // This method will define an uninitialized Data in .sdata.
+            // We will create a fake TypeDef to represent the data with size. This TypeDef
+            // will be the signature for the Field.
+            return DefineDataHelper(name, new byte[size], size, attributes);
+        }
+
+        private FieldBuilder DefineDataHelper(string name, byte[] data, int size, FieldAttributes attributes)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            ThrowIfCreated();
+
+            // form the value class name
+            string strValueClassName = $"$ArrayType${size}";
+
+            // Is this already defined in this module?
+            TypeBuilderImpl? valueClassType = _module.FindTypeBuilderWithName(strValueClassName, false);
+
+            if (valueClassType == null)
+            {
+                TypeAttributes typeAttributes = TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.AnsiClass;
+
+                // Define the backing value class
+                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, typeof(ValueType), PackingSize.Size1, size);
+                valueClassType.CreateType();
+            }
+
+            FieldBuilder fdBuilder = DefineField(name, valueClassType, attributes | FieldAttributes.Static | FieldAttributes.HasFieldRVA);
+
+            // now we need to set the RVA
+            ((FieldBuilderImpl)fdBuilder).SetData(data);
+            return fdBuilder;
+        }
+
         protected override bool IsCreatedCore() => _isCreated;
+
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             // Handle pseudo custom attributes
@@ -615,7 +734,8 @@ namespace System.Reflection.Emit
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
         public override object[] GetCustomAttributes(bool inherit) => throw new NotImplementedException();
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();
-        public override Type GetElementType() => throw new NotSupportedException();
+        // You will never have to deal with a TypeBuilder if you are just referring to arrays.
+        public override Type GetElementType() => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override string? AssemblyQualifiedName => throw new NotSupportedException();
         public override string? FullName => _strFullName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
         public override string? Namespace => _namespace;

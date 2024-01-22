@@ -18,7 +18,7 @@ namespace System.Linq
             }
             else
             {
-                array = Array.Empty<IGrouping<TKey, TElement>>();
+                array = [];
             }
             return array;
         }

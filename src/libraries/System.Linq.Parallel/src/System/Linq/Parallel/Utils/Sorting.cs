@@ -351,7 +351,9 @@ namespace System.Linq.Parallel
         // negatively impact speedups.
         //
 
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
         private void MergeSortCooperatively()
         {
             CancellationToken cancelToken = _groupState.CancellationState.MergedCancellationToken;

@@ -862,7 +862,6 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
         {
             BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
             newBlk->inheritWeight(insertAfter);
-            newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
             JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
             comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
@@ -897,7 +896,6 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     {
         BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
         newBlk->inheritWeight(insertAfter);
-        newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
         JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
         comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
@@ -1819,6 +1817,9 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
 
     // Is the entry block a handler or filter start?  If so, then if we cloned, we could create a jump
     // into the middle of a handler (to go to the cloned copy.)  Reject.
+    // TODO: This seems like it can be deleted. If the header is the beginning
+    // of a handler then the loop should be fully contained within the handler,
+    // and the cloned loop will also be in the handler.
     if (bbIsHandlerBeg(loop->GetHeader()))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Header block is a handler start.\n", loop->GetIndex());
@@ -1854,7 +1855,6 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         return false;
     }
 
-    LoopDsc* oldLoop = m_newToOldLoop[loop->GetIndex()];
     assert(!requireIterable || !lvaVarAddrExposed(iterInfo->IterVar));
 
     if (requireIterable)
@@ -1874,6 +1874,8 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
             return false;
         }
 
+        // TODO-Quirk: Can be removed, loop invariant is validated by
+        // `FlowGraphNaturalLoop::AnalyzeIteration`.
         if (!iterInfo->TestTree->OperIsCompare() || ((iterInfo->TestTree->gtFlags & GTF_RELOP_ZTT) == 0))
         {
             JITDUMP("Loop cloning: rejecting loop " FMT_LP
@@ -1991,10 +1993,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     const weight_t fastPathWeightScaleFactor = 0.99;
     const weight_t slowPathWeightScaleFactor = 1.0 - fastPathWeightScaleFactor;
 
-    // This is the containing loop, if any -- to label any blocks we create that are outside
-    // the loop being cloned.
-    unsigned char ambientLoop = m_newToOldLoop[loop->GetIndex()]->lpParent;
-
     // We're going to transform this loop:
     //
     // preheader --> header
@@ -2014,8 +2012,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     BasicBlock* fastPreheader =
         fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true, /*jumpDest*/ loop->GetHeader());
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
-    fastPreheader->bbWeight     = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    fastPreheader->bbNatLoopNum = ambientLoop;
+    fastPreheader->bbWeight = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     fastPreheader->SetFlags(BBF_LOOP_PREHEADER);
 
     if (fastPreheader->JumpsToNext())
@@ -2032,7 +2029,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     // 'preheader' is no longer the loop preheader; 'fastPreheader' is!
     preheader->RemoveFlags(BBF_LOOP_PREHEADER);
-    optUpdateLoopHead((unsigned)(m_newToOldLoop[loop->GetIndex()] - optLoopTable), preheader, fastPreheader);
 
     // We are going to create blocks after the lexical last block. If it falls
     // out of the loop then insert an explicit jump and insert after that
@@ -2057,9 +2053,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", bottomRedirBlk->bbNum, bottom->bbNum);
         bottomRedirBlk->bbWeight = bottomRedirBlk->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
 
-        // This is in the scope of a surrounding loop, if one exists -- the parent of the loop we're cloning.
-        bottomRedirBlk->bbNatLoopNum = ambientLoop;
-
         bottom->SetFalseTarget(bottomRedirBlk);
         fgAddRefPred(bottomRedirBlk, bottom);
         JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomRedirBlk->bbNum);
@@ -2079,8 +2072,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
     slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     slowPreheader->scaleBBWeight(slowPathWeightScaleFactor);
-    slowPreheader->bbNatLoopNum = ambientLoop;
-    newPred                     = slowPreheader;
+    newPred = slowPreheader;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
 
@@ -2092,11 +2084,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         BasicBlock* newBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum, newPred->bbNum);
 
-        // Call CloneBlockState to make a copy of the block's statements (and attributes), and assert that it
-        // has a return value indicating success, because optCanOptimizeByLoopCloningVisitor has already
-        // checked them to guarantee they are clonable.
-        bool cloneOk = BasicBlock::CloneBlockState(this, newBlk, blk);
-        noway_assert(cloneOk);
+        BasicBlock::CloneBlockState(this, newBlk, blk);
 
         // We're going to create the preds below, which will set the bbRefs properly,
         // so clear out the cloned bbRefs field.
@@ -2108,19 +2096,18 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         // TODO: scale the pred edges of `blk`?
 
         // If the loop we're cloning contains nested loops, we need to clear the pre-header bit on
-        // any nested loop pre-header blocks, since they will no longer be loop pre-headers. (This is because
-        // we don't add the slow loop or its child loops to the loop table. It would be simplest to
-        // just re-build the loop table if we want to enable loop optimization of the slow path loops.)
+        // any nested loop pre-header blocks, since they will no longer be loop pre-headers.
+        //
+        // TODO-Cleanup: BBF_LOOP_PREHEADER can be removed; we do not attempt
+        // to keep it up to date anymore when we do FG changes.
+        //
         if (newBlk->HasFlag(BBF_LOOP_PREHEADER))
         {
             JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);
             newBlk->RemoveFlags(BBF_LOOP_PREHEADER);
         }
 
-        // TODO-Cleanup: The above clones the bbNatLoopNum, which is incorrect.  Eventually, we should probably insert
-        // the cloned loop in the loop table.  For now, however, we'll just make these blocks be part of the surrounding
-        // loop, if one exists -- the parent of the loop we're cloning.
-        newBlk->bbNatLoopNum = ambientLoop;
+        newBlk->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
 
         newPred = newBlk;
         blockMap->Set(blk, newBlk);
@@ -2139,8 +2126,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
                 // Need to insert a block.
                 BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /* extendRegion */ true, targetBlk);
                 newRedirBlk->copyEHRegion(newPred);
-                newRedirBlk->bbNatLoopNum = ambientLoop;
-                newRedirBlk->bbWeight     = blk->Next()->bbWeight;
+                newRedirBlk->bbWeight = blk->Next()->bbWeight;
                 newRedirBlk->CopyFlags(blk->Next(), (BBF_RUN_RARELY | BBF_PROF_WEIGHT));
                 newRedirBlk->scaleBBWeight(slowPathWeightScaleFactor);
 
@@ -2266,12 +2252,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     assert(condLast->NextIs(fastPreheader));
     condLast->SetFalseTarget(fastPreheader);
     fgAddRefPred(fastPreheader, condLast);
-
-    // Don't unroll loops that we've cloned -- the unroller expects any loop it should unroll to
-    // initialize the loop counter immediately before entering the loop, but we've left a shared
-    // initialization of the loop counter up above the test that determines which version of the
-    // loop to take.
-    m_newToOldLoop[loop->GetIndex()]->lpFlags |= LPFLG_DONT_UNROLL;
 }
 
 //-------------------------------------------------------------------------
@@ -3035,12 +3015,6 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
     bool result = false;
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        // TODO-Quirk: Remove
-        if (!loop->GetHeader()->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-        {
-            continue;
-        }
-
         JITDUMP("Considering loop " FMT_LP " to clone for optimizations.\n", loop->GetIndex());
         NaturalLoopIterInfo iterInfo;
         if (loop->AnalyzeIteration(&iterInfo))
@@ -3190,12 +3164,11 @@ PhaseStatus Compiler::optCloneLoops()
 
     if (optLoopsCloned > 0)
     {
-        JITDUMP("Recompute reachability and dominators after loop cloning\n");
-        // TODO: recompute the loop table, to include the slow loop path in the table?
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
+        fgRenumberBlocks();
 
+        fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
-        optFindNewLoops();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }
 
 #ifdef DEBUG

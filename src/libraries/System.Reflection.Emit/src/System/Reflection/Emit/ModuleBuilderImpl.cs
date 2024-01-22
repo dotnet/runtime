@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -16,6 +17,7 @@ namespace System.Reflection.Emit
         private readonly string _name;
         private readonly MetadataBuilder _metadataBuilder;
         private readonly AssemblyBuilderImpl _assemblyBuilder;
+        private readonly TypeBuilderImpl _globalTypeBuilder;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyReferences = new();
         private readonly Dictionary<Type, EntityHandle> _typeReferences = new();
         private readonly Dictionary<object, EntityHandle> _memberReferences = new();
@@ -30,6 +32,7 @@ namespace System.Reflection.Emit
         private int _nextPropertyRowId = 1;
         private int _nextEventRowId = 1;
         private bool _coreTypesFullyPopulated;
+        private bool _hasGlobalBeenCreated;
         private Type?[]? _coreTypes;
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
                                                        typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
@@ -41,6 +44,7 @@ namespace System.Reflection.Emit
             _metadataBuilder = builder;
             _assemblyBuilder = assemblyBuilder;
             _moduleVersionId = Guid.NewGuid();
+            _globalTypeBuilder = new TypeBuilderImpl(this);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
@@ -104,7 +108,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        internal void AppendMetadata(MethodBodyStreamEncoder methodBodyEncoder)
+        internal void AppendMetadata(MethodBodyStreamEncoder methodBodyEncoder, BlobBuilder fieldDataBuilder)
         {
             // Add module metadata
             ModuleDefinitionHandle moduleHandle = _metadataBuilder.AddModule(
@@ -124,11 +128,14 @@ namespace System.Reflection.Emit
                 methodList: MetadataTokens.MethodDefinitionHandle(1));
 
             WriteCustomAttributes(_customAttributes, moduleHandle);
-
-            _typeDefinitions.Sort((x, y) => x.MetadataToken.CompareTo(y.MetadataToken));
-
             // All generic parameters for all types and methods should be written in specific order
             List<GenericTypeParameterBuilderImpl> genericParams = new();
+            PopulateTokensForTypesAndItsMembers();
+
+            // Add global members
+            WriteFields(_globalTypeBuilder, fieldDataBuilder);
+            WriteMethods(_globalTypeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
+
             // Add each type definition to metadata table.
             foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
             {
@@ -165,7 +172,7 @@ namespace System.Reflection.Emit
                 WriteInterfaceImplementations(typeBuilder, typeHandle);
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
                 WriteProperties(typeBuilder);
-                WriteFields(typeBuilder);
+                WriteFields(typeBuilder, fieldDataBuilder);
                 WriteMethods(typeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
                 WriteEvents(typeBuilder);
             }
@@ -185,7 +192,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:DynamicallyAccessedMembers", Justification = "Members are retrieved from internal cache")]
         private void WriteInterfaceImplementations(TypeBuilderImpl typeBuilder, TypeDefinitionHandle typeHandle)
         {
             if (typeBuilder._interfaces != null)
@@ -317,17 +323,20 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal void PopulateTypeAndItsMembersTokens(TypeBuilderImpl typeBuilder)
+        private void PopulateTokensForTypesAndItsMembers()
         {
-            typeBuilder._handle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
-            typeBuilder._firstMethodToken = _nextMethodDefRowId;
-            typeBuilder._firstFieldToken = _nextFieldDefRowId;
-            typeBuilder._firstPropertyToken = _nextPropertyRowId;
-            typeBuilder._firstEventToken = _nextEventRowId;
-            PopulateMethodDefinitionHandles(typeBuilder._methodDefinitions);
-            PopulateFieldDefinitionHandles(typeBuilder._fieldDefinitions);
-            PopulatePropertyDefinitionHandles(typeBuilder._propertyDefinitions);
-            PopulateEventDefinitionHandles(typeBuilder._eventDefinitions);
+            foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
+            {
+                typeBuilder._handle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
+                typeBuilder._firstMethodToken = _nextMethodDefRowId;
+                typeBuilder._firstFieldToken = _nextFieldDefRowId;
+                typeBuilder._firstPropertyToken = _nextPropertyRowId;
+                typeBuilder._firstEventToken = _nextEventRowId;
+                PopulateMethodDefinitionHandles(typeBuilder._methodDefinitions);
+                PopulateFieldDefinitionHandles(typeBuilder._fieldDefinitions);
+                PopulatePropertyDefinitionHandles(typeBuilder._propertyDefinitions);
+                PopulateEventDefinitionHandles(typeBuilder._eventDefinitions);
+            }
         }
 
         private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
@@ -414,11 +423,12 @@ namespace System.Reflection.Emit
                 attributes: method.InitLocals ? MethodBodyAttributes.InitLocals : MethodBodyAttributes.None,
                 hasDynamicStackAllocation: il.HasDynamicStackAllocation);
 
-        private void WriteFields(TypeBuilderImpl typeBuilder)
+        private void WriteFields(TypeBuilderImpl typeBuilder, BlobBuilder fieldDataBuilder)
         {
             foreach (FieldBuilderImpl field in typeBuilder._fieldDefinitions)
             {
-                FieldDefinitionHandle handle = AddFieldDefinition(field, MetadataSignatureHelper.GetFieldSignature(field.FieldType, this));
+                FieldDefinitionHandle handle = AddFieldDefinition(field,
+                    MetadataSignatureHelper.GetFieldSignature(field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
                 Debug.Assert(field._handle == handle);
                 WriteCustomAttributes(field._customAttributes, handle);
 
@@ -427,14 +437,21 @@ namespace System.Reflection.Emit
                     AddFieldLayout(handle, field._offset);
                 }
 
-                if (field._marshallingData != null)
+                if (field.Attributes.HasFlag(FieldAttributes.HasFieldMarshal) && field._marshallingData != null)
                 {
                     AddMarshalling(handle, field._marshallingData.SerializeMarshallingData());
                 }
 
-                if (field._defaultValue != DBNull.Value)
+                if (field.Attributes.HasFlag(FieldAttributes.HasDefault) && field._defaultValue != DBNull.Value)
                 {
                     AddDefaultValue(handle, field._defaultValue);
+                }
+
+                if (field.Attributes.HasFlag(FieldAttributes.HasFieldRVA) && field._rvaData != null)
+                {
+                    _metadataBuilder.AddFieldRelativeVirtualAddress(handle, fieldDataBuilder.Count);
+                    fieldDataBuilder.WriteBytes(field._rvaData!);
+                    fieldDataBuilder.Align(ManagedPEBuilder.MappedFieldDataAlignment);
                 }
             }
         }
@@ -502,17 +519,19 @@ namespace System.Reflection.Emit
                 method: methodHandle,
                 instantiation: _metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetMethodSpecificationSignature(genericArgs, this)));
 
-        private EntityHandle GetMemberReferenceHandle(MemberInfo member)
+        private EntityHandle GetMemberReferenceHandle(MemberInfo memberInfo)
         {
-            if (!_memberReferences.TryGetValue(member, out var memberHandle))
+            if (!_memberReferences.TryGetValue(memberInfo, out var memberHandle))
             {
+                MemberInfo member = GetOriginalMemberIfConstructedType(memberInfo);
                 switch (member)
                 {
                     case FieldInfo field:
-                        memberHandle = AddMemberReference(field.Name, GetTypeHandle(field.DeclaringType!), MetadataSignatureHelper.GetFieldSignature(field.FieldType, this));
+                        memberHandle = AddMemberReference(field.Name, GetTypeHandle(memberInfo.DeclaringType!),
+                            MetadataSignatureHelper.GetFieldSignature(field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
                         break;
                     case ConstructorInfo ctor:
-                        memberHandle = AddMemberReference(ctor.Name, GetTypeHandle(ctor.DeclaringType!), GetMemberSignature(ctor));
+                        memberHandle = AddMemberReference(ctor.Name, GetTypeHandle(memberInfo.DeclaringType!), MetadataSignatureHelper.GetConstructorSignature(ctor.GetParameters(), this));
                         break;
                     case MethodInfo method:
                         if (method.IsConstructedGenericMethod)
@@ -521,7 +540,7 @@ namespace System.Reflection.Emit
                         }
                         else
                         {
-                            memberHandle = AddMemberReference(member.Name, GetTypeHandle(member.DeclaringType!), GetMemberSignature(member));
+                            memberHandle = AddMemberReference(method.Name, GetTypeHandle(memberInfo.DeclaringType!), GetMethodSignature(method, null));
                         }
                         break;
                     default:
@@ -529,14 +548,15 @@ namespace System.Reflection.Emit
 
                 }
 
-                _memberReferences.Add(member, memberHandle);
+                _memberReferences.Add(memberInfo, memberHandle);
             }
 
             return memberHandle;
         }
 
-        private EntityHandle GetMethodReference(MethodInfo method, Type[] optionalParameterTypes)
+        private EntityHandle GetMethodReference(MethodInfo methodInfo, Type[] optionalParameterTypes)
         {
+            MethodInfo method = (MethodInfo)GetOriginalMemberIfConstructedType(methodInfo);
             BlobBuilder signature = GetMethodSignature(method, optionalParameterTypes);
             KeyValuePair<MethodInfo, BlobBuilder> pair = new(method, signature);
             if (!_memberReferences.TryGetValue(pair, out var memberHandle))
@@ -549,29 +569,31 @@ namespace System.Reflection.Emit
             return memberHandle;
         }
 
-        private BlobBuilder GetMethodSignature(MethodInfo method, Type[] optionalParameterTypes) =>
+        private BlobBuilder GetMethodSignature(MethodInfo method, Type[]? optionalParameterTypes) =>
             MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), method.ReturnType,
-                MethodBuilderImpl.GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
+                GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
 
-        private BlobBuilder GetMemberSignature(MemberInfo member)
+        internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConvention)
         {
-            if (member is MethodInfo method)
+            SignatureCallingConvention convention = SignatureCallingConvention.Default;
+
+            if ((callingConvention & CallingConventions.VarArgs) != 0)
             {
-                return MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), method.ReturnType,
-                    MethodBuilderImpl.GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic);
+                convention = SignatureCallingConvention.VarArgs;
             }
 
-            if (member is FieldInfo field)
+            return convention;
+        }
+
+        private static MemberInfo GetOriginalMemberIfConstructedType(MemberInfo memberInfo)
+        {
+            Type declaringType = memberInfo.DeclaringType!;
+            if (declaringType.IsConstructedGenericType && declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl)
             {
-                return MetadataSignatureHelper.GetFieldSignature(field.FieldType, this);
+                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(memberInfo);
             }
 
-            if (member is ConstructorInfo ctor)
-            {
-                return MetadataSignatureHelper.GetConstructorSignature(ctor.GetParameters(), this);
-            }
-
-            throw new NotSupportedException();
+            return memberInfo;
         }
 
         private static Type[] ParameterTypes(ParameterInfo[] parameterInfos)
@@ -596,7 +618,19 @@ namespace System.Reflection.Emit
             if (!_assemblyReferences.TryGetValue(assembly, out var handle))
             {
                 AssemblyName aName = assembly.GetName();
-                handle = AddAssemblyReference(aName.Name, aName.Version, aName.CultureName, aName.GetPublicKeyToken(), aName.Flags, aName.ContentType);
+                // For ref assembly flags shall have only one bit set, the PublicKey bit.
+                // All other bits shall be zero. See ECMA-335 spec II.22.5
+                AssemblyFlags assemblyFlags = 0;
+                byte[]? publicKeyOrToken = aName.GetPublicKey();
+                if (publicKeyOrToken != null && publicKeyOrToken.Length > 0)
+                {
+                    assemblyFlags = AssemblyFlags.PublicKey;
+                }
+                else
+                {
+                    publicKeyOrToken  = aName.GetPublicKeyToken();
+                }
+                handle = AddAssemblyReference(aName.Name, aName.Version, aName.CultureName, publicKeyOrToken, assemblyFlags);
                 _assemblyReferences.Add(assembly, handle);
             }
 
@@ -709,13 +743,13 @@ namespace System.Reflection.Emit
                 sequenceNumber: parameter.Position);
 
         private AssemblyReferenceHandle AddAssemblyReference(string? name, Version? version, string? culture,
-            byte[]? publicKeyToken, AssemblyNameFlags flags, AssemblyContentType contentType) =>
+            byte[]? publicKeyToken, AssemblyFlags assemblyFlags) =>
             _metadataBuilder.AddAssemblyReference(
                 name: name == null ? default : _metadataBuilder.GetOrAddString(name),
                 version: version ?? new Version(0, 0, 0, 0),
                 culture: (culture == null) ? default : _metadataBuilder.GetOrAddString(value: culture),
-                publicKeyOrToken: (publicKeyToken == null) ? default : _metadataBuilder.GetOrAddBlob(publicKeyToken), // reference has token, not full public key
-                flags: (AssemblyFlags)((int)contentType << 9) | ((flags & AssemblyNameFlags.Retargetable) != 0 ? AssemblyFlags.Retargetable : 0),
+                publicKeyOrToken: (publicKeyToken == null) ? default : _metadataBuilder.GetOrAddBlob(publicKeyToken),
+                flags: assemblyFlags,
                 hashValue: default); // .file directive assemblies not supported, no need to handle this value.
 
         internal EntityHandle GetTypeHandle(Type type)
@@ -788,58 +822,69 @@ namespace System.Reflection.Emit
         public override Guid ModuleVersionId => _moduleVersionId;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
 
-        public override int GetFieldMetadataToken(FieldInfo field)
+        public override int GetFieldMetadataToken(FieldInfo field) => GetTokenForHandle(GetFieldHandle(field));
+
+        internal EntityHandle GetFieldHandle(FieldInfo field)
         {
             if (field is FieldBuilderImpl fb)
             {
-                return fb._handle != default ? MetadataTokens.GetToken(fb._handle) : -1;
+                return fb._handle;
             }
 
-            if (IsConstuctedFromNotBakedTypeBuilder(field.DeclaringType!))
-            {
-                return -1;
-            }
-
-            return MetadataTokens.GetToken(GetMemberReferenceHandle(field));
+            return GetHandleForMember(field);
         }
 
-        private static bool IsConstuctedFromNotBakedTypeBuilder(Type type) => type.IsConstructedGenericType &&
+        private static int GetTokenForHandle(EntityHandle handle)
+        {
+            if (handle.IsNil)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_TokenNotPopulated);
+            }
+
+            return MetadataTokens.GetToken(handle);
+        }
+
+        private EntityHandle GetHandleForMember(MemberInfo member)
+        {
+            if (IsConstructedFromNotBakedTypeBuilder(member.DeclaringType!))
+            {
+                return default;
+            }
+
+            return GetMemberReferenceHandle(member);
+        }
+
+        private static bool IsConstructedFromNotBakedTypeBuilder(Type type) => type.IsConstructedGenericType &&
             type.GetGenericTypeDefinition() is TypeBuilderImpl tb && tb._handle == default;
 
-        public override int GetMethodMetadataToken(ConstructorInfo constructor)
+        public override int GetMethodMetadataToken(ConstructorInfo constructor) => GetTokenForHandle(GetConstructorHandle(constructor));
+
+        internal EntityHandle GetConstructorHandle(ConstructorInfo constructor)
         {
             if (constructor is ConstructorBuilderImpl cb)
             {
-                return cb._methodBuilder._handle != default ? MetadataTokens.GetToken(cb._methodBuilder._handle) : -1;
+                return cb._methodBuilder._handle;
             }
 
-            if (IsConstuctedFromNotBakedTypeBuilder(constructor.DeclaringType!))
-            {
-                return -1;
-            }
-
-            return MetadataTokens.GetToken(GetMemberReferenceHandle(constructor));
+            return GetHandleForMember(constructor);
         }
 
-        public override int GetMethodMetadataToken(MethodInfo method)
+        public override int GetMethodMetadataToken(MethodInfo method) => GetTokenForHandle(GetMethodHandle(method));
+
+        internal EntityHandle GetMethodHandle(MethodInfo method)
         {
             if (method is MethodBuilderImpl mb)
             {
-                return mb._handle != default ? MetadataTokens.GetToken(mb._handle) : -1;
+                return mb._handle;
             }
 
-            if (IsConstructedMethodFromNotBakedMethodBuilder(method))
-            {
-                return -1;
-            }
-
-            return MetadataTokens.GetToken(GetMemberReferenceHandle(method));
+            return GetHandleForMember(method);
         }
 
         private static bool IsConstructedMethodFromNotBakedMethodBuilder(MethodInfo method) =>
             method.IsConstructedGenericMethod && method.GetGenericMethodDefinition() is MethodBuilderImpl mb2 && mb2._handle == default;
 
-        internal int GetMethodMetadataToken(MethodInfo method, Type[] optionalParameterTypes)
+        internal EntityHandle GetMethodHandle(MethodInfo method, Type[] optionalParameterTypes)
         {
             if ((method.CallingConvention & CallingConventions.VarArgs) == 0)
             {
@@ -847,32 +892,48 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_NotAVarArgCallingConvention);
             }
 
-            if (method is MethodBuilderImpl mb && mb._handle == default || IsConstructedMethodFromNotBakedMethodBuilder(method))
+            if (method is MethodBuilderImpl mb)
             {
-                return -1;
+                return mb._handle;
             }
 
-            return MetadataTokens.GetToken(GetMethodReference(method, optionalParameterTypes));
+            if (IsConstructedMethodFromNotBakedMethodBuilder(method))
+            {
+                return default;
+            }
+
+            return GetMethodReference(method, optionalParameterTypes);
+        }
+
+        internal TypeBuilderImpl? FindTypeBuilderWithName(string strTypeName, bool ignoreCase)
+        {
+            StringComparison casing = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+            foreach (TypeBuilderImpl type in _typeDefinitions)
+            {
+                if (string.Equals(type.Name, strTypeName, casing))
+                {
+                    return type;
+                }
+            }
+
+            return null;
         }
 
         public override int GetStringMetadataToken(string stringConstant) => MetadataTokens.GetToken(_metadataBuilder.GetOrAddUserString(stringConstant));
 
-        public override int GetTypeMetadataToken(Type type)
+        public override int GetTypeMetadataToken(Type type) => GetTokenForHandle(GetTypeHandle(type));
+
+        protected override void CreateGlobalFunctionsCore()
         {
-            if (type is TypeBuilderImpl tb && Equals(tb.Module))
+            if (_hasGlobalBeenCreated)
             {
-                return tb._handle != default ? MetadataTokens.GetToken(tb._handle) : -1;
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             }
 
-            if (type is EnumBuilderImpl eb && Equals(eb.Module))
-            {
-                return eb._typeBuilder._handle != default ? MetadataTokens.GetToken(eb._typeBuilder._handle) : -1;
-            }
-
-            return MetadataTokens.GetToken(GetTypeReferenceOrSpecificationHandle(type));
+            _globalTypeBuilder.CreateTypeInfo();
+            _hasGlobalBeenCreated = true;
         }
-
-        protected override void CreateGlobalFunctionsCore() => throw new NotImplementedException();
 
         protected override EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType)
         {
@@ -880,10 +941,55 @@ namespace System.Reflection.Emit
             _typeDefinitions.Add(enumBuilder._typeBuilder);
             return enumBuilder;
         }
-        protected override MethodBuilder DefineGlobalMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers) => throw new NotImplementedException();
-        protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();
+
+        protected override MethodBuilder DefineGlobalMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention,
+            Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes,
+            Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers)
+        {
+            if (_hasGlobalBeenCreated)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
+            }
+
+            if ((attributes & MethodAttributes.Static) == 0)
+            {
+                throw new ArgumentException(SR.Argument_GlobalMembersMustBeStatic);
+            }
+
+            MethodBuilderImpl method = (MethodBuilderImpl)_globalTypeBuilder.DefineMethod(name, attributes, callingConvention,
+                returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers,
+                parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
+            method._handle = MetadataTokens.MethodDefinitionHandle(_nextMethodDefRowId++);
+            return method;
+        }
+
+        protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes)
+        {
+            if (_hasGlobalBeenCreated)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
+            }
+
+            FieldBuilderImpl field = (FieldBuilderImpl)_globalTypeBuilder.DefineInitializedData(name, data, attributes);
+            field._handle = MetadataTokens.FieldDefinitionHandle(_nextFieldDefRowId++);
+            return field;
+        }
+
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
+        protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes,
+            CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
+        {
+            // Global methods must be static.
+            if ((attributes & MethodAttributes.Static) == 0)
+            {
+                throw new ArgumentException(SR.Argument_GlobalMembersMustBeStatic);
+            }
+
+            MethodBuilderImpl method = (MethodBuilderImpl)_globalTypeBuilder.DefinePInvokeMethod(
+                name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
+            method._handle = MetadataTokens.MethodDefinitionHandle(_nextMethodDefRowId++);
+            return method;
+        }
 
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
@@ -893,7 +999,18 @@ namespace System.Reflection.Emit
             return _type;
         }
 
-        protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
+        protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes)
+        {
+            if (_hasGlobalBeenCreated)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
+            }
+
+            FieldBuilderImpl field = (FieldBuilderImpl)_globalTypeBuilder.DefineUninitializedData(name, size, attributes);
+            field._handle = MetadataTokens.FieldDefinitionHandle(_nextFieldDefRowId++);
+            return field;
+        }
+
         protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
@@ -901,13 +1018,31 @@ namespace System.Reflection.Emit
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }
 
+        [RequiresUnreferencedCode("Methods might be removed")]
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
+            CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
+        {
+            if (types == null)
+            {
+                return _globalTypeBuilder.GetMethod(name, bindingAttr);
+            }
+
+            return _globalTypeBuilder.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
+        }
+
+        [RequiresUnreferencedCode("Methods might be removed")]
+        public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
+        {
+            return _globalTypeBuilder.GetMethods(bindingFlags);
+        }
+
         public override int GetSignatureMetadataToken(SignatureHelper signature) =>
             MetadataTokens.GetToken(_metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(signature.GetSignature())));
 
-        internal int GetSignatureToken(CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes) =>
+        internal int GetSignatureToken(CallingConventions callingConventions, Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes) =>
             MetadataTokens.GetToken(_metadataBuilder.AddStandaloneSignature(
                     _metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetMethodSignature(this, parameterTypes, returnType,
-                        MethodBuilderImpl.GetSignatureConvention(callingConvention), optionalParameterTypes: optionalParameterTypes))));
+                        GetSignatureConvention(callingConventions), optionalParameterTypes: optionalParameterTypes))));
 
         internal int GetSignatureToken(CallingConvention callingConvention, Type? returnType, Type[]? parameterTypes) =>
             MetadataTokens.GetToken(_metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(

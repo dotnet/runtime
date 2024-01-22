@@ -1399,7 +1399,6 @@ DONE_CALL:
                     // fatPointer candidates should be in statements of the form call() or var = call().
                     // Such form allows to find statements with fat calls without walking through whole trees
                     // and removes problems with cutting trees.
-                    assert(!bIntrinsicImported);
                     assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                     if (call->OperGet() != GT_LCL_VAR) // can be already converted by impFixupCallStructReturn.
                     {
@@ -2789,7 +2788,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_Internal_Runtime_MethodTable_Of:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
-            case NI_System_EETypePtr_EETypePtrOf:
                 betterToExpand = true;
                 break;
 
@@ -2982,7 +2980,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_Internal_Runtime_MethodTable_Of:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
-            case NI_System_EETypePtr_EETypePtrOf:
             {
                 assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI)); // Only NativeAOT supports it.
                 CORINFO_RESOLVED_TOKEN resolvedToken;
@@ -8829,13 +8826,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "HasFlag") == 0)
                         {
                             result = NI_System_Enum_HasFlag;
-                        }
-                    }
-                    else if (strcmp(className, "EETypePtr") == 0)
-                    {
-                        if (strcmp(methodName, "EETypePtrOf") == 0)
-                        {
-                            result = NI_System_EETypePtr_EETypePtrOf;
                         }
                     }
                     break;

@@ -10,162 +10,114 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ConstructorTests
     {
-        [Fact]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
-        public async Task ReadSimpleObjectAsync()
+        [Theory]
+        [MemberData(nameof(ReadSimpleObjectAsync_TestData))]
+        public async Task ReadSimpleObjectAsync(Type type, string json)
         {
             if (StreamingSerializer is null)
             {
                 return;
             }
 
-            async Task RunTestAsync<T>(byte[] testData)
+            using Utf8MemoryStream stream = new(json);
+            JsonSerializerOptions options = new JsonSerializerOptions
             {
-                using (MemoryStream stream = new MemoryStream(testData))
-                {
-                    JsonSerializerOptions options = new JsonSerializerOptions
-                    {
-                        DefaultBufferSize = 1
-                    };
+                DefaultBufferSize = 1
+            };
 
-                    var obj = await StreamingSerializer.DeserializeWrapper<T>(stream, options);
-                    ((ITestClass)obj).Verify();
-                }
-            }
+            object obj = await StreamingSerializer.DeserializeWrapper(stream, type, options);
+            ((ITestClass)obj).Verify();
+        }
 
-            // TODO: should be refactored to a theory
-            // Array size is the count of the following tests.
-            Task[] tasks = new Task[16];
-
+        public static IEnumerable<object[]> ReadSimpleObjectAsync_TestData()
+        {
             // Simple models can be deserialized.
-            tasks[0] = Task.Run(async () => await RunTestAsync<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_data));
+            yield return new object[] { typeof(Parameterized_IndexViewModel_Immutable), Parameterized_IndexViewModel_Immutable.s_json };
             // Complex models can be deserialized.
-            tasks[1] = Task.Run(async () => await RunTestAsync<ObjWCtorMixedParams>(ObjWCtorMixedParams.s_data));
-            tasks[2] = Task.Run(async () => await RunTestAsync<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_data));
+            yield return new object[] { typeof(ObjWCtorMixedParams), ObjWCtorMixedParams.s_json };
+            yield return new object[] { typeof(Parameterized_Class_With_ComplexTuple), Parameterized_Class_With_ComplexTuple.s_json };
             // JSON that doesn't bind to ctor args are matched with properties or ignored (as appropriate).
-            tasks[3] = Task.Run(async () => await RunTestAsync<Person_Class>(Person_Class.s_data));
-            tasks[4] = Task.Run(async () => await RunTestAsync<Person_Struct>(Person_Struct.s_data));
-            // JSON that doesn't bind to ctor args or properties are sent to ext data if avaiable.
-            tasks[5] = Task.Run(async () => await RunTestAsync<Parameterized_Person>(Parameterized_Person.s_data));
-            tasks[6] = Task.Run(async () => await RunTestAsync<Parameterized_Person_ObjExtData>(Parameterized_Person_ObjExtData.s_data));
+            yield return new object[] { typeof(Person_Class), Person_Class.s_json };
+            yield return new object[] { typeof(Person_Struct), Person_Struct.s_json };
+            // JSON that doesn't bind to ctor args or properties are sent to ext data if available.
+            yield return new object[] { typeof(Parameterized_Person), Parameterized_Person.s_json };
+            yield return new object[] { typeof(Parameterized_Person_ObjExtData), Parameterized_Person_ObjExtData.s_json };
             // Up to 64 ctor args are supported.
-            tasks[7] = Task.Run(async () => await RunTestAsync<Class_With_Ctor_With_64_Params>(Class_With_Ctor_With_64_Params.Data));
+            yield return new object[] { typeof(Class_With_Ctor_With_64_Params), Class_With_Ctor_With_64_Params.Json };
             // Arg deserialization honors attributes on matching property.
-            tasks[8] = Task.Run(async () => await RunTestAsync<Point_MembersHave_JsonPropertyName>(Point_MembersHave_JsonPropertyName.s_data));
-            tasks[9] = Task.Run(async () => await RunTestAsync<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_data));
-            tasks[10] = Task.Run(async () => await RunTestAsync<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_data));
-            tasks[11] = Task.Run(async () => await RunTestAsync<Point_MembersHave_JsonInclude>(Point_MembersHave_JsonInclude.s_data));
-            tasks[12] = Task.Run(async () => await RunTestAsync<ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes>(ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes.s_data));
+            yield return new object[] { typeof(Point_MembersHave_JsonPropertyName), Point_MembersHave_JsonPropertyName.s_json };
+            yield return new object[] { typeof(Point_MembersHave_JsonConverter), Point_MembersHave_JsonConverter.s_json };
+            yield return new object[] { typeof(Point_MembersHave_JsonIgnore), Point_MembersHave_JsonIgnore.s_json };
+            yield return new object[] { typeof(Point_MembersHave_JsonInclude), Point_MembersHave_JsonInclude.s_json };
+            yield return new object[] { typeof(ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes), ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes.s_json };
             // Complex JSON as last argument works
-            tasks[13] = Task.Run(async () => await RunTestAsync<Point_With_Array>(Point_With_Array.s_data));
-            tasks[14] = Task.Run(async () => await RunTestAsync<Point_With_Dictionary>(Point_With_Dictionary.s_data));
-            tasks[15] = Task.Run(async () => await RunTestAsync<Point_With_Object>(Point_With_Object.s_data));
-
-            await Task.WhenAll(tasks);
+            yield return new object[] { typeof(Point_With_Array), Point_With_Array.s_json };
+            yield return new object[] { typeof(Point_With_Dictionary), Point_With_Dictionary.s_json };
+            yield return new object[] { typeof(Point_With_Object), Point_With_Object.s_json };
         }
 
-        [Fact]
-        public async Task ReadSimpleObjectWithTrailingTriviaAsync()
+        [Theory]
+        [MemberData(nameof(ReadSimpleObjectAsync_TestData))]
+        public async Task ReadSimpleObjectWithTrailingTriviaAsync(Type type, string json)
         {
             if (StreamingSerializer is null)
             {
                 return;
             }
 
-            async Task RunTestAsync<T>(string testData)
+            using MemoryStream stream = new Utf8MemoryStream(json + " /* Multi\r\nLine Comment */\t");
+            JsonSerializerOptions options = new JsonSerializerOptions
             {
-                byte[] data = Encoding.UTF8.GetBytes(testData + " /* Multi\r\nLine Comment */\t");
-                using (MemoryStream stream = new MemoryStream(data))
-                {
-                    JsonSerializerOptions options = new JsonSerializerOptions
-                    {
-                        DefaultBufferSize = 1,
-                        ReadCommentHandling = JsonCommentHandling.Skip,
-                    };
+                DefaultBufferSize = 1,
+                ReadCommentHandling = JsonCommentHandling.Skip,
+            };
 
-                    var obj = await StreamingSerializer.DeserializeWrapper<T>(stream, options);
-                    ((ITestClass)obj).Verify();
-                }
-            }
-
-            // TODO: should be refactored to a theory
-            // Array size is the count of the following tests.
-            Task[] tasks = new Task[14];
-
-            // Simple models can be deserialized.
-            tasks[0] = Task.Run(async () => await RunTestAsync<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_json));
-            // Complex models can be deserialized.
-            tasks[1] = Task.Run(async () => await RunTestAsync<ObjWCtorMixedParams>(ObjWCtorMixedParams.s_json));
-            tasks[2] = Task.Run(async () => await RunTestAsync<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_json));
-            // JSON that doesn't bind to ctor args are matched with properties or ignored (as appropriate).
-            tasks[3] = Task.Run(async () => await RunTestAsync<Person_Class>(Person_Class.s_json));
-            tasks[4] = Task.Run(async () => await RunTestAsync<Person_Struct>(Person_Struct.s_json));
-            // JSON that doesn't bind to ctor args or properties are sent to ext data if avaiable.
-            tasks[5] = Task.Run(async () => await RunTestAsync<Parameterized_Person>(Parameterized_Person.s_json));
-            tasks[6] = Task.Run(async () => await RunTestAsync<Parameterized_Person_ObjExtData>(Parameterized_Person_ObjExtData.s_json));
-            // Up to 64 ctor args are supported.
-            tasks[7] = Task.Run(async () => await RunTestAsync<Class_With_Ctor_With_64_Params>(Encoding.UTF8.GetString(Class_With_Ctor_With_64_Params.Data)));
-            // Arg8deserialization honors attributes on matching property.
-            tasks[8] = Task.Run(async () => await RunTestAsync<Point_MembersHave_JsonPropertyName>(Point_MembersHave_JsonPropertyName.s_json));
-            tasks[9] = Task.Run(async () => await RunTestAsync<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_json));
-            tasks[10] = Task.Run(async () => await RunTestAsync<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_json));
-            // Complex JSON as last argument works
-            tasks[11] = Task.Run(async () => await RunTestAsync<Point_With_Array>(Point_With_Array.s_json));
-            tasks[12] = Task.Run(async () => await RunTestAsync<Point_With_Dictionary>(Point_With_Dictionary.s_json));
-            tasks[13] = Task.Run(async () => await RunTestAsync<Point_With_Object>(Point_With_Object.s_json));
-
-            await Task.WhenAll(tasks);
+            object obj = await StreamingSerializer.DeserializeWrapper(stream, type, options);
+            ((ITestClass)obj).Verify();
         }
 
-        [Fact]
-        public async Task Can_DeserializeAsync_ObjectWith_Ctor_With_65_Params()
+        [Theory]
+        [InlineData(typeof(Class_With_Ctor_With_65_Params))]
+        [InlineData(typeof(Struct_With_Ctor_With_65_Params))]
+        public async Task Can_DeserializeAsync_ObjectWith_Ctor_With_65_Params(Type type)
         {
             if (StreamingSerializer is null)
             {
                 return;
             }
 
-            async Task RunTestAsync<T>()
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{");
+            for (int i = 0; i < 64; i++)
             {
-                StringBuilder sb = new StringBuilder();
-                sb.Append("{");
-                for (int i = 0; i < 64; i++)
+                sb.Append($@"""Int{i}"":{i},");
+            }
+            sb.Append($@"""Int64"":64");
+            sb.Append("}");
+
+            string json = sb.ToString();
+
+            using (MemoryStream stream = new Utf8MemoryStream(json))
+            {
+                JsonSerializerOptions options = new JsonSerializerOptions
                 {
-                    sb.Append($@"""Int{i}"":{i},");
-                }
-                sb.Append($@"""Int64"":64");
-                sb.Append("}");
+                    DefaultBufferSize = 1
+                };
 
-                string input = sb.ToString();
-                T value;
-
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(input)))
-                {
-                    JsonSerializerOptions options = new JsonSerializerOptions
-                    {
-                        DefaultBufferSize = 1
-                    };
-
-                    value = await StreamingSerializer.DeserializeWrapper<T>(stream, options);
-                }
-
-                using (MemoryStream stream = new MemoryStream("{}"u8.ToArray()))
-                {
-                    JsonSerializerOptions options = new JsonSerializerOptions
-                    {
-                        DefaultBufferSize = 1
-                    };
-
-                    value = await StreamingSerializer.DeserializeWrapper<T>(stream, options);
-                }
+                object? value = await StreamingSerializer.DeserializeWrapper(stream, type, options);
+                Assert.NotNull(value);
             }
 
-            Task[] tasks = new Task[2];
+            using (MemoryStream stream = new MemoryStream("{}"u8.ToArray()))
+            {
+                JsonSerializerOptions options = new JsonSerializerOptions
+                {
+                    DefaultBufferSize = 1
+                };
 
-            tasks[0] = Task.Run(async () => await RunTestAsync<Class_With_Ctor_With_65_Params>());
-            tasks[1] = Task.Run(async () => await RunTestAsync<Struct_With_Ctor_With_65_Params>());
-
-            await Task.WhenAll(tasks);
+                object? value = await StreamingSerializer.DeserializeWrapper(stream, type, options);
+                Assert.NotNull(value);
+            }
         }
 
         [Fact]

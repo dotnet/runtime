@@ -52,6 +52,10 @@ namespace System.Text.Json.SourceGeneration
 
         public required bool? WriteIndented { get; init; }
 
+        public required char? IndentCharacter { get; init; }
+
+        public required int? IndentSize { get; init; }
+
         public JsonKnownNamingPolicy? GetEffectivePropertyNamingPolicy()
             => PropertyNamingPolicy ?? (Defaults is JsonSerializerDefaults.Web ? JsonKnownNamingPolicy.CamelCase : null);
     }

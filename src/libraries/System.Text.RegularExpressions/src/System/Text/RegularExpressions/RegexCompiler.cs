@@ -953,6 +953,14 @@ namespace System.Text.RegularExpressions
                             Call(primarySet.Negated ? s_spanIndexOfAnyExceptInRange : s_spanIndexOfAnyInRange);
                         }
                     }
+                    else if (RegexCharClass.IsUnicodeCategoryOfSmallCharCount(primarySet.Set, out char[]? setChars, out bool negated, out _))
+                    {
+                        // We have a known set of small number of characters; we can use IndexOfAny{Except}(searchValues).
+
+                        // tmp = ...IndexOfAny(s_searchValues);
+                        LoadSearchValues(setChars);
+                        Call(negated ? s_spanIndexOfAnyExceptSearchValues : s_spanIndexOfAnySearchValues);
+                    }
                     else
                     {
                         // In order to optimize the search for ASCII characters, we use SearchValues to vectorize a search
@@ -5305,7 +5313,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        protected void EmitScan(RegexOptions options, DynamicMethod tryFindNextStartingPositionMethod, DynamicMethod tryMatchAtCurrentPositionMethod)
+        protected void EmitScan(RegexOptions options, MethodInfo tryFindNextStartingPositionMethod, MethodInfo tryMatchAtCurrentPositionMethod)
         {
             // As with the source generator, we can emit special code for common circumstances rather than always emitting
             // the most general purpose scan loop.  Unlike the source generator, however, code appearance isn't important

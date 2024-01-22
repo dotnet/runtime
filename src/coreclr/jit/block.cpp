@@ -301,18 +301,20 @@ bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------
-// CanRemoveJumpToFalseTarget: determine if jump to false target can be omitted
+// CanRemoveJumpToTarget: determine if jump to target can be omitted
 //
 // Arguments:
+//    target - true/false target of BBJ_COND block
 //    compiler - current compiler instance
 //
 // Returns:
-//    true if block is a BBJ_COND that can fall into its false target
+//    true if block is a BBJ_COND that can fall into target
 //
-bool BasicBlock::CanRemoveJumpToFalseTarget(Compiler* compiler) const
+bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const
 {
     assert(KindIs(BBJ_COND));
-    return NextIs(bbFalseTarget) && !hasAlign() && !compiler->fgInDifferentRegions(this, bbFalseTarget);
+    assert(TrueTargetIs(target) || FalseTargetIs(target));
+    return NextIs(target) && !compiler->fgInDifferentRegions(this, target);
 }
 
 //------------------------------------------------------------------------
@@ -489,7 +491,7 @@ void BasicBlock::dspFlags() const
         {BBF_INTERNAL, "internal"},
         {BBF_FAILED_VERIFICATION, "failV"},
         {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
-        {BBF_LOOP_HEAD, "Loop"},
+        {BBF_LOOP_HEAD, "loophead"},
         {BBF_HAS_LABEL, "label"},
         {BBF_HAS_JMP, "jmp"},
         {BBF_HAS_CALL, "hascall"},
@@ -511,7 +513,7 @@ void BasicBlock::dspFlags() const
         {BBF_NO_CSE_IN, "no-cse"},
         {BBF_CAN_ADD_PRED, "add-pred"},
         {BBF_RETLESS_CALL, "retless"},
-        {BBF_LOOP_PREHEADER, "LoopPH"},
+        {BBF_LOOP_PREHEADER, "preheader"},
         {BBF_COLD, "cold"},
         {BBF_KEEP_BBJ_ALWAYS, "KEEP"},
         {BBF_CLONED_FINALLY_BEGIN, "cfb"},
@@ -524,11 +526,17 @@ void BasicBlock::dspFlags() const
         {BBF_OLD_LOOP_HEADER_QUIRK, "loopheader"},
     };
 
+    bool first = true;
     for (unsigned i = 0; i < ArrLen(bbFlagDisplay); i++)
     {
         if (HasFlag(bbFlagDisplay[i].flag))
         {
-            printf("%s ", bbFlagDisplay[i].displayString);
+            if (!first)
+            {
+                printf(" ");
+            }
+            printf("%s", bbFlagDisplay[i].displayString);
+            first = false;
         }
     }
 }
@@ -786,16 +794,10 @@ void* BasicBlock::MemoryPhiArg::operator new(size_t sz, Compiler* comp)
 //    varNum - lclVar uses with lclNum `varNum` will be replaced; can be ~0 to indicate no replacement.
 //    varVal - If replacing uses of `varNum`, replace them with int constants with value `varVal`.
 //
-// Return Value:
-//    Cloning may fail because this routine uses `gtCloneExpr` for cloning and it can't handle all
-//    IR nodes.  If cloning of any statement fails, `false` will be returned and block `to` may be
-//    partially populated.  If cloning of all statements succeeds, `true` will be returned and
-//    block `to` will be fully populated.
-//
 // Note:
 //    Leaves block ref count at zero, and pred edge list empty.
 //
-bool BasicBlock::CloneBlockState(
+void BasicBlock::CloneBlockState(
     Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum, int varVal)
 {
     assert(to->bbStmtList == nullptr);
@@ -809,7 +811,6 @@ bool BasicBlock::CloneBlockState(
     to->bbCodeOffs    = from->bbCodeOffs;
     to->bbCodeOffsEnd = from->bbCodeOffsEnd;
     VarSetOps::AssignAllowUninitRhs(compiler, to->bbScope, from->bbScope);
-    to->bbNatLoopNum = from->bbNatLoopNum;
 #ifdef DEBUG
     to->bbTgtStkDepth = from->bbTgtStkDepth;
 #endif // DEBUG
@@ -817,16 +818,9 @@ bool BasicBlock::CloneBlockState(
     for (Statement* const fromStmt : from->Statements())
     {
         GenTree* newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
-        if (!newExpr)
-        {
-            // gtCloneExpr doesn't handle all opcodes, so may fail to clone a statement.
-            // When that happens, it returns nullptr; abandon the rest of this block and
-            // return `false` to the caller to indicate that cloning was unsuccessful.
-            return false;
-        }
+        assert(newExpr != nullptr);
         compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr, fromStmt->GetDebugInfo()));
     }
-    return true;
 }
 
 //------------------------------------------------------------------------
@@ -1177,7 +1171,7 @@ unsigned BasicBlock::NumSucc() const
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueTarget == bbFalseTarget)
             {
                 return 1;
             }
@@ -1302,7 +1296,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueTarget == bbFalseTarget)
             {
                 return 1;
             }
@@ -1611,14 +1605,8 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
         block->bbMemorySsaNumOut[memoryKind]  = 0;
     }
 
-    // Make sure we reserve a NOT_IN_LOOP value that isn't a legal table index.
-    static_assert_no_msg(BasicBlock::MAX_LOOP_NUM < BasicBlock::NOT_IN_LOOP);
-
-    block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
-
-    block->bbPreorderNum     = 0;
-    block->bbPostorderNum    = 0;
-    block->bbNewPostorderNum = 0;
+    block->bbPreorderNum  = 0;
+    block->bbPostorderNum = 0;
 
     return block;
 }

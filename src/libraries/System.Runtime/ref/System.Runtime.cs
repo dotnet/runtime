@@ -12631,6 +12631,10 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvStdcall() { }
     }
+    public partial class CallConvSwift
+    {
+        public CallConvSwift() { }
+    }
     public partial class CallConvSuppressGCTransition
     {
         public CallConvSuppressGCTransition() { }
@@ -13826,6 +13830,22 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { }
             public static ref T GetPinnableReference(System.Span<T> managed) { throw null; }
         }
+    }
+}
+namespace System.Runtime.InteropServices.Swift
+{
+    [System.CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftSelf
+    {
+        public SwiftSelf(void* value) { }
+        public void* Value { get; }
+    }
+
+    [System.CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftError
+    {
+        public SwiftError(void* value) { }
+        public void* Value { get; }
     }
 }
 namespace System.Runtime.Remoting
@@ -15347,6 +15367,7 @@ namespace System.Threading.Tasks
         public System.Threading.Tasks.Task Task { get { throw null; } }
         public void SetCanceled() { }
         public void SetCanceled(System.Threading.CancellationToken cancellationToken) { }
+        public void SetFromTask(System.Threading.Tasks.Task completedTask) { throw null; }
         public void SetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { }
         public void SetException(System.Exception exception) { }
         public void SetResult() { }
@@ -15354,6 +15375,7 @@ namespace System.Threading.Tasks
         public bool TrySetCanceled(System.Threading.CancellationToken cancellationToken) { throw null; }
         public bool TrySetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { throw null; }
         public bool TrySetException(System.Exception exception) { throw null; }
+        public bool TrySetFromTask(System.Threading.Tasks.Task completedTask) { throw null; }
         public bool TrySetResult() { throw null; }
     }
     public partial class TaskCompletionSource<TResult>
@@ -15365,11 +15387,13 @@ namespace System.Threading.Tasks
         public System.Threading.Tasks.Task<TResult> Task { get { throw null; } }
         public void SetCanceled() { }
         public void SetCanceled(System.Threading.CancellationToken cancellationToken) { }
+        public void SetFromTask(System.Threading.Tasks.Task<TResult> completedTask) { throw null; }
         public void SetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { }
         public void SetException(System.Exception exception) { }
         public void SetResult(TResult result) { }
         public bool TrySetCanceled() { throw null; }
         public bool TrySetCanceled(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public bool TrySetFromTask(System.Threading.Tasks.Task<TResult> completedTask) { throw null; }
         public bool TrySetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { throw null; }
         public bool TrySetException(System.Exception exception) { throw null; }
         public bool TrySetResult(TResult result) { throw null; }
