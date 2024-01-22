@@ -65,14 +65,28 @@ namespace System.Net.Security
             return new SafeFreeContextBuffer_SECURITY();
         }
 
-        //
-        // After PInvoke call the method will fix the refHandle.handle with the returned value.
-        // The caller is responsible for creating a correct SafeHandle template or null can be passed if no handle is returned.
-        //
-        // This method switches between three non-interruptible helper methods.  (This method can't be both non-interruptible and
-        // reference imports from all three DLLs - doing so would cause all three DLLs to try to be bound to.)
-        //
-        public static unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, byte* buffer, SafeHandle? refHandle)
+        public static unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, IntPtr* handle)
+        {
+            try
+            {
+                bool ignore = false;
+                phContext.DangerousAddRef(ref ignore);
+                return Interop.SspiCli.QueryContextAttributesW(ref phContext._handle, contextAttribute, handle);
+            }
+            finally
+            {
+                phContext.DangerousRelease();
+            }
+        }
+
+            //
+            // After PInvoke call the method will fix the refHandle.handle with the returned value.
+            // The caller is responsible for creating a correct SafeHandle template or null can be passed if no handle is returned.
+            //
+            // This method switches between three non-interruptible helper methods.  (This method can't be both non-interruptible and
+            // reference imports from all three DLLs - doing so would cause all three DLLs to try to be bound to.)
+            //
+            public static unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, byte* buffer, SafeHandle? refHandle)
         {
             int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
 
@@ -95,7 +109,7 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    ((SafeFreeCertContext)refHandle).Set(*(IntPtr*)buffer);
+                    Debug.Assert(false);
                 }
             }
 

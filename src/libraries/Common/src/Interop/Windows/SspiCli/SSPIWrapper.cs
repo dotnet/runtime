@@ -270,29 +270,42 @@ namespace System.Net
             }
         }
 
-        private static bool QueryCertContextAttribute(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute attribute, out SafeFreeCertContext? certContext)
+        private static unsafe bool QueryCertContextAttribute(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute attribute, out SafeFreeCertContext? certContext)
         {
-            Span<IntPtr> buffer = stackalloc IntPtr[1];
-            int errorCode = secModule.QueryContextAttributes(
-                securityContext,
-                attribute,
-                MemoryMarshal.AsBytes(buffer),
-                typeof(SafeFreeCertContext),
-                out SafeHandle? sspiHandle);
+            IntPtr handle = IntPtr.Zero;
+            certContext = null;
 
-            // certificate is not always present (e.g. on server when querying client certificate)
-            // but we still want to consider such case as a success.
-            bool success = errorCode == 0 || errorCode == (int)Interop.SECURITY_STATUS.NoCredentials;
-
-            if (!success)
+            try
             {
-                sspiHandle?.Dispose();
-                sspiHandle = null;
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"ERROR = {ErrorDescription(errorCode)}");
-            }
+                int errorCode = secModule.QueryContextAttributes(
+                    securityContext,
+                    attribute,
+                    &handle);
 
-            certContext = sspiHandle as SafeFreeCertContext;
-            return success;
+                // certificate is not always present (e.g. on server when querying client certificate)
+                // but we still want to consider such case as a success.
+                bool success = errorCode == 0 || errorCode == (int)Interop.SECURITY_STATUS.NoCredentials;
+
+                if (errorCode == 0 && handle != IntPtr.Zero)
+                {
+                    certContext = new SafeFreeCertContext();
+                    certContext.Set(handle);
+                    // Handle was successfully transferred to SafeHandle
+                    handle = IntPtr.Zero;
+                }
+                if (!success)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"ERROR = {ErrorDescription(errorCode)}");
+                }
+                return success;
+            }
+            finally
+            {
+                if (handle != IntPtr.Zero)
+                {
+                    Interop.Crypt32.CertFreeCertificateContext(handle);
+                }
+            }
         }
 
         public static bool QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(ISSPIInterface secModule, SafeDeleteContext securityContext, out SafeFreeCertContext? certContext)
