@@ -173,22 +173,23 @@ namespace System
                         pDestMT,
                         obj);
                 }
+                else if (obj is null)
+                {
+                    ThrowHelper.ThrowInvalidCastException_DownCastArrayElement();
+                }
+                else if (pDestMT->ContainsGCPointers)
+                {
+                    Buffer.BulkMoveWithWriteBarrier(
+                        ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
+                        ref CastHelpers.Unbox(pDestMT, obj),
+                        destSize);
+                }
                 else
                 {
-                    if (pDestMT->ContainsGCPointers)
-                    {
-                        Buffer.BulkMoveWithWriteBarrier(
-                            ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
-                            ref CastHelpers.Unbox(pDestMT, obj),
-                            destSize);
-                    }
-                    else
-                    {
-                        Buffer.Memmove(
-                            ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
-                            ref CastHelpers.Unbox(pDestMT, obj),
-                            destSize);
-                    }
+                    Buffer.Memmove(
+                        ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
+                        ref CastHelpers.Unbox(pDestMT, obj),
+                        destSize);
                 }
             }
         }
