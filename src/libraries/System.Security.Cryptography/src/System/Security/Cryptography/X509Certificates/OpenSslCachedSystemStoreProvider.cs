@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             var uniqueRootCerts = new HashSet<X509Certificate2>();
             var uniqueIntermediateCerts = new HashSet<X509Certificate2>();
-            var processedFiles = new HashSet<string>();
+            var processedFiles = new HashSet<(long Ino, long Dev)>();
             bool firstLoad = (s_nativeCollections == null);
 
             if (firstLoad)
@@ -207,20 +207,20 @@ namespace System.Security.Cryptography.X509Certificates
             bool ProcessFile(string file, out DateTime lastModified, bool skipStat = false)
             {
                 bool readData = false;
+                bool result = TryStatFile(file, out lastModified, out (long, long) fileDetails);
 
                 if (skipStat)
                 {
                     lastModified = default;
                 }
-                else if (!TryStatFile(file, out lastModified))
+                else if (!result)
                 {
                     return false;
                 }
 
-                string originalFile = Interop.Sys.ReadLink(file) ?? file;
-                if (processedFiles.Contains(originalFile))
+                if (processedFiles.Contains(fileDetails))
                 {
-                    return true;
+                   return true;
                 }
 
                 using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(file, "rb"))
@@ -288,9 +288,9 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                 }
 
-               if (readData)
+                if (readData)
                 {
-                    processedFiles.Add(originalFile);
+                    processedFiles.Add(fileDetails);
                 }
 
                 return readData;
@@ -319,7 +319,6 @@ namespace System.Security.Cryptography.X509Certificates
             // In order to maintain "finalization-free" the GetNativeCollections method would need to
             // DangerousAddRef, and the callers would need to DangerousRelease, adding more interlocked operations
             // on every call.
-
             Volatile.Write(ref s_nativeCollections, newCollections);
             s_recheckStopwatch.Restart();
             return newCollections;
@@ -374,12 +373,19 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         private static bool TryStatFile(string path, out DateTime lastModified)
-            => TryStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified);
+            => CallStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified).HasCallSucceed;
 
         private static bool TryStatDirectory(string path, out DateTime lastModified)
-            => TryStat(path, Interop.Sys.FileTypes.S_IFDIR, out lastModified);
+            => CallStat(path, Interop.Sys.FileTypes.S_IFDIR, out lastModified).HasCallSucceed;
 
-        private static bool TryStat(string path, int fileType, out DateTime lastModified)
+        private static bool TryStatFile(string path, out DateTime lastModified, out (long Ino, long Dev) fileDetails)
+        {
+            var statResult =  CallStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified);
+            fileDetails = (statResult.fileStatus.Ino, statResult.fileStatus.Dev);
+            return statResult.HasCallSucceed;
+        }
+
+        private static (bool HasCallSucceed, Interop.Sys.FileStatus fileStatus) CallStat(string path, int fileType, out DateTime lastModified)
         {
             lastModified = default;
 
@@ -388,11 +394,11 @@ namespace System.Security.Cryptography.X509Certificates
             if (Interop.Sys.Stat(path, out status) < 0 ||
                 (status.Mode & Interop.Sys.FileTypes.S_IFMT) != fileType)
             {
-                return false;
+                return (false, status);
             }
 
             lastModified = DateTime.UnixEpoch + TimeSpan.FromTicks(status.MTime * TimeSpan.TicksPerSecond + status.MTimeNsec / TimeSpan.NanosecondsPerTick);
-            return true;
+            return (true, status);
         }
     }
 }
