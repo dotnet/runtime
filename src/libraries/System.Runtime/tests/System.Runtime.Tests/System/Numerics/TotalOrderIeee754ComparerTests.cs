@@ -107,7 +107,7 @@ namespace System.Runtime.Tests
                 yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), 1.0f, 1 };
                 yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), float.PositiveInfinity, 1 };
                 yield return new object[] { float.NaN, float.NaN, 0 };
-                if (PlatformDetection.IsRiscV64Process) // float->double cast does not preserve payload and sign on RISC-V
+                if (PlatformDetection.IsRiscV64Process) // float->double cast does not preserve NaN payload and sign on RISC-V
                 {
                     yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), float.NegativeInfinity, 1 };
                     yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), -1.0f, 1 };
