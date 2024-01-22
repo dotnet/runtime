@@ -6,9 +6,11 @@ using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 
+using MethodTable = Internal.Runtime.MethodTable;
+
 namespace System
 {
-    internal static class InvokeUtils
+    internal static unsafe class InvokeUtils
     {
         //
         // Various reflection scenarios (Array.SetValue(), reflection Invoke, delegate DynamicInvoke and FieldInfo.Set()) perform
@@ -37,22 +39,22 @@ namespace System
             SetFieldDirect,      // Throws ArgumentException - other than that, like DynamicInvoke except that enums and integers cannot be intermingled, and null cannot substitute for default(valuetype).
         }
 
-        internal static object? CheckArgument(object? srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
+        internal static object? CheckArgument(object? srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
         {
             // Methods with ByRefLike types in signatures should be filtered out earlier
-            Debug.Assert(!dstEEType.IsByRefLike);
+            Debug.Assert(!dstEEType->IsByRefLike);
 
             if (srcObject == null)
             {
                 // null -> default(T)
-                if (dstEEType.IsPointer)
+                if (dstEEType->IsPointer)
                 {
                     return default(IntPtr);
                 }
-                else if (dstEEType.IsValueType && !dstEEType.IsNullable)
+                else if (dstEEType->IsValueType && !dstEEType->IsNullable)
                 {
                     if (semantics == CheckArgumentSemantics.SetFieldDirect)
-                        throw CreateChangeTypeException(typeof(object).TypeHandle.ToEETypePtr(), dstEEType, semantics);
+                        throw CreateChangeTypeException(MethodTable.Of<object>(), dstEEType, semantics);
                     return Runtime.RuntimeImports.RhNewObject(dstEEType);
                 }
                 else
@@ -62,11 +64,11 @@ namespace System
             }
             else
             {
-                EETypePtr srcEEType = srcObject.GetEETypePtr();
+                MethodTable* srcEEType = srcObject.GetMethodTable();
 
-                if (srcEEType.RawValue == dstEEType.RawValue ||
+                if (srcEEType == dstEEType ||
                     RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
-                    (dstEEType.IsInterface && srcObject is Runtime.InteropServices.IDynamicInterfaceCastable castable
+                    (dstEEType->IsInterface && srcObject is Runtime.InteropServices.IDynamicInterfaceCastable castable
                         && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false)))
                 {
                     return srcObject;
@@ -76,7 +78,7 @@ namespace System
             }
         }
 
-        internal static object? CheckArgumentConversions(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
+        internal static object? CheckArgumentConversions(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
         {
             object? dstObject;
             Exception exception = ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(srcObject, dstEEType, semantics, out dstObject);
@@ -96,17 +98,17 @@ namespace System
         }
 
         // Special coersion rules for primitives, enums and pointer.
-        private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object? dstObject)
+        private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, out object? dstObject)
         {
-            EETypePtr srcEEType = srcObject.GetEETypePtr();
+            MethodTable* srcEEType = srcObject.GetMethodTable();
 
-            if (semantics == CheckArgumentSemantics.SetFieldDirect && (srcEEType.IsEnum || dstEEType.IsEnum))
+            if (semantics == CheckArgumentSemantics.SetFieldDirect && (srcEEType->IsEnum || dstEEType->IsEnum))
             {
                 dstObject = null;
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            if (dstEEType.IsPointer || dstEEType.IsFunctionPointer)
+            if (dstEEType->IsPointer || dstEEType->IsFunctionPointer)
             {
                 Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out object dstPtr);
                 if (exception != null)
@@ -118,14 +120,14 @@ namespace System
                 return null;
             }
 
-            if (!(srcEEType.IsPrimitive && dstEEType.IsPrimitive))
+            if (!(srcEEType->IsPrimitive && dstEEType->IsPrimitive))
             {
                 dstObject = null;
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            CorElementType dstCorElementType = dstEEType.CorElementType;
-            if (!srcEEType.CorElementTypeInfo.CanWidenTo(dstCorElementType))
+            CorElementType dstCorElementType = new EETypePtr(dstEEType).CorElementType;
+            if (!new EETypePtr(srcEEType).CorElementTypeInfo.CanWidenTo(dstCorElementType))
             {
                 dstObject = null;
                 return CreateChangeTypeArgumentException(srcEEType, dstEEType);
@@ -139,51 +141,51 @@ namespace System
 
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     char charValue = Convert.ToChar(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, charValue) : charValue;
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, charValue) : charValue;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_I1:
                     sbyte sbyteValue = Convert.ToSByte(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, sbyteValue) : sbyteValue;
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, sbyteValue) : sbyteValue;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_I2:
                     short shortValue = Convert.ToInt16(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, shortValue) : shortValue;
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, shortValue) : shortValue;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_I4:
                     int intValue = Convert.ToInt32(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, intValue) : intValue;
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, intValue) : intValue;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_I8:
                     long longValue = Convert.ToInt64(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, longValue) : longValue;
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, longValue) : longValue;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U1:
                     byte byteValue = Convert.ToByte(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, byteValue) : byteValue;
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, byteValue) : byteValue;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U2:
                     ushort ushortValue = Convert.ToUInt16(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, ushortValue) : ushortValue;
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, ushortValue) : ushortValue;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U4:
                     uint uintValue = Convert.ToUInt32(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, uintValue) : uintValue;
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, uintValue) : uintValue;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U8:
                     ulong ulongValue = Convert.ToUInt64(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, (long)ulongValue) : ulongValue;
+                    dstObject = dstEEType->IsEnum ? Enum.ToObject(dstEEType, (long)ulongValue) : ulongValue;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_R4:
-                    if (srcEEType.CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
+                    if (new EETypePtr(srcEEType).CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
                     {
                         dstObject = (float)(char)srcObject;
                     }
@@ -194,7 +196,7 @@ namespace System
                     break;
 
                 case CorElementType.ELEMENT_TYPE_R8:
-                    if (srcEEType.CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
+                    if (new EETypePtr(srcEEType).CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
                     {
                         dstObject = (double)(char)srcObject;
                     }
@@ -210,11 +212,11 @@ namespace System
                     return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            Debug.Assert(dstObject.GetEETypePtr() == dstEEType);
+            Debug.Assert(dstObject.GetMethodTable() == dstEEType);
             return null;
         }
 
-        private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object dstPtr)
+        private static Exception ConvertPointerIfPossible(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, out object dstPtr)
         {
             if (srcObject is IntPtr or UIntPtr)
             {
@@ -224,7 +226,7 @@ namespace System
 
             if (srcObject is Pointer srcPointer)
             {
-                if (dstEEType == typeof(void*).TypeHandle.ToEETypePtr() || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.GetPointerType().TypeHandle.ToEETypePtr(), pTargetType: dstEEType))
+                if (dstEEType == typeof(void*).TypeHandle.ToMethodTable() || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.GetPointerType().TypeHandle.ToMethodTable(), pTargetType: dstEEType))
                 {
                     dstPtr = srcPointer.GetPointerValue();
                     return null;
@@ -232,10 +234,10 @@ namespace System
             }
 
             dstPtr = null;
-            return CreateChangeTypeException(srcObject.GetEETypePtr(), dstEEType, semantics);
+            return CreateChangeTypeException(srcObject.GetMethodTable(), dstEEType, semantics);
         }
 
-        private static Exception CreateChangeTypeException(EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics)
+        private static Exception CreateChangeTypeException(MethodTable* srcEEType, MethodTable* dstEEType, CheckArgumentSemantics semantics)
         {
             switch (semantics)
             {
@@ -250,10 +252,10 @@ namespace System
             }
         }
 
-        internal static ArgumentException CreateChangeTypeArgumentException(EETypePtr srcEEType, EETypePtr dstEEType, bool destinationIsByRef = false)
+        internal static ArgumentException CreateChangeTypeArgumentException(MethodTable* srcEEType, MethodTable* dstEEType, bool destinationIsByRef = false)
             => CreateChangeTypeArgumentException(srcEEType, Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType)), destinationIsByRef);
 
-        internal static ArgumentException CreateChangeTypeArgumentException(EETypePtr srcEEType, Type dstType, bool destinationIsByRef = false)
+        internal static ArgumentException CreateChangeTypeArgumentException(MethodTable* srcEEType, Type dstType, bool destinationIsByRef = false)
         {
             object? destinationTypeName = dstType;
             if (destinationIsByRef)
