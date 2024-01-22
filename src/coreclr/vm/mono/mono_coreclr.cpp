@@ -387,17 +387,6 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_nested_types(MonoClass
     return NULL;
 }
 
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_nesting_type(MonoClass *klass)
-{
-    MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
-    if (!klass_clr->GetClass()->IsNested())
-    {
-        return nullptr;
-    }
-    MonoClass_clr* ret = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(klass_clr->GetModule(), klass_clr->GetEnclosingCl(), NULL, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef).AsMethodTable();
-    return (MonoClass*)ret;
-}
-
 extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_parent(MonoClass *klass)
 {
     MonoClass_clr* parent = reinterpret_cast<MonoClass_clr*>(klass)->GetParentMethodTable();

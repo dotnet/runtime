@@ -59,8 +59,6 @@ DO_API(gboolean, mono_thread_has_sufficient_execution_stack, (void))
 
 DO_API(MonoThread *, mono_thread_current, (void))
 
-DO_API(MonoClass*, mono_class_get_nesting_type, (MonoClass * klass))
-
 DO_API(MonoMethodSignature*, mono_method_signature, (MonoMethod * method))
 DO_API(MonoType*, mono_signature_get_params, (MonoMethodSignature * sig, gpointer * iter))
 DO_API(MonoType*, mono_signature_get_return_type, (MonoMethodSignature * sig))
