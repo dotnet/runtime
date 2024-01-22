@@ -2177,7 +2177,7 @@ namespace System.Numerics.Tensors
 
             if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
             {
-                double.Round(0, 0, mode); // throw same exception for invalid enum as built-in types do
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
             }
 
             ValidateInputOutputSpanNonOverlapping(x, destination);
