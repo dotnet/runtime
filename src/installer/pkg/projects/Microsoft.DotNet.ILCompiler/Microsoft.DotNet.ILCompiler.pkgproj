@@ -18,7 +18,6 @@
     </ItemGroup>
     <ItemGroup Condition="'$(PackageTargetRuntime)' != '' and '$(TargetOS)' == 'linux'">
       <File Include="$(SharedNativeRoot)libs\System.Globalization.Native\*" TargetPath="native/src/libs/System.Globalization.Native"/>
-      <File Include="$(SharedNativeRoot)libs\System.HybridGlobalization.Native\*" TargetPath="native/src/libs/System.HybridGlobalization.Native"/>
       <File Include="$(SharedNativeRoot)libs\System.Security.Cryptography.Native\*" TargetPath="native/src/libs/System.Security.Cryptography.Native"/>
       <File Include="$(SharedNativeRoot)libs\build-local.sh" TargetPath="native/src/libs/build-local.sh"/>
       <File Include="$(SharedNativeRoot)minipal\*" TargetPath="native/src/minipal"/>
