@@ -16,7 +16,6 @@ DO_API(void, mono_add_internal_call, (const char *name, gconstpointer method))
 
 DO_API(MonoObject*, mono_runtime_invoke, (MonoMethod * method, void *obj, void **params, MonoException **exc))
 DO_API(int, mono_field_get_offset, (MonoClassField * field))
-DO_API(MonoClass*, mono_class_get_nested_types, (MonoClass * klass, gpointer * iter))
 DO_API(MonoMethod*, mono_class_get_methods, (MonoClass * klass, gpointer * iter))
 DO_API(int, mono_class_get_userdata_offset, ())
 DO_API(void*, mono_class_get_userdata, (MonoClass * klass))

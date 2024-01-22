@@ -42,7 +42,6 @@ EXPORTS
         mono_class_get_methods
         mono_class_get_name
         mono_class_get_namespace
-        mono_class_get_nested_types
         mono_class_get_parent
         mono_class_get_property_from_name
         mono_class_get_type
