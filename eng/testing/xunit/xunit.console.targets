@@ -88,10 +88,10 @@
 
     <!-- Workaround for https://github.com/xunit/xunit/issues/1651 -->
     <ItemGroup Condition="'$(ArchiveTests)' != 'true'">
-      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.utility.net452.dll" />
-      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.reporters.net452.dll" />
-      <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.utility.netcoreapp10.dll" />
-      <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.reporters.netcoreapp10.dll" />
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net462\xunit.runner.utility.net452.dll" />
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net462\xunit.runner.reporters.net452.dll" />
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net6.0\xunit.runner.utility.netcoreapp10.dll" />
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net6.0\xunit.runner.reporters.netcoreapp10.dll" />
     </ItemGroup>
   </Target>
 </Project>

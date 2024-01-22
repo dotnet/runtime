@@ -3,6 +3,9 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
+
+    <!-- Microsoft.CodeAnalysis.CSharp.CodeFix.Testing brings in NS1.x dependencies -->
+    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
   </PropertyGroup>
 
   <ItemGroup>

@@ -7,6 +7,9 @@
     <Nullable>enable</Nullable>
     <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
     <StringResourcesPath>../../gen/Common/Resources/Strings.resx</StringResourcesPath>
+
+    <!-- Microsoft.CodeAnalysis.CSharp.CodeFix.Testing brings in NS1.x dependencies -->
+    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
   </PropertyGroup>
 
   <ItemGroup>

@@ -9,6 +9,9 @@
 
     <!-- FluentAssertions library has a generic recursion and the warning breaks NativeAOT build -->
     <NoWarn>$(NoWarn);IL3054</NoWarn>
+
+    <!-- Microsoft.DotNet.ProjectModel brings in NS1.x dependencies -->
+    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
   </PropertyGroup>
 
   <ItemGroup>
