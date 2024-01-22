@@ -2,20 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text;
-using FluentAssertions;
-using Xunit;
-using Microsoft.NET.HostModel.AppHost;
-using Microsoft.DotNet.CoreSetup.Test;
-using System.Diagnostics;
-using System.Reflection.PortableExecutable;
 
-namespace Microsoft.NET.HostModel.Tests
+using FluentAssertions;
+using Microsoft.DotNet.CoreSetup.Test;
+using Xunit;
+
+namespace Microsoft.NET.HostModel.AppHost.Tests
 {
-    public class AppHostUpdateTests
+    public class CreateAppHost
     {
         /// <summary>
         /// hash value embedded in default apphost executable in a place where the path to the app binary should be stored.
@@ -24,7 +24,7 @@ namespace Microsoft.NET.HostModel.Tests
         private readonly static byte[] AppBinaryPathPlaceholderSearchValue = Encoding.UTF8.GetBytes(AppBinaryPathPlaceholder);
 
         [Fact]
-        public void ItEmbedsAppBinaryPath()
+        public void EmbedAppBinaryPath()
         {
             using (TestDirectory testDirectory = TestDirectory.Create())
             {
@@ -48,12 +48,12 @@ namespace Microsoft.NET.HostModel.Tests
                 BitConverter
                     .ToUInt16(result, SubsystemOffset)
                     .Should()
-                    .Be(3);
+                    .Be((ushort)Subsystem.WindowsCui);
             }
         }
 
         [Fact]
-        public void ItFailsToEmbedAppBinaryIfHashIsWrong()
+        public void PlaceholderHashNotFound_Fails()
         {
             using (TestDirectory testDirectory = TestDirectory.Create())
             {
@@ -76,7 +76,7 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
-        public void ItFailsToEmbedTooLongAppBinaryPath()
+        public void AppBinaryPathTooLong_Fails()
         {
             using (TestDirectory testDirectory = TestDirectory.Create())
             {
@@ -95,7 +95,7 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
-        public void ItCanSetWindowsGUISubsystem()
+        public void GUISubsystem_WindowsPEFile()
         {
             using (TestDirectory testDirectory = TestDirectory.Create())
             {
@@ -119,7 +119,7 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
-        public void ItFailsToSetGUISubsystemOnNonWindowsPEFile()
+        public void GUISubsystem_NonWindowsPEFile_Fails()
         {
             using (TestDirectory testDirectory = TestDirectory.Create())
             {
@@ -144,7 +144,7 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
-        public void ItFailsToSetGUISubsystemWithWrongDefault()
+        public void GUISubsystem_WrongDefault_Fails()
         {
             using (TestDirectory testDirectory = TestDirectory.Create())
             {
@@ -170,7 +170,7 @@ namespace Microsoft.NET.HostModel.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void ItGeneratesExecutableImage()
+        public void ExecutableImage()
         {
             using TestDirectory testDirectory = TestDirectory.Create();
             string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
@@ -198,30 +198,11 @@ namespace Microsoft.NET.HostModel.Tests
                 .Be(expectedPermissions);
         }
 
-        [Fact]
-        public void CanCreateAppHost()
-        {
-            using (TestDirectory testDirectory = TestDirectory.Create())
-            {
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
-                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
-                string appBinaryFilePath = "Test/App/Binary/Path.dll";
-                HostWriter.CreateAppHost(
-                   sourceAppHostMock,
-                   destinationFilePath,
-                   appBinaryFilePath,
-                   windowsGraphicalUserInterface: false);
-
-                File.SetAttributes(sourceAppHostMock, FileAttributes.Normal);
-            }
-        }
-
         [Theory]
         [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
-        public void CanCodeSignAppHostOnMacOS(string subdir)
+        public void CodeSignAppHostOnMacOS(string subdir)
         {
             using (TestDirectory testDirectory = TestDirectory.Create(subdir))
             {
@@ -258,7 +239,7 @@ namespace Microsoft.NET.HostModel.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
-        public void ItDoesNotCodeSignAppHostByDefault()
+        public void DoesNotCodeSignAppHostByDefault()
         {
             using (TestDirectory testDirectory = TestDirectory.Create())
             {
@@ -318,6 +299,16 @@ namespace Microsoft.NET.HostModel.Tests
                     enableMacOSCodeSign: true));
                 Assert.Contains($"{destinationFilePath}: is already signed", exception.Message);
                 Assert.True(exception.ExitCode == 1, $"AppHostSigningException.ExitCode - expected: 1, actual: '{exception.ExitCode}'");
+            }
+        }
+
+        [Fact]
+        private void ResourceWithUnknownLanguage()
+        {
+            // https://github.com/dotnet/runtime/issues/88465
+            using (TestApp app = TestApp.CreateFromBuiltAssets("AppWithUnknownLanguageResource"))
+            {
+                app.CreateAppHost();
             }
         }
 
