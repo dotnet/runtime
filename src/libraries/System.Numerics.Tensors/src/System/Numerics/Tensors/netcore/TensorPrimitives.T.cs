@@ -1,9 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
 namespace System.Numerics.Tensors
 {
     /// <summary>Performs primitive tensor operations over spans of memory.</summary>
@@ -2140,6 +2137,8 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="digits"/> is invalid.</exception>
+        /// <exception cref="ArgumentException"><paramref name="mode"/> is invalid.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = T.Round(<paramref name="x" />[i], <paramref name="digits"/>, <paramref name="mode"/>)</c>.
@@ -2148,14 +2147,41 @@ namespace System.Numerics.Tensors
         public static void Round<T>(ReadOnlySpan<T> x, int digits, MidpointRounding mode, Span<T> destination)
             where T : IFloatingPoint<T>
         {
+            if (digits == 0)
+            {
+                switch (mode)
+                {
+                    case MidpointRounding.ToZero:
+                        Truncate(x, destination);
+                        return;
+
+                    case MidpointRounding.ToNegativeInfinity:
+                        Floor(x, destination);
+                        return;
+
+                    case MidpointRounding.ToPositiveInfinity:
+                        Ceiling(x, destination);
+                        return;
+
+                    case MidpointRounding.AwayFromZero:
+                    case MidpointRounding.ToEven:
+                        // TODO: Vectorize the remaining modes
+                        break;
+                }
+            }
+
             if (x.Length > destination.Length)
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
+            {
+                double.Round(0, 0, mode); // throw same exception for invalid enum as built-in types do
+            }
+
             ValidateInputOutputSpanNonOverlapping(x, destination);
 
-            // TODO: Vectorize
             for (int i = 0; i < x.Length; i++)
             {
                 destination[i] = T.Round(x[i], digits, mode);
