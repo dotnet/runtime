@@ -185,7 +185,8 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_from_mono_type(MonoType *i
     return (MonoClass*)klass;
 }
 
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_element_class(MonoClass *klass)
+// remove once usages in this file are removed
+static MonoClass* mono_class_get_element_class(MonoClass *klass)
 {
     CONTRACTL
     {

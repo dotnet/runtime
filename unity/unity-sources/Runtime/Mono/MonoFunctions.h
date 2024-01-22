@@ -86,7 +86,6 @@ DO_API(gint32, mono_class_instance_size, (MonoClass * klass))
 DO_API(guint32, mono_class_get_type_token, (MonoClass * klass))
 DO_API(MonoProperty*, mono_class_get_property_from_name, (MonoClass * klass, const char *name))
 DO_API(MonoClass*, mono_class_from_mono_type, (MonoType * image))
-DO_API(MonoClass*, mono_class_get_element_class, (MonoClass * klass));
 
 DO_API(int, mono_array_element_size, (MonoClass * classOfArray))
 

@@ -23,7 +23,6 @@ mono_assembly_get_assemblyref
 mono_assembly_get_image
 mono_class_array_element_size
 mono_class_from_mono_type
-mono_class_get_element_class
 mono_class_get_methods
 mono_class_get_name
 mono_class_get_namespace
