@@ -1436,15 +1436,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	else
 		return NULL;
 
-	if (vector_size == 256 || vector_size == 512) {
-		if (id == SN_get_IsHardwareAccelerated ) {
-			MonoInst* ins;
-			EMIT_NEW_ICONST (cfg, ins, 0);
-			return ins;
-		}
-
+	if (vector_size == 256 || vector_size == 512)
 		return NULL;
-	}
 
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
@@ -6163,7 +6156,7 @@ mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod *cmethod)
 	if (!strcmp (m_class_get_name_space (cmethod->klass), "System.Runtime.Intrinsics")) {
 		if (!strncmp(m_class_get_name (cmethod->klass), "Vector", 6)) {
 			const char *vector_type = m_class_get_name (cmethod->klass) + 6;
-			if (!!strcmp(vector_type, "256`1") || !strcmp(vector_type, "512`1"))
+			if (!strcmp(vector_type, "256`1") || !strcmp(vector_type, "512`1"))
 				return TRUE;
 		}
 	}
