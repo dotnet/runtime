@@ -9110,7 +9110,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    direct-pinvoke-lists=<string>        - Files containing specific direct pinvokes to generate direct calls for an entire 'module' or specific 'module!entrypoint' on separate lines. Incompatible with 'direct-pinvoke' option.\n");
 			printf ("    direct-pinvoke                       - Generate direct calls for all direct pinvokes encountered in the managed assembly.\n");
 			printf ("    driver                               - Run AOT compiler in driver mode. Runs cross compiler and tools as child processes.\n");
-			printf ("    driver-logfile                       - Pass by driver parent process when executin AOT cross compiler as a child process. Executed commands will be logged into file instead of executed by child process. Path to file or 'stdout'.\n");
+			printf ("    driver-logfile                       - Pass by driver parent process when executing AOT cross compiler as a child process. Executed commands will be logged into file instead of executed by child process. Path to file or 'stdout'.\n");
 			printf ("    dwarfdebug                           - \n");
 			printf ("    full                                 - \n");
 			printf ("    hybrid                               - \n");
