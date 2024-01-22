@@ -11,7 +11,6 @@
 #include "ecall.h"
 #include "mscoree.h"
 #include "stringliteralmap.h"
-#include "threadlocalpoolallocator.h"
 #include "threads.h"
 #include "threadsuspend.h"
 #include "typeparse.h"
@@ -199,18 +198,6 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_element_class(MonoClas
     return (MonoClass*)reinterpret_cast<MonoClass_clr*>(klass)->GetArrayElementTypeHandle().GetMethodTable();
 }
 
-thread_local ThreadLocalPoolAllocator<ApproxFieldDescIterator,5> g_ApproxFieldDescIteratorAlloc;
-
-extern "C" EXPORT_API guint32 EXPORT_CC mono_class_get_flags(MonoClass *klass)
-{
-    MonoClass_clr* clrClass = reinterpret_cast<MonoClass_clr*>(klass);
-    mdTypeDef token = clrClass->GetCl();
-    IMDInternalImport *pImport = clrClass->GetMDImport();
-    DWORD           dwClassAttrs;
-    pImport->GetTypeDefProps(token, &dwClassAttrs, NULL);
-    return dwClassAttrs;
-}
-
 // Wrap iterator value in heap allocated value we can return from embedding API
 struct MethodTable_InterfaceMapIteratorWrapper
 {
@@ -388,7 +375,7 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_nested_types(MonoClass
             ClassLoader::ThrowIfNotFound,
             ClassLoader::PermitUninstDefOrRef);
         nestedIterator->index++;
-        MONO_ASSERTE(!th.IsNull());
+        assert(!th.IsNull());
         return (MonoClass*)th.GetMethodTable();
     }
     else
@@ -539,14 +526,6 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_field_get_parent(MonoClassField 
     return (MonoClass*)fieldDesc->GetApproxEnclosingMethodTable();
 }
 
-extern "C" EXPORT_API void EXPORT_CC mono_gc_collect(int generation)
-{
-    FCALL_CONTRACT;
-    _ASSERTE(generation >= -1);
-    GCX_COOP();
-    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, false, collection_blocking);
-}
-
 static inline OBJECTHANDLE handle_from_uintptr(uintptr_t p)
 {
     // mask off bit that is set for pinned in managed
@@ -633,11 +612,6 @@ extern "C" EXPORT_API void EXPORT_CC coreclr_image_get_custom_attribute_data(Mon
 
     mdImport->GetCustomAttributeProps(token, type_token);
     mdImport->GetParentToken(token, parent_type_token);
-}
-
-extern "C" EXPORT_API gboolean EXPORT_CC mono_is_debugger_attached(void)
-{
-    return FALSE;
 }
 
 extern "C" EXPORT_API MonoJitInfo* EXPORT_CC mono_jit_info_table_find(MonoDomain* domain, void* ip)
@@ -767,15 +741,7 @@ extern "C" EXPORT_API MonoMethodSignature* EXPORT_CC mono_method_signature(MonoM
     return (MonoMethodSignature*)method;
 }
 
-extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_property_get_get_method(MonoProperty *prop)
-{
-    return (MonoMethod*)prop;
-}
-
-extern "C" EXPORT_API void EXPORT_CC mono_raise_exception(MonoException *ex)
-{
-    ASSERT_NOT_IMPLEMENTED;
-}
+MonoObject* EXPORT_CC mono_runtime_invoke_with_nested_object(MonoMethod *method, void *obj, void *parentobj, void **params, MonoException **exc);
 
 extern "C" EXPORT_API MonoObject* EXPORT_CC mono_runtime_invoke(MonoMethod *method, void *obj, void **params, MonoException **exc)
 {
@@ -791,7 +757,7 @@ extern "C" EXPORT_API MonoObject* EXPORT_CC mono_runtime_invoke(MonoMethod *meth
         return mono_runtime_invoke_with_nested_object(method, obj, obj, params, exc);
 }
 
-extern "C" EXPORT_API MonoObject* EXPORT_CC mono_runtime_invoke_with_nested_object(MonoMethod *method, void *obj, void *parentobj, void **params, MonoException **exc)
+MonoObject* EXPORT_CC mono_runtime_invoke_with_nested_object(MonoMethod *method, void *obj, void *parentobj, void **params, MonoException **exc)
 {
     TRACE_API("%p, %p, %p, %p, %p", method, obj, parentobj, params, exc);
 
@@ -1278,13 +1244,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_type_get_name_full_chunked(MonoT
 {
     ASSERT_NOT_IMPLEMENTED;
 }
-
-#ifdef _DEBUG
-extern "C" void EXPORT_CC mono_debug_assert_dialog(const char *szFile, int iLine, const char *szExpr)
-{
-    DbgAssertDialog(szFile, iLine, szExpr);
-}
-#endif
 
 extern "C" EXPORT_API void EXPORT_CC coreclr_unity_profiler_register(const CLSID* classId, const guint16* profilerDllPathUtf16)
 {

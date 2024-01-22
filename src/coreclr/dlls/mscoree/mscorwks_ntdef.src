@@ -38,7 +38,6 @@ EXPORTS
         mono_class_array_element_size
         mono_class_from_mono_type
         mono_class_get_element_class
-        mono_class_get_flags
         mono_class_get_interfaces
         mono_class_get_methods
         mono_class_get_name
@@ -60,9 +59,7 @@ EXPORTS
         mono_field_get_name
         mono_field_get_offset
         mono_field_get_parent
-        mono_gc_collect
         mono_image_get_table_rows
-        mono_is_debugger_attached
         mono_jit_info_table_find
         coreclr_initialize_domain
         mono_metadata_signature_equal
@@ -72,10 +69,7 @@ EXPORTS
         mono_method_get_last_managed
         mono_method_get_name
         mono_method_signature
-        mono_property_get_get_method
-        mono_raise_exception
         mono_runtime_invoke
-        mono_runtime_invoke_with_nested_object
         mono_set_assemblies_path
         mono_set_assemblies_path_null_separated
         mono_set_dirs

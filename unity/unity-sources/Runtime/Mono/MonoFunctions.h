@@ -47,7 +47,6 @@ DO_API(const char*, mono_class_get_namespace, (MonoClass * klass))
 DO_API(const char*, mono_class_get_name, (MonoClass * klass))
 DO_API(char*, mono_type_get_name, (MonoType * type))
 DO_API(gboolean, mono_metadata_type_equal, (MonoType * t1, MonoType * t2))
-DO_API_NO_RETURN(void, mono_raise_exception, (MonoException * ex))
 
 DO_API(void*, unity_coreclr_create_delegate, (const char* assemblyName, const char* typeName, const char* methodName))
 
@@ -66,8 +65,6 @@ DO_API(MonoMethodSignature*, mono_method_signature, (MonoMethod * method))
 DO_API(MonoType*, mono_signature_get_params, (MonoMethodSignature * sig, gpointer * iter))
 DO_API(MonoType*, mono_signature_get_return_type, (MonoMethodSignature * sig))
 DO_API(MonoType*, mono_class_get_type, (MonoClass * klass))
-
-DO_API(gboolean, mono_is_debugger_attached, (void))
 
 DO_API(int, mono_assembly_name_parse, (const char* name, MonoAssemblyName * assembly))
 DO_API(int, mono_image_get_table_rows, (MonoImage * image, int table_id))
@@ -88,11 +85,6 @@ DO_API(void, mono_debug_free_source_location, (MonoDebugSourceLocation * locatio
 DO_API_OPTIONAL(MonoDebugMethodJitInfo*, mono_debug_find_method, (MonoMethod * method, MonoDomain * domain))
 DO_API_OPTIONAL(void, mono_debug_free_method_jit_info, (MonoDebugMethodJitInfo * jit))
 
-DO_API(MonoMethod*, mono_property_get_get_method, (MonoProperty * prop))
-//DO_API(MonoDomain*, mono_object_get_domain, (MonoObject *obj))
-
-DO_API(void, mono_gc_collect, (int generation))
-
 DO_API(gint32, mono_class_instance_size, (MonoClass * klass))
 DO_API(guint32, mono_class_get_type_token, (MonoClass * klass))
 DO_API(MonoClass*, mono_class_get_interfaces, (MonoClass * klass, gpointer * iter))
@@ -101,8 +93,6 @@ DO_API(MonoClass*, mono_class_from_mono_type, (MonoType * image))
 DO_API(MonoClass*, mono_class_get_element_class, (MonoClass * klass));
 
 DO_API(int, mono_array_element_size, (MonoClass * classOfArray))
-
-DO_API(guint32, mono_class_get_flags, (MonoClass * klass))
 
 DO_API(void, mono_set_dirs, (const char *assembly_dir, const char *config_dir))
 
