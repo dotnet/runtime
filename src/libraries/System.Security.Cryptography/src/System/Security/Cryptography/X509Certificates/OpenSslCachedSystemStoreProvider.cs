@@ -198,27 +198,21 @@ namespace System.Security.Cryptography.X509Certificates
 
                 foreach (string file in Directory.EnumerateFiles(dir))
                 {
-                    hasStoreData |= ProcessFile(file, out _, skipStat: true);
+                    hasStoreData |= ProcessFile(file, out _);
                 }
 
                 return hasStoreData;
             }
 
-            bool ProcessFile(string file, out DateTime lastModified, bool skipStat = false)
+            bool ProcessFile(string file, out DateTime lastModified)
             {
                 bool readData = false;
-                bool result = TryStatFile(file, out lastModified, out (long, long) fileDetails);
-
-                if (skipStat)
-                {
-                    lastModified = default;
-                }
-                else if (!result)
+                if (!TryStatFile(file, out lastModified, out (long, long) fileId))
                 {
                     return false;
                 }
 
-                if (processedFiles.Contains(fileDetails))
+                if (processedFiles.Contains(fileId))
                 {
                    return true;
                 }
@@ -290,7 +284,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (readData)
                 {
-                    processedFiles.Add(fileDetails);
+                    processedFiles.Add(fileId);
                 }
 
                 return readData;
@@ -373,32 +367,28 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         private static bool TryStatFile(string path, out DateTime lastModified)
-            => CallStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified).HasCallSucceed;
+            => CallStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified, out _);
 
         private static bool TryStatDirectory(string path, out DateTime lastModified)
-            => CallStat(path, Interop.Sys.FileTypes.S_IFDIR, out lastModified).HasCallSucceed;
+            => CallStat(path, Interop.Sys.FileTypes.S_IFDIR, out lastModified, out _);
 
-        private static bool TryStatFile(string path, out DateTime lastModified, out (long Ino, long Dev) fileDetails)
-        {
-            var statResult =  CallStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified);
-            fileDetails = (statResult.fileStatus.Ino, statResult.fileStatus.Dev);
-            return statResult.HasCallSucceed;
-        }
+        private static bool TryStatFile(string path, out DateTime lastModified, out (long, long) fileId)
+            => CallStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified, out fileId);
 
-        private static (bool HasCallSucceed, Interop.Sys.FileStatus fileStatus) CallStat(string path, int fileType, out DateTime lastModified)
+        private static bool CallStat(string path, int fileType, out DateTime lastModified, out (long, long) fileId)
         {
             lastModified = default;
-
-            Interop.Sys.FileStatus status;
+            fileId = default;
             // Use Stat to follow links.
-            if (Interop.Sys.Stat(path, out status) < 0 ||
+            if (Interop.Sys.Stat(path, out Interop.Sys.FileStatus status) < 0 ||
                 (status.Mode & Interop.Sys.FileTypes.S_IFMT) != fileType)
             {
-                return (false, status);
+                return false;
             }
 
+            fileId = (status.Ino, status.Dev);
             lastModified = DateTime.UnixEpoch + TimeSpan.FromTicks(status.MTime * TimeSpan.TicksPerSecond + status.MTimeNsec / TimeSpan.NanosecondsPerTick);
-            return (true, status);
+            return true;
         }
     }
 }
