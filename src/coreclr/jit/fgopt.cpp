@@ -5251,8 +5251,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
         fgDebugCheckBBlist();
         fgDebugCheckUpdate();
     }
-
-    fgDispBasicBlocks();
 #endif // DEBUG
 
     return modified;
