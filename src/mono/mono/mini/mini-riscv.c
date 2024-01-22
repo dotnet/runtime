@@ -872,7 +872,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets){
 			nfields ++;
 		}
 	}
-	if (nfields == 0 || nfields > 4)
+	if (nfields == 0 || nfields > 2)
 		return FALSE;
 	*out_nfields = nfields;
 	*out_esize = prev_ftype->type == MONO_TYPE_R4 ? 4 : 8;
@@ -4072,11 +4072,13 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 	 * need to be restored during EH.
 	 */
 	g_assert (lmf_offset <= 0);
-	/* pc */
-	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_FP, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, pc), 0);
 	/* callee saved gregs + sp */
 	code = emit_store_regarray_cfa (cfg, code, MONO_ARCH_LMF_REGS, RISCV_FP,
 	                                lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, gregs), (1 << RISCV_SP | 1 << RISCV_FP));
+
+	/* pc */
+	riscv_auipc (code, RISCV_RA, 0);
+	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_FP, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, pc), 0);
 
 	return code;
 }
