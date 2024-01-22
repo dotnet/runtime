@@ -31,6 +31,8 @@ namespace Sample
                 new StringEndsWithMeasurement(),
                 new StringIndexOfMeasurement(),
                 new StringLastIndexOfMeasurement(),
+                new StringHashCodeNoneMeasurement(),
+                new StringHashCodeIgnoreCaseMeasurement(),
             };
         }
 
@@ -287,6 +289,34 @@ namespace Sample
             }
             public override string Name => "String LastIndexOf";
             public override void RunStep() => compareInfo.LastIndexOf(str, needleSameAsStrStart, CompareOptions.None);
+        }
+
+        public class StringHashCodeNoneMeasurement : StringMeasurement
+        {
+            protected CompareInfo compareInfo;
+
+            public override Task BeforeBatch()
+            {
+                compareInfo = new CultureInfo("th-TH").CompareInfo;
+                InitializeString();
+                return Task.CompletedTask;
+            }
+            public override string Name => "String HashCode None";
+            public override void RunStep() => compareInfo.GetHashCode(str, CompareOptions.None);
+        }
+
+        public class StringHashCodeIgnoreCaseMeasurement : StringMeasurement
+        {
+            protected CompareInfo compareInfo;
+
+            public override Task BeforeBatch()
+            {
+                compareInfo = new CultureInfo("th-TH").CompareInfo;
+                InitializeString();
+                return Task.CompletedTask;
+            }
+            public override string Name => "String HashCode IgnoreCase";
+            public override void RunStep() => compareInfo.GetHashCode(str, CompareOptions.IgnoreCase);
         }
     }
 }
