@@ -81,6 +81,10 @@ UITextView* logLabel;
 #if INVARIANT_GLOBALIZATION
         setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
 #endif // INVARIANT_GLOBALIZATION
+
+#if HYBRID_GLOBALIZATION
+    setenv ("DOTNET_SYSTEM_GLOBALIZATION_HYBRID", "1", TRUE);
+#endif // HYBRID_GLOBALIZATION
         char **managed_argv;
         int managed_argc = get_managed_args (&managed_argv);
         int ret_val = __managed__Main (managed_argc, managed_argv);

@@ -57,6 +57,10 @@ void (*clickHandlerPtr)(void);
 #if INVARIANT_GLOBALIZATION
         setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
 #endif
+
+#if HYBRID_GLOBALIZATION
+    setenv ("DOTNET_SYSTEM_GLOBALIZATION_HYBRID", "1", TRUE);
+#endif
         char **managed_argv;
         int managed_argc = get_managed_args (&managed_argv);
         int ret_val = __managed__Main (managed_argc, managed_argv);

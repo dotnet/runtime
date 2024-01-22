@@ -23,6 +23,7 @@ namespace
 #define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
 #else
 #define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
+#if defined(__APPLE__)
 #define HYBRID_GLOBALIZATION_DLL_NAME "libSystem.HybridGlobalization.Native"
 #endif
 
