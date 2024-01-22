@@ -302,6 +302,7 @@ typedef enum {
 	ArgGSharedVtOnStack,
 	/* Variable sized gsharedvt argument passed/returned by addr */
 	ArgGsharedvtVariableInReg,
+	ArgSwiftError,
 	ArgNone /* only in pair_storage */
 } ArgStorage;
 

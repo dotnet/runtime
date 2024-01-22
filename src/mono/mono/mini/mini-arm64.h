@@ -241,6 +241,7 @@ typedef enum {
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,
 	ArgHFA,
+	ArgSwiftError,
 	ArgNone
 } ArgStorage;
 
