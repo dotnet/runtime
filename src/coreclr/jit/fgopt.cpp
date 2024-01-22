@@ -4851,13 +4851,23 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         block->SetFalseTarget(bDest);
                         fgRemoveRefPred(bFalseDest, block);
                         fgAddRefPred(bDest, block);
+                        change   = true;
+                        modified = true;
                     }
-                    else if (bFalseDest->TargetIs(bNext))
+                    else if (bFalseDest->TargetIs(bNext) && (bFalseDest != bNext))
                     {
-                        // Enable fallthrough into false target
+                        // Enable fallthrough into false target (avoid loop edge case)
                         block->SetFalseTarget(bNext);
                         fgRemoveRefPred(bFalseDest, block);
                         fgAddRefPred(bNext, block);
+                        change   = true;
+                        modified = true;
+                    }
+
+                    if ((bFalseDest->countOfInEdges() == 0) && !bFalseDest->HasFlag(BBF_DONT_REMOVE))
+                    {
+                        assert(change && modified);
+                        fgRemoveBlock(bFalseDest, /* unreachable */ true);
                     }
                 }
                 else if (bDest->KindIs(BBJ_ALWAYS) && bDest->TargetIs(bFalseDest) && bDest->isEmpty())
@@ -4866,10 +4876,19 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     block->SetTrueTarget(bFalseDest);
                     fgRemoveRefPred(bDest, block);
                     fgAddRefPred(bFalseDest, block);
+                    change   = true;
+                    modified = true;
+
+                    if ((bDest->countOfInEdges() == 0) && !bDest->HasFlag(BBF_DONT_REMOVE))
+                    {
+                        fgRemoveBlock(bDest, /* unreachable */ true);
+                    }
+
                     bDest = bFalseDest;
                 }
 
-                if (block->FalseTargetIs(bDest))
+                // Above transformations may convert block into a BBJ_ALWAYS
+                if (block->KindIs(BBJ_COND) && block->FalseTargetIs(bDest))
                 {
                     fgRemoveConditionalJump(block);
                     change   = true;
@@ -4877,6 +4896,13 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     assert(block->KindIs(BBJ_ALWAYS));
                     assert(block->TargetIs(bDest));
                 }
+                else if (block->KindIs(BBJ_ALWAYS))
+                {
+                    assert(change && modified);
+                    assert(block->TargetIs(bDest));
+                }
+
+                bNext = block->Next();
             }
 
             if (bDest != nullptr)
