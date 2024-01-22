@@ -174,6 +174,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97297")]
         public void SpanDestinationFunctions_AllLengths(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
@@ -192,6 +193,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97297")]
         public void SpanDestinationFunctions_InPlace(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
@@ -210,6 +212,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97297")]
         public void SpanDestinationFunctions_SpecialValues(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod)
         {
             Assert.All(Helpers.TensorLengths, tensorLength =>
@@ -230,6 +233,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97297")]
         public void SpanDestinationFunctions_ValueRange(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod)
         {
             Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-100f), ConvertFromSingle(100f), ConvertFromSingle(3f)), arg =>
@@ -1064,6 +1068,21 @@ namespace System.Numerics.Tensors.Tests
                     AssertEqualTolerance(T.Round(x[i], digits, mode), destination[i]);
                 }
             });
+        }
+
+        [Fact]
+        public void Round_InvalidMode_Throws()
+        {
+            T[] x = new T[10];
+            AssertExtensions.Throws<ArgumentException>("mode", () => TensorPrimitives.Round(x.AsSpan(), (MidpointRounding)(-1), x.AsSpan()));
+            AssertExtensions.Throws<ArgumentException>("mode", () => TensorPrimitives.Round(x.AsSpan(), (MidpointRounding)5, x.AsSpan()));
+        }
+
+        [Fact]
+        public void Round_InvalidDigits_Throws()
+        {
+            T[] x = new T[10];
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("digits", () => TensorPrimitives.Round(x.AsSpan(), -1, x.AsSpan()));
         }
         #endregion
     }
