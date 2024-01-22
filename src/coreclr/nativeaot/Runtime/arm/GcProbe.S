@@ -20,9 +20,7 @@
 .macro PUSH_PROBE_FRAME threadReg, trashReg, BITMASK
     // Define the method prolog, allocating enough stack space for the PInvokeTransitionFrame and saving
     // incoming register values into it.
-    PROLOG_STACK_ALLOC  4                   // Space for saved APSR
-    PROLOG_VPUSH        "{d0-d3}"           // Save floating point return registers
-    PROLOG_PUSH         "{r0-r3,lr}"        // Save volatile registers
+    PROLOG_PUSH         "{r0-r1}"           // Save return registers
     PROLOG_STACK_ALLOC  4                   // Space for caller's SP
     PROLOG_PUSH         "{r4-r10}"          // Save non-volatile registers
     PROLOG_STACK_ALLOC  8                   // Space for flags and Thread*
@@ -34,7 +32,7 @@
     str         \trashReg, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
 
     // Compute SP value at entry to this method and save it in slot of the frame.
-    add         \trashReg, sp, #(19 * 4 + 4 * 8)
+    add         \trashReg, sp, #(15 * 4)
     str         \trashReg, [sp, #(12 * 4)]
 
     // Link the frame into the Thread
@@ -52,9 +50,7 @@
     EPILOG_STACK_FREE   8                   // Discard flags and Thread*
     EPILOG_POP          "{r4-r10}"          // Restore non-volatile registers
     EPILOG_STACK_FREE   4                   // Discard caller's SP
-    EPILOG_POP          "{r0-r3,lr}"        // Restore volatile registers
-    EPILOG_VPOP         "{d0-d3}"           // Restore floating point return registers
-    EPILOG_STACK_FREE   4                   // Space for saved APSR
+    EPILOG_POP          "{r0,r1}"           // Restore return registers
 .endm
 
 //

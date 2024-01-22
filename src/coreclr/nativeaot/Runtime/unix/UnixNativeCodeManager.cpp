@@ -368,8 +368,7 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     MethodInfo * pMethodInfo = NULL;
 
 #if defined(TARGET_ARM)
-    // FIXME!!!
-    pvAddress = (PTR_VOID)((uintptr_t)pvAddress & ~1);
+    ASSERT(((uintptr_t)pvAddress & 1) == 0);
 #endif
 
 #if defined(TARGET_ARM64)
@@ -999,10 +998,12 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     GcInfoDecoder decoder(GCInfoToken(p), flags);
     *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
-    // FIXME!!!
-    TADDR ip = PCODEToPINSTR((PCODE)pRegisterSet->IP);
 
-    int epilogueInstructions = TrailingEpilogueInstructionsCount(pMethodInfo, (PTR_VOID)ip);
+#if defined(TARGET_ARM)
+    ASSERT(((uintptr_t)pRegisterSet->IP & 1) == 0);
+#endif
+
+    int epilogueInstructions = TrailingEpilogueInstructionsCount(pMethodInfo, (PTR_VOID)pRegisterSet->IP);
     if (epilogueInstructions < 0)
     {
         // can't figure, possibly a breakpoint instruction
@@ -1022,7 +1023,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     // recognized by IsInProlog. Any other instruction sequence, known or unknown, falls
     // through to the platform unwinder which should have DWARF information about the
     // frame.
-    if (IsInProlog(pMethodInfo, (PTR_VOID)ip) == 1)
+    if (IsInProlog(pMethodInfo, (PTR_VOID)pRegisterSet->IP) == 1)
     {
         return false;
     }
