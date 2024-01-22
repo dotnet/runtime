@@ -465,23 +465,37 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             TaskCompletionSource<T> readyTCS = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource doneTCS = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
+            var e1Done = false;
+            var e2Done = false;
             var e1 = executor1.Execute(async () =>
             {
-                await e1Job(doneTCS.Task, readyTCS);
-                if (!readyTCS.Task.IsCompleted)
+                try
                 {
-                    readyTCS.SetResult(default);
+                    await e1Job(doneTCS.Task, readyTCS);
+                    if (!readyTCS.Task.IsCompleted)
+                    {
+                        readyTCS.SetResult(default);
+                    }
+                    await doneTCS.Task;
                 }
-                await doneTCS.Task;
+                finally
+                {
+                    e1Done = true;
+                }
             }, cts.Token);
 
             var r1 = await readyTCS.Task.ConfigureAwait(true);
 
             var e2 = executor2.Execute(async () =>
             {
-                await e2Job(r1);
-
+                try
+                {
+                    await e2Job(r1);
+                }
+                finally
+                {
+                    e2Done = true;
+                }
             }, cts.Token);
 
             try
@@ -490,9 +504,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 doneTCS.SetResult();
                 await e1;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                cts.Cancel();
+                if (ex is OperationCanceledException oce && cts.Token.IsCancellationRequested)
+                {
+                    throw;
+                }
+                Console.WriteLine("ActionsInDifferentThreads failed with: \n" + ex);
+                if (!e1Done || !e2Done)
+                {
+                    Console.WriteLine("ActionsInDifferentThreads canceling!");
+                    cts.Cancel();
+                }
                 throw;
             }
         }
