@@ -2,9 +2,6 @@
   <PropertyGroup>
     <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/97272 -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>
