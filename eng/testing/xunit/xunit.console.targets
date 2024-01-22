@@ -85,14 +85,5 @@
             CopyToOutputDirectory="PreserveNewest"
             Visible="false" />
     </ItemGroup>
-
-    <!-- Workaround for https://github.com/xunit/xunit/issues/1651 -->
-    <ItemGroup Condition="'$(Pkgxunit_runner_visualstudio)' != '' AND '$(TargetFrameworkIdentifier)' == '.NETFramework'">
-      <!-- Remove `xunit.abstractions.dll` that was added to @(None) by xunit.runner.visualstudio -->
-      <_xunitAbstractionsRemove Include="@(None->WithMetadataValue('Filename', 'xunit.abstractions'))" />
-      <None Remove="@(_xunitAbstractionsRemove)" />
-    </ItemGroup>
-    <Error Condition="'$(Pkgxunit_runner_visualstudio)' != '' AND '$(TargetFrameworkIdentifier)' == '.NETFramework' AND '@(_xunitAbstractionsRemove)' == ''"
-           Text="Remove workaround above and GeneratePathProperty from the xunit.runner.visualstudio PackageReference as they are no longer needed." />
   </Target>
 </Project>
