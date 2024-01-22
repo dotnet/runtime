@@ -6908,7 +6908,6 @@ bool GenTree::OperIsImplicitIndir() const
 //------------------------------------------------------------------------------
 // OperExceptions: Get exception set this tree may throw.
 //
-//
 // Arguments:
 //    comp      -  Compiler instance
 //
@@ -6945,11 +6944,9 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
             ExceptionSetFlags exSetFlags = ExceptionSetFlags::None;
 
-            GenTree* op2 = this->gtGetOp2();
-
-            if (!(this->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) && !op2->IsNeverZero())
+            if (!(this->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) && !this->gtGetOp2()->gtSkipReloadOrCopy()->IsNeverZero())
             {
-                exSetFlags = ExceptionSetFlags::DivideByZeroException;
+                exSetFlags |= ExceptionSetFlags::DivideByZeroException;
             }
 
             if (this->OperIs(GT_DIV, GT_MOD) && this->CanDivOrModPossiblyOverflow(comp))
@@ -27217,8 +27214,8 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
     if (this->gtFlags & GTF_DIV_MOD_NO_OVERFLOW)
         return false;
 
-    GenTree* op1 = this->gtGetOp1();
-    GenTree* op2 = this->gtGetOp2();
+    GenTree* op1 = this->gtGetOp1()->gtSkipReloadOrCopy();
+    GenTree* op2 = this->gtGetOp2()->gtSkipReloadOrCopy();
 
     // If the divisor is known to never be '-1', we cannot overflow.
     if (op2->IsNeverNegativeOne(comp))

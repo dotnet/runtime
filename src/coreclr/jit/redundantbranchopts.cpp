@@ -1007,42 +1007,6 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
         return false;
     }
 
-    if (optLoopTableValid)
-    {
-        // If block is a loop header, skip jump threading.
-        //
-        // This is an artificial limitation to ensure that subsequent loop table valididity
-        // checking can pass. We do not expect a loop entry to have multiple non-loop predecessors.
-        //
-        // This only blocks jump threading in a small number of cases.
-        // Revisit once we can ensure that loop headers are not critical blocks.
-        //
-        // Likewise we can't properly update the loop table if we thread the entry block.
-        // Not clear how much impact this has.
-        //
-        for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
-        {
-            const LoopDsc& loop = optLoopTable[loopNum];
-
-            if (loop.lpIsRemoved())
-            {
-                continue;
-            }
-
-            if (block == loop.lpHead)
-            {
-                JITDUMP(FMT_BB " is the header for " FMT_LP "; no threading\n", block->bbNum, loopNum);
-                return false;
-            }
-
-            if (block == loop.lpEntry)
-            {
-                JITDUMP(FMT_BB " is the entry for " FMT_LP "; no threading\n", block->bbNum, loopNum);
-                return false;
-            }
-        }
-    }
-
     // Verify that dom block dominates all of block's predecessors.
     //
     // This will initially be true but if we jump thread through

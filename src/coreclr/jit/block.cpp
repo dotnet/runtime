@@ -491,7 +491,7 @@ void BasicBlock::dspFlags() const
         {BBF_INTERNAL, "internal"},
         {BBF_FAILED_VERIFICATION, "failV"},
         {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
-        {BBF_LOOP_HEAD, "Loop"},
+        {BBF_LOOP_HEAD, "loophead"},
         {BBF_HAS_LABEL, "label"},
         {BBF_HAS_JMP, "jmp"},
         {BBF_HAS_CALL, "hascall"},
@@ -513,7 +513,7 @@ void BasicBlock::dspFlags() const
         {BBF_NO_CSE_IN, "no-cse"},
         {BBF_CAN_ADD_PRED, "add-pred"},
         {BBF_RETLESS_CALL, "retless"},
-        {BBF_LOOP_PREHEADER, "LoopPH"},
+        {BBF_LOOP_PREHEADER, "preheader"},
         {BBF_COLD, "cold"},
         {BBF_KEEP_BBJ_ALWAYS, "KEEP"},
         {BBF_CLONED_FINALLY_BEGIN, "cfb"},
@@ -811,7 +811,6 @@ void BasicBlock::CloneBlockState(
     to->bbCodeOffs    = from->bbCodeOffs;
     to->bbCodeOffsEnd = from->bbCodeOffsEnd;
     VarSetOps::AssignAllowUninitRhs(compiler, to->bbScope, from->bbScope);
-    to->bbNatLoopNum = from->bbNatLoopNum;
 #ifdef DEBUG
     to->bbTgtStkDepth = from->bbTgtStkDepth;
 #endif // DEBUG
@@ -1603,11 +1602,6 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
         block->bbMemorySsaNumIn[memoryKind]   = 0;
         block->bbMemorySsaNumOut[memoryKind]  = 0;
     }
-
-    // Make sure we reserve a NOT_IN_LOOP value that isn't a legal table index.
-    static_assert_no_msg(BasicBlock::MAX_LOOP_NUM < BasicBlock::NOT_IN_LOOP);
-
-    block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
 
     block->bbPreorderNum  = 0;
     block->bbPostorderNum = 0;

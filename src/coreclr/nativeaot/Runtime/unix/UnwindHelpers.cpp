@@ -109,7 +109,6 @@ struct Registers_REGDISPLAY : REGDISPLAY
         case UNW_REG_IP:
         case UNW_X86_64_RIP:
             IP = value;
-            pIP = (PTR_PCODE)location;
             return;
         case UNW_REG_SP:
             SP = value;
@@ -198,11 +197,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
 
     uint64_t  getIP() const { return IP; }
 
-    void      setIP(uint64_t value, uint64_t location)
-    {
-        IP = value;
-        pIP = (PTR_PCODE)location;
-    }
+    void      setIP(uint64_t value, uint64_t location) { IP = value; }
 
     uint64_t  getRBP() const { return *pRbp; }
     void      setRBP(uint64_t value, uint64_t location) { pRbp = (PTR_UIntNative)location; }
@@ -260,7 +255,6 @@ struct Registers_REGDISPLAY : REGDISPLAY
         {
         case UNW_REG_IP:
             IP = value;
-            pIP = (PTR_PCODE)location;
             return;
         case UNW_REG_SP:
             SP = value;
@@ -324,11 +318,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
 
     uint64_t  getIP() const { return IP; }
 
-    void      setIP(uint64_t value, uint64_t location)
-    {
-        IP = value;
-        pIP = (PTR_PCODE)location;
-    }
+    void      setIP(uint64_t value, uint64_t location) { IP = value; }
 
     uint64_t  getEBP() const { return *pRbp; }
     void      setEBP(uint64_t value, uint64_t location) { pRbp = (PTR_UIntNative)location; }
@@ -360,8 +350,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
     uint32_t    getSP() const         { return SP;}
     void        setSP(uint32_t value, uint32_t location) { SP = value;}
     uint32_t    getIP() const         { return IP;}
-    void        setIP(uint32_t value, uint32_t location)
-    { IP = value; pIP = (PTR_UIntNative)location; }
+    void        setIP(uint32_t value, uint32_t location) { IP = value; }
     uint32_t    getFP() const         { return *pR11;}
     void        setFP(uint32_t value, uint32_t location) { pR11 = (PTR_UIntNative)location;}
 };
@@ -439,12 +428,6 @@ void Registers_REGDISPLAY::setRegister(int num, uint32_t value, uint32_t locatio
 
     if (num == UNW_REG_IP || num == UNW_ARM_IP) {
         IP = value;
-        /* the location could be NULL, we could try to recover
-           pointer to value in stack from pLR */
-        if ((!location) && pLR && (*pLR == value))
-            pIP = pLR;
-        else
-            pIP = (PTR_UIntNative)location;
         return;
     }
 
@@ -520,8 +503,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
     uint64_t    getSP() const         { return SP;}
     void        setSP(uint64_t value, uint64_t location) { SP = value;}
     uint64_t    getIP() const         { return IP;}
-    void        setIP(uint64_t value, uint64_t location)
-    { IP = value; pIP = (PTR_UIntNative)location; }
+    void        setIP(uint64_t value, uint64_t location) { IP = value; }
     uint64_t    getFP() const         { return *pFP;}
     void        setFP(uint64_t value, uint64_t location) { pFP = (PTR_UIntNative)location;}
 };
@@ -814,10 +796,6 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t fo
     {
         return false;
     }
-
-#if !defined(TARGET_ARM64)
-    regs->pIP = PTR_PCODE(regs->SP - sizeof(TADDR));
-#endif
 
 #elif defined(_LIBUNWIND_ARM_EHABI)
     PORTABILITY_ASSERT("StepFrame");

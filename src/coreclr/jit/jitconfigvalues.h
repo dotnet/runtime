@@ -220,11 +220,9 @@ CONFIG_STRING(JitDumpFgPhase, W("JitDumpFgPhase")) // Phase-based Xml/Dot flowgr
                                                    // phases
 CONFIG_STRING(JitDumpFgPrePhase,
               W("JitDumpFgPrePhase")) // Same as JitDumpFgPhase, but specifies to dump pre-phase, not post-phase.
-CONFIG_INTEGER(JitDumpFgDot, W("JitDumpFgDot"), 1)           // 0 == dump XML format; non-zero == dump DOT format
-CONFIG_INTEGER(JitDumpFgEH, W("JitDumpFgEH"), 0)             // 0 == no EH regions; non-zero == include EH regions
-CONFIG_INTEGER(JitDumpFgLoops, W("JitDumpFgLoops"), 0)       // 0 == no loop regions; non-zero == include loop regions
-CONFIG_INTEGER(JitDumpFgOldLoops, W("JitDumpFgOldLoops"), 0) // 0 == no old loop regions; non-zero == include old loop
-                                                             // regions
+CONFIG_INTEGER(JitDumpFgDot, W("JitDumpFgDot"), 1)     // 0 == dump XML format; non-zero == dump DOT format
+CONFIG_INTEGER(JitDumpFgEH, W("JitDumpFgEH"), 0)       // 0 == no EH regions; non-zero == include EH regions
+CONFIG_INTEGER(JitDumpFgLoops, W("JitDumpFgLoops"), 0) // 0 == no loop regions; non-zero == include loop regions
 
 CONFIG_INTEGER(JitDumpFgConstrained, W("JitDumpFgConstrained"), 1) // 0 == don't constrain to mostly linear layout;
                                                                    // non-zero == force mostly lexical block
@@ -576,11 +574,11 @@ CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualiza
 #endif // DEBUG
 
 // Enable insertion of patchpoints into Tier0 methods, switching to optimized where needed.
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 1)
 #else
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods

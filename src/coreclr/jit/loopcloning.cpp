@@ -862,7 +862,6 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
         {
             BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
             newBlk->inheritWeight(insertAfter);
-            newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
             JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
             comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
@@ -897,7 +896,6 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     {
         BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
         newBlk->inheritWeight(insertAfter);
-        newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
         JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
         comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
@@ -2079,9 +2077,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         // TODO: scale the pred edges of `blk`?
 
         // If the loop we're cloning contains nested loops, we need to clear the pre-header bit on
-        // any nested loop pre-header blocks, since they will no longer be loop pre-headers. (This is because
-        // we don't add the slow loop or its child loops to the loop table. It would be simplest to
-        // just re-build the loop table if we want to enable loop optimization of the slow path loops.)
+        // any nested loop pre-header blocks, since they will no longer be loop pre-headers.
+        //
+        // TODO-Cleanup: BBF_LOOP_PREHEADER can be removed; we do not attempt
+        // to keep it up to date anymore when we do FG changes.
+        //
         if (newBlk->HasFlag(BBF_LOOP_PREHEADER))
         {
             JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);

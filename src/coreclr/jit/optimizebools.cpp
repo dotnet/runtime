@@ -1193,7 +1193,7 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 
 //-----------------------------------------------------------------------------
 // optOptimizeBoolsUpdateTrees: Fold the trees based on fold type and comparison type,
-//                              update the edges, unlink removed blocks and update loop table
+//                              update the edges, and unlink removed blocks
 //
 void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 {
@@ -1343,16 +1343,6 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         m_b3->SetFlags(BBF_REMOVED);
         // If m_b3 was the last block of a try or handler, update the EH table.
         m_comp->ehUpdateForDeletedBlock(m_b3);
-    }
-
-    // Update loop table
-    if (m_comp->optLoopTableValid)
-    {
-        m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b2);
-        if (optReturnBlock)
-        {
-            m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
-        }
     }
 
     // Update IL range of first block

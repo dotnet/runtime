@@ -1,5 +1,7 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Thu Aug 16 09:44:44 MDT 2007
+.\" Manual page created with latex2man on Tue Aug 29 12:09:48 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +12,7 @@
 
 .fi
 ..
-.TH "UNW\\_GET\\_ACCESSORS" "3" "16 August 2007" "Programming Library " "Programming Library "
+.TH "UNW\\_GET\\_ACCESSORS" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
 .SH NAME
 unw_get_accessors
 \-\- get pointer to accessor call\-backs 
@@ -30,18 +32,18 @@ unw_accessors_t *unw_get_accessors(unw_addr_space_t as);
 The unw_get_accessors()
 routine returns a pointer to a 
 unw_accessors_t
-structure, which contains the call\-back 
+structure, which contains the callback 
 routines that were specified when address space as
 was created 
-(see unw_create_addr_space(3)).
+(see unw_create_addr_space(3libunwind)).
 The returned pointer is 
 guaranteed to remain valid until address space as
 is destroyed 
-by a call to unw_destroy_addr_space(3).
+by a call to unw_destroy_addr_space(3libunwind).
 .PP
 Note that unw_get_accessors()
 can be used to retrieve the 
-call\-back routines for the local address space 
+callback routines for the local address space 
 unw_local_addr_space\&.
 .PP
 .SH RETURN VALUE
@@ -58,15 +60,15 @@ structure.
 
 .PP
 The unw_get_accessors()
-routine is thread\-safe as well as 
+routine is thread safe as well as 
 safe to use from a signal handler. 
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3),
-unw_create_addr_space(3),
-unw_destroy_addr_space(3)
+libunwind(3libunwind),
+unw_create_addr_space(3libunwind),
+unw_destroy_addr_space(3libunwind)
 .PP
 .SH AUTHOR
 
