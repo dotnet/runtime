@@ -4,7 +4,6 @@
     <Description>Microsoft.NET.HostModel.Tests</Description>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AssemblyName>Microsoft.NET.HostModel.Tests</AssemblyName>
-    <PackageId>Microsoft.NET.HostModel.Tests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
     <TestsOutputName>hm</TestsOutputName>
