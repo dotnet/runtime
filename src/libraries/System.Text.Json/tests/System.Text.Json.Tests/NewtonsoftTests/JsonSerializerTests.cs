@@ -131,12 +131,6 @@ namespace System.Text.Json.Tests
             p2.Spouse = p1;
             Assert.Throws<JsonException> (() => JsonSerializer.Serialize(p1));
         }
-
-        [Fact]
-        public void PropertyWithSetterOnlyInChildClass()
-        {
-            Assert.Equal(@"{""X"":42}", JsonSerializer.Serialize(new Derived { X = 42 }));
-        }
     }
 
     public class CommentTestObject
@@ -162,15 +156,5 @@ namespace System.Text.Json.Tests
     public class ChildClass : BaseClass
     {
         public new bool IsTransient { get; set; }
-    }
-
-    public class Base
-    {
-        public virtual int X { get; set; }
-    }
-
-    public class Derived : Base
-    {
-        public override int X { set => base.X = value; }
     }
 }

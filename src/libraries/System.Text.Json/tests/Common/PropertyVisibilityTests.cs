@@ -178,6 +178,27 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task Serialize_PublicProperty_WithSetterOnlyOverride()
+        {
+            // Serialize
+            var obj = new DerivedClass_With_SetterOnlyOverride()
+            {
+                MyProp = true
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+
+            Assert.Equal(@"{""MyProp"":true}", json);
+
+            // Deserialize
+            json = @"{""MyProp"":true}";
+
+            obj = await Serializer.DeserializeWrapper<DerivedClass_With_SetterOnlyOverride>(json);
+
+            Assert.True(obj.MyProp);
+        }
+
+        [Fact]
         public async Task Ignore_NonPublicProperty()
         {
             // Serialize
@@ -1035,6 +1056,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonIgnore]
             public override bool MyProp { get; set; }
+        }
+
+        public class DerivedClass_With_SetterOnlyOverride : Class_With_VirtualProperty
+        {
+            public override bool MyProp { set => base.MyProp = value; }
         }
 
         [Fact]
