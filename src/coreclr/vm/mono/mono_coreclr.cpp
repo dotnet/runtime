@@ -198,53 +198,6 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_element_class(MonoClas
     return (MonoClass*)reinterpret_cast<MonoClass_clr*>(klass)->GetArrayElementTypeHandle().GetMethodTable();
 }
 
-// Wrap iterator value in heap allocated value we can return from embedding API
-struct MethodTable_InterfaceMapIteratorWrapper
-{
-    MethodTable::InterfaceMapIterator iter;
-
-    MethodTable_InterfaceMapIteratorWrapper(MonoClass_clr* klass_clr) :
-        iter(klass_clr->IterateInterfaceMap())
-    {
-    }
-};
-
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_interfaces(MonoClass* klass, gpointer *iter)
-{
-    TRACE_API("%p, %p", klass, iter);
-
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(klass != NULL);
-    }
-    CONTRACTL_END;
-
-    if (!iter)
-    {
-        return NULL;
-    }
-    MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
-
-    MethodTable_InterfaceMapIteratorWrapper* iterator = (MethodTable_InterfaceMapIteratorWrapper*)*iter;
-    if (iterator == nullptr)
-    {
-        iterator = new MethodTable_InterfaceMapIteratorWrapper(klass_clr);
-        *iter = iterator;
-    }
-
-    if (!iterator->iter.Next())
-    {
-        *iter = nullptr;
-        delete iterator;
-        return nullptr;
-    }
-
-    // TODO: this used to be a call to GetInterface, not sure of the difference
-    return (MonoClass*)iterator->iter.GetInterfaceApprox();
-}
-
 extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_class_get_methods(MonoClass* klass, gpointer *iter)
 {
     TRACE_API("%p, %p", klass, iter);
