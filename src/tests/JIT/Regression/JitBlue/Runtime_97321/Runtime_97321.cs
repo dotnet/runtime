@@ -7,7 +7,7 @@ public class Runtime_97321
     public static int TestEntryPoint() => Foo(false);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Foo(bool b)
+    private static int Foo(bool b)
     {
         int sum = 1;
         int i = 0;
