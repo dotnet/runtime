@@ -13,7 +13,6 @@ typedef UNUSED_SYMBOL void(*MonoUnityExceptionFunc) (MonoObject* exc);
 DO_API(gboolean, mono_unity_class_has_failure, (MonoClass * klass))
 
 DO_API(void, mono_add_internal_call, (const char *name, gconstpointer method))
-DO_API(MonoDomain*, mono_jit_init_version, (const char *file, const char* runtime_version))
 
 DO_API(MonoObject*, mono_runtime_invoke, (MonoMethod * method, void *obj, void **params, MonoException **exc))
 DO_API(int, mono_field_get_offset, (MonoClassField * field))
