@@ -94,7 +94,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
-            _writableDataNode = SupportsWritableData(factory.Target) && !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
+            _writableDataNode = !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
             if (EmitVirtualSlots)
@@ -102,11 +102,6 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.TypeSystemContext.EnsureLoadableType(type);
         }
-
-        public static bool SupportsWritableData(TargetDetails target) => true;
-
-        public static bool SupportsFrozenRuntimeTypeInstances(TargetDetails target)
-            => SupportsWritableData(target);
 
         private static VirtualMethodAnalysisFlags AnalyzeVirtualMethods(TypeDesc type)
         {
@@ -1129,7 +1124,7 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     objData.EmitPointerReloc(_writableDataNode);
             }
-            else if (SupportsWritableData(factory.Target))
+            else
             {
                 if (factory.Target.SupportsRelativePointers)
                     objData.EmitInt(0);
@@ -1428,7 +1423,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public WritableDataNode(EETypeNode type) => _type = type;
             public override ObjectNodeSection GetSection(NodeFactory factory)
-                => SupportsFrozenRuntimeTypeInstances(factory.Target) && _type.GetFrozenRuntimeTypeNode(factory).Marked
+                => _type.GetFrozenRuntimeTypeNode(factory).Marked
                 ? (factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection)
                 : ObjectNodeSection.BssSection;
 
@@ -1449,8 +1444,7 @@ namespace ILCompiler.DependencyAnalysis
                 // If the whole program view contains a reference to a preallocated RuntimeType
                 // instance for this type, generate a reference to it.
                 // Otherwise, generate as zero to save size.
-                if (SupportsFrozenRuntimeTypeInstances(factory.Target)
-                    && _type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
+                if (_type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
                 {
                     builder.EmitPointerReloc(runtimeTypeObject);
                 }
