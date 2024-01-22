@@ -26,6 +26,7 @@ namespace
 #if defined(__APPLE__)
 #define HYBRID_GLOBALIZATION_DLL_NAME "libSystem.HybridGlobalization.Native"
 #endif
+#endif
 
 // here we handle PInvokes whose implementation is always statically linked (even in .so/.dll case)
 static const void* DefaultResolveDllImport(const char* libraryName, const char* entrypointName)
@@ -34,12 +35,13 @@ static const void* DefaultResolveDllImport(const char* libraryName, const char* 
     {
         return GlobalizationResolveDllImport(entrypointName);
     }
+#if defined(__APPLE__)
     // Add hybrid globalization here
     if (strcmp(libraryName, HYBRID_GLOBALIZATION_DLL_NAME) == 0)
     {
         return HybridGlobalizationResolveDllImport(entrypointName);
     }
-
+#endif
     return nullptr;
 }
 
