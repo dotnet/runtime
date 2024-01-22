@@ -560,7 +560,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads2x))]
         public Task WebSocketClient_ResponseCloseInDifferentThread(Executor executor1, Executor executor2)
         {
-            using var cts = CreateTestCaseTimeoutSource();
+            var cts = CreateTestCaseTimeoutSource();
 
             var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
             var message = "hello";
