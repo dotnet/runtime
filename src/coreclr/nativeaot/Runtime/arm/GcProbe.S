@@ -24,9 +24,9 @@
     PROLOG_VPUSH        "{d0-d3}"           // Save floating point return registers
     PROLOG_PUSH         "{r0-r3,lr}"        // Save volatile registers
     PROLOG_STACK_ALLOC  4                   // Space for caller's SP
-    PROLOG_PUSH         "{r4-r6,r8-r10}"    // Save non-volatile registers
+    PROLOG_PUSH         "{r4-r10}"          // Save non-volatile registers
     PROLOG_STACK_ALLOC  8                   // Space for flags and Thread*
-    PROLOG_PUSH         "{r7}"              // Save caller's frame pointer
+    PROLOG_PUSH         "{r11}"             // Save caller's frame pointer
     PROLOG_PUSH         "{r11,lr}"          // Save frame-chain pointer and return address
 
     str         \threadReg, [sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
@@ -34,8 +34,8 @@
     str         \trashReg, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
 
     // Compute SP value at entry to this method and save it in slot of the frame.
-    add         \trashReg, sp, #(22 * 4)
-    str         \trashReg, [sp, #(11 * 4)]
+    add         \trashReg, sp, #(19 * 4 + 4 * 8)
+    str         \trashReg, [sp, #(12 * 4)]
 
     // Link the frame into the Thread
     str         sp, [\threadReg, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
@@ -48,9 +48,9 @@
 //
 .macro POP_PROBE_FRAME
     EPILOG_POP          "{r11,lr}"          // Restore frame-chain pointer and return address
-    EPILOG_POP          "{r7}"              // Restore caller's frame pointer
+    EPILOG_POP          "{r11}"             // Restore caller's frame pointer
     EPILOG_STACK_FREE   8                   // Discard flags and Thread*
-    EPILOG_POP          "{r4-r6,r8-r10}"    // Restore non-volatile registers
+    EPILOG_POP          "{r4-r10}"          // Restore non-volatile registers
     EPILOG_STACK_FREE   4                   // Discard caller's SP
     EPILOG_POP          "{r0-r3,lr}"        // Restore volatile registers
     EPILOG_VPOP         "{d0-d3}"           // Restore floating point return registers
@@ -124,7 +124,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
     PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r3
-    tst         r3, #TrapThreadsFlags_None
+    tst         r3, #TrapThreadsFlags_TrapThreads
     bne         LOCAL_LABEL(WaitForGC)
     bx          lr
 LOCAL_LABEL(WaitForGC):
