@@ -1502,7 +1502,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_JD_4A: // .........xxmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
             elemsize = id->idOpSize();
-            assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));    // ttttt
             assert(isPredicateRegister(id->idReg2())); // ggg
             assert(isGeneralRegister(id->idReg3()));   // nnnnn
@@ -10605,7 +10604,6 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 
         case INS_sve_st1b:
         case INS_sve_st1h:
-            assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
