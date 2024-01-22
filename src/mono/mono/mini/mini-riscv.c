@@ -9,6 +9,7 @@
 #include "ir-emit.h"
 
 #include <mono/metadata/tokentype.h>
+#include <mono/metadata/marshal-shared.h>
 
 #ifdef TARGET_RISCV64
 #include "cpu-riscv64.h"
@@ -157,9 +158,9 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 
 	if (has_target) {
 		start = code = mono_global_codeman_reserve (4 * 3);
-		code = mono_riscv_emit_load (code, RISCV_T0, RISCV_A0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), 0);
+		code = mono_riscv_emit_load (code, RISCV_T1, RISCV_A0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), 0);
 		code = mono_riscv_emit_load (code, RISCV_A0, RISCV_A0, MONO_STRUCT_OFFSET (MonoDelegate, target), 0);
-		riscv_jalr (code, RISCV_ZERO, RISCV_T0, 0);
+		riscv_jalr (code, RISCV_ZERO, RISCV_T1, 0);
 
 		g_assert ((code - start) <= 4 * 3);
 	} else {
@@ -168,12 +169,12 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		size = 8 + param_count * 4;
 		start = code = mono_global_codeman_reserve (size);
 
-		code = mono_riscv_emit_load (code, RISCV_T0, RISCV_A0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), 0);
+		code = mono_riscv_emit_load (code, RISCV_T1, RISCV_A0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr), 0);
 		/* slide down the arguments */
 		for (i = 0; i < param_count; ++i)
 			riscv_addi (code, RISCV_A0 + i, RISCV_A0 + i + 1, 0);
 
-		riscv_jalr (code, RISCV_ZERO, RISCV_T0, 0);
+		riscv_jalr (code, RISCV_ZERO, RISCV_T1, 0);
 		g_assert ((code - start) <= size);
 	}
 
@@ -213,10 +214,10 @@ get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, i
 		g_assert_not_reached ();
 
 	/* Load this->vtable [offset] */
-	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_A0, MONO_STRUCT_OFFSET (MonoObject, vtable), 0);
-	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_T0, offset, 0);
+	code = mono_riscv_emit_load (code, RISCV_T1, RISCV_A0, MONO_STRUCT_OFFSET (MonoObject, vtable), 0);
+	code = mono_riscv_emit_load (code, RISCV_T1, RISCV_T1, offset, 0);
 
-	riscv_jalr (code, RISCV_ZERO, RISCV_T0, 0);
+	riscv_jalr (code, RISCV_ZERO, RISCV_T1, 0);
 
 	g_assert ((code - start) <= size);
 
@@ -810,14 +811,114 @@ add_farg (CallInfo *cinfo, ArgInfo *ainfo, gboolean single)
 	}
 }
 
+static gboolean
+is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets){
+	MonoClass *klass;
+	gpointer iter;
+	MonoClassField *field;
+	MonoType *ftype, *prev_ftype = NULL;
+	int nfields = 0;
+
+	klass = mono_class_from_mono_type_internal (t);
+	iter = NULL;
+	while ((field = mono_class_get_fields_internal (klass, &iter))){
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		ftype = mono_field_get_type_internal (field);
+		ftype = mini_get_underlying_type (ftype);
+
+		if (MONO_TYPE_ISSTRUCT (ftype)){
+			int nested_nfields, nested_esize;
+			int nested_field_offsets [16];
+
+			MonoType *fixed_etype;
+			int fixed_len;
+			if (mono_marshal_shared_get_fixed_buffer_attr (field, &fixed_etype, &fixed_len)) {
+				if (fixed_etype->type != MONO_TYPE_R4 && fixed_etype->type != MONO_TYPE_R8)
+					return FALSE;
+				if (fixed_len > 16)
+					return FALSE;
+				nested_nfields = fixed_len;
+				nested_esize = fixed_etype->type == MONO_TYPE_R4 ? 4 : 8;
+				for (int i = 0; i < nested_nfields; ++i)
+					nested_field_offsets [i] = i * nested_esize;
+			}
+			else {
+				if (!is_hfa (ftype, &nested_nfields, &nested_esize, nested_field_offsets))
+					return FALSE;
+			}
+
+			if (nested_esize == 4)
+				ftype = m_class_get_byval_arg (mono_defaults.single_class);
+			else
+				ftype = m_class_get_byval_arg (mono_defaults.double_class);
+
+			if (prev_ftype && prev_ftype->type != ftype->type)
+				return FALSE;
+			prev_ftype = ftype;
+			for (int i = 0; i < nested_nfields; ++i) {
+				if (nfields + i < 4)
+					field_offsets [nfields + i] = field->offset - MONO_ABI_SIZEOF (MonoObject) + nested_field_offsets [i];
+			}
+			nfields += nested_nfields;
+		} else {
+			if (!(!m_type_is_byref (ftype) && (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)))
+				return FALSE;
+			if (prev_ftype && prev_ftype->type != ftype->type)
+				return FALSE;
+			prev_ftype = ftype;
+			if (nfields < 4)
+				field_offsets [nfields] = field->offset - MONO_ABI_SIZEOF (MonoObject);
+			nfields ++;
+		}
+	}
+	if (nfields == 0 || nfields > 4)
+		return FALSE;
+	*out_nfields = nfields;
+	*out_esize = prev_ftype->type == MONO_TYPE_R4 ? 4 : 8;
+	return TRUE;
+}
+
 static void
 add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 {
-	int size, aligned_size;
+	int size, aligned_size, nfields, esize;
 	guint32 align;
+	int field_offsets [16];
 
 	size = mini_type_stack_size_full (t, &align, cinfo->pinvoke);
 	aligned_size = ALIGN_TO (size, align);
+
+	if (is_hfa (t, &nfields, &esize, field_offsets)){
+		/*
+		 * The struct might include nested float structs aligned at 8,
+		 * so need to keep track of the offsets of the individual fields.
+		 */
+		if (cinfo->next_farg + nfields - 1 <= RISCV_FA7){
+			ainfo->storage = ArgHFA;
+			ainfo->reg = cinfo->next_farg;
+			ainfo->nregs = nfields;
+			ainfo->size = size;
+			ainfo->esize = esize;
+			for (int i = 0; i < nfields; ++i)
+				ainfo->foffsets [i] = GINT_TO_UINT8 (field_offsets [i]);
+			cinfo->next_farg += ainfo->nregs;
+		} else {
+			NOT_IMPLEMENTED;
+			ainfo->nfregs_to_skip = cinfo->next_farg <= RISCV_FA7  ? RISCV_FA7 - cinfo->next_farg + 1 : 0;
+			cinfo->next_farg = RISCV_FA7 + 1;
+			size = ALIGN_TO (size, 8);
+			ainfo->storage = ArgVtypeOnStack;
+			cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, align);
+			ainfo->offset = cinfo->stack_usage;
+			ainfo->size = size;
+			ainfo->hfa = TRUE;
+			ainfo->nregs = nfields;
+			ainfo->esize = esize;
+			cinfo->stack_usage += size;
+		}
+		return;
+	}
 
 	// Scalars wider than 2×XLEN bits are passed by reference
 	if (aligned_size > sizeof (host_mgreg_t) * 2) {
@@ -830,8 +931,8 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 			ainfo->storage = ArgVtypeByRef;
 			ainfo->reg = cinfo->next_arg;
 			ainfo->size = sizeof (host_mgreg_t);
-			ainfo->is_regpair = FALSE;
-			cinfo->next_arg += 1;
+			ainfo->nregs = 1;
+			cinfo->next_arg += ainfo->nregs;
 		}
 	}
 	// Scalars that are 2×XLEN bits wide are passed in a pair of argument registers
@@ -853,9 +954,8 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 
 			ainfo->reg = cinfo->next_arg;
 			ainfo->size = sizeof (host_mgreg_t);
-			ainfo->is_regpair = FALSE;
-
-			cinfo->next_arg += 1;
+			ainfo->nregs = 1;
+			cinfo->next_arg += ainfo->nregs;
 		}
 		// Scalars that are 2×XLEN bits wide are passed in a pair of argument
 		// registers, with the low-order XLEN bits in the lower-numbered register
@@ -864,9 +964,8 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 			ainfo->storage = ArgVtypeInIReg;
 			ainfo->reg = cinfo->next_arg;
 			ainfo->size = sizeof (host_mgreg_t) * 2;
-			ainfo->is_regpair = TRUE;
-
-			cinfo->next_arg += 2;
+			ainfo->nregs = 2;
+			cinfo->next_arg += ainfo->nregs;
 		}
 	}
 	// Scalars that are at most XLEN bits wide are passed in a single argument register
@@ -880,9 +979,8 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 			ainfo->storage = ArgVtypeInIReg;
 			ainfo->reg = cinfo->next_arg;
 			ainfo->size = sizeof (host_mgreg_t);
-			ainfo->is_regpair = FALSE;
-
-			cinfo->next_arg += 1;
+			ainfo->nregs = 1;
+			cinfo->next_arg += ainfo->nregs;
 		}
 	}
 }
@@ -1074,6 +1172,7 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 	case ArgVtypeInIReg:
 		return &ccontext->gregs [ainfo->reg];
 	case ArgInFReg:
+	case ArgHFA:
 		return &ccontext->fregs [ainfo->reg];
 	case ArgOnStack:
 	case ArgVtypeOnStack:
@@ -1580,6 +1679,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	/* Emit the inst of return at mono_arch_emit_setret() */
 	switch (cinfo->ret.storage) {
 	case ArgVtypeInIReg:
+	case ArgHFA:
 		if (MONO_IS_TAILCALL_OPCODE (call))
 			break;
 		/*
@@ -1687,7 +1787,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgVtypeByRef:
 		case ArgVtypeOnStack:
 		case ArgVtypeInMixed:
-		case ArgVtypeByRefOnStack: {
+		case ArgVtypeByRefOnStack: 
+		case ArgHFA: {
 			MonoInst *ins;
 			guint32 align;
 			guint32 size;
@@ -1728,6 +1829,19 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	if (ins->backend.size == 0)
 		return;
 	switch (ainfo->storage) {
+	case ArgHFA: 
+		for (int i = 0; i < ainfo->nregs; ++i) {
+			if (ainfo->esize == 4)
+				MONO_INST_NEW (cfg, load, OP_LOADR4_MEMBASE);
+			else
+				MONO_INST_NEW (cfg, load, OP_LOADR8_MEMBASE);
+			load->dreg = mono_alloc_freg (cfg);
+			load->inst_basereg = src->dreg;
+			load->inst_offset = ainfo->foffsets [i];
+			MONO_ADD_INS (cfg->cbb, load);
+			add_outarg_reg (cfg, call, ainfo->esize == 4 ? ArgInFRegR4 : ArgInFReg, ainfo->reg + i, load);
+		}
+		break;
 	case ArgVtypeInIReg:
 		MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
 		load->dreg = mono_alloc_ireg (cfg);
@@ -2109,13 +2223,13 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			cfg->ret->inst_c0 = cinfo->ret.reg;
 			cfg->ret->dreg = cinfo->ret.reg;
 			break;
+		case ArgHFA:
 		case ArgVtypeInIReg:
 			/* Allocate a local to hold the result, the epilog will copy it to the correct place */
 			cfg->ret->opcode = OP_REGOFFSET;
 			cfg->ret->inst_basereg = cfg->frame_reg;
-			if (cinfo->ret.is_regpair)
-				offset += sizeof (host_mgreg_t);
-			offset += sizeof (host_mgreg_t);
+			g_assert (cinfo->ret.nregs > 0);
+			offset += cinfo->ret.nregs * sizeof (host_mgreg_t);
 			cfg->ret->inst_offset = -offset;
 			break;
 		case ArgVtypeByRef:
@@ -2167,13 +2281,13 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			ins->inst_basereg = RISCV_FP;
 			ins->inst_offset = ainfo->offset;
 			break;
+		case ArgHFA:
 		case ArgVtypeInIReg:
 			ins->opcode = OP_REGOFFSET;
 			ins->inst_basereg = cfg->frame_reg;
 			/* These arguments are saved to the stack in the prolog */
-			if (ainfo->is_regpair)
-				offset += sizeof (host_mgreg_t);
-			offset += sizeof (host_mgreg_t);
+			g_assert (ainfo->nregs > 0);
+			offset += ainfo->nregs * sizeof (host_mgreg_t);
 			ins->inst_offset = -offset;
 			break;
 		case ArgVtypeInMixed:
@@ -3628,6 +3742,7 @@ guint8 *
 mono_riscv_emit_load (guint8 *code, int rd, int rs1, target_mgreg_t imm, int length)
 {
 	if (!RISCV_VALID_I_IMM (imm)) {
+		g_assert (rs1 != RISCV_T0);
 		code = mono_riscv_emit_imm (code, RISCV_T0, imm);
 		riscv_add (code, RISCV_T0, rs1, RISCV_T0);
 		rs1 = RISCV_T0;
@@ -3668,6 +3783,7 @@ guint8 *
 mono_riscv_emit_loadu (guint8 *code, int rd, int rs1, target_mgreg_t imm, int length)
 {
 	if (!RISCV_VALID_I_IMM (imm)) {
+		g_assert (rs1 != RISCV_T0);
 		code = mono_riscv_emit_imm (code, RISCV_T0, imm);
 		riscv_add (code, RISCV_T0, rs1, RISCV_T0);
 		rs1 = RISCV_T0;
@@ -3699,6 +3815,7 @@ mono_riscv_emit_fload (guint8 *code, int rd, int rs1, target_mgreg_t imm, gboole
 {
 	g_assert (riscv_stdext_d || (isSingle && riscv_stdext_f));
 	if (!RISCV_VALID_I_IMM (imm)) {
+		g_assert (rs1 != RISCV_T0);
 		code = mono_riscv_emit_imm (code, RISCV_T0, imm);
 		riscv_add (code, RISCV_T0, rs1, RISCV_T0);
 		rs1 = RISCV_T0;
@@ -3719,6 +3836,7 @@ guint8 *
 mono_riscv_emit_store (guint8 *code, int rs2, int rs1, target_mgreg_t imm, int length)
 {
 	if (!RISCV_VALID_S_IMM (imm)) {
+		g_assert (rs1 != RISCV_T0 && rs2 != RISCV_T0);
 		code = mono_riscv_emit_imm (code, RISCV_T0, imm);
 		riscv_add (code, RISCV_T0, rs1, RISCV_T0);
 		rs1 = RISCV_T0;
@@ -3760,6 +3878,7 @@ mono_riscv_emit_fstore (guint8 *code, int rs2, int rs1, target_mgreg_t imm, gboo
 {
 	g_assert (riscv_stdext_d || (isSingle && riscv_stdext_f));
 	if (!RISCV_VALID_I_IMM (imm)) {
+		g_assert (rs1 != RISCV_T0);
 		code = mono_riscv_emit_imm (code, RISCV_T0, imm);
 		riscv_add (code, RISCV_T0, rs1, RISCV_T0);
 		rs1 = RISCV_T0;
@@ -4003,7 +4122,6 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 			case ArgInIReg:
 			case ArgR4InIReg:
 			case ArgR8InIReg:
-				g_assert (ainfo->is_regpair == FALSE);
 				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_basereg, ins->inst_offset, 0);
 				if (i == 0 && sig->hasthis) {
 					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
@@ -4017,14 +4135,15 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				                               ainfo->storage == ArgInFRegR4);
 				break;
 			case ArgVtypeInIReg:
-				if (ainfo->is_regpair)
+				g_assert (ainfo->nregs <= 2);
+				if (ainfo->nregs == 2)
 					code = mono_riscv_emit_store (code, ainfo->reg + 1, ins->inst_basereg,
 					                              ins->inst_offset + sizeof (host_mgreg_t), 0);
 				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_basereg, ins->inst_offset, 0);
 				break;
 			case ArgVtypeInMixed:
-				code = mono_riscv_emit_load (code, RISCV_T0, RISCV_S0, 0, 0);
-				code = mono_riscv_emit_store (code, RISCV_T0, ins->inst_basereg,
+				code = mono_riscv_emit_load (code, RISCV_T1, RISCV_S0, 0, 0);
+				code = mono_riscv_emit_store (code, RISCV_T1, ins->inst_basereg,
 				                              ins->inst_offset + sizeof (host_mgreg_t), 0);
 				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_basereg, ins->inst_offset, 0);
 				break;
@@ -4038,6 +4157,14 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_left->inst_basereg,
 				                              ins->inst_left->inst_offset, 0);
 				// }
+				break;
+			case ArgHFA:
+				for (int part = 0; part < ainfo->nregs; part ++) {
+					if (ainfo->esize == 4)
+						code = mono_riscv_emit_fstore (code, ainfo->reg + part, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + ainfo->foffsets [part]), TRUE);
+					else
+						code = mono_riscv_emit_fstore (code, ainfo->reg + part, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + ainfo->foffsets [part]), FALSE);
+				}
 				break;
 			case ArgOnStack:
 			case ArgOnStackR4:
@@ -4092,10 +4219,26 @@ emit_move_return_value (MonoCompile *cfg, guint8 *code, MonoInst *ins)
 
 		/* Load the destination address */
 		g_assert (loc && loc->opcode == OP_REGOFFSET);
-		code = mono_riscv_emit_load (code, RISCV_T0, loc->inst_basereg, loc->inst_offset, 0);
-		code = mono_riscv_emit_store (code, cinfo->ret.reg, RISCV_T0, 0, 0);
-		if (cinfo->ret.is_regpair) {
-			code = mono_riscv_emit_store (code, cinfo->ret.reg + 1, RISCV_T0, sizeof (host_mgreg_t), 0);
+		code = mono_riscv_emit_load (code, RISCV_T1, loc->inst_basereg, loc->inst_offset, 0);
+		code = mono_riscv_emit_store (code, cinfo->ret.reg, RISCV_T1, 0, 0);
+		g_assert (cinfo->ret.nregs <= 2);
+		if (cinfo->ret.nregs == 2) {
+			code = mono_riscv_emit_store (code, cinfo->ret.reg + 1, RISCV_T1, sizeof (host_mgreg_t), 0);
+		}
+		break;
+	}
+	case ArgHFA: {
+		MonoInst *loc = cfg->arch.vret_addr_loc;
+		int i;
+
+		/* Load the destination address */
+		g_assert (loc && loc->opcode == OP_REGOFFSET);
+		code = mono_riscv_emit_load (code, RISCV_T1, loc->inst_basereg, GTMREG_TO_INT (loc->inst_offset), 0);
+		for (i = 0; i < cinfo->ret.nregs; ++i) {
+			if (cinfo->ret.esize == 4)
+				code = mono_riscv_emit_fstore (code, cinfo->ret.reg + i, RISCV_T1, cinfo->ret.foffsets [i], TRUE);
+			else
+				code = mono_riscv_emit_fstore (code, cinfo->ret.reg + i, RISCV_T1, cinfo->ret.foffsets [i], FALSE);
 		}
 		break;
 	}
@@ -4272,14 +4415,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			g_assert (ins->opcode == OP_REGOFFSET);
 
 			code = mono_riscv_emit_imm (code, RISCV_T0, (guint64)&ss_trampoline);
-			code = mono_riscv_emit_store (code, RISCV_T0, ins->inst_basereg, ins->inst_offset, 0);
+			code = mono_riscv_emit_store (code, RISCV_T1, ins->inst_basereg, ins->inst_offset, 0);
 		}
 		if (cfg->arch.bp_tramp_var) {
 			/* Initialize bp_tramp_var */
 			ins = cfg->arch.bp_tramp_var;
 			g_assert (ins->opcode == OP_REGOFFSET);
 			code = mono_riscv_emit_imm (code, RISCV_T0, (guint64)bp_trampoline);
-			code = mono_riscv_emit_store (code, RISCV_T0, ins->inst_basereg, ins->inst_offset, 0);
+			code = mono_riscv_emit_store (code, RISCV_T1, ins->inst_basereg, ins->inst_offset, 0);
 		}
 	}
 
@@ -4318,10 +4461,22 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	case ArgVtypeInIReg: {
 		MonoInst *ins = cfg->ret;
 
-		if (cinfo->ret.is_regpair)
+		g_assert (cinfo->ret.nregs <= 2);
+		if (cinfo->ret.nregs == 2)
 			code = mono_riscv_emit_load (code, cinfo->ret.reg + 1, ins->inst_basereg,
 			                             ins->inst_offset + sizeof (host_mgreg_t), 0);
 		code = mono_riscv_emit_load (code, cinfo->ret.reg, ins->inst_basereg, ins->inst_offset, 0);
+		break;
+	}
+	case ArgHFA: {
+		MonoInst *ins = cfg->ret;
+
+		for (int i = 0; i < cinfo->ret.nregs; ++i) {
+			if (cinfo->ret.esize == 4)
+				code = mono_riscv_emit_fload (code, cinfo->ret.reg + i, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.foffsets [i]), TRUE);
+			else
+				code = mono_riscv_emit_fload (code, cinfo->ret.reg + i, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.foffsets [i]), FALSE);
+		}
 		break;
 	}
 	default:
@@ -4396,13 +4551,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert (var->opcode == OP_REGOFFSET);
 				/* Load ss_tramp_var */
 				/* This is equal to &ss_trampoline */
-				code = mono_riscv_emit_load (code, RISCV_T0, var->inst_basereg, var->inst_offset, 0);
+				code = mono_riscv_emit_load (code, RISCV_T1, var->inst_basereg, var->inst_offset, 0);
 				/* Load the trampoline address */
-				code = mono_riscv_emit_load (code, RISCV_T0, RISCV_T0, 0, 0);
+				code = mono_riscv_emit_load (code, RISCV_T1, RISCV_T1, 0, 0);
 				/* Call it if it is non-null */
 				// In riscv, we use jalr to jump
-				riscv_beq (code, RISCV_ZERO, RISCV_T0, 8);
-				riscv_jalr (code, RISCV_ZERO, RISCV_T0, 0);
+				riscv_beq (code, RISCV_ZERO, RISCV_T1, 8);
+				riscv_jalr (code, RISCV_ZERO, RISCV_T1, 0);
 			}
 			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
 
@@ -4412,8 +4567,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				MonoInst *var = cfg->arch.bp_tramp_var;
 				g_assert (var);
 				g_assert (var->opcode == OP_REGOFFSET);
-				/* Load the address of the bp trampoline into IP0 */
-				code = mono_riscv_emit_load (code, RISCV_T0, var->inst_basereg, var->inst_offset, 0);
+				/* Load the address of the bp trampoline into T1 */
+				code = mono_riscv_emit_load (code, RISCV_T1, var->inst_basereg, var->inst_offset, 0);
 				/*
 				 * A placeholder for a possible breakpoint inserted by
 				 * mono_arch_set_breakpoint ().
@@ -4442,9 +4597,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_addi (code, RISCV_T0, RISCV_SP, 0);
 			loop_start = code;
 			riscv_beq (code, RISCV_T0, RISCV_T1, 0);
-			code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_T0, 0, 0);
-			code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_T0, sizeof (host_mgreg_t), 0);
+			riscv_ld (code, RISCV_ZERO, RISCV_T0, 0);
+			riscv_sd (code, RISCV_ZERO, RISCV_T0, sizeof (host_mgreg_t));
 #ifdef TARGET_RISCV32
+			NOT_IMPLEMENTED;
 			code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_T0, sizeof (host_mgreg_t) * 2, 0);
 			code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_T0, sizeof (host_mgreg_t) * 3, 0);
 #endif
@@ -4496,9 +4652,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			byte_offset = MONO_STRUCT_OFFSET (MonoVTable, initialized);
 
 			/* Load vtable->initialized */
-			code = mono_riscv_emit_load (code, RISCV_T0, ins->sreg1, byte_offset, 1);
+			code = mono_riscv_emit_load (code, RISCV_T1, ins->sreg1, byte_offset, 1);
 			branch_label = code;
-			riscv_bne (code, RISCV_ZERO, RISCV_T0, 0);
+			riscv_bne (code, RISCV_ZERO, RISCV_T1, 0);
 
 			/* Slowpath */
 			g_assert (ins->sreg1 == RISCV_A0);
@@ -4537,8 +4693,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ARGLIST:
 			g_assert (cfg->arch.cinfo);
-			riscv_addi (code, RISCV_T0, RISCV_FP, cfg->arch.cinfo->sig_cookie.offset);
-			code = mono_riscv_emit_store (code, RISCV_T0, ins->sreg1, 0, 0);
+			riscv_addi (code, RISCV_T1, RISCV_FP, cfg->arch.cinfo->sig_cookie.offset);
+			code = mono_riscv_emit_store (code, RISCV_T1, ins->sreg1, 0, 0);
 			break;
 
 		case OP_NOP:
@@ -5323,8 +5479,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCALL_MEMBASE:
 		case OP_VCALL2_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
-			code = mono_riscv_emit_load (code, RISCV_T0, ins->inst_basereg, ins->inst_offset, 0);
-			riscv_jalr (code, RISCV_RA, RISCV_T0, 0);
+			code = mono_riscv_emit_load (code, RISCV_T1, ins->inst_basereg, ins->inst_offset, 0);
+			riscv_jalr (code, RISCV_RA, RISCV_T1, 0);
 			code = emit_move_return_value (cfg, code, ins);
 			break;
 
