@@ -51,13 +51,6 @@ void unity_log(const char *format, ...)
     our_vprintf ("\n", nullptr);
 }
 
-static gboolean s_ReturnHandlesFromAPI;
-
-static gboolean return_handles_from_api()
-{
-    return s_ReturnHandlesFromAPI;
-}
-
 #ifdef WIN32
 #define EXPORT_API __declspec(dllexport)
 #define EXPORT_CC __cdecl
@@ -653,35 +646,8 @@ extern "C" EXPORT_API MonoJitInfo* EXPORT_CC mono_jit_info_table_find(MonoDomain
     return NULL;
 }
 
-extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init(const char *file)
-{
-    TRACE_API("%s", file);
-
-    return mono_jit_init_version(file, "4.0");
-}
-
 typedef int32_t (*initialize_scripting_runtime_func)();
 typedef void (*unity_log_func)(const char* format);
-
-void list_tpa(const SString& searchPath, SString& tpa)
-{
-    SString searchPattern = searchPath;
-    searchPattern += W("/*.dll");
-    WIN32_FIND_DATAW findData;
-    HANDLE fileHandle = FindFirstFileW(searchPattern.GetUnicode(), &findData);
-
-    if (fileHandle != INVALID_HANDLE_VALUE)
-    {
-        do
-        {
-            tpa.Append(searchPath);
-            tpa.Append(W("/"));
-            tpa.Append(findData.cFileName);
-            tpa += PATH_SEPARATOR;
-        } while (FindNextFileW(fileHandle, &findData));
-        FindClose(fileHandle);
-    }
-}
 
 extern "C" EXPORT_API void EXPORT_CC coreclr_initialize_domain(void* runtimeHost, unsigned int rootDomainId)
 {
@@ -695,136 +661,6 @@ extern "C" EXPORT_API void EXPORT_CC coreclr_initialize_domain(void* runtimeHost
 
     g_CLRRuntimeHost = (ICLRRuntimeHost*)runtimeHost;
     g_RootDomainId = rootDomainId;
-}
-
-extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *file, const char* runtime_version)
-{
-    gboolean useRealGC = false;
-    if (runtime_version != NULL)
-    {
-        if (strstr(runtime_version, "return-handles-from-api"))
-            s_ReturnHandlesFromAPI = true;
-        if (strstr(runtime_version, "use-real-gc"))
-        {
-            useRealGC = true;
-            s_ReturnHandlesFromAPI = true;
-        }
-    }
-
-#if 0 // FIXME_JON -- we can remove this right?
-    if (!useRealGC)
-    {
-    #if defined(TARGET_UNIX)
-#if defined(__APPLE__)
-        GCHeapUtilities::SetGCName("libunitygc.dylib");
-#else
-        GCHeapUtilities::SetGCName("libunitygc.so");
-#endif
-#else
-        GCHeapUtilities::SetGCName("unitygc.dll");
-#endif
-    }
-#endif
-
-    HRESULT hr;
-
-    if (!g_CLRRuntimeHost)
-    {
-        const char* entrypointExecutable = "/dev/null";
-#if defined(__APPLE__) || defined(__linux__)
-        uint32_t lenActualPath = 0;
-        /*if (_NSGetExecutablePath(nullptr, &lenActualPath) == -1)
-        {
-            // OSX has placed the actual path length in lenActualPath,
-            // so re-attempt the operation
-            entrypointExecutable = new char[lenActualPath + 1];
-            entrypointExecutable[lenActualPath] = '\0';
-            if (_NSGetExecutablePath(entrypointExecutable, &lenActualPath) == -1)
-            {
-                delete [] entrypointExecutable;
-                return nullptr;
-            }
-        }
-        else
-        {
-            return nullptr;
-        }*/
-#endif
-
-        SString appPath (*s_AssemblyDir);
-
-        SString etcPath (*s_EtcDir);
-
-        SString tpa;
-        list_tpa(appPath, tpa);
-
-        SString appPaths;
-        appPaths += appPath;
-        if (s_AssemblyPaths != NULL)
-        {
-            appPaths += PATH_SEPARATOR;
-            appPaths += *s_AssemblyPaths;
-        }
-
-        SString appNiPaths;
-        appNiPaths += appPath;
-        appNiPaths+= PATH_SEPARATOR;
-        appNiPaths += appPath;
-
-        SString nativeDllSearchDirs;
-        nativeDllSearchDirs += appPath;
-        nativeDllSearchDirs += PATH_SEPARATOR;
-        nativeDllSearchDirs += etcPath;
-
-        LPCSTR property_keys2[] = {
-            "TRUSTED_PLATFORM_ASSEMBLIES",
-            "APP_PATHS",
-            "APP_NI_PATHS",
-            "NATIVE_DLL_SEARCH_DIRECTORIES"
-        };
-
-        LPCSTR property_values2[] = {
-                  tpa.GetUTF8(),
-                  appPaths.GetUTF8(),
-                  appNiPaths.GetUTF8(),
-                  nativeDllSearchDirs.GetUTF8()
-        };
-
-        hr = coreclr_initialize (entrypointExecutable, file, 4, property_keys2, property_values2, &g_CLRRuntimeHost, &g_RootDomainId);
-
-        if(FAILED(hr))
-        {
-            return nullptr;
-        }
-    }
-
-    AppDomain *pCurDomain = SystemDomain::GetCurrentDomain();
-
-    // Disable Windows message processing during waits
-    // On Windows by default waits will processing some messages (COM, WM_PAINT, ...) leading to reentrancy issues
-    pCurDomain->SetForceTrivialWaitOperations();
-
-    gRootDomain = gCurrentDomain = (MonoDomain*)pCurDomain;
-
-    // Note : This logic can be removed once the switch over to using unity_coreclr_create_delegate is complete
-    initialize_scripting_runtime_func init_runtime_func;
-    hr = coreclr_create_delegate(g_CLRRuntimeHost, g_RootDomainId, "UnityEngine.Scripting", "UnityEngine.Scripting.Initialization", "NativeCallbackToPerformInitialization", (void**)&init_runtime_func);
-    if (hr == 0)
-    {
-        init_runtime_func();
-    }
-
-    //coreClrHelperAssembly->EnsureActive();
-    //gCoreCLRHelperAssembly = (MonoImage*)coreClrHelperAssembly;
-    //gALCWrapperClass = mono_class_from_name(gCoreCLRHelperAssembly, "Unity.CoreCLRHelpers", "ALCWrapper");
-    //gALCWrapperObject = mono_object_new(NULL, gALCWrapperClass);
-
-    //SetupDomainPaths(gALCWrapperObject);
-    //gRootDomain = gCurrentDomain;
-
-
-    TRACE_API("%s, %s", file, runtime_version);
-    return gCurrentDomain;
 }
 
 // This is a stop gap helper to assist with scripting core initializing itself until the entirety of coreclr initialization can be moved
