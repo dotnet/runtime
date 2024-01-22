@@ -884,6 +884,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Throws<InvalidOperationException>(() => Parallel.ForEach(mop, delegate (int item, ParallelLoopState state, long index) { }));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91582", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestParallelScheduler()
         {
