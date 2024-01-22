@@ -165,7 +165,6 @@ namespace System.Linq.Parallel.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void GetEnumerator_LargeQuery_PauseAfterOpening()
         {
             using (IEnumerator<int> e = Enumerable.Range(0, 8192).AsParallel().SkipWhile(i => true).GetEnumerator())

@@ -50,4 +50,15 @@ namespace SelfValidation
     public partial struct FirstValidator : IValidateOptions<FirstModel>
     {
     }
+
+    // SelfValidateOptions is self validate class as it implements IValidatableObject and contains no properties have ValidationAttribute
+    // Source generator should generate valid code for this class
+    [OptionsValidator]
+    public partial class SelfValidateOptions : IValidateOptions<SelfValidateOptions>, IValidatableObject
+    {
+        public IEnumerable<ValidationResult> Validate(ValidationContext context)
+        {
+            return new[] { new ValidationResult($"Display: {context.DisplayName}, Member: {context.MemberName}") };
+        }
+    }
 }

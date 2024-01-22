@@ -27,8 +27,8 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyIntegerEnumerator(IEnumVAR
 
     VARIANT element;
     ULONG numFetched;
-    
-    for(int i = start; i < start + count; ++i)
+
+    for (int i = start; i < start + count; ++i)
     {
         VariantClear(&element);
         hr = pEnum->Next(1, &element, &numFetched);
@@ -42,7 +42,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyIntegerEnumerator(IEnumVAR
             return E_UNEXPECTED;
         }
     }
-    
+
     hr = pEnum->Next(1, &element, &numFetched);
     if (hr != S_FALSE || numFetched != 0)
     {

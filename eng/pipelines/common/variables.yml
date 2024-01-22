@@ -9,6 +9,10 @@ variables:
 - name: NUGET_EXPERIMENTAL_NETWORK_RETRY_DELAY_MILLISECONDS
   value: 1000
 
+# disable CodeQL if we're not in the dedicated pipeline for it
+- name: Codeql.Enabled
+  value: ${{ eq(variables['Build.DefinitionName'], 'dotnet-runtime-codeql') }}
+
 - name: isOfficialBuild
   value: ${{ and(eq(variables['System.TeamProject'], 'internal'), eq(variables['Build.DefinitionName'], 'dotnet-runtime-official')) }}
 - name: isRollingBuild

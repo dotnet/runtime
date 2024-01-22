@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public static DiagnosticDescriptor LanguageVersionNotSupported { get; } = DiagnosticDescriptorHelper.Create(
                     id: "SYSLIB1102",
                     title: new LocalizableResourceString(nameof(SR.LanguageVersionIsNotSupportedTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
-                    messageFormat: new LocalizableResourceString(nameof(SR.Language_VersionIsNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
+                    messageFormat: new LocalizableResourceString(nameof(SR.LanguageVersionIsNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
                     category: ProjectName,
                     defaultSeverity: DiagnosticSeverity.Error,
                     isEnabledByDefault: true);

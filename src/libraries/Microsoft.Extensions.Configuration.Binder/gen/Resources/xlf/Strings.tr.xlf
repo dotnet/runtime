@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
         <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
-        <target state="needs-review-translation">Bir bağlayıcı çağrısı için bağlama mantığı oluşturulmadı. Desteklenmeyen giriş desenleri genel çağrılar ve geçici kutulu nesneler içeriyor.</target>
+        <target state="translated">Bağlama mantığı bir bağlayıcı çağrısı için oluşturulmadı. Desteklenmeyen giriş düzenleri şunları içerir: genel çağrılar, geçirilen kutulu nesneler ve ‘genel’ veya ‘iç’ olmayan geçirme türleri.</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">
@@ -27,14 +27,14 @@
         <target state="translated">Koleksiyon öğesi türü desteklenmiyor: '{0}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 12'.</source>
-        <target state="needs-review-translation">Projenin dil sürümü en az 'C# 11' olmalıdır.</target>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
         <source>Language version is required to be at least C# 12</source>
-        <target state="needs-review-translation">Dil sürümünün en az C# 11 olması gerekir</target>
+        <target state="translated">Dil sürümünün en az C# 12 olması gerekir</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingPublicInstanceConstructor">

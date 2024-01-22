@@ -5,33 +5,40 @@
 //
 
 //
-// FCall's for the DependentHandle class
-//
-// Handle functions require cooperative mode, making these fcalls poor candidates for QCall conversion.
+// FCalls and QCalls for the DependentHandle class
 //
 
 
 #include "common.h"
 #include "comdependenthandle.h"
 
-FCIMPL2(OBJECTHANDLE, DependentHandle::InternalInitialize, Object *_target, Object *_dependent)
+FCIMPL2(OBJECTHANDLE, DependentHandle::InternalAlloc, Object *target, Object *dependent)
 {
     FCALL_CONTRACT;
 
-    OBJECTREF target(_target);
-    OBJECTREF dependent(_dependent);
+    // Use slow path if profiler is tracking GC
+    if (CORProfilerTrackGC())
+        return NULL;
+
+    return GetAppDomain()->GetHandleStore()->CreateDependentHandle(target, dependent);
+}
+FCIMPLEND
+
+extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent)
+{
+    QCALL_CONTRACT;
+
     OBJECTHANDLE result = NULL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
+    BEGIN_QCALL;
 
-    // Create the handle.
-    result = GetAppDomain()->CreateDependentHandle(target, dependent);
+    GCX_COOP();
+    result = GetAppDomain()->CreateDependentHandle(target.Get(), dependent.Get());
 
-    HELPER_METHOD_FRAME_END_POLL();
+    END_QCALL;
 
     return result;
 }
-FCIMPLEND
 
 FCIMPL1(Object*, DependentHandle::InternalGetTarget, OBJECTHANDLE handle)
 {
@@ -97,16 +104,31 @@ FCIMPL2(VOID, DependentHandle::InternalSetDependent, OBJECTHANDLE handle, Object
 }
 FCIMPLEND
 
-FCIMPL1(VOID, DependentHandle::InternalFree, OBJECTHANDLE handle)
+FCIMPL1(FC_BOOL_RET, DependentHandle::InternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
     _ASSERTE(handle != NULL);
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    // Use slow path if profiler is tracking GC
+    if (CORProfilerTrackGC())
+        FC_RETURN_BOOL(false);
 
     DestroyDependentHandle(handle);
-
-    HELPER_METHOD_FRAME_END();
+    FC_RETURN_BOOL(true);
 }
 FCIMPLEND
+
+extern "C" void QCALLTYPE DependentHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(handle != NULL);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    DestroyDependentHandle(handle);
+
+    END_QCALL;
+}

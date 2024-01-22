@@ -71,7 +71,7 @@ protected:
 //    tree - A store tree that performs block initialization.
 //
 // Return Value:
-//    A possibly modified tree to perform the initializetion.
+//    A possibly modified tree to perform the initialization.
 //
 // static
 GenTree* MorphInitBlockHelper::MorphInitBlock(Compiler* comp, GenTree* tree)
@@ -236,7 +236,7 @@ void MorphInitBlockHelper::PropagateBlockAssertions()
 {
     if (m_comp->optLocalAssertionProp)
     {
-        m_comp->optAssertionGen(m_store);
+        m_comp->fgAssertionGen(m_store);
     }
 }
 
@@ -254,7 +254,7 @@ void MorphInitBlockHelper::PropagateExpansionAssertions()
     //
     if (m_comp->optLocalAssertionProp && (m_transformationDecision == BlockTransformation::OneStoreBlock))
     {
-        m_comp->optAssertionGen(m_store);
+        m_comp->fgAssertionGen(m_store);
     }
 }
 
@@ -425,7 +425,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
 
         if (m_comp->optLocalAssertionProp)
         {
-            m_comp->optAssertionGen(store);
+            m_comp->fgAssertionGen(store);
         }
 
         if (tree != nullptr)
@@ -1385,7 +1385,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
         if (m_comp->optLocalAssertionProp)
         {
-            m_comp->optAssertionGen(dstFldStore);
+            m_comp->fgAssertionGen(dstFldStore);
         }
 
         if (addrSpillStore != nullptr)

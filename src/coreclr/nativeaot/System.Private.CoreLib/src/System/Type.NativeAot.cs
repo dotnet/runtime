@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -30,15 +31,8 @@ namespace System
             // unifier's hash table.
             if (MethodTable.SupportsWritableData)
             {
-                ref UnsafeGCHandle handle = ref Unsafe.AsRef<UnsafeGCHandle>(pMT->WritableData);
-                if (handle.IsAllocated)
-                {
-                    return Unsafe.As<RuntimeType>(handle.Target);
-                }
-                else
-                {
-                    return GetTypeFromMethodTableSlow(pMT, ref handle);
-                }
+                ref RuntimeType? type = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+                return type ?? GetTypeFromMethodTableSlow(pMT);
             }
             else
             {
@@ -46,18 +40,36 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT, ref UnsafeGCHandle handle)
+        private static class AllocationLockHolder
         {
-            UnsafeGCHandle tempHandle = UnsafeGCHandle.Alloc(new RuntimeType(pMT));
+            public static LowLevelLock AllocationLock = new LowLevelLock();
+        }
 
-            // We don't want to leak a handle if there's a race
-            if (Interlocked.CompareExchange(ref Unsafe.As<UnsafeGCHandle, IntPtr>(ref handle), Unsafe.As<UnsafeGCHandle, IntPtr>(ref tempHandle), default) != default)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT)
+        {
+            // Allocate and set the RuntimeType under a lock - there's no way to free it if there is a race.
+            AllocationLockHolder.AllocationLock.Acquire();
+            try
             {
-                tempHandle.Free();
-            }
+                ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+                if (runtimeTypeCache != null)
+                    return runtimeTypeCache;
 
-            return Unsafe.As<RuntimeType>(handle.Target);
+                RuntimeType? type = FrozenObjectHeapManager.Instance.TryAllocateObject<RuntimeType>();
+                if (type == null)
+                    throw new OutOfMemoryException();
+
+                type.DangerousSetUnderlyingEEType(pMT);
+
+                runtimeTypeCache = type;
+
+                return type;
+            }
+            finally
+            {
+                AllocationLockHolder.AllocationLock.Release();
+            }
         }
 
         //

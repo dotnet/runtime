@@ -3,8 +3,8 @@
 
 using System.ComponentModel;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace System
@@ -88,10 +88,10 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void ReboxFromNullable (object? src, ObjectHandleOnStack res);
+        private static extern void ReboxFromNullable(object? src, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void ReboxToNullable (object? src, QCallTypeHandle destNullableType, ObjectHandleOnStack res);
+        private static extern void ReboxToNullable(object? src, QCallTypeHandle destNullableType, ObjectHandleOnStack res);
 
         internal static object ReboxFromNullable(object? src)
         {

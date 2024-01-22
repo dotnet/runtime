@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Internal.Runtime.Augments;
 using System.Diagnostics;
-using System.Threading;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Numerics;
+using System.Threading;
+
+using Internal.Runtime;
+using Internal.Runtime.Augments;
 
 namespace System.Runtime
 {
@@ -93,36 +95,6 @@ namespace System.Runtime
             return v._result;
         }
 
-        public static void GenericLookupAndCallCtor(object arg, IntPtr context, IntPtr signature)
-        {
-            Value v = LookupOrAdd(context, signature);
-            RawCalliHelper.Call(v._result, arg);
-        }
-
-        public static object GenericLookupAndAllocObject(IntPtr context, IntPtr signature)
-        {
-            Value v = LookupOrAdd(context, signature);
-            return RawCalliHelper.Call<object>(v._result, v._auxResult);
-        }
-
-        public static object GenericLookupAndAllocArray(IntPtr context, IntPtr arg, IntPtr signature)
-        {
-            Value v = LookupOrAdd(context, signature);
-            return RawCalliHelper.Call<object>(v._result, v._auxResult, arg);
-        }
-
-        public static void GenericLookupAndCheckArrayElemType(IntPtr context, object arg, IntPtr signature)
-        {
-            Value v = LookupOrAdd(context, signature);
-            RawCalliHelper.Call(v._result, v._auxResult, arg);
-        }
-
-        public static object GenericLookupAndCast(object arg, IntPtr context, IntPtr signature)
-        {
-            Value v = LookupOrAdd(context, signature);
-            return RawCalliHelper.Call<object>(v._result, arg, v._auxResult);
-        }
-
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
             if (TryGetFromCache((IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot), out var v))
@@ -135,7 +107,7 @@ namespace System.Runtime
         {
             Value v = CacheMiss((IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot),
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
-                        => RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
+                        => RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(new RuntimeTypeHandle((MethodTable*)context), *(RuntimeMethodHandle*)&signature));
 
             return v._result;
         }
@@ -159,18 +131,6 @@ namespace System.Runtime
         {
             Key k = new Key(context, signature);
             return s_cache.TryGet(k, out entry);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static IntPtr RuntimeCacheLookupInCache(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
-        {
-            if (!TryGetFromCache(context, signature, out var v))
-            {
-                v = CacheMiss(context, signature, factory, contextObject);
-            }
-
-            auxResult = v._auxResult;
-            return v._result;
         }
 
         private static Value CacheMiss(IntPtr ctx, IntPtr sig)
@@ -197,7 +157,7 @@ namespace System.Runtime
         }
     }
 
-    public delegate IntPtr RuntimeObjectFactory(IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult);
+    internal delegate IntPtr RuntimeObjectFactory(IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult);
 
     internal static unsafe class RawCalliHelper
     {

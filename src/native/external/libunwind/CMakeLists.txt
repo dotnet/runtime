@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 11)
 
 set(PKG_MAJOR "1")
 set(PKG_MINOR "6")
-set(PKG_EXTRA "-rc1")
+set(PKG_EXTRA "-rc2")
 set(PACKAGE_STRING "libunwind")
 set(PACKAGE_BUGREPORT "")
 

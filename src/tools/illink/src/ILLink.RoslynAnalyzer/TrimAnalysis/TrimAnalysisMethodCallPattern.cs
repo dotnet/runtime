@@ -4,6 +4,9 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.InteropServices.ComTypes;
+using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
@@ -14,18 +17,20 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	public readonly record struct TrimAnalysisMethodCallPattern
 	{
-		public IMethodSymbol CalledMethod { init; get; }
-		public MultiValue Instance { init; get; }
-		public ImmutableArray<MultiValue> Arguments { init; get; }
-		public IOperation Operation { init; get; }
-		public ISymbol OwningSymbol { init; get; }
+		public IMethodSymbol CalledMethod { get; init; }
+		public MultiValue Instance { get; init; }
+		public ImmutableArray<MultiValue> Arguments { get; init; }
+		public IOperation Operation { get; init; }
+		public ISymbol OwningSymbol { get; init; }
+		public FeatureContext FeatureContext { get; init; }
 
 		public TrimAnalysisMethodCallPattern (
 			IMethodSymbol calledMethod,
 			MultiValue instance,
 			ImmutableArray<MultiValue> arguments,
 			IOperation operation,
-			ISymbol owningSymbol)
+			ISymbol owningSymbol,
+			FeatureContext featureContext)
 		{
 			CalledMethod = calledMethod;
 			Instance = instance.DeepCopy ();
@@ -40,9 +45,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 			Operation = operation;
 			OwningSymbol = owningSymbol;
+			FeatureContext = featureContext.DeepCopy ();
 		}
 
-		public TrimAnalysisMethodCallPattern Merge (ValueSetLattice<SingleValue> lattice, TrimAnalysisMethodCallPattern other)
+		public TrimAnalysisMethodCallPattern Merge (
+			ValueSetLattice<SingleValue> lattice,
+			FeatureContextLattice featureContextLattice,
+			TrimAnalysisMethodCallPattern other)
 		{
 			Debug.Assert (Operation == other.Operation);
 			Debug.Assert (SymbolEqualityComparer.Default.Equals (CalledMethod, other.CalledMethod));
@@ -59,20 +68,23 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				lattice.Meet (Instance, other.Instance),
 				argumentsBuilder.ToImmutable (),
 				Operation,
-				OwningSymbol);
+				OwningSymbol,
+				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
 		}
 
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-			if (context.EnableTrimAnalyzer && !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _))
+			if (context.EnableTrimAnalyzer &&
+				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
+				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.UnreferencedCode))
 			{
 				TrimAnalysisVisitor.HandleCall(Operation, OwningSymbol, CalledMethod, Instance, Arguments, diagnosticContext, default, out var _);
 			}
 
 			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
 			{
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic(Operation, CalledMethod, OwningSymbol, context, out Diagnostic? diag))
+				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic(Operation, CalledMethod, OwningSymbol, context, FeatureContext, out Diagnostic? diag))
 					diagnosticContext.AddDiagnostic(diag);
 			}
 

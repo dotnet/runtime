@@ -5,6 +5,7 @@
 // To regenerate run the gen script in src/coreclr/tools/Common/JitInterface/ThunkGenerator
 // and follow the instructions in docs/project/updating-jitinterface.md
 DEF_CLR_API(isIntrinsic)
+DEF_CLR_API(notifyMethodInfoUsage)
 DEF_CLR_API(getMethodAttribs)
 DEF_CLR_API(setMethodAttribs)
 DEF_CLR_API(getMethodSig)
@@ -99,6 +100,7 @@ DEF_CLR_API(getFieldOffset)
 DEF_CLR_API(getFieldInfo)
 DEF_CLR_API(getThreadLocalFieldInfo)
 DEF_CLR_API(getThreadLocalStaticBlocksInfo)
+DEF_CLR_API(getThreadLocalStaticInfo_NativeAOT)
 DEF_CLR_API(isFieldStatic)
 DEF_CLR_API(getArrayOrStringLength)
 DEF_CLR_API(getBoundaries)

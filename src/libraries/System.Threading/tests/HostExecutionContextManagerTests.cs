@@ -8,7 +8,6 @@ namespace System.Threading.Tests
     public static class HostExecutionContextManagerTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void BasicTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>

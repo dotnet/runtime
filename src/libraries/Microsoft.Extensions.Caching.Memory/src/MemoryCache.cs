@@ -77,6 +77,20 @@ namespace Microsoft.Extensions.Caching.Memory
         public int Count => _coherentState.Count;
 
         /// <summary>
+        /// Gets an enumerable of the all the keys in the <see cref="MemoryCache"/>.
+        /// </summary>
+        public IEnumerable<object> Keys
+        {
+            get
+            {
+                foreach (KeyValuePair<object, CacheEntry> pairs in _coherentState._entries)
+                {
+                    yield return pairs.Key;
+                }
+            }
+        }
+
+        /// <summary>
         /// Internal accessor for Size for testing only.
         ///
         /// Note that this is only eventually consistent with the contents of the collection.
@@ -483,7 +497,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 long lowWatermark = sizeLimit - (long)(sizeLimit * _options.CompactionPercentage);
                 if (currentSize > lowWatermark)
                 {
-                     Compact(currentSize - (long)lowWatermark, entry => entry.Size, coherentState);
+                    Compact(currentSize - (long)lowWatermark, entry => entry.Size, coherentState);
                 }
             }
 

@@ -13,6 +13,7 @@ using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using Internal.TypeSystem.Ecma;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -43,6 +44,9 @@ namespace Internal.JitInterface
         {
             _compilation = compilation;
         }
+
+        private FrozenObjectNode HandleToObject(CORINFO_OBJECT_STRUCT_* obj) => (FrozenObjectNode)HandleToObject((void*)obj);
+        private CORINFO_OBJECT_STRUCT_* ObjectToHandle(FrozenObjectNode obj) => (CORINFO_OBJECT_STRUCT_*)ObjectToHandle((object)obj);
 
         private UnboxingMethodDesc getUnboxingThunk(MethodDesc method)
         {
@@ -796,6 +800,14 @@ namespace Internal.JitInterface
             {
                 MethodDesc caller = HandleToObject(callerHnd);
 
+                if (caller.OwningType is EcmaType ecmaOwningType
+                    && ecmaOwningType.EcmaModule.EntryPoint == caller)
+                {
+                    // Do not tailcall from the application entrypoint.
+                    // We want Main to be visible in stack traces.
+                    result = false;
+                }
+
                 if (caller.IsNoInlining)
                 {
                     // Do not tailcall from methods that are marked as noinline (people often use no-inline
@@ -811,7 +823,7 @@ namespace Internal.JitInterface
         {
             MethodIL methodIL = (MethodIL)HandleToObject((void*)module);
 
-            ISymbolNode stringObject;
+            FrozenStringNode stringObject;
             if (metaTok == (mdToken)CorConstants.CorTokenType.mdtString)
             {
                 stringObject = _compilation.NodeFactory.SerializedStringObject("");
@@ -1764,7 +1776,7 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
         {
             MethodDesc method = HandleToObject(handle);
-            ISymbolNode methodHandleSymbol = _compilation.NodeFactory.RuntimeMethodHandle(method);
+            RuntimeMethodHandleNode methodHandleSymbol = _compilation.NodeFactory.RuntimeMethodHandle(method);
             CORINFO_METHOD_STRUCT_* result = (CORINFO_METHOD_STRUCT_*)ObjectToHandle(methodHandleSymbol);
 
             if (methodHandleSymbol.RepresentsIndirectionCell)
@@ -1812,7 +1824,6 @@ namespace Internal.JitInterface
 
             switch (method.Name)
             {
-                case "EETypePtrOf":
                 case "Of":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
                     pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
@@ -2128,6 +2139,22 @@ namespace Internal.JitInterface
                     }
                     else if (field.IsThreadStatic)
                     {
+                        if (MethodBeingCompiled.Context.Target.IsWindows && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
+                        {
+                            ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex((MetadataType)field.OwningType);
+                            if (index is TypeThreadStaticIndexNode ti)
+                            {
+                                if (ti.IsInlined)
+                                {
+                                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
+                                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                                    {
+                                        fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
+                                    }
+                                }
+                            }
+                        }
+
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
@@ -2298,7 +2325,7 @@ namespace Internal.JitInterface
             Debug.Assert(bufferSize >= 0);
             Debug.Assert(valueOffset >= 0);
 
-            object obj = HandleToObject(objPtr);
+            FrozenObjectNode obj = HandleToObject(objPtr);
             if (obj is FrozenStringNode frozenStr)
             {
                 // Only support reading the string data
@@ -2320,20 +2347,21 @@ namespace Internal.JitInterface
 
         private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
         {
-            return ObjectToHandle(((FrozenObjectNode)HandleToObject(objPtr)).ObjectType);
+            return ObjectToHandle(HandleToObject(objPtr).ObjectType);
         }
 
-#pragma warning disable CA1822 // Mark members as static
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
-#pragma warning restore CA1822 // Mark members as static
         {
-            // TODO: https://github.com/dotnet/runtime/pull/75573#issuecomment-1250824543
-            return null;
+            if (!EETypeNode.SupportsFrozenRuntimeTypeInstances(_compilation.NodeFactory.Target))
+                return null;
+
+            TypeDesc type = HandleToObject(cls);
+            return ObjectToHandle(_compilation.NecessaryRuntimeTypeIfPossible(type));
         }
 
         private bool isObjectImmutable(CORINFO_OBJECT_STRUCT_* objPtr)
         {
-            return ((FrozenObjectNode)HandleToObject(objPtr)).IsKnownImmutable;
+            return HandleToObject(objPtr).IsKnownImmutable;
         }
 
         private bool getStringChar(CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* value)
@@ -2348,7 +2376,7 @@ namespace Internal.JitInterface
 
         private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
         {
-            return ((FrozenObjectNode)HandleToObject(objHnd)).ArrayLength ?? -1;
+            return HandleToObject(objHnd).ArrayLength ?? -1;
         }
 
         private bool getIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref int offset)
@@ -2373,6 +2401,21 @@ namespace Internal.JitInterface
                 addr.accessType = InfoAccessType.IAT_VALUE;
                 addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeNonGCStaticsSymbol(type));
             }
+            return true;
+        }
+
+        private void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+        {
+            pInfo->offsetOfThreadLocalStoragePointer = (uint)(11 * PointerSize); // Offset of ThreadLocalStoragePointer in the TEB
+            pInfo->tlsIndexObject = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
+            pInfo->tlsRootObject = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
+            pInfo->threadStaticBaseSlow = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private bool notifyMethodInfoUsage(CORINFO_METHOD_STRUCT_* ftn)
+#pragma warning restore CA1822 // Mark members as static
+        {
             return true;
         }
     }

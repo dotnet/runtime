@@ -113,7 +113,7 @@ function initRunArgs(runArgs) {
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
     runArgs.memorySnapshot = runArgs.memorySnapshot === undefined ? true : runArgs.memorySnapshot;
-    runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? true : runArgs.interpreterPgo;
+    runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? false : runArgs.interpreterPgo;
 
     return runArgs;
 }
@@ -147,6 +147,8 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.forwardConsole = false;
         } else if (currentArg == "--no-memory-snapshot") {
             runArgs.memorySnapshot = false;
+        } else if (currentArg == "--interpreter-pgo") {
+            runArgs.interpreterPgo = true;
         } else if (currentArg == "--no-interpreter-pgo") {
             runArgs.interpreterPgo = false;
         } else if (currentArg.startsWith("--fetch-random-delay=")) {
@@ -218,51 +220,29 @@ let mono_exit = (code, reason) => {
 };
 
 const App = {
-    /** Runs a particular test in legacy interop tests
-     * @type {(method_name: string, args: any[]=, signature: any=) => return number}
-     */
-    call_test_method: function (method_name, args, signature) {
-        // note: arguments here is the array of arguments passsed to this function
-        if ((arguments.length > 2) && (typeof (signature) !== "string"))
-            throw new Error("Invalid number of arguments for call_test_method");
-
-        const fqn = "[System.Runtime.InteropServices.JavaScript.Legacy.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
-        try {
-            const method = App.runtime.BINDING.bind_static_method(fqn, signature);
-            return method.apply(null, args || []);
-        } catch (exc) {
-            console.error("exception thrown in", fqn);
-            throw exc;
-        }
-    },
-
     create_function(...args) {
         const code = args.pop();
         const arg_count = args.length;
-        args.push("MONO");
-        args.push("BINDING");
         args.push("INTERNAL");
 
         const userFunction = new Function(...args, code);
         return function (...args) {
-            args[arg_count + 0] = globalThis.App.runtime.MONO;
-            args[arg_count + 1] = globalThis.App.runtime.BINDING;
-            args[arg_count + 2] = globalThis.App.runtime.INTERNAL;
+            args[arg_count] = globalThis.App.runtime.INTERNAL;
             return userFunction(...args);
         };
     },
 
     invoke_js(js_code) {
-        const closedEval = function (Module, MONO, BINDING, INTERNAL, code) {
+        const closedEval = function (Module, INTERNAL, code) {
             return eval(code);
         };
-        const res = closedEval(globalThis.App.runtime.Module, globalThis.App.runtime.MONO, globalThis.App.runtime.BINDING, globalThis.App.runtime.INTERNAL, js_code);
+        const res = closedEval(globalThis.App.runtime.Module, globalThis.App.runtime.INTERNAL, js_code);
         return (res === undefined || res === null || typeof res === "string")
             ? null
             : res.toString();
     }
 };
-globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
+globalThis.App = App; // Necessary as tests use it
 
 function configureRuntime(dotnet, runArgs) {
     dotnet
@@ -348,11 +328,11 @@ async function run() {
 
         if (ENVIRONMENT_IS_WEB && runArgs.memorySnapshot) {
             if (globalThis.isSecureContext) {
-            const dryOk = await dry_run(runArgs);
-            if (!dryOk) {
-                mono_exit(1, "Failed during dry run");
-                return;
-            }
+                const dryOk = await dry_run(runArgs);
+                if (!dryOk) {
+                    mono_exit(1, "Failed during dry run");
+                    return;
+                }
             } else {
                 console.log("Skipping dry run as the context is not secure and the snapshot would be not trusted.");
             }

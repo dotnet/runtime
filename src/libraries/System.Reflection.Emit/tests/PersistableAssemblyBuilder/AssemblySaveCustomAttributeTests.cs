@@ -42,12 +42,15 @@ namespace System.Reflection.Emit.Tests
             {
                 WriteAssemblyToDisk(assemblyName, Type.EmptyTypes, file.Path, _attributes, _attributes);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Module moduleFromDisk = assemblyFromDisk.Modules.First();
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Module moduleFromDisk = assemblyFromDisk.Modules.First();
 
-                AssemblySaveTools.AssertAssemblyNameAndModule(assemblyName, assemblyFromDisk.GetName(), moduleFromDisk);
-                ValidateAttributes(assemblyFromDisk.GetCustomAttributesData());
-                ValidateAttributes(moduleFromDisk.GetCustomAttributesData());
+                    AssemblySaveTools.AssertAssemblyNameAndModule(assemblyName, assemblyFromDisk.GetName(), moduleFromDisk);
+                    ValidateAttributes(assemblyFromDisk.GetCustomAttributesData());
+                    ValidateAttributes(moduleFromDisk.GetCustomAttributesData());
+                }
             }
         }
 
@@ -61,33 +64,36 @@ namespace System.Reflection.Emit.Tests
                 WriteAssemblyToDisk(PopulateAssemblyName(), types, file.Path, typeAttributes: _attributes,
                     methodAttributes: _attributes, fieldAttributes: _attributes);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-
-                Module moduleFromDisk = assemblyFromDisk.Modules.First();
-                Type[] typesFromDisk = moduleFromDisk.GetTypes();
-
-                Assert.Equal(types.Length, typesFromDisk.Length);
-
-                for (int i = 0; i < types.Length; i++)
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
                 {
-                    Type typeFromDisk = typesFromDisk[i];
-                    Type sourceType = types[i];
-                    MethodInfo[] methodsFromDisk = typeFromDisk.IsValueType ? typeFromDisk.GetMethods(BindingFlags.DeclaredOnly) : typeFromDisk.GetMethods();
-                    FieldInfo[] fieldsFromDisk = typeFromDisk.GetFields();
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
 
-                    AssemblySaveTools.AssertTypeProperties(sourceType, typeFromDisk);
-                    AssemblySaveTools.AssertMethods(sourceType.IsValueType ? sourceType.GetMethods(BindingFlags.DeclaredOnly) : sourceType.GetMethods(), methodsFromDisk);
-                    AssemblySaveTools.AssertFields(sourceType.GetFields(), fieldsFromDisk);
-                    ValidateAttributes(typeFromDisk.GetCustomAttributesData());
+                    Module moduleFromDisk = assemblyFromDisk.Modules.First();
+                    Type[] typesFromDisk = moduleFromDisk.GetTypes();
 
-                    for (int j = 0; j < methodsFromDisk.Length; j++)
+                    Assert.Equal(types.Length, typesFromDisk.Length);
+
+                    for (int i = 0; i < types.Length; i++)
                     {
-                        ValidateAttributes(methodsFromDisk[j].GetCustomAttributesData());
-                    }
+                        Type typeFromDisk = typesFromDisk[i];
+                        Type sourceType = types[i];
+                        MethodInfo[] methodsFromDisk = typeFromDisk.IsValueType ? typeFromDisk.GetMethods(BindingFlags.DeclaredOnly) : typeFromDisk.GetMethods();
+                        FieldInfo[] fieldsFromDisk = typeFromDisk.GetFields();
 
-                    for (int j = 0; j < fieldsFromDisk.Length; j++)
-                    {
-                        ValidateAttributes(fieldsFromDisk[j].GetCustomAttributesData());
+                        AssemblySaveTools.AssertTypeProperties(sourceType, typeFromDisk);
+                        AssemblySaveTools.AssertMethods(sourceType.IsValueType ? sourceType.GetMethods(BindingFlags.DeclaredOnly) : sourceType.GetMethods(), methodsFromDisk);
+                        AssemblySaveTools.AssertFields(sourceType.GetFields(), fieldsFromDisk);
+                        ValidateAttributes(typeFromDisk.GetCustomAttributesData());
+
+                        for (int j = 0; j < methodsFromDisk.Length; j++)
+                        {
+                            ValidateAttributes(methodsFromDisk[j].GetCustomAttributesData());
+                        }
+
+                        for (int j = 0; j < fieldsFromDisk.Length; j++)
+                        {
+                            ValidateAttributes(fieldsFromDisk[j].GetCustomAttributesData());
+                        }
                     }
                 }
             }
@@ -119,10 +125,10 @@ namespace System.Reflection.Emit.Tests
             List<CustomAttributeBuilder>? moduleAttributes = null, List<CustomAttributeBuilder>? typeAttributes = null,
             List<CustomAttributeBuilder>? methodAttributes = null, List<CustomAttributeBuilder>? fieldAttributes = null)
         {
-            AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(assemblyName, assemblyAttributes, typeof(string), out MethodInfo saveMethod);
+            AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(assemblyName, assemblyAttributes);
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
             PopulateMembersForModule(mb, types, moduleAttributes, typeAttributes, methodAttributes, fieldAttributes);
-            saveMethod.Invoke(assemblyBuilder, new object[] { fileLocation });
+            assemblyBuilder.Save(fileLocation);
         }
 
         private static void PopulateMembersForModule(ModuleBuilder mb, Type[] types, List<CustomAttributeBuilder>? moduleAttributes,
@@ -140,6 +146,7 @@ namespace System.Reflection.Emit.Tests
 
                 DefineMethodsAndSetAttributes(methodAttributes, tb, type.IsInterface ? type.GetMethods() : type.GetMethods(BindingFlags.DeclaredOnly), methodAttributes);
                 DefineFieldsAndSetAttributes(fieldAttributes, type.GetFields(), tb);
+                tb.CreateType();
             }
         }
 
@@ -191,61 +198,64 @@ namespace System.Reflection.Emit.Tests
                                                               new CustomAttributeBuilder(typeof(SpecialNameAttribute).GetConstructor(Type.EmptyTypes), new object[] { })
                                                             };
 
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(
-                    PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes, type.BaseType);
                 DefineFieldsAndSetAttributes(fieldAttributes.ToList(), type.GetFields(), tb);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                tb.CreateType();
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Module moduleFromDisk = assemblyFromDisk.Modules.First();
-                Type testType = moduleFromDisk.GetTypes()[0];
-                IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
-
-                Assert.Equal(typeAttributes.Count - 3, attributesFromDisk.Count); // 3 pseudo attributes 
-                Assert.True((testType.Attributes & TypeAttributes.Serializable) != 0); // SerializableAttribute
-                Assert.True((testType.Attributes & TypeAttributes.SpecialName) != 0); // SpecialNameAttribute
-                Assert.True((testType.Attributes & TypeAttributes.ExplicitLayout) != 0); // StructLayoutAttribute
-                Assert.True((testType.Attributes & TypeAttributes.UnicodeClass) != 0);   // StructLayoutAttribute, not sure if we could test the PackingSize and Size
-
-                for (int i = 0; i < attributesFromDisk.Count; i++)
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
                 {
-                    switch (attributesFromDisk[i].AttributeType.Name)
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Module moduleFromDisk = assemblyFromDisk.Modules.First();
+                    Type testType = moduleFromDisk.GetTypes()[0];
+                    IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
+
+                    Assert.Equal(typeAttributes.Count - 3, attributesFromDisk.Count); // 3 pseudo attributes 
+                    Assert.True((testType.Attributes & TypeAttributes.Serializable) != 0); // SerializableAttribute
+                    Assert.True((testType.Attributes & TypeAttributes.SpecialName) != 0); // SpecialNameAttribute
+                    Assert.True((testType.Attributes & TypeAttributes.ExplicitLayout) != 0); // StructLayoutAttribute
+                    Assert.True((testType.Attributes & TypeAttributes.UnicodeClass) != 0);   // StructLayoutAttribute, not sure if we could test the PackingSize and Size
+
+                    for (int i = 0; i < attributesFromDisk.Count; i++)
                     {
-                        case "GuidAttribute":
-                            Assert.Equal(s_guidPair.args[0], attributesFromDisk[i].ConstructorArguments[0].Value);
-                            break;
-                        default:
-                            Assert.Fail($"Not expected attribute : {attributesFromDisk[i].AttributeType.Name}");
-                            break;
+                        switch (attributesFromDisk[i].AttributeType.Name)
+                        {
+                            case "GuidAttribute":
+                                Assert.Equal(s_guidPair.args[0], attributesFromDisk[i].ConstructorArguments[0].Value);
+                                break;
+                            default:
+                                Assert.Fail($"Not expected attribute : {attributesFromDisk[i].AttributeType.Name}");
+                                break;
+                        }
                     }
-                }
 
-                FieldInfo field = testType.GetFields()[0];
-                IList<CustomAttributeData> fieldAttributesFromDisk = field.GetCustomAttributesData();
+                    FieldInfo field = testType.GetFields()[0];
+                    IList<CustomAttributeData> fieldAttributesFromDisk = field.GetCustomAttributesData();
 
-                Assert.Equal(3, fieldAttributesFromDisk.Count);
-                Assert.True((field.Attributes & FieldAttributes.NotSerialized) != 0); // NonSerializedAttribute
-                Assert.True((field.Attributes & FieldAttributes.SpecialName) != 0); // SpecialNameAttribute
-                Assert.True((field.Attributes & FieldAttributes.HasFieldMarshal) != 0); // MarshalAsAttribute
+                    Assert.Equal(3, fieldAttributesFromDisk.Count);
+                    Assert.True((field.Attributes & FieldAttributes.NotSerialized) != 0); // NonSerializedAttribute
+                    Assert.True((field.Attributes & FieldAttributes.SpecialName) != 0); // SpecialNameAttribute
+                    Assert.True((field.Attributes & FieldAttributes.HasFieldMarshal) != 0); // MarshalAsAttribute
 
-                for (int i = 0; i < fieldAttributesFromDisk.Count; i++)
-                {
-                    switch (fieldAttributesFromDisk[i].AttributeType.Name)
+                    for (int i = 0; i < fieldAttributesFromDisk.Count; i++)
                     {
-                        case "FieldOffsetAttribute":
-                            Assert.Equal(2, fieldAttributesFromDisk[i].ConstructorArguments[0].Value);
-                            break;
-                        case "MarshalAsAttribute":
-                            Assert.Equal(UnmanagedType.I4, (UnmanagedType)fieldAttributesFromDisk[i].ConstructorArguments[0].Value);
-                            break;
-                        case "GuidAttribute":
-                            Assert.Equal(s_guidPair.args[0], fieldAttributesFromDisk[i].ConstructorArguments[0].Value);
-                            break;
-                        default:
-                            Assert.Fail($"Not expected attribute : {fieldAttributesFromDisk[i].AttributeType.Name}");
-                            break;
+                        switch (fieldAttributesFromDisk[i].AttributeType.Name)
+                        {
+                            case "FieldOffsetAttribute":
+                                Assert.Equal(2, fieldAttributesFromDisk[i].ConstructorArguments[0].Value);
+                                break;
+                            case "MarshalAsAttribute":
+                                Assert.Equal(UnmanagedType.I4, (UnmanagedType)fieldAttributesFromDisk[i].ConstructorArguments[0].Value);
+                                break;
+                            case "GuidAttribute":
+                                Assert.Equal(s_guidPair.args[0], fieldAttributesFromDisk[i].ConstructorArguments[0].Value);
+                                break;
+                            default:
+                                Assert.Fail($"Not expected attribute : {fieldAttributesFromDisk[i].AttributeType.Name}");
+                                break;
+                        }
                     }
                 }
             }
@@ -280,125 +290,129 @@ namespace System.Reflection.Emit.Tests
                         new CustomAttributeBuilder(marshalAsEnumCtor, new object[] { UnmanagedType.CustomMarshaler },
                                 new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalType")}, new object[] { typeof(EmptyTestClass).AssemblyQualifiedName })};
 
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
                 DefineMethodsAndSetAttributes(methodAttributes, tb, type.GetMethods(), parameterAttributes);
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                tb.CreateType();
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type testType = assemblyFromDisk.Modules.First().GetTypes()[0];
-                IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
-
-                Assert.Equal(typeAttributes.Count, attributesFromDisk.Count);
-                Assert.True((testType.Attributes & TypeAttributes.Import) != 0); // ComImportAttribute
-                Assert.True((testType.Attributes & TypeAttributes.HasSecurity) != 0); // SuppressUnmanagedCodeSecurityAttribute
-                for (int i = 0; i < attributesFromDisk.Count; i++)
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
                 {
-                    switch (attributesFromDisk[i].AttributeType.Name)
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type testType = assemblyFromDisk.Modules.First().GetTypes()[0];
+                    IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
+
+                    Assert.Equal(typeAttributes.Count, attributesFromDisk.Count);
+                    Assert.True((testType.Attributes & TypeAttributes.Import) != 0); // ComImportAttribute
+                    Assert.True((testType.Attributes & TypeAttributes.HasSecurity) != 0); // SuppressUnmanagedCodeSecurityAttribute
+                    for (int i = 0; i < attributesFromDisk.Count; i++)
                     {
-                        case "ComImportAttribute": // just making sure that these attributes are expected
-                        case "SuppressUnmanagedCodeSecurityAttribute":
-                            break;
-                        case "GuidAttribute":
-                            Assert.Equal(s_guidPair.args[0], attributesFromDisk[i].ConstructorArguments[0].Value);
-                            break;
-                        default:
-                            Assert.Fail($"Not expected attribute : {attributesFromDisk[i].AttributeType.Name}");
-                            break;
-                    }
-                }
-
-                foreach (var method in testType.GetMethods())
-                {
-                    IList<CustomAttributeData> methodAttributesFromDisk = method.GetCustomAttributesData();
-
-                    Assert.True((method.Attributes & MethodAttributes.HasSecurity) != 0); // SuppressUnmanagedCodeSecurityAttribute
-                    Assert.True((method.Attributes & MethodAttributes.SpecialName) != 0); // SpecialNameAttribute
-                    MethodImplAttributes methodImpl = method.GetMethodImplementationFlags();
-                    Assert.True((methodImpl & MethodImplAttributes.NoInlining) != 0); // MethodImplAttribute
-                    Assert.True((methodImpl & MethodImplAttributes.AggressiveOptimization) != 0); // MethodImplAttribute
-                    Assert.True((methodImpl & MethodImplAttributes.PreserveSig) != 0); // PreserveSigAttribute
-                    Assert.Equal(methodAttributes.Count - 2, methodAttributesFromDisk.Count);
-
-                    for (int i = 0; i < methodAttributesFromDisk.Count; i++)
-                    {
-                        switch (methodAttributesFromDisk[i].AttributeType.Name)
+                        switch (attributesFromDisk[i].AttributeType.Name)
                         {
+                            case "ComImportAttribute": // just making sure that these attributes are expected
                             case "SuppressUnmanagedCodeSecurityAttribute":
-                            case "PreserveSigAttribute":
                                 break;
                             case "GuidAttribute":
-                                Assert.Equal(s_guidPair.args[0], methodAttributesFromDisk[i].ConstructorArguments[0].Value);
-                                break;
-                            case "DllImportAttribute":
-                                {
-                                    CustomAttributeData attribute = methodAttributesFromDisk[i];
-                                    Assert.Equal("test.dll", attribute.ConstructorArguments[0].Value);
-
-                                    for (int j = 0; j < attribute.NamedArguments.Count; j++)
-                                    {
-                                        switch (attribute.NamedArguments[j].MemberName)
-                                        {
-                                            case "CharSet":
-                                                Assert.Equal(CharSet.Ansi, (CharSet)attribute.NamedArguments[j].TypedValue.Value);
-                                                break;
-                                            case "SetLastError":
-                                                Assert.True((bool)attribute.NamedArguments[j].TypedValue.Value);
-                                                break;
-                                            case "CallingConvention":
-                                                Assert.Equal(CallingConvention.FastCall, (CallingConvention)attribute.NamedArguments[j].TypedValue.Value);
-                                                break;
-                                            case "BestFitMapping":
-                                                Assert.True((bool)attribute.NamedArguments[j].TypedValue.Value);
-                                                break;
-                                            case "ThrowOnUnmappableChar":
-                                                Assert.False((bool)attribute.NamedArguments[j].TypedValue.Value);
-                                                break;
-                                        }
-                                    }
-                                }
+                                Assert.Equal(s_guidPair.args[0], attributesFromDisk[i].ConstructorArguments[0].Value);
                                 break;
                             default:
-                                Assert.Fail($"Not expected attribute : {methodAttributesFromDisk[i].AttributeType.Name}");
+                                Assert.Fail($"Not expected attribute : {attributesFromDisk[i].AttributeType.Name}");
                                 break;
                         }
                     }
 
-                    foreach(ParameterInfo param in method.GetParameters())
+                    foreach (var method in testType.GetMethods())
                     {
-                        IList<CustomAttributeData>  paramAttributes = param.GetCustomAttributesData();
+                        IList<CustomAttributeData> methodAttributesFromDisk = method.GetCustomAttributesData();
 
-                        Assert.Equal(5, paramAttributes.Count);
-                        Assert.True((param.Attributes & ParameterAttributes.In) != 0); // InAttribute
-                        Assert.True((param.Attributes & ParameterAttributes.Out) != 0); // OutAttribute
-                        Assert.True((param.Attributes & ParameterAttributes.Optional) != 0); // OptionalAttribute
-                        Assert.True((param.Attributes & ParameterAttributes.HasFieldMarshal) != 0); // MarshalAsAttribute
+                        Assert.True((method.Attributes & MethodAttributes.HasSecurity) != 0); // SuppressUnmanagedCodeSecurityAttribute
+                        Assert.True((method.Attributes & MethodAttributes.SpecialName) != 0); // SpecialNameAttribute
+                        MethodImplAttributes methodImpl = method.GetMethodImplementationFlags();
+                        Assert.True((methodImpl & MethodImplAttributes.NoInlining) != 0); // MethodImplAttribute
+                        Assert.True((methodImpl & MethodImplAttributes.AggressiveOptimization) != 0); // MethodImplAttribute
+                        Assert.True((methodImpl & MethodImplAttributes.PreserveSig) != 0); // PreserveSigAttribute
+                        Assert.Equal(methodAttributes.Count - 2, methodAttributesFromDisk.Count);
 
-                        if (param.ParameterType.Equals(typeof(string)))
+                        for (int i = 0; i < methodAttributesFromDisk.Count; i++)
                         {
-                            Assert.Equal("Hello", param.DefaultValue);
-                        }
-
-                        for (int i = 0; i < paramAttributes.Count; i++)
-                        {
-                            switch (paramAttributes[i].AttributeType.Name)
+                            switch (methodAttributesFromDisk[i].AttributeType.Name)
                             {
-                                case "InAttribute":
-                                case "OutAttribute":
-                                case "OptionalAttribute":
-                                    break;
-                                case "MarshalAsAttribute":
-                                    Assert.Equal(UnmanagedType.CustomMarshaler, (UnmanagedType)paramAttributes[i].ConstructorArguments[0].Value);
-                                    Assert.Equal(typeof(EmptyTestClass).AssemblyQualifiedName,
-                                        paramAttributes[i].NamedArguments.First(na => na.MemberName == "MarshalType").TypedValue.Value);
+                                case "SuppressUnmanagedCodeSecurityAttribute":
+                                case "PreserveSigAttribute":
                                     break;
                                 case "GuidAttribute":
-                                    Assert.Equal(s_guidPair.args[0], paramAttributes[i].ConstructorArguments[0].Value);
+                                    Assert.Equal(s_guidPair.args[0], methodAttributesFromDisk[i].ConstructorArguments[0].Value);
+                                    break;
+                                case "DllImportAttribute":
+                                    {
+                                        CustomAttributeData attribute = methodAttributesFromDisk[i];
+                                        Assert.Equal("test.dll", attribute.ConstructorArguments[0].Value);
+
+                                        for (int j = 0; j < attribute.NamedArguments.Count; j++)
+                                        {
+                                            switch (attribute.NamedArguments[j].MemberName)
+                                            {
+                                                case "CharSet":
+                                                    Assert.Equal(CharSet.Ansi, (CharSet)attribute.NamedArguments[j].TypedValue.Value);
+                                                    break;
+                                                case "SetLastError":
+                                                    Assert.True((bool)attribute.NamedArguments[j].TypedValue.Value);
+                                                    break;
+                                                case "CallingConvention":
+                                                    Assert.Equal(CallingConvention.FastCall, (CallingConvention)attribute.NamedArguments[j].TypedValue.Value);
+                                                    break;
+                                                case "BestFitMapping":
+                                                    Assert.True((bool)attribute.NamedArguments[j].TypedValue.Value);
+                                                    break;
+                                                case "ThrowOnUnmappableChar":
+                                                    Assert.False((bool)attribute.NamedArguments[j].TypedValue.Value);
+                                                    break;
+                                            }
+                                        }
+                                    }
                                     break;
                                 default:
-                                    Assert.Fail($"Not expected attribute : {paramAttributes[i].AttributeType.Name}");
+                                    Assert.Fail($"Not expected attribute : {methodAttributesFromDisk[i].AttributeType.Name}");
                                     break;
+                            }
+                        }
+
+                        foreach (ParameterInfo param in method.GetParameters())
+                        {
+                            IList<CustomAttributeData> paramAttributes = param.GetCustomAttributesData();
+
+                            Assert.Equal(5, paramAttributes.Count);
+                            Assert.True((param.Attributes & ParameterAttributes.In) != 0); // InAttribute
+                            Assert.True((param.Attributes & ParameterAttributes.Out) != 0); // OutAttribute
+                            Assert.True((param.Attributes & ParameterAttributes.Optional) != 0); // OptionalAttribute
+                            Assert.True((param.Attributes & ParameterAttributes.HasFieldMarshal) != 0); // MarshalAsAttribute
+
+                            if (param.ParameterType.Equals(typeof(string)))
+                            {
+                                Assert.Equal("Hello", param.DefaultValue);
+                            }
+
+                            for (int i = 0; i < paramAttributes.Count; i++)
+                            {
+                                switch (paramAttributes[i].AttributeType.Name)
+                                {
+                                    case "InAttribute":
+                                    case "OutAttribute":
+                                    case "OptionalAttribute":
+                                        break;
+                                    case "MarshalAsAttribute":
+                                        Assert.Equal(UnmanagedType.CustomMarshaler, (UnmanagedType)paramAttributes[i].ConstructorArguments[0].Value);
+                                        Assert.Equal(typeof(EmptyTestClass).AssemblyQualifiedName,
+                                            paramAttributes[i].NamedArguments.First(na => na.MemberName == "MarshalType").TypedValue.Value);
+                                        break;
+                                    case "GuidAttribute":
+                                        Assert.Equal(s_guidPair.args[0], paramAttributes[i].ConstructorArguments[0].Value);
+                                        break;
+                                    default:
+                                        Assert.Fail($"Not expected attribute : {paramAttributes[i].AttributeType.Name}");
+                                        break;
+                                }
                             }
                         }
                     }
@@ -429,32 +443,35 @@ namespace System.Reflection.Emit.Tests
             using (TempFile file = TempFile.Create())
             {
                 Type type = typeof(StructWithFields);
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(
-                    PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes, type.BaseType);
                 FieldInfo stringField = type.GetFields()[1];
                 FieldBuilder fb = tb.DefineField(stringField.Name, stringField.FieldType, stringField.Attributes);
                 fb.SetCustomAttribute(attribute);
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                tb.CreateType();
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                FieldInfo field = assemblyFromDisk.Modules.First().GetTypes()[0].GetFields()[0];
-                CustomAttributeData attributeFromDisk = field.GetCustomAttributesData()[0];
-
-                Assert.Equal(1, field.GetCustomAttributesData().Count);
-                Assert.True((field.Attributes & FieldAttributes.HasFieldMarshal) != 0);
-                Assert.Equal(expectedType, (UnmanagedType)attributeFromDisk.ConstructorArguments[0].Value);
-
-                switch (expectedType)
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
                 {
-                    case UnmanagedType.CustomMarshaler:
-                        Assert.Equal(typeof(EmptyTestClass).AssemblyQualifiedName,
-                            attributeFromDisk.NamedArguments.First(na => na.MemberName == "MarshalType").TypedValue.Value);
-                        Assert.Equal("MyCookie", attributeFromDisk.NamedArguments.First(na => na.MemberName == "MarshalCookie").TypedValue.Value);
-                        break;
-                    case UnmanagedType.ByValTStr:
-                        Assert.Equal(256, attributeFromDisk.NamedArguments.First(na => na.MemberName == "SizeConst").TypedValue.Value);
-                        break;
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    FieldInfo field = assemblyFromDisk.Modules.First().GetTypes()[0].GetFields()[0];
+                    CustomAttributeData attributeFromDisk = field.GetCustomAttributesData()[0];
+
+                    Assert.Equal(1, field.GetCustomAttributesData().Count);
+                    Assert.True((field.Attributes & FieldAttributes.HasFieldMarshal) != 0);
+                    Assert.Equal(expectedType, (UnmanagedType)attributeFromDisk.ConstructorArguments[0].Value);
+
+                    switch (expectedType)
+                    {
+                        case UnmanagedType.CustomMarshaler:
+                            Assert.Equal(typeof(EmptyTestClass).AssemblyQualifiedName,
+                                attributeFromDisk.NamedArguments.First(na => na.MemberName == "MarshalType").TypedValue.Value);
+                            Assert.Equal("MyCookie", attributeFromDisk.NamedArguments.First(na => na.MemberName == "MarshalCookie").TypedValue.Value);
+                            break;
+                        case UnmanagedType.ByValTStr:
+                            Assert.Equal(256, attributeFromDisk.NamedArguments.First(na => na.MemberName == "SizeConst").TypedValue.Value);
+                            break;
+                    }
                 }
             }
         }
@@ -464,39 +481,43 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(
-                    PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(PopulateAssemblyName());
                 EnumBuilder enumBuilder = ab.DefineDynamicModule("Module").DefineEnum("TestEnum", TypeAttributes.Public, typeof(int));
 
                 ConstructorInfo attributeConstructor = typeof(BoolAttribute).GetConstructor(new Type[] { typeof(bool) });
-                CustomAttributeBuilder attributeBuilder = new CustomAttributeBuilder(attributeConstructor, new object[] { true });
+                CustomAttributeBuilder attributeBuilder = new CustomAttributeBuilder(attributeConstructor, [true]);
                 enumBuilder.SetCustomAttribute(attributeBuilder);
                 enumBuilder.SetCustomAttribute(new CustomAttributeBuilder(s_guidPair.con, s_guidPair.args));
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                enumBuilder.CreateTypeInfo();
+                ab.Save(file.Path);
 
-                Type testEnum = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First().GetType("TestEnum");
-
-                Assert.True(testEnum.IsEnum);
-                AssemblySaveTools.AssertTypeProperties(enumBuilder, testEnum);
-
-                CustomAttributeData[] attributes = testEnum.GetCustomAttributesData().ToArray();
-                if (attributes[0].AttributeType.Name == s_guidType.Name)
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
                 {
-                    AssertEnumAttributes(s_guidType.FullName, "9ED54F84-A89D-4fcd-A854-44251E925F09", attributes[0]);
-                    AssertEnumAttributes(typeof(BoolAttribute).FullName, true, attributes[1]);
-                }
-                else
-                {
-                    AssertEnumAttributes(s_guidType.FullName, "9ED54F84-A89D-4fcd-A854-44251E925F09", attributes[1]);
-                    AssertEnumAttributes(typeof(BoolAttribute).FullName, true, attributes[0]);
-                }
+                    Type testEnum = mlc.LoadFromAssemblyPath(file.Path).Modules.First().GetType("TestEnum");
 
+                    Assert.True(testEnum.IsEnum);
+                    AssemblySaveTools.AssertTypeProperties(enumBuilder, testEnum);
+
+                    CustomAttributeData[] attributes = testEnum.GetCustomAttributesData().ToArray();
+                    if (attributes[0].AttributeType.Name == s_guidType.Name)
+                    {
+                        AssertEnumAttributes(s_guidType.FullName, "9ED54F84-A89D-4fcd-A854-44251E925F09", attributes[0]);
+                        AssertEnumAttributes(typeof(BoolAttribute).FullName, true, attributes[1]);
+                    }
+                    else
+                    {
+                        AssertEnumAttributes(s_guidType.FullName, "9ED54F84-A89D-4fcd-A854-44251E925F09", attributes[1]);
+                        AssertEnumAttributes(typeof(BoolAttribute).FullName, true, attributes[0]);
+                    }
+
+                }
             }
         }
-        private void AssertEnumAttributes(string fullName, object value, CustomAttributeData testAttrbiute)
+
+        private void AssertEnumAttributes(string fullName, object value, CustomAttributeData testAttribute)
         {
-            Assert.Equal(fullName, testAttrbiute.AttributeType.FullName);
-            Assert.Equal(value, testAttrbiute.ConstructorArguments[0].Value);
+            Assert.Equal(fullName, testAttribute.AttributeType.FullName);
+            Assert.Equal(value, testAttribute.ConstructorArguments[0].Value);
         }
     }
 

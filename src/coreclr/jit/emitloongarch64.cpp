@@ -24,350 +24,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
-////These are used for loongarch64 instrs's dump.
-////LA_OP_2R  opcode: bit31 ~ bit10
-#define LA_2R_CLO_W 0x4
-#define LA_2R_CLZ_W 0x5
-#define LA_2R_CTO_W 0x6
-#define LA_2R_CTZ_W 0x7
-#define LA_2R_CLO_D 0x8
-#define LA_2R_CLZ_D 0x9
-#define LA_2R_CTO_D 0xa
-#define LA_2R_CTZ_D 0xb
-#define LA_2R_REVB_2H 0xc
-#define LA_2R_REVB_4H 0xd
-#define LA_2R_REVB_2W 0xe
-#define LA_2R_REVB_D 0xf
-#define LA_2R_REVH_2W 0x10
-#define LA_2R_REVH_D 0x11
-#define LA_2R_BITREV_4B 0x12
-#define LA_2R_BITREV_8B 0x13
-#define LA_2R_BITREV_W 0x14
-#define LA_2R_BITREV_D 0x15
-#define LA_2R_EXT_W_H 0x16
-#define LA_2R_EXT_W_B 0x17
-#define LA_2R_RDTIMEL_W 0x18
-#define LA_2R_RDTIMEH_W 0x19
-#define LA_2R_RDTIME_D 0x1a
-#define LA_2R_CPUCFG 0x1b
-#define LA_2R_ASRTLE_D 0x2
-#define LA_2R_ASRTGT_D 0x3
-#define LA_2R_FABS_S 0x4501
-#define LA_2R_FABS_D 0x4502
-#define LA_2R_FNEG_S 0x4505
-#define LA_2R_FNEG_D 0x4506
-#define LA_2R_FLOGB_S 0x4509
-#define LA_2R_FLOGB_D 0x450a
-#define LA_2R_FCLASS_S 0x450d
-#define LA_2R_FCLASS_D 0x450e
-#define LA_2R_FSQRT_S 0x4511
-#define LA_2R_FSQRT_D 0x4512
-#define LA_2R_FRECIP_S 0x4515
-#define LA_2R_FRECIP_D 0x4516
-#define LA_2R_FRSQRT_S 0x4519
-#define LA_2R_FRSQRT_D 0x451a
-#define LA_2R_FMOV_S 0x4525
-#define LA_2R_FMOV_D 0x4526
-#define LA_2R_MOVGR2FR_W 0x4529
-#define LA_2R_MOVGR2FR_D 0x452a
-#define LA_2R_MOVGR2FRH_W 0x452b
-#define LA_2R_MOVFR2GR_S 0x452d
-#define LA_2R_MOVFR2GR_D 0x452e
-#define LA_2R_MOVFRH2GR_S 0x452f
-#define LA_2R_MOVGR2FCSR 0x4530
-#define LA_2R_MOVFCSR2GR 0x4532
-#define LA_2R_MOVFR2CF 0x4534
-#define LA_2R_MOVCF2FR 0x4535
-#define LA_2R_MOVGR2CF 0x4536
-#define LA_2R_MOVCF2GR 0x4537
-#define LA_2R_FCVT_S_D 0x4646
-#define LA_2R_FCVT_D_S 0x4649
-#define LA_2R_FTINTRM_W_S 0x4681
-#define LA_2R_FTINTRM_W_D 0x4682
-#define LA_2R_FTINTRM_L_S 0x4689
-#define LA_2R_FTINTRM_L_D 0x468a
-#define LA_2R_FTINTRP_W_S 0x4691
-#define LA_2R_FTINTRP_W_D 0x4692
-#define LA_2R_FTINTRP_L_S 0x4699
-#define LA_2R_FTINTRP_L_D 0x469a
-#define LA_2R_FTINTRZ_W_S 0x46a1
-#define LA_2R_FTINTRZ_W_D 0x46a2
-#define LA_2R_FTINTRZ_L_S 0x46a9
-#define LA_2R_FTINTRZ_L_D 0x46aa
-#define LA_2R_FTINTRNE_W_S 0x46b1
-#define LA_2R_FTINTRNE_W_D 0x46b2
-#define LA_2R_FTINTRNE_L_S 0x46b9
-#define LA_2R_FTINTRNE_L_D 0x46ba
-#define LA_2R_FTINT_W_S 0x46c1
-#define LA_2R_FTINT_W_D 0x46c2
-#define LA_2R_FTINT_L_S 0x46c9
-#define LA_2R_FTINT_L_D 0x46ca
-#define LA_2R_FFINT_S_W 0x4744
-#define LA_2R_FFINT_S_L 0x4746
-#define LA_2R_FFINT_D_W 0x4748
-#define LA_2R_FFINT_D_L 0x474a
-#define LA_2R_FRINT_S 0x4791
-#define LA_2R_FRINT_D 0x4792
-#define LA_2R_IOCSRRD_B 0x19200
-#define LA_2R_IOCSRRD_H 0x19201
-#define LA_2R_IOCSRRD_W 0x19202
-#define LA_2R_IOCSRRD_D 0x19203
-#define LA_2R_IOCSRWR_B 0x19204
-#define LA_2R_IOCSRWR_H 0x19205
-#define LA_2R_IOCSRWR_W 0x19206
-#define LA_2R_IOCSRWR_D 0x19207
-
-////LA_OP_3R  opcode: bit31 ~ bit15
-#define LA_3R_ADD_W 0x20
-#define LA_3R_ADD_D 0x21
-#define LA_3R_SUB_W 0x22
-#define LA_3R_SUB_D 0x23
-#define LA_3R_SLT 0x24
-#define LA_3R_SLTU 0x25
-#define LA_3R_MASKEQZ 0x26
-#define LA_3R_MASKNEZ 0x27
-#define LA_3R_NOR 0x28
-#define LA_3R_AND 0x29
-#define LA_3R_OR 0x2a
-#define LA_3R_XOR 0x2b
-#define LA_3R_ORN 0x2c
-#define LA_3R_ANDN 0x2d
-#define LA_3R_SLL_W 0x2e
-#define LA_3R_SRL_W 0x2f
-#define LA_3R_SRA_W 0x30
-#define LA_3R_SLL_D 0x31
-#define LA_3R_SRL_D 0x32
-#define LA_3R_SRA_D 0x33
-#define LA_3R_ROTR_W 0x36
-#define LA_3R_ROTR_D 0x37
-#define LA_3R_MUL_W 0x38
-#define LA_3R_MULH_W 0x39
-#define LA_3R_MULH_WU 0x3a
-#define LA_3R_MUL_D 0x3b
-#define LA_3R_MULH_D 0x3c
-#define LA_3R_MULH_DU 0x3d
-#define LA_3R_MULW_D_W 0x3e
-#define LA_3R_MULW_D_WU 0x3f
-#define LA_3R_DIV_W 0x40
-#define LA_3R_MOD_W 0x41
-#define LA_3R_DIV_WU 0x42
-#define LA_3R_MOD_WU 0x43
-#define LA_3R_DIV_D 0x44
-#define LA_3R_MOD_D 0x45
-#define LA_3R_DIV_DU 0x46
-#define LA_3R_MOD_DU 0x47
-#define LA_3R_CRC_W_B_W 0x48
-#define LA_3R_CRC_W_H_W 0x49
-#define LA_3R_CRC_W_W_W 0x4a
-#define LA_3R_CRC_W_D_W 0x4b
-#define LA_3R_CRCC_W_B_W 0x4c
-#define LA_3R_CRCC_W_H_W 0x4d
-#define LA_3R_CRCC_W_W_W 0x4e
-#define LA_3R_CRCC_W_D_W 0x4f
-#define LA_3R_FADD_S 0x201
-#define LA_3R_FADD_D 0x202
-#define LA_3R_FSUB_S 0x205
-#define LA_3R_FSUB_D 0x206
-#define LA_3R_FMUL_S 0x209
-#define LA_3R_FMUL_D 0x20a
-#define LA_3R_FDIV_S 0x20d
-#define LA_3R_FDIV_D 0x20e
-#define LA_3R_FMAX_S 0x211
-#define LA_3R_FMAX_D 0x212
-#define LA_3R_FMIN_S 0x215
-#define LA_3R_FMIN_D 0x216
-#define LA_3R_FMAXA_S 0x219
-#define LA_3R_FMAXA_D 0x21a
-#define LA_3R_FMINA_S 0x21d
-#define LA_3R_FMINA_D 0x21e
-#define LA_3R_FSCALEB_S 0x221
-#define LA_3R_FSCALEB_D 0x222
-#define LA_3R_FCOPYSIGN_S 0x225
-#define LA_3R_FCOPYSIGN_D 0x226
-#define LA_3R_INVTLB 0xc91
-#define LA_3R_LDX_B 0x7000
-#define LA_3R_LDX_H 0x7008
-#define LA_3R_LDX_W 0x7010
-#define LA_3R_LDX_D 0x7018
-#define LA_3R_STX_B 0x7020
-#define LA_3R_STX_H 0x7028
-#define LA_3R_STX_W 0x7030
-#define LA_3R_STX_D 0x7038
-#define LA_3R_LDX_BU 0x7040
-#define LA_3R_LDX_HU 0x7048
-#define LA_3R_LDX_WU 0x7050
-#define LA_3R_PRELDX 0x7058
-#define LA_3R_FLDX_S 0x7060
-#define LA_3R_FLDX_D 0x7068
-#define LA_3R_FSTX_S 0x7070
-#define LA_3R_FSTX_D 0x7078
-#define LA_3R_AMSWAP_W 0x70c0
-#define LA_3R_AMSWAP_D 0x70c1
-#define LA_3R_AMADD_W 0x70c2
-#define LA_3R_AMADD_D 0x70c3
-#define LA_3R_AMAND_W 0x70c4
-#define LA_3R_AMAND_D 0x70c5
-#define LA_3R_AMOR_W 0x70c6
-#define LA_3R_AMOR_D 0x70c7
-#define LA_3R_AMXOR_W 0x70c8
-#define LA_3R_AMXOR_D 0x70c9
-#define LA_3R_AMMAX_W 0x70ca
-#define LA_3R_AMMAX_D 0x70cb
-#define LA_3R_AMMIN_W 0x70cc
-#define LA_3R_AMMIN_D 0x70cd
-#define LA_3R_AMMAX_WU 0x70ce
-#define LA_3R_AMMAX_DU 0x70cf
-#define LA_3R_AMMIN_WU 0x70d0
-#define LA_3R_AMMIN_DU 0x70d1
-#define LA_3R_AMSWAP_DB_W 0x70d2
-#define LA_3R_AMSWAP_DB_D 0x70d3
-#define LA_3R_AMADD_DB_W 0x70d4
-#define LA_3R_AMADD_DB_D 0x70d5
-#define LA_3R_AMAND_DB_W 0x70d6
-#define LA_3R_AMAND_DB_D 0x70d7
-#define LA_3R_AMOR_DB_W 0x70d8
-#define LA_3R_AMOR_DB_D 0x70d9
-#define LA_3R_AMXOR_DB_W 0x70da
-#define LA_3R_AMXOR_DB_D 0x70db
-#define LA_3R_AMMAX_DB_W 0x70dc
-#define LA_3R_AMMAX_DB_D 0x70dd
-#define LA_3R_AMMIN_DB_W 0x70de
-#define LA_3R_AMMIN_DB_D 0x70df
-#define LA_3R_AMMAX_DB_WU 0x70e0
-#define LA_3R_AMMAX_DB_DU 0x70e1
-#define LA_3R_AMMIN_DB_WU 0x70e2
-#define LA_3R_AMMIN_DB_DU 0x70e3
-#define LA_3R_FLDGT_S 0x70e8
-#define LA_3R_FLDGT_D 0x70e9
-#define LA_3R_FLDLE_S 0x70ea
-#define LA_3R_FLDLE_D 0x70eb
-#define LA_3R_FSTGT_S 0x70ec
-#define LA_3R_FSTGT_D 0x70ed
-#define LA_3R_FSTLE_S 0x70ee
-#define LA_3R_FSTLE_D 0x70ef
-#define LA_3R_LDGT_B 0x70f0
-#define LA_3R_LDGT_H 0x70f1
-#define LA_3R_LDGT_W 0x70f2
-#define LA_3R_LDGT_D 0x70f3
-#define LA_3R_LDLE_B 0x70f4
-#define LA_3R_LDLE_H 0x70f5
-#define LA_3R_LDLE_W 0x70f6
-#define LA_3R_LDLE_D 0x70f7
-#define LA_3R_STGT_B 0x70f8
-#define LA_3R_STGT_H 0x70f9
-#define LA_3R_STGT_W 0x70fa
-#define LA_3R_STGT_D 0x70fb
-#define LA_3R_STLE_B 0x70fc
-#define LA_3R_STLE_H 0x70fd
-#define LA_3R_STLE_W 0x70fe
-#define LA_3R_STLE_D 0x70ff
-
-////LA_OP_4R opcode: bit31 ~ bit20
-#define LA_4R_FMADD_S 0x81
-#define LA_4R_FMADD_D 0x82
-#define LA_4R_FMSUB_S 0x85
-#define LA_4R_FMSUB_D 0x86
-#define LA_4R_FNMADD_S 0x89
-#define LA_4R_FNMADD_D 0x8a
-#define LA_4R_FNMSUB_S 0x8d
-#define LA_4R_FNMSUB_D 0x8e
-#define LA_4R_FSEL 0xd0
-
-////LA_OP_2RI8
-
-////LA_OP_2RI12 opcode: bit31 ~ bit22
-#define LA_2RI12_SLTI 0x8
-#define LA_2RI12_SLTUI 0x9
-#define LA_2RI12_ADDI_W 0xa
-#define LA_2RI12_ADDI_D 0xb
-#define LA_2RI12_LU52I_D 0xc
-#define LA_2RI12_ANDI 0xd
-#define LA_2RI12_ORI 0xe
-#define LA_2RI12_XORI 0xf
-#define LA_2RI12_CACHE 0x18
-#define LA_2RI12_LD_B 0xa0
-#define LA_2RI12_LD_H 0xa1
-#define LA_2RI12_LD_W 0xa2
-#define LA_2RI12_LD_D 0xa3
-#define LA_2RI12_ST_B 0xa4
-#define LA_2RI12_ST_H 0xa5
-#define LA_2RI12_ST_W 0xa6
-#define LA_2RI12_ST_D 0xa7
-#define LA_2RI12_LD_BU 0xa8
-#define LA_2RI12_LD_HU 0xa9
-#define LA_2RI12_LD_WU 0xaa
-#define LA_2RI12_PRELD 0xab
-#define LA_2RI12_FLD_S 0xac
-#define LA_2RI12_FST_S 0xad
-#define LA_2RI12_FLD_D 0xae
-#define LA_2RI12_FST_D 0xaf
-
-////LA_OP_2RI14i opcode: bit31 ~ bit24
-#define LA_2RI14_LL_W 0x20
-#define LA_2RI14_SC_W 0x21
-#define LA_2RI14_LL_D 0x22
-#define LA_2RI14_SC_D 0x23
-#define LA_2RI14_LDPTR_W 0x24
-#define LA_2RI14_STPTR_W 0x25
-#define LA_2RI14_LDPTR_D 0x26
-#define LA_2RI14_STPTR_D 0x27
-
-////LA_OP_2RI16 opcode: bit31 ~ bit26
-#define LA_2RI16_ADDU16I_D 0x4
-#define LA_2RI16_JIRL 0x13
-#define LA_2RI16_BEQ 0x16
-#define LA_2RI16_BNE 0x17
-#define LA_2RI16_BLT 0x18
-#define LA_2RI16_BGE 0x19
-#define LA_2RI16_BLTU 0x1a
-#define LA_2RI16_BGEU 0x1b
-
-////LA_OP_1RI20 opcode: bit31 ~ bit25
-#define LA_1RI20_LU12I_W 0xa
-#define LA_1RI20_LU32I_D 0xb
-#define LA_1RI20_PCADDI 0xc
-#define LA_1RI20_PCALAU12I 0xd
-#define LA_1RI20_PCADDU12I 0xe
-#define LA_1RI20_PCADDU18I 0xf
-
-////LA_OP_I26
-#define LA_I26_B 0x14
-#define LA_I26_BL 0x15
-
-////LA_OP_1RI21
-#define LA_1RI21_BEQZ 0x10
-#define LA_1RI21_BNEZ 0x11
-#define LA_1RI21_BCEQZ 0x12
-#define LA_1RI21_BCNEZ 0x12
-
-////other
-#define LA_OP_ALSL_W 0x1
-#define LA_OP_ALSL_WU 0x1
-#define LA_OP_ALSL_D 0xb
-#define LA_OP_BYTEPICK_W 0x2
-#define LA_OP_BYTEPICK_D 0x3
-#define LA_OP_BREAK 0x54
-#define LA_OP_DBGCALL 0x55
-#define LA_OP_SYSCALL 0x56
-#define LA_OP_SLLI_W 0x10
-#define LA_OP_SLLI_D 0x10
-#define LA_OP_SRLI_W 0x11
-#define LA_OP_SRLI_D 0x11
-#define LA_OP_SRAI_W 0x12
-#define LA_OP_SRAI_D 0x12
-#define LA_OP_ROTRI_W 0x13
-#define LA_OP_ROTRI_D 0x13
-#define LA_OP_FCMP_cond_S 0xc1
-#define LA_OP_FCMP_cond_D 0xc2
-#define LA_OP_BSTRINS_W 0x1
-#define LA_OP_BSTRPICK_W 0x1
-#define LA_OP_BSTRINS_D 0x2
-#define LA_OP_BSTRPICK_D 0x3
-#define LA_OP_DBAR 0x70e4
-#define LA_OP_IBAR 0x70e5
-
-//// add other define-macro here.
-
 /*****************************************************************************/
 
 const instruction emitJumpKindInstructions[] = {
@@ -500,7 +156,7 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
-    #define INST(id, nm, info, e1) info,
+    #define INST(id, nm, info, e1, msk, fmt) info,
     #include "instrs.h"
 };
 // clang-format on
@@ -556,7 +212,7 @@ inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/)
     // clang-format off
     const static code_t insCode[] =
     {
-        #define INST(id, nm, info, e1) e1,
+        #define INST(id, nm, info, e1, msk, fmt) e1,
         #include "instrs.h"
     };
     // clang-format on
@@ -579,7 +235,16 @@ void emitter::emitIns(instruction ins)
     instrDesc* id = emitNewInstr(EA_8BYTE);
 
     id->idIns(ins);
-    id->idAddr()->iiaSetInstrEncode(emitInsCode(ins));
+    code_t code = emitInsCode(ins);
+
+#if DEBUG
+    if (ins == INS_break)
+    {
+        code |= 0x5; // just for gdb catch.
+    }
+#endif
+
+    id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(4);
 
     appendToCurIG(id);
@@ -644,6 +309,12 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         case INS_st_h:
         case INS_stx_b:
         case INS_stx_h:
+#ifdef FEATURE_SIMD
+        case INS_vst:
+        case INS_vstx:
+        case INS_xvst:
+        case INS_xvstx:
+#endif
             break;
 
         default:
@@ -694,8 +365,11 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     code_t code = emitInsCode(ins);
     code |= (code_t)(reg1 & 0x1f);
     code |= (code_t)reg2 << 5;
-    if ((ins == INS_stx_d) || (ins == INS_stx_w) || (ins == INS_stx_h) || (ins == INS_stx_b) || (ins == INS_fstx_d) ||
-        (ins == INS_fstx_s))
+    if ((ins == INS_stx_d) || (ins == INS_stx_w) || (ins == INS_stx_h) || (ins == INS_stx_b) ||
+#ifdef FEATURE_SIMD
+        (ins == INS_vstx) || (ins == INS_xvstx) ||
+#endif
+        (ins == INS_fstx_s) || (ins == INS_fstx_d))
     {
         code |= (code_t)reg3 << 10;
     }
@@ -736,6 +410,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_ld_d:
         case INS_fld_d:
+
+#ifdef FEATURE_SIMD
+        case INS_vld:
+        case INS_xvld:
+#endif
 
             break;
 
@@ -948,6 +627,43 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             code |= reg;      // rd
             code |= imm << 5; // cc
             break;
+
+#ifdef FEATURE_SIMD
+        case INS_vldi:
+        case INS_xvldi:
+            assert(isVectorRegister(reg));
+            assert((imm >> 13) == 0);
+            code |= (reg & 0x1f); // vd/xd
+            code |= imm << 5;     // si13
+            break;
+        case INS_vseteqz_v:
+        case INS_vsetnez_v:
+        case INS_vsetanyeqz_b:
+        case INS_vsetanyeqz_h:
+        case INS_vsetanyeqz_w:
+        case INS_vsetanyeqz_d:
+        case INS_vsetallnez_b:
+        case INS_vsetallnez_h:
+        case INS_vsetallnez_w:
+        case INS_vsetallnez_d:
+        case INS_xvseteqz_v:
+        case INS_xvsetnez_v:
+        case INS_xvsetanyeqz_b:
+        case INS_xvsetanyeqz_h:
+        case INS_xvsetanyeqz_w:
+        case INS_xvsetanyeqz_d:
+        case INS_xvsetallnez_b:
+        case INS_xvsetallnez_h:
+        case INS_xvsetallnez_w:
+        case INS_xvsetallnez_d:
+            assert(isVectorRegister(reg));
+            assert((imm >> 3) == 0);
+
+            code |= imm;               // cc
+            code |= (reg & 0x1f) << 5; // vj/xj
+            break;
+#endif
+
         default:
             unreached();
             break;
@@ -981,10 +697,36 @@ void emitter::emitIns_Mov(
 
     if (!canSkip || (dstReg != srcReg))
     {
-        if ((EA_4BYTE == attr) && (INS_mov == ins))
-            emitIns_R_R_I(INS_slli_w, attr, dstReg, srcReg, 0);
+#ifdef FEATURE_SIMD
+        // This include dstReg is Float/SIMD type.
+        if (isVectorRegister(dstReg))
+        {
+            assert(size <= EA_32BYTE);
+            if (isVectorRegister(srcReg))
+            {
+                ins = size == EA_32BYTE ? INS_xvbsll_v : INS_vbsll_v;
+                emitIns_R_R_I(ins, size, dstReg, srcReg, 0);
+            }
+            else
+            {
+                assert((INS_vreplgr2vr_b <= ins && ins <= INS_vreplgr2vr_d) ||
+                       (INS_xvreplgr2vr_b <= ins && ins <= INS_xvreplgr2vr_d) ||
+                       (INS_movgr2fr_w <= ins && ins <= INS_movgr2fr_d));
+                emitIns_R_R(ins, attr, dstReg, srcReg);
+            }
+        }
         else
-            emitIns_R_R(ins, attr, dstReg, srcReg);
+#endif
+        {
+            if ((EA_4BYTE == attr) && (INS_mov == ins))
+            {
+                emitIns_R_R_I(INS_slli_w, attr, dstReg, srcReg, 0);
+            }
+            else
+            {
+                emitIns_R_R(ins, attr, dstReg, srcReg);
+            }
+        }
     }
 }
 
@@ -1044,13 +786,13 @@ void emitter::emitIns_R_R(
         code |= reg1;      // rd
         code |= reg2 << 5; // rj
     }
-    else if ((INS_asrtle_d == ins) || (INS_asrtgt_d == ins))
-    {
-        assert(isGeneralRegisterOrR0(reg1));
-        assert(isGeneralRegisterOrR0(reg2));
-        code |= reg1 << 5;  // rj
-        code |= reg2 << 10; // rk
-    }
+    // else if ((INS_asrtle_d == ins) || (INS_asrtgt_d == ins))
+    // {
+    //     assert(isGeneralRegisterOrR0(reg1));
+    //     assert(isGeneralRegisterOrR0(reg2));
+    //     code |= reg1 << 5;  // rj
+    //     code |= reg2 << 10; // rk
+    // }
     else if ((INS_fabs_s <= ins) && (ins <= INS_fmov_d))
     {
 #ifdef DEBUG
@@ -1064,8 +806,12 @@ void emitter::emitIns_R_R(
             case INS_fsqrt_d:
             case INS_frsqrt_s:
             case INS_frsqrt_d:
+            case INS_frsqrte_s:
+            case INS_frsqrte_d:
             case INS_frecip_s:
             case INS_frecip_d:
+            case INS_frecipe_s:
+            case INS_frecipe_d:
             case INS_flogb_s:
             case INS_flogb_d:
             case INS_fclass_s:
@@ -1163,6 +909,25 @@ void emitter::emitIns_R_R(
         code |= reg1;      // rd
         code |= reg2 << 5; // rj
     }
+#ifdef FEATURE_SIMD
+    else if (((INS_vreplgr2vr_b <= ins) && (ins <= INS_vreplgr2vr_d)) ||
+             ((INS_xvreplgr2vr_b <= ins) && (ins <= INS_xvreplgr2vr_d)))
+    {
+        // [x]vreplgr2vr.{b/h/w/d} xd, rj
+        assert(isVectorRegister(reg1));      // vd(xd)
+        assert(isGeneralRegisterOrR0(reg2)); // rj
+        code |= (reg1 & 0x1f);               // xd , the bit field in the instruction is between 0 and 31.
+        code |= reg2 << 5;                   // rj
+    }
+    else if (((INS_vclo_b <= ins) && (ins <= INS_vextl_qu_du)) || ((INS_xvclo_b <= ins) && (ins <= INS_xvextl_qu_du)))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isVectorRegister(reg2));
+
+        code |= (reg1 & 0x1f);      // vd(xd)
+        code |= (reg2 & 0x1f) << 5; // vj(xj)
+    }
+#endif // FEATURE_SIMD
     else
     {
         unreached();
@@ -1444,6 +1209,229 @@ void emitter::emitIns_R_R_I(
         code |= reg2 << 5;            // rj
         code |= (imm & 0xffff) << 10; // offs16
     }
+#ifdef FEATURE_SIMD
+    else if (((INS_vseqi_b <= ins) && (ins <= INS_vmini_d)) || ((INS_xvseqi_b <= ins) && (ins <= INS_xvmin_d)))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isVectorRegister(reg2));
+        assert((-16 <= imm) && (imm <= 15));
+
+        code |= reg1 & 0x1f;        // vd/xd
+        code |= (reg2 & 0x1f) << 5; // vj/xj
+        code |= (imm & 0x1f) << 10; // si5
+    }
+    else if ((INS_vldrepl_d == ins) || (INS_xvldrepl_d == ins))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert((-256 <= imm) && (imm <= 255));
+        code |= reg1 & 0x1f;         // vd/xd
+        code |= (reg2 & 0x1f) << 5;  // rj
+        code |= (imm & 0x1ff) << 10; // si9
+    }
+    else if ((INS_vldrepl_w == ins) || (INS_xvldrepl_w == ins))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert((-512 <= imm) && (imm <= 511));
+        code |= reg1 & 0x1f;         // vd/xd
+        code |= (reg2 & 0x1f) << 5;  // rj
+        code |= (imm & 0x3ff) << 10; // si10
+    }
+    else if ((INS_vldrepl_h == ins) || (INS_xvldrepl_h == ins))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert((-1024 <= imm) && (imm <= 1023));
+        code |= reg1 & 0x1f;         // vd/xd
+        code |= (reg2 & 0x1f) << 5;  // rj
+        code |= (imm & 0x7ff) << 10; // si11
+    }
+    else if (((INS_vld <= ins) && (ins <= INS_vst)) || ((INS_xvld <= ins) && (ins <= INS_xvst)))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert((-2048 <= imm) && (imm <= 2047));
+
+        code |= reg1 & 0x1f;         // vd(xd)
+        code |= (reg2 & 0x1f) << 5;  // rj
+        code |= (imm & 0xfff) << 10; // si12
+    }
+    else if (((INS_vinsgr2vr_d <= ins) && (ins <= INS_vreplvei_d)) || (INS_xvrepl128vei_d == ins))
+    {
+#ifdef DEBUG
+        if (INS_vinsgr2vr_d == ins)
+        {
+            assert(isVectorRegister(reg1));      // xd
+            assert(isGeneralRegisterOrR0(reg2)); // rj
+        }
+        else if ((INS_vreplvei_d == ins) || (INS_xvrepl128vei_d == ins))
+        {
+            assert(isVectorRegister(reg1)); // vd/xd
+            assert(isVectorRegister(reg2)); // vj/xj
+        }
+        else
+        {
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // vj/xj
+        }
+        assert((0 <= imm) && (imm <= 1));
+#endif
+
+        code |= reg1 & 0x1f;
+        code |= (reg2 & 0x1f) << 5;
+        code |= (imm & 0x1) << 10; // ui1
+    }
+    else if (((INS_vinsgr2vr_w <= ins) && (ins <= INS_vreplvei_w)) ||
+             ((INS_xvinsve0_d <= ins) && (ins <= INS_xvpickve2gr_du)))
+    {
+#ifdef DEBUG
+        if (INS_vinsgr2vr_w == ins)
+        {
+            assert(isVectorRegister(reg1));      // vd
+            assert(isGeneralRegisterOrR0(reg2)); // rj
+        }
+        else if ((INS_vpickve2gr_w <= ins) && (ins <= INS_vpickve2gr_wu))
+        {
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // vj
+        }
+        else if (INS_vreplvei_w == ins)
+        {
+            assert(isVectorRegister(reg1)); // vd
+            assert(isVectorRegister(reg2)); // vj
+        }
+        else if ((INS_xvinsve0_d <= ins) && (ins <= INS_xvpickve_d))
+        {
+            assert(isVectorRegister(reg1)); // xd
+            assert(isVectorRegister(reg2)); // xj
+        }
+        else if (INS_xvinsgr2vr_d == ins)
+        {
+            assert(isVectorRegister(reg1));      // xd
+            assert(isGeneralRegisterOrR0(reg2)); // rj
+        }
+        else if ((INS_xvpickve2gr_d <= ins) && (ins <= INS_xvpickve2gr_du))
+        {
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // xj
+        }
+        else
+        {
+            assert(isVectorRegister(reg1)); // xd/vd
+            assert(isVectorRegister(reg2)); // xj/vj
+        }
+#endif
+        assert((0 <= imm) && (imm <= 3));
+
+        code |= reg1 & 0x1f;        // xd/vd/rd
+        code |= (reg2 & 0x1f) << 5; // xj/vj/rj
+        code |= (imm & 0x3) << 10;  // ui2
+    }
+    else if (((INS_vslli_b <= ins) && (ins <= INS_vreplvei_h)) || ((INS_xvslli_b <= ins) && (ins <= INS_xvsat_bu)))
+    {
+#ifdef DEBUG
+        if ((INS_vinsgr2vr_h == ins) || (INS_xvinsgr2vr_w == ins))
+        {
+            // vd/xd, rj, ui3
+            assert(isVectorRegister(reg1));      // vd/xd
+            assert(isGeneralRegisterOrR0(reg2)); // rj
+        }
+        else if ((INS_vpickve2gr_h == ins) || (INS_vpickve2gr_hu == ins) || (INS_xvpickve2gr_w == ins) ||
+                 (INS_xvpickve2gr_wu == ins))
+        {
+            // rd, vj/xj, ui3
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // vj/xj
+        }
+        else
+        {
+            assert(isVectorRegister(reg1)); // vd/xd
+            assert(isVectorRegister(reg2)); // vj/xj
+        }
+#endif
+        assert((0 <= imm) && (imm <= 7));
+
+        code |= reg1 & 0x1f;        // vd(xd)
+        code |= (reg2 & 0x1f) << 5; // vj(xj)
+        code |= (imm & 0x7) << 10;  // ui3
+    }
+    else if (((INS_vslli_h <= ins) && (ins <= INS_vreplvei_b)) || ((INS_xvslli_h <= ins) && (ins <= INS_xvsat_hu)))
+    {
+#ifdef DEBUG
+        if (INS_vinsgr2vr_b == ins)
+        {
+            assert(isVectorRegister(reg1));      // vd/xd
+            assert(isGeneralRegisterOrR0(reg2)); // rj
+        }
+        else if (INS_vpickve2gr_b == ins)
+        {
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // vj/xj
+        }
+        else if (INS_vpickve2gr_bu == ins)
+        {
+            assert(isGeneralRegisterOrR0(reg1)); // rd
+            assert(isVectorRegister(reg2));      // vj/xj
+        }
+        else
+        {
+            assert(isVectorRegister(reg1)); // vd/xd
+            assert(isVectorRegister(reg2)); // vj/xj
+        }
+#endif
+        assert((0 <= imm) && (imm <= 15));
+
+        code |= reg1 & 0x1f;        // vd
+        code |= (reg2 & 0x1f) << 5; // vj
+        code |= (imm & 0xf) << 10;  // ui4
+    }
+    else if (((INS_vslei_bu <= ins) && (ins <= INS_vsat_wu)) || ((INS_xvslei_bu <= ins) && (ins <= INS_xvsat_wu)))
+    {
+        assert(isVectorRegister(reg1)); // vd/xd
+        assert(isVectorRegister(reg2)); // vj/xj
+
+        assert((0 <= imm) && (imm <= 31));
+
+        code |= reg1 & 0x1f;        // vd
+        code |= (reg2 & 0x1f) << 5; // vj
+        code |= (imm & 0x1f) << 10; // ui5
+    }
+    else if (((INS_vslli_d <= ins) && (ins <= INS_vsat_du)) || ((INS_xvslli_d <= ins) && (ins <= INS_xvsat_du)))
+    {
+        assert(isVectorRegister(reg1)); // vd/xd
+        assert(isVectorRegister(reg2)); // vj/xj
+
+        assert((0 <= imm) && (imm <= 63));
+
+        code |= reg1 & 0x1f;        // vd
+        code |= (reg2 & 0x1f) << 5; // vj
+        code |= (imm & 0x3f) << 10; // ui6
+    }
+    else if (((INS_vsrlni_d_q <= ins) && (ins <= INS_vssrarni_du_q)) ||
+             ((INS_xvsrlni_d_q <= ins) && (ins <= INS_xvssrarni_du_q)))
+    {
+        assert(isVectorRegister(reg1)); // vd/xd
+        assert(isVectorRegister(reg2)); // vj/xj
+
+        assert((0 <= imm) && (imm <= 127));
+
+        code |= reg1 & 0x1f;        // vd
+        code |= (reg2 & 0x1f) << 5; // vj
+        code |= (imm & 0x7f) << 10; // ui7
+    }
+    else if (((INS_vextrins_d <= ins) && (ins <= INS_vpermi_w)) || ((INS_xvextrins_d <= ins) && (ins <= INS_xvpermi_q)))
+    {
+        assert(isVectorRegister(reg1)); // vd/xd
+        assert(isVectorRegister(reg2)); // vj/xj
+
+        assert((0 <= imm) && (imm <= 255));
+
+        code |= reg1 & 0x1f;        // vd
+        code |= (reg2 & 0x1f) << 5; // vj
+        code |= (imm & 0xff) << 10; // ui8
+    }
+#endif
     else
     {
         unreached();
@@ -1548,6 +1536,32 @@ void emitter::emitIns_R_R_R(
             case INS_stle_w:
             case INS_stle_d:
 
+            case INS_crc_w_b_w:
+            case INS_crc_w_h_w:
+            case INS_crc_w_w_w:
+            case INS_crc_w_d_w:
+            case INS_crcc_w_b_w:
+            case INS_crcc_w_h_w:
+            case INS_crcc_w_w_w:
+            case INS_crcc_w_d_w:
+                break;
+            default:
+                NYI_LOONGARCH64("illegal ins within emitIns_R_R_R --1!");
+        }
+#endif
+        assert(isGeneralRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert(isGeneralRegisterOrR0(reg3));
+
+        code |= (reg1 /*& 0x1f*/);       // rd
+        code |= (reg2 /*& 0x1f*/) << 5;  // rj
+        code |= (reg3 /*& 0x1f*/) << 10; // rk
+    }
+    else if ((INS_amswap_w <= ins) && (ins <= INS_ammin_db_du))
+    {
+#ifdef DEBUG
+        switch (ins)
+        {
             case INS_amswap_w:
             case INS_amswap_d:
             case INS_amswap_db_w:
@@ -1584,27 +1598,19 @@ void emitter::emitIns_R_R_R(
             case INS_ammin_du:
             case INS_ammin_db_wu:
             case INS_ammin_db_du:
-
-            case INS_crc_w_b_w:
-            case INS_crc_w_h_w:
-            case INS_crc_w_w_w:
-            case INS_crc_w_d_w:
-            case INS_crcc_w_b_w:
-            case INS_crcc_w_h_w:
-            case INS_crcc_w_w_w:
-            case INS_crcc_w_d_w:
                 break;
             default:
-                NYI_LOONGARCH64("illegal ins within emitIns_R_R_R --1!");
+                NYI_LOONGARCH64("illegal ins within emitIns_R_R_R --am!");
         }
 #endif
+
         assert(isGeneralRegister(reg1));
         assert(isGeneralRegisterOrR0(reg2));
         assert(isGeneralRegisterOrR0(reg3));
 
         code |= (reg1 /*& 0x1f*/);       // rd
-        code |= (reg2 /*& 0x1f*/) << 5;  // rj
-        code |= (reg3 /*& 0x1f*/) << 10; // rk
+        code |= (reg2 /*& 0x1f*/) << 10; // rk
+        code |= (reg3 /*& 0x1f*/) << 5;  // rj
     }
     else if ((INS_fadd_s <= ins) && (ins <= INS_fcopysign_d))
     {
@@ -1675,6 +1681,38 @@ void emitter::emitIns_R_R_R(
         code |= reg2 << 5;   // rj
         code |= reg3 << 10;  // rk
     }
+#ifdef FEATURE_SIMD
+    else if ((INS_vldx == ins) || (INS_vstx == ins) || (INS_xvldx == ins) || (INS_xvstx == ins))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert(isGeneralRegisterOrR0(reg3));
+
+        code |= reg1 & 0x1f; // vd(xd)
+        code |= reg2 << 5;   // rj
+        code |= reg3 << 10;  // rk
+    }
+    else if (((INS_vreplve_b <= ins) && (ins <= INS_vreplve_d)) || ((INS_xvreplve_b <= ins) && (ins <= INS_xvreplve_d)))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isVectorRegister(reg2));
+        assert(isGeneralRegisterOrR0(reg3));
+
+        code |= (reg1 & 0x1f);      // vd(xd)
+        code |= (reg2 & 0x1f) << 5; // vj(xj)
+        code |= reg3 << 10;         // rk
+    }
+    else if (((INS_vfcmp_caf_s <= ins) && (ins <= INS_vshuf_d)) || ((INS_xvfcmp_caf_s <= ins) && (ins <= INS_xvperm_w)))
+    {
+        assert(isVectorRegister(reg1));
+        assert(isVectorRegister(reg2));
+        assert(isVectorRegister(reg3));
+
+        code |= (reg1 & 0x1f);       // vd(xd)
+        code |= (reg2 & 0x1f) << 5;  // vj(xj)
+        code |= (reg3 & 0x1f) << 10; // vk(xk)
+    }
+#endif
     else
     {
         NYI_LOONGARCH64("Unsupported instruction in emitIns_R_R_R");
@@ -1803,6 +1841,52 @@ void emitter::emitIns_R_R_I_I(
             code |= (imm1 & 0x3f) << 16; // msbd
             code |= (imm2 & 0x3f) << 10; // lsbd
             break;
+#ifdef FEATURE_SIMD
+        case INS_vstelm_d:
+        case INS_vstelm_w:
+        case INS_vstelm_h:
+        case INS_vstelm_b:
+        case INS_xvstelm_d:
+        case INS_xvstelm_w:
+        case INS_xvstelm_h:
+        case INS_xvstelm_b:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrR0(reg2));
+            assert((-128 <= imm1) && (imm1 <= 127)); // si8, without left shift
+            code |= reg1 & 0x1f;                     // vd/xd
+            code |= reg2 << 5;                       // rj
+            code |= (imm1 & 0xff) << 10;             // si8
+            if (INS_vstelm_d == ins)
+            {
+                assert((0 <= imm2) && (imm2 <= 1)); // 1 bit
+                code |= (imm2 & 0x1) << 18;         // idx(1 bit)
+            }
+            else if ((INS_vstelm_w == ins) || (INS_xvstelm_d == ins))
+            {
+                assert((0 <= imm2) && (imm2 <= 3)); // 2 bit
+                code |= (imm2 & 0x3) << 18;         // idx(2 bit)
+            }
+            else if ((INS_vstelm_h == ins) || (INS_xvstelm_w == ins))
+            {
+                assert((0 <= imm2) && (imm2 <= 7)); // 3 bit
+                code |= (imm2 & 0x7) << 18;         // idx(3 bit)
+            }
+            else if ((INS_vstelm_b == ins) || (INS_xvstelm_h == ins))
+            {
+                assert((0 <= imm2) && (imm2 <= 15)); // 4 bit
+                code |= (imm2 & 0xf) << 18;          // idx(4 bit)
+            }
+            else if (INS_xvstelm_b == ins)
+            {
+                assert((0 <= imm2) && (imm2 <= 31)); // 5 bit
+                code |= (imm2 & 0x1f) << 18;         // idx(5 bit)
+            }
+            else
+            {
+                unreached();
+            }
+            break;
+#endif
         default:
             unreached();
     }
@@ -1838,6 +1922,29 @@ void emitter::emitIns_R_R_R_R(
         case INS_fnmadd_d:
         case INS_fnmsub_s:
         case INS_fnmsub_d:
+#ifdef FEATURE_SIMD
+        case INS_vfmadd_s:
+        case INS_vfmadd_d:
+        case INS_vfmsub_s:
+        case INS_vfmsub_d:
+        case INS_vfnmadd_s:
+        case INS_vfnmadd_d:
+        case INS_vfnmsub_s:
+        case INS_vfnmsub_d:
+        case INS_vbitsel_v:
+        case INS_vshuf_b:
+
+        case INS_xvfmadd_s:
+        case INS_xvfmadd_d:
+        case INS_xvfmsub_s:
+        case INS_xvfmsub_d:
+        case INS_xvfnmadd_s:
+        case INS_xvfnmadd_d:
+        case INS_xvfnmsub_s:
+        case INS_xvfnmsub_d:
+        case INS_xvbitsel_v:
+        case INS_xvshuf_b:
+#endif
             assert(isFloatReg(reg1));
             assert(isFloatReg(reg2));
             assert(isFloatReg(reg3));
@@ -2002,7 +2109,7 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     // if for reloc!  4-ins:
     //   pcaddu12i reg, offset-hi20
@@ -2084,7 +2191,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JIRL.
     //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dst
 
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
     assert((INS_bceqz <= ins) && (ins <= INS_bl));
@@ -2149,7 +2256,7 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     //   ins  reg1, reg2, dst
 
     assert(dst != nullptr);
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
 
@@ -3714,7 +3821,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     // Now we determine if the instruction has written to a (local variable) stack location, and either written a GC
     // ref or overwritten one.
-    if (emitInsWritesToLclVarStackLoc(id) /*|| emitInsWritesToLclVarStackLocPair(id)*/)
+    if (emitInsWritesToLclVarStackLoc(id))
     {
         int      varNum = id->idAddr()->iiaLclVar.lvaVarNum();
         unsigned ofs    = AlignDown(id->idAddr()->iiaLclVar.lvaOffset(), TARGET_POINTER_SIZE);
@@ -3741,31 +3848,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (vt == TYP_REF || vt == TYP_BYREF)
                 emitGCvarDeadUpd(adr + ofs, dstRW2 - writeableOffset DEBUG_ARG(varNum));
         }
-        // if (emitInsWritesToLclVarStackLocPair(id))
-        //{
-        //    unsigned ofs2 = ofs + TARGET_POINTER_SIZE;
-        //    if (id->idGCrefReg2() != GCT_NONE)
-        //    {
-        //        emitGCvarLiveUpd(adr + ofs2, varNum, id->idGCrefReg2(), *dp);
-        //    }
-        //    else
-        //    {
-        //        // If the type of the local is a gc ref type, update the liveness.
-        //        var_types vt;
-        //        if (varNum >= 0)
-        //        {
-        //            // "Regular" (non-spill-temp) local.
-        //            vt = var_types(emitComp->lvaTable[varNum].lvType);
-        //        }
-        //        else
-        //        {
-        //            TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
-        //            vt              = tmpDsc->tdTempType();
-        //        }
-        //        if (vt == TYP_REF || vt == TYP_BYREF)
-        //            emitGCvarDeadUpd(adr + ofs2, *dp);
-        //    }
-        //}
     }
 
 #ifdef DEBUG
@@ -3812,6 +3894,59 @@ static const char* const RegNames[] =
 };
 // clang-format on
 
+/*****************************************************************************
+ *
+ *  Display the instruction name
+ */
+void emitter::emitDispInst(instruction ins)
+{
+    const char* insstr = codeGen->genInsName(ins);
+    size_t      len    = strlen(insstr);
+
+    /* Display the instruction name */
+
+    printf("%s", insstr);
+
+    //
+    // Add at least one space after the instruction name
+    // and add spaces until we have reach the normal size of 8
+    do
+    {
+        printf(" ");
+        len++;
+    } while (len < 16);
+}
+
+emitter::code_t emitter::emitGetInsMask(int ins)
+{
+    // clang-format off
+    const static code_t insMask[] =
+    {
+        #define INST(id, nm, info, e1, msk, fmt) msk,
+        #include "instrs.h"
+        0,
+        0,
+    };
+    // clang-format on
+
+    return insMask[ins];
+}
+
+emitter::insDisasmFmt emitter::emitGetInsFmt(instruction ins)
+{
+    // clang-format off
+    const static code_t insFmt[] =
+    {
+        #define INST(id, nm, info, e1, msk, fmt) fmt,
+        #include "instrs.h"
+        0,
+        0,
+    };
+    // clang-format on
+
+    return (insDisasmFmt)insFmt[ins];
+}
+
 //----------------------------------------------------------------------------------------
 // Disassemble the given instruction.
 // The `emitter::emitDisInsName` is focused on the most important for debugging.
@@ -3829,10 +3964,7 @@ static const char* const RegNames[] =
 
 void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 {
-    const BYTE*       insAdr      = addr - writeableOffset;
-    const char* const CFregName[] = {"fcc0", "fcc1", "fcc2", "fcc3", "fcc4", "fcc5", "fcc6", "fcc7"};
-
-    unsigned int opcode = (code >> 26) & 0x3f;
+    const BYTE* insAdr = addr - writeableOffset;
 
     bool disOpcode = !emitComp->opts.disDiffable;
     bool disAddr   = emitComp->opts.disAddr;
@@ -3848,2079 +3980,473 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         printf("%08X  ", code);
     }
 
-    // bits: 31-26,MSB6
-    switch (opcode)
+    const int regd = code & 0x1f;
+    const int regj = (code >> 5) & 0x1f;
+    int       tmp;
+
+    instruction ins = INS_invalid;
+    for (int i = 1; i < INS_count; i++)
     {
-        case 0x0:
+        if ((code & emitGetInsMask(i)) == emitInsCode((instruction)i))
         {
-            goto Label_OPCODE_0;
+            ins = (instruction)i;
+            break;
         }
-        case 0x2:
-        {
-            goto Label_OPCODE_2;
-        }
-        case 0x3:
-        {
-            goto Label_OPCODE_3;
-        }
-        case 0xe:
-        {
-            goto Label_OPCODE_E;
-        }
-        case LA_2RI16_ADDU16I_D: // 0x4
-        {
-            const char* rd   = RegNames[code & 0x1f];
-            const char* rj   = RegNames[(code >> 5) & 0x1f];
-            short       si16 = (code >> 10) & 0xffff;
-            printf("addu16i.d    %s, %s, %d\n", rd, rj, si16);
-            return;
-        }
-        case 0x5:
-        case 0x6:
-        case 0x7:
-        {
-            // bits: 31-25,MSB7
-            unsigned int inscode = (code >> 25) & 0x7f;
-            const char*  rd      = RegNames[code & 0x1f];
-            unsigned int si20    = (code >> 5) & 0xfffff;
-            switch (inscode)
+    }
+
+    if (ins == INS_invalid)
+    {
+        goto illegal_ins;
+    }
+    else if (id->idInsOpt() == INS_OPTS_NONE)
+    {
+        assert((ins == id->idIns()) || (emitGetInsFmt(ins) == DF_G_ALIAS));
+    }
+
+    emitDispInst(ins);
+
+    switch (emitGetInsFmt(ins))
+    {
+        case DF_G_ALIAS: // alias instructions.
+            switch (ins)
             {
-                case LA_1RI20_LU12I_W:
-                    printf("lu12i.w      %s, 0x%x\n", rd, si20);
+                case INS_nop:
+                    printf("\n");
                     return;
-                case LA_1RI20_LU32I_D:
-                    printf("lu32i.d      %s, 0x%x\n", rd, si20);
+                case INS_mov:
+                case INS_not:
+                    printf("%s, %s\n", RegNames[regd], RegNames[regj]);
                     return;
-                case LA_1RI20_PCADDI:
-                    printf("pcaddi       %s, 0x%x\n", rd, si20);
-                    return;
-                case LA_1RI20_PCALAU12I:
-                    printf("pcalau12i    %s, 0x%x\n", rd, si20);
-                    return;
-                case LA_1RI20_PCADDU12I:
-                    printf("pcaddu12i    %s, 0x%x\n", rd, si20);
-                    return;
-                case LA_1RI20_PCADDU18I:
-                {
-                    printf("pcaddu18i    %s, 0x%x\n", rd, si20);
-                    return;
-                }
-                default:
-                    printf("LOONGARCH illegal instruction: %08X\n", code);
-                    return;
-            }
-            return;
-        }
-        case 0x8:
-        case 0x9:
-        {
-            // bits: 31-24,MSB8
-            unsigned int inscode = (code >> 24) & 0xff;
-            const char*  rd      = RegNames[code & 0x1f];
-            const char*  rj      = RegNames[(code >> 5) & 0x1f];
-            short        si14    = ((code >> 10) & 0x3fff) << 2;
-            si14 >>= 2;
-            switch (inscode)
-            {
-                case LA_2RI14_LL_W:
-                    printf("ll.w         %s, %s, %d\n", rd, rj, si14);
-                    return;
-                case LA_2RI14_SC_W:
-                    printf("sc.w         %s, %s, %d\n", rd, rj, si14);
-                    return;
-                case LA_2RI14_LL_D:
-                    printf("ll.d         %s, %s, %d\n", rd, rj, si14);
-                    return;
-                case LA_2RI14_SC_D:
-                    printf("sc.d         %s, %s, %d\n", rd, rj, si14);
-                    return;
-                case LA_2RI14_LDPTR_W:
-                    printf("ldptr.w      %s, %s, %d\n", rd, rj, si14);
-                    return;
-                case LA_2RI14_STPTR_W:
-                    printf("stptr.w      %s, %s, %d\n", rd, rj, si14);
-                    return;
-                case LA_2RI14_LDPTR_D:
-                    printf("ldptr.d      %s, %s, %d\n", rd, rj, si14);
-                    return;
-                case LA_2RI14_STPTR_D:
-                    printf("stptr.d      %s, %s, %d\n", rd, rj, si14);
+                case INS_neg:
+                case INS_dneg:
+                    printf("%s, %s\n", RegNames[regd], RegNames[(code >> 10) & 0x1f]);
                     return;
                 default:
-                    printf("LOONGARCH illegal instruction: %08X\n", code);
-                    return;
+                    goto illegal_ins;
             }
-            return;
-        }
-        case 0xa:
+        case DF_G_B2:
         {
-            // bits: 31-24,MSB8
-            unsigned int inscode = (code >> 22) & 0x3ff;
-            const char*  rd      = RegNames[code & 0x1f];
-            const char*  rj      = RegNames[(code >> 5) & 0x1f];
-            const char*  fd      = RegNames[(code & 0x1f) + 32];
-            short        si12    = ((code >> 10) & 0xfff) << 4;
-            si12 >>= 4;
-            switch (inscode)
-            {
-                case LA_2RI12_LD_B:
-                    printf("ld.b         %s, %s, %d\n", rd, rj, si12);
-                    return;
-                case LA_2RI12_LD_H:
-                    printf("ld.h         %s, %s, %d\n", rd, rj, si12);
-                    return;
-                case LA_2RI12_LD_W:
-                    printf("ld.w         %s, %s, %d\n", rd, rj, si12);
-                    return;
-                case LA_2RI12_LD_D:
-                    printf("ld.d         %s, %s, %d\n", rd, rj, si12);
-                    return;
-                case LA_2RI12_ST_B:
-                    printf("st.b         %s, %s, %d\n", rd, rj, si12);
-                    return;
-                case LA_2RI12_ST_H:
-                    printf("st.h         %s, %s, %d\n", rd, rj, si12);
-                    return;
-                case LA_2RI12_ST_W:
-                    printf("st.w         %s, %s, %d\n", rd, rj, si12);
-                    return;
-                case LA_2RI12_ST_D:
-                    printf("st.d         %s, %s, %d\n", rd, rj, si12);
-                    return;
-                case LA_2RI12_LD_BU:
-                    printf("ld.bu        %s, %s, %d\n", rd, rj, si12);
-                    return;
-                case LA_2RI12_LD_HU:
-                    printf("ld.hu        %s, %s, %d\n", rd, rj, si12);
-                    return;
-                case LA_2RI12_LD_WU:
-                    printf("ld.wu        %s, %s, %d\n", rd, rj, si12);
-                    return;
-                case LA_2RI12_PRELD:
-                    NYI_LOONGARCH64("unused instr LA_2RI12_PRELD");
-                    return;
-                case LA_2RI12_FLD_S:
-                    printf("fld.s        %s, %s, %d\n", fd, rj, si12);
-                    return;
-                case LA_2RI12_FST_S:
-                    printf("fst.s        %s, %s, %d\n", fd, rj, si12);
-                    return;
-                case LA_2RI12_FLD_D:
-                    printf("fld.d        %s, %s, %d\n", fd, rj, si12);
-                    return;
-                case LA_2RI12_FST_D:
-                    printf("fst.d        %s, %s, %d\n", fd, rj, si12);
-                    return;
-                default:
-                    printf("LOONGARCH illegal instruction: %08X\n", code);
-                    return;
-            }
-            return;
-        }
-        case LA_1RI21_BEQZ: // 0x10
-        {
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
-            offs21 >>= 9;
-            printf("beqz         %s, 0x%llx\n", rj, (int64_t)insAdr + offs21);
-            return;
-        }
-        case LA_1RI21_BNEZ: // 0x11
-        {
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
-            offs21 >>= 9;
-            printf("bnez         %s, 0x%llx\n", rj, (int64_t)insAdr + offs21);
-            return;
-        }
-        case 0x12:
-        {
-            // LA_1RI21_BCEQZ
-            // LA_1RI21_BCNEZ
-            const char* cj     = CFregName[(code >> 5) & 0x7];
-            int         offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
-            offs21 >>= 9;
-            if (0 == ((code >> 8) & 0x3))
-            {
-                printf("bceqz        %s, 0x%llx\n", cj, (int64_t)insAdr + offs21);
-                return;
-            }
-            else if (1 == ((code >> 8) & 0x3))
-            {
-                printf("bcnez        %s, 0x%llx\n", cj, (int64_t)insAdr + offs21);
-                return;
-            }
-            else
-            {
-                printf("LOONGARCH illegal instruction: %08X\n", code);
-                return;
-            }
-            return;
-        }
-        case LA_2RI16_JIRL: // 0x13
-        {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
+            int offs16 = (short)((code >> 10) & 0xffff);
             offs16 <<= 2;
             if (id->idDebugOnlyInfo()->idMemCookie)
             {
                 assert(0 < id->idDebugOnlyInfo()->idMemCookie);
                 const char* methodName;
                 methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
-                printf("jirl         %s, %s, %d  #%s\n", rd, rj, offs16, methodName);
+                printf("%s, %s, #%s\n", RegNames[regd], RegNames[regj], methodName);
+            }
+            else if (ins == INS_jirl)
+            {
+                printf("%s, %s, 0x%lx\n", RegNames[regd], RegNames[regj], offs16);
             }
             else
             {
-                printf("jirl         %s, %s, %d\n", rd, rj, offs16);
+                printf("%s, %s, 0x%llx\n", RegNames[regj], RegNames[regd], (int64_t)insAdr + offs16);
             }
             return;
         }
-        case LA_I26_B: // 0x14
+        case DF_G_B1:
         {
-            int offs26 = (((code >> 10) & 0xffff) | ((code & 0x3ff) << 16)) << 6;
-            offs26 >>= 4;
-            printf("b            0x%llx\n", (int64_t)insAdr + offs26);
+            tmp = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
+            tmp >>= 9;
+            printf("%s, 0x%llx\n", RegNames[regj], (int64_t)insAdr + tmp);
             return;
         }
-        case LA_I26_BL: // 0x15
+        case DF_G_B0:
         {
-            int offs26 = (((code >> 10) & 0xffff) | ((code & 0x3ff) << 16)) << 6;
-            offs26 >>= 4;
-            printf("bl           0x%llx\n", (int64_t)insAdr + offs26);
-            return;
-        }
-        case LA_2RI16_BEQ: // 0x16
-        {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("beq          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
-            return;
-        }
-        case LA_2RI16_BNE: // 0x17
-        {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("bne          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
-            return;
-        }
-        case LA_2RI16_BLT: // 0x18
-        {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("blt          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
-            return;
-        }
-        case LA_2RI16_BGE: // 0x19
-        {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("bge          %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
-            return;
-        }
-        case LA_2RI16_BLTU: // 0x1a
-        {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("bltu         %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
-            return;
-        }
-        case LA_2RI16_BGEU: // 0x1b
-        {
-            const char* rd     = RegNames[code & 0x1f];
-            const char* rj     = RegNames[(code >> 5) & 0x1f];
-            int         offs16 = (short)((code >> 10) & 0xffff);
-            offs16 <<= 2;
-            printf("bgeu         %s, %s, 0x%llx\n", rj, rd, (int64_t)insAdr + offs16);
-            return;
-        }
-
-        default:
-            printf("LOONGARCH illegal instruction: %08X\n", code);
-            return;
-    }
-
-Label_OPCODE_0:
-    opcode = (code >> 22) & 0x3ff;
-
-    // bits: 31-22,MSB10
-    switch (opcode)
-    {
-        case 0x0:
-        {
-            // bits: 31-18,MSB14
-            unsigned int inscode1 = (code >> 18) & 0x3fff;
-            switch (inscode1)
+            tmp = (((code >> 10) & 0xffff) | ((code & 0x3ff) << 16)) << 6;
+            tmp >>= 4;
+            if (id->idDebugOnlyInfo()->idMemCookie)
             {
-                case 0x0:
-                {
-                    // bits: 31-15,MSB17
-                    unsigned int inscode2 = (code >> 15) & 0x1ffff;
-                    switch (inscode2)
-                    {
-                        case 0x0:
-                        {
-                            // bits:31-10,MSB22
-                            unsigned int inscode3 = (code >> 10) & 0x3fffff;
-                            const char*  rd       = RegNames[code & 0x1f];
-                            const char*  rj       = RegNames[(code >> 5) & 0x1f];
-                            switch (inscode3)
-                            {
-                                case LA_2R_CLO_W:
-                                    printf("clo.w        %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_CLZ_W:
-                                    printf("clz.w        %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_CTO_W:
-                                    printf("cto.w        %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_CTZ_W:
-                                    printf("ctz.w        %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_CLO_D:
-                                    printf("clo.d        %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_CLZ_D:
-                                    printf("clz.d        %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_CTO_D:
-                                    printf("cto.d        %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_CTZ_D:
-                                    printf("ctz.d        %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_REVB_2H:
-                                    printf("revb.2h      %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_REVB_4H:
-                                    printf("revb.4h      %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_REVB_2W:
-                                    printf("revb.2w      %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_REVB_D:
-                                    printf("revb.d       %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_REVH_2W:
-                                    printf("revh.2w      %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_REVH_D:
-                                    printf("revh.d       %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_BITREV_4B:
-                                    printf("bitrev.4b    %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_BITREV_8B:
-                                    printf("bitrev.8b    %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_BITREV_W:
-                                    printf("bitrev.w     %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_BITREV_D:
-                                    printf("bitrev.d     %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_EXT_W_H:
-                                    printf("ext.w.h      %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_EXT_W_B:
-                                    printf("ext.w.b      %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_RDTIMEL_W:
-                                    printf("rdtimel.w    %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_RDTIMEH_W:
-                                    printf("rdtimeh.w    %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_RDTIME_D:
-                                    printf("rdtime.d     %s, %s\n", rd, rj);
-                                    return;
-                                case LA_2R_CPUCFG:
-                                    printf("cpucfg       %s, %s\n", rd, rj);
-                                    return;
-
-                                default:
-                                    printf("LOONGARCH illegal instruction: %08X\n", code);
-                                    return;
-                            }
-                            return;
-                        }
-                        case LA_2R_ASRTLE_D:
-                        {
-                            const char* rj = RegNames[(code >> 5) & 0x1f];
-                            const char* rk = RegNames[(code >> 10) & 0x1f];
-                            printf("asrtle.d     %s, %s\n", rj, rk);
-                            return;
-                        }
-                        case LA_2R_ASRTGT_D:
-                        {
-                            const char* rj = RegNames[(code >> 5) & 0x1f];
-                            const char* rk = RegNames[(code >> 10) & 0x1f];
-                            printf("asrtgt.d     %s, %s\n", rj, rk);
-                            return;
-                        }
-                        default:
-                            printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
-                    }
-                    return;
-                }
-                case 0x1:
-                {
-                    // LA_OP_ALSL_W
-                    // LA_OP_ALSL_WU
-                    const char*  rd  = RegNames[code & 0x1f];
-                    const char*  rj  = RegNames[(code >> 5) & 0x1f];
-                    const char*  rk  = RegNames[(code >> 10) & 0x1f];
-                    unsigned int sa2 = (code >> 15) & 0x3;
-                    if (0 == ((code >> 17) & 0x1))
-                    {
-                        printf("alsl.w       %s, %s, %s, %d\n", rd, rj, rk, (sa2 + 1));
-                        return;
-                    }
-                    else if (1 == ((code >> 17) & 0x1))
-                    {
-                        printf("alsl.wu      %s, %s, %s, %d\n", rd, rj, rk, (sa2 + 1));
-                        return;
-                    }
-                    else
-                    {
-                        printf("LOONGARCH illegal instruction: %08X\n", code);
-                        return;
-                    }
-                    return;
-                }
-                case LA_OP_BYTEPICK_W: // 0x2
-                {
-                    const char*  rd  = RegNames[code & 0x1f];
-                    const char*  rj  = RegNames[(code >> 5) & 0x1f];
-                    const char*  rk  = RegNames[(code >> 10) & 0x1f];
-                    unsigned int sa2 = (code >> 15) & 0x3;
-                    printf("bytepick.w   %s, %s, %s, %d\n", rd, rj, rk, sa2);
-                    return;
-                }
-                case LA_OP_BYTEPICK_D: // 0x3
-                {
-                    const char*  rd  = RegNames[code & 0x1f];
-                    const char*  rj  = RegNames[(code >> 5) & 0x1f];
-                    const char*  rk  = RegNames[(code >> 10) & 0x1f];
-                    unsigned int sa3 = (code >> 15) & 0x7;
-                    printf("bytepick.d   %s, %s, %s, %d\n", rd, rj, rk, sa3);
-                    return;
-                }
-                case 0x4:
-                case 0x5:
-                case 0x6:
-                case 0x7:
-                case 0x8:
-                case 0x9:
-                {
-                    // bits: 31-15,MSB17
-                    unsigned int inscode2 = (code >> 15) & 0x1ffff;
-                    const char*  rd       = RegNames[code & 0x1f];
-                    const char*  rj       = RegNames[(code >> 5) & 0x1f];
-                    const char*  rk       = RegNames[(code >> 10) & 0x1f];
-
-                    switch (inscode2)
-                    {
-                        case LA_3R_ADD_W:
-                            printf("add.w        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_ADD_D:
-                            printf("add.d        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_SUB_W:
-                            printf("sub.w        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_SUB_D:
-                            printf("sub.d        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_SLT:
-                            printf("slt          %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_SLTU:
-                            printf("sltu         %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MASKEQZ:
-                            printf("maskeqz      %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MASKNEZ:
-                            printf("masknez      %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_NOR:
-                            printf("nor          %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_AND:
-                            printf("and          %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_OR:
-                            printf("or           %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_XOR:
-                            printf("xor          %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_ORN:
-                            printf("orn          %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_ANDN:
-                            printf("andn         %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_SLL_W:
-                            printf("sll.w        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_SRL_W:
-                            printf("srl.w        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_SRA_W:
-                            printf("sra.w        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_SLL_D:
-                            printf("sll.d        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_SRL_D:
-                            printf("srl.d        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_SRA_D:
-                            printf("sra.d        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_ROTR_W:
-                            printf("rotr.w       %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_ROTR_D:
-                            printf("rotr.d       %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MUL_W:
-                            printf("mul.w        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MULH_W:
-                            printf("mulh.w       %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MULH_WU:
-                            printf("mulh.wu      %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MUL_D:
-                            printf("mul.d        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MULH_D:
-                            printf("mulh.d       %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MULH_DU:
-                            printf("mulh.du      %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MULW_D_W:
-                            printf("mulw.d.w     %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MULW_D_WU:
-                            printf("mulw.d.wu    %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_DIV_W:
-                            printf("div.w        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MOD_W:
-                            printf("mod.w        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_DIV_WU:
-                            printf("div.wu       %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MOD_WU:
-                            printf("mod.wu       %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_DIV_D:
-                            printf("div.d        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MOD_D:
-                            printf("mod.d        %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_DIV_DU:
-                            printf("div.du       %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_MOD_DU:
-                            printf("mod.du       %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_CRC_W_B_W:
-                            printf("crc.w.b.w    %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_CRC_W_H_W:
-                            printf("crc.w.h.w    %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_CRC_W_W_W:
-                            printf("crc.w.w.w    %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_CRC_W_D_W:
-                            printf("crc.w.d.w    %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_CRCC_W_B_W:
-                            printf("crcc.w.b.w   %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_CRCC_W_H_W:
-                            printf("crcc.w.h.w   %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_CRCC_W_W_W:
-                            printf("crcc.w.w.w   %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        case LA_3R_CRCC_W_D_W:
-                            printf("crcc.w.d.w   %s, %s, %s\n", rd, rj, rk);
-                            return;
-                        default:
-                            printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
-                    }
-                }
-                case 0xa:
-                {
-                    // bits: 31-15,MSB17
-                    unsigned int inscode2  = (code >> 15) & 0x1ffff;
-                    unsigned int codefield = code & 0x7fff;
-                    switch (inscode2)
-                    {
-                        case LA_OP_BREAK:
-                            printf("break        0x%x\n", codefield);
-                            return;
-                        case LA_OP_DBGCALL:
-                            printf("dbgcall      0x%x\n", codefield);
-                            return;
-                        case LA_OP_SYSCALL:
-                            printf("syscall      0x%x\n", codefield);
-                            return;
-                        default:
-                            printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
-                    }
-                }
-                case LA_OP_ALSL_D: // 0xb
-                {
-                    const char*  rd  = RegNames[code & 0x1f];
-                    const char*  rj  = RegNames[(code >> 5) & 0x1f];
-                    const char*  rk  = RegNames[(code >> 10) & 0x1f];
-                    unsigned int sa2 = (code >> 15) & 0x3;
-                    printf("alsl.d       %s, %s, %s, %d\n", rd, rj, rk, (sa2 + 1));
-                    return;
-                }
-                default:
-                    printf("LOONGARCH illegal instruction: %08X\n", code);
-                    return;
-            }
-            return;
-        }
-        case 0x1:
-        {
-            if (code & 0x200000)
-            {
-                // LA_OP_BSTRINS_W
-                // LA_OP_BSTRPICK_W
-                const char*  rd   = RegNames[code & 0x1f];
-                const char*  rj   = RegNames[(code >> 5) & 0x1f];
-                unsigned int lsbw = (code >> 10) & 0x1f;
-                unsigned int msbw = (code >> 16) & 0x1f;
-                if (!(code & 0x8000))
-                {
-                    printf("bstrins.w    %s, %s, %d, %d\n", rd, rj, msbw, lsbw);
-                    return;
-                }
-                else if (code & 0x8000)
-                {
-                    printf("bstrpick.w   %s, %s, %d, %d\n", rd, rj, msbw, lsbw);
-                    return;
-                }
-                else
-                {
-                    printf("LOONGARCH illegal instruction: %08X\n", code);
-                    return;
-                }
+                assert(0 < id->idDebugOnlyInfo()->idMemCookie);
+                const char* methodName;
+                methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+                printf("# %s\n", methodName);
             }
             else
             {
-                // bits: 31-18,MSB14
-                unsigned int inscode1 = (code >> 18) & 0x3fff;
-                switch (inscode1)
-                {
-                    case 0x10:
-                    {
-                        // LA_OP_SLLI_W:
-                        // LA_OP_SLLI_D:
-                        const char* rd = RegNames[code & 0x1f];
-                        const char* rj = RegNames[(code >> 5) & 0x1f];
-                        if (1 == ((code >> 15) & 0x7))
-                        {
-                            unsigned int ui5 = (code >> 10) & 0x1f;
-                            printf("slli.w       %s, %s, %d\n", rd, rj, ui5);
-                            return;
-                        }
-                        else if (1 == ((code >> 16) & 0x3))
-                        {
-                            unsigned int ui6 = (code >> 10) & 0x3f;
-                            printf("slli.d       %s, %s, %d\n", rd, rj, ui6);
-                            return;
-                        }
-                        else
-                        {
-                            printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
-                        }
-                        return;
-                    }
-                    case 0x11:
-                    {
-                        // LA_OP_SRLI_W:
-                        // LA_OP_SRLI_D:
-                        const char* rd = RegNames[code & 0x1f];
-                        const char* rj = RegNames[(code >> 5) & 0x1f];
-                        if (1 == ((code >> 15) & 0x7))
-                        {
-                            unsigned int ui5 = (code >> 10) & 0x1f;
-                            printf("srli.w       %s, %s, %d\n", rd, rj, ui5);
-                            return;
-                        }
-                        else if (1 == ((code >> 16) & 0x3))
-                        {
-                            unsigned int ui6 = (code >> 10) & 0x3f;
-                            printf("srli.d      %s, %s, %d\n", rd, rj, ui6);
-                            return;
-                        }
-                        else
-                        {
-                            printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
-                        }
-                        return;
-                    }
-                    case 0x12:
-                    {
-                        // LA_OP_SRAI_W:
-                        // LA_OP_SRAI_D:
-                        const char* rd = RegNames[code & 0x1f];
-                        const char* rj = RegNames[(code >> 5) & 0x1f];
-                        if (1 == ((code >> 15) & 0x7))
-                        {
-                            unsigned int ui5 = (code >> 10) & 0x1f;
-                            printf("srai.w       %s, %s, %d\n", rd, rj, ui5);
-                            return;
-                        }
-                        else if (1 == ((code >> 16) & 0x3))
-                        {
-                            unsigned int ui6 = (code >> 10) & 0x3f;
-                            printf("srai.d       %s, %s, %d\n", rd, rj, ui6);
-                            return;
-                        }
-                        else
-                        {
-                            printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
-                        }
-                        return;
-                    }
-                    case 0x13:
-                    {
-                        // LA_OP_ROTRI_W:
-                        // LA_OP_ROTRI_D:
-                        const char* rd = RegNames[code & 0x1f];
-                        const char* rj = RegNames[(code >> 5) & 0x1f];
-                        if (1 == ((code >> 15) & 0x7))
-                        {
-                            unsigned int ui5 = (code >> 10) & 0x1f;
-                            printf("rotri.w      %s, %s, %d\n", rd, rj, ui5);
-                            return;
-                        }
-                        else if (1 == ((code >> 16) & 0x3))
-                        {
-                            unsigned int ui6 = (code >> 10) & 0x3f;
-                            printf("rotri.d      %s, %s, %d\n", rd, rj, ui6);
-                            return;
-                        }
-                        else
-                        {
-                            printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
-                        }
-                        return;
-                    }
-                    default:
-                        printf("LOONGARCH illegal instruction: %08X\n", code);
-                        return;
-                }
+                printf("0x%llx\n", (int64_t)insAdr + tmp);
+            }
+            return;
+        }
+        case DF_G_15I:
+            printf("0x%x\n", code & 0x7fff);
+            return;
+        case DF_G_R20I:
+            printf("%s, 0x%x\n", RegNames[regd], (code >> 5) & 0xfffff);
+            return;
+        case DF_G_2R:
+            printf("%s, %s\n", RegNames[regd], RegNames[regj]);
+            return;
+        case DF_G_2R5IU:
+            printf("%s, %s, %d\n", RegNames[regd], RegNames[regj], (code >> 10) & 0x1f);
+            return;
+        case DF_G_2R6IU:
+            printf("%s, %s, %d\n", RegNames[regd], RegNames[regj], (code >> 10) & 0x3f);
+            return;
+        case DF_G_2R5IW:
+            printf("%s, %s, %d, %d\n", RegNames[regd], RegNames[regj], (code >> 16) & 0x1f, (code >> 10) & 0x1f);
+            return;
+        case DF_G_2R6ID:
+            printf("%s, %s, %d, %d\n", RegNames[regd], RegNames[regj], (code >> 16) & 0x3f, (code >> 10) & 0x3f);
+            return;
+        case DF_G_2R12I:
+        {
+            tmp = ((code >> 10) & 0xfff) << 20;
+            tmp >>= 20;
+            if (ins == INS_preld)
+            {
+                printf("0x%x, %s, 0x%x\n", regd, RegNames[regj], tmp);
                 return;
             }
+            printf("%s, %s, %d\n", RegNames[regd], RegNames[regj], tmp);
             return;
         }
-        case LA_OP_BSTRINS_D:
+        case DF_G_2R12IU:
+            printf("%s, %s, 0x%x\n", RegNames[regd], RegNames[regj], (code >> 10) & 0xfff);
+            return;
+        case DF_G_2R14I:
         {
-            const char*  rd   = RegNames[code & 0x1f];
-            const char*  rj   = RegNames[(code >> 5) & 0x1f];
-            unsigned int lsbd = (code >> 10) & 0x3f;
-            unsigned int msbd = (code >> 16) & 0x3f;
-            printf("bstrins.d    %s, %s, %d, %d\n", rd, rj, msbd, lsbd);
+            tmp = ((code >> 10) & 0x3fff) << 18;
+            tmp >>= 16;
+            printf("%s, %s, 0x%x\n", RegNames[regd], RegNames[regj], tmp);
             return;
         }
-        case LA_OP_BSTRPICK_D:
-        {
-            const char*  rd   = RegNames[code & 0x1f];
-            const char*  rj   = RegNames[(code >> 5) & 0x1f];
-            unsigned int lsbd = (code >> 10) & 0x3f;
-            unsigned int msbd = (code >> 16) & 0x3f;
-            printf("bstrpick.d   %s, %s, %d, %d\n", rd, rj, msbd, lsbd);
+        case DF_G_2R16I:
+            printf("%s, %s, 0x%x\n", RegNames[regd], RegNames[regj], (code >> 10) & 0xffff); // si16<<16
             return;
-        }
-        case 0x4:
+        case DF_G_3R:
         {
-            // bits: 31-15,MSB17
-            unsigned int inscode1 = (code >> 15) & 0x1ffff;
-            const char*  fd       = RegNames[(code & 0x1f) + 32];
-            const char*  fj       = RegNames[((code >> 5) & 0x1f) + 32];
-            const char*  fk       = RegNames[((code >> 10) & 0x1f) + 32];
-            const char*  rd       = RegNames[code & 0x1f];
-            const char*  rj       = RegNames[(code >> 5) & 0x1f];
-
-            switch (inscode1)
+            if (ins == INS_preldx)
             {
-                case LA_3R_FADD_S:
-                    printf("fadd.s       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FADD_D:
-                    printf("fadd.d       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FSUB_S:
-                    printf("fsub.s       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FSUB_D:
-                    printf("fsub.d       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FMUL_S:
-                    printf("fmul.s       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FMUL_D:
-                    printf("fmul.d       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FDIV_S:
-                    printf("fdiv.s       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FDIV_D:
-                    printf("fdiv.d       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FMAX_S:
-                    printf("fmax.s       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FMAX_D:
-                    printf("fmax.d       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FMIN_S:
-                    printf("fmin.s       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FMIN_D:
-                    printf("fmin.d       %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FMAXA_S:
-                    printf("fmaxa.s      %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FMAXA_D:
-                    printf("fmaxa.d      %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FMINA_S:
-                    printf("fmina.s      %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FMINA_D:
-                    printf("fmina.d      %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FSCALEB_S:
-                    printf("fscaleb.s    %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FSCALEB_D:
-                    printf("fscaleb.d    %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FCOPYSIGN_S:
-                    printf("fcopysign.s  %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case LA_3R_FCOPYSIGN_D:
-                    printf("fcopysign.d  %s, %s, %s\n", fd, fj, fk);
-                    return;
-                case 0x228:
-                case 0x229:
-                case 0x232:
-                case 0x234:
-                case 0x235:
-                case 0x236:
-                case 0x23a:
-                case 0x23c:
-                {
-                    // bits:31-10,MSB22
-                    unsigned int inscode2 = (code >> 10) & 0x3fffff;
-                    switch (inscode2)
-                    {
-                        case LA_2R_FABS_S:
-                            printf("fabs.s       %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FABS_D:
-                            printf("fabs.d       %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FNEG_S:
-                            printf("fneg.s       %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FNEG_D:
-                            printf("fneg.d       %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FLOGB_S:
-                            printf("flogb.s      %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FLOGB_D:
-                            printf("flogb.d      %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FCLASS_S:
-                            printf("fclass.s     %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FCLASS_D:
-                            printf("fclass.d     %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FSQRT_S:
-                            printf("fsqrt.s      %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FSQRT_D:
-                            printf("fsqrt.d      %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FRECIP_S:
-                            printf("frecip.s     %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FRECIP_D:
-                            printf("frecip.d     %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FRSQRT_S:
-                            printf("frsqrt.s     %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FRSQRT_D:
-                            printf("frsqrt.d     %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FMOV_S:
-                            printf("fmov.s       %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FMOV_D:
-                            printf("fmov.d       %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_MOVGR2FR_W:
-                            printf("movgr2fr.w   %s, %s\n", fd, rj);
-                            return;
-                        case LA_2R_MOVGR2FR_D:
-                            printf("movgr2fr.d   %s, %s\n", fd, rj);
-                            return;
-                        case LA_2R_MOVGR2FRH_W:
-                            printf("movgr2frh.w  %s, %s\n", fd, rj);
-                            return;
-                        case LA_2R_MOVFR2GR_S:
-                            printf("movfr2gr.s   %s, %s\n", rd, fj);
-                            return;
-                        case LA_2R_MOVFR2GR_D:
-                            printf("movfr2gr.d   %s, %s\n", rd, fj);
-                            return;
-                        case LA_2R_MOVFRH2GR_S:
-                            printf("movfrh2gr.s  %s, %s\n", rd, fj);
-                            return;
-                        case LA_2R_MOVGR2FCSR:
-                            NYI_LOONGARCH64("unused instr LA_2R_MOVGR2FCSR");
-                            return;
-                        case LA_2R_MOVFCSR2GR:
-                            NYI_LOONGARCH64("unused instr LA_2R_MOVFCSR2GR");
-                            return;
-                        case LA_2R_MOVFR2CF:
-                        {
-                            const char* cd = CFregName[code & 0x7];
-                            printf("movfr2cf     %s, %s\n", cd, fj);
-                            return;
-                        }
-                        case LA_2R_MOVCF2FR:
-                        {
-                            const char* cj = CFregName[(code >> 5) & 0x7];
-                            printf("movcf2fr     %s, %s\n", fd, cj);
-                            return;
-                        }
-                        case LA_2R_MOVGR2CF:
-                        {
-                            const char* cd = CFregName[code & 0x7];
-                            printf("movgr2cf     %s, %s\n", cd, rj);
-                            return;
-                        }
-                        case LA_2R_MOVCF2GR:
-                        {
-                            const char* cj = CFregName[(code >> 5) & 0x7];
-                            printf("movcf2gr     %s, %s\n", rd, cj);
-                            return;
-                        }
-                        case LA_2R_FCVT_S_D:
-                            printf("fcvt.s.d     %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FCVT_D_S:
-                            printf("fcvt.d.s     %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRM_W_S:
-                            printf("ftintrm.w.s  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRM_W_D:
-                            printf("ftintrm.w.d  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRM_L_S:
-                            printf("ftintrm.l.s  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRM_L_D:
-                            printf("ftintrm.l.d  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRP_W_S:
-                            printf("ftintrp.w.s  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRP_W_D:
-                            printf("ftintrp.w.d  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRP_L_S:
-                            printf("ftintrp.l.s  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRP_L_D:
-                            printf("ftintrp.l.d  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRZ_W_S:
-                            printf("ftintrz.w.s  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRZ_W_D:
-                            printf("ftintrz.w.d  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRZ_L_S:
-                            printf("ftintrz.l.s  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRZ_L_D:
-                            printf("ftintrz.l.d  %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRNE_W_S:
-                            printf("ftintrne.w.s %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRNE_W_D:
-                            printf("ftintrne.w.d %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRNE_L_S:
-                            printf("ftintrne.l.s %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINTRNE_L_D:
-                            printf("ftintrne.l.d %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINT_W_S:
-                            printf("ftint.w.s    %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINT_W_D:
-                            printf("ftint.w.d    %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINT_L_S:
-                            printf("ftint.l.s    %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FTINT_L_D:
-                            printf("ftint.l.d    %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FFINT_S_W:
-                            printf("ffint.s.w    %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FFINT_S_L:
-                            printf("ffint.s.l    %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FFINT_D_W:
-                            printf("ffint.d.w    %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FFINT_D_L:
-                            printf("ffint.d.l    %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FRINT_S:
-                            printf("frint.s      %s, %s\n", fd, fj);
-                            return;
-                        case LA_2R_FRINT_D:
-                            printf("frint.d      %s, %s\n", fd, fj);
-                            return;
-                        default:
-                            printf("LOONGARCH illegal instruction: %08X\n", code);
-                            return;
-                    }
-                    return;
-                }
-
+                printf("0x%x, %s, %s\n", regd, RegNames[regj], RegNames[(code >> 10) & 0x1f]);
+                return;
+            }
+            printf("%s, %s, %s\n", RegNames[regd], RegNames[regj], RegNames[(code >> 10) & 0x1f]);
+            return;
+        }
+        case DF_G_3R2IU:
+            printf("%s, %s, %s, %d\n", RegNames[regd], RegNames[regj], RegNames[(code >> 10) & 0x1f],
+                   ((code >> 15) & 0x3) + 1);
+            return;
+        case DF_G_3RX:
+            printf("%s, %s, %s,", RegNames[regd], RegNames[regj], RegNames[(code >> 10) & 0x1f]);
+            printf("%d\n", (code >> 15) & (ins == INS_bytepick_d ? 0x7 : 0x3));
+            return;
+        // FPU
+        case DF_F_B1:
+        {
+            int offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
+            offs21 >>= 9;
+            printf("fcc%d, 0x%llx\n", (code >> 5) & 0x7, (int64_t)insAdr + offs21);
+            return;
+        }
+        case DF_F_GR:
+            printf("%s, %s\n", RegNames[regd], RegNames[regj + 32]);
+            return;
+        case DF_F_RG:
+            printf("%s, %s\n", RegNames[regd + 32], RegNames[regj]);
+            return;
+        case DF_F_RG12I:
+        {
+            tmp = ((code >> 10) & 0xfff);
+            printf("%s, %s, 0x%x\n", RegNames[regd + 32], RegNames[regj], tmp);
+            return;
+        }
+        case DF_F_FG:
+            printf("fcsr%d, %s\n", regd, RegNames[regj]);
+            return;
+        case DF_F_GF:
+            printf("%s, fcsr%d\n", RegNames[regd], regj);
+            return;
+        case DF_F_CR:
+            printf("fcc%d, %s\n", regd & 0x7, RegNames[regj + 32]);
+            return;
+        case DF_F_RC:
+            printf("%s, fcc%d\n", RegNames[regd + 32], regj & 0x7);
+            return;
+        case DF_F_CG:
+            printf("fcc%d, %s\n", regd & 0x7, RegNames[regj]);
+            return;
+        case DF_F_GC:
+            printf("%s, fcc%d\n", RegNames[regd], regj & 0x7);
+            return;
+        case DF_F_C2R:
+            printf("fcc%d, %s, %s\n", (code >> 10) & 0x7, RegNames[regd + 32], RegNames[regj + 32]);
+            return;
+        case DF_F_2R:
+            printf("%s, %s\n", RegNames[regd + 32], RegNames[regj + 32]);
+            return;
+        case DF_F_R2G:
+            printf("%s, %s, %s\n", RegNames[regd + 32], RegNames[regj], RegNames[(code >> 10) & 0x1f]);
+            return;
+        case DF_F_3R:
+            printf("%s, %s, %s\n", RegNames[regd + 32], RegNames[regj + 32], RegNames[((code >> 10) & 0x1f) + 32]);
+            return;
+        case DF_F_4R:
+            printf("%s, %s, %s, %s\n", RegNames[regd + 32], RegNames[regj + 32], RegNames[((code >> 10) & 0x1f) + 32],
+                   RegNames[((code >> 15) & 0x1f) + 32]);
+            return;
+        case DF_F_3RX3:
+            printf("%s, %s, %s, fcc%d\n", RegNames[regd + 32], RegNames[regj + 32],
+                   RegNames[((code >> 10) & 0x1f) + 32], (code >> 15) & 0x7);
+            return;
+#ifdef FEATURE_SIMD
+        // SIMD-128bits
+        case DF_S_4R:
+            printf("vr%d, vr%d, vr%d, vr%d\n", regd, regj, (code >> 10) & 0x1f, (code >> 15) & 0x1f);
+            return;
+        case DF_S_3R:
+            printf("vr%d, vr%d, vr%d\n", regd, regj, (code >> 10) & 0x1f);
+            return;
+        case DF_S_RG:
+            printf("vr%d, %s\n", regd, RegNames[regj]);
+            return;
+        case DF_S_2R:
+            printf("vr%d, vr%d\n", regd, regj);
+            return;
+        case DF_S_CR:
+            printf("fcc%d, vr%d\n", regd, regj);
+            return;
+        case DF_S_RGX:
+        {
+            tmp = code >> 10;
+            if (ins == INS_vldrepl_h)
+            {
+                tmp = (tmp & 0x7ff) << 21;
+                tmp >>= 20;
+            }
+            else if (ins == INS_vldrepl_w)
+            {
+                tmp = (tmp & 0x3ff) << 22;
+                tmp >>= 20;
+            }
+            else if (ins == INS_vldrepl_d)
+            {
+                tmp = (tmp & 0x1ff) << 23;
+                tmp >>= 20;
+            }
+            else if (ins == INS_vinsgr2vr_b)
+            {
+                tmp &= 0xf;
+            }
+            else if (ins == INS_vinsgr2vr_h)
+            {
+                tmp &= 0x7;
+            }
+            else if (ins == INS_vinsgr2vr_w)
+            {
+                tmp &= 0x3;
+            }
+            else if (ins == INS_vinsgr2vr_d)
+            {
+                tmp &= 0x1;
+            }
+            else // INS_vldrepl_b,INS_vld,INS_vst
+            {
+                tmp = (tmp & 0xfff) << 20;
+                tmp >>= 20;
+            }
+            printf("vr%d, %s, 0x%x\n", regd, RegNames[regj], tmp);
+            return;
+        }
+        case DF_S_GRX:
+            tmp = (code >> 10) & 0xf;
+            if (ins < INS_vpickve2gr_w)
+            {
+                tmp &= 1;
+            }
+            else if (ins < INS_vpickve2gr_h)
+            {
+                tmp &= 3;
+            }
+            else if (ins < INS_vpickve2gr_b)
+            {
+                tmp &= 7;
+            }
+            printf("%s, vr%d, %d\n", RegNames[regd], regj, tmp);
+            return;
+        case DF_S_2RG:
+            printf("vr%d, vr%d, %s\n", regd, regj, RegNames[(code >> 10) & 0x1f]);
+            return;
+        case DF_S_2R3IU:
+            printf("vr%d, vr%d, %d\n", regd, regj, (code >> 10) & 0x7);
+            return;
+        case DF_S_2R4IU:
+            printf("vr%d, vr%d, %d\n", regd, regj, (code >> 10) & 0xf);
+            return;
+        case DF_S_2R5I:
+            tmp = ((code >> 10) & 0x1f) << 27;
+            printf("vr%d, vr%d, %d\n", regd, regj, tmp >> 27);
+            return;
+        case DF_S_2R5IU:
+            printf("vr%d, vr%d, %d\n", regd, regj, (code >> 10) & 0x1f);
+            return;
+        case DF_S_2R6IU:
+            printf("vr%d, vr%d, %d\n", regd, regj, (code >> 10) & 0x3f);
+            return;
+        case DF_S_2R7IU:
+            printf("vr%d, vr%d, %d\n", regd, regj, (code >> 10) & 0x7f);
+            return;
+        case DF_S_2R8IU:
+            printf("vr%d, vr%d, 0x%x\n", regd, regj, (code >> 10) & 0xff);
+            return;
+        case DF_S_2R8IX:
+        {
+            tmp     = (((code >> 10) & 0xff) << 24) >> 24;
+            int idx = code >> 18;
+            switch (ins - INS_vstelm_b)
+            {
+                case 0:
+                    idx &= 0xf;
+                    break;
+                case 1:
+                    tmp <<= 1;
+                    idx &= 0x7;
+                    break;
+                case 2:
+                    tmp <<= 2;
+                    idx &= 0x3;
+                    break;
+                case 3:
+                    tmp <<= 3;
+                    idx &= 0x1;
+                    break;
                 default:
-                    printf("LOONGARCH illegal instruction: %08X\n", code);
-                    return;
+                    goto illegal_ins;
             }
+            printf("vr%d, %s, %d, %d\n", regd, RegNames[regj], tmp, idx);
             return;
         }
-        case LA_2RI12_SLTI: // 0x8
-        {
-            const char* rd   = RegNames[code & 0x1f];
-            const char* rj   = RegNames[(code >> 5) & 0x1f];
-            short       si12 = ((code >> 10) & 0xfff) << 4;
-            si12 >>= 4;
-            printf("slti         %s, %s, %d\n", rd, rj, si12);
+        case DF_S_R13IU:
+            tmp = ((code >> 5) & 0x1fff);
+            printf("vr%d, 0x%x\n", regd, tmp);
             return;
-        }
-        case LA_2RI12_SLTUI: // 0x9
-        {
-            const char* rd   = RegNames[code & 0x1f];
-            const char* rj   = RegNames[(code >> 5) & 0x1f];
-            short       si12 = ((code >> 10) & 0xfff) << 4;
-            si12 >>= 4;
-            printf("sltui        %s, %s, %d\n", rd, rj, si12);
+        case DF_S_2RX:
+            tmp = (code >> 10) & ((ins == INS_vreplvei_d) ? 1 : 3);
+            printf("vr%d, vr%d, %d\n", regd, regj, tmp);
             return;
-        }
-        case LA_2RI12_ADDI_W: // 0xa
-        {
-            const char* rd   = RegNames[code & 0x1f];
-            const char* rj   = RegNames[(code >> 5) & 0x1f];
-            short       si12 = ((code >> 10) & 0xfff) << 4;
-            si12 >>= 4;
-            printf("addi.w       %s, %s, %d\n", rd, rj, si12);
+        // SIMD-256bits
+        case DF_A_4R:
+            printf("xr%d, xr%d, xr%d, xr%d\n", regd, regj, (code >> 10) & 0x1f, (code >> 15) & 0x1f);
             return;
-        }
-        case LA_2RI12_ADDI_D: // 0xb
-        {
-            const char* rd   = RegNames[code & 0x1f];
-            const char* rj   = RegNames[(code >> 5) & 0x1f];
-            short       si12 = ((code >> 10) & 0xfff) << 4;
-            si12 >>= 4;
-            printf("addi.d       %s, %s, %ld\n", rd, rj, si12);
+        case DF_A_3R:
+            printf("xr%d, xr%d, xr%d\n", regd, regj, (code >> 10) & 0x1f);
             return;
-        }
-        case LA_2RI12_LU52I_D: // 0xc
-        {
-            const char*  rd   = RegNames[code & 0x1f];
-            const char*  rj   = RegNames[(code >> 5) & 0x1f];
-            unsigned int si12 = (code >> 10) & 0xfff;
-            printf("lu52i.d      %s, %s, 0x%x\n", rd, rj, si12);
+        case DF_A_RG:
+            printf("xr%d, %s\n", regd, RegNames[regj]);
             return;
-        }
-        case LA_2RI12_ANDI: // 0xd
+        case DF_A_2R:
+            printf("xr%d, xr%d\n", regd, regj);
+            return;
+        case DF_A_CR:
+            printf("fcc%d, xr%d\n", regd, regj);
+            return;
+        case DF_A_RGX:
         {
-            if (code == 0x03400000)
+            tmp = code >> 10;
+            if (ins == INS_xvldrepl_h)
             {
-                printf("nop\n");
+                tmp = (tmp & 0x7ff) << 21;
+                tmp >>= 20;
             }
-            else
+            if (ins == INS_xvldrepl_w)
             {
-                const char*  rd   = RegNames[code & 0x1f];
-                const char*  rj   = RegNames[(code >> 5) & 0x1f];
-                unsigned int ui12 = ((code >> 10) & 0xfff);
-                printf("andi         %s, %s, 0x%x\n", rd, rj, ui12);
+                tmp = (tmp & 0x3ff) << 22;
+                tmp >>= 20;
             }
-            return;
-        }
-        case LA_2RI12_ORI: // 0xe
-        {
-            const char*  rd   = RegNames[code & 0x1f];
-            const char*  rj   = RegNames[(code >> 5) & 0x1f];
-            unsigned int ui12 = ((code >> 10) & 0xfff);
-            printf("ori          %s, %s, 0x%x\n", rd, rj, ui12);
-            return;
-        }
-        case LA_2RI12_XORI: // 0xf
-        {
-            const char*  rd   = RegNames[code & 0x1f];
-            const char*  rj   = RegNames[(code >> 5) & 0x1f];
-            unsigned int ui12 = ((code >> 10) & 0xfff);
-            printf("xori         %s, %s, 0x%x\n", rd, rj, ui12);
-            return;
-        }
-
-        default:
-            printf("LOONGARCH illegal instruction: %08X\n", code);
-            return;
-    }
-
-// Label_OPCODE_1:
-//    opcode = (code >> 24) & 0xff;
-//    //bits: 31-24,MSB8
-
-Label_OPCODE_2:
-    opcode = (code >> 20) & 0xfff;
-
-    // bits: 31-20,MSB12
-    switch (opcode)
-    {
-        case LA_4R_FMADD_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
-            printf("fmadd.s      %s, %s, %s, %s\n", fd, fj, fk, fa);
-            return;
-        }
-        case LA_4R_FMADD_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
-            printf("fmadd.d      %s, %s, %s, %s\n", fd, fj, fk, fa);
-            return;
-        }
-        case LA_4R_FMSUB_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
-            printf("fmsub.s      %s, %s, %s, %s\n", fd, fj, fk, fa);
-            return;
-        }
-        case LA_4R_FMSUB_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
-            printf("fmsub.d      %s, %s, %s, %s\n", fd, fj, fk, fa);
-            return;
-        }
-        case LA_4R_FNMADD_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
-            printf("fnmadd.s     %s, %s, %s, %s\n", fd, fj, fk, fa);
-            return;
-        }
-        case LA_4R_FNMADD_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
-            printf("fnmadd.d     %s, %s, %s, %s\n", fd, fj, fk, fa);
-            return;
-        }
-        case LA_4R_FNMSUB_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
-            printf("fnmsub.s     %s, %s, %s, %s\n", fd, fj, fk, fa);
-            return;
-        }
-        case LA_4R_FNMSUB_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* fa = RegNames[((code >> 15) & 0x1f) + 32];
-            printf("fnmsub.d     %s, %s, %s, %s\n", fd, fj, fk, fa);
-            return;
-        }
-        default:
-            printf("LOONGARCH illegal instruction: %08X\n", code);
-            return;
-    }
-
-Label_OPCODE_3:
-    opcode = (code >> 20) & 0xfff;
-
-    // bits: 31-20,MSB12
-    switch (opcode)
-    {
-        case LA_OP_FCMP_cond_S:
-        {
-            // bits:19-15,cond
-            unsigned int cond = (code >> 15) & 0x1f;
-            const char*  cd   = CFregName[code & 0x7];
-            const char*  fj   = RegNames[((code >> 5) & 0x1f) + 32];
-            const char*  fk   = RegNames[((code >> 10) & 0x1f) + 32];
-            switch (cond)
+            else if (ins == INS_xvldrepl_d)
             {
-                case 0x0:
-                    printf("fcmp.caf.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x1:
-                    printf("fcmp.saf.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x2:
-                    printf("fcmp.clt.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x3:
-                    printf("fcmp.slt.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x4:
-                    printf("fcmp.ceq.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x5:
-                    printf("fcmp.seq.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x6:
-                    printf("fcmp.cle.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x7:
-                    printf("fcmp.sle.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x8:
-                    printf("fcmp.cun.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x9:
-                    printf("fcmp.sun.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xA:
-                    printf("fcmp.cult.s  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xB:
-                    printf("fcmp.sult.s  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xC:
-                    printf("fcmp.cueq.s  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xD:
-                    printf("fcmp.sueq.s  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xE:
-                    printf("fcmp.cule.s  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xF:
-                    printf("fcmp.sule.s  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x10:
-                    printf("fcmp.cne.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x11:
-                    printf("fcmp.sne.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x14:
-                    printf("fcmp.cor.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x15:
-                    printf("fcmp.sor.s   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x18:
-                    printf("fcmp.cune.s  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x19:
-                    printf("fcmp.sune.s  %s, %s, %s\n", cd, fj, fk);
-                    return;
+                tmp = (tmp & 0x1ff) << 23;
+                tmp >>= 20;
+            }
+            else if (ins == INS_xvinsgr2vr_w)
+            {
+                tmp &= 0x7;
+            }
+            else if (ins == INS_xvinsgr2vr_d)
+            {
+                tmp &= 0x3;
+            }
+            else // INS_xvldrepl_b,INS_xvld,INS_xvst
+            {
+                tmp = (tmp & 0xfff) << 20;
+                tmp >>= 20;
+            }
+            printf("xr%d, %s, %d\n", regd, RegNames[regj], tmp);
+            return;
+        }
+        case DF_A_GRX:
+            tmp = (code >> 10) & ((ins < INS_xvpickve2gr_w) ? 3 : 7);
+            printf("%s, xr%d, %d\n", RegNames[regd], regj, tmp);
+            return;
+        case DF_A_2RG:
+            printf("xr%d, xr%d, %s\n", regd, regj, RegNames[(code >> 10) & 0x1f]);
+            return;
+        case DF_A_2RX:
+            tmp = (code >> 10) & ((ins == INS_xvrepl128vei_d) ? 1 : 3);
+            printf("xr%d, xr%d, %d\n", regd, regj, tmp);
+            return;
+        case DF_A_2R3IU:
+            printf("xr%d, xr%d, %d\n", regd, regj, (code >> 10) & 0x7);
+            return;
+        case DF_A_2R4IU:
+            printf("xr%d, xr%d, %d\n", regd, regj, (code >> 10) & 0xf);
+            return;
+        case DF_A_2R5I:
+            tmp = ((code >> 10) & 0x1f) << 27;
+            printf("xr%d, xr%d, %d\n", regd, regj, tmp >> 27);
+            return;
+        case DF_A_2R5IU:
+            printf("xr%d, xr%d, %d\n", regd, regj, (code >> 10) & 0x1f);
+            return;
+        case DF_A_2R6IU:
+            printf("xr%d, xr%d, %d\n", regd, regj, (code >> 10) & 0x3f);
+            return;
+        case DF_A_2R7IU:
+            printf("xr%d, xr%d, %d\n", regd, regj, (code >> 10) & 0x7f);
+            return;
+        case DF_A_2R8IU:
+            printf("xr%d, xr%d, %d\n", regd, regj, (code >> 10) & 0xff);
+            return;
+        case DF_A_R13IU:
+            printf("xr%d, xr%d, 0x%x\n", regd, regj, (code >> 10) & 0x1fff);
+            return;
+        case DF_A_RG8IX:
+        {
+            tmp     = (((code >> 10) & 0xff) << 24) >> 24;
+            int idx = code >> 18;
+            switch (ins - INS_xvstelm_b)
+            {
+                case 0:
+                    idx &= 0xf;
+                    break;
+                case 1:
+                    tmp <<= 1;
+                    idx &= 0x7;
+                    break;
+                case 2:
+                    tmp <<= 2;
+                    idx &= 0x3;
+                    break;
+                case 3:
+                    tmp <<= 3;
+                    idx &= 0x1;
+                    break;
                 default:
-                    printf("LOONGARCH illegal instruction: %08X\n", code);
-                    return;
+                    goto illegal_ins;
             }
-        }
-        case LA_OP_FCMP_cond_D:
-        {
-            // bits:19-15,cond
-            unsigned int cond = (code >> 15) & 0x1f;
-            const char*  cd   = CFregName[code & 0x7];
-            const char*  fj   = RegNames[((code >> 5) & 0x1f) + 32];
-            const char*  fk   = RegNames[((code >> 10) & 0x1f) + 32];
-            switch (cond)
-            {
-                case 0x0:
-                    printf("fcmp.caf.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x1:
-                    printf("fcmp.saf.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x2:
-                    printf("fcmp.clt.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x3:
-                    printf("fcmp.slt.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x4:
-                    printf("fcmp.ceq.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x5:
-                    printf("fcmp.seq.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x6:
-                    printf("fcmp.cle.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x7:
-                    printf("fcmp.sle.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x8:
-                    printf("fcmp.cun.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x9:
-                    printf("fcmp.sun.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xA:
-                    printf("fcmp.cult.d  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xB:
-                    printf("fcmp.sult.d  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xC:
-                    printf("fcmp.cueq.d  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xD:
-                    printf("fcmp.sueq.d  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xE:
-                    printf("fcmp.cule.d  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0xF:
-                    printf("fcmp.sule.d  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x10:
-                    printf("fcmp.cne.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x11:
-                    printf("fcmp.sne.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x14:
-                    printf("fcmp.cor.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x15:
-                    printf("fcmp.sor.d   %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x18:
-                    printf("fcmp.cune.d  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                case 0x19:
-                    printf("fcmp.sune.d  %s, %s, %s\n", cd, fj, fk);
-                    return;
-                default:
-                    printf("LOONGARCH illegal instruction: %08X\n", code);
-                    return;
-            }
-        }
-        case LA_4R_FSEL:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* fj = RegNames[((code >> 5) & 0x1f) + 32];
-            const char* fk = RegNames[((code >> 10) & 0x1f) + 32];
-            const char* ca = CFregName[(code >> 15) & 0x7];
-            printf("fsel         %s, %s, %s, %s\n", fd, fj, fk, ca);
+            printf("xr%d, %s, %d, %d\n", regd, RegNames[regj], tmp, idx);
             return;
         }
+#endif
         default:
-            printf("LOONGARCH illegal instruction: %08X\n", code);
-            return;
+            goto illegal_ins;
     }
 
-Label_OPCODE_E:
-    opcode = (code >> 15) & 0x1ffff;
-
-    // bits: 31-15,MSB17
-    switch (opcode)
-    {
-        case LA_3R_LDX_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldx.b        %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDX_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldx.h        %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDX_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldx.w        %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDX_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldx.d        %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STX_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stx.b        %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STX_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stx.h        %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STX_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stx.w        %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STX_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stx.d        %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDX_BU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldx.bu       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDX_HU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldx.hu       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDX_WU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldx.wu       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_PRELDX:
-            NYI_LOONGARCH64("unused instr LA_3R_PRELDX");
-            return;
-        case LA_3R_FLDX_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fldx.s       %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_FLDX_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fldx.d       %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_FSTX_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fstx.s       %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_FSTX_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fstx.d       %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_AMSWAP_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amswap.w     %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMSWAP_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amswap.d     %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMADD_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amadd.w      %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMADD_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amadd.d      %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMAND_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amand.w      %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMAND_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amand.d      %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMOR_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amor.w       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMOR_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amor.d       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMXOR_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amxor.w      %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMXOR_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amxor.d      %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMAX_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax.w      %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMAX_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax.d      %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMIN_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin.w      %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMIN_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin.d      %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMAX_WU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax.wu     %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMAX_DU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax.du     %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMIN_WU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin.wu     %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMIN_DU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin.du     %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMSWAP_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amswap_db.w  %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMSWAP_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amswap_db.d  %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMADD_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amadd_db.w   %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMADD_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amadd_db.d   %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMAND_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amand_db.w   %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMAND_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amand_db.d   %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMOR_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amor_db.w    %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMOR_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amor_db.d    %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMXOR_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amxor_db.w   %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMXOR_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("amxor_db.d   %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMAX_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax_db.w   %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMAX_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax_db.d   %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMIN_DB_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin_db.w   %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMIN_DB_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin_db.d   %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMAX_DB_WU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax_db.wu  %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMAX_DB_DU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammax_db.du  %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMIN_DB_WU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin_db.wu  %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_AMMIN_DB_DU:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ammin_db.du  %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_OP_DBAR:
-        {
-            unsigned int hint = code & 0x7fff;
-            printf("dbar         0x%x\n", hint);
-            return;
-        }
-        case LA_OP_IBAR:
-        {
-            unsigned int hint = code & 0x7fff;
-            printf("ibar         0x%x\n", hint);
-            return;
-        }
-        case LA_3R_FLDGT_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fldgt.s      %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_FLDGT_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fldgt.d      %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_FLDLE_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fldle.s      %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_FLDLE_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fldle.d      %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_FSTGT_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fstgt.s      %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_FSTGT_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fstgt.d      %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_FSTLE_S:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fstle.s      %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_FSTLE_D:
-        {
-            const char* fd = RegNames[(code & 0x1f) + 32];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("fstle.d      %s, %s, %s\n", fd, rj, rk);
-            return;
-        }
-        case LA_3R_LDGT_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldgt.b       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDGT_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldgt.h       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDGT_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldgt.w       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDGT_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldgt.d       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDLE_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldle.b       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDLE_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldle.h       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDLE_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldle.w       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_LDLE_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("ldle.d       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STGT_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stgt.b       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STGT_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stgt.h       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STGT_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stgt.w       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STGT_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stgt.d       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STLE_B:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stle.b       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STLE_H:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stle.h       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STLE_W:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stle.w       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        case LA_3R_STLE_D:
-        {
-            const char* rd = RegNames[code & 0x1f];
-            const char* rj = RegNames[(code >> 5) & 0x1f];
-            const char* rk = RegNames[(code >> 10) & 0x1f];
-            printf("stle.d       %s, %s, %s\n", rd, rj, rk);
-            return;
-        }
-        default:
-            printf("LOONGARCH illegal instruction: %08X\n", code);
-            return;
-    }
+illegal_ins:
+    printf("LOONGARCH illegal instruction: %08X\n", code);
+    return;
 }
 
 /*****************************************************************************
@@ -6029,7 +4555,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA));
+        assert(addr->OperIs(GT_LCL_ADDR, GT_LEA));
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -6172,13 +4698,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         }
         else // no Index register
         {
-            if (addr->OperGet() == GT_CLS_VAR_ADDR)
-            {
-                // Get a temp integer register to compute long address.
-                regNumber addrReg = indir->GetSingleTempReg();
-                emitIns_R_C(ins, attr, dataReg, addrReg, addr->AsClsVar()->gtClsVarHnd, 0);
-            }
-            else if (addr->OperIs(GT_LCL_ADDR))
+            if (addr->OperIs(GT_LCL_ADDR))
             {
                 GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
                 unsigned             lclNum  = varNode->GetLclNum();
@@ -6656,9 +5176,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
-// emitRegName: Returns a general-purpose register name or SIMD and floating-point scalar register name.
+// emitRegName: Returns a general-purpose register name or floating-point scalar register name.
 //
-// TODO-LoongArch64: supporting SIMD.
 // Arguments:
 //    reg - A general-purpose register orfloating-point register.
 //    size - unused parameter.
@@ -6707,4 +5226,102 @@ bool emitter::IsMovInstruction(instruction ins)
         }
     }
 }
+
+#ifdef FEATURE_SIMD
+// For the given 'size' and 'index' returns true if it specifies a valid index for a vector register of 'size'
+bool emitter::isValidVectorIndex(emitAttr datasize, emitAttr elemsize, ssize_t index)
+{
+    assert(isValidVectorDatasize(datasize));
+    assert(isValidVectorElemsize(elemsize));
+
+    bool result = false;
+    if (index >= 0)
+    {
+        if (datasize == EA_8BYTE)
+        {
+            switch (elemsize)
+            {
+                case EA_1BYTE:
+                    result = (index < 8);
+                    break;
+                case EA_2BYTE:
+                    result = (index < 4);
+                    break;
+                case EA_4BYTE:
+                    result = (index < 2);
+                    break;
+                default:
+                    unreached();
+                    break;
+            }
+        }
+        else if (datasize == EA_16BYTE)
+        {
+            switch (elemsize)
+            {
+                case EA_1BYTE:
+                    result = (index < 16);
+                    break;
+                case EA_2BYTE:
+                    result = (index < 8);
+                    break;
+                case EA_4BYTE:
+                    result = (index < 4);
+                    break;
+                case EA_8BYTE:
+                    result = (index < 2);
+                    break;
+                default:
+                    unreached();
+                    break;
+            }
+        }
+        else if (datasize == EA_32BYTE)
+        {
+            switch (elemsize)
+            {
+                case EA_1BYTE:
+                    result = (index < 32);
+                    break;
+                case EA_2BYTE:
+                    result = (index < 16);
+                    break;
+                case EA_4BYTE:
+                    result = (index < 8);
+                    break;
+                case EA_8BYTE:
+                    result = (index < 4);
+                    break;
+                case EA_16BYTE:
+                    result = (index < 2);
+                    break;
+                default:
+                    unreached();
+                    break;
+            }
+        }
+    }
+    return result;
+}
+
+void emitter::emitIns_S_R_SIMD12(regNumber reg, int varx, int offs)
+{
+    bool FPbased;
+    int  base = emitComp->lvaFrameAddress(varx, &FPbased);
+    int  imm  = base + offs + 8;
+
+    emitIns_S_R(INS_fst_d, EA_8BYTE, reg, varx, offs);
+    if (imm < 512)
+    {
+        assert(imm >= 0);
+        regNumber reg1 = FPbased ? REG_FPBASE : REG_SPBASE;
+        emitIns_R_R_I_I(INS_vstelm_w, EA_4BYTE, reg, reg1, (imm >> 2), 2);
+    }
+    else
+    {
+        emitIns_R_R_I(INS_xvpickve_w, EA_4BYTE, REG_SCRATCH_FLT, reg, 2);
+        emitIns_S_R(INS_fst_s, EA_4BYTE, REG_SCRATCH_FLT, varx, offs + 8);
+    }
+}
+#endif
 #endif // defined(TARGET_LOONGARCH64)

@@ -99,6 +99,14 @@ namespace System.Collections.Frozen.Tests
             Assert.False(r.AllAsciiIfIgnoreCase);
             Assert.Equal(7, r.HashIndex);
             Assert.Equal(1, r.HashCount);
+
+            r = RunAnalysis(new[] { "1abc", "2abc", "3abc", "4abc", "5abc", "6abc" }, true);
+            Assert.False(r.RightJustifiedSubstring);
+            Assert.True(r.IgnoreCase);
+            Assert.True(r.AllAsciiIfIgnoreCase);
+            Assert.Equal(0, r.HashIndex);
+            Assert.Equal(1, r.HashCount);
+
         }
 
         [Fact]

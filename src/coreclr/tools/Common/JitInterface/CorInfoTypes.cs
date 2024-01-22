@@ -812,7 +812,7 @@ namespace Internal.JitInterface
     {
         CORINFO_WINNT,
         CORINFO_UNIX,
-        CORINFO_MACOS,
+        CORINFO_APPLE,
     }
 
     public enum CORINFO_RUNTIME_ABI
@@ -1109,7 +1109,7 @@ namespace Internal.JitInterface
         CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
         CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access from the data segment
         CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
-        CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
+        CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic empty string (String.Empty)
         CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN, // intrinsic BitConverter.IsLittleEndian
     }
 
@@ -1121,7 +1121,6 @@ namespace Internal.JitInterface
         CORINFO_FLG_FIELD_FINAL = 0x00000004,
         CORINFO_FLG_FIELD_STATIC_IN_HEAP = 0x00000008, // See code:#StaticFields. This static field is in the GC heap as a boxed object
         CORINFO_FLG_FIELD_INITCLASS = 0x00000020, // initClass has to be called before accessing the field
-        CORINFO_FLG_FIELD_PROTECTED = 0x00000040,
     }
 
     public unsafe struct CORINFO_FIELD_INFO
@@ -1156,6 +1155,15 @@ namespace Internal.JitInterface
         public uint offsetOfMaxThreadStaticBlocks;
         public uint offsetOfThreadStaticBlocks;
         public uint offsetOfGCDataPointer;
+    };
+
+
+    public unsafe struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
+    {
+        public uint offsetOfThreadLocalStoragePointer;
+        public CORINFO_CONST_LOOKUP tlsRootObject;
+        public CORINFO_CONST_LOOKUP tlsIndexObject;
+        public CORINFO_CONST_LOOKUP threadStaticBaseSlow;
     };
 
     // System V struct passing

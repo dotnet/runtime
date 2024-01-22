@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Specialized;
-
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.ActiveDirectory
@@ -20,7 +19,7 @@ namespace System.DirectoryServices.ActiveDirectory
         private ArrayList _binaryDataTime = new ArrayList();
         internal bool retrieved;
 
-        internal ForestTrustRelationshipInformation(DirectoryContext context, string source, DS_DOMAIN_TRUSTS unmanagedTrust, TrustType type)
+        internal ForestTrustRelationshipInformation(DirectoryContext context, string source, Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust, TrustType type)
         {
             string? tmpDNSName = null;
             string? tmpNetBIOSName = null;
@@ -37,12 +36,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
             this.target = tmpDNSName ?? tmpNetBIOSName;
             // direction
-            if ((unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND) != 0 &&
-                (unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND) != 0)
+            if ((unmanagedTrust.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND) != 0 &&
+                (unmanagedTrust.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND) != 0)
                 direction = TrustDirection.Bidirectional;
-            else if ((unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND) != 0)
+            else if ((unmanagedTrust.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND) != 0)
                 direction = TrustDirection.Outbound;
-            else if ((unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND) != 0)
+            else if ((unmanagedTrust.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND) != 0)
                 direction = TrustDirection.Inbound;
             // type
             this.type = type;
@@ -117,7 +116,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     IntPtr ptr = (IntPtr)0;
                     fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
-                    UnsafeNativeMethods.GetSystemTimeAsFileTime(fileTime);
+                    Interop.Kernel32.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
                     FileTime currentTime = new FileTime();
@@ -133,7 +132,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         record.Time = TLN.time;
                         ptr = Marshal.StringToHGlobalUni(TLN.Name);
                         ptrList.Add(ptr);
-                        UnsafeNativeMethods.RtlInitUnicodeString(out record.TopLevelName, ptr);
+                        Interop.NtDll.RtlInitUnicodeString(out record.TopLevelName, ptr);
 
                         tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
@@ -163,7 +162,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                         ptr = Marshal.StringToHGlobalUni(_excludedNames[i]);
                         ptrList.Add(ptr);
-                        UnsafeNativeMethods.RtlInitUnicodeString(out record.TopLevelName, ptr);
+                        Interop.NtDll.RtlInitUnicodeString(out record.TopLevelName, ptr);
                         tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);
@@ -251,10 +250,10 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the target name
                     global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(TargetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
+                    Interop.NtDll.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // call the unmanaged function
-                    uint error = UnsafeNativeMethods.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 1, out collisionInfo);
+                    uint error = Interop.Advapi32.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, true, out collisionInfo);
                     if (error != 0)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(error), serverName);
@@ -267,7 +266,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // commit the changes
-                    error = UnsafeNativeMethods.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 0, out collisionInfo);
+                    error = Interop.Advapi32.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, false, out collisionInfo);
                     if (error != 0)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode((int)error, serverName);
@@ -340,7 +339,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the target name
                     global::Interop.UNICODE_STRING tmpName;
                     targetPtr = Marshal.StringToHGlobalUni(TargetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(out tmpName, targetPtr);
+                    Interop.NtDll.RtlInitUnicodeString(out tmpName, targetPtr);
 
                     serverName = Utils.GetPolicyServerName(context, true, false, source);
 
@@ -350,7 +349,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the policy handle
                     handle = Utils.GetPolicyHandle(serverName);
 
-                    uint result = UnsafeNativeMethods.LsaQueryForestTrustInformation(handle, tmpName, ref forestTrustInfo);
+                    uint result = Interop.Advapi32.LsaQueryForestTrustInformation(handle, tmpName, ref forestTrustInfo);
                     // check the result
                     if (result != 0)
                     {
