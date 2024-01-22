@@ -27,7 +27,43 @@ namespace Microsoft.Extensions.Logging.Console.Test
             return string.Join("", contexts.Select(c => c.Message));
         }
 
-        internal static (ConsoleLogger Logger, ConsoleSink Sink, ConsoleSink ErrorSink, Func<LogLevel, string> GetLevelPrefix, int WritesPerMsg) SetUp(
+        internal class SetupDisposeHelper : IDisposable
+        {
+            public ConsoleLogger Logger;
+            public ConsoleSink Sink;
+            public ConsoleSink ErrorSink;
+            public Func<LogLevel, string> GetLevelPrefix;
+            public int WritesPerMsg;
+            public TestLoggerProcessor LoggerProcessor;
+            public SetupDisposeHelper(ConsoleLogger logger, ConsoleSink sink, ConsoleSink errorSink, Func<LogLevel, string> getLevelPrefix, int writesPerMsg, TestLoggerProcessor loggerProcessor)
+            {
+                Logger = logger;
+                Sink = sink;
+                ErrorSink = errorSink;
+                GetLevelPrefix = getLevelPrefix;
+                WritesPerMsg = writesPerMsg;
+                LoggerProcessor = loggerProcessor;
+            }
+
+            private bool _isDisposed;
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (!_isDisposed)
+                {
+                    LoggerProcessor.Dispose();
+                    _isDisposed = true;
+                }
+            }
+
+            public void Dispose()
+            {
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
+            }
+        }
+
+        internal static SetupDisposeHelper SetUp(
             ConsoleLoggerOptions options = null,
             SimpleConsoleFormatterOptions simpleOptions = null,
             ConsoleFormatterOptions systemdOptions = null,
@@ -70,7 +106,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
             var logger = new ConsoleLogger(_loggerName, consoleLoggerProcessor, formatter, new LoggerExternalScopeProvider(), loggerOptions);
 
-            return (logger, sink, errorSink, levelAsString, writesPerMsg);
+            return new SetupDisposeHelper(logger, sink, errorSink, levelAsString, writesPerMsg, consoleLoggerProcessor);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -78,7 +114,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         {
             // Arrange
             var monitor = new TestOptionsMonitor(new ConsoleLoggerOptions() { FormatterName = "NonExistentFormatter" });
-            var loggerProvider = new ConsoleLoggerProvider(monitor, ConsoleLoggerTest.GetFormatters());
+            using var loggerProvider = new ConsoleLoggerProvider(monitor, ConsoleLoggerTest.GetFormatters());
             var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
 
             // Act & Assert
@@ -91,7 +127,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void InvalidLogLevel_Throws(string formatterName)
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName }
             );
             var logger = (ILogger)t.Logger;
@@ -105,7 +141,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void NoMessageOrException_Noop(string formatterName, LogLevel level)
         {
             // Arrange
-            var t = SetUp(new ConsoleLoggerOptions { FormatterName = formatterName });
+            using var t = SetUp(new ConsoleLoggerOptions { FormatterName = formatterName });
             var levelPrefix = t.GetLevelPrefix(level);
             var logger = t.Logger;
             var sink = t.Sink;
@@ -124,7 +160,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_LogsCorrectTimestamp(string formatterName, LogLevel level)
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName },
                 new SimpleConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false, ColorBehavior = LoggerColorBehavior.Enabled },
                 new ConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false },
