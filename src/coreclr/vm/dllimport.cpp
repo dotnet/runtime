@@ -3672,11 +3672,6 @@ static void CreateNDirectStubWorker(StubState*               pss,
         COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_PRESERVESIG);
     }
 
-    if (runtimeMarshallingEnabled && SF_IsCALLIStub(dwStubFlags) && NDirect::MarshalingRequired(pMD))
-    {
-        COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
-    }
-
     int numArgs = msig.NumFixedArgs();
 
     // thiscall must have at least one parameter (the "this")
@@ -5040,6 +5035,12 @@ namespace
                                 }
                                 else
                                 {
+                                    // For generic calli, we only support blittable types
+                                    if (!pSigDesc->m_typeContext.IsEmpty() && SF_IsCALLIStub(dwStubFlags) && NDirect::MarshalingRequired(pStubMD))
+                                    {
+                                        COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
+                                    }
+
                                     CreateNDirectStubWorker(pss,
                                                             pSigDesc,
                                                             nlType,
