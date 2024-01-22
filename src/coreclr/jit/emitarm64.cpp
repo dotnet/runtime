@@ -20034,14 +20034,14 @@ void emitter::emitDispInsHelp(
             printf("[");
             emitDispReg(id->idReg3(), EA_8BYTE, true); // nnnnn
             emitDispReg(id->idReg4(), EA_8BYTE, true); // mmmmm
-            printf("lsl #2]");       
+            printf("lsl #2]");
             break;
 
         // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #3]
         // {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #1]
         // {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2]
-        case IF_SVE_JJ_4A:   // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
-                             // offsets)
+        case IF_SVE_JJ_4A: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                           // offsets)
         // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]
         // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #1]
         // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #2]
@@ -20059,59 +20059,58 @@ void emitter::emitDispInsHelp(
         // {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
         case IF_SVE_JK_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit
                              // unscaled offsets)
-        {
-            emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(),
-                                          true);                                      // ttttt
-            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true); // ggg
-            printf("[");
-            emitDispReg(id->idReg3(), EA_8BYTE, true);          // nnnnn
-            emitDispSveReg(id->idReg4(), id->idInsOpt(), true); // mmmmm
-            emitDispSveExtendOpts(id->idInsOpt());
-            switch (ins)
             {
-                case INS_sve_st1b:
-                    printf("]");
-                    break;
-
-                case INS_sve_st1h:
-                    if ((fmt == IF_SVE_JJ_4A_C) || (fmt == IF_SVE_JJ_4A_D))
-                    {
+                emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
+                emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true);                      // ggg
+                printf("[");
+                emitDispReg(id->idReg3(), EA_8BYTE, true);          // nnnnn
+                emitDispSveReg(id->idReg4(), id->idInsOpt(), true); // mmmmm
+                emitDispSveExtendOpts(id->idInsOpt());
+                switch (ins)
+                {
+                    case INS_sve_st1b:
                         printf("]");
-                    }
-                    else
-                    {
-                        printf(" #1]");
-                    }
-                    break;
+                        break;
 
-                case INS_sve_st1w:
-                    if ((fmt == IF_SVE_JJ_4A_C) || (fmt == IF_SVE_JJ_4A_D))
-                    {
-                        printf("]");
-                    }
-                    else
-                    {
-                        printf(" #2]");
-                    }
-                    break;
+                    case INS_sve_st1h:
+                        if ((fmt == IF_SVE_JJ_4A_C) || (fmt == IF_SVE_JJ_4A_D))
+                        {
+                            printf("]");
+                        }
+                        else
+                        {
+                            printf(" #1]");
+                        }
+                        break;
 
-                case INS_sve_st1d:
-                    if (fmt == IF_SVE_JJ_4A_B)
-                    {
-                        printf("]");
-                    }
-                    else
-                    {
-                        printf(" #3]");
-                    }
-                    break;
+                    case INS_sve_st1w:
+                        if ((fmt == IF_SVE_JJ_4A_C) || (fmt == IF_SVE_JJ_4A_D))
+                        {
+                            printf("]");
+                        }
+                        else
+                        {
+                            printf(" #2]");
+                        }
+                        break;
 
-                default:
-                    assert(!"Invalid instruction");
-                    break;
+                    case INS_sve_st1d:
+                        if (fmt == IF_SVE_JJ_4A_B)
+                        {
+                            printf("]");
+                        }
+                        else
+                        {
+                            printf(" #3]");
+                        }
+                        break;
+
+                    default:
+                        assert(!"Invalid instruction");
+                        break;
+                }
+                break;
             }
-            break;
-        }
 
         // {<Zt>.<T>}, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_JN_3A: // .........xx.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
