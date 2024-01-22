@@ -156,20 +156,22 @@ namespace System
 
             MethodTable* pDestMT = destTH.AsMethodTable();
             nuint destSize = pDestArrayMT->ComponentSize;
-            ref object srcData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<object[]>(sourceArray)), sourceIndex);
+            ref object? srcData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<object?[]>(sourceArray)), sourceIndex);
             ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destSize);
 
             for (int i = 0; i < length; i++)
             {
-                object obj = Unsafe.Add(ref srcData, i);
+                object? obj = Unsafe.Add(ref srcData, i);
 
                 // Now that we have retrieved the element, we are no longer subject to race
                 // conditions from another array mutator.
 
+                ref byte dest = ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize);
+
                 if (pDestMT->IsNullable)
                 {
                     CastHelpers.Unbox_Nullable(
-                        ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
+                        ref dest,
                         pDestMT,
                         obj);
                 }
@@ -180,14 +182,14 @@ namespace System
                 else if (pDestMT->ContainsGCPointers)
                 {
                     Buffer.BulkMoveWithWriteBarrier(
-                        ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
+                        ref dest,
                         ref CastHelpers.Unbox(pDestMT, obj),
                         destSize);
                 }
                 else
                 {
                     Buffer.Memmove(
-                        ref Unsafe.AddByteOffset(ref data, (nuint)i * destSize),
+                        ref dest,
                         ref CastHelpers.Unbox(pDestMT, obj),
                         destSize);
                 }
