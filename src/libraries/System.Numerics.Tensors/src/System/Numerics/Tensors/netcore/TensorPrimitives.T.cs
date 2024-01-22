@@ -2006,7 +2006,7 @@ namespace System.Numerics.Tensors
             where T : IFloatingPointIeee754<T> =>
             InvokeSpanIntoSpan<T, ReciprocalSqrtEstimateOperator<T>>(x, destination);
 
-        /// <summary>Computes the element-wise rotation right of numbers in the specified tensor by the specified rotation amount.</summary>
+        /// <summary>Computes the element-wise n-th root of the values in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <param name="n">The degree of the root to be computed, represented as a scalar.</param>
