@@ -119,14 +119,19 @@ namespace System
             _a = a;
             _b = b;
             _c = c;
-            _k = d[7]; // hoist bounds checks
-            _d = d[0];
-            _e = d[1];
-            _f = d[2];
-            _g = d[3];
-            _h = d[4];
-            _i = d[5];
-            _j = d[6];
+            
+             //Read the remaining 8 bytes in one go, packed in a 64 bit ulong. Safe because we already ensured that the length of the array is exactly 8
+            ref byte firstElement = ref MemoryMarshal.GetArrayDataReference(d);
+    		ulong packedValue = Unsafe.As<byte, ulong>(ref firstElement);
+
+    		_d = (byte)(packedValue & 0xFF);
+    		_e = (byte)((packedValue >> 8) & 0xFF);
+    		_f = (byte)((packedValue >> 16) & 0xFF);
+    		_g = (byte)((packedValue >> 24) & 0xFF);
+    		_h = (byte)((packedValue >> 32) & 0xFF);
+    		_i = (byte)((packedValue >> 40) & 0xFF);
+    		_j = (byte)((packedValue >> 48) & 0xFF);
+    		_k = (byte)((packedValue >> 56) & 0xFF);
         }
 
         // Creates a new GUID initialized to the value represented by the
