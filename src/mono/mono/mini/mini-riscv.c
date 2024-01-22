@@ -4597,7 +4597,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_addi (code, RISCV_T0, RISCV_SP, 0);
 			loop_start = code;
 			riscv_beq (code, RISCV_T0, RISCV_T1, 0);
-			riscv_ld (code, RISCV_ZERO, RISCV_T0, 0);
+			riscv_sd (code, RISCV_ZERO, RISCV_T0, 0);
 			riscv_sd (code, RISCV_ZERO, RISCV_T0, sizeof (host_mgreg_t));
 #ifdef TARGET_RISCV32
 			NOT_IMPLEMENTED;
