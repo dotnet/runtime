@@ -130,39 +130,75 @@ namespace System.Globalization
         }
 
         // there are chars that are ignored by ICU hashing algorithm but not ignored by invariant hashing
-        // Control: 1105 (out of 1105)
-        // Format: 697 (out of 731)
-        // OtherPunctuation: 6919 (out of 7004)
-        // SpaceSeparator: 289 (out of 289)
-        // OpenPunctuation: 1275 (out of 1343)
-        // ClosePunctuation: 1241 (out of 1309)
-        // DashPunctuation: 408 (out of 425)
-        // ConnectorPunctuation: 170 (out of 170)
-        // InitialQuotePunctuation: 204 (out of 204)
-        // FinalQuotePunctuation: 170 (out of 170)
-        // LineSeparator: 17 (out of 17)
-        // ParagraphSeparator: 17 (out of 17)
-        // OtherLetter: 34 (out of 784142)
-        // SpacingCombiningMark: 68 (out of 4420)
-        // ModifierLetter: 51 (out of 4012)
-        // EnclosingMark: 85 (out of 221)
-        // NonSpacingMark: 3281 (out of 18105)
-        // we can skip them all (~1027k chars) by checking for the remaining UnicodeCategories (~291k chars)
+        // Control: 59 (out of 1105)
+        // Format: 43 (out of 731)
+        // NonSpacingMark: 195 (out of 18105)
+        // EnclosingMark: 5 (out of 221) // 0488, 0489, A670, A671, A672
+        // ModifierLetter: 2 (out of 4012) // 0640, 07FA
+        // SpacingCombiningMark: 4 (out of 4420) // 0F3E, 0F3F, 1CE1, 1CF7
+        // OtherPunctuation: 4 (out of 7004) // 180A, 1CD3, 10F86 (\uD803\uDC00), 10F87 (\uD803\uDF87)
+        // OtherLetter: 683 (out of 784142)
+        // OtherNotAssigned: 3581 (out of 24718)
+        // UppercaseLetter: 4 (out of 19159) // 10591 (\uD801\uDC91), 10592 (\uD801\uDC92), 10594 (\uD801\uDC94), 10595 (\uD801\uDC95)
+        // LowercaseLetter: 24 (out of 24565) // 10597 -  105AF
+        // OtherNumber: 1 (out of 5100) // 10FC6 (\uD843\uDFC6)
+        // PrivateUse: 614 (out of 108800)
+        // total: 5219 chars
         // skipping more characters than ICU would lead to hashes with smaller distribution and more collisions in hash tables
         // but it makes the behavior correct and consistent with locale-aware equals, which is acceptable tradeoff
-        private static bool ShouldNotBeSkipped(UnicodeCategory category) =>
-            category == UnicodeCategory.LowercaseLetter ||
-            category == UnicodeCategory.UppercaseLetter ||
-            category == UnicodeCategory.TitlecaseLetter ||
-            category == UnicodeCategory.LetterNumber ||
-            category == UnicodeCategory.OtherNumber ||
-            category == UnicodeCategory.Surrogate ||
-            category == UnicodeCategory.PrivateUse ||
-            category == UnicodeCategory.MathSymbol ||
-            category == UnicodeCategory.CurrencySymbol ||
-            category == UnicodeCategory.ModifierSymbol ||
-            category == UnicodeCategory.OtherSymbol ||
-            category == UnicodeCategory.OtherNotAssigned;
+        private static bool ShouldBeSkipped(UnicodeCategory category, char value)
+        {
+            switch (category)
+            {
+                case UnicodeCategory.Control:
+                case UnicodeCategory.Format:
+                case UnicodeCategory.NonSpacingMark:
+                case UnicodeCategory.OtherLetter:
+                case UnicodeCategory.OtherNotAssigned:
+                case UnicodeCategory.PrivateUse:
+                {
+                    return true;
+                }
+                case UnicodeCategory.LowercaseLetter:
+                {
+                    // some skipped unicodes, e.g. from Elbasan script, are surrogates
+                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
+                    return 0x10597 <= codePoint && codePoint <= 0x105AF;
+                }
+                case UnicodeCategory.UppercaseLetter:
+                {
+                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
+                    return 0x10591 <= codePoint && codePoint <= 0x10595;
+                }
+                case UnicodeCategory.OtherNumber:
+                {
+                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
+                    return codePoint == 0x10FC6;
+                }
+                case UnicodeCategory.EnclosingMark:
+                {
+                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
+                    return (codePoint == 0x0488 || codePoint == 0x0489 || codePoint == 0xA670 || codePoint == 0xA671 || codePoint == 0xA672);
+                }
+                case UnicodeCategory.ModifierLetter:
+                {
+                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
+                    return codePoint == 0x0640 || codePoint == 0x07FA;
+                }
+                case UnicodeCategory.SpacingCombiningMark:
+                {
+                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
+                    return codePoint == 0x0F3E || codePoint == 0x0F3F || codePoint == 0x1CE1 || codePoint == 0x1CF7;
+                }
+                case UnicodeCategory.OtherPunctuation:
+                {
+                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
+                    return codePoint == 0x180A || codePoint == 0x1CD3 || codePoint == 0x10F86 || codePoint == 0x10F87;
+                }
+                default:
+                    return false;
+            }
+        }
 
         private ReadOnlySpan<char> SanitizeForInvariantHash(ReadOnlySpan<char> source, CompareOptions options)
         {
@@ -171,10 +207,11 @@ namespace System.Globalization
             foreach (char c in source)
             {
                 UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (ShouldNotBeSkipped(category))
+                if (ShouldBeSkipped(category, c))
                 {
-                    result[resultIndex++] = c;
+                    continue;
                 }
+                result[resultIndex++] = c;
             }
             if ((options & CompareOptions.IgnoreCase) != 0)
             {
