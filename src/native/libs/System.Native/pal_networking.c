@@ -1796,7 +1796,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socket
 #endif
 #ifdef IP_DONTFRAG
                 case SocketOptionName_SO_IP_DONTFRAGMENT:
-                    *optName = IP_DONTFRAG; // option values will also need to be translated
+                    *optName = IP_DONTFRAG;
                     return true;
 #endif
 #ifdef IP_ADD_SOURCE_MEMBERSHIP
