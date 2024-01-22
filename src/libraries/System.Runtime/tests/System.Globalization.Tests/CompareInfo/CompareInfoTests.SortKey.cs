@@ -12,12 +12,6 @@ namespace System.Globalization.Tests
 {
     public class CompareInfoSortKeyTests : CompareInfoTestsBase
     {
-        [ConditionalTheory(typeof(CompareInfoTests), nameof(IsNotWindowsKanaRegressedVersionAndNotHybridGlobalizationOnWasm))]
-        [MemberData(nameof(SortKey_Kana_TestData))]
-        public void SortKeyKanaTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
-        {
-            SortKeyTest(compareInfo, string1, string2, options, expected);
-        }
         public static IEnumerable<object[]> SortKey_TestData()
         {
             CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
@@ -212,8 +206,15 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "", "\u200c", CompareOptions.None, 0 };
         }
 
+        [ConditionalTheory(typeof(CompareInfoTests), nameof(IsNotWindowsKanaRegressedVersionAndNotHybridGlobalizationOnWasm))]
+        [MemberData(nameof(SortKey_Kana_TestData))]
+        public void SortKeyKanaTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
+        {
+            SortKeyTest(compareInfo, string1, string2, options, expected);
+        }
+
         
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))] // ILONA
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(SortKey_TestData))]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
@@ -262,7 +263,7 @@ namespace System.Globalization.Tests
             }
         }
         
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))] // ILONA
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void SortKeyMiscTest()
         {
             CompareInfo ci = new CultureInfo("en-US").CompareInfo;
