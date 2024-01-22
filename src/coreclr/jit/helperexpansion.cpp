@@ -450,17 +450,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
     }
 
-    //
-    // Update loop info
-    //
-    nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-    if (needsSizeCheck)
-    {
-        sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    }
-
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
     assert(BasicBlock::sameEHRegion(prevBb, nullcheckBb));
@@ -693,13 +682,6 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         fgRemoveRefPred(block, prevBb);
         fgAddRefPred(tlsRootNullCondBB, prevBb);
         prevBb->SetTarget(tlsRootNullCondBB);
-
-        //
-        // Update loop info if loop table is known to be valid
-        //
-        tlsRootNullCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-        fastPathBb->bbNatLoopNum        = prevBb->bbNatLoopNum;
-        fallbackBb->bbNatLoopNum        = prevBb->bbNatLoopNum;
 
         // All blocks are expected to be in the same EH region
         assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1080,14 +1062,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     // fallback will just execute first time
     fallbackBb->bbSetRunRarely();
 
-    //
-    // Update loop info if loop table is known to be valid
-    //
-    maxThreadStaticBlocksCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-    threadStaticBlockNullCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastPathBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
-
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
     assert(BasicBlock::sameEHRegion(prevBb, maxThreadStaticBlocksCondBB));
@@ -1449,13 +1423,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     isInitedBb->inheritWeight(prevBb);
     helperCallBb->bbSetRunRarely();
 
-    //
-    // Update loop info if loop table is known to be valid
-    //
-
-    isInitedBb->bbNatLoopNum   = prevBb->bbNatLoopNum;
-    helperCallBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
     assert(BasicBlock::sameEHRegion(prevBb, isInitedBb));
@@ -1794,12 +1761,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     fastpathBb->inheritWeight(lengthCheckBb);
     block->inheritWeight(prevBb);
 
-    //
-    // Update bbNatLoopNum for all new blocks
-    //
-    lengthCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastpathBb->bbNatLoopNum    = prevBb->bbNatLoopNum;
-
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
     assert(BasicBlock::sameEHRegion(prevBb, lengthCheckBb));
@@ -2101,12 +2062,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     lastBb->inheritWeight(firstBb);
 
     //
-    // Update bbNatLoopNum for all new blocks and validate EH regions
+    // Validate EH regions
     //
-    nullcheckBb->bbNatLoopNum        = firstBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum         = firstBb->bbNatLoopNum;
-    typeCheckBb->bbNatLoopNum        = firstBb->bbNatLoopNum;
-    typeCheckSucceedBb->bbNatLoopNum = firstBb->bbNatLoopNum;
     assert(BasicBlock::sameEHRegion(firstBb, lastBb));
     assert(BasicBlock::sameEHRegion(firstBb, nullcheckBb));
     assert(BasicBlock::sameEHRegion(firstBb, fallbackBb));
