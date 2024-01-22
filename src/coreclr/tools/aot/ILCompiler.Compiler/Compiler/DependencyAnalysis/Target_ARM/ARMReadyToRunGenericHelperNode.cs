@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // If there's any invalid entries, we need to test for them
             //
-            // Only do this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
+            // Skip this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
             // flag can change over the course of compilation and the bad slot helper dependency
             // should be reported by someone else - the system should not rely on it coming from here.
             if (!relocsOnly && _hasInvalidEntries)
