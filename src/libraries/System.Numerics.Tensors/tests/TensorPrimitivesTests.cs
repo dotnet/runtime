@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Numerics.Tensors.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97295", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public abstract class TensorPrimitivesTests<T> where T : unmanaged, IEquatable<T>
     {
         #region Abstract Methods Under Test
