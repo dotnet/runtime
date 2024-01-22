@@ -6,9 +6,6 @@
     <GCStressIncompatible>true</GCStressIncompatible>
 
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
-
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/97272 -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
