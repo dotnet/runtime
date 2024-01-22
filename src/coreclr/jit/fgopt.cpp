@@ -4854,9 +4854,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         change   = true;
                         modified = true;
                     }
-                    else if (bFalseDest->TargetIs(bNext) && (bFalseDest != bNext))
+                    else if (bFalseDest->TargetIs(bNext) && (bFalseDest != bNext)) // special case for self jumps
                     {
-                        // Enable fallthrough into false target (avoid loop edge case)
+                        // Enable fallthrough into false target
                         block->SetFalseTarget(bNext);
                         fgRemoveRefPred(bFalseDest, block);
                         fgAddRefPred(bNext, block);
@@ -4902,6 +4902,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     assert(block->TargetIs(bDest));
                 }
 
+                // We might have removed previous/next block, so update those pointers here
+                bPrev = block->Prev();
                 bNext = block->Next();
             }
 
