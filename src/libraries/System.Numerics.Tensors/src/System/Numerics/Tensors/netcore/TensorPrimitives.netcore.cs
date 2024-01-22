@@ -9365,7 +9365,7 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float)) return AdvSimd.FusedMultiplyAdd(addend.AsSingle(), x.AsSingle(), y.AsSingle()).As<float, T>();
             }
 
-            if (AdvSimd.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
             {
                 if (typeof(T) == typeof(double)) return AdvSimd.Arm64.FusedMultiplyAdd(addend.AsDouble(), x.AsDouble(), y.AsDouble()).As<double, T>();
             }
@@ -9872,15 +9872,19 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
-                if (typeof(T) == typeof(float))
+                if (Sse.IsSupported)
                 {
-                    if (Sse.IsSupported) return Sse.Reciprocal(x.AsSingle()).As<float, T>();
-                    if (AdvSimd.IsSupported) return AdvSimd.ReciprocalEstimate(x.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(float)) return Sse.Reciprocal(x.AsSingle()).As<float, T>();
                 }
 
-                if (typeof(T) == typeof(double))
+                if (AdvSimd.IsSupported)
                 {
-                    if (AdvSimd.Arm64.IsSupported) return AdvSimd.Arm64.ReciprocalEstimate(x.AsDouble()).As<double, T>();
+                    if (typeof(T) == typeof(float)) return AdvSimd.ReciprocalEstimate(x.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.ReciprocalEstimate(x.AsDouble()).As<double, T>();
                 }
 
                 return Vector128<T>.One / x;
@@ -9888,9 +9892,9 @@ namespace System.Numerics.Tensors
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
-                if (typeof(T) == typeof(float))
+                if (Avx.IsSupported)
                 {
-                    if (Avx.IsSupported) return Avx.Reciprocal(x.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(float)) return Avx.Reciprocal(x.AsSingle()).As<float, T>();
                 }
 
                 return Vector256<T>.One / x;
@@ -9916,15 +9920,19 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
-                if (typeof(T) == typeof(float))
+                if (Sse.IsSupported)
                 {
-                    if (Sse.IsSupported) return Sse.ReciprocalSqrt(x.AsSingle()).As<float, T>();
-                    if (AdvSimd.IsSupported) return AdvSimd.ReciprocalSquareRootEstimate(x.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(float)) return Sse.ReciprocalSqrt(x.AsSingle()).As<float, T>();
                 }
 
-                if (typeof(T) == typeof(double))
+                if (AdvSimd.IsSupported)
                 {
-                    if (AdvSimd.Arm64.IsSupported) return AdvSimd.Arm64.ReciprocalSquareRootEstimate(x.AsDouble()).As<double, T>();
+                    if (typeof(T) == typeof(float)) return AdvSimd.ReciprocalSquareRootEstimate(x.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.ReciprocalSquareRootEstimate(x.AsDouble()).As<double, T>();
                 }
 
                 return Vector128<T>.One / Vector128.Sqrt(x);
@@ -9932,9 +9940,9 @@ namespace System.Numerics.Tensors
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
-                if (typeof(T) == typeof(float))
+                if (Avx.IsSupported)
                 {
-                    if (Avx.IsSupported) return Avx.ReciprocalSqrt(x.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(float)) return Avx.ReciprocalSqrt(x.AsSingle()).As<float, T>();
                 }
 
                 return Vector256<T>.One / Vector256.Sqrt(x);
@@ -14026,10 +14034,7 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float))
                 {
-                    if (Avx.IsSupported)
-                    {
-                        return Avx.RoundToZero(x.AsSingle()).As<float, T>();
-                    }
+                    if (Avx.IsSupported) return Avx.RoundToZero(x.AsSingle()).As<float, T>();
 
                     return Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(x, Vector256<T>.Zero),
                         Vector256.Floor(x.AsSingle()).As<float, T>(),
@@ -14038,10 +14043,7 @@ namespace System.Numerics.Tensors
 
                 if (typeof(T) == typeof(double))
                 {
-                    if (Avx.IsSupported)
-                    {
-                        return Avx.RoundToZero(x.AsDouble()).As<double, T>();
-                    }
+                    if (Avx.IsSupported) return Avx.RoundToZero(x.AsDouble()).As<double, T>();
 
                     return Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(x, Vector256<T>.Zero),
                         Vector256.Floor(x.AsDouble()).As<double, T>(),
@@ -14055,10 +14057,7 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float))
                 {
-                    if (Avx512F.IsSupported)
-                    {
-                        return Avx512F.RoundScale(x.AsSingle(), 0b11).As<float, T>();
-                    }
+                    if (Avx512F.IsSupported) return Avx512F.RoundScale(x.AsSingle(), 0b11).As<float, T>();
 
                     return Vector512.ConditionalSelect(Vector512.GreaterThanOrEqual(x, Vector512<T>.Zero),
                         Vector512.Floor(x.AsSingle()).As<float, T>(),
@@ -14067,10 +14066,7 @@ namespace System.Numerics.Tensors
 
                 if (typeof(T) == typeof(double))
                 {
-                    if (Avx512F.IsSupported)
-                    {
-                        return Avx512F.RoundScale(x.AsDouble(), 0b11).As<double, T>();
-                    }
+                    if (Avx512F.IsSupported) return Avx512F.RoundScale(x.AsDouble(), 0b11).As<double, T>();
 
                     return Vector512.ConditionalSelect(Vector512.GreaterThanOrEqual(x, Vector512<T>.Zero),
                         Vector512.Floor(x.AsDouble()).As<double, T>(),
