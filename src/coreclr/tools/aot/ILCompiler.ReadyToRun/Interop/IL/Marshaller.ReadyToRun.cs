@@ -144,6 +144,32 @@ namespace Internal.TypeSystem.Interop
             return false;
         }
 
+        public static bool IsMarshallingRequired(MethodSignature methodSig, ModuleDesc moduleContext, UnmanagedCallingConventions callingConvention)
+        {
+            if (callingConvention == UnmanagedCallingConventions.Swift)
+            {
+                // Swift calling convention has strict rules about value types that the JIT does not implement.
+                // Skip stub generation of Swift methods with value types to allow an exception at runtime.
+                foreach (var param in methodSig)
+                {
+                    if (param is { IsValueType: true, IsEnum: false, IsPrimitive: false }
+                        && !MarshalHelpers.IsSwiftIntrinsicValueType(param))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            Marshaller[] marshallers = GetMarshallersForSignature(methodSig, Array.Empty<ParameterMetadata>(), moduleContext);
+            for (int i = 0; i < marshallers.Length; i++)
+            {
+                if (marshallers[i].IsMarshallingRequired())
+                    return true;
+            }
+
+            return false;
+        }
+
         public static bool IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
         {
             if (methodSig.GetStandaloneMethodSignatureCallingConventions() == UnmanagedCallingConventions.Swift)
