@@ -1069,6 +1069,21 @@ namespace System.Numerics.Tensors.Tests
                 }
             });
         }
+
+        [Fact]
+        public void Round_InvalidMode_Throws()
+        {
+            T[] x = new T[10];
+            AssertExtensions.Throws<ArgumentException>("mode", () => TensorPrimitives.Round(x.AsSpan(), (MidpointRounding)(-1), x.AsSpan()));
+            AssertExtensions.Throws<ArgumentException>("mode", () => TensorPrimitives.Round(x.AsSpan(), (MidpointRounding)5, x.AsSpan()));
+        }
+
+        [Fact]
+        public void Round_InvalidDigits_Throws()
+        {
+            T[] x = new T[10];
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("digits", () => TensorPrimitives.Round(x.AsSpan(), -1, x.AsSpan()));
+        }
         #endregion
     }
 
