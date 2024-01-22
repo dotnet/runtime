@@ -10,8 +10,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -292,9 +292,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double CopySign(double x, double y)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
-                return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
+                return Vector128.ConditionalSelect(Vector128.CreateScalarUnsafe(-0.0), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
             }
             else
             {

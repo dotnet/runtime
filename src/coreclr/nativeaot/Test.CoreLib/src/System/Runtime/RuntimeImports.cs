@@ -40,13 +40,14 @@ namespace System.Runtime
             return h;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpRegisterFrozenSegment")]
-        internal static extern IntPtr RhpRegisterFrozenSegment(IntPtr pSegmentStart, IntPtr length);
+        [DllImport(RuntimeLibrary, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern unsafe IntPtr RhRegisterFrozenSegment(void* pSegmentStart, nuint allocSize, nuint commitSize, nuint reservedSize);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpUnregisterFrozenSegment")]
-        internal static extern void RhpUnregisterFrozenSegment(IntPtr pSegmentHandle);
+        [DllImport(RuntimeLibrary, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern unsafe void RhUpdateFrozenSegment(IntPtr seg, void* allocated, void* committed);
+
+        [DllImport(RuntimeLibrary, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void RhUnregisterFrozenSegment(IntPtr pSegmentHandle);
 
         [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -75,15 +76,9 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
         private static extern unsafe object RhNewObject(MethodTable* pEEType);
 
-        internal static unsafe object RhNewObject(EETypePtr pEEType)
-            => RhNewObject(pEEType.ToPointer());
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
         private static extern unsafe Array RhNewArray(MethodTable* pEEType, int length);
-
-        internal static unsafe Array RhNewArray(EETypePtr pEEType, int length)
-            => RhNewArray(pEEType.ToPointer(), length);
 
         [DllImport(RuntimeLibrary)]
         internal static extern unsafe void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);

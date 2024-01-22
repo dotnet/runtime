@@ -3,12 +3,12 @@
 
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -1277,7 +1277,7 @@ namespace System.Data.SqlTypes
             // negate all operands including result.
             if (!fMySignPos)
             {
-                fMySignPos = !fMySignPos;
+                // fMySignPos = !fMySignPos;
                 fOpSignPos = !fOpSignPos;
                 fResSignPos = !fResSignPos;
             }
@@ -2073,7 +2073,7 @@ namespace System.Data.SqlTypes
 
             int ciulU = _bLen;
             int Prec;
-            uint ulRem;
+            // uint ulRem;
 
             if (ciulU == 1)
             {
@@ -2089,7 +2089,7 @@ namespace System.Data.SqlTypes
                 Prec = 0;
                 do
                 {
-                    MpDiv1(rgulU, ref ciulU, 1000000000, out ulRem);
+                    MpDiv1(rgulU, ref ciulU, 1000000000, out _ /* ulRem */);
                     Prec += 9;
                 }
                 while (ciulU > 2);
@@ -2158,7 +2158,7 @@ namespace System.Data.SqlTypes
             int iDataMax = _bLen; // How many UI4s currently in *this
 
             ulong dwlAccum = 0;       // accumulated sum
-            ulong dwlNextAccum = 0;   // accumulation past dwlAccum
+            ulong dwlNextAccum;       // accumulation past dwlAccum
             int iData;              // which UI4 in *This we are on.
 
             Span<uint> rguiData = [_data1, _data2, _data3, _data4];
@@ -2212,7 +2212,7 @@ namespace System.Data.SqlTypes
         {
             ulong dwlDivisor = iDivisor;
             ulong dwlAccum = 0;           //Accumulated sum
-            uint ulQuotientCur = 0;      // Value of the current UI4 of the quotient
+            uint ulQuotientCur;          // Value of the current UI4 of the quotient
             bool fAllZero = true;    // All of the quotient (so far) has been 0
             int iData;              //Which UI4 currently on
 

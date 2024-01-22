@@ -13,9 +13,9 @@
 #pragma warning disable IDE0036, SA1129
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Internal.NativeFormat;
 
@@ -123,7 +123,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ArraySignatureHandle handle)
+        public static implicit operator Handle(ArraySignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -236,7 +236,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ByReferenceSignatureHandle handle)
+        public static implicit operator Handle(ByReferenceSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -348,7 +348,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantBooleanArrayHandle handle)
+        public static implicit operator Handle(ConstantBooleanArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -460,7 +460,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantBooleanValueHandle handle)
+        public static implicit operator Handle(ConstantBooleanValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -584,7 +584,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantBoxedEnumValueHandle handle)
+        public static implicit operator Handle(ConstantBoxedEnumValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -696,7 +696,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantByteArrayHandle handle)
+        public static implicit operator Handle(ConstantByteArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -808,7 +808,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantByteValueHandle handle)
+        public static implicit operator Handle(ConstantByteValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -920,7 +920,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantCharArrayHandle handle)
+        public static implicit operator Handle(ConstantCharArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1032,7 +1032,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantCharValueHandle handle)
+        public static implicit operator Handle(ConstantCharValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1144,7 +1144,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantDoubleArrayHandle handle)
+        public static implicit operator Handle(ConstantDoubleArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1256,7 +1256,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantDoubleValueHandle handle)
+        public static implicit operator Handle(ConstantDoubleValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1378,7 +1378,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantEnumArrayHandle handle)
+        public static implicit operator Handle(ConstantEnumArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1490,7 +1490,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantHandleArrayHandle handle)
+        public static implicit operator Handle(ConstantHandleArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1602,7 +1602,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt16ArrayHandle handle)
+        public static implicit operator Handle(ConstantInt16ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1714,7 +1714,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt16ValueHandle handle)
+        public static implicit operator Handle(ConstantInt16ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1826,7 +1826,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt32ArrayHandle handle)
+        public static implicit operator Handle(ConstantInt32ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -1938,7 +1938,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt32ValueHandle handle)
+        public static implicit operator Handle(ConstantInt32ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2050,7 +2050,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt64ArrayHandle handle)
+        public static implicit operator Handle(ConstantInt64ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2162,7 +2162,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantInt64ValueHandle handle)
+        public static implicit operator Handle(ConstantInt64ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2264,7 +2264,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantReferenceValueHandle handle)
+        public static implicit operator Handle(ConstantReferenceValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2376,7 +2376,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantSByteArrayHandle handle)
+        public static implicit operator Handle(ConstantSByteArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2488,7 +2488,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantSByteValueHandle handle)
+        public static implicit operator Handle(ConstantSByteValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2600,7 +2600,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantSingleArrayHandle handle)
+        public static implicit operator Handle(ConstantSingleArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2712,7 +2712,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantSingleValueHandle handle)
+        public static implicit operator Handle(ConstantSingleValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2825,7 +2825,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantStringArrayHandle handle)
+        public static implicit operator Handle(ConstantStringArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -2937,7 +2937,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantStringValueHandle handle)
+        public static implicit operator Handle(ConstantStringValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3049,7 +3049,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt16ArrayHandle handle)
+        public static implicit operator Handle(ConstantUInt16ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3161,7 +3161,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt16ValueHandle handle)
+        public static implicit operator Handle(ConstantUInt16ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3273,7 +3273,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt32ArrayHandle handle)
+        public static implicit operator Handle(ConstantUInt32ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3385,7 +3385,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt32ValueHandle handle)
+        public static implicit operator Handle(ConstantUInt32ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3497,7 +3497,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt64ArrayHandle handle)
+        public static implicit operator Handle(ConstantUInt64ArrayHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3609,7 +3609,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ConstantUInt64ValueHandle handle)
+        public static implicit operator Handle(ConstantUInt64ValueHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3743,7 +3743,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(CustomAttributeHandle handle)
+        public static implicit operator Handle(CustomAttributeHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -3896,7 +3896,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(EventHandle handle)
+        public static implicit operator Handle(EventHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4059,7 +4059,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(FieldHandle handle)
+        public static implicit operator Handle(FieldHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4172,7 +4172,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(FieldSignatureHandle handle)
+        public static implicit operator Handle(FieldSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4284,7 +4284,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(FunctionPointerSignatureHandle handle)
+        public static implicit operator Handle(FunctionPointerSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4447,7 +4447,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(GenericParameterHandle handle)
+        public static implicit operator Handle(GenericParameterHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4581,7 +4581,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MemberReferenceHandle handle)
+        public static implicit operator Handle(MemberReferenceHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4753,7 +4753,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MethodHandle handle)
+        public static implicit operator Handle(MethodHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4877,7 +4877,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MethodInstantiationHandle handle)
+        public static implicit operator Handle(MethodInstantiationHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -4999,7 +4999,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MethodSemanticsHandle handle)
+        public static implicit operator Handle(MethodSemanticsHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5154,7 +5154,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MethodSignatureHandle handle)
+        public static implicit operator Handle(MethodSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5266,7 +5266,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(MethodTypeVariableSignatureHandle handle)
+        public static implicit operator Handle(MethodTypeVariableSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5400,7 +5400,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ModifiedTypeHandle handle)
+        public static implicit operator Handle(ModifiedTypeHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5544,7 +5544,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(NamedArgumentHandle handle)
+        public static implicit operator Handle(NamedArgumentHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5697,7 +5697,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(NamespaceDefinitionHandle handle)
+        public static implicit operator Handle(NamespaceDefinitionHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5820,7 +5820,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(NamespaceReferenceHandle handle)
+        public static implicit operator Handle(NamespaceReferenceHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -5973,7 +5973,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ParameterHandle handle)
+        public static implicit operator Handle(ParameterHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6086,7 +6086,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(PointerSignatureHandle handle)
+        public static implicit operator Handle(PointerSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6249,7 +6249,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(PropertyHandle handle)
+        public static implicit operator Handle(PropertyHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6383,7 +6383,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(PropertySignatureHandle handle)
+        public static implicit operator Handle(PropertySignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6505,7 +6505,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(QualifiedFieldHandle handle)
+        public static implicit operator Handle(QualifiedFieldHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6627,7 +6627,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(QualifiedMethodHandle handle)
+        public static implicit operator Handle(QualifiedMethodHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -6740,7 +6740,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(SZArraySignatureHandle handle)
+        public static implicit operator Handle(SZArraySignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7002,7 +7002,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ScopeDefinitionHandle handle)
+        public static implicit operator Handle(ScopeDefinitionHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7184,7 +7184,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(ScopeReferenceHandle handle)
+        public static implicit operator Handle(ScopeReferenceHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7438,7 +7438,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeDefinitionHandle handle)
+        public static implicit operator Handle(TypeDefinitionHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7570,7 +7570,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeForwarderHandle handle)
+        public static implicit operator Handle(TypeForwarderHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7694,7 +7694,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeInstantiationSignatureHandle handle)
+        public static implicit operator Handle(TypeInstantiationSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7817,7 +7817,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeReferenceHandle handle)
+        public static implicit operator Handle(TypeReferenceHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -7930,7 +7930,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeSpecificationHandle handle)
+        public static implicit operator Handle(TypeSpecificationHandle handle)
         {
             return new Handle(handle._value);
         } // Handle
@@ -8042,7 +8042,7 @@ namespace Internal.Metadata.NativeFormat
             _Validate();
         }
 
-        public static implicit operator  Handle(TypeVariableSignatureHandle handle)
+        public static implicit operator Handle(TypeVariableSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // Handle

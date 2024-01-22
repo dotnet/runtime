@@ -126,31 +126,33 @@ jobs:
         perfForkToUse: ${{ parameters.perfForkToUse }}
 
   #run mono wasm aot microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
-      buildconfig: release
-      runtimeflavor: wasm
-      platforms:
-      - linux_x64
-      jobparameters:
-        testgroup: perf
-        livelibrariesbuildconfig: Release
-        skipLiveLibrariesDownload: true
-        runtimetype: wasm
-        codegentype: 'aot'
-        projectfile: microbenchmarks.proj
-        runkind: micro
-        runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        javascriptEngine: 'v8'
-        # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
-        #additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
-        collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
-        compare: ${{ parameters.compare }}
-        onlySanityCheck: ${{ parameters.onlySanityCheck }}
-        downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
-        perfForkToUse: ${{ parameters.perfForkToUse }}
+  # Disabled for runtime-wasm-perf on PRs due to https://github.com/dotnet/runtime/issues/95101
+  - ${{if not(in(variables['Build.DefinitionName'], 'runtime-wasm-perf')) }}:
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
+        buildconfig: release
+        runtimeflavor: wasm
+        platforms:
+        - linux_x64
+        jobparameters:
+          testgroup: perf
+          livelibrariesbuildconfig: Release
+          skipLiveLibrariesDownload: true
+          runtimetype: wasm
+          codegentype: 'aot'
+          projectfile: microbenchmarks.proj
+          runkind: micro
+          runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+          logicalmachine: 'perftiger'
+          javascriptEngine: 'v8'
+          # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
+          #additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
+          collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
+          compare: ${{ parameters.compare }}
+          onlySanityCheck: ${{ parameters.onlySanityCheck }}
+          downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+          perfForkToUse: ${{ parameters.perfForkToUse }}
 
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml

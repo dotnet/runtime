@@ -20,9 +20,9 @@ namespace System.Collections.Tests
 
         protected override bool ResetImplemented => true;
 
-        protected override ModifyOperation ModifyEnumeratorThrows => PlatformDetection.IsNetFramework ? base.ModifyEnumeratorThrows : (base.ModifyEnumeratorAllowed & ~(ModifyOperation.Remove | ModifyOperation.Clear));
+        protected override ModifyOperation ModifyEnumeratorThrows => base.ModifyEnumeratorAllowed & ~(ModifyOperation.Remove | ModifyOperation.Clear);
 
-        protected override ModifyOperation ModifyEnumeratorAllowed => PlatformDetection.IsNetFramework ? base.ModifyEnumeratorAllowed : ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
+        protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
 
         protected override ISet<T> GenericISetFactory()
         {
@@ -126,6 +126,33 @@ namespace System.Collections.Tests
             Assert.True(set.SetEquals(enumerable));
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void HashSet_CreateWithCapacity_CapacityAtLeastPassedValue(int capacity)
+        {
+            var hashSet = new HashSet<T>(capacity);
+            Assert.True(capacity <= hashSet.Capacity);
+        }
+
+        #endregion
+
+        #region Properties
+
+        [Fact]
+        public void HashSetResized_CapacityChanged()
+        {
+            var hashSet = (HashSet<T>)GenericISetFactory(3);
+            int initialCapacity = hashSet.Capacity;
+
+            int seed = 85877;
+            hashSet.Add(CreateT(seed++));
+
+            int afterCapacity = hashSet.Capacity;
+
+            Assert.True(afterCapacity > initialCapacity);
+        }
+
         #endregion
 
         #region RemoveWhere
@@ -174,6 +201,24 @@ namespace System.Collections.Tests
         #endregion
 
         #region TrimExcess
+
+        [Theory]
+        [InlineData(1, -1)]
+        [InlineData(2, 1)]
+        public void HashSet_TrimAccessWithInvalidArg_ThrowOutOfRange(int size, int newCapacity)
+        {
+            HashSet<T> hashSet = (HashSet<T>)GenericISetFactory(size);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => hashSet.TrimExcess(newCapacity));
+        }
+
+        [Fact]
+        public void TrimExcess_Generic_LargeInitialCapacity_TrimReducesSize()
+        {
+            var set = new HashSet<T>(20);
+            set.TrimExcess(7);
+            Assert.Equal(7, set.Capacity);
+        }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]

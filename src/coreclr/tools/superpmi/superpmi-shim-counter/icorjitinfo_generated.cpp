@@ -19,6 +19,13 @@ bool interceptor_ICJI::isIntrinsic(
     return original_ICorJitInfo->isIntrinsic(ftn);
 }
 
+bool interceptor_ICJI::notifyMethodInfoUsage(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    mcs->AddCall("notifyMethodInfoUsage");
+    return original_ICorJitInfo->notifyMethodInfoUsage(ftn);
+}
+
 uint32_t interceptor_ICJI::getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -768,6 +775,13 @@ void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
 {
     mcs->AddCall("getThreadLocalStaticBlocksInfo");
     original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
+}
+
+void interceptor_ICJI::getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+{
+    mcs->AddCall("getThreadLocalStaticInfo_NativeAOT");
+    original_ICorJitInfo->getThreadLocalStaticInfo_NativeAOT(pInfo);
 }
 
 bool interceptor_ICJI::isFieldStatic(

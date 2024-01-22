@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
 using System.Collections;
 using System.ComponentModel;
+using System.Reflection;
 
 namespace System.Xml.Serialization
 {

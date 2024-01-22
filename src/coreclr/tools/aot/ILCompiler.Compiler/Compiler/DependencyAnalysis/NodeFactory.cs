@@ -304,6 +304,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelegateTargetVirtualMethodNode(method);
             });
 
+            _reflectedDelegates = new NodeCache<TypeDesc, ReflectedDelegateNode>(type =>
+            {
+                return new ReflectedDelegateNode(type);
+            });
+
             _reflectedMethods = new NodeCache<MethodDesc, ReflectedMethodNode>(method =>
             {
                 return new ReflectedMethodNode(method);
@@ -316,6 +321,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _reflectedTypes = new NodeCache<TypeDesc, ReflectedTypeNode>(type =>
             {
+                TypeSystemContext.EnsureLoadableType(type);
                 return new ReflectedTypeNode(type);
             });
 
@@ -995,6 +1001,16 @@ namespace ILCompiler.DependencyAnalysis
             return _delegateTargetMethods.GetOrAdd(method);
         }
 
+        private ReflectedDelegateNode _unknownReflectedDelegate = new ReflectedDelegateNode(null);
+        private NodeCache<TypeDesc, ReflectedDelegateNode> _reflectedDelegates;
+        public ReflectedDelegateNode ReflectedDelegate(TypeDesc type)
+        {
+            if (type == null)
+                return _unknownReflectedDelegate;
+
+            return _reflectedDelegates.GetOrAdd(type);
+        }
+
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
         public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
@@ -1237,6 +1253,13 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningType, allocationSiteId, data));
         }
 
+        public FrozenRuntimeTypeNode SerializedMaximallyConstructableRuntimeTypeObject(TypeDesc type)
+        {
+            if (ConstructedEETypeNode.CreationAllowed(type))
+                return SerializedConstructedRuntimeTypeObject(type);
+            return SerializedNecessaryRuntimeTypeObject(type);
+        }
+
         private NodeCache<TypeDesc, FrozenRuntimeTypeNode> _frozenConstructedRuntimeTypeNodes;
 
         public FrozenRuntimeTypeNode SerializedConstructedRuntimeTypeObject(TypeDesc type)
@@ -1319,7 +1342,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 
-        protected internal TlsRootNode TlsRoot = new TlsRootNode();
+        public TlsRootNode TlsRoot = new TlsRootNode();
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {

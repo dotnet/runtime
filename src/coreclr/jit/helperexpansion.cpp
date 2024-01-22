@@ -34,6 +34,55 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
 };
 
 //------------------------------------------------------------------------------
+// SplitAtTreeAndReplaceItWithLocal : Split block at the given tree and replace it with a local
+//    See comments in gtSplitTree and fgSplitBlockBeforeTree
+//    TODO: use this function in more places in this file.
+//
+// Arguments:
+//    comp        - Compiler instance
+//    block       - Block to split
+//    stmt        - Statement containing the tree to split at
+//    tree        - Tree to split at
+//    topBlock    - [out] Top block after the split
+//    bottomBlock - [out] Bottom block after the split
+//
+// Return Value:
+//    Number of the local that replaces the tree
+//
+static unsigned SplitAtTreeAndReplaceItWithLocal(
+    Compiler* comp, BasicBlock* block, Statement* stmt, GenTree* tree, BasicBlock** topBlock, BasicBlock** bottomBlock)
+{
+    BasicBlock* prevBb       = block;
+    GenTree**   callUse      = nullptr;
+    Statement*  newFirstStmt = nullptr;
+    block                    = comp->fgSplitBlockBeforeTree(block, stmt, tree, &newFirstStmt, &callUse);
+    assert(prevBb != nullptr && block != nullptr);
+
+    // Block ops inserted by the split need to be morphed here since we are after morph.
+    // We cannot morph stmt yet as we may modify it further below, and the morphing
+    // could invalidate callUse
+    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+    {
+        comp->fgMorphStmtBlockOps(block, newFirstStmt);
+        newFirstStmt = newFirstStmt->GetNextStmt();
+    }
+
+    // Grab a temp to store the result.
+    const unsigned tmpNum         = comp->lvaGrabTemp(true DEBUGARG("replacement local"));
+    comp->lvaTable[tmpNum].lvType = tree->TypeGet();
+
+    // Replace the original call with that temp
+    *callUse = comp->gtNewLclvNode(tmpNum, tree->TypeGet());
+
+    comp->fgMorphStmtBlockOps(block, stmt);
+    comp->gtUpdateStmtSideEffects(stmt);
+
+    *topBlock    = prevBb;
+    *bottomBlock = block;
+    return tmpNum;
+}
+
+//------------------------------------------------------------------------------
 // gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
 //
 // Arguments:
@@ -252,7 +301,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 
     // Non-dynamic expansion case (no size check):
     //
-    // prevBb(BBJ_NONE):                    [weight: 1.0]
+    // prevBb(BBJ_ALWAYS):                  [weight: 1.0]
     //     ...
     //
     // nullcheckBb(BBJ_COND):               [weight: 1.0]
@@ -263,7 +312,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     //     rtLookupLcl = *fastPathValue;
     //     goto block;
     //
-    // fallbackBb(BBJ_NONE):                [weight: 0.2]
+    // fallbackBb(BBJ_ALWAYS):              [weight: 0.2]
     //     rtLookupLcl = HelperCall();
     //
     // block(...):                          [weight: 1.0]
@@ -285,21 +334,28 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 
     // Fallback basic block
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), call);
-    BasicBlock* fallbackBb = fgNewBBFromTreeAfter(BBJ_NONE, nullcheckBb, fallbackValueDef, debugInfo, nullptr, true);
+    BasicBlock* fallbackBb =
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, nullcheckBb->Next(), true);
 
-    // Set nullcheckBb's real jump target
-    nullcheckBb->SetJumpDest(fallbackBb);
+    assert(fallbackBb->JumpsToNext());
+    fallbackBb->SetFlags(BBF_NONE_QUIRK);
+
+    // Set nullcheckBb's true jump target
+    nullcheckBb->SetTrueTarget(fallbackBb);
 
     // Fast-path basic block
     GenTree*    fastpathValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), fastPathValueClone);
     BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fastpathValueDef, debugInfo, block);
+
+    // Set nullcheckBb's false jump target
+    nullcheckBb->SetFalseTarget(fastPathBb);
 
     BasicBlock* sizeCheckBb = nullptr;
     if (needsSizeCheck)
     {
         // Dynamic expansion case (sizeCheckBb is added and some preds are changed):
         //
-        // prevBb(BBJ_NONE):                    [weight: 1.0]
+        // prevBb(BBJ_ALWAYS):                  [weight: 1.0]
         //
         // sizeCheckBb(BBJ_COND):               [weight: 1.0]
         //     if (sizeValue <= offsetValue)
@@ -314,7 +370,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         //     rtLookupLcl = *fastPathValue;
         //     goto block;
         //
-        // fallbackBb(BBJ_NONE):                [weight: 0.36]
+        // fallbackBb(BBJ_ALWAYS):              [weight: 0.36]
         //     rtLookupLcl = HelperCall();
         //
         // block(...):                          [weight: 1.0]
@@ -335,6 +391,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         GenTree* jtrue = gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck);
         // sizeCheckBb fails - jump to fallbackBb
         sizeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo, fallbackBb);
+        sizeCheckBb->SetFalseTarget(nullcheckBb);
     }
 
     //
@@ -343,10 +400,12 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     fgRemoveRefPred(block, prevBb);
     fgAddRefPred(block, fastPathBb);
     fgAddRefPred(block, fallbackBb);
+    assert(prevBb->KindIs(BBJ_ALWAYS));
 
     if (needsSizeCheck)
     {
         // sizeCheckBb is the first block after prevBb
+        prevBb->SetTarget(sizeCheckBb);
         fgAddRefPred(sizeCheckBb, prevBb);
         // sizeCheckBb flows into nullcheckBb in case if the size check passes
         fgAddRefPred(nullcheckBb, sizeCheckBb);
@@ -359,6 +418,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     else
     {
         // nullcheckBb is the first block after prevBb
+        prevBb->SetTarget(nullcheckBb);
         fgAddRefPred(nullcheckBb, prevBb);
         // No size check, nullcheckBb jumps to fast path
         fgAddRefPred(fastPathBb, nullcheckBb);
@@ -388,17 +448,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
         // 20% chance we fail nullcheck (TODO: Consider making it cold (0%))
         fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
-    }
-
-    //
-    // Update loop info
-    //
-    nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-    if (needsSizeCheck)
-    {
-        sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
     }
 
     // All blocks are expected to be in the same EH region
@@ -431,6 +480,14 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
         return result;
     }
 
+    // Always expand for NativeAOT because the slow TLS access helper will not be generated by NativeAOT
+    const bool isNativeAOT = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    if (isNativeAOT)
+    {
+        return fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCallNativeAOT>(
+            false /* expand rarely run blocks for NativeAOT */);
+    }
+
     if (opts.OptimizationDisabled())
     {
         JITDUMP("Optimizations aren't allowed - bail out.\n")
@@ -450,6 +507,205 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 }
 
 //------------------------------------------------------------------------------
+// fgExpandThreadLocalAccessForCallNativeAOT : Expand the access of tlsRoot needed
+//  to access fields marked with [ThreadLocal].
+//
+// Arguments:
+//    pBlock - Block containing the helper call to expand. If expansion is performed,
+//             this is updated to the new block that was an outcome of block splitting.
+//    stmt   - Statement containing the helper call
+//    call   - The helper call
+//
+//
+// Returns:
+//    true if we expanded any field access, false otherwise.
+//
+bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
+{
+    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    BasicBlock*     block  = *pBlock;
+    CorInfoHelpFunc helper = call->GetHelperNum();
+
+    const bool isExpTLSFieldAccess = (helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR);
+    if (!call->IsHelperCall() || !isExpTLSFieldAccess)
+    {
+        return false;
+    }
+
+    JITDUMP("Expanding thread static local access for [%06d] in " FMT_BB ":\n", dspTreeID(call), block->bbNum);
+    DISPTREE(call);
+    JITDUMP("\n");
+
+    CORINFO_THREAD_STATIC_INFO_NATIVEAOT threadStaticInfo;
+    memset(&threadStaticInfo, 0, sizeof(CORINFO_THREAD_STATIC_INFO_NATIVEAOT));
+
+    info.compCompHnd->getThreadLocalStaticInfo_NativeAOT(&threadStaticInfo);
+
+    JITDUMP("tlsRootObject= %p\n", dspPtr(threadStaticInfo.tlsRootObject.addr));
+    JITDUMP("tlsIndexObject= %p\n", dspPtr(threadStaticInfo.tlsIndexObject.addr));
+    JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", dspOffset(threadStaticInfo.offsetOfThreadLocalStoragePointer));
+    JITDUMP("threadStaticBaseSlow= %p\n", dspPtr(threadStaticInfo.threadStaticBaseSlow.addr));
+
+    // Split block right before the call tree
+    BasicBlock* prevBb       = block;
+    GenTree**   callUse      = nullptr;
+    Statement*  newFirstStmt = nullptr;
+    DebugInfo   debugInfo    = stmt->GetDebugInfo();
+    block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+    *pBlock                  = block;
+    var_types callType       = call->TypeGet();
+    assert(prevBb != nullptr && block != nullptr);
+
+    unsigned finalLclNum = lvaGrabTemp(true DEBUGARG("Final offset"));
+    // Note, `tlsRoot` refers to the TLS blob object, which is an unpinned managed object,
+    // thus the type of the local is TYP_REF
+    lvaTable[finalLclNum].lvType = TYP_REF;
+    GenTree* finalLcl            = gtNewLclVarNode(finalLclNum);
+
+    // Block ops inserted by the split need to be morphed here since we are after morph.
+    // We cannot morph stmt yet as we may modify it further below, and the morphing
+    // could invalidate callUse.
+    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+    {
+        fgMorphStmtBlockOps(block, newFirstStmt);
+        newFirstStmt = newFirstStmt->GetNextStmt();
+    }
+
+    if (TargetOS::IsWindows)
+    {
+#ifdef TARGET_64BIT
+        // prevBb (BBJ_NONE):                                               [weight: 1.0]
+        //      ...
+        //
+        // tlsRootNullCondBB (BBJ_COND):                                    [weight: 1.0]
+        //      fastPathValue = [tlsRootAddress]
+        //      if (fastPathValue != nullptr)
+        //          goto fastPathBb;
+        //
+        // fallbackBb (BBJ_ALWAYS):                                         [weight: 0]
+        //      tlsRoot = HelperCall();
+        //      goto block;
+        //
+        // fastPathBb(BBJ_ALWAYS):                                          [weight: 1.0]
+        //      tlsRoot = fastPathValue;
+        //
+        // block (...):                                                     [weight: 1.0]
+        //      use(tlsRoot);
+        // ...
+
+        // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
+        GenTree* tlsValue = gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+        tlsValue          = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
+
+        GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_OBJ_HDL);
+        dllRef          = gtNewIndir(TYP_INT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        dllRef          = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
+
+        // Add the dllRef to produce thread local storage reference for coreclr
+        tlsValue = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
+
+        // Base of coreclr's thread local storage
+        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
+
+        // This resolves to an offset which is TYP_INT
+        GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject.handle, TYP_INT);
+        tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET;
+
+        // Add the tlsValue and tlsRootOffset to produce tlsRootAddr.
+        GenTree* tlsRootAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, tlsRootOffset);
+
+        // Cache the TlsRootAddr value
+        unsigned tlsRootAddrLclNum         = lvaGrabTemp(true DEBUGARG("TlsRootAddr access"));
+        lvaTable[tlsRootAddrLclNum].lvType = TYP_I_IMPL;
+        GenTree* tlsRootAddrDef            = gtNewStoreLclVarNode(tlsRootAddrLclNum, tlsRootAddr);
+        GenTree* tlsRootAddrUse            = gtNewLclVarNode(tlsRootAddrLclNum);
+
+        // See comments near finalLclNum above regarding TYP_REF
+        GenTree* tlsRootVal = gtNewIndir(TYP_REF, tlsRootAddrUse, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        GenTree* tlsRootDef = gtNewStoreLclVarNode(finalLclNum, tlsRootVal);
+
+        GenTree* tlsRootNullCond = gtNewOperNode(GT_NE, TYP_INT, gtCloneExpr(finalLcl), gtNewIconNode(0, TYP_I_IMPL));
+        tlsRootNullCond          = gtNewOperNode(GT_JTRUE, TYP_VOID, tlsRootNullCond);
+
+        // tlsRootNullCondBB
+        BasicBlock* tlsRootNullCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsRootAddrDef, debugInfo);
+        fgInsertStmtAfter(tlsRootNullCondBB, tlsRootNullCondBB->firstStmt(), fgNewStmtFromTree(tlsRootNullCond));
+        fgInsertStmtAfter(tlsRootNullCondBB, tlsRootNullCondBB->firstStmt(), fgNewStmtFromTree(tlsRootDef));
+
+        CORINFO_CONST_LOOKUP threadStaticSlowHelper = threadStaticInfo.threadStaticBaseSlow;
+
+        // See comments near finalLclNum above regarding TYP_REF
+        GenTreeCall* slowHelper =
+            gtNewIndCallNode(gtNewIconHandleNode((size_t)threadStaticSlowHelper.addr, GTF_ICON_TLS_HDL), TYP_REF);
+        GenTree* helperArg = gtClone(tlsRootAddrUse);
+        slowHelper->gtArgs.PushBack(this, NewCallArg::Primitive(helperArg));
+        fgMorphArgs(slowHelper);
+
+        // fallbackBb
+        GenTree*    fallbackValueDef = gtNewStoreLclVarNode(finalLclNum, slowHelper);
+        BasicBlock* fallbackBb =
+            fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, block, true);
+
+        GenTree*    fastPathValueDef = gtNewStoreLclVarNode(finalLclNum, gtCloneExpr(finalLcl));
+        BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
+
+        *callUse = finalLcl;
+
+        fgMorphStmtBlockOps(block, stmt);
+        gtUpdateStmtSideEffects(stmt);
+
+        //
+        // Update preds in all new blocks
+        //
+        fgAddRefPred(fallbackBb, tlsRootNullCondBB);
+        fgAddRefPred(fastPathBb, tlsRootNullCondBB);
+
+        fgAddRefPred(block, fallbackBb);
+        fgAddRefPred(block, fastPathBb);
+
+        tlsRootNullCondBB->SetTrueTarget(fastPathBb);
+        tlsRootNullCondBB->SetFalseTarget(fallbackBb);
+
+        // Inherit the weights
+        block->inheritWeight(prevBb);
+        tlsRootNullCondBB->inheritWeight(prevBb);
+        fastPathBb->inheritWeight(prevBb);
+
+        // fallback will just execute first time
+        fallbackBb->bbSetRunRarely();
+
+        fgRemoveRefPred(block, prevBb);
+        fgAddRefPred(tlsRootNullCondBB, prevBb);
+        prevBb->SetTarget(tlsRootNullCondBB);
+
+        // All blocks are expected to be in the same EH region
+        assert(BasicBlock::sameEHRegion(prevBb, block));
+        assert(BasicBlock::sameEHRegion(prevBb, tlsRootNullCondBB));
+        assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
+
+        JITDUMP("tlsRootNullCondBB: " FMT_BB "\n", tlsRootNullCondBB->bbNum);
+        JITDUMP("fallbackBb: " FMT_BB "\n", fallbackBb->bbNum);
+        JITDUMP("fastPathBb: " FMT_BB "\n", fastPathBb->bbNum);
+#else
+        unreached();
+
+#endif // TARGET_64BIT
+
+        return true;
+    }
+    else
+    {
+        unreached();
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
 // fgExpandThreadLocalAccessForCall : Expand the CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
 //  or CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, that access fields marked with [ThreadLocal].
 //
@@ -461,7 +717,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 //
 //
 // Returns:
-//    PhaseStatus indicating what, if anything, was changed.
+//    true if we expanded any field access, false otherwise.
 //
 // Notes:
 //    A cache is stored in thread local storage (TLS) of coreclr. It maps the typeIndex (embedded in
@@ -474,6 +730,8 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 //
 bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
+    assert(!opts.IsReadyToRun());
+
     BasicBlock* block = *pBlock;
 
     CorInfoHelpFunc helper = call->GetHelperNum();
@@ -483,8 +741,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     {
         return false;
     }
-
-    assert(!opts.IsReadyToRun());
 
     if (TargetOS::IsUnix)
     {
@@ -561,19 +817,17 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     fgMorphStmtBlockOps(block, stmt);
     gtUpdateStmtSideEffects(stmt);
 
-    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
-    GenTree* tlsValue                        = nullptr;
-    unsigned tlsLclNum                       = lvaGrabTemp(true DEBUGARG("TLS access"));
-    lvaTable[tlsLclNum].lvType               = TYP_I_IMPL;
-    GenTree* maxThreadStaticBlocksValue      = nullptr;
-    GenTree* threadStaticBlocksValue         = nullptr;
-    GenTree* tlsValueDef                     = nullptr;
+    GenTree* tlsValue                   = nullptr;
+    unsigned tlsLclNum                  = lvaGrabTemp(true DEBUGARG("TLS access"));
+    lvaTable[tlsLclNum].lvType          = TYP_I_IMPL;
+    GenTree* maxThreadStaticBlocksValue = nullptr;
+    GenTree* threadStaticBlocksValue    = nullptr;
+    GenTree* tlsValueDef                = nullptr;
 
     if (TargetOS::IsWindows)
     {
         size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
         GenTree* dllRef        = nullptr;
-
         if (tlsIndexValue != 0)
         {
             dllRef = gtNewIconHandleNode(tlsIndexValue * TARGET_POINTER_SIZE, GTF_ICON_TLS_HDL);
@@ -592,19 +846,19 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Base of coreclr's thread local storage
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
     }
-    else if (TargetOS::IsMacOS)
+    else if (TargetOS::IsApplePlatform)
     {
-        // For OSX x64/arm64, we need to get the address of relevant __thread_vars section of
+        // For Apple x64/arm64, we need to get the address of relevant __thread_vars section of
         // the thread local variable `t_ThreadStatics`. Address of `tlv_get_address` is stored
         // in this entry, which we dereference and invoke it, passing the __thread_vars address
         // present in `threadVarsSection`.
         //
-        // Code sequence to access thread local variable on osx/x64:
+        // Code sequence to access thread local variable on Apple/x64:
         //
         //      mov rdi, threadVarsSection
         //      call     [rdi]
         //
-        // Code sequence to access thread local variable on osx/arm64:
+        // Code sequence to access thread local variable on Apple/arm64:
         //
         //      mov x0, threadVarsSection
         //      mov x1, [x0]
@@ -693,6 +947,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     threadStaticBlocksValue = gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
+    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
     GenTree* maxThreadStaticBlocksCond =
         gtNewOperNode(GT_LT, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
     maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
@@ -715,7 +970,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         gtNewOperNode(GT_NE, TYP_INT, threadStaticBlockBaseLclValueUse, gtNewIconNode(0, TYP_I_IMPL));
     threadStaticBlockNullCond = gtNewOperNode(GT_JTRUE, TYP_VOID, threadStaticBlockNullCond);
 
-    // prevBb (BBJ_NONE):                                               [weight: 1.0]
+    // prevBb (BBJ_ALWAYS):                                             [weight: 1.0]
     //      ...
     //
     // maxThreadStaticBlocksCondBB (BBJ_COND):                          [weight: 1.0]
@@ -773,15 +1028,19 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
     BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
 
-    // Set maxThreadStaticBlocksCondBB's real jump target
-    maxThreadStaticBlocksCondBB->SetJumpDest(fallbackBb);
+    // Set maxThreadStaticBlocksCondBB's jump targets
+    maxThreadStaticBlocksCondBB->SetTrueTarget(fallbackBb);
+    maxThreadStaticBlocksCondBB->SetFalseTarget(threadStaticBlockNullCondBB);
 
-    // Set threadStaticBlockNullCondBB's real jump target
-    threadStaticBlockNullCondBB->SetJumpDest(fastPathBb);
+    // Set threadStaticBlockNullCondBB's jump targets
+    threadStaticBlockNullCondBB->SetTrueTarget(fastPathBb);
+    threadStaticBlockNullCondBB->SetFalseTarget(fallbackBb);
 
     //
     // Update preds in all new blocks
     //
+    assert(prevBb->KindIs(BBJ_ALWAYS));
+    prevBb->SetTarget(maxThreadStaticBlocksCondBB);
     fgRemoveRefPred(block, prevBb);
     fgAddRefPred(maxThreadStaticBlocksCondBB, prevBb);
 
@@ -802,14 +1061,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     // fallback will just execute first time
     fallbackBb->bbSetRunRarely();
-
-    //
-    // Update loop info if loop table is known to be valid
-    //
-    maxThreadStaticBlocksCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-    threadStaticBlockNullCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastPathBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -852,8 +1103,7 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
 
     if ((result == PhaseStatus::MODIFIED_EVERYTHING) && opts.OptimizationEnabled())
     {
-        fgReorderBlocks(/* useProfileData */ false);
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+        fgRenumberBlocks();
     }
 
     return result;
@@ -1086,7 +1336,9 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     // Fallback basic block
     // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
     // that only accepts a single argument
-    BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, call, debugInfo, nullptr, true);
+    BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, call, debugInfo, isInitedBb->Next(), true);
+    assert(helperCallBb->JumpsToNext());
+    helperCallBb->SetFlags(BBF_NONE_QUIRK);
 
     GenTree* replacementNode = nullptr;
     if (retValKind == SHRV_STATIC_BASE_PTR)
@@ -1126,14 +1378,14 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     // Final block layout looks like this:
     //
-    // prevBb(BBJ_NONE):                    [weight: 1.0]
+    // prevBb(BBJ_ALWAYS):                  [weight: 1.0]
     //     ...
     //
     // isInitedBb(BBJ_COND):                [weight: 1.0]
     //     if (isInited)
     //         goto block;
     //
-    // helperCallBb(BBJ_NONE):              [weight: 0.0]
+    // helperCallBb(BBJ_ALWAYS):            [weight: 0.0]
     //     helperCall();
     //
     // block(...):                          [weight: 1.0]
@@ -1152,10 +1404,15 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     fgAddRefPred(block, isInitedBb);
     fgAddRefPred(block, helperCallBb);
 
-    // prevBb always flow into isInitedBb
+    // prevBb always flows into isInitedBb
+    assert(prevBb->KindIs(BBJ_ALWAYS));
+    prevBb->SetTarget(isInitedBb);
+    prevBb->SetFlags(BBF_NONE_QUIRK);
+    assert(prevBb->JumpsToNext());
     fgAddRefPred(isInitedBb, prevBb);
 
     // Both fastPathBb and helperCallBb have a single common pred - isInitedBb
+    isInitedBb->SetFalseTarget(helperCallBb);
     fgAddRefPred(helperCallBb, isInitedBb);
 
     //
@@ -1165,13 +1422,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     block->inheritWeight(prevBb);
     isInitedBb->inheritWeight(prevBb);
     helperCallBb->bbSetRunRarely();
-
-    //
-    // Update loop info if loop table is known to be valid
-    //
-
-    isInitedBb->bbNatLoopNum   = prevBb->bbNatLoopNum;
-    helperCallBb->bbNatLoopNum = prevBb->bbNatLoopNum;
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1414,7 +1664,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // Block 1: lengthCheckBb (we check that dstLen < srcLen)
     //
     BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true, block);
-    lengthCheckBb->bbFlags |= BBF_INTERNAL;
+    lengthCheckBb->SetFlags(BBF_INTERNAL);
 
     // Set bytesWritten -1 by default, if the fast path is not taken we'll return it as the result.
     GenTree* bytesWrittenDefaultVal = gtNewStoreLclVarNode(resultLclNum, gtNewIconNode(-1));
@@ -1435,8 +1685,9 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // In theory, we could just emit the const U8 data to the data section and use GT_BLK here
     // but that would be a bit less efficient since we would have to load the data from memory.
     //
-    BasicBlock* fastpathBb = fgNewBBafter(BBJ_NONE, lengthCheckBb, true);
-    fastpathBb->bbFlags |= BBF_INTERNAL;
+    BasicBlock* fastpathBb = fgNewBBafter(BBJ_ALWAYS, lengthCheckBb, true, lengthCheckBb->Next());
+    assert(fastpathBb->JumpsToNext());
+    fastpathBb->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
 
     // The widest type we can use for loads
     const var_types maxLoadType = roundDownMaxType(srcLenU8);
@@ -1491,8 +1742,13 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // block is no longer a predecessor of prevBb
     fgRemoveRefPred(block, prevBb);
     // prevBb flows into lengthCheckBb
+    assert(prevBb->KindIs(BBJ_ALWAYS));
+    prevBb->SetTarget(lengthCheckBb);
+    prevBb->SetFlags(BBF_NONE_QUIRK);
+    assert(prevBb->JumpsToNext());
     fgAddRefPred(lengthCheckBb, prevBb);
     // lengthCheckBb has two successors: block and fastpathBb
+    lengthCheckBb->SetFalseTarget(fastpathBb);
     fgAddRefPred(fastpathBb, lengthCheckBb);
     fgAddRefPred(block, lengthCheckBb);
     // fastpathBb flows into block
@@ -1504,12 +1760,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     lengthCheckBb->inheritWeight(prevBb);
     fastpathBb->inheritWeight(lengthCheckBb);
     block->inheritWeight(prevBb);
-
-    //
-    // Update bbNatLoopNum for all new blocks
-    //
-    lengthCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastpathBb->bbNatLoopNum    = prevBb->bbNatLoopNum;
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1523,5 +1773,307 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     }
 
     JITDUMP("ReadUtf8: succesfully expanded!\n")
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// fgLateCastExpansion: Partially inline various cast helpers, e.g.:
+//
+//    tmp = CORINFO_HELP_ISINSTANCEOFINTERFACE(clsHandle, obj);
+//
+// into:
+//
+//    tmp = obj;
+//    if ((obj != null) && (obj->pMT != likelyClassHandle))
+//    {
+//        tmp = CORINFO_HELP_ISINSTANCEOFINTERFACE(clsHandle, obj);
+//    }
+//
+// The goal is to move cast expansion logic from the importer to this phase, for now,
+// this phase only supports "isinst" and for profiled casts only.
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
+PhaseStatus Compiler::fgLateCastExpansion()
+{
+    if (!doesMethodHaveExpandableCasts())
+    {
+        // Nothing to expand in the current method
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (!opts.IsOptimizedWithProfile())
+    {
+        // Currently, we're only interested in expanding cast helpers using profile data
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (JitConfig.JitConsumeProfileForCasts() == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
+    if (preferSize)
+    {
+        // The optimization comes with a codegen size increase
+        JITDUMP("Optimized for size - bail out.\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+    return fgExpandHelper<&Compiler::fgLateCastExpansionForCall>(true);
+}
+
+//------------------------------------------------------------------------------
+// PickLikelyClass: picks a likely class handle corresponding to the given IL offset
+//
+// Arguments:
+//    comp       - Compiler instance
+//    offset     - IL offset
+//    likelihood - [out] likelihood of the returned class
+//
+// Returns:
+//    Likely class handle or NO_CLASS_HANDLE
+//
+static CORINFO_CLASS_HANDLE PickLikelyClass(Compiler* comp, IL_OFFSET offset, unsigned* likelihood)
+{
+    // TODO-InlineCast: consider merging this helper with pickGDV
+
+    const int               maxLikelyClasses = 8;
+    LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
+    unsigned                likelyClassCount = getLikelyClasses(likelyClasses, maxLikelyClasses, comp->fgPgoSchema,
+                                                 comp->fgPgoSchemaCount, comp->fgPgoData, (int)offset);
+
+    if (likelyClassCount == 0)
+    {
+        return NO_CLASS_HANDLE;
+    }
+
+#ifdef DEBUG
+    // Print all the candidates and their likelihoods to the log
+    for (UINT32 i = 0; i < likelyClassCount; i++)
+    {
+        const char* className = comp->eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
+        JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+                likelyClasses[i].likelihood);
+    }
+
+    // Optional stress mode to pick a random known class, rather than
+    // the most likely known class.
+    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+    {
+        // Reuse the random inliner's random state.
+        CLRRandom* const random =
+            comp->impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+        unsigned index = static_cast<unsigned>(random->Next(static_cast<int>(likelyClassCount)));
+        *likelihood    = 100;
+        return (CORINFO_CLASS_HANDLE)likelyClasses[index].handle;
+    }
+#endif
+    *likelihood = likelyClasses[0].likelihood;
+    return (CORINFO_CLASS_HANDLE)likelyClasses[0].handle;
+}
+
+//------------------------------------------------------------------------------
+// fgLateCastExpansionForCall : Expand specific cast helper, see
+//    fgLateCastExpansion's comments.
+//
+// Arguments:
+//    block - Block containing the cast helper to expand
+//    stmt  - Statement containing the cast helper
+//    call  - The cast helper
+//
+// Returns:
+//    True if expanded, false otherwise.
+//
+bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
+{
+    if (!call->IsHelperCall() || !impIsCastHelperMayHaveProfileData(call->GetHelperNum()))
+    {
+        // Not a cast helper we're interested in
+        return false;
+    }
+
+    if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) == 0)
+    {
+        // It's not eligible for expansion (already expanded in importer)
+        // To be removed once we move cast expansion here completely.
+        return false;
+    }
+
+    // Helper calls are never tail calls
+    assert(!call->IsTailCall());
+
+    BasicBlock* block = *pBlock;
+    JITDUMP("Attempting to expand a cast helper call in " FMT_BB "...\n", block->bbNum);
+    DISPTREE(call);
+    JITDUMP("\n");
+
+    // Currently, we only expand "isinst" and only using profile data. The long-term plan is to
+    // move cast expansion logic here from the importer completely.
+    unsigned             likelihood = 100;
+    CORINFO_CLASS_HANDLE likelyCls  = PickLikelyClass(this, call->gtCastHelperILOffset, &likelihood);
+    if (likelyCls == NO_CLASS_HANDLE)
+    {
+        // TODO: make null significant, so it could mean our object is likely just null
+        JITDUMP("Likely class is null - bail out.\n");
+        return false;
+    }
+
+    // if there is a dominating candidate with >= 50% likelihood, use it
+    const unsigned likelihoodMinThreshold = 50;
+    if (likelihood < likelihoodMinThreshold)
+    {
+        JITDUMP("Likely class likelihood is below %u%% - bail out.\n", likelihoodMinThreshold);
+        return false;
+    }
+
+    // E.g. "call CORINFO_HELP_ISINSTANCEOFCLASS(class, obj)"
+    GenTree*             clsArg      = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+    CORINFO_CLASS_HANDLE expectedCls = gtGetHelperArgClassHandle(clsArg);
+    if (expectedCls == NO_CLASS_HANDLE)
+    {
+        // clsArg doesn't represent a class handle - bail out
+        // TODO-InlineCast: use VN if it's available (depends on when this phase is executed)
+        JITDUMP("clsArg is not a constant handle - bail out.\n");
+        return false;
+    }
+
+    const TypeCompareState castResult = info.compCompHnd->compareTypesForCast(likelyCls, expectedCls);
+    if (castResult == TypeCompareState::May)
+    {
+        JITDUMP("compareTypesForCast returned May for this candidate\n");
+        return false;
+    }
+
+    if ((info.compCompHnd->getClassAttribs(likelyCls) & (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0)
+    {
+        // Possible scenario: someone changed Foo to be an interface,
+        // but static profile data still report it as a normal likely class.
+        JITDUMP("Likely class is abstract/interface - bail out (stale PGO data?).\n");
+        return false;
+    }
+
+    DebugInfo debugInfo = stmt->GetDebugInfo();
+
+    BasicBlock*    firstBb;
+    BasicBlock*    lastBb;
+    const unsigned tmpNum = SplitAtTreeAndReplaceItWithLocal(this, block, stmt, call, &firstBb, &lastBb);
+    lvaSetClass(tmpNum, expectedCls);
+    GenTree* tmpNode = gtNewLclvNode(tmpNum, call->TypeGet());
+    *pBlock          = lastBb;
+
+    // We're going to expand this "isinst" like this:
+    //
+    // prevBb:                                      [weight: 1.0]
+    //     ...
+    //
+    // nullcheckBb (BBJ_COND):                      [weight: 1.0]
+    //     tmp = obj;
+    //     if (tmp == null)
+    //         goto lastBlock;
+    //
+    // typeCheckBb (BBJ_COND):                      [weight: 0.5]
+    //     if (tmp->pMT == likelyCls)
+    //         goto typeCheckSucceedBb;
+    //
+    // fallbackBb (BBJ_ALWAYS):                     [weight: <profile>]
+    //     tmp = helper_call(expectedCls, obj);
+    //     goto lastBlock;
+    //
+    // typeCheckSucceedBb (BBJ_ALWAYS):             [weight: <profile>]
+    //     no-op (or tmp = null; in case of 'MustNot')
+    //
+    // lastBlock (BBJ_any):                         [weight: 1.0]
+    //     use(tmp);
+    //
+
+    // Block 1: nullcheckBb
+    // TODO-InlineCast: assertionprop should leave us a mark that objArg is never null, so we can omit this check
+    // it's too late to rely on upstream phases to do this for us (unless we do optRepeat).
+    GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, tmpNode, gtNewNull());
+    nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
+    BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
+                                                   debugInfo, lastBb, true);
+
+    // The very first statement in the whole expansion is to assign obj to tmp.
+    // We assume it's the value we're going to return in most cases.
+    GenTree*   originalObj = gtCloneExpr(call->gtArgs.GetUserArgByIndex(1)->GetNode());
+    Statement* assignTmp   = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(tmpNum, originalObj), debugInfo);
+    gtSetStmtInfo(assignTmp);
+    fgSetStmtSeq(assignTmp);
+
+    // Block 2: typeCheckBb
+    // TODO-InlineCast: if likelyCls == expectedCls we can consider saving to a local to re-use.
+    GenTree* likelyClsNode = gtNewIconEmbClsHndNode(likelyCls);
+    GenTree* mtCheck       = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(tmpNode)), likelyClsNode);
+    mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
+    GenTree*    jtrue       = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
+    BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, lastBb, true);
+
+    // Block 3: fallbackBb
+    GenTree*    fallbackTree = gtNewTempStore(tmpNum, call);
+    BasicBlock* fallbackBb   = fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, fallbackTree, debugInfo, lastBb, true);
+
+    // Block 4: typeCheckSucceedBb
+    GenTree* typeCheckSucceedTree;
+    if (castResult == TypeCompareState::MustNot)
+    {
+        // With TypeCompareState::MustNot it means our likely class never passes the type check.
+        // it means we just check obj's type for being likelyclass and return null if it's true.
+        typeCheckSucceedTree = gtNewTempStore(tmpNum, gtNewNull());
+    }
+    else
+    {
+        // tmp is already assigned to obj, so we don't need to do anything here
+        // some downstream phase will collect this block. It's done for simplicity.
+        typeCheckSucceedTree = gtNewNothingNode();
+    }
+    BasicBlock* typeCheckSucceedBb =
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo, lastBb);
+
+    //
+    // Wire up the blocks
+    //
+    firstBb->SetTarget(nullcheckBb);
+    nullcheckBb->SetTrueTarget(lastBb);
+    nullcheckBb->SetFalseTarget(typeCheckBb);
+    typeCheckBb->SetTrueTarget(typeCheckSucceedBb);
+    typeCheckBb->SetFalseTarget(fallbackBb);
+    fallbackBb->SetTarget(lastBb);
+    fgRemoveRefPred(lastBb, firstBb);
+    fgAddRefPred(nullcheckBb, firstBb);
+    fgAddRefPred(typeCheckBb, nullcheckBb);
+    fgAddRefPred(lastBb, nullcheckBb);
+    fgAddRefPred(fallbackBb, typeCheckBb);
+    fgAddRefPred(lastBb, typeCheckSucceedBb);
+    fgAddRefPred(typeCheckSucceedBb, typeCheckBb);
+    fgAddRefPred(lastBb, fallbackBb);
+
+    //
+    // Re-distribute weights
+    // We assume obj is 50%/50% null/not-null (TODO: use profile data)
+    // and rely on profile for the slow path.
+    //
+    nullcheckBb->inheritWeight(firstBb);
+    typeCheckBb->inheritWeightPercentage(nullcheckBb, 50);
+    fallbackBb->inheritWeightPercentage(typeCheckBb, 100 - likelihood);
+    typeCheckSucceedBb->inheritWeightPercentage(typeCheckBb, likelihood);
+    lastBb->inheritWeight(firstBb);
+
+    //
+    // Validate EH regions
+    //
+    assert(BasicBlock::sameEHRegion(firstBb, lastBb));
+    assert(BasicBlock::sameEHRegion(firstBb, nullcheckBb));
+    assert(BasicBlock::sameEHRegion(firstBb, fallbackBb));
+    assert(BasicBlock::sameEHRegion(firstBb, typeCheckBb));
+
+    // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
+    if (fgCanCompactBlocks(firstBb, nullcheckBb))
+    {
+        fgCompactBlocks(firstBb, nullcheckBb);
+    }
+
     return true;
 }

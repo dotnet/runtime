@@ -114,7 +114,7 @@
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
         <source>The System.Text.Json source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="needs-review-translation">Generator źródła System.Text.Json nie jest dostępny w języku C# „{0}”. Użyj wersji językowej lub nowszej {1} .</target>
+        <target state="translated">Generator źródła System.Text.Json nie jest dostępny w języku C# {0}. Użyj wersji językowej {1} lub nowszej.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionTitle">

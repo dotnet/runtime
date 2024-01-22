@@ -6,9 +6,8 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 
-using Internal.Runtime.CompilerServices;
-
 using Internal.NativeFormat;
+using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader

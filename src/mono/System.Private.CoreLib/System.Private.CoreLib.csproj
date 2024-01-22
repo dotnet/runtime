@@ -13,6 +13,8 @@
     <Platforms>x64;x86;arm;armv6;arm64;riscv64;s390x;wasm;ppc64le</Platforms>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <FeatureWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
@@ -42,7 +44,6 @@
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <SlnGenSolutionFolder>src</SlnGenSolutionFolder>
   </PropertyGroup>
 
   <!-- Platform specific properties -->
@@ -281,11 +282,17 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Threads.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\WebWorkerEventLoop.Browser.Threads.Mono.cs" />
   </ItemGroup>
-  <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(FeatureWasmThreads)' != 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmThreads)' != 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Wasi.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Wasi.Mono.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\HotReload.cs" />

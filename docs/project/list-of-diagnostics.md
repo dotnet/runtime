@@ -218,7 +218,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1099`__ | COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime |
 |  __`SYSLIB1100`__ | Configuration binding generator: type is not supported. |
 |  __`SYSLIB1101`__ | Configuration binding generator: property on type is not supported. |
-|  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 11.|
+|  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 12.|
 |  __`SYSLIB1103`__ | Configuration binding generator: value types are invalid inputs to configuration 'Bind' methods.* |
 |  __`SYSLIB1104`__ | Configuration binding generator: Generator cannot determine the target configuration type.* |
 |  __`SYSLIB1105`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |

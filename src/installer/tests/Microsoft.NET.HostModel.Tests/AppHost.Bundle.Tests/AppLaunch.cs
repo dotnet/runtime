@@ -3,12 +3,11 @@
 
 using System;
 using System.IO;
-using Xunit;
-using Microsoft.DotNet.Cli.Build.Framework;
-using Microsoft.DotNet.CoreSetup.Test;
-using BundleTests.Helpers;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup.Test;
+using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
@@ -26,7 +25,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(path)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(selfContained ? null : RepoDirectoriesProvider.Default.BuiltDotnet)
+                .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World!");
@@ -74,9 +73,9 @@ namespace AppHost.Bundle.Tests
             if (OperatingSystem.IsWindows())
             {
                 // StandaloneApp sets FileVersion to NETCoreApp version. On Windows, this should be copied to singlefilehost resources.
-                string expectedVersion = RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion.Contains('-')
-                    ? RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion[..RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion.IndexOf('-')]
-                    : RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion;
+                string expectedVersion = TestContext.MicrosoftNETCoreAppVersion.Contains('-')
+                    ? TestContext.MicrosoftNETCoreAppVersion[..TestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
+                    : TestContext.MicrosoftNETCoreAppVersion;
                 Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
             }
         }

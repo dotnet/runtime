@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
+
 using Internal.DeveloperExperience;
 
 namespace System
@@ -171,7 +172,8 @@ namespace System
             if (!OpenValue(key, '{'))
                 return false;
 
-            if (!WriteHexValue("address"u8, (ulong)Unsafe.AsPointer(ref exception)))
+            ulong address = Unsafe.As<Exception, nuint>(ref exception);
+            if (!WriteHexValue("address"u8, address))
                 return false;
 
             if (!WriteHexValue("hr"u8, exception.HResult))

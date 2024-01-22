@@ -68,6 +68,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 return bootConfig.resources.wasmSymbols ??= new();
             else if (resourceName.StartsWith("icudt", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.icu ??= new();
+            else if (resourceName.Equals("segmentation-rules.json", StringComparison.OrdinalIgnoreCase))
+                return bootConfig.resources.icu ??= new();
             else
                 Log.LogError($"The resource '{resourceName}' is not recognized as any native asset");
 

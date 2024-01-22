@@ -30,6 +30,10 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
         LogPath = Path.Combine(s_buildEnv.LogRootPath, Id);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
+
+        // WasmBasicTestApp consists of App + Library projects
+        if (assetName == "WasmBasicTestApp")
+            _projectDir = Path.Combine(_projectDir!, "App");
     }
 
     protected void BuildProject(string configuration)

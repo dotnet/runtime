@@ -46,21 +46,14 @@ internal sealed class IcallTableGenerator
     {
         if (outputPath != null)
         {
-            string tmpFileName = Path.GetTempFileName();
-            try
-            {
-                using (var w = File.CreateText(tmpFileName))
-                    EmitTable(w);
+            using TempFileName tmpFileName = new();
+            using (var w = File.CreateText(tmpFileName.Path))
+                EmitTable(w);
 
-                if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
-                    Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{outputPath}'.");
-                else
-                    Log.LogMessage(MessageImportance.Low, $"Icall table in {outputPath} is unchanged.");
-            }
-            finally
-            {
-                File.Delete(tmpFileName);
-            }
+            if (Utils.CopyIfDifferent(tmpFileName.Path, outputPath, useHash: false))
+                Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{outputPath}'.");
+            else
+                Log.LogMessage(MessageImportance.Low, $"Icall table in {outputPath} is unchanged.");
         }
 
         return _signatures;

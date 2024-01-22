@@ -23,7 +23,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_RunWorkingDirectory>$(OutputPath)</_RunWorkingDirectory>
     <_RunWorkingDirectory Condition="'$(_RunWorkingDirectory)' != '' and !$([System.IO.Path]::IsPathRooted($(_RunWorkingDirectory)))">$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(_RunWorkingDirectory)))</_RunWorkingDirectory>
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_RunWorkingDirectory), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
-    
+
     <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --use-staticwebassets --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory>$(_RunWorkingDirectory)</RunWorkingDirectory>
   </PropertyGroup>
@@ -45,7 +45,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <PropertyGroup>
     <!-- Paths to tools, tasks, and extensions are calculated relative to the WebAssemblySdkDirectoryRoot. This can be modified to test a local build. -->
     <WebAssemblySdkDirectoryRoot Condition="'$(WebAssemblySdkDirectoryRoot)'==''">$(MSBuildThisFileDirectory)..\</WebAssemblySdkDirectoryRoot>
-    <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net8.0</_WebAssemblySdkTasksTFM>
+    <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net9.0</_WebAssemblySdkTasksTFM>
     <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' != 'Core'">net472</_WebAssemblySdkTasksTFM>
     <_WebAssemblySdkTasksAssembly>$(WebAssemblySdkDirectoryRoot)tools\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
 
@@ -395,7 +395,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     BeforeTargets="PrepareForPublish" />
 
   <!-- Wasm's Nested publish is run just to build the native bits. We don't need to run blazor targets for that -->
-  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GetWasmRuntimePackVersion" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GetWasmRuntimePackVersion;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <!-- The list of static web assets already contains all the assets from the build. We want to correct certain assets that might
          have changed as part of the publish process. We are going to do so as follows:
          * We will update Blazor runtime asset dlls if we are running PublishTrimmed
@@ -414,8 +414,19 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEmitSourceMapPublish Condition="'$(_WasmEmitSourceMapPublish)' == ''">false</_WasmEmitSourceMapPublish>
     </PropertyGroup>
 
+    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) == 0">
+      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" />
+    </ItemGroup>
+    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) > 0">
+      <_WasmResolvedFilesToPublish Include="@(WasmAssembliesFinal)" />
+
+      <!-- remove the original assemblies -->
+      <ResolvedFileToPublish Remove="@(WasmAssembliesToBundle)" />
+      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" />
+    </ItemGroup>
+
     <ComputeWasmPublishAssets
-      ResolvedFilesToPublish="@(ResolvedFileToPublish)"
+      ResolvedFilesToPublish="@(_WasmResolvedFilesToPublish)"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
       TimeZoneSupport="$(_BlazorEnableTimeZoneSupport)"
       PublishPath="$(PublishDir)"
@@ -592,10 +603,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       Code="BLAZORSDK1002" />
   </Target>
 
+  <!-- called twice, once in the regular publish, and the other in the nested publish -->
   <Target Name="_GatherWasmFilesToPublish">
     <ItemGroup>
       <WasmAssembliesToBundle Remove="@(WasmAssembliesToBundle)" />
-      <WasmAssembliesToBundle Include="%(ResolvedFileToPublish.FullPath)" Exclude="@(_Exclude)" Condition="%(Extension) == '.dll'" />
+      <WasmAssembliesToBundle Include="@(ResolvedFileToPublish)" Exclude="@(_Exclude)" Condition="%(Extension) == '.dll'" />
     </ItemGroup>
   </Target>
 </Project>

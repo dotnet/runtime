@@ -17,11 +17,13 @@
 //    Reflection.Core.dll
 
 using System;
-using System.Reflection;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Reflection;
+
+using Internal.Runtime;
 
 using EETypeElementType = Internal.Runtime.EETypeElementType;
 
@@ -39,24 +41,24 @@ namespace Internal.Reflection.Augments
             s_reflectionCoreCallbacks = reflectionCoreCallbacks;
         }
 
-        internal static TypeCode GetRuntimeTypeCode(RuntimeType type)
+        internal static unsafe TypeCode GetRuntimeTypeCode(RuntimeType type)
         {
             Debug.Assert(type != null);
 
-            EETypePtr eeType = type.ToEETypePtrMayBeNull();
-            if (eeType.IsNull)
+            MethodTable* eeType = type.ToMethodTableMayBeNull();
+            if (eeType == null)
             {
                 // Type exists in metadata only. Aside from the enums, there is no chance a type with a TypeCode would not have an MethodTable,
                 // so if it's not an enum, return the default.
                 if (!type.IsActualEnum)
                     return TypeCode.Object;
                 Type underlyingType = Enum.GetUnderlyingType(type);
-                eeType = underlyingType.TypeHandle.ToEETypePtr();
+                eeType = underlyingType.TypeHandle.ToMethodTable();
             }
 
             // Note: Type.GetTypeCode() is expected to return the underlying type's TypeCode for enums. EETypePtr.CorElementType does the same,
             // so this one switch handles both cases.
-            EETypeElementType rhType = eeType.ElementType;
+            EETypeElementType rhType = eeType->ElementType;
             switch (rhType)
             {
                 case EETypeElementType.Boolean: return TypeCode.Boolean;

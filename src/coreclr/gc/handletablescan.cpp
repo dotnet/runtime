@@ -811,7 +811,7 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
             {
                 if (!HndIsNullOrDestroyedHandle(*pValue))
                 {
-                    int thisAge = g_theGCHeap->WhichGeneration(*pValue);
+                    int thisAge = GetConvertedGeneration(*pValue);
                     if (minAge > thisAge)
                         minAge = thisAge;
 
@@ -820,7 +820,7 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
                         [](Object*, Object* to, void* ctx)
                         {
                             int* minAge = reinterpret_cast<int*>(ctx);
-                            int generation = g_theGCHeap->WhichGeneration(to);
+                            int generation = GetConvertedGeneration(to);
                             if (*minAge > generation)
                             {
                                 *minAge = generation;
@@ -903,7 +903,7 @@ static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF o
 {
     VerifyObject(from, obj);
 
-    int thisAge = g_theGCHeap->WhichGeneration(obj);
+    int thisAge = GetConvertedGeneration(obj);
 
     //debugging code
     //if (minAge > thisAge && thisAge < g_theGCHeap->GetMaxGeneration())

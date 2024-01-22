@@ -7,12 +7,12 @@
 // keep the main files less cluttered.
 //
 
-using System.IO;
-using System.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Reflection.Runtime.General;
+using System.Text;
 
 using Internal.LowLevelLinq;
 

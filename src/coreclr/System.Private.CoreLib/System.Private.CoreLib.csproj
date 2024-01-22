@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -47,7 +47,7 @@
     <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion>
     <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
-    <NoWarn>$(NoWarn),0419,0649,CA2249,CA1830;AD0001</NoWarn>
+    <NoWarn>$(NoWarn),0419,0649;AD0001</NoWarn>
     <Nullable>enable</Nullable>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
@@ -56,7 +56,6 @@
 
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <SlnGenSolutionFolder>src</SlnGenSolutionFolder>
   </PropertyGroup>
 
   <!-- Platform specific properties -->
