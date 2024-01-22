@@ -904,18 +904,17 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 				ainfo->foffsets [i] = GINT_TO_UINT8 (field_offsets [i]);
 			cinfo->next_farg += ainfo->nregs;
 		} else {
-			NOT_IMPLEMENTED;
 			ainfo->nfregs_to_skip = cinfo->next_farg <= RISCV_FA7  ? RISCV_FA7 - cinfo->next_farg + 1 : 0;
 			cinfo->next_farg = RISCV_FA7 + 1;
-			size = ALIGN_TO (size, 8);
-			ainfo->storage = ArgVtypeOnStack;
-			cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, align);
+
 			ainfo->offset = cinfo->stack_usage;
-			ainfo->size = size;
+			ainfo->storage = ArgVtypeOnStack;
+			cinfo->stack_usage += aligned_size;
+			ainfo->slot_size = aligned_size;
+			
 			ainfo->hfa = TRUE;
 			ainfo->nregs = nfields;
 			ainfo->esize = esize;
-			cinfo->stack_usage += size;
 		}
 		return;
 	}
@@ -4414,14 +4413,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ins = cfg->arch.ss_tramp_var;
 			g_assert (ins->opcode == OP_REGOFFSET);
 
-			code = mono_riscv_emit_imm (code, RISCV_T0, (guint64)&ss_trampoline);
+			code = mono_riscv_emit_imm (code, RISCV_T1, (guint64)&ss_trampoline);
 			code = mono_riscv_emit_store (code, RISCV_T1, ins->inst_basereg, ins->inst_offset, 0);
 		}
 		if (cfg->arch.bp_tramp_var) {
 			/* Initialize bp_tramp_var */
 			ins = cfg->arch.bp_tramp_var;
 			g_assert (ins->opcode == OP_REGOFFSET);
-			code = mono_riscv_emit_imm (code, RISCV_T0, (guint64)bp_trampoline);
+			code = mono_riscv_emit_imm (code, RISCV_T1, (guint64)bp_trampoline);
 			code = mono_riscv_emit_store (code, RISCV_T1, ins->inst_basereg, ins->inst_offset, 0);
 		}
 	}
