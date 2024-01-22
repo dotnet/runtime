@@ -198,7 +198,6 @@ namespace System
         }
 
         // Will box each element in an array of value classes or primitives into an array of Objects.
-        [UnconditionalSuppressMessage("Trimming", "IL2059:The type passed to the RunClassConstructor is not statically known, Trimmer can't make sure that its static constructor is available.", Justification = "The type handle is retrieved from existing array.")]
         private static unsafe void CopyImplBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             MethodTable* pSrcArrayMT = RuntimeHelpers.GetMethodTable(sourceArray);
@@ -208,8 +207,6 @@ namespace System
             Debug.Assert(!RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle().AsMethodTable()->IsValueType);
 
             MethodTable* pSrcMT = srcTH.AsMethodTable();
-
-            RuntimeHelpers.RunClassConstructor(RuntimeTypeHandle.FromIntPtr((nint)pSrcMT)); // pSrcMT->CheckRunClassInitThrowing
 
             nuint srcSize = pSrcArrayMT->ComponentSize;
             ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcSize);
