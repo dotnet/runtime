@@ -1794,7 +1794,11 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socket
                     *optName = IP_MTU_DISCOVER; // option values will also need to be translated
                     return true;
 #endif
-
+#ifdef IP_DONTFRAG
+                case SocketOptionName_SO_IP_DONTFRAGMENT:
+                    *optName = IP_DONTFRAG; // option values will also need to be translated
+                    return true;
+#endif
 #ifdef IP_ADD_SOURCE_MEMBERSHIP
                 case SocketOptionName_SO_IP_ADD_SOURCE_MEMBERSHIP:
                     *optName = IP_ADD_SOURCE_MEMBERSHIP;
@@ -1962,7 +1966,6 @@ int32_t SystemNative_GetSockOpt(
     }
 
     int fd = ToFileDescriptor(socket);
-
     //
     // Handle some special cases for compatibility with Windows and OSX
     //
