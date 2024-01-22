@@ -16,6 +16,7 @@
     <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
     <!-- Same for ILLink -->
     <DebuggerSupport>true</DebuggerSupport>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
   </PropertyGroup>
 
   <!--
