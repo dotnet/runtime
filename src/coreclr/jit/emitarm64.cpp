@@ -1534,6 +1534,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                            // offsets)
         case IF_SVE_JK_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit
                              // unscaled offsets)
+            elemsize = id->idOpSize();
             assert(insOptsScalable32bitExtends(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));    // ttttt
             assert(isPredicateRegister(id->idReg2())); // ggg
@@ -11180,11 +11181,10 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
             assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
             assert(isScalableVectorSize(size));
-            // st1h is reserved for scalable B
-            assert((ins == INS_sve_st1h) ? insOptsScalableAtLeastHalf(opt)
-                                         : insOptsScalableStandard(opt));
             if (insOptsScalableStandard(opt))
             {
+                // st1h is reserved for scalable B
+                assert((ins == INS_sve_st1h) ? insOptsScalableAtLeastHalf(opt) : true);
                 assert(isGeneralRegister(reg4));
                 assert(sopt == INS_SCALABLE_OPTS_LSL_N);
                 fmt = IF_SVE_JD_4A;
