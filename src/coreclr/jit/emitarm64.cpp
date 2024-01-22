@@ -1508,12 +1508,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isGeneralRegister(id->idReg3()));   // nnnnn
             assert(isGeneralRegister(id->idReg4()));   // mmmmm
             assert(isScalableVectorSize(elemsize));    // xx
-#ifdef DEBUG
-            if ((id->idIns() == INS_sve_st1h) && (id->idInsOpt() == INS_OPTS_SCALABLE_B))
-            {
-                assert(!"sve_st1h with scalable B is reserved");
-            }
-#endif // DEBUG
+            // st1h is reserved for scalable B
+            assert((id->idIns() == INS_sve_st1h) ? insOptsScalableAtLeastHalf(id->idInsOpt())
+                                                 : insOptsScalableStandard(id->idInsOpt()));
             break;
 
         case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
@@ -1538,8 +1535,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                            // offsets)
         case IF_SVE_JK_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit
                              // unscaled offsets)
-            elemsize = id->idOpSize();
-            assert(insOptsScalableStandard(id->idInsOpt()) || insOptsScalable32bitExtends(id->idInsOpt()));
+            assert(insOptsScalable32bitExtends(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));    // ttttt
             assert(isPredicateRegister(id->idReg2())); // ggg
             assert(isGeneralRegister(id->idReg3()));   // nnnnn
@@ -10614,12 +10610,8 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
             assert(isValidSimm4(imm));
-#ifdef DEBUG
-            if ((ins == INS_sve_st1h) && (opt == INS_OPTS_SCALABLE_B))
-            {
-                assert(!"sve_st1h with scalable B is reserved");
-            }
-#endif // DEBUG
+            // st1h is reserved for scalable B
+            assert((ins == INS_sve_st1h) ? insOptsScalableAtLeastHalf(opt) : insOptsScalableStandard(opt));
             fmt = IF_SVE_JN_3A;
             break;
 
@@ -11190,12 +11182,9 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
             assert(isPredicateRegister(reg2));
             assert(isGeneralRegister(reg3));
             assert(isScalableVectorSize(size));
-#ifdef DEBUG
-            if (opt == INS_OPTS_SCALABLE_B)
-            {
-                assert(!"sve_st1h with scalable B is reserved");
-            }
-#endif // DEBUG
+            // st1h is reserved for scalable B
+            assert((ins == INS_sve_st1h) ? insOptsScalableAtLeastHalf(opt)
+                                         : insOptsScalableStandard(opt));
             if (insOptsScalableStandard(opt))
             {
                 assert(isGeneralRegister(reg4));
@@ -17725,12 +17714,12 @@ void emitter::emitDispSveExtendOpts(insOpts opt)
     {
         case INS_OPTS_SCALABLE_S_UXTW:
         case INS_OPTS_SCALABLE_D_UXTW:
-            printf("UXTW");
+            printf("uxtw");
             break;
 
         case INS_OPTS_SCALABLE_S_SXTW:
         case INS_OPTS_SCALABLE_D_SXTW:
-            printf("SXTW");
+            printf("sxtw");
             break;
 
         default:
@@ -20031,7 +20020,7 @@ void emitter::emitDispInsHelp(
             if (ins == INS_sve_st1h)
             {
                 emitDispReg(id->idReg4(), EA_8BYTE, true); // mmmmm
-                printf("LSL #1]");
+                printf("lsl #1]");
             }
             else
             {
@@ -20047,7 +20036,7 @@ void emitter::emitDispInsHelp(
             printf("[");
             emitDispReg(id->idReg3(), EA_8BYTE, true); // nnnnn
             emitDispReg(id->idReg4(), EA_8BYTE, true); // mmmmm
-            printf("LSL #2]");       
+            printf("lsl #2]");       
             break;
 
         // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #3]
@@ -23016,182 +23005,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SVE_JD_4A: // .........xxmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
-            switch (ins)
-            {
-                case INS_sve_st1b:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                case INS_sve_st1h:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-
-        case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
-            switch (ins)
-            {
-                case INS_sve_st1w:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-
-        case IF_SVE_JJ_4A: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
-                           // offsets)
-            switch (ins)
-            {
-                case INS_sve_st1h:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                case INS_sve_st1w:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                case INS_sve_st1d:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-
+        case IF_SVE_JD_4A:   // .........xxmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+        case IF_SVE_JD_4B:   // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+        case IF_SVE_JJ_4A:   // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
         case IF_SVE_JJ_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
                              // offsets)
-            switch (ins)
-            {
-                case INS_sve_st1h:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                case INS_sve_st1w:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                case INS_sve_st1d:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-
         case IF_SVE_JJ_4A_C: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
                              // offsets)
-            switch (ins)
-            {
-                case INS_sve_st1h:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                case INS_sve_st1w:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-
         case IF_SVE_JJ_4A_D: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
                              // offsets)
-            switch (ins)
-            {
-                case INS_sve_st1h:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                case INS_sve_st1w:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-
         case IF_SVE_JK_4A: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit unscaled
                            // offsets)
-            switch (ins)
-            {
-                case INS_sve_st1b:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-
         case IF_SVE_JK_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit
                              // unscaled offsets)
-            switch (ins)
-            {
-                case INS_sve_st1b:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-
-        case IF_SVE_JN_3A: // .........xx.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
-            switch (ins)
-            {
-                case INS_sve_st1b:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                case INS_sve_st1h:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
-            break;
-
-        case IF_SVE_JN_3B: // ..........x.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
-            switch (ins)
-            {
-                case INS_sve_st1w:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
-                    break;
-                default:
-                    // all other instructions
-                    perfScoreUnhandledInstruction(id, &result);
-                    break;
-            }
+        case IF_SVE_JN_3A:   // .........xx.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+        case IF_SVE_JN_3B:   // ..........x.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
         default:
