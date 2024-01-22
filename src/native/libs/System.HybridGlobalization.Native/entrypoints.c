@@ -84,9 +84,9 @@ static const Entry s_globalizationNative[] =
      DllImportEntry(GlobalizationNative_InitOrdinalCasingPage)
 };
 
-EXTERN_C const void* GlobalizationResolveDllImport(const char* name);
+EXTERN_C const void* HybridGlobalizationResolveDllImport(const char* name);
 
-EXTERN_C const void* GlobalizationResolveDllImport(const char* name)
+EXTERN_C const void* HybridGlobalizationResolveDllImport(const char* name)
 {
     return minipal_resolve_dllimport(s_globalizationNative, ARRAY_SIZE(s_globalizationNative), name);
 }

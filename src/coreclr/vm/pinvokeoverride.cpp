@@ -11,6 +11,7 @@
 #include "pinvokeoverride.h"
 
 extern "C" const void* GlobalizationResolveDllImport(const char* name);
+extern "C" const void* HybridGlobalizationResolveDllImport(const char* name);
 
 namespace
 {
