@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CompareInfoHashCodeTests : CompareInfoTestsBase
+    public class CompareInfoSortKeyTests : CompareInfoTestsBase
     {
         [ConditionalTheory(typeof(CompareInfoTests), nameof(IsNotWindowsKanaRegressedVersionAndNotHybridGlobalizationOnWasm))]
         [MemberData(nameof(SortKey_Kana_TestData))]
