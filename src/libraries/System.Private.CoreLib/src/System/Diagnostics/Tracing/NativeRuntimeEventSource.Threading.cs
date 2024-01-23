@@ -367,9 +367,18 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
+                IntPtr hashCode;
+                if (ThreadPool.UseWindowsThreadPool) {
+                    hashCode = (IntPtr)Win32ThreadPoolNativeOverlapped.FromNativeOverlapped(overlapped)->GetHashCode();
+                }
+                else
+                {
+                    hashCode = (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+                }
+
                 ThreadPoolIOEnqueue(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
+                    hashCode,
                     false);
             }
         }
