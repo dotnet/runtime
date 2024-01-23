@@ -1871,20 +1871,27 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
     // Helper calls are never tail calls
     assert(!castHelper->IsTailCall());
 
+    bool alwaysNeedsFallbackCall = false;
     bool isCastClass;
     switch (castHelper->GetHelperNum())
     {
-        case CORINFO_HELP_CHKCASTINTERFACE:
         case CORINFO_HELP_CHKCASTARRAY:
-        case CORINFO_HELP_CHKCASTCLASS:
         case CORINFO_HELP_CHKCASTANY:
+            // these helpers imply type variance
+            alwaysNeedsFallbackCall = true;
+            FALLTHROUGH;
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTCLASS:
             isCastClass = true;
             break;
 
-        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
         case CORINFO_HELP_ISINSTANCEOFARRAY:
-        case CORINFO_HELP_ISINSTANCEOFCLASS:
         case CORINFO_HELP_ISINSTANCEOFANY:
+            // these helpers imply type variance
+            alwaysNeedsFallbackCall = true;
+            FALLTHROUGH;
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
             isCastClass = false;
             break;
 
@@ -1915,11 +1922,22 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
 
     // If "cast to" class is already exact, we don't need to do anything
+    // in case if the cast helper doesn't imply type variance. If it does - we still
+    // can inline it, we just can't remove the fallback call or convert it to no-return.
     if (comp->eeIsClassExact(castToCls))
     {
-        // Fallback call is still needed for InvalidCastException (only for castclass)
-        *typeCheckFailed = isCastClass ? F_CallHelper_AlwaysThrows : F_ReturnNull;
-        result           = castToCls;
+        if (alwaysNeedsFallbackCall)
+        {
+            // VM told us the class is exact but the cast helper implies type variance
+            // keep the fallback call then.
+            *typeCheckFailed = isCastClass ? F_CallHelper_MayThrow : F_CallHelper_NeverThrows;
+        }
+        else
+        {
+            // Fallback call is only needed for castclass and only to throw InvalidCastException
+            *typeCheckFailed = isCastClass ? F_CallHelper_AlwaysThrows : F_ReturnNull;
+        }
+        result = castToCls;
     }
     else
     {
@@ -1928,9 +1946,17 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
         // (and VM is not going to load more types dynamically)
         if (comp->info.compCompHnd->getExactClasses(castToCls, 1, &result) == 1)
         {
-            // Fallback call is still needed for InvalidCastException (only for castclass)
-            // TODO-InlineCast: support multiple guesses without the fallback call
-            *typeCheckFailed = isCastClass ? F_CallHelper_AlwaysThrows : F_ReturnNull;
+            if (alwaysNeedsFallbackCall)
+            {
+                // VM told us the class is exact but the cast helper implies type variance
+                // keep the fallback call then.
+                *typeCheckFailed = isCastClass ? F_CallHelper_MayThrow : F_CallHelper_NeverThrows;
+            }
+            else
+            {
+                // Fallback call is only needed for castclass and only to throw InvalidCastException
+                *typeCheckFailed = isCastClass ? F_CallHelper_AlwaysThrows : F_ReturnNull;
+            }
         }
         else
         {
