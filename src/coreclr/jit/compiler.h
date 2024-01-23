@@ -6698,9 +6698,11 @@ protected:
         int m_loopVarFPCount;
         int m_hoistedFPExprCount;
 
+#ifdef TARGET_XARCH
         int m_loopVarInOutMskCount;
         int m_loopVarMskCount;
         int m_hoistedMskExprCount;
+#endif // TARGET_XARCH
 
         // Get the VN cache for current loop
         VNSet* GetHoistedInCurLoop(Compiler* comp)
