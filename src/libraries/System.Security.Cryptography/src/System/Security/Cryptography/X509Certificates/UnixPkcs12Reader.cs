@@ -236,7 +236,10 @@ namespace System.Security.Cryptography.X509Certificates
             }
             finally
             {
-                password.DangerousRelease();
+                if (hasRef)
+                {
+                    password.DangerousRelease();
+                }
             }
         }
 

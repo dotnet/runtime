@@ -151,7 +151,11 @@ namespace System.Security.Cryptography.X509Certificates
             }
             finally
             {
-                password.DangerousRelease();
+                if (gotRef)
+                {
+                    password.DangerousRelease();
+                }
+
                 certAttrs.AsSpan(0, certCount).Clear();
                 certBags.AsSpan(0, certCount).Clear();
                 keyBags.AsSpan(0, certCount).Clear();
