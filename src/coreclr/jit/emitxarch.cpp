@@ -7754,10 +7754,11 @@ void emitter::emitIns_R_AI(instruction ins,
 
     id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
-    //if (EA_IS_CNS_TLSGD_RELOC(attr))
-    //{
-    //    id->idSetIsCallAddr(); // = true;
-    //}
+    if (EA_IS_CNS_TLSGD_RELOC(attr))
+    {
+        id->idSetIsCallAddr();
+        //id->idAddr()->iiaTlsGD = true;
+    }
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idFlags     = gtFlags;
@@ -12943,8 +12944,16 @@ GOT_DSP:
 #else
                     dst += emitOutputLong(dst, dsp);
 #endif
-                    emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_DISP32,
+                    if (id->idIsCallAddr())
+                    {
+                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_TLSGD,
                                                       addlDelta);
+                    }
+                    else
+                    {
+                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp,
+                                                          IMAGE_REL_BASED_DISP32, addlDelta);
+                    }
                 }
                 else
                 {
