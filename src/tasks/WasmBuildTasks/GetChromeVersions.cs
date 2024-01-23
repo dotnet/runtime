@@ -102,18 +102,21 @@ public partial class GetChromeVersions : MBU.Task
         XmlDocument xmlDoc = new XmlDocument();
         xmlDoc.Load(ChromeVersionsPath);
 
-        if (version.os == "Linux")
+        if (string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase))
         {
             string linuxChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "linux_ChromeBaseSnapshotUrl");
             string linuxV8Version = GetNodeValue(xmlDoc, "linux_V8Version");
             return version.v8_version != linuxV8Version ||
                 baseUrl != linuxChromeBaseSnapshotUrl;
         }
-        // version.os == "Windows"
-        string winChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "win_ChromeBaseSnapshotUrl");
-        string winV8Version = GetNodeValue(xmlDoc, "win_V8Version");
-        return version.v8_version != winV8Version ||
-            baseUrl != winChromeBaseSnapshotUrl;
+        else if (string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase))
+        {
+            string winChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "win_ChromeBaseSnapshotUrl");
+            string winV8Version = GetNodeValue(xmlDoc, "win_V8Version");
+            return version.v8_version != winV8Version ||
+                baseUrl != winChromeBaseSnapshotUrl;
+        }
+        throw new Exception($"GetChromeVersions task was used with unknown OS: {version.os}");
     }
 
     private static string GetNodeValue(XmlDocument xmlDoc, string nodeName)
