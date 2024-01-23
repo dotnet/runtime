@@ -5919,7 +5919,7 @@ public:
 
     void fgCompactBlocks(BasicBlock* block, BasicBlock* bNext);
 
-    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, bool noFallThroughQuirk = false);
+    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst);
 
     bool fgRenumberBlocks();
 
@@ -5965,6 +5965,8 @@ public:
     bool fgOptimizeBranch(BasicBlock* bJump);
 
     bool fgOptimizeSwitchBranches(BasicBlock* block);
+
+    bool fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev);
 
     bool fgOptimizeSwitchJumps();
 #ifdef DEBUG

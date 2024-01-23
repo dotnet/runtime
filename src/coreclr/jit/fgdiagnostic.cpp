@@ -136,7 +136,7 @@ void Compiler::fgDebugCheckUpdate()
         // A conditional branch should never jump to the next block as it can be folded into a BBJ_ALWAYS.
         if (block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()))
         {
-            noway_assert(!"BBJ_COND true/false targets are the same!");
+            noway_assert(!"Unnecessary jump to the next block!");
         }
 
         // For a BBJ_CALLFINALLY block we make sure that we are followed by a BBJ_CALLFINALLYRET block
@@ -2919,6 +2919,13 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
 
         maxBBNum = max(maxBBNum, block->bbNum);
+
+        // BBJ_COND's normal (false) jump target is expected to be the next block
+        // TODO-NoFallThrough: Allow bbFalseTarget to diverge from bbNext
+        if (block->KindIs(BBJ_COND))
+        {
+            assert(block->NextIs(block->GetFalseTarget()));
+        }
 
         // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
         // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will

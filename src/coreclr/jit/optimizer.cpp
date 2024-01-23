@@ -2436,7 +2436,7 @@ PhaseStatus Compiler::optOptimizeLayout()
 {
     noway_assert(opts.OptimizationEnabled());
 
-    fgUpdateFlowGraph();
+    fgUpdateFlowGraph(/* doTailDuplication */ false);
     fgReorderBlocks(/* useProfile */ true);
     fgUpdateFlowGraph();
 
@@ -3099,29 +3099,47 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
                 header->bbNum, enterBlock->bbNum, preheader->bbNum);
 
         fgReplaceJumpTarget(enterBlock, preheader, header);
+
+        // Fix up fall through
+        if (enterBlock->KindIs(BBJ_COND) && enterBlock->NextIs(header))
+        {
+            FlowEdge*   edge      = fgRemoveRefPred(header, enterBlock);
+            BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, enterBlock, true, preheader);
+            fgAddRefPred(preheader, newAlways, edge);
+            fgAddRefPred(newAlways, enterBlock, edge);
+
+            JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " to preheader\n", newAlways->bbNum,
+                    enterBlock->bbNum);
+            enterBlock->SetFalseTarget(newAlways);
+        }
     }
 
-    // For BBJ_COND blocks preceding header, fgReplaceJumpTarget set their false targets to preheader.
-    // Direct fallthrough to preheader by inserting a jump after the block.
-    // TODO-NoFallThrough: Remove this, and just rely on fgReplaceJumpTarget to do the fixup
-    BasicBlock* fallthroughSource = header->Prev();
-    if (fallthroughSource->KindIs(BBJ_COND) && fallthroughSource->FalseTargetIs(preheader))
+    // Fix up potential fallthrough into the preheader.
+    BasicBlock* fallthroughSource = preheader->Prev();
+    if ((fallthroughSource != nullptr) && fallthroughSource->KindIs(BBJ_COND))
     {
-        FlowEdge*   edge      = fgRemoveRefPred(preheader, fallthroughSource);
-        BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, fallthroughSource, true, preheader);
-        fgAddRefPred(preheader, newAlways, edge);
-        fgAddRefPred(newAlways, fallthroughSource, edge);
+        if (!loop->ContainsBlock(fallthroughSource))
+        {
+            // Either unreachable or an enter edge. The new fallthrough into
+            // the preheader is what we want. We still need to update refs
+            // which fgReplaceJumpTarget doesn't do for fallthrough.
+            FlowEdge* old = fgRemoveRefPred(header, fallthroughSource);
+            fgAddRefPred(preheader, fallthroughSource, old);
+        }
+        else
+        {
+            // For a backedge we need to make sure we're still going to the head,
+            // and not falling into the preheader.
+            FlowEdge*   edge      = fgRemoveRefPred(header, fallthroughSource);
+            BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, fallthroughSource, true, header);
+            fgAddRefPred(header, newAlways, edge);
+            fgAddRefPred(newAlways, fallthroughSource, edge);
 
-        JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " to preheader\n", newAlways->bbNum,
-                fallthroughSource->bbNum);
-        fallthroughSource->SetFalseTarget(newAlways);
-    }
+            JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " over preheader\n", newAlways->bbNum,
+                    fallthroughSource->bbNum);
+        }
 
-    // Make sure false target is set correctly for fallthrough into preheader.
-    if (!preheader->IsFirst())
-    {
-        fallthroughSource = preheader->Prev();
-        assert(!fallthroughSource->KindIs(BBJ_COND) || fallthroughSource->FalseTargetIs(preheader));
+        fallthroughSource->SetFalseTarget(fallthroughSource->Next());
     }
 
     optSetPreheaderWeight(loop, preheader);
