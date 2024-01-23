@@ -31,7 +31,7 @@ Unlike traditional C# compiler generated async, async2 methods shall not save/re
 #### Integration with `SynchronizationContext` and resumption
 
 A new attribute `System.Runtime.CompilerServices.ConfigureAwaitAttribute` will be defined. It can be applied at the assembly/module/type/method level. It shall be defined as 
-```
+```cs
 namespace System.Runtime.CompilerServices
 {
     class ConfigureAwaitAttribute : Attribute
@@ -52,14 +52,14 @@ The behavior of this attribute shall be to apply configure await semantics for r
 
 Any MethodDef that is an async2 based method can also be called as a `Task`/`ValueTask` returning method. Likewise any MethodDef which returns `Task` or `ValueTask` can be called via an async2 entrypoint. In addition, MethodImpl records and virtual method override rules shall be adjusted so that if an interface or base type defines a virtual method using a signature of `Task`/`ValueTask` then it can be overriden via a method that is an async2 api. The same is true vice versa. For overrides implemented via `MethodImpl` the MethodImpl must describe the Body and Decl using signatures which are either both async2 or `Task`/`ValueTask` returning, but the MethodImpl will also apply to the other async variant. These overrides are permitted to be interleaved, so for example
 
-```
+```cs
 class Base
 {
     public virtual async Task<int> Method() { ... }
 }
 class Derived : Base
 {
-    public override async2 int Method() { ... }
+    public override async2 Task<int> Method() { ... }
 }
 
 class MoreDerived : Derived
@@ -71,7 +71,7 @@ class MoreDerived : Derived
 Any attempt to call an entrypoint will resolve to either an implementation which matches the signature, or in case of an async variant mismatch, will resolve to a runtime generated thunk which will call into the developer provided implementation.
 
 Methods that return Task via generics do not follow this rule. For instance
-```
+```cs
 class MyGeneric<T>
 {
     T DoSomething() { ... }
@@ -84,16 +84,16 @@ class MyGeneric<T>
 
 A thunk from an async2 api surface to a Task based implementation will have the following psuedocode, if a legal thunk can be made.
 
-```
-async2 ReturnType ThunkAsync(ParameterType param1, ParameterType2 param2, ...)
+```cs
+async2 Task<ReturnType> ThunkAsync(ParameterType param1, ParameterType2 param2, ...)
 {
     return RuntimeHelpers.UnsafeAwaitAwaiterFromRuntimeAsync<TaskAwaiter<ReturnType>, ReturnType>(TargetMethod(param1, param2, ...));
 }
 ```
 
 If any of the parameter types to the target method are ref parameters, or ref structures, then the Thunk generated will be 
-```
-async2 ReturnType ThunkAsync(ParameterType param1, ParameterType2 param2, ...)
+```cs
+async2 Task<ReturnType> ThunkAsync(ParameterType param1, ParameterType2 param2, ...)
 {
     throw new InvalidProgramException();
 }
@@ -130,8 +130,11 @@ The StackTrace of a exception thrown within an async2 method shall include any a
 The runtime shall provide the following apis
 
 ```
-        public static async2 void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
-        public static async2 void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
+        // public static async2 Task AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
+        public static void modopt([System.Runtime]System.Threading.Tasks.Task) AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
+
+        // public static async2 Task UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
+        public static void modopt([System.Runtime]System.Threading.Tasks.Task) UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
 ```
 
 Any IL in an async2 method which needs to await will follow the existing C# model of calling `IsCompleted` and `GetResult()` and in the middle instead of using the existing patterns for suspension shall call one of the above helper methods.
@@ -277,7 +280,7 @@ The resumption stub implements the following:
 
 In pseudo-C#:
 ```csharp
-static async2 int Foo(int a, int b)
+static async2 Task<int> Foo(int a, int b)
 {
     ...
 }
@@ -355,7 +358,7 @@ private struct RuntimeAsyncAwaitState
 [ThreadStatic]
 private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
 
-public static async2 void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
+public static async2 Task AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
 {
     ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
     Continuation? sentinelContinuation = state.SentinelContinuation;
@@ -438,8 +441,8 @@ It turns out that due to the api design of how async2 code interacts with the ex
 
 ### Thunk from the async2 surface to Task api implementation
 
-```
-async2 ReturnType Thunk(ParameterType param1, ParameterType2 param2, ...)
+```cs
+async2 Task<ReturnType> Thunk(ParameterType param1, ParameterType2 param2, ...)
 {
     var awaiter = TargetMethod(param1, param2, ...).GetAwaiter();
     if (!awaiter.IsCompleted)
@@ -452,13 +455,104 @@ async2 ReturnType Thunk(ParameterType param1, ParameterType2 param2, ...)
 
 ## C# Language changes
 
-TBD, and not part of this experiment. We have built something. It is strictly for demonstrating that code CAN be generated.
+For the purpose of the experiment we have extended the syntax and semantics of C# language to support async2 methods. It is not the goal for this syntax to become the syntax in the actual implementation, however we will record our experiences with the experimental syntax in case it is useful when designing the actual syntax.
+  
+#### === Syntax v2 (current)
 
-Major identified concerns are
+The syntax that is currently in use in the experiment looks like:
 
-1. What about code which today looks like `public async Task<Task<Task<int>>> Method()` What would the new syntax be?
-2. It is desirable to be able to implement methods that return `ValueTask` as well as just `Task` with an async2 method. How do we distinguish?
-3. There is an existing concept for `async void` methods. Does that model need to exist in the new system.
+```cs
+async2 Task<int> M1(int arg) {}
+
+// meaning in IL 
+int32 modopt([System.Runtime]System.Threading.Tasks.Task`1) M1(int arg)
+```
+
+That is basically the same syntax as used by regular async, except for a different modifier. (The name of the modifier is intentionally `async2`, to indicate that the name is at best a placeholder). The syntax naturally generalizes to:
+- Nongeneric Task-returning.
+```cs
+async2 Task M1(int arg) {}
+
+// meaning in IL 
+void modopt([System.Runtime]System.Threading.Tasks.Task) M1(int arg)
+```
+- ValueTask-returning.
+```cs
+async2 ValueTask<int> M1(int arg) {}
+
+// meaning in IL 
+int32 modopt([System.Runtime]System.Threading.Tasks.ValueTask`1) M1(int arg)
+```
+and combinations of the above.
+
+Internal Roslyn compiler representation of async2 methods is roughly the same as for regular `Task/ValueTask` returning methods, except that the method symbol reports that it is an async2 method thus scenarios that are different for different flavors of async/async2 (i.e. lowering of `await` operator), can work differently. 
+
+In a particular case of lowering await operator, if we notice that both containing and awaited members are async2, we can lower the `await M1()` into a direct call to the `int modopt(..)M1()`
+Conversely, if we see an invocation of `M1()` without await or in a regular, non-async2 member, we lower that into a call to `Task<int> M1()` thunk.
+And when inside an async2 function we see an `await` with an argument that is not an async2, we emit corresponding `GetAwaiter`/`IsCompleted`/`UnsafeAwaitAwaiterFromRuntimeAsync`/`GetResult` sequence.
+
+For example.
+```cs
+public async2 Task<int> M1()
+{
+    await Task.Yield();
+    return 3;
+}
+```
+
+is lowered to an equivalent of:
+
+```cs
+public int32 modopt([System.Runtime]System.Threading.Tasks.Task`1) M1()
+{
+    YieldAwaitable.YieldAwaiter awaiter = Task.Yield().GetAwaiter();
+    if (!awaiter.IsCompleted)
+    {
+        RuntimeHelpers.UnsafeAwaitAwaiterFromRuntimeAsync<YieldAwaitable.YieldAwaiter>(awaiter);
+    }
+    awaiter.GetResult();
+    return 3;
+}
+```
+
+Operations that are not affected by `async2`, such as generic substitution or Overriding/Hiding/Implementing end up naturally working with async2 methods. Note that these areas are some of the most complex parts of the compiler. It was very beneficial to not having to specialcase async2 in these areas.
+
+One thing to observe is that unlike regular `async`, which is a source-only concept, the async2 survives serialization/deserialization via metadata. 
+Effectively we treat the `int32 modopt([System.Runtime]System.Threading.Tasks.Task'1)` as just a special encoding of `Task<int>` return type with additional property of making the method `async2`.
+
+#### Unresolved concerns.
+None of the following appears to be unresolvable or blocking, we just did not get to these due to time constraints and the scoping of the experiment.
+
+1. There is an existing concept for `async void` methods. Does that model need to exist in the new system?
+1. It looks like there might be a need for async2 flavors of delegates. 
+To the runtime these would look like delegates with async2 `Invoke` method and may "just work". They would need some kind of syntax in C#.
+1. It looks like there might be a need for async2 flavors of method pointers - to represent async2 methods. 
+In the runtime this is representable via the modopt on the return type and, again, might "just work", so this is mostly a matter of picking C# syntax/semantics.
+1. Is there any impact on async enumerable/iterator?  
+While async2 is interoperable with regular async and these interfaces could be used or even implemented by the means of async2 methods, there could be opportunities to employ async2 implementations in the lowering. It is not clear if that could be beneficial without defining/deriving async2 versions of `IAsyncEnumerable`/`IAsyncEnumerator`/`IAsyncDisposable`.
+
+#### ==== Syntax v1 (abandoned)
+
+Initially we assumed a different syntax for async2 methods. It ended up not working well beyond simple scenarios. We will still describe that here for future reference as something that appear to be a syntactical dead-end.
+
+The initial version of the syntax looked like:
+
+```cs
+async2 int M1(int arg) {}
+
+// meaning in IL 
+int32 modopt([System.Runtime]System.Threading.Tasks.Task`1) M1(int arg)
+```
+
+While initially favored for being close to the IL representation, it was eventually abandoned due to major problems and inconsistencies.
+- When the method above is called from regular code without awaiting, user gets `Task<int>` result. That is not what it looks in the signature.
+- For the purposes of overriding/hiding/inheriting the method above is equivalent to `Task<int> M1(int arg)`, which is easily observable.
+For example it is illegal to add such method in the same class as invoking `Task<int> M1(int arg)` would become ambiguous. On the other hand overloading a method like `int M1(int arg)` is completely non-conflicting.  
+This was very confusing, both as a programming model and as internal implementation.  
+- Internally, due to duality with `Task<int> M1(int arg)` signature it was often necessary to "lift" the signature into the `Task<int>` form, perform operation there (such as generic substitution or overriding resolution) and then "unlift" the result back into `async2 int` form. It was frequintly a source of subtle bugs.  
+- When we got to interfacing with `ValueTask` there was no good place in the syntax to express a variant of the same method, but with `ValueTask`-based thunk.
+For some time we used an attribute and that was verbose and not symmetrical.  
+Besides, it is valid for the same class to contain two async2 methods that differ only on `Task`/`ValueTask` flavor of the thunk. It would mean that in the source one could have two methods in the same class, differing only by an attribute.  
 
 ## Microbenchmarks
 
