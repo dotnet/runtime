@@ -17,7 +17,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder method = type.DefineMethod("MImpl", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 ilGenerator.Emit(OpCodes.Ldc_I4, 2);
@@ -26,7 +26,7 @@ namespace System.Reflection.Emit.Tests
                 MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod("M");
                 type.DefineMethodOverride(method, declaration);
                 type.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 InterfaceMapping im = type.GetInterfaceMap(typeof(DefineMethodOverrideInterface));
                 Assert.Equal(type, im.TargetType);
@@ -35,9 +35,12 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(declaration, im.InterfaceMethods[0]);
                 Assert.Equal(method, im.TargetMethods[0]);
 
-                Type typeFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path).GetType("MyType");
-                MethodInfo methodFromDisk = typeFromDisk.GetMethod("MImpl");
-                Assert.True(methodFromDisk.IsVirtual);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Type typeFromDisk = mlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                    MethodInfo methodFromDisk = typeFromDisk.GetMethod("MImpl");
+                    Assert.True(methodFromDisk.IsVirtual);
+                }
             }
         }
 
@@ -46,7 +49,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 type.SetParent(typeof(DefineMethodOverrideClass));
                 MethodBuilder method = type.DefineMethod("M2", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
                 ILGenerator ilGenerator = method.GetILGenerator();
@@ -55,10 +58,13 @@ namespace System.Reflection.Emit.Tests
                 MethodInfo declaration = typeof(DefineMethodOverrideClass).GetMethod("M");
                 type.DefineMethodOverride(method, declaration);
                 Type createdType = type.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
-                Type typeFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path).GetType("MyType");
-                Assert.True(typeFromDisk.GetMethod("M2").IsVirtual);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Type typeFromDisk = mlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                    Assert.True(typeFromDisk.GetMethod("M2").IsVirtual);
+                }
             }
         }
 
@@ -67,7 +73,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 type.AddInterfaceImplementation(typeof(GenericInterface<string>));
                 MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Virtual, typeof(string), Type.EmptyTypes);
                 ILGenerator ilGenerator = method.GetILGenerator();
@@ -75,25 +81,28 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.Emit(OpCodes.Ret);
                 type.DefineMethodOverride(method, typeof(GenericInterface<string>).GetMethod("Method"));
                 Type createdType = type.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
-                Type typeFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path).GetType("MyType");
-                MethodInfo methodFromDisk = typeFromDisk.GetMethod("Method");
-                Assert.True(methodFromDisk.IsVirtual);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Type typeFromDisk = mlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                    MethodInfo methodFromDisk = typeFromDisk.GetMethod("Method");
+                    Assert.True(methodFromDisk.IsVirtual);
 
-                InterfaceMapping im = type.GetInterfaceMap(typeof(GenericInterface<string>));
-                Assert.Equal(type, im.TargetType);
-                Assert.Equal(typeof(GenericInterface<string>), im.InterfaceType);
-                Assert.Equal(1, im.InterfaceMethods.Length);
-                Assert.Equal(typeof(GenericInterface<string>).GetMethod("Method"), im.InterfaceMethods[0]);
-                Assert.Equal(method, im.TargetMethods[0]);
+                    InterfaceMapping im = type.GetInterfaceMap(typeof(GenericInterface<string>));
+                    Assert.Equal(type, im.TargetType);
+                    Assert.Equal(typeof(GenericInterface<string>), im.InterfaceType);
+                    Assert.Equal(1, im.InterfaceMethods.Length);
+                    Assert.Equal(typeof(GenericInterface<string>).GetMethod("Method"), im.InterfaceMethods[0]);
+                    Assert.Equal(method, im.TargetMethods[0]);
+                }
             }
         }
 
         [Fact]
         public void DefineMethodOverride_NullMethodInfoBody_ThrowsArgumentNullException()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             MethodInfo method = typeof(DefineMethodOverrideClass).GetMethod("M");
             MethodInfo imethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
 
@@ -104,7 +113,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineMethodOverride_MethodNotInClass_ThrowsArgumentException()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             MethodInfo body = typeof(DefineMethodOverrideInterface).GetMethod("M");
             MethodInfo declaration = typeof(DefineMethodOverrideClass).GetMethod("M");
 
@@ -114,7 +123,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineMethodOverride_TypeCreated_ThrowsInvalidOperationException()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
             method.GetILGenerator().Emit(OpCodes.Ret);
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
@@ -128,7 +137,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineMethodOverride_MethodNotVirtual_ThrowsArgumentException()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public, typeof(int), null);
             ILGenerator ilGenerator = method.GetILGenerator();
             ilGenerator.Emit(OpCodes.Ldc_I4, 2);
@@ -143,7 +152,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineMethodOverride_TypeDoesNotImplementOrInheritMethod_ThrowsArgumentException()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
             method.GetILGenerator().Emit(OpCodes.Ret);
             MethodInfo interfaceMethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
@@ -160,7 +169,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineMethodOverride_CalledAgainWithSameDeclaration_ThrowsArgumentException()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             MethodBuilder method1 = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
             ILGenerator ilGenerator1 = method1.GetILGenerator();
             ilGenerator1.Emit(OpCodes.Ldc_I4, 1);
@@ -187,7 +196,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(typeof(string), new Type[] { typeof(string), typeof(int) })]
         public void DefineMethodOverride_BodyAndDeclarationHaveDifferentSignatures_ThrowsArgumentException(Type returnType, Type[] parameterTypes)
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, returnType, parameterTypes);
             method.GetILGenerator().Emit(OpCodes.Ret);
             type.AddInterfaceImplementation(typeof(InterfaceWithMethod));
@@ -210,7 +219,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void DefineMethodOverride_StaticVirtualInterfaceMethodWorks()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
 
             TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
@@ -240,7 +249,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void GetInterfaceMap_WithImplicitOverride_DefineMethodOverride()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
 
             TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
@@ -294,7 +303,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void GetInterfaceMap_Validations()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
 
             Assert.Throws<NotSupportedException>(() => type.GetInterfaceMap(typeof(Impl))); // concreteTypeWithAbstractMethod not created
@@ -331,7 +340,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void CreateType_ValidateAllAbstractMethodsAreImplemented()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder typeNotImplementedIfaceMethod, out MethodInfo _);
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeNotImplementedIfaceMethod);
             typeNotImplementedIfaceMethod.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
             TypeBuilder partiallyImplementedType = module.DefineType("Type2", TypeAttributes.Public);
@@ -359,7 +368,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void CreateType_ValidateMethods()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder concreteTypeWithAbstractMethod, out MethodInfo _);
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder concreteTypeWithAbstractMethod);
             concreteTypeWithAbstractMethod.DefineMethod("AbstractMethod", MethodAttributes.Public | MethodAttributes.Abstract);
             Assert.Throws<InvalidOperationException>(() => concreteTypeWithAbstractMethod.CreateType()); // Type must be declared abstract if any of its methods are abstract.
 
@@ -386,7 +395,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void GetMethodsGetMethodImpl_Tests()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             MethodBuilder voidPublicMethod = type.DefineMethod("VoidMethod", MethodAttributes.Public, typeof(void), [typeof(int)]);
             MethodBuilder voidAssemblyStaticMethod = type.DefineMethod("VoidMethod", MethodAttributes.Assembly | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
             MethodBuilder voidFamilyOrAssemblyMethod = type.DefineMethod("VoidMethod", MethodAttributes.FamORAssem, typeof(void), Type.EmptyTypes);
@@ -425,14 +434,14 @@ namespace System.Reflection.Emit.Tests
                 Type[] cmodsReq2 = [typeof(uint)];
                 Type[] cmodsOpt1 = [typeof(int)];
                 Type[] cmodsOpt2 = [typeof(long), typeof(byte), typeof(bool)];
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder methodAll = type.DefineMethod("AllModifiers", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
                     typeof(string), [typeof(int), typeof(short)], [typeof(Version)], [typeof(int), typeof(long)], [cmodsReq1, cmodsReq2], [cmodsOpt1, cmodsOpt2]);
                 ILGenerator ilGenerator = methodAll.GetILGenerator();
                 ilGenerator.Emit(OpCodes.Ldstr, "Hello World");
                 ilGenerator.Emit(OpCodes.Ret);
                 Type createdType = type.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
                 {
@@ -466,7 +475,7 @@ namespace System.Reflection.Emit.Tests
 
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("DefinePInvokeMethodExecution_Windows"), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("DefinePInvokeMethodExecution_Windows"));
                 TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
                 MethodBuilder mb = tb.DefinePInvokeMethod(
                     "GetEnvironmentVariableW",
@@ -480,7 +489,7 @@ namespace System.Reflection.Emit.Tests
                 mb.SetImplementationFlags(mb.GetMethodImplementationFlags() | MethodImplAttributes.PreserveSig);
 
                 Type t = tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
                 Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
@@ -535,12 +544,12 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 MethodBuilder mb = tb.DefinePInvokeMethod(p.MethodName, p.LibName, p.EntrypointName, p.Attributes, p.ManagedCallConv, p.ReturnType,
                     p.ReturnTypeReqMods, p.ReturnTypeOptMods, p.ParameterTypes, p.ParameterTypeReqMods, p.ParameterTypeOptMods, p.NativeCallConv, p.Charset);
                 mb.SetImplementationFlags(mb.GetMethodImplementationFlags() | MethodImplAttributes.PreserveSig);
                 Type t = tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
                 {
@@ -667,7 +676,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 FieldBuilder greetingField = tb.DefineField("Greeting", typeof(string), FieldAttributes.Private | FieldAttributes.Static);
                 ConstructorBuilder constructor = tb.DefineTypeInitializer();
                 ILGenerator constructorIlGenerator = constructor.GetILGenerator();
@@ -676,7 +685,7 @@ namespace System.Reflection.Emit.Tests
                 constructorIlGenerator.Emit(OpCodes.Ret);
 
                 tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
                 Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
@@ -691,7 +700,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 FieldBuilder myFieldBuilder = tb.DefineUninitializedData("MyGreeting", 4, FieldAttributes.Public);
                 var loadAddressMethod = tb.DefineMethod("LoadAddress", MethodAttributes.Public | MethodAttributes.Static, typeof(IntPtr), null);
                 var methodIL = loadAddressMethod.GetILGenerator();
@@ -699,7 +708,7 @@ namespace System.Reflection.Emit.Tests
                 methodIL.Emit(OpCodes.Ret);
 
                 Type t = tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
                 Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);

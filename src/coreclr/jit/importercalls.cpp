@@ -2788,7 +2788,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_Internal_Runtime_MethodTable_Of:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
-            case NI_System_EETypePtr_EETypePtrOf:
                 betterToExpand = true;
                 break;
 
@@ -2981,7 +2980,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_Internal_Runtime_MethodTable_Of:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
-            case NI_System_EETypePtr_EETypePtrOf:
             {
                 assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI)); // Only NativeAOT supports it.
                 CORINFO_RESOLVED_TOKEN resolvedToken;
@@ -8843,13 +8841,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "HasFlag") == 0)
                         {
                             result = NI_System_Enum_HasFlag;
-                        }
-                    }
-                    else if (strcmp(className, "EETypePtr") == 0)
-                    {
-                        if (strcmp(methodName, "EETypePtrOf") == 0)
-                        {
-                            result = NI_System_EETypePtr_EETypePtrOf;
                         }
                     }
                     break;

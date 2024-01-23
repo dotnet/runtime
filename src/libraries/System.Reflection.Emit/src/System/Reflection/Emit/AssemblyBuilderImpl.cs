@@ -19,15 +19,9 @@ namespace System.Reflection.Emit
 
         internal List<CustomAttributeWrapper>? _customAttributes;
 
-        internal AssemblyBuilderImpl(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+        internal AssemblyBuilderImpl(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes = null)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
-            name = (AssemblyName)name.Clone();
-
-            ArgumentException.ThrowIfNullOrEmpty(name.Name, "AssemblyName.Name");
-
-            _assemblyName = name;
+            _assemblyName = (AssemblyName)name.Clone();
             _coreAssembly = coreAssembly;
             _metadataBuilder = new MetadataBuilder();
 
@@ -39,10 +33,6 @@ namespace System.Reflection.Emit
                 }
             }
         }
-
-        internal static AssemblyBuilderImpl DefinePersistedAssembly(AssemblyName name, Assembly coreAssembly,
-            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
-                => new AssemblyBuilderImpl(name, coreAssembly, assemblyAttributes);
 
         private void WritePEImage(Stream peStream, BlobBuilder ilBuilder, BlobBuilder fieldData)
         {
@@ -64,7 +54,7 @@ namespace System.Reflection.Emit
             peBlob.WriteContentTo(peStream);
         }
 
-        internal void Save(Stream stream)
+        protected override void SaveCore(Stream stream)
         {
             ArgumentNullException.ThrowIfNull(stream);
 
@@ -102,14 +92,6 @@ namespace System.Reflection.Emit
 
         private static AssemblyFlags AddContentType(AssemblyFlags flags, AssemblyContentType contentType)
             => (AssemblyFlags)((int)contentType << 9) | flags;
-
-        internal void Save(string assemblyFileName)
-        {
-            ArgumentNullException.ThrowIfNull(assemblyFileName);
-
-            using var peStream = new FileStream(assemblyFileName, FileMode.Create, FileAccess.Write);
-            Save(peStream);
-        }
 
         protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
