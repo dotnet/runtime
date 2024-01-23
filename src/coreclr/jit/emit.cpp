@@ -5991,6 +5991,12 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader,
 // emitSetLoopBackEdge : Sets igLoopBackEdge field, if not already set and
 //                       if currIG has back-edge to dstIG.
 //
+//  Arguments:
+//      loopTopBlock - The target block of a branch instruction that is expected to be aligned.
+//
+//  Returns:
+//      true if igLoopBackEdge is set, false otherwise.
+//
 // Notes:
 //    Although we align only inner-most loops, we might see intersected loops because of control flow
 //    re-arrangement like adding a split edge in LSRA.
@@ -6000,16 +6006,21 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader,
 //    then *do not align* either of them since the flow is complicated enough that aligning one of them
 //    will not improve performance.
 //
-void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
+//    This means that a call to this function might set `igLoopBackEdge`, but a subsequent call might remove
+//    the alignment instruction from the current IG (but not null out `igLoopBackEdge`).
+//
+bool emitter::emitSetLoopBackEdge(const BasicBlock* loopTopBlock)
 {
-    insGroup* dstIG = (insGroup*)loopTopBlock->bbEmitCookie;
+    assert(loopTopBlock->isLoopAlign());
+
+    insGroup* dstIG = (insGroup*)emitCodeGetCookie(loopTopBlock);
     if (dstIG == nullptr)
     {
         // This is a forward branch.
         JITDUMP("ALIGN: loop block " FMT_BB
                 " needing alignment has not been generated yet; not marking IG back edge.\n",
                 loopTopBlock->bbNum);
-        return;
+        return false;
     }
 
     if (dstIG->igNum > emitCurIG->igNum)
@@ -6017,9 +6028,10 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
         // Is this possible?
         JITDUMP("ALIGN: found forward branch from IG%02u to IG%02u; not marking IG back edge.\n", emitCurIG->igNum,
                 dstIG->igNum);
-        return;
+        return false;
     }
 
+    bool backEdgeSet      = false;
     bool alignCurrentLoop = true;
     bool alignLastLoop    = true;
 
@@ -6031,6 +6043,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
     {
         assert(emitCurIG->igLoopBackEdge == nullptr);
         emitCurIG->igLoopBackEdge = dstIG;
+        backEdgeSet               = true;
 
         JITDUMP("** IG%02u jumps back to IG%02u forming a loop.\n", currLoopEnd, currLoopStart);
 
@@ -6119,6 +6132,8 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 
         assert(markedLastLoop && markedCurrLoop);
     }
+
+    return backEdgeSet;
 }
 
 //-----------------------------------------------------------------------------

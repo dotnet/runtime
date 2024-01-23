@@ -2224,7 +2224,7 @@ inline PredBlockList::iterator& PredBlockList::iterator::operator++()
  *  emitter to convert a basic block to its corresponding emitter cookie.
  */
 
-void* emitCodeGetCookie(BasicBlock* block);
+void* emitCodeGetCookie(const BasicBlock* block);
 
 // An enumerator of a block's all successors. In some cases (e.g. SsaBuilder::TopologicalSort)
 // using iterators is not exactly efficient, at least because they contain an unnecessary
