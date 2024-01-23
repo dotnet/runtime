@@ -6338,7 +6338,7 @@ bool Compiler::gtHaveStoreInterference(GenTree* treeWithStores, GenTree* tree)
 
     class Visitor final : public GenTreeVisitor<Visitor>
     {
-        GenTree* m_op1;
+        GenTree* m_readTree;
 
     public:
         enum
@@ -6346,7 +6346,7 @@ bool Compiler::gtHaveStoreInterference(GenTree* treeWithStores, GenTree* tree)
             DoPreOrder = true,
         };
 
-        Visitor(Compiler* compiler, GenTree* op1) : GenTreeVisitor(compiler), m_op1(op1)
+        Visitor(Compiler* compiler, GenTree* readTree) : GenTreeVisitor(compiler), m_readTree(readTree)
         {
         }
 
@@ -6360,7 +6360,7 @@ bool Compiler::gtHaveStoreInterference(GenTree* treeWithStores, GenTree* tree)
 
             if (node->OperIsLocalStore())
             {
-                if (m_compiler->gtTreeHasLocalRead(m_op1, node->AsLclVarCommon()->GetLclNum()))
+                if (m_compiler->gtTreeHasLocalRead(m_readTree, node->AsLclVarCommon()->GetLclNum()))
                 {
                     return WALK_ABORT;
                 }
