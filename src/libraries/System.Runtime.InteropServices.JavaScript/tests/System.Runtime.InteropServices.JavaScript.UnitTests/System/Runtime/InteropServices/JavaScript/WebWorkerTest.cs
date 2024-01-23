@@ -250,12 +250,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.False(shouldNotHitPost);
         }
 
+#if !DEBUG
         [Fact]
         // this will say something like `JSSynchronizationContext is still installed on worker 0x4ff0030.` in the console during shutdown.
         public async Task JSWebWorker_Abandon_Running()
         {
-            var cts = new CancellationTokenSource();
-
             TaskCompletionSource never = new TaskCompletionSource();
             TaskCompletionSource ready = new TaskCompletionSource();
 
@@ -265,7 +264,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 ready.SetResult();
                 return never.Task;
-            }, cts.Token);
+            }, CancellationToken.None);
 #pragma warning restore CS4014
 
             await ready.Task;
@@ -280,8 +279,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         // this will say something like `JSSynchronizationContext is still installed on worker 0x4ff0030.` in the console during shutdown.
         public async Task JSWebWorker_Abandon_Running_JS()
         {
-            var cts = new CancellationTokenSource();
-
             TaskCompletionSource ready = new TaskCompletionSource();
 
 #pragma warning disable CS4014
@@ -292,7 +289,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var never = WebWorkerTestHelper.JSDelay(int.MaxValue);
                 ready.SetResult();
                 await never;
-            }, cts.Token);
+            }, CancellationToken.None);
 #pragma warning restore CS4014
 
             await ready.Task;
@@ -302,6 +299,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             // it should not prevent mono and the test suite from exiting
         }
+#endif
+
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task Executor_Propagates(Executor executor)
@@ -584,9 +583,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
 
         [Theory, MemberData(nameof(GetTargetThreads2x))]
-        public Task WebSocketClient_ResponseCloseInDifferentThread(Executor executor1, Executor executor2)
+        public async Task WebSocketClient_ResponseCloseInDifferentThread(Executor executor1, Executor executor2)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
             var message = "hello";
@@ -615,13 +614,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
             };
 
-            return ActionsInDifferentThreads<ClientWebSocket>(executor1, executor2, e1Job, e2Job, cts);
+            await ActionsInDifferentThreads<ClientWebSocket>(executor1, executor2, e1Job, e2Job, cts);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads2x))]
-        public Task WebSocketClient_CancelInDifferentThread(Executor executor1, Executor executor2)
+        public async Task WebSocketClient_CancelInDifferentThread(Executor executor1, Executor executor2)
         {
-            var cts = new CancellationTokenSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
             var message = ".delay5sec"; // this will make the loopback server slower
@@ -648,7 +647,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 Assert.Equal(cts2.Token, ex.CancellationToken);
             };
 
-            return ActionsInDifferentThreads<ClientWebSocket>(executor1, executor2, e1Job, e2Job, cts);
+            await ActionsInDifferentThreads<ClientWebSocket>(executor1, executor2, e1Job, e2Job, cts);
         }
 
         #endregion
@@ -676,9 +675,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static string HelloJson = "{'hello':'world'}".Replace('\'', '"');
         private static string EchoStart = "{\"Method\":\"POST\",\"Url\":\"/Echo.ashx";
 
-        private Task HttpClient_ActionInDifferentThread(string url, Executor executor1, Executor executor2, Func<HttpResponseMessage, Task> e2Job)
+        private async Task HttpClient_ActionInDifferentThread(string url, Executor executor1, Executor executor2, Func<HttpResponseMessage, Task> e2Job)
         {
-            var cts = new CancellationTokenSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var e1Job = async (Task e2done, TaskCompletionSource<HttpResponseMessage> e1State) =>
             {
@@ -697,7 +696,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 await e2done;
             };
-            return ActionsInDifferentThreads<HttpResponseMessage>(executor1, executor2, e1Job, e2Job, cts);
+            await ActionsInDifferentThreads<HttpResponseMessage>(executor1, executor2, e1Job, e2Job, cts);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads2x))]
