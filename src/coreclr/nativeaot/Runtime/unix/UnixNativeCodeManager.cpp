@@ -87,12 +87,12 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
 
     unw_proc_info_t procInfo;
 
-    if (!UnwindHelpers::GetUnwindProcInfo(PINSTRToPCODE((TADDR)ControlPC), m_UnwindInfoSections, &procInfo))
+    if (!UnwindHelpers::GetUnwindProcInfo((TADDR)ControlPC, m_UnwindInfoSections, &procInfo))
     {
         return false;
     }
 
-    assert((procInfo.start_ip <= PINSTRToPCODE((TADDR)ControlPC)) && (PINSTRToPCODE((TADDR)ControlPC) < procInfo.end_ip));
+    assert((procInfo.start_ip <= (TADDR)ControlPC) && ((TADDR)ControlPC < procInfo.end_ip));
 
     pMethodInfo->start_ip = procInfo.start_ip;
     pMethodInfo->format = procInfo.format;
