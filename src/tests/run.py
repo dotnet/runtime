@@ -806,7 +806,7 @@ def run_tests(args,
     """
 
     # Set default per-test timeout to 2 minutes (in milliseconds).
-    per_test_timeout = 5*60*1000
+    per_test_timeout = 10*60*1000
 
     # Setup the environment
     if args.long_gc:

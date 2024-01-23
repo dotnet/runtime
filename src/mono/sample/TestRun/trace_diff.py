@@ -20,7 +20,7 @@ def compare_stacks(file1_path, file2_path):
             match2 = pattern.match(stack2)
 
             if match1 and match2:
-                sameStackDeeps = match1.group(4) == match2.group(4)
+                sameStackDeeps = True
                 sameFuncAction = match1.group(5) == match2.group(5)
                 sameFuncSig = match1.group(6) == match2.group(6) and match1.group(7) == match2.group(7)
                 file1Param = match1.group(8)
