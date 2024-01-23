@@ -5460,9 +5460,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         shouldExpandInline = isCastClass && isClassExact;
     }
 
-    // CI test, expand all casts in the late phase
-    shouldExpandInline = false;
-
     // Pessimistically assume the jit cannot expand this as an inline test
     bool                  canExpandInline = false;
     bool                  partialExpand   = false;
