@@ -499,6 +499,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         genHWIntrinsicJumpTableFallback(intrinsicId, op2Reg, baseReg, offsReg, emitSwCase);
                     }
                 }
+                else if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) && HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) == numArgs && !op2->IsCnsIntOrI())
+                {
+                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_RM(node, ins, simdSize, i); };
+                    regNumber                    baseReg = node->ExtractTempReg();
+                    regNumber                    offsReg = node->GetSingleTempReg();
+                    genHWIntrinsicJumpTableFallback(intrinsicId, op2Reg, baseReg, offsReg, emitSwCase);
+                }
                 else if (node->TypeGet() == TYP_VOID)
                 {
                     genHWIntrinsic_R_RM(node, ins, simdSize, op1Reg, op2);
@@ -737,6 +744,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             unreached();
             break;
     }
+}
+
+//------------------------------------------------------------------------
+// genHWIntrinsic_R_RM: Generates code for a hardware intrinsic node that takes a
+//                      register operand and a register/memory operand.
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//    ins  - The instruction being generated
+//    attr - The emit attribute for the instruction being generated
+//    ival - a "fake" immediate to indicate the rounding mode
+//
+void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival)
+{
+    regNumber targetReg = node->GetRegNum();
+    GenTree*  op1       = node->Op(1);
+    regNumber op1Reg    = op1->GetRegNum();
+
+    assert(targetReg != REG_NA);
+    assert(op1Reg != REG_NA);
+
+    node->SetEmbRoundingMode((uint8_t)ival);
+
+    genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
 }
 
 //------------------------------------------------------------------------
@@ -2585,7 +2616,20 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             if (varTypeIsFloating(baseType))
             {
                 instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
+                // There are cases when ConvertToVector256Int32/UInt32 with embedded rounding faeture are called and the control byte is not constant.
+                // Generate the jump table fallback in this case.
+                if(HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) && HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) == numArgs && !node->Op(numArgs)->IsCnsIntOrI())
+                {
+                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_RM(node, ins, attr, i); };
+                    regNumber                    op2Reg  = node->Op(2)->GetRegNum();
+                    regNumber                    baseReg = node->ExtractTempReg();
+                    regNumber                    offsReg = node->GetSingleTempReg();
+                    genHWIntrinsicJumpTableFallback(intrinsicId, op2Reg, baseReg, offsReg, emitSwCase);
+                }
+                else
+                {
+                    genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
+                }
                 break;
             }
             FALLTHROUGH;
