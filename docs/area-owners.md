@@ -187,7 +187,7 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 | arch-loongarch64 | @shushanhf    | @LuckyXu-HF                                                         |              |
 | arch-riscv       | @gbalykov     | @hjleee, @wscho77, @clamp03, @JongHeonChoi, @t-mustafin, @viewizard |              |
 | arch-s390x       | @uweigand     | @uweigand                                                           |              |
-| arch-wasm        | @lewing       | @lewing, @pavelsavara, @BrzVlad                                     |              |
+| arch-wasm        | @lewing       | @lewing, @pavelsavara                                               |              |
 
 ## Community Triagers
 
