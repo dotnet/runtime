@@ -640,8 +640,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 else if (con->IsIconHandle(GTF_ICON_TLSGD_OFFSET))
                 {
                     attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
-                    //attr = (emitAttr)((unsigned)attr & ~EA_8BYTE);
-                    //attr = (emitAttr)((unsigned)attr | EA_2BYTE);
                 }
             }
 
@@ -6417,8 +6415,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             else
             {
                 GenTree* tlsGetAddr = (GenTree*)call->gtCallMethHnd;
-                
-                //printf("%x\n", arg1);
+
+                // NativeAOT code needs special code sequence prefix of call so the
+                // linker will do the fixup and emit accurate TLS access information.
                 GetEmitter()->emitIns_Data16(1);
                 GetEmitter()->emitIns_Data16(1);
 

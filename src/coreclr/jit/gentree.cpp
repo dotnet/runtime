@@ -10876,6 +10876,10 @@ void Compiler::gtDispNodeName(GenTree* tree)
         {
             gtfType = " r2r_ind";
         }
+        else if (tree->gtFlags & GTF_TLS_GET_ADDR)
+        {
+            gtfType = " _tls_get_addr";
+        }
 #endif // FEATURE_READYTORUN
         else if (tree->gtFlags & GTF_CALL_UNMANAGED)
         {

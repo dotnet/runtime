@@ -771,7 +771,7 @@ protected:
 #ifndef TARGET_ARMARCH
         unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
 #endif
-        unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
+        unsigned _idTlsGD : 1;    // Used to store information related to TLS GD access on linux
         unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
         // EVEX.b can indicate several context: embedded broadcast, embedded rounding.
@@ -1046,9 +1046,6 @@ protected:
 
             // Used for instrDesc that has relocatable immediate offset
             bool iiaSecRel;
-
-            // Used for instrDesc that has TLSGD address to be passed to tls_get_addr
-            bool iiaTlsGD;
 
         } _idAddrUnion;
 
@@ -1572,13 +1569,13 @@ protected:
         }
 #endif
 
-        bool idIsCallAddr() const
+        bool idIsTlsGD() const
         {
-            return _idCallAddr != 0;
+            return _idTlsGD != 0;
         }
-        void idSetIsCallAddr()
+        void idSetTlsGD()
         {
-            _idCallAddr = 1;
+            _idTlsGD = 1;
         }
 
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating

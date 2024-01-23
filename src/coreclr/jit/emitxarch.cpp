@@ -4158,11 +4158,6 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 
             size += sizeof(INT32);
 
-            //if ((ins == INS_lea) && id->idIsCallAddr())
-            //{
-            //    size += 1;
-            //}
-
 #ifdef TARGET_AMD64
             // If id is not marked for reloc, add 1 additional byte for SIB that follows disp32
             if (!id->idIsDspReloc())
@@ -7756,8 +7751,7 @@ void emitter::emitIns_R_AI(instruction ins,
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
     if (EA_IS_CNS_TLSGD_RELOC(attr))
     {
-        id->idSetIsCallAddr();
-        //id->idAddr()->iiaTlsGD = true;
+        id->idSetTlsGD();
     }
 
 #ifdef DEBUG
@@ -9674,27 +9668,12 @@ void emitter::emitIns_Call(EmitCallType          callType,
         
         if (codeGen->genCodeAddrNeedsReloc((size_t)addr))
         {
-            //if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && (id->idIns() == INS_call))
-            //{
-            //    if (((size_t)addr) != 1)
-            //    {
-            //        id->idSetIsDspReloc();
-            //    }
-            //    else
-            //    {
-            //        id->idSetIsCallAddr();
-            //        sz += 1;
-            //    }
-            //}
-            //else
-            {
-                id->idSetIsDspReloc();
+            id->idSetIsDspReloc();
 
-                if ((size_t)methHnd == 1)
-                {
-                    id->idSetIsCallAddr();
-                    sz += 1;
-                }
+            if ((size_t)methHnd == 1)
+            {
+                id->idSetTlsGD();
+                sz += 1;
             }
         }
     }
@@ -12808,10 +12787,6 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 #ifdef TARGET_AMD64
             case EA_8BYTE:
 #endif
-                //if (id->idIsCallAddr())
-                //{
-                //    dst += emitOutputByte(dst, 0x66);
-                //}
                 /* Set the 'w' bit to get the large version */
 
                 code |= 0x1;
@@ -12936,15 +12911,10 @@ GOT_DSP:
 #ifdef TARGET_AMD64
                     // We emit zero on Amd64, to avoid the assert in emitOutputLong()
                     dst += emitOutputLong(dst, 0);
-                    //if (id->idIsCallAddr())
-                    //{
-                    //    //dst--;
-                    //    printf("here\n");
-                    //}
 #else
                     dst += emitOutputLong(dst, dsp);
 #endif
-                    if (id->idIsCallAddr())
+                    if (id->idIsTlsGD())
                     {
                         emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_TLSGD,
                                                       addlDelta);
@@ -16551,7 +16521,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 assert(ins == INS_call);
                 code_t callCode = insCodeMI(ins);
-                if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsCallAddr())
+                if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
                 {
                     callCode = (callCode << 8) | 0x48; // REX.W prefix
                     dst += emitOutputWord(dst, callCode);
