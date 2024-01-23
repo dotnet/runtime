@@ -355,31 +355,51 @@ namespace System.Xml.Xsl.Runtime
         // string ms:format-time(string datetime[, string format[, string language]])
         //
         // Format xsd:dateTime as a date/time string for a given language using a given format string.
-        // * Datetime contains a lexical representation of xsd:dateTime. If datetime is not valid, the
+        // * dateTime contains a lexical representation of xsd:dateTime. If datetime is not valid, the
         //   empty string is returned.
-        // * Format specifies a format string in the same way as for GetDateFormat/GetTimeFormat system
+        // * format specifies a format string in the same way as for GetDateFormat/GetTimeFormat system
         //   functions. If format is the empty string or not passed, the default date/time format for the
         //   given culture is used.
-        // * Language specifies a culture used for formatting. If language is the empty string or not
+        // * lang specifies a culture used for formatting. If language is the empty string or not
         //   passed, the current culture is used. If language is not recognized, a runtime error happens.
+        // * isDate - true to output just the date; false to output just the time.
         public static string MSFormatDateTime(string dateTime, string format, string lang, bool isDate)
         {
             try
             {
                 string locale = GetCultureInfo(lang).Name;
 
-                XsdDateTime xdt;
-                if (!XsdDateTime.TryParse(dateTime, XsdDateTimeFlags.AllXsd | XsdDateTimeFlags.XdrDateTime | XsdDateTimeFlags.XdrTimeNoTz, out xdt))
+                if (!XsdDateTime.TryParse(dateTime, XsdDateTimeFlags.AllXsd | XsdDateTimeFlags.XdrDateTime | XsdDateTimeFlags.XdrTimeNoTz, out XsdDateTime xdt))
                 {
                     return string.Empty;
                 }
+
+                var ci = new CultureInfo(locale);
+
                 DateTime dt = xdt.ToZulu();
 
-                // If format is the empty string or not specified, use the default format for the given locale
-                return dt.ToString(format.Length != 0 ? format : null, new CultureInfo(locale));
+                if (isDate)
+                {
+                    DateOnly dateOnly = DateOnly.FromDateTime(dt);
+                    return dateOnly.ToString(format.Length != 0 ? format : null, ci);
+                }
+                else
+                {
+                    TimeOnly timeOnly = TimeOnly.FromDateTime(dt);
+                    if (format.Length != 0)
+                    {
+                        return timeOnly.ToString(format, ci);
+                    }
+                    else
+                    {
+                        // Duplicate what the Win32 GetTimeFormat API returns
+                        // with an empty format - the long time string.
+                        return timeOnly.ToLongTimeString();
+                    }
+                }
             }
             catch (ArgumentException)
-            { // Operations with DateTime can throw this exception eventualy
+            { // Operations with DateTime can throw this exception
                 return string.Empty;
             }
         }
