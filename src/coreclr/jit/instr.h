@@ -336,6 +336,28 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_UNPREDICATED_WIDE, // Variants without a predicate and wide elements (eg asr)
 };
 
+// Maps directly to the pattern used in SVE instructions such as cntb.
+enum insSvePattern : unsigned
+{
+    SVE_PATTERN_POW2 = 0,   // The largest power of 2.
+    SVE_PATTERN_VL1 = 1,    // 1 element.
+    SVE_PATTERN_VL2 = 2,    // 2 elements.
+    SVE_PATTERN_VL3 = 3,    // 3 elements.
+    SVE_PATTERN_VL4 = 4,    // 4 elements.
+    SVE_PATTERN_VL5 = 5,    // 5 elements.
+    SVE_PATTERN_VL6 = 6,    // 6 elements.
+    SVE_PATTERN_VL7 = 7,    // 7 elements.
+    SVE_PATTERN_VL8 = 8,    // 8 elements.
+    SVE_PATTERN_VL16 = 9,   // 16 elements.
+    SVE_PATTERN_VL32 = 10,  // 32 elements.
+    SVE_PATTERN_VL64 = 11,  // 64 elements.
+    SVE_PATTERN_VL128 = 12, // 128 elements.
+    SVE_PATTERN_VL256 = 13, // 256 elements.
+    SVE_PATTERN_MUL4 = 29,  // The largest multiple of 3.
+    SVE_PATTERN_MUL3 = 30,  // The largest multiple of 4.
+    SVE_PATTERN_ALL = 31    // All available (implicitly a multiple of two).
+};
+
 enum insCond : unsigned
 {
     INS_COND_EQ,

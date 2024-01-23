@@ -66,6 +66,7 @@ void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
 void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, bool isScaled, emitAttr size);
+void emitDispSvePattern(insSvePattern pattern, bool addComma);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -535,6 +536,9 @@ static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 // Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
 static code_t insEncodeUimm7_20_to_14(ssize_t imm);
 
+// Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
+static code_t insEncodeUimm4From1_19_to_16(ssize_t imm);
+
 // Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
 // This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
 static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift, size_t imm);
@@ -542,6 +546,9 @@ static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift
 // Returns the encoding to select the 4/8-byte width specifier <R> at bit location 22
 // for an Arm64 Sve instruction.
 static code_t insEncodeSveElemsize_R_22(emitAttr size);
+
+// Returns the encoding to select an insSvePattern
+static code_t insEncodeSvePattern(insSvePattern pattern);
 
 // Returns true if 'reg' represents an integer register.
 static bool isIntegerRegister(regNumber reg)
@@ -589,6 +596,12 @@ static bool isValidSimm4_MultipleOf16(ssize_t value)
 static bool isValidSimm4_MultipleOf32(ssize_t value)
 {
     return (-256 <= value) && (value <= 224) && (value % 32 == 0);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 4 bit encoding, starting from 1 (such as for CNTB).
+static bool isValidUimm4From1(ssize_t value)
+{
+    return (1 <= value) && (value <= 16);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
@@ -1188,6 +1201,8 @@ void emitIns_R_R_FLAGS_COND(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insCflags flags, insCond cond);
 
 void emitIns_R_I_FLAGS_COND(instruction ins, emitAttr attr, regNumber reg1, int imm, insCflags flags, insCond cond);
+
+void emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, int imm);
 
 void emitIns_BARR(instruction ins, insBarrier barrier);
 
