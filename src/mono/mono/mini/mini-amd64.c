@@ -874,6 +874,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 	cinfo->nargs = n;
 	cinfo->gsharedvt = mini_is_gsharedvt_variable_signature (sig);
+	cinfo->swift_error_index = -1;
 
 	gr = 0;
 	fr = 0;
@@ -1028,6 +1029,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				else
 					add_general (&gr, &stack_size, ainfo);
 				ainfo->storage = ArgSwiftError;
+				cinfo->swift_error_index = i;
 				continue;
 			}
 		}
@@ -1997,8 +1999,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				break;
 			}
 			case ArgSwiftError: {
-					ins->flags |= MONO_INST_VOLATILE;
-					ins->flags &= ~MONO_INST_IS_DEAD;
 					ins->opcode = OP_REGOFFSET;
 					ins->inst_basereg = cfg->frame_reg;
 					ins->inst_offset = ainfo->offset + ARGS_OFFSET;
@@ -2079,6 +2079,9 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->method->save_lmf) {
 		cfg->lmf_ir = TRUE;
 	}
+
+	if (cinfo->swift_error_index >= 0)
+		cfg->args [cinfo->swift_error_index]->flags |= MONO_INST_VOLATILE;
 }
 
 static void

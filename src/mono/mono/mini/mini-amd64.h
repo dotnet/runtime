@@ -330,6 +330,7 @@ struct CallInfo {
 	guint32 stack_usage;
 	guint32 reg_usage;
 	guint32 freg_usage;
+	gint32 swift_error_index;
 	gboolean need_stack_align;
 	gboolean gsharedvt;
 	/* The index of the vret arg in the argument list */
