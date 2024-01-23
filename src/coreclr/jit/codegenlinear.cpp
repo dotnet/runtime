@@ -643,6 +643,25 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // TARGET_AMD64
 
+#if FEATURE_LOOP_ALIGN
+        auto SetLoopAlignBackEdge = [=](BasicBlock* target) {
+            // This is the last place where we operate on blocks and after this, we operate
+            // on IG. Hence, if we know that the destination of "block" is the first block
+            // of a loop and that loop needs alignment (it has BBF_LOOP_ALIGN), then "block"
+            // might represent the lexical end of the loop. Propagate that information on the
+            // IG through "igLoopBackEdge".
+            //
+            // During emitter, this information will be used to calculate the loop size.
+            // Depending on the loop size, the decision of whether to align a loop or not will be taken.
+            // (Loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
+
+            if (target->isLoopAlign())
+            {
+                GetEmitter()->emitSetLoopBackEdge(target);
+            }
+        };
+#endif // FEATURE_LOOP_ALIGN
+
         /* Do we need to generate a jump or return? */
 
         switch (block->GetKind())
@@ -746,45 +765,16 @@ void CodeGen::genCodeForBBlist()
             }
 
 #if FEATURE_LOOP_ALIGN
-                // This is the last place where we operate on blocks and after this, we operate
-                // on IG. Hence, if we know that the destination of "block" is the first block
-                // of a loop and needs alignment (it has BBF_LOOP_ALIGN), then "block" represents
-                // end of the loop. Propagate that information on the IG through "igLoopBackEdge".
-                //
-                // During emitter, this information will be used to calculate the loop size.
-                // Depending on the loop size, decision of whether to align a loop or not will be taken.
-                //
-                // In the emitter, we need to calculate the loop size from `block->bbTarget` through
-                // `block` (inclusive). Thus, we need to ensure there is a label on the lexical fall-through
-                // block, even if one is not otherwise needed, to be able to calculate the size of this
-                // loop (loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
-
-                if (block->GetTarget()->isLoopAlign())
-                {
-                    GetEmitter()->emitSetLoopBackEdge(block->GetTarget());
-
-                    if (!block->IsLast())
-                    {
-                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
-                        block->Next()->SetFlags(BBF_HAS_LABEL);
-                    }
-                }
+                SetLoopAlignBackEdge(block->GetTarget());
 #endif // FEATURE_LOOP_ALIGN
                 break;
 
             case BBJ_COND:
 
 #if FEATURE_LOOP_ALIGN
-                if (block->GetTrueTarget()->isLoopAlign())
-                {
-                    GetEmitter()->emitSetLoopBackEdge(block->GetTrueTarget());
-
-                    if (!block->IsLast())
-                    {
-                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
-                        block->Next()->SetFlags(BBF_HAS_LABEL);
-                    }
-                }
+                // Either true or false target of BBJ_COND can induce a loop.
+                SetLoopAlignBackEdge(block->GetTrueTarget());
+                SetLoopAlignBackEdge(block->GetFalseTarget());
 #endif // FEATURE_LOOP_ALIGN
 
                 break;
@@ -824,7 +814,7 @@ void CodeGen::genCodeForBBlist()
                 GetEmitter()->emitConnectAlignInstrWithCurIG();
             }
         }
-#endif
+#endif // FEATURE_LOOP_ALIGN
 
 #ifdef DEBUG
         if (compiler->verbose)
