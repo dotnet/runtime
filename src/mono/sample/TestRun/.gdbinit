@@ -20,11 +20,9 @@ define mono_stack
  if ($mono_thread == 0x00)
    printf "No mono thread associated with this thread\n"
  else
-   set $ucp = (MonoContext *)malloc (sizeof (MonoContext))
-   set $ucp->gregs[0] = $pc
-   set $ucp->gregs[2] = $sp
-   set $ucp->gregs[8] = $fp
-   call (void) mono_print_thread_dump_from_ctx ($ucp)
+   set $ucp = malloc (sizeof (ucontext_t))
+   call (void) getcontext ($ucp)
+   call (void) mono_print_thread_dump ($ucp)
    call (void) free ($ucp)
  end
 end
