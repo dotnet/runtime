@@ -150,8 +150,8 @@ namespace System.Buffers
                     state.Bitmap = Vector256.Create(state.Bitmap._lower, state.Bitmap._lower);
 
                     index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
-                        ? IndexOfAnyVectorized<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref state)
-                        : IndexOfAnyVectorized<TNegator, Default>(ref searchSpace, searchSpaceLength, ref state);
+                        ? IndexOfAny<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref state)
+                        : IndexOfAny<TNegator, Default>(ref searchSpace, searchSpaceLength, ref state);
                     return true;
                 }
             }
@@ -177,8 +177,8 @@ namespace System.Buffers
                     state.Bitmap = Vector256.Create(state.Bitmap._lower, state.Bitmap._lower);
 
                     index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
-                        ? LastIndexOfAnyVectorized<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref state)
-                        : LastIndexOfAnyVectorized<TNegator, Default>(ref searchSpace, searchSpaceLength, ref state);
+                        ? LastIndexOfAny<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref state)
+                        : LastIndexOfAny<TNegator, Default>(ref searchSpace, searchSpaceLength, ref state);
                     return true;
                 }
             }
@@ -187,12 +187,32 @@ namespace System.Buffers
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int IndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref AsciiState state)
+        public static bool ContainsAny<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref AsciiState state)
+            where TNegator : struct, INegator
+            where TOptimizations : struct, IOptimizations =>
+            IndexOfAnyCore<bool, TNegator, TOptimizations, ContainsAnyResultMapper<short>>(ref searchSpace, searchSpaceLength, ref state);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
+        public static int IndexOfAny<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref AsciiState state)
+            where TNegator : struct, INegator
+            where TOptimizations : struct, IOptimizations =>
+            IndexOfAnyCore<int, TNegator, TOptimizations, IndexOfAnyResultMapper<short>>(ref searchSpace, searchSpaceLength, ref state);
+
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
+        private static TResult IndexOfAnyCore<TResult, TNegator, TOptimizations, TResultMapper>(ref short searchSpace, int searchSpaceLength, ref AsciiState state)
+            where TResult : struct
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
+            where TResultMapper : struct, IResultMapper<short, TResult>
         {
             ref short currentSearchSpace = ref searchSpace;
 
@@ -205,13 +225,13 @@ namespace System.Buffers
                     char c = (char)currentSearchSpace;
                     if (TNegator.NegateIfNeeded(state.Lookup.Contains128(c)))
                     {
-                        return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref currentSearchSpace) / sizeof(char));
+                        return TResultMapper.ScalarResult(ref searchSpace, ref currentSearchSpace);
                     }
 
                     currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 1);
                 }
 
-                return -1;
+                return TResultMapper.NotFound;
             }
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
@@ -238,7 +258,7 @@ namespace System.Buffers
                         Vector256<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source0, source1, bitmap256);
                         if (result != Vector256<byte>.Zero)
                         {
-                            return ComputeFirstIndex<short, TNegator>(ref searchSpace, ref currentSearchSpace, result);
+                            return TResultMapper.FirstIndex<TNegator>(ref searchSpace, ref currentSearchSpace, result);
                         }
 
                         currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector256<short>.Count);
@@ -262,11 +282,11 @@ namespace System.Buffers
                     Vector256<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source0, source1, bitmap256);
                     if (result != Vector256<byte>.Zero)
                     {
-                        return ComputeFirstIndexOverlapped<short, TNegator>(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
+                        return TResultMapper.FirstIndexOverlapped<TNegator>(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
                     }
                 }
 
-                return -1;
+                return TResultMapper.NotFound;
             }
 
             Vector128<byte> bitmap = state.Bitmap._lower;
@@ -291,7 +311,7 @@ namespace System.Buffers
                     Vector128<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source0, source1, bitmap);
                     if (result != Vector128<byte>.Zero)
                     {
-                        return ComputeFirstIndex<short, TNegator>(ref searchSpace, ref currentSearchSpace, result);
+                        return TResultMapper.FirstIndex<TNegator>(ref searchSpace, ref currentSearchSpace, result);
                     }
 
                     currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 2 * Vector128<short>.Count);
@@ -315,17 +335,17 @@ namespace System.Buffers
                 Vector128<byte> result = IndexOfAnyLookup<TNegator, TOptimizations>(source0, source1, bitmap);
                 if (result != Vector128<byte>.Zero)
                 {
-                    return ComputeFirstIndexOverlapped<short, TNegator>(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
+                    return TResultMapper.FirstIndexOverlapped<TNegator>(ref searchSpace, ref firstVector, ref oneVectorAwayFromEnd, result);
                 }
             }
 
-            return -1;
+            return TResultMapper.NotFound;
         }
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int LastIndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref AsciiState state)
+        public static int LastIndexOfAny<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref AsciiState state)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
         {
@@ -451,11 +471,29 @@ namespace System.Buffers
             return -1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int IndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AsciiState state)
+        public static bool ContainsAny<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AsciiState state)
+            where TNegator : struct, INegator =>
+            IndexOfAnyCore<bool, TNegator, ContainsAnyResultMapper<byte>>(ref searchSpace, searchSpaceLength, ref state);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
+        public static int IndexOfAny<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AsciiState state)
+            where TNegator : struct, INegator =>
+            IndexOfAnyCore<int, TNegator, IndexOfAnyResultMapper<byte>>(ref searchSpace, searchSpaceLength, ref state);
+
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
+        private static TResult IndexOfAnyCore<TResult, TNegator, TResultMapper>(ref byte searchSpace, int searchSpaceLength, ref AsciiState state)
+            where TResult : struct
             where TNegator : struct, INegator
+            where TResultMapper : struct, IResultMapper<byte, TResult>
         {
             ref byte currentSearchSpace = ref searchSpace;
 
@@ -468,13 +506,13 @@ namespace System.Buffers
                     byte b = currentSearchSpace;
                     if (TNegator.NegateIfNeeded(state.Lookup.Contains(b)))
                     {
-                        return (int)Unsafe.ByteOffset(ref searchSpace, ref currentSearchSpace);
+                        return TResultMapper.ScalarResult(ref searchSpace, ref currentSearchSpace);
                     }
 
                     currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 1);
                 }
 
-                return -1;
+                return TResultMapper.NotFound;
             }
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
@@ -498,7 +536,7 @@ namespace System.Buffers
                         Vector256<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap256));
                         if (result != Vector256<byte>.Zero)
                         {
-                            return ComputeFirstIndex<byte, TNegator>(ref searchSpace, ref currentSearchSpace, result);
+                            return TResultMapper.FirstIndex<TNegator>(ref searchSpace, ref currentSearchSpace, result);
                         }
 
                         currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<byte>.Count);
@@ -523,11 +561,11 @@ namespace System.Buffers
                     Vector256<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap256));
                     if (result != Vector256<byte>.Zero)
                     {
-                        return ComputeFirstIndexOverlapped<byte, TNegator>(ref searchSpace, ref firstVector, ref halfVectorAwayFromEnd, result);
+                        return TResultMapper.FirstIndexOverlapped<TNegator>(ref searchSpace, ref firstVector, ref halfVectorAwayFromEnd, result);
                     }
                 }
 
-                return -1;
+                return TResultMapper.NotFound;
             }
 
             Vector128<byte> bitmap = state.Bitmap._lower;
@@ -547,7 +585,7 @@ namespace System.Buffers
                     Vector128<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap));
                     if (result != Vector128<byte>.Zero)
                     {
-                        return ComputeFirstIndex<byte, TNegator>(ref searchSpace, ref currentSearchSpace, result);
+                        return TResultMapper.FirstIndex<TNegator>(ref searchSpace, ref currentSearchSpace, result);
                     }
 
                     currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<byte>.Count);
@@ -572,17 +610,17 @@ namespace System.Buffers
                 Vector128<byte> result = TNegator.NegateIfNeeded(IndexOfAnyLookupCore(source, bitmap));
                 if (result != Vector128<byte>.Zero)
                 {
-                    return ComputeFirstIndexOverlapped<byte, TNegator>(ref searchSpace, ref firstVector, ref halfVectorAwayFromEnd, result);
+                    return TResultMapper.FirstIndexOverlapped<TNegator>(ref searchSpace, ref firstVector, ref halfVectorAwayFromEnd, result);
                 }
             }
 
-            return -1;
+            return TResultMapper.NotFound;
         }
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int LastIndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AsciiState state)
+        public static int LastIndexOfAny<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AsciiState state)
             where TNegator : struct, INegator
         {
             if (searchSpaceLength < sizeof(ulong))
@@ -703,11 +741,29 @@ namespace System.Buffers
             return -1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int IndexOfAnyVectorizedAnyByte<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AnyByteState state)
+        public static bool ContainsAny<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AnyByteState state)
+            where TNegator : struct, INegator =>
+            IndexOfAnyCore<bool, TNegator, ContainsAnyResultMapper<byte>>(ref searchSpace, searchSpaceLength, ref state);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
+        public static int IndexOfAny<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AnyByteState state)
+            where TNegator : struct, INegator =>
+            IndexOfAnyCore<int, TNegator, IndexOfAnyResultMapper<byte>>(ref searchSpace, searchSpaceLength, ref state);
+
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
+        private static TResult IndexOfAnyCore<TResult, TNegator, TResultMapper>(ref byte searchSpace, int searchSpaceLength, ref AnyByteState state)
+            where TResult : struct
             where TNegator : struct, INegator
+            where TResultMapper : struct, IResultMapper<byte, TResult>
         {
             ref byte currentSearchSpace = ref searchSpace;
 
@@ -720,13 +776,13 @@ namespace System.Buffers
                     byte b = currentSearchSpace;
                     if (TNegator.NegateIfNeeded(state.Lookup.Contains(b)))
                     {
-                        return (int)Unsafe.ByteOffset(ref searchSpace, ref currentSearchSpace);
+                        return TResultMapper.ScalarResult(ref searchSpace, ref currentSearchSpace);
                     }
 
                     currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, 1);
                 }
 
-                return -1;
+                return TResultMapper.NotFound;
             }
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
@@ -751,7 +807,7 @@ namespace System.Buffers
                         Vector256<byte> result = IndexOfAnyLookup<TNegator>(source, bitmap256_0, bitmap256_1);
                         if (result != Vector256<byte>.Zero)
                         {
-                            return ComputeFirstIndex<byte, TNegator>(ref searchSpace, ref currentSearchSpace, result);
+                            return TResultMapper.FirstIndex<TNegator>(ref searchSpace, ref currentSearchSpace, result);
                         }
 
                         currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector256<byte>.Count);
@@ -776,11 +832,11 @@ namespace System.Buffers
                     Vector256<byte> result = IndexOfAnyLookup<TNegator>(source, bitmap256_0, bitmap256_1);
                     if (result != Vector256<byte>.Zero)
                     {
-                        return ComputeFirstIndexOverlapped<byte, TNegator>(ref searchSpace, ref firstVector, ref halfVectorAwayFromEnd, result);
+                        return TResultMapper.FirstIndexOverlapped<TNegator>(ref searchSpace, ref firstVector, ref halfVectorAwayFromEnd, result);
                     }
                 }
 
-                return -1;
+                return TResultMapper.NotFound;
             }
 
             Vector128<byte> bitmap0 = state.Bitmap0._lower;
@@ -803,7 +859,7 @@ namespace System.Buffers
                     Vector128<byte> result = IndexOfAnyLookup<TNegator>(source, bitmap0, bitmap1);
                     if (result != Vector128<byte>.Zero)
                     {
-                        return ComputeFirstIndex<byte, TNegator>(ref searchSpace, ref currentSearchSpace, result);
+                        return TResultMapper.FirstIndex<TNegator>(ref searchSpace, ref currentSearchSpace, result);
                     }
 
                     currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector128<byte>.Count);
@@ -828,17 +884,17 @@ namespace System.Buffers
                 Vector128<byte> result = IndexOfAnyLookup<TNegator>(source, bitmap0, bitmap1);
                 if (result != Vector128<byte>.Zero)
                 {
-                    return ComputeFirstIndexOverlapped<byte, TNegator>(ref searchSpace, ref firstVector, ref halfVectorAwayFromEnd, result);
+                    return TResultMapper.FirstIndexOverlapped<TNegator>(ref searchSpace, ref firstVector, ref halfVectorAwayFromEnd, result);
                 }
             }
 
-            return -1;
+            return TResultMapper.NotFound;
         }
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal static int LastIndexOfAnyVectorizedAnyByte<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AnyByteState state)
+        public static int LastIndexOfAny<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AnyByteState state)
             where TNegator : struct, INegator
         {
             if (!IsVectorizationSupported || searchSpaceLength < sizeof(ulong))
@@ -1082,30 +1138,6 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int ComputeFirstIndex<T, TNegator>(ref T searchSpace, ref T current, Vector128<byte> result)
-            where TNegator : struct, INegator
-        {
-            uint mask = TNegator.ExtractMask(result);
-            int offsetInVector = BitOperations.TrailingZeroCount(mask);
-            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int ComputeFirstIndexOverlapped<T, TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector128<byte> result)
-            where TNegator : struct, INegator
-        {
-            uint mask = TNegator.ExtractMask(result);
-            int offsetInVector = BitOperations.TrailingZeroCount(mask);
-            if (offsetInVector >= Vector128<short>.Count)
-            {
-                // We matched within the second vector
-                current0 = ref current1;
-                offsetInVector -= Vector128<short>.Count;
-            }
-            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / (nuint)sizeof(T));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector128<byte> result)
             where TNegator : struct, INegator
         {
@@ -1127,44 +1159,6 @@ namespace System.Buffers
 
             // We matched within the second vector
             return offsetInVector - Vector128<short>.Count + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref secondVector) / (nuint)sizeof(T));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        private static unsafe int ComputeFirstIndex<T, TNegator>(ref T searchSpace, ref T current, Vector256<byte> result)
-            where TNegator : struct, INegator
-        {
-            if (typeof(T) == typeof(short))
-            {
-                result = PackedSpanHelpers.FixUpPackedVector256Result(result);
-            }
-
-            uint mask = TNegator.ExtractMask(result);
-
-            int offsetInVector = BitOperations.TrailingZeroCount(mask);
-            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        private static unsafe int ComputeFirstIndexOverlapped<T, TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector256<byte> result)
-            where TNegator : struct, INegator
-        {
-            if (typeof(T) == typeof(short))
-            {
-                result = PackedSpanHelpers.FixUpPackedVector256Result(result);
-            }
-
-            uint mask = TNegator.ExtractMask(result);
-
-            int offsetInVector = BitOperations.TrailingZeroCount(mask);
-            if (offsetInVector >= Vector256<short>.Count)
-            {
-                // We matched within the second vector
-                current0 = ref current1;
-                offsetInVector -= Vector256<short>.Count;
-            }
-            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1292,6 +1286,98 @@ namespace System.Buffers
             public static Vector256<byte> PackSources(Vector256<ushort> lower, Vector256<ushort> upper)
             {
                 return Avx2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16());
+            }
+        }
+
+        private interface IResultMapper<T, TResult>
+            where TResult : struct
+        {
+            static abstract TResult NotFound { get; }
+
+            static abstract TResult ScalarResult(ref T searchSpace, ref T current);
+            static abstract TResult FirstIndex<TNegator>(ref T searchSpace, ref T current, Vector128<byte> result) where TNegator : struct, INegator;
+            static abstract TResult FirstIndex<TNegator>(ref T searchSpace, ref T current, Vector256<byte> result) where TNegator : struct, INegator;
+            static abstract TResult FirstIndexOverlapped<TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector128<byte> result) where TNegator : struct, INegator;
+            static abstract TResult FirstIndexOverlapped<TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector256<byte> result) where TNegator : struct, INegator;
+        }
+
+        private readonly struct ContainsAnyResultMapper<T> : IResultMapper<T, bool>
+        {
+            public static bool NotFound => false;
+
+            public static bool ScalarResult(ref T searchSpace, ref T current) => true;
+            public static bool FirstIndex<TNegator>(ref T searchSpace, ref T current, Vector128<byte> result) where TNegator : struct, INegator => true;
+            public static bool FirstIndex<TNegator>(ref T searchSpace, ref T current, Vector256<byte> result) where TNegator : struct, INegator => true;
+            public static bool FirstIndexOverlapped<TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector128<byte> result) where TNegator : struct, INegator => true;
+            public static bool FirstIndexOverlapped<TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector256<byte> result) where TNegator : struct, INegator => true;
+        }
+
+        private readonly unsafe struct IndexOfAnyResultMapper<T> : IResultMapper<T, int>
+        {
+            public static int NotFound => -1;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int ScalarResult(ref T searchSpace, ref T current)
+            {
+                return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int FirstIndex<TNegator>(ref T searchSpace, ref T current, Vector128<byte> result) where TNegator : struct, INegator
+            {
+                uint mask = TNegator.ExtractMask(result);
+                int offsetInVector = BitOperations.TrailingZeroCount(mask);
+                return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(Avx2))]
+            public static int FirstIndex<TNegator>(ref T searchSpace, ref T current, Vector256<byte> result) where TNegator : struct, INegator
+            {
+                if (typeof(T) == typeof(short))
+                {
+                    result = PackedSpanHelpers.FixUpPackedVector256Result(result);
+                }
+
+                uint mask = TNegator.ExtractMask(result);
+
+                int offsetInVector = BitOperations.TrailingZeroCount(mask);
+                return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int FirstIndexOverlapped<TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector128<byte> result) where TNegator : struct, INegator
+            {
+                uint mask = TNegator.ExtractMask(result);
+                int offsetInVector = BitOperations.TrailingZeroCount(mask);
+                if (offsetInVector >= Vector128<short>.Count)
+                {
+                    // We matched within the second vector
+                    current0 = ref current1;
+                    offsetInVector -= Vector128<short>.Count;
+                }
+                return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / (nuint)sizeof(T));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(Avx2))]
+            public static int FirstIndexOverlapped<TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector256<byte> result) where TNegator : struct, INegator
+            {
+                if (typeof(T) == typeof(short))
+                {
+                    result = PackedSpanHelpers.FixUpPackedVector256Result(result);
+                }
+
+                uint mask = TNegator.ExtractMask(result);
+
+                int offsetInVector = BitOperations.TrailingZeroCount(mask);
+                if (offsetInVector >= Vector256<short>.Count)
+                {
+                    // We matched within the second vector
+                    current0 = ref current1;
+                    offsetInVector -= Vector256<short>.Count;
+                }
+                return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / (nuint)sizeof(T));
             }
         }
     }

@@ -75,7 +75,8 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ComVisible(false)]
-        [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot)) /* Descriptors tell us to remove ComVisibleAttribute */]
+        [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))
+            /* Descriptors tell us to remove ComVisibleAttribute */]
         public static void Test_CustomAttribute_Constructor_CrossAssembly2()
         {
             MethodInfo m = (MethodInfo)MethodBase.GetCurrentMethod();

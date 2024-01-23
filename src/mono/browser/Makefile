@@ -34,7 +34,7 @@ all: build-all
 #
 
 EMSCRIPTEN_VERSION := $(shell cat $(TOP)/src/mono/browser/emscripten-version.txt)
-EMSDK_LOCAL_PATH=emsdk
+EMSDK_LOCAL_PATH=$(CURDIR)/emsdk
 EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 
 .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION):
@@ -42,7 +42,7 @@ EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 	git clone https://github.com/emscripten-core/emsdk.git $(EMSDK_LOCAL_PATH)
 	cd $(EMSDK_LOCAL_PATH) && ./emsdk install $(EMSCRIPTEN_VERSION)
 	cd $(EMSDK_LOCAL_PATH) && ./emsdk activate $(EMSCRIPTEN_VERSION)
-	python3 ./sanitize.py $(EMSDK_PATH)
+	python3 ./sanitize.py $(EMSDK_LOCAL_PATH)
 	touch $@
 
 provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)
@@ -105,7 +105,7 @@ run-tests-%:
 	EMSDK_PATH=$(EMSDK_PATH) PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-build-tests:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /t:Test /bl:$(LOG_PATH)/Wasm.Build.Tests.binlog $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /t:Test /bl:$(LOG_PATH)/Wasm.Build.Tests.binlog /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
 
 run-browser-tests-%:
 	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)

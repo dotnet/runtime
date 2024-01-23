@@ -300,7 +300,7 @@ if [[ "$internal" == true ]]; then
     if [[ "$logical_machine" == "perfiphone12mini" ]]; then
         queue=OSX.13.Amd64.Iphone.Perf
     elif [[ "$logical_machine" == "perfampere" ]]; then
-        queue=Ubuntu.2004.Arm64.Perf
+        queue=Ubuntu.2204.Arm64.Perf
     elif [[ "$logical_machine" == "cloudvm" ]]; then
         queue=Ubuntu.2204.Amd64
     elif [[ "$architecture" == "arm64" ]]; then
