@@ -673,6 +673,8 @@ handle_branch (TransformData *td, int long_op, int offset)
 	if (offset > 0)
 		init_bb_stack_state (td, target_bb);
 
+	if (td->cbb->no_inlining && long_op != MINT_CALL_HANDLER)
+		target_bb->jump_targets--;
 	interp_link_bblocks (td, td->cbb, target_bb);
 
 	interp_add_ins (td, long_op);
@@ -712,6 +714,8 @@ one_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 				return FALSE;
 			} else {
 				// branch condition always false, it is a NOP
+				int target = GPTRDIFF_TO_INT (td->ip + offset + inst_size - td->il_code);
+				td->offset_to_bb [target]->jump_targets--;
 				return TRUE;
 			}
 		} else {
@@ -2677,6 +2681,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (td->disable_inlining)
 		return FALSE;
 
+	if (td->cbb->no_inlining)
+		return FALSE;
+
 	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
 		/* Used to mark methods containing StackCrawlMark locals */
 		return FALSE;
@@ -3780,6 +3787,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 	unsigned char *target;
 	ptrdiff_t cli_addr;
 	const MonoOpcode *opcode;
+	InterpBasicBlock *bb;
 
 	td->offset_to_bb = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, (unsigned int)(sizeof (InterpBasicBlock*) * (end - start + 1)));
 	get_bb (td, start, make_list);
@@ -3788,18 +3796,21 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 		MonoExceptionClause *c = header->clauses + i;
 		if (start + c->try_offset > end || start + c->try_offset + c->try_len > end)
 			return FALSE;
-		get_bb (td, start + c->try_offset, make_list);
+		bb = get_bb (td, start + c->try_offset, make_list);
+		bb->jump_targets++;
 		mono_bitset_set (il_targets, c->try_offset);
 		mono_bitset_set (il_targets, c->try_offset + c->try_len);
 		if (start + c->handler_offset > end || start + c->handler_offset + c->handler_len > end)
 			return FALSE;
-		get_bb (td, start + c->handler_offset, make_list);
+		bb = get_bb (td, start + c->handler_offset, make_list);
+		bb->jump_targets++;
 		mono_bitset_set (il_targets, c->handler_offset);
 		mono_bitset_set (il_targets, c->handler_offset + c->handler_len);
 		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 			if (start + c->data.filter_offset > end)
 				return FALSE;
-			get_bb (td, start + c->data.filter_offset, make_list);
+			bb = get_bb (td, start + c->data.filter_offset, make_list);
+			bb->jump_targets++;
 			mono_bitset_set (il_targets, c->data.filter_offset);
 		}
 	}
@@ -3832,7 +3843,8 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			target = start + cli_addr + 2 + (signed char)ip [1];
 			if (target > end)
 				return FALSE;
-			get_bb (td, target, make_list);
+			bb = get_bb (td, target, make_list);
+			bb->jump_targets++;
 			ip += 2;
 			get_bb (td, ip, make_list);
 			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
@@ -3841,7 +3853,8 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			target = start + cli_addr + 5 + (gint32)read32 (ip + 1);
 			if (target > end)
 				return FALSE;
-			get_bb (td, target, make_list);
+			bb = get_bb (td, target, make_list);
+			bb->jump_targets++;
 			ip += 5;
 			get_bb (td, ip, make_list);
 			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
@@ -3854,13 +3867,15 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			target = start + cli_addr;
 			if (target > end)
 				return FALSE;
-			get_bb (td, target, make_list);
+			bb = get_bb (td, target, make_list);
+			bb->jump_targets++;
 			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			for (j = 0; j < n; ++j) {
 				target = start + cli_addr + (gint32)read32 (ip);
 				if (target > end)
 					return FALSE;
-				get_bb (td, target, make_list);
+				bb = get_bb (td, target, make_list);
+				bb->jump_targets++;
 				ip += 4;
 				mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			}
@@ -4818,12 +4833,27 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		if (new_bb != NULL && td->cbb != new_bb) {
 			/* We are starting a new basic block. Change cbb and link them together */
 			if (link_bblocks) {
+				if (!new_bb->jump_targets && td->cbb->no_inlining) {
+					// This is a bblock that is not branched to and falls through from
+					// a dead predecessor. It means it is dead.
+					new_bb->no_inlining = TRUE;
+					if (td->verbose_level)
+						g_print ("Disable inlining in BB%d\n", new_bb->index);
+				}
 				/*
 				 * By default we link cbb with the new starting bblock, unless the previous
 				 * instruction is an unconditional branch (BR, LEAVE, ENDFINALLY)
 				 */
 				interp_link_bblocks (td, td->cbb, new_bb);
 				fixup_newbb_stack_locals (td, new_bb);
+			} else if (!new_bb->jump_targets) {
+				// This is a bblock that is not branched to and it is not linked to the
+				// predecessor. It means it is dead.
+				new_bb->no_inlining = TRUE;
+				if (td->verbose_level)
+					g_print ("Disable inlining in BB%d\n", new_bb->index);
+			} else {
+				g_assert (new_bb->jump_targets > 0);
 			}
 			td->cbb->next_bb = new_bb;
 			td->cbb = new_bb;
