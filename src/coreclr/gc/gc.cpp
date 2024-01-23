@@ -30262,9 +30262,15 @@ retry:
 inline
 void gc_heap::seg_set_mark_bits (heap_segment* seg)
 {
+    uint32_t pid = GCToOSInterface::GetCurrentProcessId();
+    int tid = (int)GCToOSInterface::GetCurrentThreadIdForLogging ();
+    printf("%d %d Performing seg_set_mark_bits\n", pid, tid);
+    fflush(stdout);
     uint8_t* o = heap_segment_mem (seg);
     while (o < heap_segment_allocated (seg))
     {
+        printf("%d %d Walking at object %p\n", pid, tid, o);
+        fflush(stdout);
         set_marked (o);
         o = o + Align (size(o));
     }
@@ -30289,26 +30295,44 @@ void gc_heap::seg_clear_mark_bits (heap_segment* seg)
 // all of them on the in range ro segs.
 void gc_heap::mark_ro_segments()
 {
+    uint32_t pid = GCToOSInterface::GetCurrentProcessId();
+    int tid = (int)GCToOSInterface::GetCurrentThreadIdForLogging ();
+    printf("%d %d: mark_ro_segment_begins\n", pid, tid);
+    fflush(stdout);
 #ifndef USE_REGIONS
     if ((settings.condemned_generation == max_generation) && ro_segments_in_range)
     {
+        printf("%d %d: performing mark_ro_segment_begins\n", pid, tid);
+        fflush(stdout);
         heap_segment* seg = generation_start_segment (generation_of (max_generation));
 
         while (seg)
         {
+            printf("%d %d: working on segment %p\n", pid, tid, seg);
+            printf("%d %d: heap_segment_mem is %p\n", pid, tid, heap_segment_mem(seg));
+            printf("%d %d: heap_segment_allocated is %p\n", pid, tid, heap_segment_allocated(seg));
+            printf("%d %d: heap_segment_committed is %p\n", pid, tid, heap_segment_committed(seg));
+            printf("%d %d: heap_segment_reserved is %p\n", pid, tid, heap_segment_reserved(seg));
+            fflush(stdout);
             if (!heap_segment_read_only_p (seg))
                 break;
 
             if (heap_segment_in_range_p (seg))
             {
+                printf("%d %d: The segment is decided to be in range\n", pid, tid);
+                fflush(stdout);
 #ifdef BACKGROUND_GC
                 if (settings.concurrent)
                 {
+                    printf("%d %d: Working on the case for background GC\n", pid, tid);
+                    fflush(stdout);
                     seg_set_mark_array_bits_soh (seg);
                 }
                 else
 #endif //BACKGROUND_GC
                 {
+                    printf("%d %d: Working on the case for blocking GC\n", pid, tid);
+                    fflush(stdout);
                     seg_set_mark_bits (seg);
                 }
             }
