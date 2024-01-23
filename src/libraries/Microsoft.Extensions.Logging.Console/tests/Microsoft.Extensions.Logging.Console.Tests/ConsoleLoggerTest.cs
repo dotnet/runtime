@@ -17,7 +17,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Console.Test
 {
-    public class ConsoleLoggerTest
+    public class ConsoleLoggerTest : ConsoleTestsBase
     {
         private const string _paddingString = "      ";
         private const string _loggerName = "test";
@@ -32,48 +32,12 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var defaultMonitor = new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(simpleOptions ?? new SimpleConsoleFormatterOptions());
             var systemdMonitor = new TestFormatterOptionsMonitor<ConsoleFormatterOptions>(systemdOptions ?? new ConsoleFormatterOptions());
             var jsonMonitor = new TestFormatterOptionsMonitor<JsonConsoleFormatterOptions>(jsonOptions ?? new JsonConsoleFormatterOptions());
-            var formatters = new List<ConsoleFormatter>() { 
+            var formatters = new List<ConsoleFormatter>() {
                 new SimpleConsoleFormatter(defaultMonitor),
                 new SystemdConsoleFormatter(systemdMonitor),
                 new JsonConsoleFormatter(jsonMonitor)
             };
             return formatters;
-        }
-
-        internal class SetupDisposeHelper : IDisposable
-        {
-            public ConsoleLogger Logger;
-            public ConsoleSink Sink;
-            public ConsoleSink ErrorSink;
-            public Func<LogLevel, string> GetLevelPrefix;
-            public int WritesPerMsg;
-            public TestLoggerProcessor LoggerProcessor;
-            public SetupDisposeHelper(ConsoleLogger logger, ConsoleSink sink, ConsoleSink errorSink, Func<LogLevel, string> getLevelPrefix, int writesPerMsg, TestLoggerProcessor loggerProcessor)
-            {
-                Logger= logger;
-                Sink= sink;
-                ErrorSink= errorSink;
-                GetLevelPrefix = getLevelPrefix;
-                WritesPerMsg = writesPerMsg;
-                LoggerProcessor = loggerProcessor;
-            }
-
-            private bool _isDisposed;
-
-            protected virtual void Dispose(bool disposing)
-            {
-                if (!_isDisposed)
-                {
-                    LoggerProcessor.Dispose();
-                    _isDisposed = true;
-                }
-            }
-
-            public void Dispose()
-            {
-                Dispose(disposing: true);
-                GC.SuppressFinalize(this);
-            }
         }
 
         private static SetupDisposeHelper SetUp(ConsoleLoggerOptions options = null)
@@ -122,13 +86,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);
                 Assert.Equal(formatter.FormatterOptions.UseUtcTimestamp, logger.Options.UseUtcTimestamp);
                 Assert.Equal(formatter.FormatterOptions.TimestampFormat, logger.Options.TimestampFormat);
-                Assert.Equal(formatter.FormatterOptions.ColorBehavior, 
-                    logger.Options.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled);   
+                Assert.Equal(formatter.FormatterOptions.ColorBehavior,
+                    logger.Options.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled);
             }
             else
             {
                 var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
-                Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);   
+                Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);
                 Assert.Equal(formatter.FormatterOptions.UseUtcTimestamp, logger.Options.UseUtcTimestamp);
                 Assert.Equal(formatter.FormatterOptions.TimestampFormat, logger.Options.TimestampFormat);
             }
@@ -139,7 +103,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // kept for deprecated apis:
             if (formatter is SimpleConsoleFormatter defaultFormatter)
             {
-                defaultFormatter.FormatterOptions.ColorBehavior = deprecatedFromOptions.DisableColors ? 
+                defaultFormatter.FormatterOptions.ColorBehavior = deprecatedFromOptions.DisableColors ?
                     LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled;
                 defaultFormatter.FormatterOptions.IncludeScopes = deprecatedFromOptions.IncludeScopes;
                 defaultFormatter.FormatterOptions.TimestampFormat = deprecatedFromOptions.TimestampFormat;

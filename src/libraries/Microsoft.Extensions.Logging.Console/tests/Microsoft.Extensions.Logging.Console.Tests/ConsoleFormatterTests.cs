@@ -16,7 +16,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Console.Test
 {
-    public class ConsoleFormatterTests
+    public class ConsoleFormatterTests : ConsoleTestsBase
     {
         protected const string _loggerName = "test";
         protected const string _state = "This is a test, and {curly braces} are just fine!";
@@ -25,42 +25,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         protected string GetMessage(List<ConsoleContext> contexts)
         {
             return string.Join("", contexts.Select(c => c.Message));
-        }
-
-        internal class SetupDisposeHelper : IDisposable
-        {
-            public ConsoleLogger Logger;
-            public ConsoleSink Sink;
-            public ConsoleSink ErrorSink;
-            public Func<LogLevel, string> GetLevelPrefix;
-            public int WritesPerMsg;
-            public TestLoggerProcessor LoggerProcessor;
-            public SetupDisposeHelper(ConsoleLogger logger, ConsoleSink sink, ConsoleSink errorSink, Func<LogLevel, string> getLevelPrefix, int writesPerMsg, TestLoggerProcessor loggerProcessor)
-            {
-                Logger = logger;
-                Sink = sink;
-                ErrorSink = errorSink;
-                GetLevelPrefix = getLevelPrefix;
-                WritesPerMsg = writesPerMsg;
-                LoggerProcessor = loggerProcessor;
-            }
-
-            private bool _isDisposed;
-
-            protected virtual void Dispose(bool disposing)
-            {
-                if (!_isDisposed)
-                {
-                    LoggerProcessor.Dispose();
-                    _isDisposed = true;
-                }
-            }
-
-            public void Dispose()
-            {
-                Dispose(disposing: true);
-                GC.SuppressFinalize(this);
-            }
         }
 
         internal static SetupDisposeHelper SetUp(
