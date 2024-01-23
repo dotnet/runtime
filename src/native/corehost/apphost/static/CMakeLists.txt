@@ -136,9 +136,9 @@ else()
     if(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
         LIST(APPEND NATIVE_LIBS createdump_static)
     endif()
-    if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-        LIST(APPEND NATIVE_LIBS System.HybridGlobalization.Native-Static)
-    endif()
+    # if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    #     LIST(APPEND NATIVE_LIBS System.HybridGlobalization.Native-Static)
+    # endif()
 
     LIST(APPEND NATIVE_LIBS
         coreclr_static

@@ -164,9 +164,9 @@ add_library(System.HybridGlobalization.Native-Static
     entrypoints.c
 )
 
-# if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
-#     set_target_properties(System.HybridGlobalization.Native-Static PROPERTIES OUTPUT_NAME System.HybridGlobalization.Native  CLEAN_DIRECT_OUTPUT 1)
-# endif()
+if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
+    set_target_properties(System.HybridGlobalization.Native-Static PROPERTIES OUTPUT_NAME System.HybridGlobalization.Native  CLEAN_DIRECT_OUTPUT 1)
+endif()
 
 install (TARGETS System.HybridGlobalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
