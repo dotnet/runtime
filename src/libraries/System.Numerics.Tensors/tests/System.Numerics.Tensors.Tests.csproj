@@ -5,6 +5,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <!-- to see timing and which test aborted the runtime -->
+    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- Workaround an OOM in LLVM -->
     <WasmDedup>false</WasmDedup>
