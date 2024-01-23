@@ -396,7 +396,6 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
 
     // write a printf statement here to help debug problems with imm constant sizes
 
-
     emitAttr origAttr = size;
     if (!compiler->opts.compReloc)
     {
@@ -6434,7 +6433,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                             call->IsFastTailCall());
                 // clang-format on
             }
-
         }
     }
     else

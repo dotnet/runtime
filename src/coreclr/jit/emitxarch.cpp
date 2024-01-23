@@ -9665,7 +9665,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         id->idAddr()->iiaAddr = (BYTE*)addr;
 
         // Direct call to a method and no addr indirection is needed.
-        
+
         if (codeGen->genCodeAddrNeedsReloc((size_t)addr))
         {
             id->idSetIsDspReloc();
@@ -12917,7 +12917,7 @@ GOT_DSP:
                     if (id->idIsTlsGD())
                     {
                         emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_TLSGD,
-                                                      addlDelta);
+                                                          addlDelta);
                     }
                     else
                     {
@@ -16529,7 +16529,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 else
                 {
                     dst += emitOutputByte(dst, callCode);
-                }                
+                }
             }
 
             ssize_t offset;

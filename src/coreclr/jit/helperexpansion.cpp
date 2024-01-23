@@ -591,15 +591,14 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     //      use(tlsRoot);
     // ...
 
-    GenTree* tlsRootAddr = nullptr;
+    GenTree*             tlsRootAddr   = nullptr;
     CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
 
     if (TargetOS::IsWindows)
     {
         // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
-        GenTree* tlsValue =
-            gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
-        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        GenTree* tlsValue = gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+        tlsValue          = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
         CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
 
@@ -632,10 +631,10 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
             gtNewIconHandleNode((size_t)threadStaticInfo.tlsGetAddrFtnPtr.handle, GTF_ICON_FTN_ADDR);
         tls_get_addr_val->SetContained();
 
-        //GenTreeCall* tlsRefCall = gtNewCallNode(CT_ tls_get_addr_val, TYP_I_IMPL);
+        // GenTreeCall* tlsRefCall = gtNewCallNode(CT_ tls_get_addr_val, TYP_I_IMPL);
         GenTreeCall* tlsRefCall = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
         tlsRefCall->gtFlags |= GTF_TLS_GET_ADDR;
-            // //            
+        // //
 
         // This is an indirect call which takes an argument.
         // Populate and set the ABI appropriately.
