@@ -53,7 +53,7 @@ repoRootDir="$(cd "$scriptPath"/../..; pwd -P)"
 source "$repoRootDir/eng/native/init-os-and-arch.sh"
 
 # Argument variables
-buildArch="riscv64"
+buildArch="$arch"
 buildOS=
 buildConfiguration="Debug"
 testRootDir=
