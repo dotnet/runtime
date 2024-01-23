@@ -6,13 +6,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
-using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
-namespace Microsoft.NET.HostModel.Tests
+namespace Microsoft.NET.HostModel.Bundle.Tests
 {
     public class BundlerConsistencyTests : IClassFixture<BundlerConsistencyTests.SharedTestState>
     {

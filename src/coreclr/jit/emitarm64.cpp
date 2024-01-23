@@ -1500,6 +1500,70 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             }
             break;
 
+        case IF_SVE_JD_4A: // .........xxmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+            elemsize = id->idOpSize();
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isGeneralRegister(id->idReg4()));   // mmmmm
+            assert(isScalableVectorSize(elemsize));    // xx
+            // st1h is reserved for scalable B
+            assert((id->idIns() == INS_sve_st1h) ? insOptsScalableAtLeastHalf(id->idInsOpt())
+                                                 : insOptsScalableStandard(id->idInsOpt()));
+            break;
+
+        case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+            elemsize = id->idOpSize();
+            assert(insOptsScalableWords(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isGeneralRegister(id->idReg4()));   // mmmmm
+            assert(isScalableVectorSize(elemsize));    // x
+            break;
+
+        case IF_SVE_JJ_4A:   // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JJ_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JJ_4A_C: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JJ_4A_D: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JK_4A: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit unscaled
+                           // offsets)
+        case IF_SVE_JK_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit
+                             // unscaled offsets)
+            elemsize = id->idOpSize();
+            assert(insOptsScalable32bitExtends(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isScalableVectorSize(elemsize));
+            break;
+
+        case IF_SVE_JN_3A: // .........xx.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+            imm      = emitGetInsSC(id);
+            elemsize = id->idOpSize();
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isScalableVectorSize(elemsize));    // xx
+            assert(isValidSimm4(imm));                 // iiii
+            break;
+
+        case IF_SVE_JN_3B: // ..........x.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+            imm      = emitGetInsSC(id);
+            elemsize = id->idOpSize();
+            assert(insOptsScalableWords(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isScalableVectorSize(elemsize));    // x
+            assert(isValidSimm4(imm));                 // iiii
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -5595,9 +5659,13 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
             return EA_2BYTE;
 
         case INS_OPTS_SCALABLE_S:
+        case INS_OPTS_SCALABLE_S_UXTW:
+        case INS_OPTS_SCALABLE_S_SXTW:
             return EA_4BYTE;
 
         case INS_OPTS_SCALABLE_D:
+        case INS_OPTS_SCALABLE_D_UXTW:
+        case INS_OPTS_SCALABLE_D_SXTW:
             return EA_8BYTE;
 
         case INS_OPTS_SCALABLE_Q:
@@ -10441,17 +10509,24 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             }
             else
             {
-#if DEBUG
-                if (ins == INS_sve_st1w)
+                if ((ins == INS_sve_st1w) && insOptsScalableWords(opt))
                 {
-                    assert(opt == INS_OPTS_SCALABLE_Q);
+                    fmt = IF_SVE_JN_3B;
                 }
                 else
                 {
-                    assert(opt == INS_OPTS_SCALABLE_D);
-                }
+#if DEBUG
+                    if (ins == INS_sve_st1w)
+                    {
+                        assert(opt == INS_OPTS_SCALABLE_Q);
+                    }
+                    else
+                    {
+                        assert(opt == INS_OPTS_SCALABLE_D);
+                    }
 #endif // DEBUG
-                fmt = IF_SVE_JN_3C;
+                    fmt = IF_SVE_JN_3C;
+                }
             }
             break;
 
@@ -10534,6 +10609,17 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 #endif // DEBUG
 
             fmt = IF_SVE_JO_3A;
+            break;
+
+        case INS_sve_st1b:
+        case INS_sve_st1h:
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidSimm4(imm));
+            // st1h is reserved for scalable B
+            assert((ins == INS_sve_st1h) ? insOptsScalableAtLeastHalf(opt) : insOptsScalableStandard(opt));
+            fmt = IF_SVE_JN_3A;
             break;
 
         default:
@@ -11063,6 +11149,166 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
             assert(isVectorRegister(reg4));       // aaaaa
             assert(isScalableVectorSize(size));
             fmt = IF_SVE_AS_4A;
+            break;
+
+        case INS_sve_st1b:
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isScalableVectorSize(size));
+            assert(insScalableOptsNone(sopt));
+            if (insOptsScalableStandard(opt))
+            {
+                assert(isGeneralRegister(reg4));
+                fmt = IF_SVE_JD_4A;
+            }
+            else
+            {
+                assert(insOptsScalable32bitExtends(opt));
+                switch (opt)
+                {
+                    case INS_OPTS_SCALABLE_S_UXTW:
+                    case INS_OPTS_SCALABLE_S_SXTW:
+                        fmt = IF_SVE_JK_4A_B;
+                        break;
+
+                    case INS_OPTS_SCALABLE_D_UXTW:
+                    case INS_OPTS_SCALABLE_D_SXTW:
+                        fmt = IF_SVE_JK_4A;
+                        break;
+
+                    default:
+                        assert(!"Invalid options for scalable");
+                        break;
+                }
+            }
+            break;
+
+        case INS_sve_st1h:
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isScalableVectorSize(size));
+            if (insOptsScalableStandard(opt))
+            {
+                // st1h is reserved for scalable B
+                assert((ins == INS_sve_st1h) ? insOptsScalableAtLeastHalf(opt) : true);
+                assert(isGeneralRegister(reg4));
+                assert(sopt == INS_SCALABLE_OPTS_LSL_N);
+                fmt = IF_SVE_JD_4A;
+            }
+            else
+            {
+                assert(insOptsScalable32bitExtends(opt));
+                switch (opt)
+                {
+                    case INS_OPTS_SCALABLE_S_UXTW:
+                    case INS_OPTS_SCALABLE_S_SXTW:
+                        if (insScalableOptsNone(sopt))
+                        {
+                            fmt = IF_SVE_JJ_4A_D;
+                        }
+                        else
+                        {
+                            assert(sopt == INS_SCALABLE_OPTS_MOD_N);
+                            fmt = IF_SVE_JJ_4A;
+                        }
+                        break;
+
+                    case INS_OPTS_SCALABLE_D_UXTW:
+                    case INS_OPTS_SCALABLE_D_SXTW:
+                        if (insScalableOptsNone(sopt))
+                        {
+                            fmt = IF_SVE_JJ_4A_C;
+                        }
+                        else
+                        {
+                            assert(sopt == INS_SCALABLE_OPTS_MOD_N);
+                            fmt = IF_SVE_JJ_4A_B;
+                        }
+                        break;
+
+                    default:
+                        assert(!"Invalid options for scalable");
+                        break;
+                }
+            }
+            break;
+
+        case INS_sve_st1w:
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isScalableVectorSize(size));
+            if (insOptsScalableStandard(opt))
+            {
+                assert(isGeneralRegister(reg4));
+                assert(sopt == INS_SCALABLE_OPTS_LSL_N);
+                fmt = IF_SVE_JD_4B;
+            }
+            else
+            {
+                assert(insOptsScalable32bitExtends(opt));
+                switch (opt)
+                {
+                    case INS_OPTS_SCALABLE_S_UXTW:
+                    case INS_OPTS_SCALABLE_S_SXTW:
+                        if (insScalableOptsNone(sopt))
+                        {
+                            fmt = IF_SVE_JJ_4A_D;
+                        }
+                        else
+                        {
+                            assert(sopt == INS_SCALABLE_OPTS_MOD_N);
+                            fmt = IF_SVE_JJ_4A;
+                        }
+                        break;
+
+                    case INS_OPTS_SCALABLE_D_UXTW:
+                    case INS_OPTS_SCALABLE_D_SXTW:
+                        if (insScalableOptsNone(sopt))
+                        {
+                            fmt = IF_SVE_JJ_4A_C;
+                        }
+                        else
+                        {
+                            assert(sopt == INS_SCALABLE_OPTS_MOD_N);
+                            fmt = IF_SVE_JJ_4A_B;
+                        }
+                        break;
+
+                    default:
+                        assert(!"Invalid options for scalable");
+                        break;
+                }
+            }
+            break;
+
+        case INS_sve_st1d:
+            assert(insOptsScalable32bitExtends(opt));
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isScalableVectorSize(size));
+            switch (opt)
+            {
+                case INS_OPTS_SCALABLE_D_UXTW:
+                case INS_OPTS_SCALABLE_D_SXTW:
+                    if (sopt == INS_SCALABLE_OPTS_MOD_N)
+                    {
+                        fmt = IF_SVE_JJ_4A;
+                    }
+                    else
+                    {
+                        assert(insScalableOptsNone(sopt));
+                        fmt = IF_SVE_JJ_4A_B;
+                    }
+                    break;
+
+                default:
+                    assert(!"Invalid options for scalable");
+                    break;
+            }
             break;
 
         default:
@@ -13896,6 +14142,56 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*****************************************************************************
  *
  *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+ *  This specifically encodes the size at bit locations '22-21'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_22_to_21(emitAttr size)
+{
+    switch (size)
+    {
+        case EA_1BYTE:
+            return 0;
+
+        case EA_2BYTE:
+            return (1 << 21); // set the bit at location 21
+
+        case EA_4BYTE:
+            return (1 << 22); // set the bit at location 22
+
+        case EA_8BYTE:
+            return (1 << 22) | (1 << 21); // set the bit at location 22 and 21
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
+ *  This specifically encodes the field 'sz' at bit location '21'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_sz_21(emitAttr size)
+{
+    switch (size)
+    {
+        case EA_4BYTE:
+            return 0;
+
+        case EA_8BYTE:
+            return (1 << 21);
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
  *  This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
  */
 
@@ -14003,6 +14299,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case INS_sve_ldff1d:
         case INS_sve_ldff1sw:
         case INS_sve_st1b:
+        case INS_sve_st1h:
         case INS_sve_ldff1sb:
         case INS_sve_ldff1b:
         case INS_sve_ldnt1sb:
@@ -16926,6 +17223,80 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_JD_4A: // .........xxmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                              // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2());                            // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg3());                              // nnnnn
+            code |= insEncodeReg_R_20_to_16(id->idReg4());                            // mmmmm
+            code |= insEncodeSveElemsize_22_to_21(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                           // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2());                         // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg3());                           // nnnnn
+            code |= insEncodeReg_R_20_to_16(id->idReg4());                         // mmmmm
+            code |= insEncodeSveElemsize_sz_21(optGetSveElemsize(id->idInsOpt())); // x
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_JJ_4A:   // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JJ_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             //                     // offsets)
+        case IF_SVE_JJ_4A_C: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JJ_4A_D: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JK_4A: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit unscaled
+                           // offsets)
+        case IF_SVE_JK_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit
+                             // unscaled offsets)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg4()); // mmmmm
+
+            switch (id->idInsOpt())
+            {
+                case INS_OPTS_SCALABLE_S_SXTW:
+                case INS_OPTS_SCALABLE_D_SXTW:
+                    code |= (1 << 14); // h
+                    break;
+
+                default:
+                    break;
+            }
+
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_JN_3A: // .........xx.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                              // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2());                            // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg3());                              // nnnnn
+            code |= insEncodeSimm4_19_to_16(imm);                                     // iiii
+            code |= insEncodeSveElemsize_22_to_21(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_JN_3B: // ..........x.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                           // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2());                         // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg3());                           // nnnnn
+            code |= insEncodeSimm4_19_to_16(imm);                                  // iiii
+            code |= insEncodeSveElemsize_sz_21(optGetSveElemsize(id->idInsOpt())); // x
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         default:
             assert(!"Unexpected format");
             break;
@@ -17351,6 +17722,31 @@ void emitter::emitDispExtendOpts(insOpts opt)
 
 /*****************************************************************************
  *
+ *  Prints the encoding for the Extend Type encoding
+ */
+
+void emitter::emitDispSveExtendOpts(insOpts opt)
+{
+    switch (opt)
+    {
+        case INS_OPTS_SCALABLE_S_UXTW:
+        case INS_OPTS_SCALABLE_D_UXTW:
+            printf("uxtw");
+            break;
+
+        case INS_OPTS_SCALABLE_S_SXTW:
+        case INS_OPTS_SCALABLE_D_SXTW:
+            printf("sxtw");
+            break;
+
+        default:
+            assert(!"Bad value");
+            break;
+    }
+}
+
+/*****************************************************************************
+ *
  *  Prints the encoding for the Extend Type encoding in loads/stores
  */
 
@@ -17387,7 +17783,7 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 //
 void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
 {
-    assert(insOptsScalable(opt));
+    assert(insOptsScalable(opt) || insOptsScalable32bitExtends(opt));
     assert(isVectorRegister(reg));
     printf(emitSveRegName(reg));
     emitDispArrangement(opt);
@@ -17617,6 +18013,8 @@ void emitter::emitDispArrangement(insOpts opt)
             str = "4s";
             break;
         case INS_OPTS_SCALABLE_S:
+        case INS_OPTS_SCALABLE_S_UXTW:
+        case INS_OPTS_SCALABLE_S_SXTW:
             str = "s";
             break;
         case INS_OPTS_1D:
@@ -17626,6 +18024,8 @@ void emitter::emitDispArrangement(insOpts opt)
             str = "2d";
             break;
         case INS_OPTS_SCALABLE_D:
+        case INS_OPTS_SCALABLE_D_UXTW:
+        case INS_OPTS_SCALABLE_D_SXTW:
             str = "d";
             break;
         case INS_OPTS_SCALABLE_Q:
@@ -19623,6 +20023,140 @@ void emitter::emitDispInsHelp(
                         printf("mul vl");
                         break;
                 }
+            }
+            printf("]");
+            break;
+
+        // {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>]
+        // {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
+        case IF_SVE_JD_4A: // .........xxmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+            emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
+            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true);                      // ggg
+            printf("[");
+            emitDispReg(id->idReg3(), EA_8BYTE, true); // nnnnn
+            if (ins == INS_sve_st1h)
+            {
+                emitDispReg(id->idReg4(), EA_8BYTE, true); // mmmmm
+                printf("lsl #1]");
+            }
+            else
+            {
+                emitDispReg(id->idReg4(), EA_8BYTE, false); // mmmmm
+                printf("]");
+            }
+            break;
+
+        // {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
+        case IF_SVE_JD_4B: // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+            emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
+            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true);                      // ggg
+            printf("[");
+            emitDispReg(id->idReg3(), EA_8BYTE, true); // nnnnn
+            emitDispReg(id->idReg4(), EA_8BYTE, true); // mmmmm
+            printf("lsl #2]");
+            break;
+
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #3]
+        // {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #1]
+        // {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2]
+        case IF_SVE_JJ_4A: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                           // offsets)
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #1]
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #2]
+        case IF_SVE_JJ_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]
+        case IF_SVE_JJ_4A_C: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        // {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
+        case IF_SVE_JJ_4A_D: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]
+        case IF_SVE_JK_4A: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit unscaled
+                           // offsets)
+        // {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
+        case IF_SVE_JK_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit
+                             // unscaled offsets)
+            {
+                emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
+                emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true);                      // ggg
+                printf("[");
+                emitDispReg(id->idReg3(), EA_8BYTE, true);          // nnnnn
+                emitDispSveReg(id->idReg4(), id->idInsOpt(), true); // mmmmm
+                emitDispSveExtendOpts(id->idInsOpt());
+                switch (ins)
+                {
+                    case INS_sve_st1b:
+                        printf("]");
+                        break;
+
+                    case INS_sve_st1h:
+                        if ((fmt == IF_SVE_JJ_4A_C) || (fmt == IF_SVE_JJ_4A_D))
+                        {
+                            printf("]");
+                        }
+                        else
+                        {
+                            printf(" #1]");
+                        }
+                        break;
+
+                    case INS_sve_st1w:
+                        if ((fmt == IF_SVE_JJ_4A_C) || (fmt == IF_SVE_JJ_4A_D))
+                        {
+                            printf("]");
+                        }
+                        else
+                        {
+                            printf(" #2]");
+                        }
+                        break;
+
+                    case INS_sve_st1d:
+                        if (fmt == IF_SVE_JJ_4A_B)
+                        {
+                            printf("]");
+                        }
+                        else
+                        {
+                            printf(" #3]");
+                        }
+                        break;
+
+                    default:
+                        assert(!"Invalid instruction");
+                        break;
+                }
+                break;
+            }
+
+        // {<Zt>.<T>}, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        case IF_SVE_JN_3A: // .........xx.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+            imm = emitGetInsSC(id);
+            emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);            // ggg
+            printf("[");
+            emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
+            if (imm != 0)
+            {
+                emitDispImm(emitGetInsSC(id), true); // iiii
+                printf("mul vl");
+            }
+            printf("]");
+            break;
+
+        // {<Zt>.<T>}, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        case IF_SVE_JN_3B: // ..........x.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+            imm = emitGetInsSC(id);
+            emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);            // ggg
+            printf("[");
+            emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
+            if (imm != 0)
+            {
+                emitDispImm(emitGetInsSC(id), true); // iiii
+                printf("mul vl");
             }
             printf("]");
             break;
@@ -22485,6 +23019,26 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     perfScoreUnhandledInstruction(id, &result);
                     break;
             }
+            break;
+
+        case IF_SVE_JD_4A:   // .........xxmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+        case IF_SVE_JD_4B:   // ..........xmmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+        case IF_SVE_JJ_4A:   // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JJ_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JJ_4A_C: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JJ_4A_D: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
+        case IF_SVE_JK_4A: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit unscaled
+                           // offsets)
+        case IF_SVE_JK_4A_B: // ...........mmmmm .h.gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit
+                             // unscaled offsets)
+        case IF_SVE_JN_3A:   // .........xx.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+        case IF_SVE_JN_3B:   // ..........x.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
         default:
