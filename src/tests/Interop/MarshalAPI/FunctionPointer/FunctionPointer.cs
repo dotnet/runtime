@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -110,5 +111,54 @@ public partial class FunctionPtr
             GC.KeepAlive(d);
         }
         Assert.Equal(expectedValue, outVar);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    static int UnmanagedExportedFunction(float arg)
+    {
+        return Convert.ToInt32(arg);
+    }
+
+    class GenericCaller<T>
+    {
+        internal static unsafe T GenericCalli<U>(void* fnptr, U arg)
+        {
+            return ((delegate* unmanaged<U, T>)fnptr)(arg);
+        }
+    }
+
+    [Fact]
+    public static void RunGenericFunctionPointerTest()
+    {
+        Console.WriteLine($"Running {nameof(RunGenericFunctionPointerTest)}...");
+        int outVar = 0;
+        int expectedValue = 42;
+        unsafe
+        {
+            outVar = GenericCaller<int>.GenericCalli((delegate* unmanaged[Cdecl]<float, int>)&UnmanagedExportedFunction, 42.0f);
+        }
+        Assert.Equal(expectedValue, outVar);
+    }
+
+    [Fact]
+    public static void RunInvalidGenericFunctionPointerTest()
+    {
+        Console.WriteLine($"Running {nameof(RunInvalidGenericFunctionPointerTest)}...");
+        unsafe
+        {
+            nint lib = nint.Zero;
+            try
+            {
+                lib = NativeLibrary.Load(nameof(FunctionPointerNative));
+                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged[Cdecl]<string, string>)NativeLibrary.GetExport(lib, "ReturnParameter"), "test"));
+            }
+            finally
+            {
+                if (lib != nint.Zero)
+                {
+                    NativeLibrary.Free(lib);
+                }
+            }
+        }
     }
 }
