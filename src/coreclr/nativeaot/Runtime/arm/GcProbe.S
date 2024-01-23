@@ -1,14 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+.syntax unified
+.thumb
+
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
 .global RhpGcPoll2
 
 LEAF_ENTRY RhpGcPoll
-    ldr         r0, =RhpTrapThreads
-    ldr         r0, [r0]
+    PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r0
     cmp         r0, #TrapThreadsFlags_None
     bne         RhpGcPollRare
     bx          lr

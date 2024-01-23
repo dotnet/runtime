@@ -301,18 +301,20 @@ bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------
-// CanRemoveJumpToFalseTarget: determine if jump to false target can be omitted
+// CanRemoveJumpToTarget: determine if jump to target can be omitted
 //
 // Arguments:
+//    target - true/false target of BBJ_COND block
 //    compiler - current compiler instance
 //
 // Returns:
-//    true if block is a BBJ_COND that can fall into its false target
+//    true if block is a BBJ_COND that can fall into target
 //
-bool BasicBlock::CanRemoveJumpToFalseTarget(Compiler* compiler) const
+bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const
 {
     assert(KindIs(BBJ_COND));
-    return NextIs(bbFalseTarget) && !hasAlign() && !compiler->fgInDifferentRegions(this, bbFalseTarget);
+    assert(TrueTargetIs(target) || FalseTargetIs(target));
+    return NextIs(target) && !compiler->fgInDifferentRegions(this, target);
 }
 
 //------------------------------------------------------------------------
@@ -489,7 +491,7 @@ void BasicBlock::dspFlags() const
         {BBF_INTERNAL, "internal"},
         {BBF_FAILED_VERIFICATION, "failV"},
         {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
-        {BBF_LOOP_HEAD, "Loop"},
+        {BBF_LOOP_HEAD, "loophead"},
         {BBF_HAS_LABEL, "label"},
         {BBF_HAS_JMP, "jmp"},
         {BBF_HAS_CALL, "hascall"},
@@ -511,7 +513,7 @@ void BasicBlock::dspFlags() const
         {BBF_NO_CSE_IN, "no-cse"},
         {BBF_CAN_ADD_PRED, "add-pred"},
         {BBF_RETLESS_CALL, "retless"},
-        {BBF_LOOP_PREHEADER, "LoopPH"},
+        {BBF_LOOP_PREHEADER, "preheader"},
         {BBF_COLD, "cold"},
         {BBF_KEEP_BBJ_ALWAYS, "KEEP"},
         {BBF_CLONED_FINALLY_BEGIN, "cfb"},
@@ -524,11 +526,17 @@ void BasicBlock::dspFlags() const
         {BBF_OLD_LOOP_HEADER_QUIRK, "loopheader"},
     };
 
+    bool first = true;
     for (unsigned i = 0; i < ArrLen(bbFlagDisplay); i++)
     {
         if (HasFlag(bbFlagDisplay[i].flag))
         {
-            printf("%s ", bbFlagDisplay[i].displayString);
+            if (!first)
+            {
+                printf(" ");
+            }
+            printf("%s", bbFlagDisplay[i].displayString);
+            first = false;
         }
     }
 }
@@ -803,7 +811,6 @@ void BasicBlock::CloneBlockState(
     to->bbCodeOffs    = from->bbCodeOffs;
     to->bbCodeOffsEnd = from->bbCodeOffsEnd;
     VarSetOps::AssignAllowUninitRhs(compiler, to->bbScope, from->bbScope);
-    to->bbNatLoopNum = from->bbNatLoopNum;
 #ifdef DEBUG
     to->bbTgtStkDepth = from->bbTgtStkDepth;
 #endif // DEBUG
@@ -1164,7 +1171,7 @@ unsigned BasicBlock::NumSucc() const
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueTarget == bbFalseTarget)
             {
                 return 1;
             }
@@ -1289,7 +1296,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueTarget == bbFalseTarget)
             {
                 return 1;
             }
@@ -1598,14 +1605,8 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
         block->bbMemorySsaNumOut[memoryKind]  = 0;
     }
 
-    // Make sure we reserve a NOT_IN_LOOP value that isn't a legal table index.
-    static_assert_no_msg(BasicBlock::MAX_LOOP_NUM < BasicBlock::NOT_IN_LOOP);
-
-    block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
-
-    block->bbPreorderNum     = 0;
-    block->bbPostorderNum    = 0;
-    block->bbNewPostorderNum = 0;
+    block->bbPreorderNum  = 0;
+    block->bbPostorderNum = 0;
 
     return block;
 }

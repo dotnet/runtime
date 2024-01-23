@@ -338,8 +338,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     pMT->SetLoaderAllocator(pAllocator);
     pMT->SetModule(elemTypeHnd.GetModule());
 
-    // This also disables IBC logging until the type is sufficiently initialized so
-    // it needs to be done early
     pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
     // Fill in pClass
@@ -440,7 +438,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
-    // Mark the type as restored to avoid asserts. Note that this also enables IBC logging.
+    // Mark the type as restored to avoid asserts.
     pMT->GetAuxiliaryDataForWrite()->SetIsRestoredForBuildArrayMethodTable();
 
     {

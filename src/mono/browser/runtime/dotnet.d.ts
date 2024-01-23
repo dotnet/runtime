@@ -18,24 +18,6 @@ declare interface Int32Ptr extends NativePointer {
     __brand: "Int32Ptr";
 }
 declare interface EmscriptenModule {
-    /** @deprecated Please use localHeapViewI8() instead.*/
-    HEAP8: Int8Array;
-    /** @deprecated Please use localHeapViewI16() instead.*/
-    HEAP16: Int16Array;
-    /** @deprecated Please use localHeapViewI32() instead. */
-    HEAP32: Int32Array;
-    /** @deprecated Please use localHeapViewI64() instead. */
-    HEAP64: BigInt64Array;
-    /** @deprecated Please use localHeapViewU8() instead. */
-    HEAPU8: Uint8Array;
-    /** @deprecated Please use localHeapViewU16() instead. */
-    HEAPU16: Uint16Array;
-    /** @deprecated Please use localHeapViewU32() instead */
-    HEAPU32: Uint32Array;
-    /** @deprecated Please use localHeapViewF32() instead */
-    HEAPF32: Float32Array;
-    /** @deprecated Please use localHeapViewF64() instead. */
-    HEAPF64: Float64Array;
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
     out(message: string): void;
@@ -354,7 +336,11 @@ type AssetBehaviors = SingleAssetBehaviors |
 /**
  * The javascript module for threads.
  */
- | "symbols";
+ | "symbols"
+/**
+ * Load segmentation rules file for Hybrid Globalization.
+ */
+ | "segmentation-rules";
 declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.
@@ -378,7 +364,6 @@ declare const enum GlobalizationMode {
     Hybrid = "hybrid"
 }
 type DotnetModuleConfig = {
-    disableDotnet6Compatibility?: boolean;
     config?: MonoConfig;
     configSrc?: string;
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
@@ -430,14 +415,6 @@ type APIType = {
     localHeapViewF64: () => Float64Array;
 };
 type RuntimeAPI = {
-    /**
-     * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
-     */
-    MONO: any;
-    /**
-     * @deprecated Please use API object instead. See also BINDINGType in dotnet-legacy.d.ts
-     */
-    BINDING: any;
     INTERNAL: any;
     Module: EmscriptenModule;
     runtimeId: number;

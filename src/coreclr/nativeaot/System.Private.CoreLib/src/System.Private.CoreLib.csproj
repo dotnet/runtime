@@ -126,7 +126,6 @@
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInheritanceRules.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInstantiator.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeSearcher.cs" />
@@ -221,6 +220,7 @@
     <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\Array.NativeAot.cs" />
     <Compile Include="System\Delegate.cs" />
+    <Compile Include="System\StartupHookProvider.NativeAot.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\Exception.NativeAot.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />

@@ -8,7 +8,7 @@
 
     <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsCurrent>
     <!-- force net8 to use the current targets until the SDK can target net9 -->
-    <ForceNet8Current Condition="'$(ForceNet8Current)' == ''">true</ForceNet8Current>
+    <ForceNet8Current Condition="'$(ForceNet8Current)' == ''">false</ForceNet8Current>
     <TargetsCurrent Condition="'$(ForceNet8Current)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsCurrent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsCurrent)' != 'true'">
@@ -45,7 +45,6 @@
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Keep in sync with WasmApp.Native.targets -->
     <_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded Condition="
-        '$(WasmEnableLegacyJsInterop)' == 'false' or
         '$(WasmEnableSIMD)' == 'false' or
         '$(WasmEnableExceptionHandling)' == 'false' or
         '$(InvariantTimezone)' == 'true' or
