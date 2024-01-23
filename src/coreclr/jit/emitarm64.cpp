@@ -14660,6 +14660,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeImm8_12_to_5(ssize_t imm)
+{
+    assert(isValidSimm8(imm) || isValidUimm8(imm));
+    return (code_t)((imm & 0xFF) << 5);
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding to select the <R> 4/8-byte width specifier <R>
  *  at bit location 22 for an Arm64 Sve instruction.
  */
@@ -16927,10 +16938,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SVE_ED_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer min/max immediate (unpredicated)
         case IF_SVE_EE_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer multiply immediate (unpredicated)
         {
+            imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
-            code_t imm8 = (code_t)(emitGetInsSC(id) & 0xFF); // iiiiiiii
-            code |= (imm8 << 5);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -16939,11 +16950,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
         case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
         {
+            imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
-            code |= (id->idOptionalShift() ? 0x2000 : 0);    // h
-            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
-            code_t imm8 = (code_t)(emitGetInsSC(id) & 0xFF); // iiiiiiii
-            code |= (imm8 << 5);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeImm8_12_to_5(imm);                           // iiiiiiii
+            code |= (id->idOptionalShift() ? 0x2000 : 0);                 // h
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
