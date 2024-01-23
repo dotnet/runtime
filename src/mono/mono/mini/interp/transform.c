@@ -1688,6 +1688,29 @@ interp_emit_metadata_update_ldflda (TransformData *td, MonoClassField *field, Mo
 	td->last_ins->data [1] = get_data_item_index (td, GUINT_TO_POINTER (field_token));
 }
 
+static guint16
+get_type_comparison_op (TransformData *td, gboolean equality)
+{
+	guint16 op;
+	InterpInst *src1, *src2;
+	src2 = td->last_ins;
+	src1 = src2 ? interp_prev_ins (src2) : NULL;
+
+	if (src1 && src2 && src1->opcode == MINT_LDPTR && src2->opcode == MINT_LDPTR &&
+			td->sp [-2].var == src1->dreg && td->sp [-1].var == src2->dreg) {
+		// Resolve the comparision immediately
+		if (src1->data [0] == src2->data [0])
+			op = equality ? MINT_LDC_I4_1 : MINT_LDC_I4_0;
+		else
+			op = equality ? MINT_LDC_I4_0 : MINT_LDC_I4_1;
+		interp_clear_ins (src1);
+		interp_clear_ins (src2);
+	} else {
+		op = equality ? MINT_CEQ_P : MINT_CNE_P;
+	}
+
+	return op;
+}
 
 /* Return TRUE if call transformation is finished */
 static gboolean
@@ -2135,10 +2158,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			td->sp [-1].klass == mono_defaults.runtimetype_class && td->sp [-2].klass == mono_defaults.runtimetype_class) {
 		// We do a reference comparison only if we know both operands are runtime type
 		// (they originate from object.GetType or ldftn + GetTypeFromHandle)
-		*op = MINT_CEQ_P;
+		*op = get_type_comparison_op (td, TRUE);
 	} else if (in_corlib && target_method->klass == mono_defaults.systemtype_class && !strcmp (target_method->name, "op_Inequality") &&
 			td->sp [-1].klass == mono_defaults.runtimetype_class && td->sp [-2].klass == mono_defaults.runtimetype_class) {
-		*op = MINT_CNE_P;
+		*op = get_type_comparison_op (td, FALSE);
 	} else if (in_corlib && target_method->klass == mono_defaults.object_class) {
 		if (!strcmp (tm, "GetType")) {
 			if (constrained_class && m_class_is_valuetype (constrained_class) && !mono_class_is_nullable (constrained_class)) {
