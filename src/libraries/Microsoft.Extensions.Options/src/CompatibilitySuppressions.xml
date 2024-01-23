@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.AddOptionsWithValidateOnStart``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String)&lt;0&gt;:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>lib/net8.0/Microsoft.Extensions.Options.dll</Left>
+    <Right>lib/net8.0/Microsoft.Extensions.Options.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.AddOptionsWithValidateOnStart``2(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String)&lt;0&gt;:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>lib/net8.0/Microsoft.Extensions.Options.dll</Left>
+    <Right>lib/net8.0/Microsoft.Extensions.Options.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+</Suppressions>
