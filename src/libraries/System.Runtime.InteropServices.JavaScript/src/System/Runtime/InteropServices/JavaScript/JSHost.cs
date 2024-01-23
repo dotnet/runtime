@@ -50,17 +50,5 @@ namespace System.Runtime.InteropServices.JavaScript
             return JSHostImplementation.ImportAsync(moduleName, moduleUrl, cancellationToken);
         }
 
-        public static SynchronizationContext CurrentOrMainJSSynchronizationContext
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-#if FEATURE_WASM_THREADS
-                return (JSProxyContext.ExecutionContext ?? JSProxyContext.MainThreadContext).SynchronizationContext;
-#else
-                return null!;
-#endif
-            }
-        }
     }
 }
