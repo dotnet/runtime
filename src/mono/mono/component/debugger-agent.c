@@ -5670,9 +5670,9 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 				decode_byte (buf, &buf, limit);
 				if (CHECK_PROTOCOL_VERSION(2, 61))
 					decode_byte (buf, &buf, limit); //ignore is boxed
+				decode_typeid (buf, &buf, limit, &d, &err);
 				if (CHECK_PROTOCOL_VERSION(2, 65))
 					decode_int (buf, &buf, limit); //ignore inline array
-				decode_typeid (buf, &buf, limit, &d, &err);
 				ret += decode_vtype_compute_size (NULL, domain, buf, &buf, limit, from_by_ref_value_type);
 			} else {
 				goto end;
