@@ -175,25 +175,24 @@ namespace System.Globalization
                     int codePoint = char.ConvertToUtf32(value.ToString(), 0);
                     return codePoint == 0x10FC6;
                 }
+                case UnicodeCategory.OtherPunctuation:
+                {
+                    if (value == '\u180A' || value == '\u1CD3')
+                        return true;
+                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
+                    return codePoint == 0x10F86 || codePoint == 0x10F87;
+                }
                 case UnicodeCategory.EnclosingMark:
                 {
-                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
-                    return (codePoint == 0x0488 || codePoint == 0x0489 || codePoint == 0xA670 || codePoint == 0xA671 || codePoint == 0xA672);
+                    return value == '\u0488' || value == '\u0489' || value == '\uA670' || value == '\uA671' || value == '\uA672';
                 }
                 case UnicodeCategory.ModifierLetter:
                 {
-                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
-                    return codePoint == 0x0640 || codePoint == 0x07FA;
+                    return value == '\u0640' || value == '\u07FA';
                 }
                 case UnicodeCategory.SpacingCombiningMark:
                 {
-                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
-                    return codePoint == 0x0F3E || codePoint == 0x0F3F || codePoint == 0x1CE1 || codePoint == 0x1CF7;
-                }
-                case UnicodeCategory.OtherPunctuation:
-                {
-                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
-                    return codePoint == 0x180A || codePoint == 0x1CD3 || codePoint == 0x10F86 || codePoint == 0x10F87;
+                    return value == '\u0F3E' || value == '\u0F3F' || value == '\u1CE1' || value == '\u1CF7';
                 }
                 default:
                     return false;
