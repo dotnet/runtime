@@ -786,6 +786,31 @@ public:
         bbTarget = finallyContinuation;
     }
 
+#ifdef DEBUG
+
+    // Return the block target; it might be null. Only used during dumping.
+    BasicBlock* GetTargetRaw() const
+    {
+        assert(HasTarget());
+        return bbTarget;
+    }
+
+    // Return the BBJ_COND true target; it might be null. Only used during dumping.
+    BasicBlock* GetTrueTargetRaw() const
+    {
+        assert(KindIs(BBJ_COND));
+        return bbTrueTarget;
+    }
+
+    // Return the BBJ_COND false target; it might be null. Only used during dumping.
+    BasicBlock* GetFalseTargetRaw() const
+    {
+        assert(KindIs(BBJ_COND));
+        return bbFalseTarget;
+    }
+
+#endif // DEBUG
+
 private:
     BasicBlockFlags bbFlags;
 
@@ -910,7 +935,7 @@ public:
     static weight_t getCalledCount(Compiler* comp);
 
     // getBBWeight -- get the normalized weight of this block
-    weight_t getBBWeight(Compiler* comp);
+    weight_t getBBWeight(Compiler* comp) const;
 
     // hasProfileWeight -- Returns true if this block's weight came from profile data
     bool hasProfileWeight() const
