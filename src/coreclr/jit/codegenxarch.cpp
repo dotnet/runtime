@@ -394,8 +394,6 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
 
-    // write a printf statement here to help debug problems with imm constant sizes
-
     emitAttr origAttr = size;
     if (!compiler->opts.compReloc)
     {
@@ -415,7 +413,9 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
         {
             if (EA_IS_CNS_TLSGD_RELOC(origAttr))
             {
-                GetEmitter()->emitIns_Data16(1);
+                // NativeAOT code needs special code sequence prefix of call so the
+                // linker will do the fixup and emit accurate TLS access information.
+                GetEmitter()->emitIns_Data16();
             }
             if (!EA_IS_CNS_SEC_RELOC(origAttr))
             {
@@ -6417,8 +6417,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 
                 // NativeAOT code needs special code sequence prefix of call so the
                 // linker will do the fixup and emit accurate TLS access information.
-                GetEmitter()->emitIns_Data16(1);
-                GetEmitter()->emitIns_Data16(1);
+                GetEmitter()->emitIns_Data16();
+                GetEmitter()->emitIns_Data16();
 
                 // clang-format off
                 genEmitCall(emitter::EC_FUNC_TOKEN,

@@ -496,7 +496,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
     // TODO: Replace with opts.compCodeOpt once it's fixed
     const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
-    if (!isNativeAOT && preferSize)
+    if (preferSize)
     {
         // The optimization comes with a codegen size increase
         JITDUMP("Optimized for size - bail out.\n")

@@ -4491,17 +4491,15 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
      *  Add a NOP instruction of the given size.
      */
 
-void emitter::emitIns_Data16(unsigned nBytes)
+void emitter::emitIns_Data16()
 {
-    assert(nBytes <= MAX_ENCODED_SIZE);
-
     instrDesc* id = emitNewInstrSmall(emitAttr::EA_1BYTE);
     id->idIns(INS_data16);
     id->idInsFmt(IF_NONE);
-    id->idCodeSize(nBytes);
+    id->idCodeSize(1);
 
     dispIns(id);
-    emitCurIGsize += nBytes;
+    emitCurIGsize += 1;
 }
 
 /*****************************************************************************
@@ -9665,7 +9663,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         id->idAddr()->iiaAddr = (BYTE*)addr;
 
         // Direct call to a method and no addr indirection is needed.
-
         if (codeGen->genCodeAddrNeedsReloc((size_t)addr))
         {
             id->idSetIsDspReloc();
@@ -9673,7 +9670,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             if ((size_t)methHnd == 1)
             {
                 id->idSetTlsGD();
-                sz += 1;
+                sz += 1; // For REX.W prefix
             }
         }
     }
@@ -12203,17 +12200,14 @@ void emitter::emitDispIns(
 
 /*****************************************************************************
  *
- *  Output nBytes bytes of NOP instructions
+ *  Output 0x66 byte of `data16` instructions
  */
 
-BYTE* emitter::emitOutputData16(BYTE* dst, size_t nBytes)
+BYTE* emitter::emitOutputData16(BYTE* dst)
 {
 #ifdef TARGET_AMD64
     BYTE* dstRW = dst + writeableOffset;
-    for (size_t i = 0; i < nBytes; i++)
-    {
-        *dstRW++ = 0x66;
-    }
+    *dstRW++    = 0x66;
     return dstRW - writeableOffset;
 #else
     return dst;
@@ -12787,6 +12781,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 #ifdef TARGET_AMD64
             case EA_8BYTE:
 #endif
+
                 /* Set the 'w' bit to get the large version */
 
                 code |= 0x1;
@@ -15262,12 +15257,6 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
                     // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
                     emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
                 }
-                else if (id->idIsCallRegPtr())
-                {
-                    assert(false);
-                    // For TLS GD, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
-                    emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_TLSGD);
-                }
             }
             else
             {
@@ -16317,7 +16306,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             if (ins == INS_data16)
             {
-                dst = emitOutputData16(dst, id->idCodeSize());
+                dst = emitOutputData16(dst);
                 sz  = emitSizeOfInsDsc_NONE(id);
                 break;
             }
@@ -16460,7 +16449,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
             addr = (BYTE*)id->idAddr()->iiaAddr;
-            assert(addr != nullptr || emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+            assert(addr != nullptr);
 
             // Some helpers don't get recorded in GC tables
             if (id->idIsNoGC())
@@ -16536,7 +16525,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #ifdef TARGET_AMD64
             // All REL32 on Amd64 go through recordRelocation.  Here we will output zero to advance dst.
             offset = 0;
-            assert(id->idIsDspReloc() || ((ins == INS_call) && emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI)));
+            assert(id->idIsDspReloc());
 #else
             // Calculate PC relative displacement.
             // Although you think we should be using sizeof(void*), the x86 and x64 instruction set
@@ -16636,7 +16625,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
 #ifdef DEBUG
-            if (ins == INS_call && !emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            if (ins == INS_call && !id->idIsTlsGD())
             {
                 emitRecordCallSite(emitCurCodeOffs(*dp), id->idDebugOnlyInfo()->idCallSig,
                                    (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
