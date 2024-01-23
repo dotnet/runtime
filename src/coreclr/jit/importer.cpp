@@ -5410,7 +5410,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     assert(op1->TypeGet() == TYP_REF);
 
     // Optimistically assume the jit should expand this as an inline test
-    bool shouldExpandInline = false;
+    bool shouldExpandInline = true;
     bool isClassExact       = eeIsClassExact(pResolvedToken->hClass);
 
     // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
@@ -5428,6 +5428,36 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             op2                    = impTokenToHandle(pResolvedToken, &runtimeLookup);
             assert(!runtimeLookup);
         }
+    }
+
+    // Profitability check.
+    //
+    // Don't bother with inline expansion when jit is trying to generate code quickly
+    if (opts.OptimizationDisabled())
+    {
+        // not worth the code expansion if jitting fast or in a rarely run block
+        shouldExpandInline = false;
+    }
+    else if ((op1->gtFlags & GTF_GLOB_EFFECT) && lvaHaveManyLocals())
+    {
+        // not worth creating an untracked local variable
+        shouldExpandInline = false;
+    }
+    else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (JitConfig.JitProfileCasts() == 1))
+    {
+        // Optimizations are enabled but we're still instrumenting (including casts)
+        if (isCastClass && !isClassExact)
+        {
+            // Usually, we make a speculative assumption that it makes sense to expand castclass
+            // even for non-sealed classes, but let's rely on PGO in this specific case
+            shouldExpandInline = false;
+        }
+    }
+
+    if (shouldExpandInline && compCurBB->isRunRarely())
+    {
+        // For cold blocks we only expand castclass against exact classes because it's cheap
+        shouldExpandInline = isCastClass && isClassExact;
     }
 
     // Pessimistically assume the jit cannot expand this as an inline test
