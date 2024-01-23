@@ -8241,11 +8241,6 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
 #endif
     }
 
-    while ((pFrame != FRAME_TOP) && (pFrame < (void*)GetSP(pStackwalkCtx)))
-    {
-        pFrame = pFrame->PtrNextFrame();
-    }
-
     REGDISPLAY* pRD = &pExInfo->m_regDisplay;
     pThread->FillRegDisplay(pRD, pStackwalkCtx);
 
@@ -8437,7 +8432,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                 else
                 {
 #ifdef HOST_WINDOWS
-                    RaiseFailFastException(pTopExInfo->m_ptrs.ExceptionRecord, pTopExInfo->m_ptrs.ContextRecord, 0);
+                    RaiseFailFastException(NULL, NULL, 0);
 #else
                     CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);
 #endif
