@@ -823,7 +823,7 @@ namespace Internal.JitInterface
         {
             MethodIL methodIL = (MethodIL)HandleToObject((void*)module);
 
-            ISymbolNode stringObject;
+            FrozenStringNode stringObject;
             if (metaTok == (mdToken)CorConstants.CorTokenType.mdtString)
             {
                 stringObject = _compilation.NodeFactory.SerializedStringObject("");
@@ -1776,7 +1776,7 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
         {
             MethodDesc method = HandleToObject(handle);
-            ISymbolNode methodHandleSymbol = _compilation.NodeFactory.RuntimeMethodHandle(method);
+            RuntimeMethodHandleNode methodHandleSymbol = _compilation.NodeFactory.RuntimeMethodHandle(method);
             CORINFO_METHOD_STRUCT_* result = (CORINFO_METHOD_STRUCT_*)ObjectToHandle(methodHandleSymbol);
 
             if (methodHandleSymbol.RepresentsIndirectionCell)
@@ -2352,9 +2352,6 @@ namespace Internal.JitInterface
 
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
-            if (!EETypeNode.SupportsFrozenRuntimeTypeInstances(_compilation.NodeFactory.Target))
-                return null;
-
             TypeDesc type = HandleToObject(cls);
             return ObjectToHandle(_compilation.NecessaryRuntimeTypeIfPossible(type));
         }

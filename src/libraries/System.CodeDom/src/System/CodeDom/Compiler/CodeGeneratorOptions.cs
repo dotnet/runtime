@@ -8,7 +8,7 @@ namespace System.CodeDom.Compiler
 {
     public class CodeGeneratorOptions
     {
-        private readonly IDictionary _options = new ListDictionary();
+        private readonly ListDictionary _options = new ListDictionary();
 
         public CodeGeneratorOptions() { }
 
