@@ -5935,7 +5935,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
 
                     // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
-                    if ((op2->gtFlags & GTF_ASG) != 0)
+                    if (gtHaveStoreInterference(op2, op1))
                     {
                         // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
                         allowReversal = false;
@@ -6316,6 +6316,125 @@ DONE:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+//------------------------------------------------------------------------
+// gtHaveStoreInterference: Check if two trees interfere because of a store in
+// one of the trees.
+//
+// Parameters:
+//   treeWithStores - Tree that may have stores in it
+//   tree           - Tree that may be reading from a store in "treeWithStores"
+//
+// Returns:
+//   True if there is any GT_LCL_VAR or GT_LCL_FLD node whose value depends on
+//   "lclNum".
+//
+bool Compiler::gtHaveStoreInterference(GenTree* treeWithStores, GenTree* tree)
+{
+    if (((treeWithStores->gtFlags & GTF_ASG) == 0) || tree->IsInvariant())
+    {
+        return false;
+    }
+
+    class Visitor final : public GenTreeVisitor<Visitor>
+    {
+        GenTree* m_op1;
+
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        Visitor(Compiler* compiler, GenTree* op1) : GenTreeVisitor(compiler), m_op1(op1)
+        {
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & GTF_ASG) == 0)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (node->OperIsLocalStore())
+            {
+                if (m_compiler->gtTreeHasLocalRead(m_op1, node->AsLclVarCommon()->GetLclNum()))
+                {
+                    return WALK_ABORT;
+                }
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(this, tree);
+    return visitor.WalkTree(&treeWithStores, nullptr) == WALK_ABORT;
+}
+
+//------------------------------------------------------------------------
+// gtTreeHasLocalRead: Check if a tree has a read of the specified local,
+// taking promotion into account.
+//
+// Parameters:
+//   tree   - The tree to check.
+//   lclNum - The local to look for.
+//
+// Returns:
+//   True if there is any GT_LCL_VAR or GT_LCL_FLD node whose value depends on
+//   "lclNum".
+//
+bool Compiler::gtTreeHasLocalRead(GenTree* tree, unsigned lclNum)
+{
+    class Visitor final : public GenTreeVisitor<Visitor>
+    {
+    public:
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        unsigned   m_lclNum;
+        LclVarDsc* m_lclDsc;
+
+        Visitor(Compiler* compiler, unsigned lclNum) : GenTreeVisitor(compiler), m_lclNum(lclNum)
+        {
+            m_lclDsc = compiler->lvaGetDesc(lclNum);
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+
+            if (node->OperIsLocalRead())
+            {
+                if (node->AsLclVarCommon()->GetLclNum() == m_lclNum)
+                {
+                    return WALK_ABORT;
+                }
+
+                if (m_lclDsc->lvIsStructField && (node->AsLclVarCommon()->GetLclNum() == m_lclDsc->lvParentLcl))
+                {
+                    return WALK_ABORT;
+                }
+
+                if (m_lclDsc->lvPromoted && (node->AsLclVarCommon()->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
+                    (node->AsLclVarCommon()->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
+                {
+                    return WALK_ABORT;
+                }
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(this, lclNum);
+    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+}
 
 #ifdef DEBUG
 bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
