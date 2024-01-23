@@ -791,14 +791,11 @@ void* BasicBlock::MemoryPhiArg::operator new(size_t sz, Compiler* comp)
 //    compiler - Jit compiler instance
 //    to - New/empty block to copy statements into
 //    from - Block to copy statements from
-//    varNum - lclVar uses with lclNum `varNum` will be replaced; can be ~0 to indicate no replacement.
-//    varVal - If replacing uses of `varNum`, replace them with int constants with value `varVal`.
 //
 // Note:
 //    Leaves block ref count at zero, and pred edge list empty.
 //
-void BasicBlock::CloneBlockState(
-    Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum, int varVal)
+void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const BasicBlock* from)
 {
     assert(to->bbStmtList == nullptr);
     to->CopyFlags(from);
@@ -817,7 +814,7 @@ void BasicBlock::CloneBlockState(
 
     for (Statement* const fromStmt : from->Statements())
     {
-        GenTree* newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
+        GenTree* newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode());
         assert(newExpr != nullptr);
         compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr, fromStmt->GetDebugInfo()));
     }

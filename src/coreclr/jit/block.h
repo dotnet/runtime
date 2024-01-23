@@ -1647,10 +1647,8 @@ public:
         return BBCompilerSuccList(comp, this);
     }
 
-    // Clone block state and statements from `from` block to `to` block (which must be new/empty),
-    // optionally replacing uses of local `varNum` with IntCns `varVal`.
-    static void CloneBlockState(
-        Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum = (unsigned)-1, int varVal = 0);
+    // Clone block state and statements from `from` block to `to` block (which must be new/empty)
+    static void CloneBlockState(Compiler* compiler, BasicBlock* to, const BasicBlock* from);
 
     // Copy the block kind and targets. The `from` block is untouched.
     void CopyTarget(Compiler* compiler, const BasicBlock* from);

@@ -1622,7 +1622,9 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
 
             // Now clone block state and statements from `from` block to `to` block.
             //
-            BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval);
+            BasicBlock::CloneBlockState(this, newBlock, block);
+
+            optReplaceScalarUsesWithConst(newBlock, lvar, lval);
 
             newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
 
@@ -1796,6 +1798,57 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
 #endif // DEBUG
 
     return true;
+}
+
+//-----------------------------------------------------------------------------
+// optReplaceScalarUsesWithConst: Replace all GT_LCL_VAR occurrences of a local
+// with a constant.
+//
+// Arguments:
+//   block   - The block to replace in
+//   lclNum  - The local to replace
+//   cnsVal  - The constant to replace with
+//
+// Remarks:
+//   This is used to replace the loop iterator with the constant value when
+//   unrolling.
+//
+void Compiler::optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum, ssize_t cnsVal)
+{
+    class ReplaceVisitor final : public GenTreeVisitor<ReplaceVisitor>
+    {
+        unsigned m_lclNum;
+        ssize_t  m_cnsVal;
+
+    public:
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        ReplaceVisitor(Compiler* comp, unsigned lclNum, ssize_t cnsVal)
+            : GenTreeVisitor(comp), m_lclNum(lclNum), m_cnsVal(cnsVal)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            if ((*use)->OperIs(GT_LCL_VAR) && ((*use)->AsLclVarCommon()->GetLclNum() == m_lclNum))
+            {
+                *use = m_compiler->gtNewIconNode(m_cnsVal, genActualType(*use));
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    ReplaceVisitor visitor(this, lclNum, cnsVal);
+
+    for (Statement* stmt : block->Statements())
+    {
+        visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    }
 }
 
 Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* tree)
@@ -3692,7 +3745,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
 #endif
 
     // Create a copy of the expression and mark it for CSE's.
-    GenTree* hoistExpr = gtCloneExpr(origExpr, GTF_MAKE_CSE);
+    GenTree* hoistExpr = gtCloneExpr(origExpr);
 
     // The hoist Expr does not have to computed into a specific register,
     // so clear the RegNum if it was set in the original expression
@@ -3701,9 +3754,9 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
     // Copy any loop memory dependence.
     optCopyLoopMemoryDependence(origExpr, hoistExpr);
 
-    // At this point we should have a cloned expression, marked with the GTF_MAKE_CSE flag
+    // At this point we should have a cloned expression
+    hoistExpr->gtFlags |= GTF_MAKE_CSE;
     assert(hoistExpr != origExpr);
-    assert(hoistExpr->gtFlags & GTF_MAKE_CSE);
 
     // The value of the expression isn't used.
     GenTree* hoist = gtUnusedValNode(hoistExpr);
