@@ -11,15 +11,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private OpenSslPkcs12Reader(ReadOnlySpan<byte> data)
         {
-            try
-            {
-                ParsePkcs12(data);
-            }
-            catch(Exception)
-            {
-                Dispose();
-                throw;
-            }
+            ParsePkcs12(data);
         }
 
         protected override ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data)

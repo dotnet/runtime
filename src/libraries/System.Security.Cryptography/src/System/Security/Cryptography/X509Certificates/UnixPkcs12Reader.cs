@@ -112,12 +112,23 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Dispose()
         {
+            Dispose(true);
+        }
+
+        ~UnixPkcs12Reader()
+        {
+            Dispose(false);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
             // Generally, having a MemoryManager cleaned up in a Dispose is a bad practice.
             // In this case, the UnixPkcs12Reader is only ever created in a using statement,
             // never accessed by a second thread, and there isn't a manual call to Dispose
             // mixed in anywhere.
             if (_tmpManager != null)
             {
+                // unmanaged buffer should always be released
                 unsafe
                 {
                     Span<byte> tmp = _tmpManager.GetSpan();
@@ -128,27 +139,32 @@ namespace System.Security.Cryptography.X509Certificates
                         Marshal.FreeHGlobal((IntPtr)ptr);
                     }
                 }
-
-                ((IDisposable)_tmpManager).Dispose();
+                if (disposing)
+                {
+                    ((IDisposable)_tmpManager).Dispose();
+                }
                 _tmpManager = null;
             }
 
-            ContentInfoAsn[]? rentedContents = Interlocked.Exchange(ref _safeContentsValues, null);
-            CertAndKey[]? rentedCerts = Interlocked.Exchange(ref _certs, null);
-
-            if (rentedContents != null)
+            if (disposing)
             {
-                ReturnRentedContentInfos(rentedContents);
-            }
+                ContentInfoAsn[]? rentedContents = Interlocked.Exchange(ref _safeContentsValues, null);
+                CertAndKey[]? rentedCerts = Interlocked.Exchange(ref _certs, null);
 
-            if (rentedCerts != null)
-            {
-                for (int i = _certCount - 1; i >= 0; --i)
+                if (rentedContents != null)
                 {
-                    rentedCerts[i].Dispose();
+                    ReturnRentedContentInfos(rentedContents);
                 }
 
-                ArrayPool<CertAndKey>.Shared.Return(rentedCerts, clearArray: true);
+                if (rentedCerts != null)
+                {
+                    for (int i = _certCount - 1; i >= 0; --i)
+                    {
+                        rentedCerts[i].Dispose();
+                    }
+
+                    ArrayPool<CertAndKey>.Shared.Return(rentedCerts, clearArray: true);
+                }
             }
         }
 
