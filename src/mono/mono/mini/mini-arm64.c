@@ -2622,8 +2622,6 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	/* r28 is reserved for cfg->arch.args_reg */
 	/* r27 is reserved for the imt argument */
 	for (i = ARMREG_R19; i <= ARMREG_R26; ++i) {
-		if (!(mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL) && i == ARMREG_R21))
-		
 		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
 	}
 
@@ -2729,13 +2727,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->arch.args_reg = ARMREG_R28;
 		cfg->used_int_regs |= 1 << ARMREG_R28;
 	}
-
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
-		g_assert (!(cfg->used_int_regs & (1 << ARMREG_R21)));
-		cfg->used_int_regs |= 1 << ARMREG_R21;
-	}
-#endif
 
 	if (cfg->method->save_lmf) {
 		/* The LMF var is allocated normally */
@@ -2883,7 +2874,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			break;
 		}
 		case ArgSwiftError: {
-			MonoInst *ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+			ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 			ins->flags |= MONO_INST_VOLATILE;
 			size = 8;
 			align = 8;
