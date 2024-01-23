@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
@@ -48,12 +49,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #region Executors
 
-        private CancellationTokenSource CreateTestCaseTimeoutSource()
+        private CancellationTokenSource CreateTestCaseTimeoutSource([CallerMemberName] string memberName = "")
         {
+            var start = DateTime.Now;
             var cts = new CancellationTokenSource(TimeoutMilliseconds);
             cts.Token.Register(() =>
             {
-                Console.WriteLine($"Unexpected test case timeout at {DateTime.Now.ToString("u")} ManagedThreadId:{Environment.CurrentManagedThreadId}");
+                var end = DateTime.Now;
+                Console.WriteLine($"Unexpected test case {memberName} timeout after {end - start} ManagedThreadId:{Environment.CurrentManagedThreadId}");
             });
             return cts;
         }
@@ -675,7 +678,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         private Task HttpClient_ActionInDifferentThread(string url, Executor executor1, Executor executor2, Func<HttpResponseMessage, Task> e2Job)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            var cts = new CancellationTokenSource();
 
             var e1Job = async (Task e2done, TaskCompletionSource<HttpResponseMessage> e1State) =>
             {
