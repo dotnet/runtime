@@ -145,6 +145,8 @@ struct UNIX_CONTEXT
     {
         lambda((size_t*)&R0());
         lambda((size_t*)&R1());
+        lambda((size_t*)&R2());
+        lambda((size_t*)&R3());
         lambda((size_t*)&R4());
         lambda((size_t*)&R5());
         lambda((size_t*)&R6());
