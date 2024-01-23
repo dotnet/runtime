@@ -1856,10 +1856,10 @@ weight_t BasicBlock::getCalledCount(Compiler* comp)
 //    compiler - Compiler instance
 //
 // Notes:
-//    with profie data: number of expected executions of this block, given
-//    one call to the method
+//    With profile data: number of expected executions of this block, given
+//    one call to the method.
 //
-weight_t BasicBlock::getBBWeight(Compiler* comp)
+weight_t BasicBlock::getBBWeight(Compiler* comp) const
 {
     if (this->bbWeight == BB_ZERO_WEIGHT)
     {

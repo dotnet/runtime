@@ -910,7 +910,7 @@ public:
     static weight_t getCalledCount(Compiler* comp);
 
     // getBBWeight -- get the normalized weight of this block
-    weight_t getBBWeight(Compiler* comp);
+    weight_t getBBWeight(Compiler* comp) const;
 
     // hasProfileWeight -- Returns true if this block's weight came from profile data
     bool hasProfileWeight() const
