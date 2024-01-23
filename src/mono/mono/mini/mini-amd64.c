@@ -1997,8 +1997,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				break;
 			}
 			case ArgSwiftError: {
+					ins->flags |= MONO_INST_VOLATILE;
 					ins->flags &= ~MONO_INST_IS_DEAD;
-					cfg->arch.swift_error_var->flags |= MONO_INST_IS_DEAD;
+					ins->opcode = OP_REGOFFSET;
+					ins->inst_basereg = cfg->frame_reg;
+					ins->inst_offset = ainfo->offset + ARGS_OFFSET;
+					offset += sizeof (target_mgreg_t);;
+
+					cfg->arch.swift_error_var = ins;
 				}
 				break;
 			default:
@@ -2073,15 +2079,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->method->save_lmf) {
 		cfg->lmf_ir = TRUE;
 	}
-
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-	if (mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
-		MonoInst *ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-		ins->flags |= MONO_INST_VOLATILE;
-		cfg->arch.swift_error_var = ins;
-	}
-#endif
-
 }
 
 static void
@@ -8400,7 +8397,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	/* Mark the start of the epilog */
 	mono_emit_unwind_op_mark_loc (cfg, code, 0);
 
-	if (cfg->arch.swift_error_var && (cfg->arch.swift_error_var->flags & MONO_INST_IS_DEAD)) {
+	if (cfg->arch.swift_error_var) {
 		MonoInst *ins = cfg->arch.swift_error_var;
 		amd64_mov_reg_membase (code, AMD64_R11, ins->inst_basereg, ins->inst_offset, sizeof (target_mgreg_t));
 		amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_R12, sizeof (target_mgreg_t));

@@ -2870,7 +2870,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			break;
 		}
 		case ArgSwiftError: {
-			ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 			ins->flags |= MONO_INST_VOLATILE;
 			size = 8;
 			align = 8;
