@@ -10388,6 +10388,7 @@ namespace System.IO
         public virtual System.IFormatProvider FormatProvider { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string NewLine { get { throw null; } set { } }
+        public static System.IO.TextWriter CreateBroadcasting(params System.IO.TextWriter[] writers) { throw null; }
         public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
