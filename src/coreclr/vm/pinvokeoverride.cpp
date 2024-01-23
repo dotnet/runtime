@@ -31,6 +31,7 @@ static const void* DefaultResolveDllImport(const char* libraryName, const char* 
     {
         return GlobalizationResolveDllImport(entrypointName);
     }
+
     return nullptr;
 }
 
