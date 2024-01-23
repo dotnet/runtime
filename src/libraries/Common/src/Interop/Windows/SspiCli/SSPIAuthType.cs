@@ -153,7 +153,7 @@ namespace System.Net
             {
                 if (mustRelease)
                 {
-                    context.DangerousRelease();
+                    phContext.DangerousRelease();
                 }
             }
         }
