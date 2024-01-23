@@ -1822,6 +1822,10 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
     blockNumWidth                           = max(blockNumWidth, 2);
     int blockNumPadding                     = maxBlockNumWidth - blockNumWidth;
 
+    // Instead of displaying a block number, should we instead display "*" when the specified block is
+    // the next block?
+    const bool terseNext = (JitConfig.JitDumpTerseNextBlock() != 0);
+
     printf("%s %2u", block->dspToString(blockNumPadding), block->bbRefs);
 
     //
@@ -1929,21 +1933,22 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
 
     int printedBlockWidth;
 
-    // Instead of displaying a block number, should we instead display "*" when the specified block is
-    // the next block?
-    const bool elideNext = true;
-
     // Call `dspBlockNum()` to get the block number to print, and update `printedBlockWidth` with the width
     // of the generated string. Note that any computation using `printedBlockWidth` must be done after all
     // calls to this function.
-    auto dspBlockNum = [nextBlock, &printedBlockWidth](BasicBlock* b) -> const char* {
+    auto dspBlockNum = [terseNext, nextBlock, &printedBlockWidth](BasicBlock* b) -> const char* {
         static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
         static int  nextBufferIndex = 0;
 
         auto& buffer    = buffers[nextBufferIndex];
         nextBufferIndex = (nextBufferIndex + 1) % ArrLen(buffers);
 
-        if (elideNext && (b == nextBlock))
+        if (b == nullptr)
+        {
+            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), "NULL");
+            printedBlockWidth += 4;
+        }
+        else if (terseNext && (b == nextBlock))
         {
             _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), "*");
             printedBlockWidth += 1;
@@ -1968,13 +1973,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
         {
             case BBJ_COND:
                 printedBlockWidth = 3 /* "-> " */ + 1 /* comma */ + 9 /* kind */;
-                printf("-> %s,%s", dspBlockNum(block->GetTrueTarget()), dspBlockNum(block->GetFalseTarget()));
+                printf("-> %s,%s", dspBlockNum(block->GetTrueTargetRaw()), dspBlockNum(block->GetFalseTargetRaw()));
                 printf("%*s ( cond )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_CALLFINALLY:
                 printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
-                printf("-> %s", dspBlockNum(block->GetTarget()));
+                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
                 printf("%*s (callf )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
@@ -1988,13 +1993,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 const char* label;
                 label             = (flags & BBF_KEEP_BBJ_ALWAYS) ? "ALWAYS" : "always";
                 printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
-                printf("-> %s", dspBlockNum(block->GetTarget()));
+                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
                 printf("%*s (%s)", blockTargetFieldWidth - printedBlockWidth, "", label);
                 break;
 
             case BBJ_LEAVE:
                 printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
-                printf("-> %s", dspBlockNum(block->GetTarget()));
+                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
                 printf("%*s (leave )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
@@ -2039,13 +2044,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
 
             case BBJ_EHFILTERRET:
                 printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
-                printf("-> %s", dspBlockNum(block->GetTarget()));
+                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
                 printf("%*s (fltret)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_EHCATCHRET:
                 printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
-                printf("-> %s", dspBlockNum(block->GetTarget()));
+                printf("-> %s", dspBlockNum(block->GetTargetRaw()));
                 printf("%*s ( cret )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
