@@ -47,10 +47,6 @@ static GHashTable *native_library_module_map;
  */
 static GHashTable *native_library_module_blocklist;
 
-// #ifndef NO_GLOBALIZATION_SHIM
-// extern const void *GlobalizationResolveDllImport (const char *name);
-// #endif
-
 static GHashTable *global_module_map; // should only be accessed with the global loader data lock
 
 static MonoDl *internal_module; // used when pinvoking `__Internal`
@@ -861,12 +857,6 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		return piinfo->addr;
 	}
 #endif
-
-// #ifndef NO_GLOBALIZATION_SHIM
-// 	addr = default_resolve_dllimport (new_scope, new_import);
-// 	if (addr)
-// 		goto exit;
-// #endif
 
 	if (pinvoke_override) {
 		addr = pinvoke_override (new_scope, new_import);

@@ -114,8 +114,10 @@ endif()
 if(CLR_CMAKE_TARGET_WIN32)
     set(NATIVE_LIBS
         coreclr_static
+
         System.Globalization.Native-Static
         System.IO.Compression.Native-Static
+
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -142,6 +144,7 @@ else()
 
     LIST(APPEND NATIVE_LIBS
         coreclr_static
+
         System.Globalization.Native-Static
         System.IO.Compression.Native-Static
         System.Net.Security.Native-Static
