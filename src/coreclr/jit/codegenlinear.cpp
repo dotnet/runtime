@@ -2640,10 +2640,9 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     inst_JCC(jcc->gtCondition, compiler->compCurBB->GetTrueTarget());
 
     // If we cannot fall into the false target, emit a jump to it
-    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
-    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    if (!compiler->compCurBB->CanRemoveJumpToFalseTarget(compiler))
     {
-        inst_JMP(EJ_jmp, falseTarget);
+        inst_JMP(EJ_jmp, compiler->compCurBB->GetFalseTarget());
     }
 }
 
