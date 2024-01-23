@@ -960,7 +960,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     continue;
                 }
 
-                if (comp->gtMayHaveStoreInterference(argx, prevArg.GetEarlyNode()))
+                if (((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0) ||
+                    comp->gtMayHaveStoreInterference(argx, prevArg.GetEarlyNode()))
                 {
                     SetNeedsTemp(&prevArg);
                 }
