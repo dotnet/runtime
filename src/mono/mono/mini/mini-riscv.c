@@ -198,7 +198,7 @@ get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, i
 
 	if (offset / (int)sizeof (target_mgreg_t) > MAX_VIRTUAL_DELEGATE_OFFSET)
 		return NULL;
-	
+
 	MINI_BEGIN_CODEGEN ();
 
 	start = code = mono_global_codeman_reserve (size);
@@ -812,7 +812,8 @@ add_farg (CallInfo *cinfo, ArgInfo *ainfo, gboolean single)
 }
 
 static gboolean
-is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets){
+is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
+{
 	MonoClass *klass;
 	gpointer iter;
 	MonoClassField *field;
@@ -821,13 +822,13 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets){
 
 	klass = mono_class_from_mono_type_internal (t);
 	iter = NULL;
-	while ((field = mono_class_get_fields_internal (klass, &iter))){
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		ftype = mono_field_get_type_internal (field);
 		ftype = mini_get_underlying_type (ftype);
 
-		if (MONO_TYPE_ISSTRUCT (ftype)){
+		if (MONO_TYPE_ISSTRUCT (ftype)) {
 			int nested_nfields, nested_esize;
 			int nested_field_offsets [16];
 
@@ -842,8 +843,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets){
 				nested_esize = fixed_etype->type == MONO_TYPE_R4 ? 4 : 8;
 				for (int i = 0; i < nested_nfields; ++i)
 					nested_field_offsets [i] = i * nested_esize;
-			}
-			else {
+			} else {
 				if (!is_hfa (ftype, &nested_nfields, &nested_esize, nested_field_offsets))
 					return FALSE;
 			}
@@ -858,7 +858,8 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets){
 			prev_ftype = ftype;
 			for (int i = 0; i < nested_nfields; ++i) {
 				if (nfields + i < 4)
-					field_offsets [nfields + i] = field->offset - MONO_ABI_SIZEOF (MonoObject) + nested_field_offsets [i];
+					field_offsets [nfields + i] =
+					    field->offset - MONO_ABI_SIZEOF (MonoObject) + nested_field_offsets [i];
 			}
 			nfields += nested_nfields;
 		} else {
@@ -869,7 +870,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets){
 			prev_ftype = ftype;
 			if (nfields < 4)
 				field_offsets [nfields] = field->offset - MONO_ABI_SIZEOF (MonoObject);
-			nfields ++;
+			nfields++;
 		}
 	}
 	if (nfields == 0 || nfields > 2)
@@ -889,12 +890,12 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 	size = mini_type_stack_size_full (t, &align, cinfo->pinvoke);
 	aligned_size = ALIGN_TO (size, align);
 
-	if (is_hfa (t, &nfields, &esize, field_offsets)){
+	if (is_hfa (t, &nfields, &esize, field_offsets)) {
 		/*
 		 * The struct might include nested float structs aligned at 8,
 		 * so need to keep track of the offsets of the individual fields.
 		 */
-		if (cinfo->next_farg + nfields - 1 <= RISCV_FA7){
+		if (cinfo->next_farg + nfields - 1 <= RISCV_FA7) {
 			ainfo->storage = ArgHFA;
 			ainfo->reg = cinfo->next_farg;
 			ainfo->nregs = nfields;
@@ -904,14 +905,14 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 				ainfo->foffsets [i] = GINT_TO_UINT8 (field_offsets [i]);
 			cinfo->next_farg += ainfo->nregs;
 		} else {
-			ainfo->nfregs_to_skip = cinfo->next_farg <= RISCV_FA7  ? RISCV_FA7 - cinfo->next_farg + 1 : 0;
+			ainfo->nfregs_to_skip = cinfo->next_farg <= RISCV_FA7 ? RISCV_FA7 - cinfo->next_farg + 1 : 0;
 			cinfo->next_farg = RISCV_FA7 + 1;
 
 			ainfo->offset = cinfo->stack_usage;
 			ainfo->storage = ArgVtypeOnStack;
 			cinfo->stack_usage += aligned_size;
 			ainfo->slot_size = aligned_size;
-			
+
 			ainfo->hfa = TRUE;
 			ainfo->nregs = nfields;
 			ainfo->esize = esize;
@@ -1132,7 +1133,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		ArgInfo *ainfo = cinfo->args + sig->hasthis + pindex;
 
 		// process the variable parameter sig->sentinelpos mark the first VARARG
-		if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos)){
+		if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos)) {
 			cinfo->next_arg = RISCV_A7 + 1;
 			cinfo->next_farg = RISCV_FA7 + 1;
 			/* Emit the signature cookie just before the implicit arguments */
@@ -1143,7 +1144,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	}
 
 	/* Handle the case where there are no implicit arguments */
-	if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos)){
+	if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos)) {
 		cinfo->next_arg = RISCV_A7 + 1;
 		cinfo->next_farg = RISCV_FA7 + 1;
 		/* Emit the signature cookie just before the implicit arguments */
@@ -1786,7 +1787,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgVtypeByRef:
 		case ArgVtypeOnStack:
 		case ArgVtypeInMixed:
-		case ArgVtypeByRefOnStack: 
+		case ArgVtypeByRefOnStack:
 		case ArgHFA: {
 			MonoInst *ins;
 			guint32 align;
@@ -1828,7 +1829,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	if (ins->backend.size == 0)
 		return;
 	switch (ainfo->storage) {
-	case ArgHFA: 
+	case ArgHFA:
 		for (int i = 0; i < ainfo->nregs; ++i) {
 			if (ainfo->esize == 4)
 				MONO_INST_NEW (cfg, load, OP_LOADR4_MEMBASE);
@@ -2321,7 +2322,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			// 	break;
 			// }
 
-
 			/* The vtype address is in a register, will be copied to the stack in the prolog */
 			MONO_INST_NEW (cfg, vtaddr, 0);
 			vtaddr->opcode = OP_REGOFFSET;
@@ -2799,9 +2799,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->opcode = OP_RISCV_BEQ;
 					next_ins->sreg1 = ins->dreg;
 					next_ins->sreg2 = RISCV_ZERO;
-				} 
-				else {
-					if (cfg->verbose_level > 1){
+				} else {
+					if (cfg->verbose_level > 1) {
 						g_print ("Unhandaled op %s following after OP_RCOMPARE\n", mono_inst_name (next_ins->opcode));
 					}
 					NULLIFY_INS (ins);
@@ -2885,7 +2884,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					next_ins->sreg1 = ins->dreg;
 					next_ins->sreg2 = RISCV_ZERO;
 				} else {
-					if (cfg->verbose_level > 1){
+					if (cfg->verbose_level > 1) {
 						g_print ("Unhandaled op %s following after OP_FCOMPARE\n", mono_inst_name (next_ins->opcode));
 					}
 					NULLIFY_INS (ins);
@@ -3105,8 +3104,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 						next_ins->sreg1 = ins->dreg;
 						next_ins->inst_imm = 1;
 						break;
-					}
-					else if ((ins->inst_imm == -1)) {
+					} else if ((ins->inst_imm == -1)) {
 						// rs1 will never greater than -1
 						next_ins->opcode = OP_ADD_IMM;
 						next_ins->sreg1 = RISCV_ZERO;
@@ -3303,9 +3301,9 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					 *
 					 * what should I do?
 					 */
-					if (cfg->verbose_level > 1){
+					if (cfg->verbose_level > 1) {
 						g_print ("Unhandaled op %s following after OP_{I|L}COMPARE{|_IMM}\n",
-					         mono_inst_name (next_ins->opcode));
+						         mono_inst_name (next_ins->opcode));
 					}
 					NULLIFY_INS (ins);
 					break;
@@ -4160,11 +4158,14 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				// }
 				break;
 			case ArgHFA:
-				for (int part = 0; part < ainfo->nregs; part ++) {
+				for (int part = 0; part < ainfo->nregs; part++) {
 					if (ainfo->esize == 4)
-						code = mono_riscv_emit_fstore (code, ainfo->reg + part, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + ainfo->foffsets [part]), TRUE);
+						code = mono_riscv_emit_fstore (code, ainfo->reg + part, ins->inst_basereg,
+						                               GTMREG_TO_INT (ins->inst_offset + ainfo->foffsets [part]), TRUE);
 					else
-						code = mono_riscv_emit_fstore (code, ainfo->reg + part, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + ainfo->foffsets [part]), FALSE);
+						code =
+						    mono_riscv_emit_fstore (code, ainfo->reg + part, ins->inst_basereg,
+						                            GTMREG_TO_INT (ins->inst_offset + ainfo->foffsets [part]), FALSE);
 				}
 				break;
 			case ArgOnStack:
@@ -4474,9 +4475,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 		for (int i = 0; i < cinfo->ret.nregs; ++i) {
 			if (cinfo->ret.esize == 4)
-				code = mono_riscv_emit_fload (code, cinfo->ret.reg + i, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.foffsets [i]), TRUE);
+				code = mono_riscv_emit_fload (code, cinfo->ret.reg + i, ins->inst_basereg,
+				                              GTMREG_TO_INT (ins->inst_offset + cinfo->ret.foffsets [i]), TRUE);
 			else
-				code = mono_riscv_emit_fload (code, cinfo->ret.reg + i, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.foffsets [i]), FALSE);
+				code = mono_riscv_emit_fload (code, cinfo->ret.reg + i, ins->inst_basereg,
+				                              GTMREG_TO_INT (ins->inst_offset + cinfo->ret.foffsets [i]), FALSE);
 		}
 		break;
 	}
@@ -4676,7 +4679,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_andi (code, RISCV_T0, RISCV_T0, ~(RISCV_FCLASS_INF | RISCV_FCLASS_NAN));
 			code =
 			    mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO, "ArithmeticException");
-			if (ins->dreg != ins->sreg1){
+			if (ins->dreg != ins->sreg1) {
 				if (riscv_stdext_d)
 					riscv_fsgnj_d (code, ins->dreg, ins->sreg1, ins->sreg1);
 				else
@@ -4883,7 +4886,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_IREM:
-		case OP_IDIV:{
+		case OP_IDIV: {
 			g_assert (riscv_stdext_m);
 			/* Check for zero */
 			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
@@ -4906,8 +4909,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_sltiu (code, RISCV_T0, RISCV_T0, 1);
 			riscv_and (code, RISCV_T0, RISCV_T0, RISCV_T1);
 			riscv_addi (code, RISCV_T0, RISCV_T0, -1);
-			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO,
-			                                   "OverflowException");
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO, "OverflowException");
 			if (ins->opcode == OP_IREM)
 #ifdef TARGET_RISCV64
 				riscv_remw (code, ins->dreg, ins->sreg1, ins->sreg2);
@@ -4919,7 +4921,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_LREM:
-		case OP_LDIV:{
+		case OP_LDIV: {
 			g_assert (riscv_stdext_m);
 			/* Check for zero */
 			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
@@ -4934,8 +4936,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_sltiu (code, RISCV_T0, RISCV_T0, 1);
 			riscv_and (code, RISCV_T0, RISCV_T0, RISCV_T1);
 			riscv_addi (code, RISCV_T0, RISCV_T0, -1);
-			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO,
-			                                   "OverflowException");
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO, "OverflowException");
 			if (ins->opcode == OP_LREM)
 				riscv_rem (code, ins->dreg, ins->sreg1, ins->sreg2);
 			else
@@ -5073,16 +5074,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* Atomic */
 		case OP_MEMORY_BARRIER:
-			riscv_fence (code, mono_arch_get_memory_ordering(ins->backend.memory_barrier_kind), mono_arch_get_memory_ordering(ins->backend.memory_barrier_kind));
+			riscv_fence (code, mono_arch_get_memory_ordering (ins->backend.memory_barrier_kind),
+			             mono_arch_get_memory_ordering (ins->backend.memory_barrier_kind));
 			break;
 		/**
-		* OP_ATOMIC_ADD_I4 rd, rs1, rs2
-		* this instriuction increase the value of address rs1 by rs2
-		* and store the **new** value to rd.
-		* But in RISC-V amoadd rd, rs2(rs1) increase the value of address rs1 by rs2
-		* and store the **old** value to rd,  store the result value to address rs1.
-		* So we need more add rd, rd, rs2 to fix the rd as the **new** value.
-		*/
+		 * OP_ATOMIC_ADD_I4 rd, rs1, rs2
+		 * this instriuction increase the value of address rs1 by rs2
+		 * and store the **new** value to rd.
+		 * But in RISC-V amoadd rd, rs2(rs1) increase the value of address rs1 by rs2
+		 * and store the **old** value to rd,  store the result value to address rs1.
+		 * So we need more add rd, rd, rs2 to fix the rd as the **new** value.
+		 */
 		case OP_ATOMIC_ADD_I4:
 			riscv_amoadd_w (code, RISCV_ORDER_ALL, RISCV_T0, ins->sreg2, ins->sreg1);
 			riscv_addw (code, ins->dreg, RISCV_T0, ins->sreg2);
@@ -5091,7 +5093,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_amoadd_d (code, RISCV_ORDER_ALL, RISCV_T0, ins->sreg2, ins->sreg1);
 			riscv_add (code, ins->dreg, RISCV_T0, ins->sreg2);
 			break;
-		case OP_ATOMIC_LOAD_I1:{
+		case OP_ATOMIC_LOAD_I1: {
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 1);
 			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
@@ -5103,7 +5105,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
 			break;
 		}
-		case OP_ATOMIC_LOAD_U2:{
+		case OP_ATOMIC_LOAD_U2: {
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			code = mono_riscv_emit_loadu (code, ins->dreg, ins->sreg1, ins->inst_offset, 2);
 			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
@@ -5115,7 +5117,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
 			break;
 		}
-		case OP_ATOMIC_LOAD_I4:{
+		case OP_ATOMIC_LOAD_I4: {
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 4);
 			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
