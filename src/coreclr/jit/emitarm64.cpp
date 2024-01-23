@@ -1081,6 +1081,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidScalarDatasize(elemsize));
             break;
 
+        case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_NONE);
+            assert(isGeneralRegister(id->idReg1()));
+            assert(elemsize == EA_8BYTE);
+            assert(isValidUimm4From1(emitGetInsSC(id)));
+            break;
+
         // Scalable, 4 regs, to predicate register.
         case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
             elemsize = id->idOpSize();
@@ -2002,6 +2010,19 @@ static const char * const  pnRegNames[] =
     "pn10", "pn11", "pn12", "pn13", "pn14",
     "pn15"
 };
+
+static const char * const  svePatternNames[] =
+{
+    "pow2", "vl1", "vl2", "vl3",
+    "vl4", "vl5", "vl6", "vl7",
+    "vl8", "vl16", "vl32", "vl64",
+    "vl128", "vl256", "invalid", "invalid",
+    "invalid", "invalid", "invalid", "invalid",
+    "invalid", "invalid", "invalid", "invalid",
+    "invalid", "invalid", "invalid", "invalid",
+    "invalid", "mul4", "mul3", "all"
+};
+
 // clang-format on
 
 //------------------------------------------------------------------------
@@ -11608,6 +11629,49 @@ void emitter::emitIns_R_I_FLAGS_COND(
 
 /*****************************************************************************
  *
+ *  Add an instruction referencing a register, a SVE Pattern and an immediate.
+ */
+
+void emitter::emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, int imm)
+{
+    emitAttr  size     = EA_SIZE(attr);
+    emitAttr  elemsize = EA_UNKNOWN;
+    insFormat fmt      = IF_NONE;
+
+    /* Figure out the encoding format of the instruction */
+    switch (ins)
+    {
+        case INS_sve_cntb:
+        case INS_sve_cntd:
+        case INS_sve_cnth:
+        case INS_sve_cntw:
+            assert(isGeneralRegister(reg1));
+            assert(size == EA_8BYTE);
+            assert(isValidUimm4From1(imm));
+            fmt = IF_SVE_BL_1A;
+            break;
+
+        default:
+            unreached();
+            break;
+
+    } // end switch (ins)
+    assert(fmt != IF_NONE);
+
+    instrDesc* id = emitNewInstrCns(attr, imm);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    id->idReg1(reg1);
+    id->idSvePattern(pattern);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
  *  Add a memory barrier instruction with a 'barrier' immediate
  */
 
@@ -14837,6 +14901,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ * Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm4From1_19_to_16(ssize_t imm)
+{
+    assert(isValidUimm4From1(imm));
+    return (code_t)(imm - 1) << 16;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding to select the <R> 4/8-byte width specifier <R>
  *  at bit location 22 for an Arm64 Sve instruction.
  */
@@ -14849,6 +14924,15 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     assert(size == EA_4BYTE);
     return 0;
+}
+
+/*****************************************************************************
+ *
+ * Returns the encoding to select an insSvePattern
+ */
+/*static*/ emitter::code_t emitter::insEncodeSvePattern(insSvePattern pattern)
+{
+    return (code_t)((unsigned)pattern << 5);
 }
 
 BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id)
@@ -16918,6 +17002,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        // Immediate and patterm to general purpose.
+        case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_Rd(id->idReg1());           // ddddd
+            code |= insEncodeSvePattern(id->idSvePattern()); // ppppp
+            code |= insEncodeUimm4From1_19_to_16(imm);       // iiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         // Scalable to general register.
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
         case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
@@ -18246,6 +18340,20 @@ void emitter::emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, boo
     }
 
     printf("]");
+}
+
+/*****************************************************************************
+ *
+ *  Display an insSvePattern
+ */
+void emitter::emitDispSvePattern(insSvePattern pattern, bool addComma)
+{
+    printf("%s", svePatternNames[pattern]);
+
+    if (addComma)
+    {
+        emitDispComma();
+    }
 }
 
 /*****************************************************************************
@@ -19668,6 +19776,17 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             emitDispReg(id->idReg2(), size, true);              // nnnnn
             emitDispReg(id->idReg3(), size, false);             // mmmmm
+            break;
+
+        case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+            imm = emitGetInsSC(id);
+            emitDispReg(id->idReg1(), size, true);             // ddddd
+            emitDispSvePattern(id->idSvePattern(), (imm > 1)); // ppppp
+            if (imm > 1)
+            {
+                printf("mul ");
+                emitDispImm(emitGetInsSC(id), false, false); // iiii
+            }
             break;
 
         // <Zd>.<T>, <Zn>.<T>, <Zm>.D
@@ -22478,6 +22597,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                            // increment)
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_8C;
+            break;
+
+        case IF_SVE_BL_1A: // ............iiii ......pppppddddd -- SVE element count
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
         case IF_SVE_BK_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE floating-point trig select coefficient
