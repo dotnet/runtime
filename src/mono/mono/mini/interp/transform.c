@@ -679,18 +679,49 @@ handle_branch (TransformData *td, int long_op, int offset)
 	td->last_ins->info.target_bb = target_bb;
 }
 
-static void
+static int
+try_fold_one_arg_branch (TransformData *td, int mint_op)
+{
+	if (td->last_ins && MINT_IS_LDC_I4 (td->last_ins->opcode) && td->last_ins->dreg == td->sp [0].var) {
+		gint32 val = interp_get_const_from_ldc_i4 (td->last_ins);
+		interp_clear_ins (td->last_ins);
+
+		switch (mint_op) {
+			case MINT_BRFALSE_I4: return !val;
+			case MINT_BRTRUE_I4: return !!val;
+			default:
+				g_assert_not_reached ();
+		}
+	}
+
+	return -1;
+}
+
+static gboolean
 one_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 {
-	CHECK_STACK_RET_VOID(td, 1);
+	CHECK_STACK_RET (td, 1, TRUE);
 	int type = td->sp [-1].type == STACK_TYPE_O || td->sp [-1].type == STACK_TYPE_MP ? STACK_TYPE_I : td->sp [-1].type;
 	int long_op = mint_op + type - STACK_TYPE_I4;
 	--td->sp;
 	if (offset) {
-		handle_branch (td, long_op, offset + inst_size);
-		interp_ins_set_sreg (td->last_ins, td->sp->var);
+		int cond_result = try_fold_one_arg_branch (td, mint_op);
+		if (cond_result != -1) {
+			if (cond_result) {
+				handle_branch (td, MINT_BR, offset + inst_size);
+				return FALSE;
+			} else {
+				// branch condition always false, it is a NOP
+				return TRUE;
+			}
+		} else {
+			handle_branch (td, long_op, offset + inst_size);
+			interp_ins_set_sreg (td->last_ins, td->sp->var);
+			return TRUE;
+		}
 	} else {
 		interp_add_ins (td, MINT_NOP);
+		return TRUE;
 	}
 }
 
@@ -5275,22 +5306,22 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		}
 		case CEE_BRFALSE:
-			one_arg_branch (td, MINT_BRFALSE_I4, read32 (td->ip + 1), 5);
+			link_bblocks = one_arg_branch (td, MINT_BRFALSE_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BRFALSE_S:
-			one_arg_branch (td, MINT_BRFALSE_I4, (gint8)td->ip [1], 2);
+			link_bblocks = one_arg_branch (td, MINT_BRFALSE_I4, (gint8)td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BRTRUE:
-			one_arg_branch (td, MINT_BRTRUE_I4, read32 (td->ip + 1), 5);
+			link_bblocks = one_arg_branch (td, MINT_BRTRUE_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BRTRUE_S:
-			one_arg_branch (td, MINT_BRTRUE_I4, (gint8)td->ip [1], 2);
+			link_bblocks = one_arg_branch (td, MINT_BRTRUE_I4, (gint8)td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
