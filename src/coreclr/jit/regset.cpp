@@ -338,8 +338,8 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 #ifdef TARGET_RISCV64
         if (genIsValidIntReg(reg))
         {
-            treeType   = (treeType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
-            mask       = genRegMask(reg);
+            treeType = (treeType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
+            mask     = genRegMask(reg);
         }
         else
 #endif // TARGET_RISCV64
@@ -354,7 +354,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     }
 
     var_types tempType = RegSet::tmpNormalizeType(treeType);
-    rsNeededSpillReg = true;
+    rsNeededSpillReg   = true;
 
     // We should only be spilling nodes marked for spill,
     // vars should be handled elsewhere, and to prevent

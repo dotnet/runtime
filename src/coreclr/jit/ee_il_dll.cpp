@@ -1135,7 +1135,8 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-    // For arm64/LoongArch64/RISCV64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
+    // For arm64/LoongArch64/RISCV64, we want to allocate JIT data always adjacent to code similar to what native
+    // compiler does.
     // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
     // For LoongArch64 using `pcaddi + ld` to access such data.
 

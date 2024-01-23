@@ -1566,7 +1566,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
     p += 4;
     *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegT0, 16);// ld a1, 16(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 24);;// ld t0, 24(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 24);// ld t0, 24(t0)
     p += 4;
     *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegT0, 0);// jalr zero, 0(t0)
     p += 4;
@@ -1593,7 +1593,7 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
     p += 4;
     *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA1, RegT0, 16);// ld a1, 16(t0)
     p += 4;
-    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 24);;// ld t0, 24(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 24);// ld t0, 24(t0)
     p += 4;
     *(DWORD*)p = ITypeInstr(0x67, 0, RegR0, RegT0, 0);// jalr zero, 0(t0)
     p += 4;

@@ -1310,7 +1310,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // The spill temp allocated for it is associated with the original tree that defined the
             // register that it was spilled from.
             // So we use 'unspillTree' to recover that spill temp.
-            TempDsc* t            = regSet.rsUnspillInPlace(unspillTree, unspillTree->GetRegNum());
+            TempDsc*  t           = regSet.rsUnspillInPlace(unspillTree, unspillTree->GetRegNum());
             var_types unspillType = unspillTree->TypeGet();
 
             // Reload into the register specified by 'tree' which may be a GT_RELOAD.
@@ -1321,7 +1321,8 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 unspillType = (unspillType == TYP_FLOAT) ? TYP_INT : TYP_LONG;
             }
 #endif // TARGET_RISCV64
-            GetEmitter()->emitIns_R_S(ins_Load(unspillType), emitActualTypeSize(unspillType), dstReg, t->tdTempNum(), 0);
+            GetEmitter()->emitIns_R_S(ins_Load(unspillType), emitActualTypeSize(unspillType), dstReg, t->tdTempNum(),
+                                      0);
             regSet.tmpRlsTemp(t);
 
             unspillTree->gtFlags &= ~GTF_SPILLED;
