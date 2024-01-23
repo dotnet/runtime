@@ -5923,7 +5923,7 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 
 	if (!strcmp (class_ns, "System.Numerics")) {
 		// FIXME: Support Vector2 https://github.com/dotnet/runtime/issues/81501
-		if (!strcmp (class_name, "Vector2") || !strcmp (class_name, "Vector4") || 
+		if (!strcmp (class_name, "Vector2") || !strcmp (class_name, "Vector3")  || !strcmp (class_name, "Vector4") || 
 			!strcmp (class_name, "Quaternion") || !strcmp (class_name, "Plane"))
 			return emit_vector_2_3_4 (cfg, cmethod, fsig, args);
 	}
