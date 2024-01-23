@@ -282,6 +282,11 @@ enum insOpts : unsigned
     INS_OPTS_SCALABLE_D,
     INS_OPTS_SCALABLE_Q,
 
+    INS_OPTS_SCALABLE_S_UXTW,
+    INS_OPTS_SCALABLE_S_SXTW,
+    INS_OPTS_SCALABLE_D_UXTW,
+    INS_OPTS_SCALABLE_D_SXTW,
+
     INS_OPTS_MSL,         // Vector Immediate (shifting ones variant)
 
     INS_OPTS_S_TO_4BYTE,  // Single to INT32
@@ -322,6 +327,9 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR, // Variants with {<Pd1>.<T>, <Pd2>.<T>} predicate pair (eg whilege)
     INS_SCALABLE_OPTS_VL_2X,               // Variants with a vector length specifier of 2x (eg whilege)
     INS_SCALABLE_OPTS_VL_4X,               // Variants with a vector length specifier of 4x (eg whilege)
+
+    INS_SCALABLE_OPTS_LSL_N,               // Variants with a LSL #N (eg {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>, LSL #2])
+    INS_SCALABLE_OPTS_MOD_N,               // Variants with a <mod> #N (eg {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2])
 
     // Removable once REG_V0 and REG_P0 are distinct
     INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)
