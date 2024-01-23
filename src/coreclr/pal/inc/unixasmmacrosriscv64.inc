@@ -296,9 +296,9 @@ C_FUNC(\Name\()_End):
 
     RESTORE_CALLEESAVED_REGISTERS sp, __PWTB_CalleeSavedRegisters
 
-    EPILOG_RESTORE_REG_PAIR fp, ra, __PWTB_CalleeSavedRegisters
+    EPILOG_RESTORE_REG_PAIR       fp, ra, __PWTB_CalleeSavedRegisters
 
-    EPILOG_STACK_FREE                 __PWTB_StackAlloc
+    EPILOG_STACK_FREE             __PWTB_StackAlloc
 
     ret
 .endm
