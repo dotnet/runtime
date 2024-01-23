@@ -24,7 +24,12 @@ namespace System.Globalization
             if (estimatedLength < StackallocThreshold)
             {
                 char* outputStack = stackalloc char[estimatedLength];
-                actualLength = Interop.Globalization.ToAscii(flags, unicode, count, outputStack, estimatedLength);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    actualLength = Interop.Globalization.ToAsciiNative(flags, unicode, count, outputStack, estimatedLength);
+                else
+#endif
+                    actualLength = Interop.Globalization.ToAscii(flags, unicode, count, outputStack, estimatedLength);
                 if (actualLength > 0 && actualLength <= estimatedLength)
                 {
                     return GetStringForOutput(unicodeString, unicode, count, outputStack, actualLength);
@@ -32,7 +37,12 @@ namespace System.Globalization
             }
             else
             {
-                actualLength = Interop.Globalization.ToAscii(flags, unicode, count, null, 0);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    actualLength = Interop.Globalization.ToAsciiNative(flags, unicode, count, null, 0);
+                else
+#endif
+                    actualLength = Interop.Globalization.ToAscii(flags, unicode, count, null, 0);
             }
             if (actualLength == 0)
             {
@@ -82,7 +92,13 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(asciiString != null && asciiString.Length >= count);
 
-            int realLen = Interop.Globalization.ToUnicode(flags, ascii, count, output, outputLength);
+            int realLen;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+                realLen = Interop.Globalization.ToUnicodeNative(flags, ascii, count, output, outputLength);
+            else
+#endif
+                realLen = Interop.Globalization.ToUnicode(flags, ascii, count, output, outputLength);
 
             if (realLen == 0)
             {

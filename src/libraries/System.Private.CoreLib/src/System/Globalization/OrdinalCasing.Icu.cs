@@ -434,6 +434,11 @@ namespace System.Globalization
             fixed (ushort* table = casingTable)
             {
                 char* pTable = (char*)table;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+                Interop.Globalization.InitOrdinalCasingPageNative(pageNumber, pTable);
+            else
+#endif
                 Interop.Globalization.InitOrdinalCasingPage(pageNumber, pTable);
             }
             Volatile.Write(ref s_casingTable[pageNumber], casingTable);
