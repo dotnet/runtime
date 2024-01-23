@@ -4822,6 +4822,16 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R(INS_sve_pfirst, EA_SCALABLE, REG_P0, REG_P15,
                             INS_OPTS_SCALABLE_B); // PFIRST  <Pdn>.B, <Pg>, <Pdn>.B
 
+    // IF_SVE_DE_1A
+    theEmitter->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, REG_P0, INS_OPTS_SCALABLE_B,
+                                  SVE_PATTERN_POW2); // PTRUE   <Pd>.<T>{, <pattern>}
+    theEmitter->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, REG_P7, INS_OPTS_SCALABLE_H,
+                                  SVE_PATTERN_MUL3); // PTRUE   <Pd>.<T>{, <pattern>}
+    theEmitter->emitIns_R_PATTERN(INS_sve_ptrues, EA_SCALABLE, REG_P8, INS_OPTS_SCALABLE_S,
+                                  SVE_PATTERN_ALL); // PTRUES  <Pd>.<T>{, <pattern>}
+    theEmitter->emitIns_R_PATTERN(INS_sve_ptrues, EA_SCALABLE, REG_P15,
+                                  INS_OPTS_SCALABLE_D); // PTRUES  <Pd>.<T>{, <pattern>}
+
     // IF_SVE_DG_2A
     theEmitter->emitIns_R_R(INS_sve_rdffr, EA_SCALABLE, REG_P10, REG_P15,
                             INS_OPTS_SCALABLE_B); // RDFFR   <Pd>.B, <Pg>/Z

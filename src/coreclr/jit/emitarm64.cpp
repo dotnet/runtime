@@ -1137,6 +1137,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isPredicateRegister(id->idReg2())); // gggg
             break;
 
+        case IF_SVE_DE_1A: // ........xx...... ......ppppp.DDDD -- SVE predicate initialize
+            elemsize = id->idOpSize();
+            assert(isScalableVectorSize(elemsize));
+            assert(isPredicateRegister(id->idReg1()));       // DDDD
+            assert(insOptsScalableStandard(id->idInsOpt())); // xx
+            break;
+
         case IF_SVE_GE_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE2 character match
             elemsize = id->idOpSize();
             assert(isScalableVectorSize(elemsize));
@@ -11771,6 +11778,48 @@ void emitter::emitIns_R_I_FLAGS_COND(
 
 /*****************************************************************************
  *
+ *  Add an instruction referencing a register, a SVE Pattern.
+ */
+
+void emitter::emitIns_R_PATTERN(
+    instruction ins, emitAttr attr, regNumber reg1, insOpts opt, insSvePattern pattern /* = SVE_PATTERN_ALL*/)
+{
+    emitAttr  elemsize = EA_UNKNOWN;
+    insFormat fmt      = IF_NONE;
+
+    /* Figure out the encoding format of the instruction */
+    switch (ins)
+    {
+        case INS_sve_ptrue:
+        case INS_sve_ptrues:
+            assert(isPredicateRegister(reg1));
+            assert(isScalableVectorSize(attr));
+            assert(insOptsScalableStandard(opt));
+            fmt = IF_SVE_DE_1A;
+            break;
+
+        default:
+            unreached();
+            break;
+
+    } // end switch (ins)
+    assert(fmt != IF_NONE);
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    id->idReg1(reg1);
+    id->idInsOpt(opt);
+    id->idSvePattern(pattern);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
  *  Add an instruction referencing a register, a SVE Pattern and an immediate.
  */
 
@@ -14701,6 +14750,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_CF_2C:
         case IF_SVE_CF_2D:
         case IF_SVE_CI_3A:
+        case IF_SVE_DE_1A:
         case IF_SVE_DM_2A:
         case IF_SVE_DN_2A:
         case IF_SVE_DO_2A:
@@ -17231,6 +17281,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
             code |= insEncodeReg_P_8_to_5(id->idReg2()); // gggg
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_DE_1A: // ........xx...... ......ppppp.DDDD -- SVE predicate initialize
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeSvePattern(id->idSvePattern());              // ppppp
+            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -20096,6 +20154,19 @@ void emitter::emitDispInsHelp(
             emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt, 3), id->idInsOpt(), false); // DDDD
             break;
 
+        // <Pd>.<T>{, <pattern>}
+        case IF_SVE_DE_1A: // ........xx...... ......ppppp.DDDD -- SVE predicate initialize
+        {
+            bool dispPattern = (id->idSvePattern() != SVE_PATTERN_ALL);
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), id->idInsOpt(), dispPattern); // DDDD
+            if (dispPattern)
+            {
+                emitDispSvePattern(id->idSvePattern(), false); // ppppp
+            }
+            break;
+        }
+
+        // <Pd>.B, <Pg>/Z
         case IF_SVE_DG_2A: // ................ .......gggg.DDDD -- SVE predicate read from FFR (predicated)
             emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt, 1), id->idInsOpt(), true);  // DDDD
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt, 2), id->idInsOpt(), false); // gggg
@@ -22882,6 +22953,26 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_DD_2A: // ................ .......gggg.DDDD -- SVE predicate first active
             result.insLatency    = PERFSCORE_LATENCY_3C;
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+
+        case IF_SVE_DE_1A: // ........xx...... ......ppppp.DDDD -- SVE predicate initialize
+            switch (ins)
+            {
+                case INS_sve_ptrue:
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    break;
+
+                case INS_sve_ptrues:
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         case IF_SVE_DG_2A: // ................ .......gggg.DDDD -- SVE predicate read from FFR (predicated)
