@@ -2089,7 +2089,7 @@ class FlowGraphNaturalLoop
     GenTreeLclVarCommon* FindDef(unsigned lclNum);
 
     void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
-    bool MatchLimit(NaturalLoopIterInfo* info, GenTree* test);
+    bool MatchLimit(unsigned iterVar, GenTree* test, NaturalLoopIterInfo* info);
     bool CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info);
     template<typename T>
     static bool EvaluateRelop(T op1, T op2, genTreeOps oper);

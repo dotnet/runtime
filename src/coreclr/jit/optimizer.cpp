@@ -393,11 +393,11 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 // Arguments:
 //      pInitBlock - [IN/OUT] *pInitBlock is the loop head block on entry, and is set to the initBlock on exit,
 //                   if `**ppInit` is non-null.
-//      bottom     - Loop bottom block
-//      top        - Loop top block
-//      ppInit     - The init stmt of the loop if found.
-//      ppTest     - The test stmt of the loop if found.
-//      ppIncr     - The incr stmt of the loop if found.
+//      cond       - A BBJ_COND block that exits the loop
+//      header     - Loop header block
+//      ppInit     - [out] The init stmt of the loop if found.
+//      ppTest     - [out] The test stmt of the loop if found.
+//      ppIncr     - [out] The incr stmt of the loop if found.
 //
 //  Return Value:
 //      The results are put in "ppInit", "ppTest" and "ppIncr" if the method
@@ -406,25 +406,15 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //      to nullptr. Return value will never be false if `init` is not found.
 //
 //  Operation:
-//      Check if the "test" stmt is last stmt in the loop "bottom". Try to find the "incr" stmt.
-//      Check previous stmt of "test" to get the "incr" stmt. If it is not found it could be a loop of the
-//      below form.
-//
-//                     +-------<-----------------<-----------+
-//                     |                                     |
-//                     v                                     |
-//      BBinit(head) -> BBcond(top) -> BBLoopBody(bottom) ---^
-//
-//      Check if the "incr" tree is present in the loop "top" node as the last stmt.
-//      Also check if the "test" tree is assigned to a tmp node and the tmp is used
-//      in the jtrue condition.
+//      Check if the "test" stmt is last stmt in an exiting BBJ_COND block of the loop. Try to find the "incr" stmt.
+//      Check previous stmt of "test" to get the "incr" stmt.
 //
 //  Note:
 //      This method just retrieves what it thinks is the "test" node,
 //      the callers are expected to verify that "iterVar" is used in the test.
 //
 bool Compiler::optExtractInitTestIncr(
-    BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr)
+    BasicBlock** pInitBlock, BasicBlock* cond, BasicBlock* header, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr)
 {
     assert(pInitBlock != nullptr);
     assert(ppInit != nullptr);
@@ -433,8 +423,8 @@ bool Compiler::optExtractInitTestIncr(
 
     // Check if last two statements in the loop body are the increment of the iterator
     // and the loop termination test.
-    noway_assert(bottom->bbStmtList != nullptr);
-    Statement* testStmt = bottom->lastStmt();
+    noway_assert(cond->bbStmtList != nullptr);
+    Statement* testStmt = cond->lastStmt();
     noway_assert(testStmt != nullptr && testStmt->GetNextStmt() == nullptr);
 
     Statement* newTestStmt;
@@ -444,7 +434,7 @@ bool Compiler::optExtractInitTestIncr(
     }
 
     // Check if we have the incr stmt before the test stmt, if we don't,
-    // check if incr is part of the loop "top".
+    // check if incr is part of the loop "header".
     Statement* incrStmt = testStmt->GetPrevStmt();
 
     // If we've added profile instrumentation, we may need to skip past a BB counter update.
@@ -472,7 +462,7 @@ bool Compiler::optExtractInitTestIncr(
         // If we are rebuilding the loops, we would already have the pre-header block introduced
         // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
         // little harder for the possible loop initialization statement.
-        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->TargetIs(top) && (initBlock->countOfInEdges() == 1) &&
+        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->TargetIs(header) && (initBlock->countOfInEdges() == 1) &&
             !initBlock->IsFirst() && initBlock->Prev()->bbFallsThrough())
         {
             initBlock = initBlock->Prev();
