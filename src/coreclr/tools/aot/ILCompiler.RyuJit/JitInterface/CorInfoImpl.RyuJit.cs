@@ -2352,9 +2352,6 @@ namespace Internal.JitInterface
 
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
-            if (!EETypeNode.SupportsFrozenRuntimeTypeInstances(_compilation.NodeFactory.Target))
-                return null;
-
             TypeDesc type = HandleToObject(cls);
             return ObjectToHandle(_compilation.NecessaryRuntimeTypeIfPossible(type));
         }
