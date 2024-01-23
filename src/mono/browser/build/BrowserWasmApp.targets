@@ -333,7 +333,7 @@
 
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
-      <!-- See src\mono\wasm\runtime\modularize-dotnet.md -->
+      <!-- See src\mono\browser\runtime\modularize-dotnet.md -->
       <JSFileType Include="extpre.js"  Kind="extern-pre-js" />
       <JSFileType Include="iffe.js"    Kind="extern-pre-js" />
       <JSFileType Include="pre.js"     Kind="pre-js" />
