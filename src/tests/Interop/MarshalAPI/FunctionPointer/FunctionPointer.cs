@@ -175,9 +175,10 @@ public partial class FunctionPtr
             try
             {
                 lib = NativeLibrary.Load(nameof(FunctionPointerNative));
-                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<int>.GenericCalli((delegate* unmanaged[Cdecl]<string, int>)NativeLibrary.GetExport(lib, "ReturnParameter"), "test"));
-                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged[Cdecl]<int, string>)NativeLibrary.GetExport(lib, "ReturnParameter"), "test"));
-                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged[Cdecl]<string, string>)NativeLibrary.GetExport(lib, "ReturnParameter"), "test"));
+                nint fnptr = NativeLibrary.GetExport(lib, "ReturnParameter");
+                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<int>.GenericCalli((delegate* unmanaged[Cdecl]<string, int>)fnptr, "test"));
+                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged[Cdecl]<int, string>)fnptr, "test"));
+                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged[Cdecl]<string, string>)fnptr, "test"));
             }
             finally
             {
