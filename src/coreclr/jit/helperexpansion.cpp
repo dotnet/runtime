@@ -1824,54 +1824,229 @@ PhaseStatus Compiler::fgLateCastExpansion()
     return fgExpandHelper<&Compiler::fgLateCastExpansionForCall>(true);
 }
 
+enum TypeCheckFailedAction
+{
+    F_ReturnNull,
+    F_CallHelper_NeverThrows,
+    F_CallHelper_MayThrow,
+    F_CallHelper_AlwaysThrows
+};
+
+enum TypeCheckPassedAction
+{
+    P_ReturnObj,
+    P_ReturnNull,
+};
+
 //------------------------------------------------------------------------------
-// PickLikelyClass: picks a likely class handle corresponding to the given IL offset
+// PickCandidateForTypeCheck: picks a class to use as a fast type check against
+//    the object being casted. The function also defines the strategy to follow
+//    if the type check fails or passes.
 //
 // Arguments:
-//    comp       - Compiler instance
-//    offset     - IL offset
-//    likelihood - [out] likelihood of the returned class
+//    comp               - Compiler instance
+//    castHelper         - Cast helper call to expand
+//    commonCls          - [out] Common denominator class for the fast and the fallback paths.
+//    likelihood         - [out] Likelihood of successful type check (0..100)
+//    typeCheckFailed    - [out] Action to perform if the type check fails
+//    typeCheckPassed    - [out] Action to perform if the type check passes
 //
 // Returns:
 //    Likely class handle or NO_CLASS_HANDLE
 //
-static CORINFO_CLASS_HANDLE PickLikelyClass(Compiler* comp, IL_OFFSET offset, unsigned* likelihood)
+static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              comp,
+                                                      GenTreeCall*           castHelper,
+                                                      CORINFO_CLASS_HANDLE*  commonCls,
+                                                      unsigned*              likelihood,
+                                                      TypeCheckFailedAction* typeCheckFailed,
+                                                      TypeCheckPassedAction* typeCheckPassed)
 {
-    // TODO-InlineCast: consider merging this helper with pickGDV
+    if (!castHelper->IsHelperCall() || ((castHelper->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) == 0))
+    {
+        // It's not eligible for expansion (already expanded in importer)
+        // To be removed once we move cast expansion here completely.
+        return false;
+    }
 
-    const int               maxLikelyClasses = 8;
-    LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
-    unsigned                likelyClassCount = getLikelyClasses(likelyClasses, maxLikelyClasses, comp->fgPgoSchema,
-                                                 comp->fgPgoSchemaCount, comp->fgPgoData, (int)offset);
+    // Helper calls are never tail calls
+    assert(!castHelper->IsTailCall());
 
-    if (likelyClassCount == 0)
+    bool isCastClass;
+    switch (castHelper->GetHelperNum())
+    {
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTCLASS:
+        case CORINFO_HELP_CHKCASTANY:
+            isCastClass = true;
+            break;
+
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+            isCastClass = false;
+            break;
+
+        // These are ignored:
+        // CORINFO_HELP_ISINSTANCEOF_EXCEPTION
+        // CORINFO_HELP_CHKCASTCLASS_SPECIAL
+
+        default:
+            return NO_CLASS_HANDLE;
+    }
+
+    // Assume that the type check will pass with 50% probability by default
+    // only PGO can change this assumption
+    *likelihood = 50;
+
+    // E.g. "call CORINFO_HELP_ISINSTANCEOFCLASS(castToCls, obj)"
+    GenTree*             clsArg    = castHelper->gtArgs.GetUserArgByIndex(0)->GetNode();
+    CORINFO_CLASS_HANDLE castToCls = comp->gtGetHelperArgClassHandle(clsArg);
+    if (castToCls == NO_CLASS_HANDLE)
+    {
+        // clsArg doesn't represent a class handle - bail out
+        // TODO-InlineCast: use VN if it's available (depends on when this phase is executed)
+        JITDUMP("clsArg is not a constant handle - bail out.\n");
+        return NO_CLASS_HANDLE;
+    }
+
+    // result is the exact class handle we're going to use for the type check
+    CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
+
+    // If "cast to" class is already exact, we don't need to do anything
+    if (comp->eeIsClassExact(castToCls))
+    {
+        // Fallback call is still needed for InvalidCastException (only for castclass)
+        *typeCheckFailed = isCastClass ? F_CallHelper_AlwaysThrows : F_ReturnNull;
+        result           = castToCls;
+    }
+    else
+    {
+        // If VM can tell us the exact class for this "cast to" class, use it
+        // E.g. we're casting to IMyInterface and there is only one implementation of it
+        // (and VM is not going to load more types dynamically)
+        if (comp->info.compCompHnd->getExactClasses(castToCls, 1, &result) == 1)
+        {
+            // Fallback call is still needed for InvalidCastException (only for castclass)
+            // TODO-InlineCast: support multiple guesses without the fallback call
+            *typeCheckFailed = isCastClass ? F_CallHelper_AlwaysThrows : F_ReturnNull;
+        }
+        else
+        {
+            // Check PGO data
+            LikelyClassMethodRecord likelyClasses[MAX_GDV_TYPE_CHECKS];
+            unsigned                likelyClassCount =
+                getLikelyClasses(likelyClasses, MAX_GDV_TYPE_CHECKS, comp->fgPgoSchema, comp->fgPgoSchemaCount,
+                                 comp->fgPgoData, (int)castHelper->gtCastHelperILOffset);
+
+            if (likelyClassCount != 0)
+            {
+// TODO-InlineCast: We have no PGO data, but we still can speculate, e.g. for "(MyClass)obj"
+// we guess for MyClass itself if possible. That is what importer does.
+
+#ifdef DEBUG
+                // Print all the candidates and their likelihoods to the log
+                for (UINT32 i = 0; i < likelyClassCount; i++)
+                {
+                    const char* className = comp->eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
+                    JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+                            likelyClasses[i].likelihood);
+                }
+
+                // Optional stress mode to pick a random known class, rather than
+                // the most likely known class.
+                if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+                {
+                    // Reuse the random inliner's random state.
+                    CLRRandom* const random = comp->impInlineRoot()->m_inlineStrategy->GetRandom(
+                        JitConfig.JitRandomGuardedDevirtualization());
+                    unsigned index = static_cast<unsigned>(random->Next(static_cast<int>(likelyClassCount)));
+
+                    likelyClasses[0].likelihood = 100;
+                    likelyClasses[0].handle     = likelyClasses[index].handle;
+                }
+#endif
+
+                // if there is a dominating candidate with >= 50% likelihood, use it
+                const unsigned likelihoodMinThreshold = 50;
+                if (likelyClasses[0].likelihood < likelihoodMinThreshold)
+                {
+                    JITDUMP("Likely class likelihood is below %u%% - bail out.\n", likelihoodMinThreshold);
+                    return NO_CLASS_HANDLE;
+                }
+
+                *likelihood      = likelyClasses[0].likelihood;
+                *typeCheckFailed = isCastClass ? F_CallHelper_MayThrow : F_CallHelper_NeverThrows;
+                result           = (CORINFO_CLASS_HANDLE)likelyClasses[0].handle;
+
+                // Validate static profile data
+                if ((comp->info.compCompHnd->getClassAttribs(result) &
+                     (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT | CORINFO_FLG_STATIC)) != 0)
+                {
+                    // Possible scenario: someone changed Foo to be an interface/abstract class/static class,
+                    // but static profile data still reports it as a normal likely class.
+                    JITDUMP("Likely class is abstract/interface - bail out (stale PGO data?).\n");
+                    return NO_CLASS_HANDLE;
+                }
+            }
+            else
+            {
+                // There is no PGO data, but we still can speculate, e.g. for "(MyClass)obj"
+                // we guess for MyClass itself if possible. That is what importer does.
+
+                // TODO-InlineCast: implement it, this is the last missing piece to get rid of the importer's cast
+                // expansion
+            }
+        }
+    }
+
+    if (result == NO_CLASS_HANDLE)
     {
         return NO_CLASS_HANDLE;
     }
 
-#ifdef DEBUG
-    // Print all the candidates and their likelihoods to the log
-    for (UINT32 i = 0; i < likelyClassCount; i++)
+    const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(result, castToCls);
+    if (castResult == TypeCompareState::May)
     {
-        const char* className = comp->eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
-        JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
-                likelyClasses[i].likelihood);
+        // TODO-InlineCast: revise this logic
+        JITDUMP("compareTypesForCast returned May for this candidate\n");
+        return NO_CLASS_HANDLE;
     }
 
-    // Optional stress mode to pick a random known class, rather than
-    // the most likely known class.
-    if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+    if ((castResult == TypeCompareState::MustNot) && isCastClass)
     {
-        // Reuse the random inliner's random state.
-        CLRRandom* const random =
-            comp->impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-        unsigned index = static_cast<unsigned>(random->Next(static_cast<int>(likelyClassCount)));
-        *likelihood    = 100;
-        return (CORINFO_CLASS_HANDLE)likelyClasses[index].handle;
+        // Our fast path candidate never passes the type check (may happen with PGO-driven expansion),
+        // we can return null if the type check against it passes. It doesn't make a lot of sense to do it
+        // for castclass as its fallback call is going to throw an exception anyway.
+        return NO_CLASS_HANDLE;
     }
-#endif
-    *likelihood = likelyClasses[0].likelihood;
-    return (CORINFO_CLASS_HANDLE)likelyClasses[0].handle;
+
+    if (castResult == TypeCompareState::Must)
+    {
+        // return actual object on successful type check
+        *typeCheckPassed = P_ReturnObj;
+    }
+    else
+    {
+        // Our likely candidate never passes the type check -> return null on successful type check
+        assert(!isCastClass);
+        assert(castResult == TypeCompareState::MustNot);
+        *typeCheckPassed = P_ReturnNull;
+    }
+
+    if ((result == castToCls) && (*typeCheckFailed == F_CallHelper_MayThrow))
+    {
+        // TODO-InlineCast: Change helper to faster CORINFO_HELP_CHKCASTCLASS_SPECIAL
+        // it won't check for null and castToCls assuming we already did it inline.
+    }
+
+    // A common denominator class for the fast and the fallback paths
+    // can be used as a class for LCL_VAR storing the result of the expansion.
+    *commonCls = castToCls;
+
+    // Exact class for the fast path's type check.
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -1888,104 +2063,28 @@ static CORINFO_CLASS_HANDLE PickLikelyClass(Compiler* comp, IL_OFFSET offset, un
 //
 bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    if (!call->IsHelperCall())
+    unsigned              likelihood;
+    TypeCheckFailedAction typeCheckFailedAction;
+    TypeCheckPassedAction typeCheckPassedAction;
+    CORINFO_CLASS_HANDLE  commonCls;
+    CORINFO_CLASS_HANDLE  expectedExactCls =
+        PickCandidateForTypeCheck(this, call, &commonCls, &likelihood, &typeCheckFailedAction, &typeCheckPassedAction);
+    if (expectedExactCls == NO_CLASS_HANDLE)
     {
         return false;
     }
-
-    if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) == 0)
-    {
-        // It's not eligible for expansion (already expanded in importer)
-        // To be removed once we move cast expansion here completely.
-        return false;
-    }
-
-    bool isInstanceOf = false;
-    switch (call->GetHelperNum())
-    {
-        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
-        case CORINFO_HELP_ISINSTANCEOFARRAY:
-        case CORINFO_HELP_ISINSTANCEOFCLASS:
-        case CORINFO_HELP_ISINSTANCEOFANY:
-            isInstanceOf = true;
-            break;
-
-        case CORINFO_HELP_CHKCASTINTERFACE:
-        case CORINFO_HELP_CHKCASTARRAY:
-        case CORINFO_HELP_CHKCASTCLASS:
-        case CORINFO_HELP_CHKCASTANY:
-            break;
-
-        default:
-            return false;
-    }
-
-    // Helper calls are never tail calls
-    assert(!call->IsTailCall());
 
     BasicBlock* block = *pBlock;
-    JITDUMP("Attempting to expand a cast helper call in " FMT_BB "...\n", block->bbNum);
+    JITDUMP("Expanding cast helper call in " FMT_BB "...\n", block->bbNum);
     DISPTREE(call);
     JITDUMP("\n");
-
-    // Currently, we only expand "isinst" and only using profile data. The long-term plan is to
-    // move cast expansion logic here from the importer completely.
-    unsigned             likelihood = 100;
-    CORINFO_CLASS_HANDLE likelyCls  = PickLikelyClass(this, call->gtCastHelperILOffset, &likelihood);
-    if (likelyCls == NO_CLASS_HANDLE)
-    {
-        // TODO: make null significant, so it could mean our object is likely just null
-        JITDUMP("Likely class is null - bail out.\n");
-        return false;
-    }
-
-    // if there is a dominating candidate with >= 50% likelihood, use it
-    const unsigned likelihoodMinThreshold = 50;
-    if (likelihood < likelihoodMinThreshold)
-    {
-        JITDUMP("Likely class likelihood is below %u%% - bail out.\n", likelihoodMinThreshold);
-        return false;
-    }
-
-    // E.g. "call CORINFO_HELP_ISINSTANCEOFCLASS(class, obj)"
-    GenTree*             clsArg      = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-    CORINFO_CLASS_HANDLE expectedCls = gtGetHelperArgClassHandle(clsArg);
-    if (expectedCls == NO_CLASS_HANDLE)
-    {
-        // clsArg doesn't represent a class handle - bail out
-        // TODO-InlineCast: use VN if it's available (depends on when this phase is executed)
-        JITDUMP("clsArg is not a constant handle - bail out.\n");
-        return false;
-    }
-
-    const TypeCompareState castResult = info.compCompHnd->compareTypesForCast(likelyCls, expectedCls);
-    if (castResult == TypeCompareState::May)
-    {
-        JITDUMP("compareTypesForCast returned May for this candidate\n");
-        return false;
-    }
-
-    if ((castResult == TypeCompareState::MustNot) && !isInstanceOf)
-    {
-        // Don't expand castclass if likelyclass always fails the type check
-        // it's going to throw an exception anyway.
-        return false;
-    }
-
-    if ((info.compCompHnd->getClassAttribs(likelyCls) & (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0)
-    {
-        // Possible scenario: someone changed Foo to be an interface,
-        // but static profile data still report it as a normal likely class.
-        JITDUMP("Likely class is abstract/interface - bail out (stale PGO data?).\n");
-        return false;
-    }
 
     DebugInfo debugInfo = stmt->GetDebugInfo();
 
     BasicBlock*    firstBb;
     BasicBlock*    lastBb;
     const unsigned tmpNum = SplitAtTreeAndReplaceItWithLocal(this, block, stmt, call, &firstBb, &lastBb);
-    lvaSetClass(tmpNum, expectedCls);
+    lvaSetClass(tmpNum, commonCls);
     GenTree* tmpNode = gtNewLclvNode(tmpNum, call->TypeGet());
     *pBlock          = lastBb;
 
@@ -1997,7 +2096,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // nullcheckBb (BBJ_COND):                      [weight: 1.0]
     //     tmp = obj;
     //     if (tmp == null)
-    //         goto lastBlock;
+    //         goto lastBb;
     //
     // typeCheckBb (BBJ_COND):                      [weight: 0.5]
     //     if (tmp->pMT == likelyCls)
@@ -2005,12 +2104,12 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //
     // fallbackBb (BBJ_ALWAYS):                     [weight: <profile>]
     //     tmp = helper_call(expectedCls, obj);
-    //     goto lastBlock;
+    //     goto lastBb;
     //
     // typeCheckSucceedBb (BBJ_ALWAYS):             [weight: <profile>]
     //     no-op (or tmp = null; in case of 'MustNot')
     //
-    // lastBlock (BBJ_any):                         [weight: 1.0]
+    // lastBb (BBJ_any):                            [weight: 1.0]
     //     use(tmp);
     //
 
@@ -2031,28 +2130,41 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     // Block 2: typeCheckBb
     // TODO-InlineCast: if likelyCls == expectedCls we can consider saving to a local to re-use.
-    GenTree* likelyClsNode = gtNewIconEmbClsHndNode(likelyCls);
+    GenTree* likelyClsNode = gtNewIconEmbClsHndNode(expectedExactCls);
     GenTree* mtCheck       = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(tmpNode)), likelyClsNode);
     mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
     GenTree*    jtrue       = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
     BasicBlock* typeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, nullcheckBb, jtrue, debugInfo, lastBb, true);
 
     // Block 3: fallbackBb
-    GenTree*    fallbackTree = gtNewTempStore(tmpNum, call);
-    BasicBlock* fallbackBb   = fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, fallbackTree, debugInfo, lastBb, true);
+    BasicBlock* fallbackBb;
+    if (typeCheckFailedAction == F_CallHelper_AlwaysThrows)
+    {
+        // fallback call is used only to throw InvalidCastException
+        fallbackBb = fgNewBBFromTreeAfter(BBJ_THROW, typeCheckBb, gtUnusedValNode(call), debugInfo, nullptr, true);
+    }
+    else if (typeCheckFailedAction == F_ReturnNull)
+    {
+        // if fallback call is not needed, we just assign null to tmp
+        GenTree* fallbackTree = gtNewTempStore(tmpNum, gtNewNull());
+        fallbackBb            = fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, fallbackTree, debugInfo, lastBb, true);
+    }
+    else
+    {
+        GenTree* fallbackTree = gtNewTempStore(tmpNum, call);
+        fallbackBb            = fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, fallbackTree, debugInfo, lastBb, true);
+    }
 
     // Block 4: typeCheckSucceedBb
     GenTree* typeCheckSucceedTree;
-    if (castResult == TypeCompareState::MustNot)
+    if (typeCheckPassedAction == P_ReturnNull)
     {
-        // With TypeCompareState::MustNot it means our likely class never passes the type check.
-        // it means we just check obj's type for being likelyclass and return null if it's true.
         typeCheckSucceedTree = gtNewTempStore(tmpNum, gtNewNull());
     }
     else
     {
-        // tmp is already assigned to obj, so we don't need to do anything here
-        // some downstream phase will collect this block. It's done for simplicity.
+        assert(typeCheckPassedAction == P_ReturnObj);
+        // No-op because tmp was already assigned to obj
         typeCheckSucceedTree = gtNewNothingNode();
     }
     BasicBlock* typeCheckSucceedBb =
@@ -2066,7 +2178,6 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     nullcheckBb->SetFalseTarget(typeCheckBb);
     typeCheckBb->SetTrueTarget(typeCheckSucceedBb);
     typeCheckBb->SetFalseTarget(fallbackBb);
-    fallbackBb->SetTarget(lastBb);
     fgRemoveRefPred(lastBb, firstBb);
     fgAddRefPred(nullcheckBb, firstBb);
     fgAddRefPred(typeCheckBb, nullcheckBb);
@@ -2074,16 +2185,21 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     fgAddRefPred(fallbackBb, typeCheckBb);
     fgAddRefPred(lastBb, typeCheckSucceedBb);
     fgAddRefPred(typeCheckSucceedBb, typeCheckBb);
-    fgAddRefPred(lastBb, fallbackBb);
+    if (typeCheckFailedAction != F_CallHelper_AlwaysThrows)
+    {
+        // if fallbackBb is BBJ_THROW then it has no successors
+        fgAddRefPred(lastBb, fallbackBb);
+    }
 
     //
     // Re-distribute weights
-    // We assume obj is 50%/50% null/not-null (TODO: use profile data)
+    // We assume obj is 50%/50% null/not-null (TODO-InlineCast: rely on PGO)
     // and rely on profile for the slow path.
     //
     nullcheckBb->inheritWeight(firstBb);
     typeCheckBb->inheritWeightPercentage(nullcheckBb, 50);
-    fallbackBb->inheritWeightPercentage(typeCheckBb, 100 - likelihood);
+    fallbackBb->inheritWeightPercentage(typeCheckBb,
+                                        (typeCheckFailedAction == F_CallHelper_AlwaysThrows) ? 0 : 100 - likelihood);
     typeCheckSucceedBb->inheritWeightPercentage(typeCheckBb, likelihood);
     lastBb->inheritWeight(firstBb);
 

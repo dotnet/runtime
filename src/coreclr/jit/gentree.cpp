@@ -14034,7 +14034,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
     // if both classes are "final" (e.g. System.String[]) we can replace the comparison
     // with `true/false` + null check.
-    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || impIsClassExact(objCls)))
+    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || eeIsClassExact(objCls)))
     {
         TypeCompareState tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
         if (tcs != TypeCompareState::May)
@@ -18585,7 +18585,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         }
         else
         {
-            *pIsExact = impIsClassExact(objClass);
+            *pIsExact = eeIsClassExact(objClass);
         }
     }
 
