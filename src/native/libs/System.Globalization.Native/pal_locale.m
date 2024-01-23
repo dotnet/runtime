@@ -35,6 +35,26 @@ char* DetectDefaultAppleLocaleName(void)
     return strdup([localeName UTF8String]);
 }
 
+const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path)
+{
+    @autoreleasepool
+    {
+        NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
+        NSString *dataPath = [bundlePath stringByAppendingPathComponent: [NSString stringWithFormat:@"%s", path]];
+
+        return strdup([dataPath UTF8String]);
+    }
+}
+
+const char* GlobalizationNative_GetICUDataPathFallback(void)
+{
+    @autoreleasepool
+    {
+        NSString *dataPath = [[NSBundle mainBundle] pathForResource:@"icudt" ofType:@"dat"];
+        return strdup([dataPath UTF8String]);
+    }
+}
+
 
 
 

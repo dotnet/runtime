@@ -10,10 +10,7 @@
 #include <unicode/putil.h>
 #include <unicode/uversion.h>
 #include <unicode/localpointer.h>
-
-#if !defined(APPLE_HYBRID_GLOBALIZATION)
 #include <unicode/utrace.h>
-#endif
 
 #if defined(TARGET_UNIX)
 #include <strings.h>
@@ -21,7 +18,7 @@
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
 #endif
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+
 static int32_t isLoaded = 0;
 static int32_t isDataSet = 0;
 
@@ -250,5 +247,5 @@ int32_t GlobalizationNative_GetICUVersion(void)
 
     return (versionInfo[0] << 24) + (versionInfo[1] << 16) + (versionInfo[2] << 8) + versionInfo[3];
 }
-#endif
+
 

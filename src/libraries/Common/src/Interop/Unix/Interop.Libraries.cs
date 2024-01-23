@@ -12,8 +12,7 @@ internal static partial class Interop
         internal const string NetSecurityNative = "libSystem.Net.Security.Native";
         internal const string CryptoNative = "libSystem.Security.Cryptography.Native.OpenSsl";
         internal const string CompressionNative = "libSystem.IO.Compression.Native";
-        // change this temporary
-        internal const string GlobalizationNative = "libSystem.HybridGlobalization.Native";
+        internal const string GlobalizationNative = "libSystem.Globalization.Native";
         internal const string HybridGlobalizationNative = "libSystem.HybridGlobalization.Native";
         internal const string IOPortsNative = "libSystem.IO.Ports.Native";
         internal const string HostPolicy = "libhostpolicy";

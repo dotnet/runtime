@@ -7,10 +7,13 @@ internal static partial class Interop
 {
     internal static partial class Globalization
     {
-        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_ChangeCaseNative", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.HybridGlobalizationNative, EntryPoint = "GlobalizationNative_ChangeCaseNative", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int ChangeCaseNative(string localeName, int lNameLen, char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, [MarshalAs(UnmanagedType.Bool)] bool bToUpper);
 
-        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_ChangeCaseInvariantNative", StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(Libraries.HybridGlobalizationNative, EntryPoint = "GlobalizationNative_ChangeCaseInvariantNative", StringMarshalling = StringMarshalling.Utf8)]
         internal static unsafe partial int ChangeCaseInvariantNative(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, [MarshalAs(UnmanagedType.Bool)] bool bToUpper);
+
+        [LibraryImport(Libraries.HybridGlobalizationNative, EntryPoint = "GlobalizationNative_InitOrdinalCasingPage", StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial void InitOrdinalCasingPageNative(int pageNumber, char* pTarget);
     }
 }

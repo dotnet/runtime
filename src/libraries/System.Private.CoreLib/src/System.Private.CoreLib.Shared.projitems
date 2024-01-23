@@ -1357,6 +1357,9 @@
     <Compile Include="$(CommonPath)Interop\Interop.Idna.cs">
       <Link>Common\Interop\Interop.Idna.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Idna.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
+      <Link>Common\Interop\Interop.Idna.iOS.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Locale.cs">
       <Link>Common\Interop\Interop.Locale.cs</Link>
     </Compile>
