@@ -40,7 +40,7 @@
     <!-- Publish crossgen2 on supported platforms. -->
 
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
-      Targets="PublishToDisk"
+      Targets="Restore;PublishToDisk"
       BuildInParallel="true"
       Properties="OutputPath=$(CORE_ROOT)\crossgen2"
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
