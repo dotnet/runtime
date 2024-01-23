@@ -499,7 +499,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         genHWIntrinsicJumpTableFallback(intrinsicId, op2Reg, baseReg, offsReg, emitSwCase);
                     }
                 }
-                else if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) && HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) == numArgs && !op2->IsCnsIntOrI())
+                else if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) &&
+                         HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) == numArgs && !op2->IsCnsIntOrI())
                 {
                     auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_RM(node, ins, simdSize, i); };
                     regNumber                    baseReg = node->ExtractTempReg();
@@ -2616,11 +2617,12 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             if (varTypeIsFloating(baseType))
             {
                 instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-                // There are cases when ConvertToVector256Int32/UInt32 with embedded rounding faeture are called and the control byte is not constant.
-                // Generate the jump table fallback in this case.
-                if(HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) && HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) == numArgs && !node->Op(numArgs)->IsCnsIntOrI())
+                // There are cases when ConvertToVector256Int32/UInt32 with embedded rounding faeture are called and the
+                // control byte is not constant. Generate the jump table fallback in this case.
+                if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) &&
+                    HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) == numArgs && !node->Op(numArgs)->IsCnsIntOrI())
                 {
-                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_RM(node, ins, attr, i); };
+                    auto emitSwCase                      = [&](int8_t i) { genHWIntrinsic_R_RM(node, ins, attr, i); };
                     regNumber                    op2Reg  = node->Op(2)->GetRegNum();
                     regNumber                    baseReg = node->ExtractTempReg();
                     regNumber                    offsReg = node->GetSingleTempReg();

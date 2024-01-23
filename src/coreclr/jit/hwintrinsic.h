@@ -633,7 +633,7 @@ struct HWIntrinsicInfo
 #if defined(TARGET_AMD64)
             case NI_AVX512F_X64_ConvertScalarToVector128Double:
             case NI_AVX512F_X64_ConvertScalarToVector128Single:
-#endif  // TARGET_AMD64
+#endif // TARGET_AMD64
                 return 3;
 
             case NI_AVX512F_Sqrt:
@@ -648,9 +648,9 @@ struct HWIntrinsicInfo
 #if defined(TARGET_AMD64)
             case NI_AVX512F_X64_ConvertToInt64:
             case NI_AVX512F_X64_ConvertToUInt64:
-#endif  // TARGET_AMD64
+#endif // TARGET_AMD64
                 return 2;
-            
+
             default:
                 unreached();
         }
