@@ -5461,9 +5461,9 @@ decode_fixed_size_array_internal (MonoType *t, int type, MonoDomain *domain, gui
 
 
 static int 
-decode_fixed_size_array_compute_size_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype)
+decode_fixed_size_array_compute_size_internal (MonoType *t, int type, MonoDomain *domain, guint8 *buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype)
 {
-	int size = 0;
+	int ret = 0;
 	int fixedSizeLen = 1;
 	int newType = MONO_TYPE_END;
 	if (CHECK_PROTOCOL_VERSION (2, 53)) {
@@ -5595,7 +5595,7 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 		goto end;
 	}
 	if (type == VALUE_TYPE_ID_FIXED_ARRAY && t->type != MONO_TYPE_VALUETYPE) {
-		ret += decode_fixed_size_array_compute_size_internal (t, type, domain, addr, buf, endbuf, limit, check_field_datatype);
+		ret += decode_fixed_size_array_compute_size_internal (t, type, domain, buf, endbuf, limit, check_field_datatype);
 		goto end;
 	}
 	switch (t->type) {
