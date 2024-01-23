@@ -1140,6 +1140,30 @@ static bool isLowSimdReg(regNumber reg)
 }
 
 //------------------------------------------------------------------------
+// GetEmbRoundingMode: Get the rounding mode for embedded rounding
+//
+// Arguments:
+//     mode -- the flag from the corresponding GenTree node indicating the mode.
+//
+// Return Value:
+//   the instruction option carrying the rounding mode information.
+//
+insOpts emitter::GetEmbRoundingMode(uint8_t mode) const
+{
+    switch (mode)
+    {
+        case 1:
+            return INS_OPTS_EVEX_eb_er_rd;
+        case 2:
+            return INS_OPTS_EVEX_er_ru;
+        case 3:
+            return INS_OPTS_EVEX_er_rz;
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
 // encodeRegAsIval: Encodes a register as an ival for use by a SIMD instruction
 //
 // Arguments
@@ -1309,18 +1333,50 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     if (attr == EA_32BYTE)
     {
-        // Set L bit to 1 in case of instructions that operate on 256-bits.
+        // Set EVEX.L'L bits to 01 in case of instructions that operate on 256-bits.
         code |= LBIT_IN_BYTE_EVEX_PREFIX;
     }
     else if (attr == EA_64BYTE)
     {
-        // Set L' bits to 11 in case of instructions that operate on 512-bits.
+        // Set EVEX.L'L bits to 10 in case of instructions that operate on 512-bits.
         code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
     }
 
-    if (id->idIsEvexbContext())
+    if (id->idIsEvexbContextSet())
     {
         code |= EVEX_B_BIT;
+
+        if (!id->idHasMem())
+        {
+            // embedded rounding case.
+            unsigned roundingMode = id->idGetEvexbContext();
+            if (roundingMode == 1)
+            {
+                // {rd-sae}
+                code &= ~(LPRIMEBIT_IN_BYTE_EVEX_PREFIX);
+                code |= LBIT_IN_BYTE_EVEX_PREFIX;
+            }
+            else if (roundingMode == 2)
+            {
+                // {ru-sae}
+                code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
+                code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);
+            }
+            else if (roundingMode == 3)
+            {
+                // {rz-sae}
+                code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
+                code |= LBIT_IN_BYTE_EVEX_PREFIX;
+            }
+            else
+            {
+                unreached();
+            }
+        }
+        else
+        {
+            assert(id->idGetEvexbContext() == 1);
+        }
     }
 
     regNumber maskReg = REG_NA;
@@ -6742,11 +6798,7 @@ void emitter::emitIns_R_R_A(
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
-    if (instOptions == INS_OPTS_EVEX_b)
-    {
-        assert(UseEvexEncoding());
-        id->idSetEvexbContext();
-    }
+    SetEvexBroadcastIfNeeded(id, instOptions);
 
     emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
 
@@ -6871,11 +6923,7 @@ void emitter::emitIns_R_R_C(instruction          ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
-    if (instOptions == INS_OPTS_EVEX_b)
-    {
-        assert(UseEvexEncoding());
-        id->idSetEvexbContext();
-    }
+    SetEvexBroadcastIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -6889,7 +6937,8 @@ void emitter::emitIns_R_R_C(instruction          ins,
 *  Add an instruction with three register operands.
 */
 
-void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2)
+void emitter::emitIns_R_R_R(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2, insOpts instOptions)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
@@ -6900,6 +6949,13 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
     id->idReg1(targetReg);
     id->idReg2(reg1);
     id->idReg3(reg2);
+
+    if ((instOptions & INS_OPTS_b_MASK) != INS_OPTS_NONE)
+    {
+        // if EVEX.b needs to be set in this path, then it should be embedded rounding.
+        assert(UseEvexEncoding());
+        id->idSetEvexbContext(instOptions);
+    }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -6921,12 +6977,8 @@ void emitter::emitIns_R_R_S(
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+    SetEvexBroadcastIfNeeded(id, instOptions);
 
-    if (instOptions == INS_OPTS_EVEX_b)
-    {
-        assert(UseEvexEncoding());
-        id->idSetEvexbContext();
-    }
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
@@ -8224,11 +8276,11 @@ void emitter::emitIns_SIMD_R_R_C(instruction          ins,
 //    op2Reg    -- The register of the second operand
 //
 void emitter::emitIns_SIMD_R_R_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg)
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, insOpts instOptions)
 {
     if (UseSimdEncoding())
     {
-        emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg);
+        emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
     }
     else
     {
@@ -10656,13 +10708,44 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 //
 void emitter::emitDispEmbBroadcastCount(instrDesc* id)
 {
-    if (!id->idIsEvexbContext())
+    if (!id->idIsEvexbContextSet())
     {
         return;
     }
     ssize_t baseSize   = GetInputSizeInBytes(id);
     ssize_t vectorSize = (ssize_t)emitGetBaseMemOpSize(id);
     printf(" {1to%d}", vectorSize / baseSize);
+}
+
+// emitDispEmbRounding: Display the tag where embedded rounding is activated
+//
+// Arguments:
+//   id - The instruction descriptor
+//
+void emitter::emitDispEmbRounding(instrDesc* id)
+{
+    if (!id->idIsEvexbContextSet())
+    {
+        return;
+    }
+    assert(!id->idHasMem());
+    unsigned roundingMode = id->idGetEvexbContext();
+    if (roundingMode == 1)
+    {
+        printf(" {rd-sae}");
+    }
+    else if (roundingMode == 2)
+    {
+        printf(" {ru-sae}");
+    }
+    else if (roundingMode == 3)
+    {
+        printf(" {rz-sae}");
+    }
+    else
+    {
+        unreached();
+    }
 }
 
 //--------------------------------------------------------------------
@@ -11533,6 +11616,7 @@ void emitter::emitDispIns(
             printf("%s, ", emitRegName(id->idReg1(), attr));
             printf("%s, ", emitRegName(reg2, attr));
             printf("%s", emitRegName(reg3, attr));
+            emitDispEmbRounding(id);
             break;
         }
 

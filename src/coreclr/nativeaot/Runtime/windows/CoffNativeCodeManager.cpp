@@ -636,8 +636,6 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     pRegisterSet->SP = context.Rsp;
     pRegisterSet->IP = context.Rip;
 
-    pRegisterSet->pIP = PTR_PCODE(pRegisterSet->SP - sizeof(TADDR));
-
     if (!(flags & USFF_GcUnwind))
     {
         memcpy(pRegisterSet->Xmm, &context.Xmm6, sizeof(pRegisterSet->Xmm));
@@ -666,8 +664,6 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     pRegisterSet->SP = context.Sp;
     pRegisterSet->IP = context.Pc;
-
-    pRegisterSet->pIP = contextPointers.Lr;
 
     if (!(flags & USFF_GcUnwind))
     {
