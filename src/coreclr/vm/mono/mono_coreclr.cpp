@@ -185,7 +185,8 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_from_mono_type(MonoType *i
     return (MonoClass*)klass;
 }
 
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_element_class(MonoClass *klass)
+// remove once usages in this file are removed
+static MonoClass* mono_class_get_element_class(MonoClass *klass)
 {
     CONTRACTL
     {
@@ -196,53 +197,6 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_element_class(MonoClas
     CONTRACTL_END;
 
     return (MonoClass*)reinterpret_cast<MonoClass_clr*>(klass)->GetArrayElementTypeHandle().GetMethodTable();
-}
-
-// Wrap iterator value in heap allocated value we can return from embedding API
-struct MethodTable_InterfaceMapIteratorWrapper
-{
-    MethodTable::InterfaceMapIterator iter;
-
-    MethodTable_InterfaceMapIteratorWrapper(MonoClass_clr* klass_clr) :
-        iter(klass_clr->IterateInterfaceMap())
-    {
-    }
-};
-
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_interfaces(MonoClass* klass, gpointer *iter)
-{
-    TRACE_API("%p, %p", klass, iter);
-
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(klass != NULL);
-    }
-    CONTRACTL_END;
-
-    if (!iter)
-    {
-        return NULL;
-    }
-    MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
-
-    MethodTable_InterfaceMapIteratorWrapper* iterator = (MethodTable_InterfaceMapIteratorWrapper*)*iter;
-    if (iterator == nullptr)
-    {
-        iterator = new MethodTable_InterfaceMapIteratorWrapper(klass_clr);
-        *iter = iterator;
-    }
-
-    if (!iterator->iter.Next())
-    {
-        *iter = nullptr;
-        delete iterator;
-        return nullptr;
-    }
-
-    // TODO: this used to be a call to GetInterface, not sure of the difference
-    return (MonoClass*)iterator->iter.GetInterfaceApprox();
 }
 
 extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_class_get_methods(MonoClass* klass, gpointer *iter)
@@ -320,82 +274,6 @@ extern "C" EXPORT_API const char* EXPORT_CC mono_class_get_namespace(MonoClass *
 	LPCUTF8 name, namespaze;
 	clazz->GetMDImport()->GetNameOfTypeDef(clazz->GetCl(), &name, &namespaze);
     return namespaze;
-}
-
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_nested_types(MonoClass* klass, gpointer *iter)
-{
-    TRACE_API("%p, %p", klass, iter);
-
-    CONTRACTL
-    {
-        THROWS; // new BYTE
-        GC_TRIGGERS; // ClassLoader::LoadTypeDefThrowing
-    PRECONDITION(klass != NULL);
-    }
-    CONTRACTL_END;
-
-    if (!iter)
-    {
-        return NULL;
-    }
-
-    struct NestedTypesIterator
-    {
-        ULONG index;
-        ULONG count;
-        mdTypeDef tokens[];
-    };
-
-    MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
-
-    NestedTypesIterator* nestedIterator = (NestedTypesIterator*)*iter;
-    if (nestedIterator == NULL)
-    {
-        mdTypeDef token = klass_clr->GetCl();
-        IMDInternalImport *pImport = klass_clr->GetMDImport();
-        ULONG nestedCount;
-        pImport->GetCountNestedClasses(token, &nestedCount);
-        // Early exit if there is no nested classes
-        if (nestedCount == 0)
-        {
-            return NULL;
-        }
-        SIZE_T sizeOfIterator = sizeof(NestedTypesIterator) + sizeof(mdTypeDef) * nestedCount;
-        nestedIterator = (NestedTypesIterator*)new BYTE[sizeOfIterator];
-        nestedIterator->index = 0;
-        nestedIterator->count = nestedCount;
-        *iter = nestedIterator;
-        pImport->GetNestedClasses(token, nestedIterator->tokens, nestedCount, &nestedCount);
-    }
-
-    if (nestedIterator->index < nestedIterator->count)
-    {
-        TypeHandle th = ClassLoader::LoadTypeDefThrowing(klass_clr->GetModule(),
-            nestedIterator->tokens[nestedIterator->index],
-            ClassLoader::ThrowIfNotFound,
-            ClassLoader::PermitUninstDefOrRef);
-        nestedIterator->index++;
-        assert(!th.IsNull());
-        return (MonoClass*)th.GetMethodTable();
-    }
-    else
-    {
-        *iter = NULL;
-        delete[](BYTE*)nestedIterator;
-    }
-
-    return NULL;
-}
-
-extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_nesting_type(MonoClass *klass)
-{
-    MonoClass_clr* klass_clr = (MonoClass_clr*)klass;
-    if (!klass_clr->GetClass()->IsNested())
-    {
-        return nullptr;
-    }
-    MonoClass_clr* ret = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(klass_clr->GetModule(), klass_clr->GetEnclosingCl(), NULL, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef).AsMethodTable();
-    return (MonoClass*)ret;
 }
 
 extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_get_parent(MonoClass *klass)

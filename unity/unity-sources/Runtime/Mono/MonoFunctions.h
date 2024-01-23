@@ -16,7 +16,6 @@ DO_API(void, mono_add_internal_call, (const char *name, gconstpointer method))
 
 DO_API(MonoObject*, mono_runtime_invoke, (MonoMethod * method, void *obj, void **params, MonoException **exc))
 DO_API(int, mono_field_get_offset, (MonoClassField * field))
-DO_API(MonoClass*, mono_class_get_nested_types, (MonoClass * klass, gpointer * iter))
 DO_API(MonoMethod*, mono_class_get_methods, (MonoClass * klass, gpointer * iter))
 DO_API(int, mono_class_get_userdata_offset, ())
 DO_API(void*, mono_class_get_userdata, (MonoClass * klass))
@@ -59,8 +58,6 @@ DO_API(gboolean, mono_thread_has_sufficient_execution_stack, (void))
 
 DO_API(MonoThread *, mono_thread_current, (void))
 
-DO_API(MonoClass*, mono_class_get_nesting_type, (MonoClass * klass))
-
 DO_API(MonoMethodSignature*, mono_method_signature, (MonoMethod * method))
 DO_API(MonoType*, mono_signature_get_params, (MonoMethodSignature * sig, gpointer * iter))
 DO_API(MonoType*, mono_signature_get_return_type, (MonoMethodSignature * sig))
@@ -87,10 +84,8 @@ DO_API_OPTIONAL(void, mono_debug_free_method_jit_info, (MonoDebugMethodJitInfo *
 
 DO_API(gint32, mono_class_instance_size, (MonoClass * klass))
 DO_API(guint32, mono_class_get_type_token, (MonoClass * klass))
-DO_API(MonoClass*, mono_class_get_interfaces, (MonoClass * klass, gpointer * iter))
 DO_API(MonoProperty*, mono_class_get_property_from_name, (MonoClass * klass, const char *name))
 DO_API(MonoClass*, mono_class_from_mono_type, (MonoType * image))
-DO_API(MonoClass*, mono_class_get_element_class, (MonoClass * klass));
 
 DO_API(int, mono_array_element_size, (MonoClass * classOfArray))
 
