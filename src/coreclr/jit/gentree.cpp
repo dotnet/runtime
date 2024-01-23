@@ -5935,7 +5935,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
 
                     // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
-                    if (gtHaveStoreInterference(op2, op1))
+                    if (gtMayHaveStoreInterference(op2, op1))
                     {
                         // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
                         allowReversal = false;
@@ -6318,18 +6318,20 @@ DONE:
 #endif
 
 //------------------------------------------------------------------------
-// gtHaveStoreInterference: Check if two trees interfere because of a store in
-// one of the trees.
+// gtMayHaveStoreInterference: Check if two trees may interfere because of a
+// store in one of the trees.
 //
 // Parameters:
 //   treeWithStores - Tree that may have stores in it
-//   tree           - Tree that may be reading from a store in "treeWithStores"
+//   tree           - Tree that may be reading from a local stored to in "treeWithStores"
 //
 // Returns:
-//   True if there is any GT_LCL_VAR or GT_LCL_FLD node whose value depends on
-//   "lclNum".
+//   False if there is no interference. Returns true if there is any GT_LCL_VAR
+//   or GT_LCL_FLD node whose value depends on "lclNum". May also return true
+//   in cases without interference if the trees are too large and the function
+//   runs out of budget.
 //
-bool Compiler::gtHaveStoreInterference(GenTree* treeWithStores, GenTree* tree)
+bool Compiler::gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree)
 {
     if (((treeWithStores->gtFlags & GTF_ASG) == 0) || tree->IsInvariant())
     {
@@ -6339,6 +6341,7 @@ bool Compiler::gtHaveStoreInterference(GenTree* treeWithStores, GenTree* tree)
     class Visitor final : public GenTreeVisitor<Visitor>
     {
         GenTree* m_readTree;
+        unsigned m_numStoresChecked = 0;
 
     public:
         enum
@@ -6360,10 +6363,17 @@ bool Compiler::gtHaveStoreInterference(GenTree* treeWithStores, GenTree* tree)
 
             if (node->OperIsLocalStore())
             {
-                if (m_compiler->gtTreeHasLocalRead(m_readTree, node->AsLclVarCommon()->GetLclNum()))
+                // Check up to 8 stores before we bail with a conservative
+                // answer. Avoids quadratic behavior in case we have a large
+                // number of stores (e.g. created by physical promotion or by
+                // call args morphing).
+                if ((m_numStoresChecked >= 8) ||
+                    m_compiler->gtTreeHasLocalRead(m_readTree, node->AsLclVarCommon()->GetLclNum()))
                 {
                     return WALK_ABORT;
                 }
+
+                m_numStoresChecked++;
             }
 
             return WALK_CONTINUE;

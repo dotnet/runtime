@@ -960,10 +960,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     continue;
                 }
 
-                bool interferes = comp->opts.OptimizationEnabled()
-                                      ? comp->gtHaveStoreInterference(argx, prevArg.GetEarlyNode())
-                                      : !prevArg.GetEarlyNode()->IsInvariant();
-                if (interferes)
+                if (comp->gtMayHaveStoreInterference(argx, prevArg.GetEarlyNode()))
                 {
                     SetNeedsTemp(&prevArg);
                 }
