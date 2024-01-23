@@ -89,6 +89,21 @@
       <!-- Used by the Crossgen comparison job -->
       <RunTimeArtifactsIncludeFolders Include="IL/" TargetDir="IL/" />
 
+      <!-- Used for NativeAOT tests -->
+      <RunTimeArtifactsIncludeFolders Include="ilc-published/" TargetDir="ilc-published/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
+      <!-- Used for NativeAOT tests -->
+      <RunTimeArtifactsIncludeFolders Include="aotsdk/" TargetDir="aotsdk/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
+      <!-- Used for NativeAOT tests -->
+      <RunTimeArtifactsIncludeFolders Include="build/" TargetDir="build/">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
+
       <!-- Used for capturing symbolic stack traces using Watson -->
       <RunTimeArtifactsIncludeFolders Include="PDB/" TargetDir="PDB/" />
 

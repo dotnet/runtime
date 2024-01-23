@@ -37,34 +37,6 @@
 
   <Target Name="PublishCrossgen"
           BeforeTargets="GetFilesToPackage">
-
-    <!-- Copy System.Private.CoreLib from the coreclr bin directory to the runtime pack directory,
-         as we always need the copy of System.Private.CoreLib that matches exactly with the runtime. -->
-    <Copy SourceFiles="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
-          SkipUnchangedFiles="true" />
-
-    <MSBuild Projects="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj"
-             Targets="Restore"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())
-              ;_IsPublishing=true
-              ;RuntimeIdentifier=$(PackageRID)
-              ;NativeAotSupported=$(NativeAotSupported)
-              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets" />
-
-    <MSBuild Projects="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj"
-             Targets="Publish;PublishItemsOutputGroup"
-             Properties="_IsPublishing=true
-              ;RuntimeIdentifier=$(PackageRID)
-              ;NativeAotSupported=$(NativeAotSupported)
-              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;ObjCopyName=$(ObjCopyName)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets">
-      <Output TaskParameter="TargetOutputs"
-              ItemName="_RawCrossgenPublishFiles" />
-    </MSBuild>
-
     <ItemGroup>
       <_CrossgenPublishFiles Include="@(_RawCrossgenPublishFiles->'%(OutputPath)')"
                              KeepMetadata="REMOVE_ALL" />

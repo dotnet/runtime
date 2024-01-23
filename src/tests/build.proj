@@ -640,7 +640,6 @@
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and !$(MonoAot) and !$(MonoFullAot)" >
 
     <PropertyGroup>
-
       <CrossgenDir>$(__BinDir)\$(BuildArchitecture)</CrossgenDir>
       <Crossgen2Path>$(CrossgenDir)\crossgen2\tools\crossgen2</Crossgen2Path>
       <Crossgen2Path Condition="'$(TargetOS)' == 'windows'">$(Crossgen2Path).exe</Crossgen2Path>
