@@ -4014,6 +4014,39 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         hoistCtxt->m_hoistedFPExprCount  = 0;
     }
 
+#ifdef TARGET_XARCH
+    if (!VarSetOps::IsEmpty(this, lvaMaskVars))
+    {
+        VARSET_TP loopMskVars(VarSetOps::Intersection(this, loopVars, lvaMaskVars));
+        VARSET_TP inOutMskVars(VarSetOps::Intersection(this, sideEffs.VarInOut, lvaMaskVars));
+
+        hoistCtxt->m_loopVarMskCount      = VarSetOps::Count(this, loopMskVars);
+        hoistCtxt->m_loopVarInOutMskCount = VarSetOps::Count(this, inOutMskVars);
+        hoistCtxt->m_hoistedMskExprCount  = 0;
+        hoistCtxt->m_loopVarCount -= hoistCtxt->m_loopVarMskCount;
+        hoistCtxt->m_loopVarInOutCount -= hoistCtxt->m_loopVarInOutMskCount;
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("  INOUT-MSK(%d)=", hoistCtxt->m_loopVarInOutMskCount);
+            dumpConvertedVarSet(this, inOutMskVars);
+
+            printf("\n  LOOPV-MSK(%d)=", hoistCtxt->m_loopVarMskCount);
+            dumpConvertedVarSet(this, loopMskVars);
+
+            printf("\n");
+        }
+#endif
+    }
+    else // lvaMaskVars is empty
+    {
+        hoistCtxt->m_loopVarMskCount      = 0;
+        hoistCtxt->m_loopVarInOutMskCount = 0;
+        hoistCtxt->m_hoistedMskExprCount  = 0;
+    }
+#endif // TARGET_XARCH
+
     // Find the set of definitely-executed blocks.
     // Ideally, the definitely-executed blocks are the ones that post-dominate the entry block.
     // Until we have post-dominators, we'll special-case for single-exit blocks.
@@ -4133,7 +4166,10 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
 
     optHoistLoopBlocks(loop, &defExec, hoistCtxt);
 
-    const unsigned numHoisted = hoistCtxt->m_hoistedFPExprCount + hoistCtxt->m_hoistedExprCount;
+    unsigned numHoisted = hoistCtxt->m_hoistedFPExprCount + hoistCtxt->m_hoistedExprCount;
+#ifdef TARGET_XARCH
+    numHoisted += hoistCtxt->m_hoistedMskExprCount;
+#endif // TARGET_XARCH
     return numHoisted > 0;
 }
 
@@ -4165,6 +4201,20 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* l
         }
 #endif
     }
+#ifdef TARGET_XARCH
+    else if (varTypeUsesMaskReg(tree))
+    {
+        hoistedExprCount = hoistCtxt->m_hoistedMskExprCount;
+        loopVarCount     = hoistCtxt->m_loopVarMskCount;
+        varInOutCount    = hoistCtxt->m_loopVarInOutMskCount;
+
+        availRegCount = CNT_CALLEE_SAVED_MASK;
+        if (!loopContainsCall)
+        {
+            availRegCount += CNT_CALLEE_TRASH_MASK - 1;
+        }
+    }
+#endif // TARGET_XARCH
     else
     {
         assert(varTypeUsesFloatReg(tree));
@@ -5028,7 +5078,7 @@ void Compiler::optHoistCandidate(GenTree*              tree,
     optPerformHoistExpr(tree, treeBb, loop);
 
     // Increment lpHoistedExprCount or lpHoistedFPExprCount
-    if (!varTypeIsFloating(tree->TypeGet()))
+    if (varTypeUsesIntReg(tree))
     {
         hoistCtxt->m_hoistedExprCount++;
 #ifndef TARGET_64BIT
@@ -5039,8 +5089,15 @@ void Compiler::optHoistCandidate(GenTree*              tree,
         }
 #endif
     }
-    else // Floating point expr hoisted
+#ifdef TARGET_XARCH
+    else if (varTypeUsesMaskReg(tree))
     {
+        hoistCtxt->m_hoistedMskExprCount++;
+    }
+#endif // TARGET_XARCH
+    else
+    {
+        assert(varTypeUsesFloatReg(tree));
         hoistCtxt->m_hoistedFPExprCount++;
     }
 
@@ -5291,6 +5348,9 @@ void Compiler::optComputeInterestingVarSets()
 #ifndef TARGET_64BIT
     VarSetOps::AssignNoCopy(this, lvaLongVars, VarSetOps::MakeEmpty(this));
 #endif
+#ifdef TARGET_XARCH
+    VarSetOps::AssignNoCopy(this, lvaMaskVars, VarSetOps::MakeEmpty(this));
+#endif
 
     for (unsigned i = 0; i < lvaCount; i++)
     {
@@ -5307,6 +5367,12 @@ void Compiler::optComputeInterestingVarSets()
                 VarSetOps::AddElemD(this, lvaLongVars, varDsc->lvVarIndex);
             }
 #endif
+#ifdef TARGET_XARCH
+            else if (varTypeUsesMaskReg(varDsc->lvType))
+            {
+                VarSetOps::AddElemD(this, lvaMaskVars, varDsc->lvVarIndex);
+            }
+#endif // TARGET_XARCH
         }
     }
 }

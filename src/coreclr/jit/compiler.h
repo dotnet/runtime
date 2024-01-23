@@ -3733,7 +3733,10 @@ public:
 #ifndef TARGET_64BIT
     VARSET_TP lvaLongVars; // set of long (64-bit) variables
 #endif
-    VARSET_TP lvaFloatVars; // set of floating-point (32-bit and 64-bit) variables
+    VARSET_TP lvaFloatVars; // set of floating-point (32-bit and 64-bit) or SIMD variables
+#ifdef TARGET_XARCH
+    VARSET_TP lvaMaskVars; // set of mask variables
+#endif // TARGET_XARCH
 
     unsigned lvaCurEpoch; // VarSets are relative to a specific set of tracked var indices.
                           // It that changes, this changes.  VarSets from different epochs
@@ -5556,7 +5559,7 @@ public:
     // Assign the proper value number to the tree
     void fgValueNumberTreeConst(GenTree* tree);
 
-    // If the constant has a field sequence associated with it, then register 
+    // If the constant has a field sequence associated with it, then register
     void fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree);
 
     // If the VN store has been initialized, reassign the
@@ -6690,9 +6693,14 @@ protected:
         int m_loopVarInOutCount;
         int m_loopVarCount;
         int m_hoistedExprCount;
-        int m_loopVarFPCount;
+
         int m_loopVarInOutFPCount;
+        int m_loopVarFPCount;
         int m_hoistedFPExprCount;
+
+        int m_loopVarInOutMskCount;
+        int m_loopVarMskCount;
+        int m_hoistedMskExprCount;
 
         // Get the VN cache for current loop
         VNSet* GetHoistedInCurLoop(Compiler* comp)
@@ -6742,7 +6750,7 @@ protected:
     // written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopSideEffects();
 
-    // Compute the sets of long and float vars (lvaLongVars, lvaFloatVars).
+    // Compute the sets of long and float vars (lvaLongVars, lvaFloatVars, lvaMaskVars).
     void optComputeInterestingVarSets();
 
 private:
