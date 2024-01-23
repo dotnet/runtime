@@ -1865,7 +1865,7 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
     {
         // It's not eligible for expansion (already expanded in importer)
         // To be removed once we move cast expansion here completely.
-        return false;
+        return NO_CLASS_HANDLE;
     }
 
     // Helper calls are never tail calls
