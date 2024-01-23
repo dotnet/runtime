@@ -388,7 +388,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             string runtimePackDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.TargetFramework, assertOptions.RuntimeType);
             if (!Path.IsPathRooted(srcPath))
                 srcPath = Path.Combine(runtimePackDir, assertOptions.PredefinedIcudt!);
-            TestUtils.AssertSameFile(srcPath, actual.Single());
+            TestUtils.AssertSameFile(srcPath, actual.Single(item => Path.GetFileName(item) == assertOptions.PredefinedIcudt!));
         }
     }
 
