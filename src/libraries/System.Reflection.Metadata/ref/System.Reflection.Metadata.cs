@@ -2408,6 +2408,31 @@ namespace System.Reflection.Metadata
         public int PackingSize { get { throw null; } }
         public int Size { get { throw null; } }
     }
+    public readonly partial struct TypeName
+    {
+        public string? AssemblyQualifiedName { get { throw null; } }
+        public bool ContainsGenericParameters { get { throw null; } }
+        public string? FullName { get { throw null; } }
+        public System.Reflection.Metadata.TypeName[] GenericTypeArguments { get { throw null; } }
+        public bool IsArray { get { throw null; } }
+        public bool IsManagedPointerType { get { throw null; } }
+        public bool IsNested { get { throw null; } }
+        public bool IsUnmanagedPointerType { get { throw null; } }
+        public bool IsVariableBoundArrayType { get { throw null; } }
+        public string Name { get { throw null; } }
+        public string? Namespace { get { throw null; } }
+        public int GetArrayRank() { throw null; }
+    }
+    public ref partial struct TypeNameParser
+    {
+        public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> name, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
+    }
+    public partial class TypeNameParserOptions
+    {
+        public TypeNameParserOptions() { }
+        public int MaxRecursiveDepth { get { throw null; } set { } }
+        public virtual void ValidateIdentifier(string candidate) { }
+    }
     public readonly partial struct TypeReference
     {
         private readonly object _dummy;

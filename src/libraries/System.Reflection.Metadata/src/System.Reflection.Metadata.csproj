@@ -77,6 +77,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\Metadata\MetadataReaderProvider.cs" />
     <Compile Include="System\Reflection\Metadata\BlobContentId.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\PrimitiveSerializationTypeCode.cs" />
+    <Compile Include="System\Reflection\Metadata\TypeNameParser.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyDefinition.netstandard.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyReference.netstandard.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\Handles.TypeSystem.cs" />
