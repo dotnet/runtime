@@ -523,14 +523,14 @@ namespace System.Reflection.Emit
         {
             if (!_memberReferences.TryGetValue(memberInfo, out var memberHandle))
             {
-                MemberInfo member = GetOriginalMemberIfConstructedType(memberInfo);
-                switch (member)
+                switch (memberInfo)
                 {
                     case FieldInfo field:
                         memberHandle = AddMemberReference(field.Name, GetTypeHandle(memberInfo.DeclaringType!),
                             MetadataSignatureHelper.GetFieldSignature(field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
                         break;
                     case ConstructorInfo ctor:
+                        ctor = (ConstructorInfo)GetOriginalMemberIfConstructedType(ctor);
                         memberHandle = AddMemberReference(ctor.Name, GetTypeHandle(memberInfo.DeclaringType!), MetadataSignatureHelper.GetConstructorSignature(ctor.GetParameters(), this));
                         break;
                     case MethodInfo method:
@@ -540,6 +540,7 @@ namespace System.Reflection.Emit
                         }
                         else
                         {
+                            method = (MethodInfo)GetOriginalMemberIfConstructedType(method);
                             memberHandle = AddMemberReference(method.Name, GetTypeHandle(memberInfo.DeclaringType!), GetMethodSignature(method, null));
                         }
                         break;
@@ -585,10 +586,11 @@ namespace System.Reflection.Emit
             return convention;
         }
 
-        private static MemberInfo GetOriginalMemberIfConstructedType(MemberInfo memberInfo)
+        private static MemberInfo GetOriginalMemberIfConstructedType(MethodBase memberInfo)
         {
             Type declaringType = memberInfo.DeclaringType!;
-            if (declaringType.IsConstructedGenericType && declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl)
+            if (declaringType.IsConstructedGenericType && !memberInfo.ContainsGenericParameters &&
+                declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl)
             {
                 return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(memberInfo);
             }

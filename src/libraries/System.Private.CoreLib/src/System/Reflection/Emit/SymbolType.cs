@@ -280,12 +280,12 @@ namespace System.Reflection.Emit
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
-            string s = GetRank(rank);
+            string s = FormatRank(rank);
             SymbolType? st = FormCompoundType(_format + s, _baseType, 0) as SymbolType;
             return st!;
         }
 
-        internal static string GetRank(int rank)
+        internal static string FormatRank(int rank)
         {
             if (rank <= 0)
                 throw new IndexOutOfRangeException();

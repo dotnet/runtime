@@ -243,7 +243,7 @@ namespace System.Reflection.Emit
         public override CallingConventions CallingConvention => _callingConventions;
         public override Type? DeclaringType => _declaringType._isHiddenGlobalType ? null : _declaringType;
         public override Module Module => _module;
-        public override bool ContainsGenericParameters => throw new NotSupportedException();
+        public override bool ContainsGenericParameters => _typeParameters != null;
         public override bool IsGenericMethod => _typeParameters != null;
         public override bool IsGenericMethodDefinition => _typeParameters != null;
         public override bool IsSecurityCritical => true;

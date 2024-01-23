@@ -149,6 +149,6 @@ namespace System.Reflection.Emit
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank) =>
-            SymbolType.FormCompoundType(SymbolType.GetRank(rank), this, 0)!;
+            SymbolType.FormCompoundType(SymbolType.FormatRank(rank), this, 0)!;
     }
 }

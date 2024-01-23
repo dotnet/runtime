@@ -2306,5 +2306,45 @@ internal class Dummy
                 tlc.Unload();
             }
         }
+
+        [Fact]
+        public void CallDictionaryMethodThatHasGenericTypeParameterBuilderAsArgument()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            TypeBuilder tb = ab.GetDynamicModule("MyModule").DefineType("EnumNameCache", TypeAttributes.NestedAssembly);
+            GenericTypeParameterBuilder[] param = tb.DefineGenericParameters(["TEnum"]);
+            Type fieldType = typeof(Dictionary<,>).MakeGenericType(param[0], typeof(string));
+            FieldBuilder field = tb.DefineField("Cache", fieldType, FieldAttributes.Public | FieldAttributes.Static);
+
+            MethodBuilder method1 = type.DefineMethod("Append", MethodAttributes.Public, typeof(void), [typeof(string)]);
+            method1.GetILGenerator().Emit(OpCodes.Ret);
+            MethodBuilder method = type.DefineMethod("Append", MethodAttributes.Public, typeof(void), null);
+            GenericTypeParameterBuilder[] methParam = method.DefineGenericParameters(["T"]);
+            method.SetParameters(methParam[0]);
+            Type typeOfT = tb.MakeGenericType(methParam);
+            FieldInfo fieldOfT = TypeBuilder.GetField(typeOfT, field);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            LocalBuilder str = ilGenerator.DeclareLocal(typeof(string));
+            Label labelFalse = ilGenerator.DefineLabel();
+            ilGenerator.Emit(OpCodes.Ldsfld, fieldOfT);
+            ilGenerator.Emit(OpCodes.Ldarg_1);
+            ilGenerator.Emit(OpCodes.Ldloca_S, 0);
+            ilGenerator.Emit(OpCodes.Callvirt, TypeBuilder.GetMethod(
+                typeof(Dictionary<,>).MakeGenericType(methParam[0], typeof(string)), typeof(Dictionary<,>).GetMethod("TryGetValue")));
+            ilGenerator.Emit(OpCodes.Brfalse_S, labelFalse);
+            ilGenerator.Emit(OpCodes.Ldarg_0);
+            ilGenerator.Emit(OpCodes.Ldloc_0);
+            ilGenerator.Emit(OpCodes.Call, method1);
+            ilGenerator.Emit(OpCodes.Ret);
+            ilGenerator.MarkLabel(labelFalse);
+            ilGenerator.Emit(OpCodes.Ldarg_0);
+            ilGenerator.Emit(OpCodes.Ldarg_1);
+            ilGenerator.Emit(OpCodes.Constrained, methParam[0]);
+            ilGenerator.Emit(OpCodes.Callvirt, typeof(object).GetMethod("ToString"));
+            ilGenerator.Emit(OpCodes.Call, method1);
+            ilGenerator.Emit(OpCodes.Ret);
+            type.CreateType();
+            tb.CreateType();
+        }
     }
 }

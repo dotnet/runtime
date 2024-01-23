@@ -951,13 +951,13 @@ namespace System.Reflection.Emit
 
             FieldInfo? match = null;
 
-            BindingFlags matchBindingAttr = bindingAttr ^ BindingFlags.DeclaredOnly;
-            matchBindingAttr ^= BindingFlags.IgnoreCase;
+            BindingFlags fieldFlags = bindingAttr ^ BindingFlags.DeclaredOnly;
+            fieldFlags ^= BindingFlags.IgnoreCase;
             StringComparison compare = (bindingAttr & BindingFlags.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             foreach (FieldBuilderImpl fieldInfo in _fieldDefinitions)
             {
-                BindingFlags fieldBFlags = GetBindingFlags(fieldInfo);
-                if (name.Equals(fieldInfo.Name, compare) && (matchBindingAttr & fieldBFlags) == fieldBFlags)
+                BindingFlags currentFieldFlags = GetBindingFlags(fieldInfo);
+                if (name.Equals(fieldInfo.Name, compare) && (fieldFlags & currentFieldFlags) == currentFieldFlags)
                 {
                     if (match != null)
                     {
