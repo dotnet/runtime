@@ -914,7 +914,7 @@ bool interceptor_ICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     return temp;
 }
 
-// Return if a class handle can only describe values of exactly one type.
+// Returns true if a class handle can only describe values of exactly one type.
 bool interceptor_ICJI::isExactType(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("isExactType");

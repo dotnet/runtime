@@ -4625,7 +4625,7 @@ static bool isExactTypeHelper(TypeHandle th)
     return pMT->IsSealed();
 }
 
-// Return if a class handle can only describe values of exactly one type.
+// Returns true if a class handle can only describe values of exactly one type.
 bool CEEInfo::isExactType(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {

@@ -764,7 +764,7 @@ bool MyICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE 
     return jitInstance->mc->repIsMoreSpecificType(cls1, cls2);
 }
 
-// Return if a class handle can only describe values of exactly one type.
+// Returns true if a class handle can only describe values of exactly one type.
 bool MyICJI::isExactType(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("isExactType");

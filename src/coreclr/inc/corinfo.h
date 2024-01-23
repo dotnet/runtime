@@ -2734,7 +2734,7 @@ public:
             CORINFO_CLASS_HANDLE        cls2
             ) = 0;
 
-    // Return if a class handle can only describe values of exactly one type.
+    // Returns true if a class handle can only describe values of exactly one type.
     virtual bool isExactType(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
