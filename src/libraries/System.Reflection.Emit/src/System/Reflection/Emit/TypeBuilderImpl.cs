@@ -183,7 +183,7 @@ namespace System.Reflection.Emit
 
                         if ((targetMethod == null || targetMethod.IsAbstract) && !FoundInInterfaceMapping(method))
                         {
-                            throw new TypeLoadException(SR.Format(SR.TypeLoad_MissingMethod, method, FullName));
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_MissingMethod, method.Name, FullName));
                         }
                     }
                 }
@@ -211,7 +211,7 @@ namespace System.Reflection.Emit
 
                     if ((implementedMethod == null || implementedMethod.IsAbstract) && !FoundInInterfaceMapping(interfaceMethod))
                     {
-                        throw new TypeLoadException(SR.Format(SR.TypeLoad_MissingMethod, interfaceMethod, FullName));
+                        throw new TypeLoadException(SR.Format(SR.TypeLoad_MissingMethod, interfaceMethod.Name, FullName));
                     }
                 }
 
@@ -483,7 +483,23 @@ namespace System.Reflection.Emit
                 {
                     for (int i = 0; i < bodyParameters.Length; i++)
                     {
-                        if (!bodyParameters[i].ParameterType.Equals(declarationParameters[i].ParameterType))
+                        Type? bodyType = bodyParameters[i].ParameterType;
+                        Type? declType = declarationParameters[i].ParameterType;
+
+                        if (bodyType.IsArray != declType.IsArray ||
+                            bodyType.IsByRef != declType.IsByRef ||
+                            bodyType.IsPointer != declType.IsPointer)
+                        {
+                            throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
+                        }
+
+                        if (bodyType.HasElementType || declType.HasElementType)
+                        {
+                            bodyType = bodyType.GetElementType();
+                            declType = declType.GetElementType();
+                        }
+
+                        if (bodyType == null || !bodyType.Equals(declType))
                         {
                             throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
                         }
@@ -854,7 +870,23 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < parameterTypes.Length; i++)
             {
-                if (argumentTypes[i] != parameterTypes[i])
+                Type? argType = argumentTypes[i];
+                Type? paramType = parameterTypes[i];
+
+                if (argType.IsArray != paramType.IsArray ||
+                    argType.IsByRef != paramType.IsByRef ||
+                    argType.IsPointer != argType.IsPointer)
+                {
+                    return false;
+                }
+
+                if (argType.HasElementType || paramType.HasElementType)
+                {
+                    argType = argType.GetElementType();
+                    paramType = paramType.GetElementType();
+                }
+
+                if (argType == null || !argType.Equals(paramType))
                 {
                     return false;
                 }

@@ -16,6 +16,7 @@ namespace System.Reflection.Emit
         private GenericParameterAttributes _genParamAttributes;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _parent;
+
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal List<Type>? _interfaces;
         private MethodBuilderImpl? _methodBuilder;

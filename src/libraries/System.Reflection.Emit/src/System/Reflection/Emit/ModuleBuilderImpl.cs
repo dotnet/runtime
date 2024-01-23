@@ -586,16 +586,16 @@ namespace System.Reflection.Emit
             return convention;
         }
 
-        private static MemberInfo GetOriginalMemberIfConstructedType(MethodBase memberInfo)
+        private static MemberInfo GetOriginalMemberIfConstructedType(MethodBase methodBase)
         {
-            Type declaringType = memberInfo.DeclaringType!;
-            if (declaringType.IsConstructedGenericType && !memberInfo.ContainsGenericParameters &&
+            Type declaringType = methodBase.DeclaringType!;
+            if (declaringType.IsConstructedGenericType && !methodBase.ContainsGenericParameters &&
                 declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl)
             {
-                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(memberInfo);
+                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(methodBase);
             }
 
-            return memberInfo;
+            return methodBase;
         }
 
         private static Type[] ParameterTypes(ParameterInfo[] parameterInfos)

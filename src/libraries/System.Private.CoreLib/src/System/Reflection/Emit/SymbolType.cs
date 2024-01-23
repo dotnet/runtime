@@ -288,11 +288,11 @@ namespace System.Reflection.Emit
         internal static string FormatRank(int rank)
         {
             if (rank <= 0)
+            {
                 throw new IndexOutOfRangeException();
+            }
 
-            return rank == 1 ?
-                "[*]" :
-                "[" + new string(',', rank - 1) + "]";
+            return rank == 1 ? "[*]" : "[" + new string(',', rank - 1) + "]";
         }
 
         public override int GetArrayRank()

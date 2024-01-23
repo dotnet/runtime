@@ -247,6 +247,36 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void DefineMethodOverride_InterfaceImplementationWithByRefArrayTypes()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+
+            TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
+            Type ptrType = type.MakePointerType();
+            Type byrefType = type.MakeByRefType();
+            Type arrayType = type.MakeArrayType(2);
+            MethodBuilder methPointerArg = interfaceType.DefineMethod("M1", MethodAttributes.Public | MethodAttributes.Abstract, typeof(void), [ptrType]);
+            MethodBuilder methByRefArg = interfaceType.DefineMethod("M1", MethodAttributes.Public | MethodAttributes.Abstract, typeof(int), [byrefType, typeof(string)]);
+            MethodBuilder methArrArg = interfaceType.DefineMethod("M1", MethodAttributes.Public | MethodAttributes.Abstract, typeof(void), [arrayType]);
+            interfaceType.CreateType();
+
+            TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public, parent: typeof(object), [interfaceType]);
+            MethodBuilder pointerArgImpl = implType.DefineMethod("InterfaceType.M1", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [ptrType]);
+            MethodBuilder byrefArgImpl = implType.DefineMethod("InterfaceType.M1", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), [byrefType, typeof(string)]);
+            MethodBuilder arrayArgImpl = implType.DefineMethod("InterfaceType.M1", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [arrayType]);
+            pointerArgImpl.GetILGenerator().Emit(OpCodes.Ret);
+            arrayArgImpl.GetILGenerator().Emit(OpCodes.Ret);
+            byrefArgImpl.GetILGenerator().Emit(OpCodes.Ret);
+
+            implType.DefineMethodOverride(pointerArgImpl, methPointerArg);
+            implType.DefineMethodOverride(byrefArgImpl, methByRefArg);
+            implType.DefineMethodOverride(arrayArgImpl, interfaceType.GetMethod("M1", [arrayType]));
+
+            implType.CreateType(); // succeeds
+        }
+
+        [Fact]
         public void GetInterfaceMap_WithImplicitOverride_DefineMethodOverride()
         {
             AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
