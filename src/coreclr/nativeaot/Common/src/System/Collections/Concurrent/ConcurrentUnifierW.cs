@@ -75,7 +75,7 @@ namespace System.Collections.Concurrent
     {
         protected ConcurrentUnifierW()
         {
-            _lock = new Lock(useAlertableWaits: false);
+            _lock = new Lock(useTrivialWaits: true);
             _container = new Container(this);
         }
 

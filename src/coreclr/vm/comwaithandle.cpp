@@ -16,7 +16,7 @@
 #include "excep.h"
 #include "comwaithandle.h"
 
-FCIMPL3(INT32, WaitHandleNative::CorWaitOneNative, HANDLE handle, INT32 timeout, CLR_BOOL alertable)
+FCIMPL3(INT32, WaitHandleNative::CorWaitOneNative, HANDLE handle, INT32 timeout, CLR_BOOL useTrivialWaits)
 {
     FCALL_CONTRACT;
 
@@ -28,7 +28,7 @@ FCIMPL3(INT32, WaitHandleNative::CorWaitOneNative, HANDLE handle, INT32 timeout,
 
     Thread* pThread = GET_THREAD();
 
-    WaitMode waitMode = (WaitMode)((alertable ? WaitMode_Alertable : WaitMode_None) | WaitMode_IgnoreSyncCtx);
+    WaitMode waitMode = (WaitMode)((!useTrivialWaits ? WaitMode_Alertable : WaitMode_None) | WaitMode_IgnoreSyncCtx);
     retVal = pThread->DoAppropriateWait(1, &handle, TRUE, timeout, waitMode);
 
     HELPER_METHOD_FRAME_END();

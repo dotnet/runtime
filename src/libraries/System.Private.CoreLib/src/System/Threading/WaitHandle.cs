@@ -106,7 +106,7 @@ namespace System.Threading
 
         internal bool WaitOneNoCheck(
             int millisecondsTimeout,
-            bool alertable = true,
+            bool useTrivialWaits = false,
             object? associatedObject = null,
             NativeRuntimeEventSource.WaitHandleWaitSourceMap waitSource = NativeRuntimeEventSource.WaitHandleWaitSourceMap.Unknown)
         {
@@ -124,10 +124,10 @@ namespace System.Threading
 
                 int waitResult = WaitFailed;
 
-                // Check if the wait should be forwarded to a SynchronizationContext wait override. Non-alertable waits don't
-                // allow reentrance or interruption, and are not forwarded.
+                // Check if the wait should be forwarded to a SynchronizationContext wait override. Trivial waits don't allow
+                // reentrance or interruption, and are not forwarded.
                 bool usedSyncContextWait = false;
-                if (alertable)
+                if (!useTrivialWaits)
                 {
                     SynchronizationContext? context = SynchronizationContext.Current;
                     if (context != null && context.IsWaitNotificationRequired())
@@ -142,7 +142,7 @@ namespace System.Threading
 #if !CORECLR // CoreCLR sends the wait events from the native side
                     bool sendWaitEvents =
                         millisecondsTimeout != 0 &&
-                        alertable &&
+                        !useTrivialWaits &&
                         NativeRuntimeEventSource.Log.IsEnabled(
                             EventLevel.Verbose,
                             NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
@@ -154,7 +154,7 @@ namespace System.Threading
                         waitSource != NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait;
                     if (tryNonblockingWaitFirst)
                     {
-                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), 0 /* millisecondsTimeout */, alertable);
+                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), 0 /* millisecondsTimeout */, useTrivialWaits);
                         if (waitResult == WaitTimeout)
                         {
                             // Do a full wait and send the wait events
@@ -176,7 +176,7 @@ namespace System.Threading
                     if (!tryNonblockingWaitFirst)
 #endif
                     {
-                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout, alertable);
+                        waitResult = WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout, useTrivialWaits);
                     }
 
 #if !CORECLR // CoreCLR sends the wait events from the native side

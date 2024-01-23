@@ -42,7 +42,7 @@ namespace System
 
         private static class AllocationLockHolder
         {
-            public static Lock AllocationLock = new Lock(useAlertableWaits: false);
+            public static Lock AllocationLock = new Lock(useTrivialWaits: true);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

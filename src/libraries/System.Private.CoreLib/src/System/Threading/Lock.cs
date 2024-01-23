@@ -39,19 +39,19 @@ namespace System.Threading
         private uint _recursionCount;
         private short _spinCount;
 
-        // The lowest bit is a flag, when set it indicates that the lock should not use alertable waits
+        // The lowest bit is a flag, when set it indicates that the lock should use trivial waits
         private ushort _waiterStartTimeMsAndFlags;
 
         private AutoResetEvent? _waitEvent;
 
 #if NATIVEAOT // The method needs to be public in NativeAOT so that other private libraries can access it
-        public Lock(bool useAlertableWaits)
+        public Lock(bool useTrivialWaits)
 #else
-        internal Lock(bool useAlertableWaits)
+        internal Lock(bool useTrivialWaits)
 #endif
             : this()
         {
-            if (!useAlertableWaits)
+            if (useTrivialWaits)
             {
                 _waiterStartTimeMsAndFlags = 1;
             }
@@ -488,7 +488,7 @@ namespace System.Threading
                 int remainingTimeoutMs = timeoutMs;
                 while (true)
                 {
-                    if (!waitEvent.WaitOneNoCheck(remainingTimeoutMs, UseAlertableWaits))
+                    if (!waitEvent.WaitOneNoCheck(remainingTimeoutMs, UseTrivialWaits))
                     {
                         break;
                     }
@@ -567,7 +567,11 @@ namespace System.Threading
             return new ThreadId(0);
         }
 
-        private bool UseAlertableWaits => (_waiterStartTimeMsAndFlags & 1) == 0;
+        // Trivial waits are:
+        // - Not interruptible by Thread.Interrupt
+        // - Don't allow reentrance through APCs or message pumping
+        // - Not forwarded to SynchronizationContext wait overrides
+        private bool UseTrivialWaits => (_waiterStartTimeMsAndFlags & 1) != 0;
 
         private ushort WaiterStartTimeMs
         {

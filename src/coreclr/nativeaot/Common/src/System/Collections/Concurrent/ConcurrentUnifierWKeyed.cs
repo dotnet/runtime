@@ -84,7 +84,7 @@ namespace System.Collections.Concurrent
     {
         protected ConcurrentUnifierWKeyed()
         {
-            _lock = new Lock(useAlertableWaits: false);
+            _lock = new Lock(useTrivialWaits: true);
             _container = new Container(this);
         }
 

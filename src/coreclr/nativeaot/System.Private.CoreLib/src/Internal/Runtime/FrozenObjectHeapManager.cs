@@ -16,7 +16,7 @@ namespace Internal.Runtime
     {
         public static readonly FrozenObjectHeapManager Instance = new FrozenObjectHeapManager();
 
-        private readonly Lock m_Crst = new Lock(useAlertableWaits: false);
+        private readonly Lock m_Crst = new Lock(useTrivialWaits: true);
         private FrozenObjectSegment m_CurrentSegment;
 
         // Default size to reserve for a frozen segment
