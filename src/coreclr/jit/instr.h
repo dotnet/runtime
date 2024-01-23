@@ -282,6 +282,11 @@ enum insOpts : unsigned
     INS_OPTS_SCALABLE_D,
     INS_OPTS_SCALABLE_Q,
 
+    INS_OPTS_SCALABLE_S_UXTW,
+    INS_OPTS_SCALABLE_S_SXTW,
+    INS_OPTS_SCALABLE_D_UXTW,
+    INS_OPTS_SCALABLE_D_SXTW,
+
     INS_OPTS_MSL,         // Vector Immediate (shifting ones variant)
 
     INS_OPTS_S_TO_4BYTE,  // Single to INT32
@@ -323,9 +328,34 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_VL_2X,               // Variants with a vector length specifier of 2x (eg whilege)
     INS_SCALABLE_OPTS_VL_4X,               // Variants with a vector length specifier of 4x (eg whilege)
 
+    INS_SCALABLE_OPTS_LSL_N,               // Variants with a LSL #N (eg {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>, LSL #2])
+    INS_SCALABLE_OPTS_MOD_N,               // Variants with a <mod> #N (eg {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2])
+
     // Removable once REG_V0 and REG_P0 are distinct
     INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)
     INS_SCALABLE_OPTS_UNPREDICATED_WIDE, // Variants without a predicate and wide elements (eg asr)
+};
+
+// Maps directly to the pattern used in SVE instructions such as cntb.
+enum insSvePattern : unsigned
+{
+    SVE_PATTERN_POW2 = 0,   // The largest power of 2.
+    SVE_PATTERN_VL1 = 1,    // 1 element.
+    SVE_PATTERN_VL2 = 2,    // 2 elements.
+    SVE_PATTERN_VL3 = 3,    // 3 elements.
+    SVE_PATTERN_VL4 = 4,    // 4 elements.
+    SVE_PATTERN_VL5 = 5,    // 5 elements.
+    SVE_PATTERN_VL6 = 6,    // 6 elements.
+    SVE_PATTERN_VL7 = 7,    // 7 elements.
+    SVE_PATTERN_VL8 = 8,    // 8 elements.
+    SVE_PATTERN_VL16 = 9,   // 16 elements.
+    SVE_PATTERN_VL32 = 10,  // 32 elements.
+    SVE_PATTERN_VL64 = 11,  // 64 elements.
+    SVE_PATTERN_VL128 = 12, // 128 elements.
+    SVE_PATTERN_VL256 = 13, // 256 elements.
+    SVE_PATTERN_MUL4 = 29,  // The largest multiple of 3.
+    SVE_PATTERN_MUL3 = 30,  // The largest multiple of 4.
+    SVE_PATTERN_ALL = 31    // All available (implicitly a multiple of two).
 };
 
 enum insCond : unsigned

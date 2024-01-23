@@ -12,9 +12,7 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.Extensions.Options.Generators
 {
-#pragma warning disable RS1041 // we're multi-targeting so this is fine
     [Generator]
-#pragma warning restore
     public class OptionsValidatorGenerator : IIncrementalGenerator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
