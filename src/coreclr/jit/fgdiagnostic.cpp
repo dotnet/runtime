@@ -1936,7 +1936,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
     // Call `dspBlockNum()` to get the block number to print, and update `printedBlockWidth` with the width
     // of the generated string. Note that any computation using `printedBlockWidth` must be done after all
     // calls to this function.
-    auto dspBlockNum = [elideNext, nextBlock, &printedBlockWidth](BasicBlock* b) -> const char* {
+    auto dspBlockNum = [nextBlock, &printedBlockWidth](BasicBlock* b) -> const char* {
         static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
         static int  nextBufferIndex = 0;
 
@@ -2059,11 +2059,6 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 printf("%*s (return)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
-            default:
-                printedBlockWidth = 9 /* kind */;
-                printf("%*s (??????)", blockTargetFieldWidth - printedBlockWidth, "");
-                break;
-
             case BBJ_SWITCH:
             {
                 printf("->");
@@ -2101,6 +2096,12 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 printf(" (switch)");
             }
             break;
+
+            default:
+                // Bad Kind
+                printedBlockWidth = 9 /* kind */;
+                printf("%*s (ERROR )", blockTargetFieldWidth - printedBlockWidth, "");
+                break;
         }
     }
 
