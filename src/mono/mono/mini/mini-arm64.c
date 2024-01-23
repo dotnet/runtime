@@ -1862,20 +1862,18 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [pindex]);
-			if (klass) {
-				if (klass == swift_self && sig->pinvoke) {
-					cinfo->gr--;
+			if (klass == swift_self && sig->pinvoke) {
+				cinfo->gr--;
+				add_param (cinfo, ainfo, sig->params [pindex], FALSE);
+				ainfo->reg = ARMREG_R20;
+				continue;
+			} else if (klass == swift_error) {
+				if (sig->pinvoke)
+					ainfo->reg = ARMREG_R21;
+				else
 					add_param (cinfo, ainfo, sig->params [pindex], FALSE);
-					ainfo->reg = ARMREG_R20;
-					continue;
-				} else if (klass == swift_error) {
-					if (sig->pinvoke)
-						ainfo->reg = ARMREG_R21;
-					else
-						add_param (cinfo, ainfo, sig->params [pindex], FALSE);
-					ainfo->storage = ArgSwiftError;
-					continue;
-				}
+				ainfo->storage = ArgSwiftError;
+				continue;
 			}
 		}
 #endif
@@ -2040,13 +2038,11 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
-			if (klass) {
-				if (klass == swift_self) {
-					storage = &ccontext->gregs [PARAM_REGS + 1];
-				} else if (klass == swift_error) {
-					*(gpointer*)storage = 0;
-					continue;
-				}
+			if (klass == swift_self) {
+				storage = &ccontext->gregs [PARAM_REGS + 1];
+			} else if (klass == swift_error) {
+				*(gpointer*)storage = 0;
+				continue;
 			}
 		}
 #endif
@@ -6329,15 +6325,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		break;
 	}
 
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-	if (mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
-		if (cfg->arch.swift_error_var) {
-			MonoInst *ins = cfg->arch.swift_error_var;
-			code = emit_ldrx (code, ARMREG_IP0, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
-			code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
-		}
+	if (cfg->arch.swift_error_var) {
+		MonoInst *ins = cfg->arch.swift_error_var;
+		code = emit_ldrx (code, ARMREG_IP0, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
+		code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
 	}
-#endif
 
 	/* Destroy frame */
 	code = mono_arm_emit_destroy_frame (code, cfg->stack_offset, (1 << ARMREG_IP0) | (1 << ARMREG_IP1));

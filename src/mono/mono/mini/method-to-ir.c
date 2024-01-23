@@ -7656,7 +7656,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto calli_end;
 				}
 			}
-
 			/* Some wrappers use calli with ftndesc-es */
 			if (cfg->llvm_only && !(cfg->method->wrapper_type &&
 									cfg->method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD &&
