@@ -5915,6 +5915,28 @@ bool MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     return value != 0;
 }
 
+void MethodContext::recIsExactType(CORINFO_CLASS_HANDLE cls, bool result)
+{
+    if (IsExactType == nullptr)
+        IsExactType = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = result ? 1 : 0;
+    IsExactType->Add(key, value);
+    DEBUG_REC(dmpIsExactType(key, value));
+}
+void MethodContext::dmpIsExactType(DWORDLONG key, DWORD value)
+{
+    printf("IsExactType key cls-%016" PRIX64 ", value res-%u", key, value);
+}
+bool MethodContext::repIsExactType(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(IsExactType, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsExactType(key, value));
+    return value != 0;
+}
+
 void MethodContext::recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE underlyingType, TypeCompareState result)
 {
     if (IsEnum == nullptr)

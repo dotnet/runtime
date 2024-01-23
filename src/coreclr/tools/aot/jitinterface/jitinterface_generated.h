@@ -92,6 +92,7 @@ struct JitInterfaceCallbacks
     TypeCompareState (* compareTypesForCast)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
     TypeCompareState (* compareTypesForEquality)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     bool (* isMoreSpecificType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
+    bool (* isExactType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     TypeCompareState (* isEnum)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType);
     CORINFO_CLASS_HANDLE (* getParentType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoType (* getChildType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clsHnd, CORINFO_CLASS_HANDLE* clsRet);
@@ -984,6 +985,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->isMoreSpecificType(_thisHandle, &pException, cls1, cls2);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool isExactType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->isExactType(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

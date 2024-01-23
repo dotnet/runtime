@@ -1062,8 +1062,6 @@ namespace Internal.JitInterface
         {
             CorInfoFlag result = 0;
 
-            // CORINFO_FLG_PROTECTED - verification only
-
             if (method.Signature.IsStatic)
                 result |= CorInfoFlag.CORINFO_FLG_STATIC;
 
@@ -2061,9 +2059,6 @@ namespace Internal.JitInterface
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
-            if (type.HasVariance)
-                result |= CorInfoFlag.CORINFO_FLG_VARIANCE;
-
             if (type.IsDelegate)
                 result |= CorInfoFlag.CORINFO_FLG_DELEGATE;
 
@@ -2912,6 +2907,41 @@ namespace Internal.JitInterface
 
             // If the common parent is type1, then type2 is more specific.
             return merged == type1;
+        }
+
+        private bool isExactType(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            while (type.IsArray)
+            {
+                ArrayType arrayType = (ArrayType)type;
+
+                // Single dimensional array with non-zero bounds may be SZ array.
+                if (arrayType.IsMdArray && arrayType.Rank == 1)
+                    return false;
+
+                type = arrayType.ElementType;
+
+                // Arrays of primitives are interchangeable with arrays of enums of the same underlying type.
+                if (type.IsPrimitive || type.IsEnum)
+                    return false;
+            }
+
+            // Use conservative answer for pointers and custom types.
+            if (!type.IsDefType)
+                return false;
+
+            // Use conservative answer for equivalent and variant types.
+            if (type.HasTypeEquivalence || type.HasVariance)
+                return false;
+
+            // Valuetypes are invariant. This assumes that introducing type equivalence to an existing type
+            // is not compatible change.
+            if (type.IsValueType)
+                return true;
+
+            return _compilation.IsEffectivelySealed(type);
         }
 
         private TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)

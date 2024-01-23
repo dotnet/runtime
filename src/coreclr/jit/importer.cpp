@@ -13597,29 +13597,9 @@ methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED
 //    true if class is final and not subject to special casting from
 //    variance or similar.
 //
-// Note:
-//    We are conservative on arrays of primitive types here.
-
 bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
 {
-    DWORD flags     = info.compCompHnd->getClassAttribs(classHnd);
-    DWORD flagsMask = CORINFO_FLG_FINAL | CORINFO_FLG_VARIANCE | CORINFO_FLG_ARRAY;
-
-    if ((flags & flagsMask) == CORINFO_FLG_FINAL)
-    {
-        return true;
-    }
-    if ((flags & flagsMask) == (CORINFO_FLG_FINAL | CORINFO_FLG_ARRAY))
-    {
-        CORINFO_CLASS_HANDLE arrayElementHandle = nullptr;
-        CorInfoType          type               = info.compCompHnd->getChildType(classHnd, &arrayElementHandle);
-
-        if ((type == CORINFO_TYPE_CLASS) || (type == CORINFO_TYPE_VALUECLASS))
-        {
-            return impIsClassExact(arrayElementHandle);
-        }
-    }
-    return false;
+    return info.compCompHnd->isExactType(classHnd);
 }
 
 //------------------------------------------------------------------------

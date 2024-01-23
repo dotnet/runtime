@@ -719,6 +719,10 @@ public:
     void dmpIsMoreSpecificType(DLDL key, DWORD value);
     bool repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
+    void recIsExactType(CORINFO_CLASS_HANDLE cls, bool result);
+    void dmpIsExactType(DWORDLONG key, DWORD value);
+    bool repIsExactType(CORINFO_CLASS_HANDLE cls);
+
     void recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE underlyingType, TypeCompareState result);
     void dmpIsEnum(DWORDLONG key, DLD value);
     TypeCompareState repIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType);
@@ -1148,6 +1152,7 @@ enum mcPackets
     Packet_GetTypeLayout = 212,
     Packet_HaveSameMethodDefinition = 213,
     Packet_NotifyMethodInfoUsage = 214,
+    Packet_IsExactType = 215,
 };
 
 void SetDebugDumpVariables();

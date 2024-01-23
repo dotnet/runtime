@@ -342,6 +342,9 @@ bool isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2) override;
 
+bool isExactType(
+          CORINFO_CLASS_HANDLE cls) override;
+
 TypeCompareState isEnum(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CLASS_HANDLE* underlyingType) override;

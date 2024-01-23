@@ -3914,9 +3914,6 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
         if (VMClsHnd.IsCanonicalSubtype())
             ret |= CORINFO_FLG_SHAREDINST;
 
-        if (pMT->HasVariance())
-            ret |= CORINFO_FLG_VARIANCE;
-
         if (pMT->ContainsPointers() || pMT == g_TypedReferenceMT)
             ret |= CORINFO_FLG_CONTAINS_GC_PTR;
 
@@ -4544,18 +4541,9 @@ TypeCompareState CEEInfo::compareTypesForEquality(
 
 
 /*********************************************************************/
-static BOOL isMoreSpecificTypeHelper(
-       CORINFO_CLASS_HANDLE        cls1,
-       CORINFO_CLASS_HANDLE        cls2)
+static BOOL isMoreSpecificTypeHelper(TypeHandle hnd1, TypeHandle hnd2)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    TypeHandle hnd1 = TypeHandle(cls1);
-    TypeHandle hnd2 = TypeHandle(cls2);
+    STANDARD_VM_CONTRACT;
 
     // We can't really reason about equivalent types. Just
     // assume the new type is not more specific.
@@ -4599,7 +4587,58 @@ bool CEEInfo::isMoreSpecificType(
 
     JIT_TO_EE_TRANSITION();
 
-    result = isMoreSpecificTypeHelper(cls1, cls2);
+    result = isMoreSpecificTypeHelper(TypeHandle(cls1), TypeHandle(cls2));
+
+    EE_TO_JIT_TRANSITION();
+    return result;
+}
+
+static bool isExactTypeHelper(TypeHandle th)
+{
+    STANDARD_VM_CONTRACT;
+
+    while (th.IsArray())
+    {
+        MethodTable* pMT = th.AsMethodTable();
+
+        // Single dimensional array with non-zero bounds may be SZ array.
+        if (pMT->IsMultiDimArray() && pMT->GetRank() == 1)
+            return false;
+
+        th = pMT->GetArrayElementTypeHandle();
+
+        // Arrays of primitives are interchangeable with arrays of enums of the same underlying type.
+        if (CorTypeInfo::IsPrimitiveType(th.GetVerifierCorElementType()))
+            return false;
+    }
+
+    // Use conservative answer for pointers.
+    if (th.IsTypeDesc())
+        return false;
+
+    MethodTable* pMT = th.AsMethodTable();
+
+    // Use conservative answer for equivalent and variant types.
+    if (pMT->HasTypeEquivalence() || pMT->HasVariance())
+        return false;
+
+    return pMT->IsSealed();
+}
+
+// Return if a class handle can only describe values of exactly one type.
+bool CEEInfo::isExactType(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    result = isExactTypeHelper(TypeHandle(cls));
 
     EE_TO_JIT_TRANSITION();
     return result;
@@ -6614,8 +6653,6 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
 
     DWORD attribs = pMD->GetAttrs();
 
-    if (IsMdFamily(attribs))
-        result |= CORINFO_FLG_PROTECTED;
     if (IsMdStatic(attribs))
         result |= CORINFO_FLG_STATIC;
     if (pMD->IsSynchronized())
