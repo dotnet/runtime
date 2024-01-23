@@ -405,6 +405,10 @@ internal sealed class Xcode
                     continue;
 
                 string libName = Path.GetFileNameWithoutExtension(lib);
+                if(libName.StartsWith("libSystem.Globalization", StringComparison.OrdinalIgnoreCase) && hybridGlobalization)
+                    continue;
+                else if (libName.StartsWith("libSystem.HybridGlobalization", StringComparison.OrdinalIgnoreCase) && !hybridGlobalization)
+                    continue;
                 // libmono must always be statically linked, for other librarires we can use dylibs
                 bool dylibExists = libName != "libmonosgen-2.0" && dylibs.Any(dylib => Path.GetFileName(dylib) == libName + ".dylib");
 
@@ -532,6 +536,10 @@ internal sealed class Xcode
             foreach (string aFile in Directory.GetFiles(workspace, "*.a"))
             {
                 string aFileName = Path.GetFileNameWithoutExtension(aFile);
+                if(aFileName.StartsWith("libSystem.Globalization", StringComparison.OrdinalIgnoreCase) && hybridGlobalization)
+                    continue;
+                else if (aFileName.StartsWith("libSystem.HybridGlobalization", StringComparison.OrdinalIgnoreCase) && !hybridGlobalization)
+                    continue;
                 pinvokeOverrides.AppendLine($"        \"{aFileName}\",");
 
                 // also register with or without "lib" prefix

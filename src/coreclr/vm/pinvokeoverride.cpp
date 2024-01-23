@@ -11,7 +11,6 @@
 #include "pinvokeoverride.h"
 
 extern "C" const void* GlobalizationResolveDllImport(const char* name);
-extern "C" const void* HybridGlobalizationResolveDllImport(const char* name);
 
 namespace
 {
@@ -23,9 +22,6 @@ namespace
 #define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
 #else
 #define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
-#if defined(__APPLE__)
-#define HYBRID_GLOBALIZATION_DLL_NAME "libSystem.HybridGlobalization.Native"
-#endif
 #endif
 
 // here we handle PInvokes whose implementation is always statically linked (even in .so/.dll case)
@@ -35,13 +31,6 @@ static const void* DefaultResolveDllImport(const char* libraryName, const char* 
     {
         return GlobalizationResolveDllImport(entrypointName);
     }
-#if defined(__APPLE__)
-    // Add hybrid globalization here
-    if (strcmp(libraryName, HYBRID_GLOBALIZATION_DLL_NAME) == 0)
-    {
-        return HybridGlobalizationResolveDllImport(entrypointName);
-    }
-#endif
     return nullptr;
 }
 

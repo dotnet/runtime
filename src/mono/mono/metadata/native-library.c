@@ -786,25 +786,6 @@ get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 	return flags;
 }
 
-// #ifndef NO_GLOBALIZATION_SHIM
-// #ifdef HOST_WIN32
-// #define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
-// #else
-// #define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
-// #endif
-
-// static gpointer
-// default_resolve_dllimport (const char *dll, const char *func)
-// {
-// 	if (strcmp (dll, GLOBALIZATION_DLL_NAME) == 0) {
-// 		const void *method_impl = GlobalizationResolveDllImport (func);
-// 		if (method_impl)
-// 			return (gpointer)method_impl;
-// 	}
-
-// 	return NULL;
-// }
-// #endif // NO_GLOBALIZATION_SHIM
 
 gpointer
 lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
