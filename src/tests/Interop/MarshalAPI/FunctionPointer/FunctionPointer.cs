@@ -125,6 +125,16 @@ public partial class FunctionPtr
         {
             return ((delegate* unmanaged[Cdecl]<U, T>)fnptr)(arg);
         }
+
+        internal static unsafe BlittableGeneric<T> WrappedGenericCalli<U>(void* fnptr, U arg)
+        {
+            return ((delegate* unmanaged[Cdecl]<U, BlittableGeneric<T>>)fnptr)(arg);
+        }
+    }
+
+    struct BlittableGeneric<T>
+    {
+        public int X;
     }
 
     [Fact]
@@ -133,9 +143,24 @@ public partial class FunctionPtr
         Console.WriteLine($"Running {nameof(RunGenericFunctionPointerTest)}...");
         int outVar = 0;
         int expectedValue = 42;
+
         unsafe
         {
             outVar = GenericCaller<int>.GenericCalli((delegate* unmanaged[Cdecl]<float, int>)&UnmanagedExportedFunction, 42.0f);
+        }
+        Assert.Equal(expectedValue, outVar);
+        
+        outVar = 0;
+        unsafe
+        {
+            outVar = GenericCaller<int>.WrappedGenericCalli((delegate* unmanaged[Cdecl]<float, int>)&UnmanagedExportedFunction, 42.0f).X;
+        }
+        Assert.Equal(expectedValue, outVar);
+
+        outVar = 0;
+        unsafe
+        {
+            outVar = GenericCaller<string>.WrappedGenericCalli((delegate* unmanaged[Cdecl]<float, int>)&UnmanagedExportedFunction, 42.0f).X;
         }
         Assert.Equal(expectedValue, outVar);
     }
@@ -150,6 +175,8 @@ public partial class FunctionPtr
             try
             {
                 lib = NativeLibrary.Load(nameof(FunctionPointerNative));
+                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<int>.GenericCalli((delegate* unmanaged[Cdecl]<string, int>)NativeLibrary.GetExport(lib, "ReturnParameter"), "test"));
+                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged[Cdecl]<int, string>)NativeLibrary.GetExport(lib, "ReturnParameter"), "test"));
                 Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged[Cdecl]<string, string>)NativeLibrary.GetExport(lib, "ReturnParameter"), "test"));
             }
             finally
