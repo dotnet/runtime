@@ -205,6 +205,13 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     PTR_UInt8 gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
 
+#ifdef TARGET_ARM
+    // Ensure that code offset doesn't have the Thumb bit set. We need
+    // it to be aligned to instruction start to make the !isActiveStackFrame
+    // branch below work.
+    ASSERT(((uintptr_t)codeOffset & 1) == 0);
+#endif
+
     if (!isActiveStackFrame)
     {
         // If we are not in the active method, we are currently pointing
@@ -1000,6 +1007,8 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
 
 #if defined(TARGET_ARM)
+    // Ensure that PC doesn't have the Thumb bit set. Prolog and epilog
+    // checks depend on it.
     ASSERT(((uintptr_t)pRegisterSet->IP & 1) == 0);
 #endif
 
