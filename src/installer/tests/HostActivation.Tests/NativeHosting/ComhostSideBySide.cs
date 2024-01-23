@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
-using System.Runtime.InteropServices;
 
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.NET.HostModel.ComHost;
@@ -33,7 +31,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             CommandResult result = Command.Create(sharedState.ComSxsPath, args)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(sharedState.ComLibraryFixture.BuiltDotnet.BinPath)
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
 
@@ -51,7 +49,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             CommandResult result = Command.Create(sharedState.ComSxsPath, args)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(sharedState.ComLibraryFixture.BuiltDotnet.BinPath)
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
 
@@ -99,16 +97,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 }
 
                 string comsxsDirectory = BaseDirectory;
-                string regFreeManifestName = $"{ ComLibraryFixture.TestProject.AssemblyName }.X.manifest";
+                string regFreeManifestName = $"{ ComLibrary.AssemblyName }.X.manifest";
                 string regFreeManifestPath = Path.Combine(comsxsDirectory, regFreeManifestName);
-                using (var assemblyStream = new FileStream(ComLibraryFixture.TestProject.AppDll, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.Read))
+                using (var assemblyStream = new FileStream(ComLibrary.AppDll, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.Read))
                 using (var peReader = new System.Reflection.PortableExecutable.PEReader(assemblyStream))
                 {
                     if (peReader.HasMetadata)
                     {
                         MetadataReader reader = peReader.GetMetadataReader();
                         RegFreeComManifest.CreateManifestFromClsidmap(
-                            ComLibraryFixture.TestProject.AssemblyName,
+                            ComLibrary.AssemblyName,
                             Path.GetFileName(ComHostPath),
                             reader.GetAssemblyDefinition().Version.ToString(),
                             ClsidMapPath,
@@ -121,7 +119,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 string comsxsName = Binaries.GetExeFileNameForCurrentPlatform("comsxs");
                 ComSxsPath = Path.Combine(comsxsDirectory, comsxsName);
                 File.Copy(
-                    Path.Combine(RepoDirectories.HostTestArtifacts, comsxsName),
+                    Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, comsxsName),
                     ComSxsPath);
 
                 ManagedHostFixture_FrameworkDependent = new TestProjectFixture("ManagedHost", RepoDirectories)
@@ -136,9 +134,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 // Copy the ComLibrary output and comhost to the ComSxS and ManagedHost directories
                 string[] toCopy = {
-                    ComLibraryFixture.TestProject.AppDll,
-                    ComLibraryFixture.TestProject.DepsJson,
-                    ComLibraryFixture.TestProject.RuntimeConfigJson,
+                    ComLibrary.AppDll,
+                    ComLibrary.DepsJson,
+                    ComLibrary.RuntimeConfigJson,
                     ComHostPath,
                 };
                 foreach (string filePath in toCopy)

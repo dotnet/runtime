@@ -21,15 +21,16 @@ static bool strictArmAsm;
 
 enum PredicateType
 {
-    PREDICATE_NONE = 0,
-    PREDICATE_MERGE,
-    PREDICATE_ZERO,
-    PREDICATE_SIZED,
+    PREDICATE_NONE = 0, // Predicate printed with no extensions
+    PREDICATE_MERGE,    // Predicate printed with /m
+    PREDICATE_ZERO,     // Predicate printed with /z
+    PREDICATE_SIZED,    // Predicate printed with element size
+    PREDICATE_N_SIZED,  // Predicate printed printed as counter with element size
 };
 
 const char* emitSveRegName(regNumber reg);
 const char* emitVectorRegName(regNumber reg);
-const char* emitPredicateRegName(regNumber reg);
+const char* emitPredicateRegName(regNumber reg, PredicateType ptype);
 
 void emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
@@ -46,6 +47,7 @@ void emitDispFlags(insCflags flags);
 void emitDispBarrier(insBarrier barrier);
 void emitDispShiftOpts(insOpts opt);
 void emitDispExtendOpts(insOpts opt);
+void emitDispSveExtendOpts(insOpts opt);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
@@ -483,6 +485,14 @@ static code_t insEncodeReg3Scale(bool isScaled);
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 static code_t insEncodeSveElemsize(emitAttr size);
 
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+// This specifically encodes the size at bit locations '22-21'.
+static code_t insEncodeSveElemsize_22_to_21(emitAttr size);
+
+// Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
+// This specifically encodes the field 'sz' at bit location '21'.
+static code_t insEncodeSveElemsize_sz_21(emitAttr size);
+
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
@@ -491,7 +501,8 @@ static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 static int insGetSveReg1ListSize(instruction ins);
 
 // Returns the predicate type for the given SVE format.
-static PredicateType insGetPredicateType(insFormat fmt);
+// Register position is required for instructions with multiple predicates.
+static PredicateType insGetPredicateType(insFormat fmt, int regpos = 0);
 
 // Returns true if the specified instruction can encode the 'dtype' field.
 static bool canEncodeSveElemsize_dtype(instruction ins);
@@ -1039,6 +1050,12 @@ inline static bool insOptsScalableWide(insOpts opt)
 {
     // `opt` is any of the scalable types that are valid for widening to size D.
     return ((opt == INS_OPTS_SCALABLE_B) || (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S));
+}
+
+inline static bool insOptsScalable32bitExtends(insOpts opt)
+{
+    return ((opt == INS_OPTS_SCALABLE_S_UXTW) || (opt == INS_OPTS_SCALABLE_S_SXTW) ||
+            (opt == INS_OPTS_SCALABLE_D_UXTW) || (opt == INS_OPTS_SCALABLE_D_SXTW));
 }
 
 inline static bool insScalableOptsNone(insScalableOpts sopt)

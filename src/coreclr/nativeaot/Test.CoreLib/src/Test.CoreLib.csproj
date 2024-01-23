@@ -160,9 +160,6 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IsByRefLikeAttribute.cs">
       <Link>Runtime.Base\src\System\Runtime\CompilerServices\IsByRefLikeAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\EETypePtr.cs">
-      <Link>System\EETypePtr.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\ExceptionIDs.cs">
       <Link>System\Runtime\ExceptionIDs.cs</Link>
     </Compile>

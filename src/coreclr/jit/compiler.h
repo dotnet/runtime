@@ -1516,7 +1516,7 @@ enum class PhaseChecks : unsigned int
     CHECK_UNIQUE        = 1 << 1, // tree node uniqueness
     CHECK_FG            = 1 << 2, // flow graph integrity
     CHECK_EH            = 1 << 3, // eh table integrity
-    CHECK_LOOPS         = 1 << 4, // loop table integrity
+    CHECK_LOOPS         = 1 << 4, // loop integrity/canonicalization
     CHECK_PROFILE       = 1 << 5, // profile data integrity
     CHECK_LINKED_LOCALS = 1 << 6, // check linked list of locals
 };
@@ -1887,60 +1887,6 @@ typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, TestLabelAndNum> NodeToT
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif // DEBUG
 
-//-------------------------------------------------------------------------
-// LoopFlags: flags for the loop table.
-//
-enum LoopFlags : unsigned short
-{
-    LPFLG_EMPTY = 0,
-
-    // LPFLG_UNUSED  = 0x0001,
-    // LPFLG_UNUSED  = 0x0002,
-    LPFLG_ITER = 0x0004, // loop of form: for (i = icon or expression; test_condition(); i++)
-    // LPFLG_UNUSED    = 0x0008,
-
-    LPFLG_CONTAINS_CALL = 0x0010, // If executing the loop body *may* execute a call
-    // LPFLG_UNUSED     = 0x0020,
-    LPFLG_CONST_INIT = 0x0040, // iterator is initialized with a constant (found in lpConstInit)
-    LPFLG_SIMD_LIMIT = 0x0080, // iterator is compared with vector element count (found in lpConstLimit)
-
-    LPFLG_VAR_LIMIT    = 0x0100, // iterator is compared with a local var (var # found in lpVarLimit)
-    LPFLG_CONST_LIMIT  = 0x0200, // iterator is compared with a constant (found in lpConstLimit)
-    LPFLG_ARRLEN_LIMIT = 0x0400, // iterator is compared with a.len or a[i].len (found in lpArrLenLimit)
-    LPFLG_HAS_PREHEAD  = 0x0800, // lpHead is known to be a preHead for this loop
-
-    LPFLG_REMOVED     = 0x1000, // has been removed from the loop table (unrolled or optimized away)
-    LPFLG_DONT_UNROLL = 0x2000, // do not unroll this loop
-    LPFLG_ASGVARS_YES = 0x4000, // "lpAsgVars" has been computed
-    LPFLG_ASGVARS_INC = 0x8000, // "lpAsgVars" is incomplete -- vars beyond those representable in an AllVarSet
-                                // type are assigned to.
-};
-
-inline constexpr LoopFlags operator~(LoopFlags a)
-{
-    return (LoopFlags)(~(unsigned short)a);
-}
-
-inline constexpr LoopFlags operator|(LoopFlags a, LoopFlags b)
-{
-    return (LoopFlags)((unsigned short)a | (unsigned short)b);
-}
-
-inline constexpr LoopFlags operator&(LoopFlags a, LoopFlags b)
-{
-    return (LoopFlags)((unsigned short)a & (unsigned short)b);
-}
-
-inline LoopFlags& operator|=(LoopFlags& a, LoopFlags b)
-{
-    return a = (LoopFlags)((unsigned short)a | (unsigned short)b);
-}
-
-inline LoopFlags& operator&=(LoopFlags& a, LoopFlags b)
-{
-    return a = (LoopFlags)((unsigned short)a & (unsigned short)b);
-}
-
 // Represents a depth-first search tree of the flow graph.
 class FlowGraphDfsTree
 {
@@ -2006,13 +1952,15 @@ struct NaturalLoopIterInfo
     // The local that is the induction variable.
     unsigned IterVar = BAD_VAR_NUM;
 
+#ifdef DEBUG
+    // Tree that initializes induction varaible outside the loop.
+    // Only valid if HasConstInit is true.
+    GenTree* InitTree = nullptr;
+#endif
+
     // Constant value that the induction variable is initialized with, outside
     // the loop. Only valid if HasConstInit is true.
     int ConstInitValue = 0;
-
-    // Block outside the loop that initializes the induction variable. Only
-    // valid if HasConstInit is true.
-    BasicBlock* InitBlock = nullptr;
 
     // Tree that has the loop test for the induction variable.
     GenTree* TestTree = nullptr;
@@ -2022,6 +1970,9 @@ struct NaturalLoopIterInfo
 
     // Tree that mutates the induction variable.
     GenTree* IterTree = nullptr;
+
+    // Is the loop exited when TestTree is true?
+    bool ExitedOnTrue : 1;
 
     // Whether or not we found an initialization of the induction variable.
     bool HasConstInit : 1;
@@ -2042,7 +1993,8 @@ struct NaturalLoopIterInfo
     bool HasArrayLengthLimit : 1;
 
     NaturalLoopIterInfo()
-        : HasConstInit(false)
+        : ExitedOnTrue(false)
+        , HasConstInit(false)
         , HasConstLimit(false)
         , HasSimdLimit(false)
         , HasInvariantLocalLimit(false)
@@ -2053,7 +2005,6 @@ struct NaturalLoopIterInfo
     int IterConst();
     genTreeOps IterOper();
     var_types IterOperType();
-    bool IsReversed();
     genTreeOps TestOper();
     bool IsIncreasingLoop();
     bool IsDecreasingLoop();
@@ -2062,6 +2013,9 @@ struct NaturalLoopIterInfo
     int ConstLimit();
     unsigned VarLimit();
     bool ArrLenLimit(Compiler* comp, ArrIndex* index);
+
+private:
+    bool IsReversed();
 };
 
 // Represents a natural loop in the flow graph. Natural loops are characterized
@@ -2136,7 +2090,9 @@ class FlowGraphNaturalLoop
 
     void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
     bool MatchLimit(NaturalLoopIterInfo* info, GenTree* test);
-
+    bool CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info);
+    template<typename T>
+    static bool EvaluateRelop(T op1, T op2, genTreeOps oper);
 public:
     BasicBlock* GetHeader() const
     {
@@ -5004,6 +4960,9 @@ public:
     FlowGraphDominatorTree* m_domTree;
     BlockReachabilitySets* m_reachabilitySets;
 
+    bool optLoopsRequirePreHeaders; // Do we require that all loops (in m_loops) have pre-headers?
+    unsigned optNumNaturalLoopsFound; // Number of natural loops found in the loop finding phase
+
     bool fgBBVarSetsInited;
 
     // Track how many artificial ref counts we've added to fgEntryBB (for OSR)
@@ -5820,6 +5779,9 @@ public:
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
     bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
+    PhaseStatus fgLateCastExpansion();
+    bool fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -5914,8 +5876,6 @@ public:
 
     void fgFindBasicBlocks();
 
-    bool fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt);
-
     bool fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionIndex, bool putInTryRegion);
 
     BasicBlock* fgFindInsertPoint(unsigned    regionIndex,
@@ -5958,8 +5918,6 @@ public:
     bool fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext);
 
     void fgCompactBlocks(BasicBlock* block, BasicBlock* bNext);
-
-    void fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext);
 
     BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, bool noFallThroughQuirk = false);
 
@@ -6096,7 +6054,7 @@ public:
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
     void fgDebugCheckLinkedLocals();
     void fgDebugCheckNodesUniqueness();
-    void fgDebugCheckLoopTable();
+    void fgDebugCheckLoops();
     void fgDebugCheckSsa();
 
     void fgDebugCheckTypes(GenTree* tree);
@@ -6554,7 +6512,11 @@ public:
     struct AddCodeDsc
     {
         AddCodeDsc*     acdNext;
-        BasicBlock*     acdDstBlk; // block  to  which we jump
+
+        // Initially the source block of the exception. After fgCreateThrowHelperBlocks, the block to which
+        // we jump to raise the exception.
+        BasicBlock*     acdDstBlk;
+
         unsigned        acdData;
         SpecialCodeKind acdKind; // what kind of a special block is this?
         bool            acdUsed; // do we need to keep this helper block?
@@ -6783,13 +6745,6 @@ protected:
     // Compute the sets of long and float vars (lvaLongVars, lvaFloatVars).
     void optComputeInterestingVarSets();
 
-#ifdef DEBUG
-    bool optAnyChildNotRemoved(unsigned loopNum);
-#endif // DEBUG
-
-    // Mark a loop as removed.
-    void optMarkLoopRemoved(unsigned loopNum);
-
 private:
     // Given a loop mark it and any nested loops as having 'memoryHavoc'
     void optRecordLoopNestsMemoryHavoc(FlowGraphNaturalLoop* loop, MemoryKindSet memoryHavoc);
@@ -6813,7 +6768,6 @@ public:
     PhaseStatus optFindLoopsPhase(); // Finds loops and records them in the loop table
 
     void optFindLoops();
-    void optFindNewLoops();
     bool optCanonicalizeLoops();
     bool optCompactLoops();
     bool optCompactLoop(FlowGraphNaturalLoop* loop);
@@ -6830,267 +6784,12 @@ public:
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
 
-protected:
-    // This enumeration describes what is killed by a call.
-
-    enum callInterf
-    {
-        CALLINT_NONE,       // no interference                               (most helpers)
-        CALLINT_REF_INDIRS, // kills GC ref indirections                     (SETFIELD OBJ)
-        CALLINT_SCL_INDIRS, // kills non GC ref indirections                 (SETFIELD non-OBJ)
-        CALLINT_ALL_INDIRS, // kills both GC ref and non GC ref indirections (SETFIELD STRUCT)
-        CALLINT_ALL,        // kills everything                              (normal method call)
-    };
-
 public:
-    // A "LoopDsc" describes a ("natural") loop.  We (currently) require the body of a loop to be a contiguous (in
-    // bbNext order) sequence of basic blocks.  (At times, we may require the blocks in a loop to be "properly numbered"
-    // in bbNext order; we use comparisons on the bbNum to decide order.)
-    // The blocks that define the body are
-    //   top <= entry <= bottom
-    // The "head" of the loop is a block outside the loop that has "entry" as a successor. We only support loops with a
-    // single 'head' block. The meanings of these blocks are given in the definitions below. Also see the picture at
-    // Compiler::optFindNaturalLoops().
-    struct LoopDsc
-    {
-        BasicBlock* lpHead;   // HEAD of the loop (not part of the looping of the loop) -- has ENTRY as a successor.
-        BasicBlock* lpTop;    // loop TOP (the back edge from lpBottom reaches here). Lexically first block (in bbNext
-                              // order) reachable in this loop.
-        BasicBlock* lpEntry;  // the ENTRY in the loop (in most cases TOP or BOTTOM)
-        BasicBlock* lpBottom; // loop BOTTOM (from here we have a back edge to the TOP)
-        BasicBlock* lpExit;   // if a single exit loop this is the EXIT (in most cases BOTTOM)
-
-        callInterf   lpAsgCall;     // "callInterf" for calls in the loop
-        ALLVARSET_TP lpAsgVars;     // set of vars assigned within the loop (all vars, not just tracked)
-        varRefKinds  lpAsgInds : 8; // set of inds modified within the loop
-
-        LoopFlags lpFlags;
-
-        unsigned char lpExitCnt; // number of exits from the loop
-
-        unsigned char lpParent;  // The index of the most-nested loop that completely contains this one,
-                                 // or else BasicBlock::NOT_IN_LOOP if no such loop exists.
-        unsigned char lpChild;   // The index of a nested loop, or else BasicBlock::NOT_IN_LOOP if no child exists.
-                                 // (Actually, an "immediately" nested loop --
-                                 // no other child of this loop is a parent of lpChild.)
-        unsigned char lpSibling; // The index of another loop that is an immediate child of lpParent,
-                                 // or else BasicBlock::NOT_IN_LOOP.  One can enumerate all the children of a loop
-                                 // by following "lpChild" then "lpSibling" links.
-
-        bool lpLoopHasMemoryHavoc[MemoryKindCount]; // The loop contains an operation that we assume has arbitrary
-                                                    // memory side effects.  If this is set, the fields below
-                                                    // may not be accurate (since they become irrelevant.)
-
-        VARSET_TP lpVarInOut;  // The set of variables that are IN or OUT during the execution of this loop
-        VARSET_TP lpVarUseDef; // The set of variables that are USE or DEF during the execution of this loop
-
-        // The following counts are used for hoisting profitability checks.
-
-        int lpHoistedExprCount; // The register count for the non-FP expressions from inside this loop that have been
-                                // hoisted
-        int lpLoopVarCount;     // The register count for the non-FP LclVars that are read/written inside this loop
-        int lpVarInOutCount;    // The register count for the non-FP LclVars that are alive inside or across this loop
-
-        int lpHoistedFPExprCount; // The register count for the FP expressions from inside this loop that have been
-                                  // hoisted
-        int lpLoopVarFPCount;     // The register count for the FP LclVars that are read/written inside this loop
-        int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or across this loop
-
-        typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN>
-                        FieldHandleSet;
-        FieldHandleSet* lpFieldsModified; // This has entries for all static field and object instance fields modified
-                                          // in the loop.
-
-        typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, bool> ClassHandleSet;
-        ClassHandleSet* lpArrayElemTypesModified; // Bits set indicate the set of sz array element types such that
-                                                  // arrays of that type are modified
-                                                  // in the loop.
-
-        /* The following values are set only for iterator loops, i.e. has the flag LPFLG_ITER set */
-
-        GenTree*   lpIterTree;          // The "i = i <op> const" tree
-        unsigned   lpIterVar() const;   // iterator variable #
-        int        lpIterConst() const; // the constant with which the iterator is incremented
-        genTreeOps lpIterOper() const;  // the type of the operation on the iterator (ADD, SUB, etc.)
-        void       VERIFY_lpIterTree() const;
-
-        var_types lpIterOperType() const; // For overflow instructions
-
-        // Set to the block where we found the initialization for LPFLG_CONST_INIT loops.
-        // Initially, this will be 'head', but 'head' might change if we insert a loop pre-header block.
-        BasicBlock* lpInitBlock;
-
-        int lpConstInit; // initial constant value of iterator : Valid if LPFLG_CONST_INIT
-
-        // The following is for LPFLG_ITER loops only (i.e. the loop condition is "i RELOP const or var")
-
-        GenTree*   lpTestTree;         // pointer to the node containing the loop test
-        genTreeOps lpTestOper() const; // the type of the comparison between the iterator and the limit (GT_LE, GT_GE,
-                                       // etc.)
-
-        bool lpIsIncreasingLoop() const; // if the loop iterator increases from low to high value.
-        bool lpIsDecreasingLoop() const; // if the loop iterator decreases from high to low value.
-
-        void VERIFY_lpTestTree() const;
-
-        bool     lpIsReversed() const; // true if the iterator node is the second operand in the loop condition
-        GenTree* lpIterator() const;   // the iterator node in the loop test
-        GenTree* lpLimit() const;      // the limit node in the loop test
-
-        // Limit constant value of iterator - loop condition is "i RELOP const"
-        // : Valid if LPFLG_CONST_LIMIT
-        int lpConstLimit() const;
-
-        // The lclVar # in the loop condition ( "i RELOP lclVar" )
-        // : Valid if LPFLG_VAR_LIMIT
-        unsigned lpVarLimit() const;
-
-        // The array length in the loop condition ( "i RELOP arr.len" or "i RELOP arr[i][j].len" )
-        // : Valid if LPFLG_ARRLEN_LIMIT
-        bool lpArrLenLimit(Compiler* comp, ArrIndex* index) const;
-
-        // Returns "true" iff this is a "top entry" loop.
-        bool lpIsTopEntry() const
-        {
-            if (lpHead->NextIs(lpEntry))
-            {
-                assert(lpHead->bbFallsThrough() || lpHead->JumpsToNext());
-                assert(lpTop == lpEntry);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        // Returns "true" iff this is removed loop.
-        bool lpIsRemoved() const
-        {
-            return (lpFlags & LPFLG_REMOVED) != 0;
-        }
-
-        // Returns "true" iff "*this" contains the blk.
-        bool lpContains(BasicBlock* blk) const
-        {
-            return lpTop->bbNum <= blk->bbNum && blk->bbNum <= lpBottom->bbNum;
-        }
-
-        // Returns "true" iff "*this" (properly) contains the range [top, bottom] (allowing tops
-        // to be equal, but requiring bottoms to be different.)
-        bool lpContains(BasicBlock* top, BasicBlock* bottom) const
-        {
-            return lpTop->bbNum <= top->bbNum && bottom->bbNum < lpBottom->bbNum;
-        }
-
-        // Returns "true" iff "*this" (properly) contains "lp2" (allowing tops to be equal, but requiring
-        // bottoms to be different.)
-        bool lpContains(const LoopDsc& lp2) const
-        {
-            return lpContains(lp2.lpTop, lp2.lpBottom);
-        }
-
-        // Returns "true" iff "*this" is (properly) contained by the range [top, bottom]
-        // (allowing tops to be equal, but requiring bottoms to be different.)
-        bool lpContainedBy(BasicBlock* top, BasicBlock* bottom) const
-        {
-            return top->bbNum <= lpTop->bbNum && lpBottom->bbNum < bottom->bbNum;
-        }
-
-        // Returns "true" iff "*this" is (properly) contained by "lp2"
-        // (allowing tops to be equal, but requiring bottoms to be different.)
-        bool lpContainedBy(const LoopDsc& lp2) const
-        {
-            return lpContainedBy(lp2.lpTop, lp2.lpBottom);
-        }
-
-        // Returns "true" iff "*this" is disjoint from the range [top, bottom].
-        bool lpDisjoint(BasicBlock* top, BasicBlock* bottom) const
-        {
-            return bottom->bbNum < lpTop->bbNum || lpBottom->bbNum < top->bbNum;
-        }
-        // Returns "true" iff "*this" is disjoint from "lp2".
-        bool lpDisjoint(const LoopDsc& lp2) const
-        {
-            return lpDisjoint(lp2.lpTop, lp2.lpBottom);
-        }
-
-        // Returns "true" iff the loop is well-formed (see code for defn).
-        bool lpWellFormed() const
-        {
-            return lpTop->bbNum <= lpEntry->bbNum && lpEntry->bbNum <= lpBottom->bbNum &&
-                   (lpHead->bbNum < lpTop->bbNum || lpHead->bbNum > lpBottom->bbNum);
-        }
-
-#ifdef DEBUG
-        void lpValidatePreHeader() const
-        {
-            // If this is called, we expect there to be a pre-header.
-            assert(lpFlags & LPFLG_HAS_PREHEAD);
-
-            // The pre-header must unconditionally enter the loop.
-            assert(lpHead->GetUniqueSucc() == lpEntry);
-
-            // The loop block must be marked as a pre-header.
-            assert(lpHead->HasFlag(BBF_LOOP_PREHEADER));
-
-            // The loop entry must have a single non-loop predecessor, which is the pre-header.
-            // We can't assume here that the bbNum are properly ordered, so we can't do a simple lpContained()
-            // check. So, we defer this check, which will be done by `fgDebugCheckLoopTable()`.
-        }
-#endif // DEBUG
-
-        // LoopBlocks: convenience method for enabling range-based `for` iteration over all the
-        // blocks in a loop, e.g.:
-        //    for (BasicBlock* const block : loop->LoopBlocks()) ...
-        // Currently, the loop blocks are expected to be in linear, lexical, `bbNext` order
-        // from `lpTop` through `lpBottom`, inclusive. All blocks in this range are considered
-        // to be part of the loop.
-        //
-        BasicBlockRangeList LoopBlocks() const
-        {
-            return BasicBlockRangeList(lpTop, lpBottom);
-        }
-    };
-
-protected:
-    bool fgMightHaveLoop(); // returns true if there are any back edges
-    bool fgHasLoops;        // True if this method has any loops, set in fgComputeReachability
-
-public:
-    LoopDsc*      optLoopTable;              // loop descriptor table
-    bool          optLoopTableValid;         // info in loop table should be valid
-    bool          optLoopsRequirePreHeaders; // Do we require that all loops (in the loop table) have pre-headers?
-    unsigned char optLoopCount;              // number of tracked loops
-
-    // Every time we rebuild the loop table, we increase the global "loop epoch". Any loop indices or
-    // loop table pointers from the previous epoch are invalid.
-    // TODO: validate this in some way?
-    unsigned optCurLoopEpoch;
-
-    void NewLoopEpoch()
-    {
-        ++optCurLoopEpoch;
-        JITDUMP("New loop epoch %d\n", optCurLoopEpoch);
-    }
-
+    bool fgHasLoops;
 #ifdef DEBUG
     unsigned loopAlignCandidates; // number of candidates identified by placeLoopAlignInstructions
     unsigned loopsAligned;        // number of loops actually aligned
 #endif                          // DEBUG
-
-    bool optRecordLoop(BasicBlock*   head,
-                       BasicBlock*   top,
-                       BasicBlock*   entry,
-                       BasicBlock*   bottom,
-                       BasicBlock*   exit,
-                       unsigned char exitCnt);
-
-#ifdef DEBUG
-    void optPrintLoopInfo(unsigned lnum, bool printVerbose = false);
-    void optPrintLoopInfo(const LoopDsc* loop, bool printVerbose = false);
-    void optPrintLoopTable();
-#endif
 
 protected:
     unsigned optCallCount;         // number of calls made in the method
@@ -7110,33 +6809,10 @@ protected:
 
     void optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk);
 
-    void optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk);
-
-    void optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmarkLoop = false);
-
     bool optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt);
     unsigned optIsLoopIncrTree(GenTree* incr);
-    bool optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned iterVar);
-    bool optComputeIterInfo(GenTree* incr, BasicBlock* from, BasicBlock* to, unsigned* pIterVar);
-    bool optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenTree* init, unsigned iterVar);
     bool optExtractInitTestIncr(
         BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
-
-    void optFindNaturalLoops();
-
-    // Requires "l1" to be a valid loop table index, and not "BasicBlock::NOT_IN_LOOP".
-    // Requires "l2" to be a valid loop table index, or else "BasicBlock::NOT_IN_LOOP".
-    // Returns true iff "l2" is not NOT_IN_LOOP, and "l1" contains "l2".
-    // A loop contains itself.
-    bool optLoopContains(unsigned l1, unsigned l2) const;
-
-    // Returns the lpEntry for given preheader block of a loop
-    BasicBlock* optLoopEntry(BasicBlock* preHeader);
-
-    // Updates the loop table by changing loop "loopInd", whose head is required
-    // to be "from", to be "to".  Also performs this transformation for any
-    // loop nested in "loopInd" that shares the same head as "loopInd".
-    void optUpdateLoopHead(unsigned loopInd, BasicBlock* from, BasicBlock* to);
 
     enum class RedirectBlockOption
     {
@@ -7161,21 +6837,6 @@ protected:
     // Adds "elemType" to the set of modified array element types of "loop" and any parent loops.
     void AddModifiedElemTypeAllContainingLoops(FlowGraphNaturalLoop* loop, CORINFO_CLASS_HANDLE elemType);
 
-    // Returns true if 'block' is an entry block for any loop in 'optLoopTable'
-    bool optIsLoopEntry(BasicBlock* block) const;
-
-    // The depth of the loop described by "lnum" (an index into the loop table.) (0 == top level)
-    unsigned optLoopDepth(unsigned lnum) const
-    {
-        assert(lnum < optLoopCount);
-        unsigned depth = 0;
-        while ((lnum = optLoopTable[lnum].lpParent) != BasicBlock::NOT_IN_LOOP)
-        {
-            ++depth;
-        }
-        return depth;
-    }
-
     // Struct used in optInvertWhileLoop to count interesting constructs to boost the profitability score.
     struct OptInvertCountTreeInfoType
     {
@@ -7199,31 +6860,11 @@ private:
                            var_types  iterType,
                            genTreeOps testOper,
                            bool       unsignedTest,
-                           bool       dupCond,
                            unsigned*  iterCount);
 
 protected:
-    struct isVarAssgDsc
-    {
-        GenTree*     ivaSkip;
-        ALLVARSET_TP ivaMaskVal;        // Set of variables assigned to.  This is a set of all vars, not tracked vars.
-        unsigned     ivaVar;            // Variable we are interested in, or -1
-        varRefKinds  ivaMaskInd;        // What kind of indirect assignments are there?
-        callInterf   ivaMaskCall;       // What kind of calls are there?
-        bool         ivaMaskIncomplete; // Variables not representable in ivaMaskVal were assigned to.
-    };
-
-    bool optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc);
-
-    bool optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTree* skip, unsigned var);
-
-    bool optIsVarAssgLoop(unsigned lnum, unsigned var);
-
-    bool optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKinds inds = VR_NONE);
-
     bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
 
-protected:
     //  The following is the upper limit on how many expressions we'll keep track
     //  of for the CSE analysis.
     //
@@ -7409,8 +7050,6 @@ protected:
 
     void optOptimizeCSEs();
 
-    static callInterf optCallInterf(GenTreeCall* call);
-
 public:
     // VN based copy propagation.
 
@@ -7508,6 +7147,7 @@ public:
 #define OMF_HAS_TLS_FIELD                      0x00010000 // Method contains TLS field access
 #define OMF_HAS_SPECIAL_INTRINSICS             0x00020000 // Method contains special intrinsics expanded in late phases
 #define OMF_HAS_RECURSIVE_TAILCALL             0x00040000 // Method contains recursive tail call
+#define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
 
     // clang-format on
 
@@ -7546,6 +7186,16 @@ public:
     void setMethodHasStaticInit()
     {
         optMethodFlags |= OMF_HAS_STATIC_INIT;
+    }
+
+    bool doesMethodHaveExpandableCasts()
+    {
+        return (optMethodFlags & OMF_HAS_EXPANDABLE_CAST) != 0;
+    }
+
+    void setMethodHasExpandableCasts()
+    {
+        optMethodFlags |= OMF_HAS_EXPANDABLE_CAST;
     }
 
     bool doesMethodHaveGuardedDevirtualization() const
@@ -10716,14 +10366,14 @@ public:
     unsigned  compHndBBtabCount;      // element count of used elements in EH data array
     unsigned  compHndBBtabAllocCount; // element count of allocated elements in EH data array
 
-#if defined(TARGET_X86)
+#if !defined(FEATURE_EH_FUNCLETS)
 
     //-------------------------------------------------------------------------
     //  Tracking of region covered by the monitor in synchronized methods
     void* syncStartEmitCookie; // the emitter cookie for first instruction after the call to MON_ENTER
     void* syncEndEmitCookie;   // the emitter cookie for first instruction after the call to MON_EXIT
 
-#endif // !TARGET_X86
+#endif // !FEATURE_EH_FUNCLETS
 
     Phases      mostRecentlyActivePhase; // the most recently active phase
     PhaseChecks activePhaseChecks;       // the currently active phase checks
@@ -12192,7 +11842,6 @@ extern Histogram computeReachabilitySetsIterationTable;
 
 extern unsigned  totalLoopMethods;        // counts the total number of methods that have natural loops
 extern unsigned  maxLoopsPerMethod;       // counts the maximum number of loops a method has
-extern unsigned  totalLoopOverflows;      // # of methods that identified more loops than we can represent
 extern unsigned  totalLoopCount;          // counts the total number of natural loops
 extern unsigned  totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
 extern unsigned  totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent

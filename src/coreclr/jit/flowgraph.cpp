@@ -266,16 +266,8 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock*   top                = block;
-        unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
-
-        BBKinds       oldJumpKind = top->GetKind();
-        unsigned char lpIndex     = top->bbNatLoopNum;
-
-        if (oldJumpKind == BBJ_COND)
-        {
-            lpIndexFallThrough = top->GetFalseTarget()->bbNatLoopNum;
-        }
+        BasicBlock* top         = block;
+        BBKinds     oldJumpKind = top->GetKind();
 
         BasicBlock* poll = fgNewBBafter(BBJ_ALWAYS, top, true);
         bottom           = fgNewBBafter(top->GetKind(), poll, true);
@@ -301,24 +293,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // Mark Poll as rarely run.
         poll->bbSetRunRarely();
-
-        if (optLoopTableValid)
-        {
-            poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
-
-            bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
-            if (lpIndex != BasicBlock::NOT_IN_LOOP)
-            {
-                // Set the new lpBottom in the natural loop table
-                optLoopTable[lpIndex].lpBottom = bottom;
-            }
-
-            if (lpIndexFallThrough != BasicBlock::NOT_IN_LOOP)
-            {
-                // Set the new lpHead in the natural loop table
-                optLoopTable[lpIndexFallThrough].lpHead = bottom;
-            }
-        }
 
         // Add the GC_CALL node to Poll.
         Statement* pollStmt = fgNewStmtAtEnd(poll, call);
@@ -1868,7 +1842,7 @@ public:
                 return;
             }
 
-            // We'e reached our threshold
+            // We've reached our threshold
             mergingReturns = true;
 
             // Merge any returns we've already identified
@@ -2478,29 +2452,25 @@ PhaseStatus Compiler::fgAddInternal()
 
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
-        GenTree* tree = NULL;
+        GenTree* tree = nullptr;
 
         /* Insert the expression "enterCrit(this)" or "enterCrit(handle)" */
 
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, tree);
         }
         else
         {
             noway_assert(lvaTable[info.compThisArg].lvType == TYP_REF);
-
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
         }
 
         /* Create a new basic block and stick the call in it */
 
         fgEnsureFirstBBisScratch();
-
         fgNewStmtAtEnd(fgFirstBB, tree);
 
 #ifdef DEBUG
@@ -2522,13 +2492,11 @@ PhaseStatus Compiler::fgAddInternal()
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree);
         }
         else
         {
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
         }
 
@@ -2537,15 +2505,16 @@ PhaseStatus Compiler::fgAddInternal()
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nSynchronized method - Add exit expression ");
-            printTreeID(tree);
+            printf("\nSynchronized method - Add exitCrit statement in single return block %s\n",
+                   genReturnBB->dspToString());
+            gtDispTree(tree);
             printf("\n");
         }
 #endif
 
         // Reset cookies used to track start and end of the protected region in synchronized methods
-        syncStartEmitCookie = NULL;
-        syncEndEmitCookie   = NULL;
+        syncStartEmitCookie = nullptr;
+        syncEndEmitCookie   = nullptr;
         madeChanges         = true;
     }
 
@@ -3539,15 +3508,15 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 }
 
 //------------------------------------------------------------------------
-// fgFindExcptnTarget: finds the block to jump that will throw a given kind of exception
+// fgFindExcptnTarget: finds the block to jump to that will throw a given kind of exception
 //
 // Arguments:
-//    kind - kind of exception to throw
+//    kind -- kind of exception to throw
 //    refData -- bbThrowIndex of the block that will jump to the throw helper
 //
 // Return Value:
 //    Code descriptor for the appropriate throw helper block, or nullptr if no such
-//    descriptor exists
+//    descriptor exists.
 //
 Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
 {
@@ -3559,7 +3528,7 @@ Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigne
 
     if (add == nullptr)
     {
-        // We should't be asking for these blocks late in compilation
+        // We shouldn't be asking for these blocks late in compilation
         // unless we know there are entries to be found.
         assert(!fgRngChkThrowAdded);
     }
@@ -4573,23 +4542,12 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
         return;
     }
 
-    // Display: LOOP# (old LOOP#) / header / parent loop# / blocks / entry edges / exit edges / back edges
+    // Display: LOOP# / header / parent loop# / blocks / entry edges / exit edges / back edges
     // Blocks can compacted be "[top .. bottom]" if lexically adjacent and no non-loop blocks in
     // the range. Otherwise, print a verbose list of blocks.
 
     Compiler* comp = loop->GetDfsTree()->GetCompiler();
     printf(FMT_LP, loop->GetIndex());
-
-    // We might want to print out the old loop number using something like:
-    //
-    // if (comp->m_newToOldLoop[loop->GetIndex()] != nullptr)
-    // {
-    //   printf(" (old: " FMT_LP ")", (unsigned)(comp->m_newToOldLoop[loop->GetIndex()] - comp->optLoopTable));
-    // }
-    //
-    // However, not all callers of FlowGraphNaturalLoops::Find update m_newToOldLoop -- only
-    // Compiler::optFindNewLoops() does that. This dumper should work with any construction of
-    // FlowGraphNaturalLoops.
 
     printf(" header: " FMT_BB, loop->GetHeader()->bbNum);
     if (loop->GetParent() != nullptr)
@@ -4791,7 +4749,7 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
 /* static */
 void FlowGraphNaturalLoops::Dump(FlowGraphNaturalLoops* loops)
 {
-    printf("\n***************  (New) Natural loop graph\n");
+    printf("\n***************  Natural loop graph\n");
 
     if (loops == nullptr)
     {
@@ -4933,15 +4891,31 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
 //   otherwise false.
 //
 // Remarks:
-//   The function guarantees that at all definitions of the iteration local,
-//   the loop condition is reestablished before iteration continues. In other
-//   words, if this function returns true the loop invariant is guaranteed to
-//   be upheld in all blocks in the loop (but see below for establishing the
-//   base case).
+//   On a true return, the function guarantees that the loop invariant is true
+//   and maintained at all points within the loop, except possibly right after
+//   the update of the iterator variable (NaturalLoopIterInfo::IterTree). The
+//   function guarantees that the test (NaturalLoopIterInfo::TestTree) occurs
+//   immediately after the update, so no IR in the loop is executed without the
+//   loop invariant being true, except for the test.
 //
-//   Currently we do not validate that there is a zero-trip test ensuring the
-//   condition is true, so it is up to the user to validate that. This is
-//   normally done via GTF_RELOP_ZTT set by loop inversion.
+//   The loop invariant is defined as the expression obtained by
+//   [info->IterVar] [info->TestOper()] [info->Limit()]. Note that
+//   [info->TestTree()] may not be of this form; it could for instance have the
+//   iterator variable as the second operand. However,
+//   [NaturalLoopIterInfo::TestOper()] will automatically normalize the test
+//   oper so that the invariant is equivalent to the returned form that has the
+//   iteration variable as op1 and the limit as op2.
+//
+//   The limit can be further decomposed via NaturalLoopIterInfo::ConstLimit,
+//   ::VarLimit and ::ArrLenLimit.
+//
+//   As an example, if info->IterVar == V02, info->TestOper() == GT_LT and
+//   info->ConstLimit() == 10, then the function guarantees that the value of
+//   the local V02 is less than 10 everywhere within the loop (except possibly
+//   at the test).
+//
+//   In some cases we also know the initial value on entry to the loop; see
+//   ::HasConstInit and ::ConstInitValue.
 //
 bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 {
@@ -4972,8 +4946,15 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         return false;
     }
 
-    info->TestBlock = cond;
-    info->IterVar   = comp->optIsLoopIncrTree(info->IterTree);
+    assert(ContainsBlock(cond->GetTrueTarget()) != ContainsBlock(cond->GetFalseTarget()));
+
+    info->TestBlock    = cond;
+    info->IterVar      = comp->optIsLoopIncrTree(info->IterTree);
+    info->ExitedOnTrue = !ContainsBlock(cond->GetTrueTarget());
+
+    // TODO-CQ: Currently, since we only look at the lexically bottom most block all loops have
+    // ExitedOnTrue == false. Once we recognize more structures this can be true.
+    assert(!info->ExitedOnTrue);
 
     assert(info->IterVar != BAD_VAR_NUM);
     LclVarDsc* const iterVarDsc = comp->lvaGetDesc(info->IterVar);
@@ -5027,13 +5008,20 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         return false;
     }
 
+    if (!CheckLoopConditionBaseCase(initBlock, info))
+    {
+        JITDUMP("  Loop condition is not always true\n");
+        return false;
+    }
+
 #ifdef DEBUG
     if (comp->verbose)
     {
         printf("  IterVar = V%02u\n", info->IterVar);
 
         if (info->HasConstInit)
-            printf("  Const init with value %d in " FMT_BB "\n", info->ConstInitValue, info->InitBlock->bbNum);
+            printf("  Const init with value %d (at [%06u])\n", info->ConstInitValue,
+                   Compiler::dspTreeID(info->InitTree));
 
         printf("  Test is [%06u] (", Compiler::dspTreeID(info->TestTree));
         if (info->HasConstLimit)
@@ -5075,7 +5063,7 @@ void FlowGraphNaturalLoop::MatchInit(NaturalLoopIterInfo* info, BasicBlock* init
 
     info->HasConstInit   = true;
     info->ConstInitValue = (int)initValue->AsIntCon()->IconValue();
-    info->InitBlock      = initBlock;
+    INDEBUG(info->InitTree = init);
 }
 
 //------------------------------------------------------------------------
@@ -5118,12 +5106,12 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
     GenTree* limitOp;
 
     // Make sure op1 or op2 is the iterVar.
-    if (opr1->gtOper == GT_LCL_VAR && opr1->AsLclVarCommon()->GetLclNum() == info->IterVar)
+    if (opr1->OperIsScalarLocal() && (opr1->AsLclVarCommon()->GetLclNum() == info->IterVar))
     {
         iterOp  = opr1;
         limitOp = opr2;
     }
-    else if (opr2->gtOper == GT_LCL_VAR && opr2->AsLclVarCommon()->GetLclNum() == info->IterVar)
+    else if (opr2->OperIsScalarLocal() && (opr2->AsLclVarCommon()->GetLclNum() == info->IterVar))
     {
         iterOp  = opr2;
         limitOp = opr1;
@@ -5138,11 +5126,8 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
         return false;
     }
 
-    // Mark the iterator node.
-    iterOp->gtFlags |= GTF_VAR_ITERATOR;
-
     // Check what type of limit we have - constant, variable or arr-len.
-    if (limitOp->gtOper == GT_CNS_INT)
+    if (limitOp->IsCnsIntOrI())
     {
         info->HasConstLimit = true;
         if ((limitOp->gtFlags & GTF_ICON_SIMD_COUNT) != 0)
@@ -5210,6 +5195,105 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
 
     info->TestTree = relop;
     return true;
+}
+
+//------------------------------------------------------------------------
+// EvaluateRelop: Evaluate a relational operator with constant arguments.
+//
+// Parameters:
+//   op1  - First operand
+//   op2  - Second operand
+//   oper - Operator
+//
+// Returns:
+//   Result.
+//
+template <typename T>
+bool FlowGraphNaturalLoop::EvaluateRelop(T op1, T op2, genTreeOps oper)
+{
+    switch (oper)
+    {
+        case GT_EQ:
+            return op1 == op2;
+
+        case GT_NE:
+            return op1 != op2;
+
+        case GT_LT:
+            return op1 < op2;
+
+        case GT_LE:
+            return op1 <= op2;
+
+        case GT_GT:
+            return op1 > op2;
+
+        case GT_GE:
+            return op1 >= op2;
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// CheckLoopConditionBaseCase: Verify that the loop condition is true when the
+// loop is entered (or validated immediately on entry).
+//
+// Returns:
+//   True if we could prove that the condition is true at all interesting
+//   points in the loop.
+//
+// Remarks:
+//   Currently handles the following cases:
+//     * The condition being trivially true in the first iteration (e.g. for (int i = 0; i < 3; i++))
+//     * The condition is checked before entry (often due to loop inversion)
+//
+bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info)
+{
+    // TODO: A common loop idiom is to enter the loop at the test, with the
+    // unique in-loop predecessor of the header block being the increment. We
+    // currently do not handle these patterns in `optExtractInitTestIncr`.
+    // Instead we depend on loop inversion to put them into an
+    //   if (x) { do { ... } while (x) }
+    // form. Once we handle the pattern in `optExtractInitTestIncr` we can
+    // handle it here by checking for whether the test is the header and first
+    // thing in the header.
+
+    // Is it trivially true?
+    if (info->HasConstInit && info->HasConstLimit)
+    {
+        int initVal  = info->ConstInitValue;
+        int limitVal = info->ConstLimit();
+
+        assert(genActualType(info->TestTree->gtGetOp1()) == TYP_INT);
+
+        bool isTriviallyTrue = info->TestTree->IsUnsigned()
+                                   ? EvaluateRelop<uint32_t>((uint32_t)initVal, (uint32_t)limitVal, info->TestOper())
+                                   : EvaluateRelop<int32_t>(initVal, limitVal, info->TestOper());
+
+        if (isTriviallyTrue)
+        {
+            JITDUMP("  Condition is trivially true on entry (%d %s%s %d)\n", initVal,
+                    info->TestTree->IsUnsigned() ? "(uns)" : "", GenTree::OpName(info->TestOper()), limitVal);
+            return true;
+        }
+    }
+
+    // Do we have a zero-trip test?
+    if (initBlock->KindIs(BBJ_COND))
+    {
+        GenTree* enteringJTrue = initBlock->lastStmt()->GetRootNode();
+        assert(enteringJTrue->OperIs(GT_JTRUE));
+        if (enteringJTrue->gtGetOp1()->OperIsCompare() && ((enteringJTrue->gtGetOp1()->gtFlags & GTF_RELOP_ZTT) != 0))
+        {
+            JITDUMP("  Condition is established before entry at [%06u]\n",
+                    Compiler::dspTreeID(enteringJTrue->gtGetOp1()));
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -5340,7 +5424,7 @@ var_types NaturalLoopIterInfo::IterOperType()
 //
 bool NaturalLoopIterInfo::IsReversed()
 {
-    return TestTree->gtGetOp2()->OperIs(GT_LCL_VAR) && ((TestTree->gtGetOp2()->gtFlags & GTF_VAR_ITERATOR) != 0);
+    return TestTree->gtGetOp2()->OperIsScalarLocal() && (TestTree->gtGetOp2()->AsLclVar()->GetLclNum() == IterVar);
 }
 
 //------------------------------------------------------------------------
@@ -5353,7 +5437,15 @@ bool NaturalLoopIterInfo::IsReversed()
 genTreeOps NaturalLoopIterInfo::TestOper()
 {
     genTreeOps op = TestTree->OperGet();
-    return IsReversed() ? GenTree::SwapRelop(op) : op;
+    if (IsReversed())
+    {
+        op = GenTree::SwapRelop(op);
+    }
+    if (ExitedOnTrue)
+    {
+        op = GenTree::ReverseRelop(op);
+    }
+    return op;
 }
 
 //------------------------------------------------------------------------
