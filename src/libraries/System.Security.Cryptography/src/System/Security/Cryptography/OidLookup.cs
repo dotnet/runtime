@@ -12,8 +12,8 @@ namespace System.Security.Cryptography
         private static readonly ConcurrentDictionary<string, string> s_lateBoundOidToFriendlyName =
             new ConcurrentDictionary<string, string>();
 
-        private static readonly ConcurrentDictionary<string, string?> s_lateBoundFriendlyNameToOid =
-            new ConcurrentDictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, string> s_lateBoundFriendlyNameToOid =
+            new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         //
         // Attempts to map a friendly name to an OID. Returns null if not a known name.
