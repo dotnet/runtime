@@ -2,6 +2,9 @@
 
   <Import Project="..\..\Directory.Build.props" />
   <UsingTask AssemblyFile="$(WasmBuildTasksAssemblyPath)" TaskName="Microsoft.WebAssembly.Build.Tasks.GetChromeVersions" />
+  <PropertyGroup>
+    <ChromeVersionsPath>$(RepositoryEngineeringDir)testing\ChromeVersions.props</ChromeVersionsPath>
+  </PropertyGroup>
 
   <Target Name="UpdateChromeVersion">
     <GetChromeVersions
@@ -9,11 +12,13 @@
                 OSPrefix="Linux_x64"
                 Channel="$(ChromeChannel)"
                 MaxMajorVersionsToCheck="1"
-                IntermediateOutputPath="$(ArtifactsObjDir)">
+                IntermediateOutputPath="$(ArtifactsObjDir)"
+                ChromeVersionsPath="$(ChromeVersionsPath)">
       <Output TaskParameter="ChromeVersion"      PropertyName="linux_ChromeVersion" />
       <Output TaskParameter="V8Version"          PropertyName="linux_V8Version" />
       <Output TaskParameter="BranchPosition"     PropertyName="linux_ChromeRevision" />
       <Output TaskParameter="BaseSnapshotUrl"    PropertyName="linux_ChromeBaseSnapshotUrl" />
+      <Output TaskParameter="OverwriteVersions"  PropertyName="linux_OverwriteVersions" />
     </GetChromeVersions>
 
     <GetChromeVersions
@@ -21,11 +26,13 @@
                 OSPrefix="Win_x64"
                 Channel="$(ChromeChannel)"
                 MaxMajorVersionsToCheck="1"
-                IntermediateOutputPath="$(ArtifactsObjDir)">
+                IntermediateOutputPath="$(ArtifactsObjDir)"
+                ChromeVersionsPath="$(ChromeVersionsPath)">
       <Output TaskParameter="ChromeVersion"      PropertyName="win_ChromeVersion" />
       <Output TaskParameter="V8Version"          PropertyName="win_V8Version" />
       <Output TaskParameter="BranchPosition"     PropertyName="win_ChromeRevision" />
       <Output TaskParameter="BaseSnapshotUrl"    PropertyName="win_ChromeBaseSnapshotUrl" />
+      <Output TaskParameter="OverwriteVersions"  PropertyName="win_OverwriteVersions" />
     </GetChromeVersions>
 
     <ItemGroup>
@@ -33,8 +40,8 @@
       <EnvVarForPR Include="CHROME_LINUX_VER=$(linux_ChromeVersion)" />
       <EnvVarForPR Include="CHROME_WIN_VER=$(win_ChromeVersion)" />
     </ItemGroup>
-
     <PropertyGroup>
+      <_ExecuteWriteVersionProps Condition="'$(linux_OverwriteVersions)' == 'true' OR '$(win_OverwriteVersions)' == 'true'">true</_ExecuteWriteVersionProps>
       <_PropsContent>
 &lt;Project&gt;
   &lt;PropertyGroup&gt;
@@ -52,10 +59,12 @@
       </_PropsContent>
     </PropertyGroup>
 
-    <Message Text="Writing version props: $(_PropsContent)" Importance="High" />
-    <WriteLinesToFile Lines="$(_PropsContent)" File="$(RepositoryEngineeringDir)testing\ChromeVersions.props" Overwrite="true" />
+    <Message Text="No major changes: skipping version props update." Importance="High" Condition="'$(_ExecuteWriteVersionProps)' != 'true'"/>
+    <Message Text="Version props update: $(_PropsContent)" Importance="High" Condition="'$(_ExecuteWriteVersionProps)' == 'true'"/>
+    <WriteLinesToFile Lines="$(_PropsContent)" File="$(ChromeVersionsPath)" Overwrite="true" Condition="'$(_ExecuteWriteVersionProps)' == 'true'"/>
 
-    <WriteLinesToFile Lines="@(EnvVarForPR)" File="$(RepositoryEngineeringDir)testing\bump-chrome-pr.env" Overwrite="true" />
+    <WriteLinesToFile Lines="@(EnvVarForPR)" File="$(RepositoryEngineeringDir)testing\bump-chrome-pr.env" Overwrite="true" Condition="'$(_ExecuteWriteVersionProps)' == 'true'"/>
+
   </Target>
 
   <Import Project="..\..\Directory.Build.targets" />

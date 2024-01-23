@@ -12,6 +12,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
+using System.Xml;
 
 using MBU = Microsoft.Build.Utilities;
 
@@ -43,6 +44,9 @@ public partial class GetChromeVersions : MBU.Task
     [Required, NotNull]
     public string IntermediateOutputPath { get; set; } = string.Empty;
 
+    [Required, NotNull]
+    public string ChromeVersionsPath { get; set; } = string.Empty;
+
     public int MaxMajorVersionsToCheck { get; set; } = 2;
 
     // start at the branch position found in all.json, and try to
@@ -58,6 +62,8 @@ public partial class GetChromeVersions : MBU.Task
     public string BaseSnapshotUrl { get; set; } = string.Empty;
     [Output]
     public string V8Version { get; set; } = string.Empty;
+    [Output]
+    public bool OverwriteVersions { get; set; }
 
     public override bool Execute() => ExecuteInternalAsync().Result;
 
@@ -80,6 +86,7 @@ public partial class GetChromeVersions : MBU.Task
             ChromeVersion = version.version;
             V8Version = version.v8_version;
             BranchPosition = version.branch_base_position;
+            OverwriteVersions = AreVersionsChanged(version, baseUrl);
 
             return !Log.HasLoggedErrors;
         }
@@ -88,6 +95,31 @@ public partial class GetChromeVersions : MBU.Task
             Log.LogError(laee.Message);
             return false;
         }
+    }
+
+    private bool AreVersionsChanged(ChromeVersionSpec version, string baseUrl)
+    {
+        XmlDocument xmlDoc = new XmlDocument();
+        xmlDoc.Load(ChromeVersionsPath);
+
+        if (version.os == "Linux")
+        {
+            string linuxChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "linux_ChromeBaseSnapshotUrl");
+            string linuxV8Version = GetNodeValue(xmlDoc, "linux_V8Version");
+            return version.v8_version != linuxV8Version ||
+                baseUrl != linuxChromeBaseSnapshotUrl;
+        }
+        // version.os == "Windows"
+        string winChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "win_ChromeBaseSnapshotUrl");
+        string winV8Version = GetNodeValue(xmlDoc, "win_V8Version");
+        return version.v8_version != winV8Version ||
+            baseUrl != winChromeBaseSnapshotUrl;
+    }
+
+    private static string GetNodeValue(XmlDocument xmlDoc, string nodeName)
+    {
+        XmlNode? node = xmlDoc.SelectSingleNode($"/Project/PropertyGroup/{nodeName}");
+        return node?.InnerText ?? string.Empty;
     }
 
     private async Task<(ChromeVersionSpec versionSpec, string baseSnapshotUrl)> FindVersionFromHistoryAsync()
