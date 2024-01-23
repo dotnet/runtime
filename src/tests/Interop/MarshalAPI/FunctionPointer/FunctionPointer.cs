@@ -123,7 +123,7 @@ public partial class FunctionPtr
     {
         internal static unsafe T GenericCalli<U>(void* fnptr, U arg)
         {
-            return ((delegate* unmanaged<U, T>)fnptr)(arg);
+            return ((delegate* unmanaged[Cdecl]<U, T>)fnptr)(arg);
         }
     }
 
