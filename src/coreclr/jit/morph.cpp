@@ -955,7 +955,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
 #endif
 
-                if (prevArg.GetEarlyNode() == nullptr)
+                if ((prevArg.GetEarlyNode() == nullptr) || prevArg.m_needTmp)
                 {
                     continue;
                 }
