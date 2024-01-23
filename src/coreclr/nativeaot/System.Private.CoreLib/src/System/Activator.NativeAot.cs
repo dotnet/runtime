@@ -15,6 +15,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Remoting;
 
 using Internal.Reflection.Augments;
+using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -52,7 +53,7 @@ namespace System
                 {
                     // Grab a pointer to the optimized allocator for the type and call it.
                     IntPtr allocator = AllocatorOf<T>();
-                    t = RawCalliHelper.Call<T>(allocator, EETypePtr.EETypePtrOf<T>().RawValue);
+                    t = RawCalliHelper.Call<T>(allocator, (nint)MethodTable.Of<T>());
                     RawCalliHelper.Call(defaultConstructor, t);
 
                     // Debugger goo so that stepping in works. Only affects debug info generation.

@@ -27,6 +27,7 @@
 #include "rhbinder.h"
 #include "MethodTable.h"
 #include "MethodTable.inl"
+#include "CommonMacros.inl"
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhpEHEnumInitFromStackFrameIterator, (
     StackFrameIterator* pFrameIter, void ** pMethodStartAddressOut, EHEnum* pEHEnum))
@@ -327,7 +328,7 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         ASSERT(*(uint8_t*)writeBarrierAVLocations[i] != 0xE9); // jmp XXXXXXXX
 #endif
 
-        if (writeBarrierAVLocations[i] == faultingIP)
+        if (PCODEToPINSTR(writeBarrierAVLocations[i]) == faultingIP)
             return true;
     }
 #endif // USE_PORTABLE_HELPERS
@@ -368,7 +369,7 @@ static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
         ASSERT(*(uint8_t*)interfaceDispatchAVLocations[i] != 0xE9); // jmp XXXXXXXX
 #endif
 
-        if (interfaceDispatchAVLocations[i] == faultingIP)
+        if (PCODEToPINSTR(interfaceDispatchAVLocations[i]) == faultingIP)
             return true;
     }
 #endif // USE_PORTABLE_HELPERS
@@ -458,7 +459,7 @@ int32_t __stdcall RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t fau
     {
         *arg0Reg = faultCode;
         *arg1Reg = faultingIP;
-        palContext->SetIp((uintptr_t)&RhpThrowHwEx);
+        palContext->SetIp(PCODEToPINSTR((PCODE)&RhpThrowHwEx));
 
         return EXCEPTION_CONTINUE_EXECUTION;
     }
@@ -542,7 +543,7 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 
     if (translateToManagedException)
     {
-        pExPtrs->ContextRecord->SetIp((uintptr_t)&RhpThrowHwEx);
+        pExPtrs->ContextRecord->SetIp(PCODEToPINSTR((PCODE)&RhpThrowHwEx));
         pExPtrs->ContextRecord->SetArg0Reg(faultCode);
         pExPtrs->ContextRecord->SetArg1Reg(faultingIP);
 

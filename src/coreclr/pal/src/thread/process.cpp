@@ -2821,6 +2821,12 @@ CorUnix::InitializeProcessCommandLine(
     if (lpwstrFullPath)
     {
         LPWSTR lpwstr = PAL_wcsrchr(lpwstrFullPath, '/');
+        if (!lpwstr)
+        {
+            ERROR("Invalid full path\n");
+            palError = ERROR_INTERNAL_ERROR;
+            goto exit;
+        }    
         lpwstr[0] = '\0';
         size_t n = PAL_wcslen(lpwstrFullPath) + 1;
 
