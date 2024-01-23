@@ -3238,14 +3238,6 @@ private :
 class MngdNativeArrayMarshaler
 {
 public:
-    static FCDECL4(void, CreateMarshaler,           MngdNativeArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, PCODE pManagedMarshaler);
-    static FCDECL3(void, ConvertSpaceToNative,      MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ConvertContentsToNative,   MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL4(void, ConvertSpaceToManaged,     MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements);
-    static FCDECL3(void, ConvertContentsToManaged,  MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL4(void, ClearNative,               MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements);
-    static FCDECL4(void, ClearNativeContents,       MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements);
-
     static void DoClearNativeContents(MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements);
     enum
     {
@@ -3260,6 +3252,14 @@ public:
     BOOL                    m_ThrowOnUnmappableChar;
     VARTYPE                 m_vt;
 };
+
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_CreateMarshaler(MngdNativeArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, PCODE pManagedMarshaler);
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements);
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements);
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements);
 
 class ILFixedArrayMarshaler : public ILMngdMarshaler
 {
