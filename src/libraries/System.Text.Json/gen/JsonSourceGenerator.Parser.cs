@@ -1041,6 +1041,11 @@ namespace System.Text.Json.SourceGeneration
                             // Signal the fast-path generator to emit a throwing stub method.
                             state.HasInvalidConfigurationForFastPath = true;
                         }
+
+                        if (memberInfo.IsOverriddenOrShadowedBy(otherSymbol) && propertySpec.CanUseGetter && !other.CanUseGetter)
+                        {
+                            state.AddedProperties[propertySpec.EffectiveJsonPropertyName] = (other with { CanUseGetter = true }, otherSymbol, index);
+                        }
                     }
                 }
 
