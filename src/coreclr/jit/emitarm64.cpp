@@ -1572,6 +1572,28 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidSimm4(imm));                 // iiii
             break;
 
+        case IF_SVE_HW_4A:   // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_HW_4A_A: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_HW_4A_B: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_HW_4A_C: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_IU_4A:   // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+        case IF_SVE_IU_4A_A: // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+        case IF_SVE_IU_4A_C: // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+            elemsize = id->idOpSize();
+            assert(insOptsScalable32bitExtends(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isVectorRegister(id->idReg4()));    // mmmmm
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -11332,6 +11354,109 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
             }
             break;
 
+        case INS_sve_ld1sb:
+        case INS_sve_ldff1sb:
+        case INS_sve_ld1b:
+        case INS_sve_ldff1b:
+        case INS_sve_ld1sh:
+        case INS_sve_ldff1sh:
+        case INS_sve_ld1h:
+        case INS_sve_ldff1h:
+        case INS_sve_ld1w:
+        case INS_sve_ldff1w:
+            assert(insOptsScalable32bitExtends(opt));
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isVectorRegister(reg4));
+            assert(isScalableVectorSize(size));
+
+            switch (ins)
+            {
+                case INS_sve_ld1b:
+                case INS_sve_ld1sb:
+                case INS_sve_ldff1b:
+                case INS_sve_ldff1sb:
+                    assert(insScalableOptsNone(sopt));
+                    if (insOptsScalableDoubleWord32bitExtends(opt))
+                    {
+                        fmt = IF_SVE_HW_4A;
+                    }
+                    else
+                    {
+                        assert(insOptsScalableSingleWord32bitExtends(opt));
+                        fmt = IF_SVE_HW_4A_A;
+                    }
+                    break;
+
+                case INS_sve_ld1h:
+                case INS_sve_ld1sh:
+                case INS_sve_ldff1h:
+                case INS_sve_ldff1sh:
+                case INS_sve_ld1w:
+                case INS_sve_ldff1w:
+                    if (insOptsScalableDoubleWord32bitExtends(opt))
+                    {
+                        if (sopt == INS_SCALABLE_OPTS_MOD_N)
+                        {
+                            fmt = IF_SVE_HW_4A_A;
+                        }
+                        else
+                        {
+                            assert(insScalableOptsNone(sopt));
+                            fmt = IF_SVE_HW_4A_B;
+                        }
+                    }
+                    else
+                    {
+                        assert(insOptsScalableSingleWord32bitExtends(opt));
+                        if (sopt == INS_SCALABLE_OPTS_MOD_N)
+                        {
+                            fmt = IF_SVE_HW_4A;
+                        }
+                        else
+                        {
+                            assert(insScalableOptsNone(sopt));
+                            fmt = IF_SVE_HW_4A_C;
+                        }
+                    }
+                    break;
+
+                default:
+                    assert(!"Invalid instruction");
+                    break;
+            }
+            break;
+
+        case INS_sve_ldff1sw:
+        case INS_sve_ldff1d:
+        case INS_sve_ld1d:
+        case INS_sve_ld1sw:
+            assert(insOptsScalableDoubleWord32bitExtends(opt));
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isVectorRegister(reg4));
+            assert(isScalableVectorSize(size));
+
+            if (sopt == INS_SCALABLE_OPTS_MOD_N)
+            {
+                fmt = IF_SVE_IU_4A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                if (ins == INS_sve_ld1d)
+                {
+                    fmt = IF_SVE_IU_4A_C;
+                }
+                else
+                {
+                    fmt = IF_SVE_IU_4A_A;
+                }
+            }
+            break;
+
         default:
             unreached();
             break;
@@ -17391,6 +17516,40 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_HW_4A:   // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_HW_4A_A: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_HW_4A_B: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_HW_4A_C: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_IU_4A:   // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+        case IF_SVE_IU_4A_A: // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+        case IF_SVE_IU_4A_C: // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg4()); // mmmmm
+
+            switch (id->idInsOpt())
+            {
+                case INS_OPTS_SCALABLE_S_SXTW:
+                case INS_OPTS_SCALABLE_D_SXTW:
+                    code |= (1 << 22); // h
+                    break;
+
+                default:
+                    break;
+            }
+
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         default:
             assert(!"Unexpected format");
             break;
@@ -20280,6 +20439,95 @@ void emitter::emitDispInsHelp(
             printf("]");
             break;
 
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+        // {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #1]
+        // {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod> #2]
+        case IF_SVE_HW_4A:   // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        // {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #1]
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #2]
+        case IF_SVE_HW_4A_A: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+        case IF_SVE_HW_4A_B: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        // {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]
+        case IF_SVE_HW_4A_C: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #2]
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod> #3]
+        case IF_SVE_IU_4A:   // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+        case IF_SVE_IU_4A_A: // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]
+        case IF_SVE_IU_4A_C: // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+            emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true);
+            emitDispPredicateReg(id->idReg2(), PREDICATE_ZERO, id->idInsOpt(), true);
+            printf("[");
+            emitDispReg(id->idReg3(), EA_8BYTE, true);
+            emitDispSveReg(id->idReg4(), id->idInsOpt(), true);
+            emitDispSveExtendOpts(id->idInsOpt());
+            switch (ins)
+            {
+                case INS_sve_ld1h:
+                case INS_sve_ld1sh:
+                case INS_sve_ldff1h:
+                case INS_sve_ldff1sh:
+                    switch (fmt)
+                    {
+                        case IF_SVE_HW_4A:
+                        case IF_SVE_HW_4A_A:
+                            printf(" #1]");
+                            break;
+
+                        default:
+                            printf("]");
+                            break;
+                    }
+                    break;
+
+                case INS_sve_ld1w:
+                case INS_sve_ldff1w:
+                case INS_sve_ld1sw:
+                case INS_sve_ldff1sw:
+                    switch (fmt)
+                    {
+                        case IF_SVE_HW_4A:
+                        case IF_SVE_HW_4A_A:
+                        case IF_SVE_IU_4A:
+                            printf(" #2]");
+                            break;
+
+                        default:
+                            printf("]");
+                            break;
+                    }
+                    break;
+
+                case INS_sve_ld1d:
+                case INS_sve_ldff1d:
+                    switch (fmt)
+                    {
+                        case IF_SVE_IU_4A:
+                            printf(" #3]");
+                            break;
+
+                        default:
+                            printf("]");
+                            break;
+                    }
+                    break;
+
+                default:
+                    printf("]");
+                    break;
+            }
+            break;
+
         default:
             printf("unexpected format %s", emitIfName(id->idInsFmt()));
             assert(!"unexpectedFormat");
@@ -23163,6 +23411,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_JN_3B:   // ..........x.iiii ...gggnnnnnttttt -- SVE contiguous store (scalar plus immediate)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_HW_4A:   // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_HW_4A_A: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_HW_4A_B: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_HW_4A_C: // .........h.mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
+                             // offsets)
+        case IF_SVE_IU_4A:   // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+        case IF_SVE_IU_4A_A: // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+        case IF_SVE_IU_4A_C: // .........h.mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_9C;
             break;
 
         default:

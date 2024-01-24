@@ -1071,6 +1071,16 @@ inline static bool insOptsScalable32bitExtends(insOpts opt)
             (opt == INS_OPTS_SCALABLE_D_UXTW) || (opt == INS_OPTS_SCALABLE_D_SXTW));
 }
 
+inline static bool insOptsScalableSingleWord32bitExtends(insOpts opt)
+{
+    return (opt == INS_OPTS_SCALABLE_S_UXTW) || (opt == INS_OPTS_SCALABLE_S_SXTW);
+}
+
+inline static bool insOptsScalableDoubleWord32bitExtends(insOpts opt)
+{
+    return (opt == INS_OPTS_SCALABLE_D_UXTW) || (opt == INS_OPTS_SCALABLE_D_SXTW);
+}
+
 inline static bool insScalableOptsNone(insScalableOpts sopt)
 {
     // `sopt` is used for instructions with no extra encoding variants.
