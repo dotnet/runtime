@@ -1821,14 +1821,16 @@ PhaseStatus Compiler::fgLateCastExpansion()
         JITDUMP("Optimized for size - bail out.\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
-    return fgExpandHelper<&Compiler::fgLateCastExpansionForCall>(true);
+
+    // TODO-InlineCast: should we still inline some trivial cases even in cold blocks?
+    const bool skipForRarelyRunBlocks = true;
+    return fgExpandHelper<&Compiler::fgLateCastExpansionForCall>(skipForRarelyRunBlocks);
 }
 
 enum TypeCheckFailedAction
 {
     F_ReturnNull,
-    F_CallHelper_NeverThrows,
-    F_CallHelper_MayThrow,
+    F_CallHelper,
     F_CallHelper_AlwaysThrows
 };
 
@@ -1906,8 +1908,10 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
     // Assume that the type check will pass with 50% probability by default
     *likelihood = 50;
 
-    // isinst cast helpers never throw
-    *typeCheckFailed = isCastClass ? F_CallHelper_MayThrow : F_CallHelper_NeverThrows;
+    // Assume that in the slow path (fallback) we'll always invoke the helper.
+    // In some cases we can optimize this further e.g. either mark it additionally
+    // as no-return (BBJ_THROW) or simply return null.
+    *typeCheckFailed = F_CallHelper;
 
     // result is the class we're going to use as a guess for the type check.
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
@@ -2022,9 +2026,8 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
                     return NO_CLASS_HANDLE;
                 }
 
-                *likelihood      = likelyClasses[0].likelihood;
-                *typeCheckFailed = isCastClass ? F_CallHelper_MayThrow : F_CallHelper_NeverThrows;
-                result           = (CORINFO_CLASS_HANDLE)likelyClasses[0].handle;
+                *likelihood = likelyClasses[0].likelihood;
+                result      = (CORINFO_CLASS_HANDLE)likelyClasses[0].handle;
 
                 // Validate static profile data
                 if ((comp->info.compCompHnd->getClassAttribs(result) &
@@ -2141,7 +2144,7 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
         *typeCheckPassed = P_ReturnNull;
     }
 
-    if ((result == castToCls) && (*typeCheckFailed == F_CallHelper_MayThrow))
+    if ((result == castToCls) && (*typeCheckFailed == F_CallHelper))
     {
         assert(isCastClass);
         // TODO-InlineCast: Change helper to faster CORINFO_HELP_CHKCASTCLASS_SPECIAL
