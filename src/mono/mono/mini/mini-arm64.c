@@ -3725,8 +3725,7 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 	MonoCallInst *call;
 
 	if (cfg->arch.swift_error_var) {
-		MonoInst *ins = cfg->arch.swift_error_var;
-		code = emit_ldrx (code, ARMREG_IP0, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
+		code = emit_ldrx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
 		code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
 	}
 

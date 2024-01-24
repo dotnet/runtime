@@ -4281,8 +4281,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	guint32 quad;
 
 	if (cfg->arch.swift_error_var) {
-		MonoInst *ins = cfg->arch.swift_error_var;
-		amd64_mov_reg_membase (code, AMD64_R11, ins->inst_basereg, ins->inst_offset, sizeof (target_mgreg_t));
+		amd64_mov_reg_membase (code, AMD64_R11, cfg->arch.swift_error_var->inst_basereg, cfg->arch.swift_error_var->inst_offset, sizeof (target_mgreg_t));
 		amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_R12, sizeof (target_mgreg_t));
 	}
 
