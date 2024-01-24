@@ -5477,30 +5477,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     // Check legality only if an inline expansion is desirable.
     if (shouldExpandInline)
     {
-        CORINFO_CLASS_HANDLE actualImplCls = NO_CLASS_HANDLE;
-        if (this->IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&
-            ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_CHKCASTINTERFACE)) &&
-            (info.compCompHnd->getExactClasses(pResolvedToken->hClass, 1, &actualImplCls) == 1) &&
-            (actualImplCls != NO_CLASS_HANDLE) && info.compCompHnd->isExactType(actualImplCls))
-        {
-            // if an interface has a single implementation on NativeAOT where we won't load new types,
-            // we can assume that our object is always of that implementation's type, e.g.:
-            //
-            // var case1 = obj is IMyInterface;
-            // var case2 = (IMyInterface)obj;
-            //
-            //   can be optimized to:
-            //
-            // var case1 = o is not null && o.GetType() == typeof(MyInterfaceImpl);
-            // var case2 = (o is null || o.GetType() == typeof(MyInterfaceImpl)) ? o : HELPER_CALL(o);
-            //
-            canExpandInline = true;
-            exactCls        = actualImplCls;
-
-            JITDUMP("'%s' interface has a single implementation - '%s', using that to inline isinst/castclass.",
-                    eeGetClassName(pResolvedToken->hClass), eeGetClassName(actualImplCls));
-        }
-        else if (isCastClass)
+        if (isCastClass)
         {
             // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
             canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
@@ -5548,7 +5525,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
             }
         }
-        else if (impIsCastHelperMayHaveProfileData(helper))
+        else
         {
             // Leave a note for fgLateCastExpand to expand this helper call
             call->gtCallMoreFlags |= GTF_CALL_M_CAST_CAN_BE_EXPANDED;
