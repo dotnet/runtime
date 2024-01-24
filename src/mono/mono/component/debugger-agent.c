@@ -5546,7 +5546,7 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 			continue;
 		if (mono_field_is_deleted (f))
 			continue;
-
+		
 		gboolean cur_field_in_extra_space = from_by_ref_value_type;
   		gboolean members_in_extra_space = cur_field_in_extra_space || m_type_is_byref (f->type) || m_class_is_byreflike (mono_class_from_mono_type_internal (f->type));
 		int field_size = decode_value_compute_size (f->type, 0, domain, buf, &buf, limit, members_in_extra_space);
