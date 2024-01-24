@@ -622,7 +622,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// The address of the current type handle object.
         /// </summary>
-        internal readonly void* m_asTAddr;
+        private readonly void* m_asTAddr;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TypeHandle(void* tAddr)

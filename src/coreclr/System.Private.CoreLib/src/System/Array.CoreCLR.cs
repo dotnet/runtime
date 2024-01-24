@@ -100,9 +100,9 @@ namespace System
         {
             Debug.Assert(sourceArray.Rank == destinationArray.Rank);
 
-            TypeHandle srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle();
-            TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
-            AssignArrayEnum r = CanAssignArrayType(srcTH.m_asTAddr, destTH.m_asTAddr);
+            void* srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->ElementType;
+            void* destTH = RuntimeHelpers.GetMethodTable(destinationArray)->ElementType;
+            AssignArrayEnum r = CanAssignArrayType(srcTH, destTH);
 
             if (r == AssignArrayEnum.AssignWrongType)
                 ThrowHelper.ThrowArrayTypeMismatchException_CantAssignType();
@@ -222,7 +222,7 @@ namespace System
         // Casts and assigns each element of src array to the dest array type.
         private static unsafe void CopyImplCastCheckEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
-            TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
+            void* destTH = RuntimeHelpers.GetMethodTable(destinationArray)->ElementType;
 
             ref object? srcData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<object?[]>(sourceArray)), sourceIndex);
             ref object? destData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<object?[]>(destinationArray)), destinationIndex);
@@ -234,7 +234,7 @@ namespace System
                 // Now that we have grabbed obj, we are no longer subject to races from another
                 // mutator thread.
 
-                Unsafe.Add(ref destData, i) = CastHelpers.ChkCastAny(destTH.AsMethodTable(), obj);
+                Unsafe.Add(ref destData, i) = CastHelpers.ChkCastAny(destTH, obj);
             }
         }
 
