@@ -2207,7 +2207,7 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
 
     if (numParameters > initialParamLength)
     {
-        JITDUMP("Too few parameters (expected %d), trailing will be zero", numParameters);
+        JITDUMP("Too few parameters (expected %d), trailing will be zero\n", numParameters);
         for (unsigned i = initialParamLength; i < numParameters; i++)
         {
             m_parameters[i] = 0;
@@ -2215,7 +2215,7 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
     }
     else if (numParameters < initialParamLength)
     {
-        JITDUMP("Too many parameters (expected %d), trailing will be ignored", numParameters);
+        JITDUMP("Too many parameters (expected %d), trailing will be ignored\n", numParameters);
     }
 
     // Policy sub-behavior: explore / update / greedy
@@ -2305,7 +2305,7 @@ void CSE_HeuristicRL::Announce()
 
     if (m_updateParameters)
     {
-        JITDUMP("Operating in update mode with sequence %s, reward %f, and alpha %f\n", JitConfig.JitReplayCSE(),
+        JITDUMP("Operating in update mode with sequence %ls, rewards %ls, and alpha %f\n", JitConfig.JitReplayCSE(),
                 JitConfig.JitReplayCSEReward(), m_alpha);
     }
 }
@@ -2945,7 +2945,7 @@ void CSE_HeuristicRL::UpdateParameters()
     {
         printf("Updating parameters with sequence ");
         JitReplayCSEArray.Dump();
-        printf(" alpha " FMT_WT " and rewards ");
+        printf(" alpha " FMT_WT " and rewards ", m_alpha);
         for (unsigned int i = 0; i < JitReplayCSEArray.GetLength(); i++)
         {
             printf("%s%7.4f", (i == 0 ? "" : ","), m_rewards[i]);
@@ -2962,12 +2962,22 @@ void CSE_HeuristicRL::UpdateParameters()
     }
 
     const unsigned nSteps = JitReplayCSEArray.GetLength();
+    unsigned       i      = 0;
 
-    for (unsigned i = 0; i < nSteps; i++)
+    for (; i < nSteps; i++)
     {
+        const int candNumber = JitReplayCSEArray.GetData()[i];
+
+        // CSE "0" means stop.
+        //
+        if (candNumber == 0)
+        {
+            break;
+        }
+
         // optCSEtab is 0-based; candidate numbers are 1-based
         //
-        const int index = JitReplayCSEArray.GetData()[i] - 1;
+        const int index = candNumber - 1;
 
         if ((index < 0) || (index >= (int)n))
         {
@@ -3037,12 +3047,12 @@ void CSE_HeuristicRL::UpdateParameters()
     {
         if (m_verbose)
         {
-            printf("\nRL Update stopping early (%d CSEs left undone)\n", undoneCSEs);
+            printf("\nRL Update stopping early (%d CSEs done, %d CSEs left undone)\n", i, undoneCSEs);
         }
 
         Softmax(choices);
         // nullptr here means "stopping"
-        UpdateParametersStep(nullptr, choices, m_rewards[nSteps], parameterDelta);
+        UpdateParametersStep(nullptr, choices, m_rewards[i], parameterDelta);
     }
 
     // Update the parameters to include the computed delta
@@ -3127,12 +3137,12 @@ void CSE_HeuristicRL::UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choi
 
     if (m_verbose)
     {
-        printf("      OldDelta     Feature  Adjustment    Gradient    StepDelta     NewDelta\n");
+        printf("Feat   OldDelta     Feature  Adjustment    Gradient   StepDelta   NewDelta\n");
 
         for (int i = 0; i < numParameters; i++)
         {
-            printf("%2d:  %10.7f  %10.7f  %10.7f  %10.7f  %10.7f\n", i, delta[i], currentFeatures[i], adjustment[i],
-                   gradient[i], newDelta[i], newDelta[i] + delta[i]);
+            printf("%4d  %10.7f  %10.7f  %10.7f  %10.7f  %10.7f %10.7f\n", i, delta[i], currentFeatures[i],
+                   adjustment[i], gradient[i], newDelta[i], newDelta[i] + delta[i]);
         }
     }
 
