@@ -165,6 +165,8 @@ namespace System.Security.Cryptography.X509Certificates
 
                     ArrayPool<CertAndKey>.Shared.Return(rentedCerts, clearArray: true);
                 }
+
+                GC.SuppressFinalize(this);
             }
         }
 
