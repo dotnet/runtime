@@ -21,6 +21,11 @@ handle_arguments() {
             __ShiftArgs=1
             ;;
 
+        tzddir|-tzddir)
+            __tzdDir="$2"
+            __ShiftArgs=1
+            ;;
+
         staticliblink|-staticliblink)
             __StaticLibLink=1
             ;;
@@ -44,6 +49,7 @@ __StaticLibLink=0
 __UnprocessedBuildArgs=
 __VerboseBuild=false
 __icuDir=""
+__tzdDir=""
 
 source "$__RepoRootDir"/eng/native/build-commons.sh
 
@@ -128,6 +134,9 @@ fi
 
 if [[ -n "$__icuDir" ]]; then
     __CMakeArgs="-DCMAKE_ICU_DIR=\"$__icuDir\" $__CMakeArgs"
+fi
+if [[ -n "$__tzdDir" ]]; then
+    __CMakeArgs="-DCMAKE_TZD_DIR=\"$__tzdDir\" $__CMakeArgs"
 fi
 
 # Set the remaining variables based upon the determined build configuration
