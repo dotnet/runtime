@@ -70,8 +70,8 @@ dsdf137success3245somethingold";
         {
             RegexTestClass testClass = new RegexTestClass();
 
-            Assert.Equal(["", "4", "success", "\n", "5", "success", "\n", "6", "success", "\n", "7", "success", ""], testClass.Split(textWithMultipleMatches));
-            Assert.Equal(["", "4", "success", $"\nbsdf135success1245somethingelse{Environment.NewLine}csdf136success2245somethingnew{Environment.NewLine}dsdf137success3245somethingold"], testClass.Split(textWithMultipleMatches, 2));
+            Assert.Equal<string>(["", "4", "success", "\n", "5", "success", "\n", "6", "success", "\n", "7", "success", ""], testClass.Split(textWithMultipleMatches));
+            Assert.Equal<string>(["", "4", "success", $"\nbsdf135success1245somethingelse{Environment.NewLine}csdf136success2245somethingnew{Environment.NewLine}dsdf137success3245somethingold"], testClass.Split(textWithMultipleMatches, 2));
         }
 
         [Fact]
@@ -97,8 +97,8 @@ dsdf137success3245somethingold";
             RegexTestClass testClass = new RegexTestClass();
 
             Assert.Equal(text, testClass.Match(text).Groups[0].Value);
-            Assert.Equal([0, 1, 2], testClass.GetGroupNumbers());
-            Assert.Equal(["0", "1", "output"], testClass.GetGroupNames());
+            Assert.Equal(new int[] { 0, 1, 2 }, testClass.GetGroupNumbers());
+            Assert.Equal<string>(["0", "1", "output"], testClass.GetGroupNames());
         }
     }
 }

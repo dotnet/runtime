@@ -450,17 +450,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
     }
 
-    //
-    // Update loop info
-    //
-    nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-    if (needsSizeCheck)
-    {
-        sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    }
-
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
     assert(BasicBlock::sameEHRegion(prevBb, nullcheckBb));
@@ -693,13 +682,6 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         fgRemoveRefPred(block, prevBb);
         fgAddRefPred(tlsRootNullCondBB, prevBb);
         prevBb->SetTarget(tlsRootNullCondBB);
-
-        //
-        // Update loop info if loop table is known to be valid
-        //
-        tlsRootNullCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-        fastPathBb->bbNatLoopNum        = prevBb->bbNatLoopNum;
-        fallbackBb->bbNatLoopNum        = prevBb->bbNatLoopNum;
 
         // All blocks are expected to be in the same EH region
         assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1080,14 +1062,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     // fallback will just execute first time
     fallbackBb->bbSetRunRarely();
 
-    //
-    // Update loop info if loop table is known to be valid
-    //
-    maxThreadStaticBlocksCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-    threadStaticBlockNullCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastPathBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
-
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
     assert(BasicBlock::sameEHRegion(prevBb, maxThreadStaticBlocksCondBB));
@@ -1449,13 +1423,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     isInitedBb->inheritWeight(prevBb);
     helperCallBb->bbSetRunRarely();
 
-    //
-    // Update loop info if loop table is known to be valid
-    //
-
-    isInitedBb->bbNatLoopNum   = prevBb->bbNatLoopNum;
-    helperCallBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
     assert(BasicBlock::sameEHRegion(prevBb, isInitedBb));
@@ -1794,12 +1761,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     fastpathBb->inheritWeight(lengthCheckBb);
     block->inheritWeight(prevBb);
 
-    //
-    // Update bbNatLoopNum for all new blocks
-    //
-    lengthCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastpathBb->bbNatLoopNum    = prevBb->bbNatLoopNum;
-
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
     assert(BasicBlock::sameEHRegion(prevBb, lengthCheckBb));
@@ -1927,9 +1888,8 @@ static CORINFO_CLASS_HANDLE PickLikelyClass(Compiler* comp, IL_OFFSET offset, un
 //
 bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    if (!call->IsHelperCall() || !impIsCastHelperMayHaveProfileData(call->GetHelperNum()))
+    if (!call->IsHelperCall())
     {
-        // Not a cast helper we're interested in
         return false;
     }
 
@@ -1938,6 +1898,26 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         // It's not eligible for expansion (already expanded in importer)
         // To be removed once we move cast expansion here completely.
         return false;
+    }
+
+    bool isInstanceOf = false;
+    switch (call->GetHelperNum())
+    {
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+            isInstanceOf = true;
+            break;
+
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTCLASS:
+        case CORINFO_HELP_CHKCASTANY:
+            break;
+
+        default:
+            return false;
     }
 
     // Helper calls are never tail calls
@@ -1982,6 +1962,13 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     if (castResult == TypeCompareState::May)
     {
         JITDUMP("compareTypesForCast returned May for this candidate\n");
+        return false;
+    }
+
+    if ((castResult == TypeCompareState::MustNot) && !isInstanceOf)
+    {
+        // Don't expand castclass if likelyclass always fails the type check
+        // it's going to throw an exception anyway.
         return false;
     }
 
@@ -2101,12 +2088,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     lastBb->inheritWeight(firstBb);
 
     //
-    // Update bbNatLoopNum for all new blocks and validate EH regions
+    // Validate EH regions
     //
-    nullcheckBb->bbNatLoopNum        = firstBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum         = firstBb->bbNatLoopNum;
-    typeCheckBb->bbNatLoopNum        = firstBb->bbNatLoopNum;
-    typeCheckSucceedBb->bbNatLoopNum = firstBb->bbNatLoopNum;
     assert(BasicBlock::sameEHRegion(firstBb, lastBb));
     assert(BasicBlock::sameEHRegion(firstBb, nullcheckBb));
     assert(BasicBlock::sameEHRegion(firstBb, fallbackBb));

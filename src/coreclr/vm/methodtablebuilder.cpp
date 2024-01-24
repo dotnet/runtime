@@ -2751,7 +2751,7 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
             }
-            if (strnlen(strMethodName, MAX_CLASS_NAME) >= MAX_CLASS_NAME)
+            if(IsStrLongerThan(strMethodName,MAX_CLASS_NAME))
             {
                 BuildMethodTableThrowException(BFA_METHOD_NAME_TOO_LONG);
             }
@@ -4057,8 +4057,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
                         }
 
-                        if (strnlen((char *)pszClassName, MAX_CLASS_NAME) >= MAX_CLASS_NAME
-                            || strnlen((char *)pszNameSpace, MAX_CLASS_NAME) >= MAX_CLASS_NAME
+                        if (IsStrLongerThan((char *)pszClassName, MAX_CLASS_NAME)
+                            || IsStrLongerThan((char *)pszNameSpace, MAX_CLASS_NAME)
                             || (strlen(pszClassName) + strlen(pszNameSpace) + 1 >= MAX_CLASS_NAME))
                         {
                             BuildMethodTableThrowException(BFA_TYPEREG_NAME_TOO_LONG, mdMethodDefNil);
