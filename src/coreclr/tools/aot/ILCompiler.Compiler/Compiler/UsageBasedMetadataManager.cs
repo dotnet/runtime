@@ -34,7 +34,7 @@ namespace ILCompiler
     /// This class is responsible for managing native metadata to be emitted into the compiled
     /// module. It applies a policy that every type/method that is statically used shall be reflectable.
     /// </summary>
-    public sealed class UsageBasedMetadataManager : GeneratingMetadataManager
+    public sealed class UsageBasedMetadataManager : MetadataManager
     {
         private readonly CompilationModuleGroup _compilationModuleGroup;
 

@@ -68,7 +68,6 @@
       - $(RunAOTCompilationAfterBuild)      - Run AOT compilation even after Build. By default, it is run only for publish.
                                               Defaults to false.
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
-      - $(WasmEnableLegacyJsInterop)        - Include support for legacy JS interop. Defaults to true.
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM post MVP Exception Handling runtime extension.
       - $(WasmEnableSIMD)                   - Enable support for the WASM post MVP SIMD runtime extension.
       - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to Webcil wrapped in .wasm (default: true)

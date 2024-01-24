@@ -283,7 +283,6 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
 
 export type EmscriptenInternals = {
     isPThread: boolean,
-    linkerDisableLegacyJsInterop: boolean,
     linkerWasmEnableSIMD: boolean,
     linkerWasmEnableEH: boolean,
     linkerEnableAotProfiler: boolean,
@@ -452,6 +451,16 @@ export interface WasmRootBuffer {
 }
 
 export declare interface EmscriptenModuleInternal {
+    HEAP8: Int8Array,
+    HEAP16: Int16Array;
+    HEAP32: Int32Array;
+    HEAP64: BigInt64Array;
+    HEAPU8: Uint8Array;
+    HEAPU16: Uint16Array;
+    HEAPU32: Uint32Array;
+    HEAPF32: Float32Array;
+    HEAPF64: Float64Array;
+
     __locateFile?: (path: string, prefix?: string) => string;
     locateFile?: (path: string, prefix?: string) => string;
     mainScriptUrlOrBlob?: string;

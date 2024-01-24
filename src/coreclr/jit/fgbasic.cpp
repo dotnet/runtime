@@ -693,35 +693,15 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             break;
 
         case BBJ_COND:
-        {
-            FlowEdge* oldEdge = fgGetPredForBlock(oldTarget, block);
-            assert(oldEdge != nullptr);
 
+            // Functionally equivalent to above
             if (block->TrueTargetIs(oldTarget))
             {
-                if (block->FalseTargetIs(oldTarget))
-                {
-                    assert(oldEdge->getDupCount() == 2);
-                    fgRemoveConditionalJump(block);
-                    assert(block->KindIs(BBJ_ALWAYS));
-                    block->SetTarget(newTarget);
-                }
-                else
-                {
-                    block->SetTrueTarget(newTarget);
-                }
+                block->SetTrueTarget(newTarget);
+                fgRemoveRefPred(oldTarget, block);
+                fgAddRefPred(newTarget, block);
             }
-            else
-            {
-                assert(block->FalseTargetIs(oldTarget));
-                block->SetFalseTarget(newTarget);
-            }
-
-            assert(oldEdge->getDupCount() == 1);
-            fgRemoveRefPred(oldTarget, block);
-            fgAddRefPred(newTarget, block);
             break;
-        }
 
         case BBJ_SWITCH:
         {
@@ -4924,17 +4904,6 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
     assert(prevBb->KindIs(BBJ_ALWAYS) && prevBb->JumpsToNext() && prevBb->NextIs(block));
     prevBb->SetFlags(BBF_NONE_QUIRK);
 
-    if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
-    {
-        block->bbNatLoopNum = prevBb->bbNatLoopNum;
-
-        // Update lpBottom after block split
-        if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
-        {
-            optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
-        }
-    }
-
     return block;
 }
 
@@ -5083,17 +5052,13 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     if (curr->KindIs(BBJ_COND))
     {
+        curr->SetFalseTarget(curr->Next());
+        fgReplacePred(succ, curr, newBlock);
         if (curr->TrueTargetIs(succ))
         {
+            // Now 'curr' jumps to newBlock
             curr->SetTrueTarget(newBlock);
         }
-        else
-        {
-            assert(curr->FalseTargetIs(succ));
-            curr->SetFalseTarget(newBlock);
-        }
-
-        fgReplacePred(succ, curr, newBlock);
         fgAddRefPred(newBlock, curr);
     }
     else if (curr->KindIs(BBJ_SWITCH))
@@ -5303,12 +5268,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         /* At this point the bbPreds and bbRefs had better be zero */
         noway_assert((block->bbRefs == 0) && (block->bbPreds == nullptr));
-
-        if (bPrev->KindIs(BBJ_COND) && bPrev->FalseTargetIs(block))
-        {
-            assert(bNext != nullptr);
-            bPrev->SetFalseTarget(bNext);
-        }
     }
     else // block is empty
     {
@@ -5355,9 +5314,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         }
 #endif // FEATURE_EH_FUNCLETS
 
-        /* First update the loop table and bbWeights */
-        optUpdateLoopsBeforeRemoveBlock(block, skipUnmarkLoop);
-
         // Update successor block start IL offset, if empty predecessor
         // covers the immediately preceding range.
         if ((block->bbCodeOffsEnd == succBlock->bbCodeOffs) && (block->bbCodeOffs != BAD_IL_OFFSET))
@@ -5390,14 +5346,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         {
             BasicBlock* predBlock = pred->getSourceBlock();
 
-            /* Are we changing a loop backedge into a forward jump? */
-
-            if (block->isLoopHead() && (predBlock->bbNum >= block->bbNum) && (predBlock->bbNum <= succBlock->bbNum))
-            {
-                /* First update the loop table and bbWeights */
-                optUpdateLoopsBeforeRemoveBlock(predBlock);
-            }
-
             /* If predBlock is a new predecessor, then add it to succBlock's
                predecessor's list. */
             if (!predBlock->KindIs(BBJ_SWITCH))
@@ -5418,15 +5366,24 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     break;
 
                 case BBJ_COND:
-                    if (predBlock->TrueTargetIs(block))
+                    /* The links for the direct predecessor case have already been updated above */
+                    if (!predBlock->TrueTargetIs(block))
                     {
-                        predBlock->SetTrueTarget(succBlock);
+                        break;
                     }
 
-                    if (predBlock->FalseTargetIs(block))
+                    /* Check if both sides of the BBJ_COND now jump to the same block */
+                    if (predBlock->FalseTargetIs(succBlock))
                     {
-                        predBlock->SetFalseTarget(succBlock);
+                        // Make sure we are replacing "block" with "succBlock" in predBlock->bbTarget.
+                        noway_assert(predBlock->TrueTargetIs(block));
+                        predBlock->SetTrueTarget(succBlock);
+                        fgRemoveConditionalJump(predBlock);
+                        break;
                     }
+
+                    noway_assert(predBlock->TrueTargetIs(block));
+                    predBlock->SetTrueTarget(succBlock);
                     break;
 
                 case BBJ_CALLFINALLY:
@@ -5461,9 +5418,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 break;
 
             case BBJ_COND:
-                // block should not be a target anymore
-                assert(!bPrev->TrueTargetIs(block));
-                assert(!bPrev->FalseTargetIs(block));
+                bPrev->SetFalseTarget(block->Next());
 
                 /* Check if both sides of the BBJ_COND now jump to the same block */
                 if (bPrev->TrueTargetIs(bPrev->GetFalseTarget()))
@@ -5531,7 +5486,7 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
 //   Newly inserted block after bSrc that jumps to bDst,
 //   or nullptr if bSrc already falls through to bDst
 //
-BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, bool noFallThroughQuirk /* = false */)
+BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 {
     assert(bSrc != nullptr);
     assert(fgPredsComputed);
@@ -5539,25 +5494,12 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, b
 
     /* If bSrc falls through to a block that is not bDst, we will insert a jump to bDst */
 
-    if (bSrc->KindIs(BBJ_COND) && bSrc->FalseTargetIs(bDst) && !bSrc->NextIs(bDst))
+    if (bSrc->KindIs(BBJ_COND) && !bSrc->NextIs(bDst))
     {
-        assert(fgGetPredForBlock(bDst, bSrc) != nullptr);
-
-        // Allow the caller to decide whether to use the old logic of maintaining implicit fallthrough behavior,
-        // or to allow BBJ_COND blocks' false targets to diverge from bbNext.
-        // TODO-NoFallThrough: Remove this quirk once callers' dependencies on implicit fallthrough are gone.
-        if (noFallThroughQuirk)
-        {
-            return jmpBlk;
-        }
-
         // Add a new block after bSrc which jumps to 'bDst'
         jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
         bSrc->SetFalseTarget(jmpBlk);
         fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
-
-        // Record the loop number in the new block
-        jmpBlk->bbNatLoopNum = bSrc->bbNatLoopNum;
 
         // When adding a new jmpBlk we will set the bbWeight and bbFlags
         //
@@ -5724,14 +5666,8 @@ bool Compiler::fgRenumberBlocks()
  */
 bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc /* = NULL */)
 {
-    if (bJump->KindIs(BBJ_COND))
-    {
-        assert(bJump->TrueTargetIs(bDest) || bJump->FalseTargetIs(bDest));
-    }
-    else
-    {
-        assert(bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest));
-    }
+    assert((bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest)) ||
+           (bJump->KindIs(BBJ_COND) && bJump->TrueTargetIs(bDest)));
 
     bool        result = false;
     BasicBlock* bTemp  = (bSrc == nullptr) ? bJump : bSrc;
@@ -6161,46 +6097,6 @@ DONE:
     return bLast;
 }
 
-//------------------------------------------------------------------------
-// fgMightHaveLoop: return true if there is a possibility that the method has a loop (a back edge is present).
-// This function doesn't depend on any previous loop computations, including predecessors. It looks for any
-// lexical back edge to a block previously seen in a forward walk of the block list.
-//
-// As it walks all blocks and all successors of each block (including EH successors), it is not cheap.
-// It returns as soon as any possible loop is discovered.
-//
-// Return Value:
-//    true if there might be a loop
-//
-bool Compiler::fgMightHaveLoop()
-{
-    // Don't use a BlockSet for this temporary bitset of blocks: we don't want to have to call EnsureBasicBlockEpoch()
-    // and potentially change the block epoch.
-
-    BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
-    BitVec       blocksSeen(BitVecOps::MakeEmpty(&blockVecTraits));
-
-    for (BasicBlock* const block : Blocks())
-    {
-        BitVecOps::AddElemD(&blockVecTraits, blocksSeen, block->bbNum);
-
-        BasicBlockVisit result = block->VisitAllSuccs(this, [&](BasicBlock* succ) {
-            if (BitVecOps::IsMember(&blockVecTraits, blocksSeen, succ->bbNum))
-            {
-                return BasicBlockVisit::Abort;
-            }
-
-            return BasicBlockVisit::Continue;
-        });
-
-        if (result == BasicBlockVisit::Abort)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
 /*****************************************************************************
  *
  * Insert a BasicBlock before the given block.
@@ -6376,83 +6272,6 @@ void Compiler::fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk)
     }
 
     insertAfterBlk->SetNext(newBlk);
-}
-
-// We have two edges (bAlt => bCur) and (bCur => bNext).
-//
-// Returns true if the weight of (bAlt => bCur)
-//  is greater than the weight of (bCur => bNext).
-// We compare the edge weights if we have valid edge weights
-//  otherwise we compare blocks weights.
-//
-bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
-{
-    // bCur can't be NULL and must be a fall through bbKind
-    noway_assert(bCur != nullptr);
-    noway_assert(bCur->bbFallsThrough() || (bCur->KindIs(BBJ_ALWAYS) && bCur->JumpsToNext()));
-    noway_assert(bAlt != nullptr);
-
-    if (bAlt->KindIs(BBJ_ALWAYS))
-    {
-        // If bAlt doesn't jump to bCur, it can't be a better fall through than bCur
-        if (!bAlt->TargetIs(bCur))
-        {
-            return false;
-        }
-    }
-    else if (bAlt->KindIs(BBJ_COND))
-    {
-        // If bAlt doesn't potentially jump to bCur, it can't be a better fall through than bCur
-        if (!bAlt->TrueTargetIs(bCur))
-        {
-            return false;
-        }
-    }
-    else
-    {
-        // We only handle the cases when bAlt is a BBJ_ALWAYS or a BBJ_COND
-        return false;
-    }
-
-    // BBJ_CALLFINALLY shouldn't have a flow edge into the next (BBJ_CALLFINALLYRET) block
-    if (bCur->isBBCallFinallyPair())
-    {
-        return false;
-    }
-
-    // Currently bNext is the fall through for bCur
-    // TODO-NoFallThrough: Allow bbFalseTarget to diverge from bbNext for BBJ_COND
-    assert(!bCur->KindIs(BBJ_COND) || bCur->NextIs(bCur->GetFalseTarget()));
-    BasicBlock* bNext = bCur->Next();
-    noway_assert(bNext != nullptr);
-
-    // We will set result to true if bAlt is a better fall through than bCur
-    bool result;
-    if (fgHaveValidEdgeWeights)
-    {
-        // We will compare the edge weight for our two choices
-        FlowEdge* edgeFromAlt = fgGetPredForBlock(bCur, bAlt);
-        FlowEdge* edgeFromCur = fgGetPredForBlock(bNext, bCur);
-        noway_assert(edgeFromCur != nullptr);
-        noway_assert(edgeFromAlt != nullptr);
-
-        result = (edgeFromAlt->edgeWeightMin() > edgeFromCur->edgeWeightMax());
-    }
-    else
-    {
-        if (bAlt->KindIs(BBJ_ALWAYS))
-        {
-            // Our result is true if bAlt's weight is more than bCur's weight
-            result = (bAlt->bbWeight > bCur->bbWeight);
-        }
-        else
-        {
-            noway_assert(bAlt->KindIs(BBJ_COND));
-            // Our result is true if bAlt's weight is more than twice bCur's weight
-            result = (bAlt->bbWeight > (2 * bCur->bbWeight));
-        }
-    }
-    return result;
 }
 
 //------------------------------------------------------------------------
@@ -6663,31 +6482,14 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
             }
         }
 
-        // Look for an insert location:
-        // 1. We want blocks that don't end with a fall through,
-        // 2. Also, when blk equals nearBlk we may want to insert here.
+        // Look for an insert location. We want blocks that don't end with a fall through.
         // Quirk: Manually check for BBJ_COND fallthrough behavior
         const bool blkFallsThrough =
             blk->bbFallsThrough() && (!blk->KindIs(BBJ_COND) || blk->NextIs(blk->GetFalseTarget()));
         const bool blkJumpsToNext = blk->KindIs(BBJ_ALWAYS) && blk->HasFlag(BBF_NONE_QUIRK) && blk->JumpsToNext();
-        if ((!blkFallsThrough && !blkJumpsToNext) || (blk == nearBlk))
+        if (!blkFallsThrough && !blkJumpsToNext)
         {
             bool updateBestBlk = true; // We will probably update the bestBlk
-
-            // If blk falls through then we must decide whether to use the nearBlk
-            // hint
-            if (blkFallsThrough || blkJumpsToNext)
-            {
-                noway_assert(blk == nearBlk);
-                if (jumpBlk != nullptr)
-                {
-                    updateBestBlk = fgIsBetterFallThrough(blk, jumpBlk);
-                }
-                else
-                {
-                    updateBestBlk = false;
-                }
-            }
 
             // If we already have a best block, see if the 'runRarely' flags influences
             // our choice. If we want a runRarely insertion point, and the existing best
@@ -6697,7 +6499,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
             // want a non-rarely-run block), but bestBlock->isRunRarely() is true. In that
             // case, we should update the block, also. Probably what we want is:
             //    (bestBlk->isRunRarely() != runRarely) && (blk->isRunRarely() == runRarely)
-            if (updateBestBlk && (bestBlk != nullptr) && runRarely && bestBlk->isRunRarely() && !blk->isRunRarely())
+            if ((bestBlk != nullptr) && runRarely && bestBlk->isRunRarely() && !blk->isRunRarely())
             {
                 updateBestBlk = false;
             }
@@ -7165,58 +6967,6 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
 
     /* If afterBlk falls through, we insert a jump around newBlk */
     fgConnectFallThrough(afterBlk, newBlk->Next());
-
-    // If the loop table is valid, add this block to the appropriate loop.
-    // Note we don't verify (via flow) that this block actually belongs
-    // to the loop, just that it is lexically within the span of blocks
-    // in the loop.
-    //
-    if (optLoopTableValid)
-    {
-        BasicBlock* const bbPrev = newBlk->Prev();
-        BasicBlock* const bbNext = newBlk->Next();
-
-        if ((bbPrev != nullptr) && (bbNext != nullptr))
-        {
-            BasicBlock::loopNumber const prevLoopNum = bbPrev->bbNatLoopNum;
-            BasicBlock::loopNumber const nextLoopNum = bbNext->bbNatLoopNum;
-
-            if ((prevLoopNum != BasicBlock::NOT_IN_LOOP) && (nextLoopNum != BasicBlock::NOT_IN_LOOP))
-            {
-                if (prevLoopNum == nextLoopNum)
-                {
-                    newBlk->bbNatLoopNum = prevLoopNum;
-                }
-                else
-                {
-                    BasicBlock::loopNumber const prevParentLoopNum = optLoopTable[prevLoopNum].lpParent;
-                    BasicBlock::loopNumber const nextParentLoopNum = optLoopTable[nextLoopNum].lpParent;
-
-                    if (nextParentLoopNum == prevLoopNum)
-                    {
-                        // next is in child loop
-                        newBlk->bbNatLoopNum = prevLoopNum;
-                    }
-                    else if (prevParentLoopNum == nextLoopNum)
-                    {
-                        // prev is in child loop
-                        newBlk->bbNatLoopNum = nextLoopNum;
-                    }
-                    else
-                    {
-                        // next and prev are siblings
-                        assert(prevParentLoopNum == nextParentLoopNum);
-                        newBlk->bbNatLoopNum = prevParentLoopNum;
-                    }
-                }
-            }
-        }
-
-        if (newBlk->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
-        {
-            JITDUMP("Marked " FMT_BB " as lying within " FMT_LP "\n", newBlk->bbNum, newBlk->bbNatLoopNum);
-        }
-    }
 
 #ifdef DEBUG
     fgVerifyHandlerTab();

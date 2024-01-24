@@ -285,6 +285,16 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
 //
 int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
 {
+    if (HWIntrinsicInfo::IsEmbRoundingCompatible(id))
+    {
+        // The only case this branch should be hit is that JIT is generating a jump table fallback when the
+        // FloatRoundingMode is not a compile-time constant.
+        // Although the expected FloatRoundingMode values are 8, 9, 10, 11, but in the generated jump table, results for
+        // entries within [0, 11] are all calculated,
+        // Any unexpected value, say [0, 7] should be blocked by the managed code.
+        return 11;
+    }
+
     assert(HWIntrinsicInfo::lookupCategory(id) == HW_Category_IMM);
 
     switch (id)
