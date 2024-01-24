@@ -816,5 +816,18 @@ namespace DebuggerTests
                     ("mc.Method(instance2.propInt)", TNumber(12))
                 ); 
            });
+        
+        [Fact]
+        public async Task EvaluateValueTypeWithFixedArrayAndMoreFields() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateValueTypeWithFixedArray", "run", 3, "DebuggerTests.EvaluateValueTypeWithFixedArray.run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateValueTypeWithFixedArray:run'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               await RuntimeEvaluateAndCheck(
+                   ("myVar.MyMethod()", TNumber(13)),
+                   ("myVar.myIntArray[0]", TNumber(1)),
+                   ("myVar.myIntArray[1]", TNumber(2)),
+                   ("myVar.myCharArray[2]", TChar('a')));
+           });
     }
 }

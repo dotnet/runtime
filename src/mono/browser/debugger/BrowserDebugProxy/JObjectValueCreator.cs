@@ -104,7 +104,6 @@ internal sealed class JObjectValueCreator
             case ElementType.U:
             case ElementType.Void:
             case (ElementType)ValueTypeId.VType:
-            case (ElementType)ValueTypeId.FixedArray:
                 ret = Create(value: "void", type: "void", description: "void");
                 break;
             case ElementType.Boolean:
@@ -419,4 +418,199 @@ internal sealed class JObjectValueCreator
                               objectId: "dotnet:array:" + objectId,
                               subtype: length.Rank == 1 ? "array" : null);
     }
+
+    private JObject ReadAsFixedSizeArray(MonoBinaryReader retDebuggerCmdReader)
+    {
+        ElementType fixedArrayType = (ElementType)retDebuggerCmdReader.ReadByte();
+        var fixedLen = retDebuggerCmdReader.ReadInt32();
+        string description = "{";
+        string className = "";
+        for (int i = 0 ; i < fixedLen ; i++)
+        {
+            switch (fixedArrayType)
+            {
+                case ElementType.Boolean:
+                {
+                    description += retDebuggerCmdReader.ReadInt32();
+                    className = "bool";
+                    break;
+                }
+                case ElementType.I1:
+                {
+                    description += retDebuggerCmdReader.ReadSByte();
+                    className = "number";
+                    break;
+                }
+                case ElementType.I2:
+                case ElementType.I4:
+                {
+                    className = "number";
+                    description += retDebuggerCmdReader.ReadInt32();
+                    break;
+                }
+                case ElementType.U1:
+                {
+                    className = "number";
+                    description += retDebuggerCmdReader.ReadUByte();
+                    break;
+                }
+                case ElementType.U2:
+                {
+                    className = "number";
+                    description += retDebuggerCmdReader.ReadUShort();
+                    break;
+                }
+                case ElementType.U4:
+                {
+                    className = "number";
+                    description += retDebuggerCmdReader.ReadUInt32();
+                    break;
+                }
+                case ElementType.R4:
+                {
+                    className = "number";
+                    description += retDebuggerCmdReader.ReadSingle();
+                    break;
+                }
+                case ElementType.Char:
+                {
+                    className = "char";
+                    description += Convert.ToChar(retDebuggerCmdReader.ReadInt32());
+                    break;
+                }
+                case ElementType.I8:
+                {
+                    className = "number";
+                    description += retDebuggerCmdReader.ReadInt64();
+                    break;
+                }
+                case ElementType.U8:
+                {
+                    className = "number";
+                    description += retDebuggerCmdReader.ReadUInt64();
+                    break;
+                }
+                case ElementType.R8:
+                {
+                    className = "number";
+                    description += retDebuggerCmdReader.ReadDouble();
+                    break;
+                }
+                case ElementType.FnPtr:
+                case ElementType.Ptr:
+                {
+                    className = "ptr";
+                    description += retDebuggerCmdReader.ReadInt64();
+                    break;
+                }
+                default:
+                {
+                    _logger.LogDebug($"Could not evaluate CreateJObjectForVariableValue invalid type {fixedArrayType}");
+                    break;
+                }
+            }
+            if (i+1 < fixedLen)
+                description += ", ";
+        }
+        return Create<object>(value: null,
+                              type: "object",
+                              description: description + "}",
+                              className:  className + "[]",
+                              objectId: null,
+                              subtype: "array");
+    }
+    public async Task<JObject> CreateFixedArrayElement(MonoBinaryReader retDebuggerCmdReader, ElementType etype, string name, CancellationToken token)
+    {
+        JObject ret = null;
+        switch (etype)
+        {
+            case ElementType.I:
+            case ElementType.U:
+            case ElementType.Void:
+            case (ElementType)ValueTypeId.VType:
+                ret = Create(value: "void", type: "void", description: "void");
+                break;
+            case ElementType.Boolean:
+                {
+                    var value = retDebuggerCmdReader.ReadInt32();
+                    ret = CreateFromPrimitiveType(value == 1);
+                    break;
+                }
+            case ElementType.I1:
+                {
+                    var value = retDebuggerCmdReader.ReadSByte();
+                    ret = CreateJObjectForNumber<int>(value);
+                    break;
+                }
+            case ElementType.I2:
+            case ElementType.I4:
+                {
+                    var value = retDebuggerCmdReader.ReadInt32();
+                    ret = CreateJObjectForNumber<int>(value);
+                    break;
+                }
+            case ElementType.U1:
+                {
+                    var value = retDebuggerCmdReader.ReadUByte();
+                    ret = CreateJObjectForNumber<int>(value);
+                    break;
+                }
+            case ElementType.U2:
+                {
+                    var value = retDebuggerCmdReader.ReadUShort();
+                    ret = CreateJObjectForNumber<int>(value);
+                    break;
+                }
+            case ElementType.U4:
+                {
+                    var value = retDebuggerCmdReader.ReadUInt32();
+                    ret = CreateJObjectForNumber<uint>(value);
+                    break;
+                }
+            case ElementType.R4:
+                {
+                    float value = retDebuggerCmdReader.ReadSingle();
+                    ret = CreateJObjectForNumber<float>(value);
+                    break;
+                }
+            case ElementType.Char:
+                {
+                    var value = retDebuggerCmdReader.ReadInt32();
+                    ret = CreateJObjectForChar(value);
+                    break;
+                }
+            case ElementType.I8:
+                {
+                    long value = retDebuggerCmdReader.ReadInt64();
+                    ret = CreateJObjectForNumber<long>(value);
+                    break;
+                }
+            case ElementType.U8:
+                {
+                    ulong value = retDebuggerCmdReader.ReadUInt64();
+                    ret = CreateJObjectForNumber<ulong>(value);
+                    break;
+                }
+            case ElementType.R8:
+                {
+                    double value = retDebuggerCmdReader.ReadDouble();
+                    ret = CreateJObjectForNumber<double>(value);
+                    break;
+                }
+            case ElementType.FnPtr:
+            case ElementType.Ptr:
+                {
+                    ret = await ReadAsPtrValue(etype, retDebuggerCmdReader, name, token);
+                    break;
+                }
+            default:
+                {
+                    _logger.LogDebug($"Could not evaluate CreateFixedArrayElement invalid type {etype}");
+                    break;
+                }
+        }
+        ret["name"] = name;
+        return ret;
+    }
+
 }

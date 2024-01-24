@@ -5010,7 +5010,7 @@ buffer_add_fixed_array (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain
 {
 	buffer_add_byte (buf, VALUE_TYPE_ID_FIXED_ARRAY);
 	buffer_add_byte (buf, t->type);
-	buffer_add_int (buf, len_fixed_array );
+	buffer_add_int (buf, len_fixed_array);
 	for (gint32 i = 0; i < len_fixed_array; i++) {
 		switch (t->type) {
 			case MONO_TYPE_BOOLEAN:
@@ -5461,7 +5461,7 @@ decode_fixed_size_array_internal (MonoType *t, int type, MonoDomain *domain, gui
 
 
 static int 
-decode_fixed_size_array_compute_size_internal (MonoType *t, int type, MonoDomain *domain, guint8 *buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype)
+decode_fixed_size_array_compute_size_internal (MonoType *t, int type, MonoDomain *domain, guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
 	int ret = 0;
 	int fixedSizeLen = 1;
@@ -5490,7 +5490,7 @@ decode_fixed_size_array_compute_size_internal (MonoType *t, int type, MonoDomain
 				break;
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4:
-			case MONO_TYPE_R4:	
+			case MONO_TYPE_R4:
 				decode_int (buf, &buf, limit);
 				ret += sizeof(guint32);
 				break;
@@ -5595,7 +5595,7 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 		goto end;
 	}
 	if (type == VALUE_TYPE_ID_FIXED_ARRAY && t->type != MONO_TYPE_VALUETYPE) {
-		ret += decode_fixed_size_array_compute_size_internal (t, type, domain, buf, endbuf, limit, check_field_datatype);
+		ret += decode_fixed_size_array_compute_size_internal (t, type, domain, buf, &buf, limit);
 		goto end;
 	}
 	switch (t->type) {
@@ -5720,7 +5720,8 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		return ERR_INVALID_ARGUMENT;
 	}
 	if (type == VALUE_TYPE_ID_FIXED_ARRAY && t->type != MONO_TYPE_VALUETYPE) {
-		decode_fixed_size_array_internal (t, type, domain, addr, buf, endbuf, limit, check_field_datatype);
+		decode_fixed_size_array_internal (t, type, domain, addr, buf, &buf, limit, check_field_datatype);
+		*endbuf = buf;
 		return ERR_NONE;
 	}
 
