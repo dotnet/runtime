@@ -464,13 +464,13 @@ namespace System.Diagnostics.Tracing
         [MethodImpl(MethodImplOptions.NoInlining)]
         public unsafe void ThreadPoolIOPack(NativeOverlapped* nativeOverlapped)
         {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
+            {
 #if TARGET_WINDOWS
                 IntPtr overlapped = ThreadPool.UseWindowsThreadPool ? 0 : (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
 #else
                 IntPtr overlapped = (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
 #endif
-            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
-            {
                 ThreadPoolIOPack(
                     (IntPtr)nativeOverlapped,
                     overlapped);
