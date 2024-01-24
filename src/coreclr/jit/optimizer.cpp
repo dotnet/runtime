@@ -2437,6 +2437,20 @@ PhaseStatus Compiler::optOptimizeLayout()
     noway_assert(opts.OptimizationEnabled());
 
     fgUpdateFlowGraph(/* doTailDuplication */ false);
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+    {
+        if (block->KindIs(BBJ_COND) && !block->NextIs(block->GetFalseTarget()))
+        {
+            BasicBlock* jmpBlk = fgConnectFallThrough(block, block->GetFalseTarget());
+            assert(jmpBlk != nullptr);
+            assert(block->NextIs(jmpBlk));
+
+            // Skip next block
+            block = jmpBlk;
+        }
+    }
+
     fgReorderBlocks(/* useProfile */ true);
     fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
 
