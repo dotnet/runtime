@@ -1494,7 +1494,7 @@ FCIMPL2(FC_UINT8_RET,COMInterlocked::Exchange8, UINT8 *location, UINT8 value)
 {
     FCALL_CONTRACT;
 
-    return InterlockedExchange8((CHAR *) location, value);
+    return (UINT8)InterlockedExchange8((CHAR *) location, (CHAR)value);
 }
 FCIMPLEND
 
@@ -1526,7 +1526,7 @@ FCIMPL3(FC_UINT8_RET, COMInterlocked::CompareExchange8, UINT8* location, UINT8 v
 {
     FCALL_CONTRACT;
 
-    return InterlockedCompareExchange8((CHAR*)location, value, comparand);
+    return (UINT8)InterlockedCompareExchange8((CHAR*)location, (CHAR)value, (CHAR)comparand);
 }
 FCIMPLEND
 
