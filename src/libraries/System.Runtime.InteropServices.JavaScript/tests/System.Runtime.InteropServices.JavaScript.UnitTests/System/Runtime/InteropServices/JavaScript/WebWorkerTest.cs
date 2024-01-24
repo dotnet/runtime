@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
@@ -48,12 +49,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #region Executors
 
-        private CancellationTokenSource CreateTestCaseTimeoutSource()
+        private CancellationTokenSource CreateTestCaseTimeoutSource([CallerMemberName] string memberName = "")
         {
+            var start = DateTime.Now;
             var cts = new CancellationTokenSource(TimeoutMilliseconds);
             cts.Token.Register(() =>
             {
-                Console.WriteLine($"Unexpected test case timeout at {DateTime.Now.ToString("u")} ManagedThreadId:{Environment.CurrentManagedThreadId}");
+                var end = DateTime.Now;
+                Console.WriteLine($"Unexpected test case {memberName} timeout after {end - start} ManagedThreadId:{Environment.CurrentManagedThreadId}");
             });
             return cts;
         }
@@ -247,11 +250,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.False(shouldNotHitPost);
         }
 
+#if !DEBUG
         [Fact]
+        // this will say something like `JSSynchronizationContext is still installed on worker 0x4ff0030.` in the console during shutdown.
         public async Task JSWebWorker_Abandon_Running()
         {
-            var cts = new CancellationTokenSource();
-
             TaskCompletionSource never = new TaskCompletionSource();
             TaskCompletionSource ready = new TaskCompletionSource();
 
@@ -261,7 +264,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 ready.SetResult();
                 return never.Task;
-            }, cts.Token);
+            }, CancellationToken.None);
 #pragma warning restore CS4014
 
             await ready.Task;
@@ -273,10 +276,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        // this will say something like `JSSynchronizationContext is still installed on worker 0x4ff0030.` in the console during shutdown.
         public async Task JSWebWorker_Abandon_Running_JS()
         {
-            var cts = new CancellationTokenSource();
-
             TaskCompletionSource ready = new TaskCompletionSource();
 
 #pragma warning disable CS4014
@@ -287,7 +289,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var never = WebWorkerTestHelper.JSDelay(int.MaxValue);
                 ready.SetResult();
                 await never;
-            }, cts.Token);
+            }, CancellationToken.None);
 #pragma warning restore CS4014
 
             await ready.Task;
@@ -297,11 +299,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             // it should not prevent mono and the test suite from exiting
         }
+#endif
+
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task Executor_Propagates(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             bool hit = false;
             var failedTask = executor.Execute(() =>
             {
@@ -321,7 +325,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedConsole(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(() =>
             {
                 Console.WriteLine("C# Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId);
@@ -332,7 +336,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSConsole(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(() =>
             {
                 WebWorkerTestHelper.Log("JS Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
@@ -343,7 +347,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task NativeThreadId(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await executor.StickyAwait(WebWorkerTestHelper.InitializeAsync(), cts.Token);
@@ -367,7 +371,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task ThreadingTimer(Executor executor)
         {
             var hit = false;
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 TaskCompletionSource tcs = new TaskCompletionSource();
@@ -389,7 +393,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSDelay_ContinueWith(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
@@ -405,7 +409,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task JSDelay_ConfigureAwait_True(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
@@ -420,7 +424,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task ManagedDelay_ContinueWith(Executor executor)
         {
             var hit = false;
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await Task.Delay(10, cts.Token).ContinueWith(_ =>
@@ -434,7 +438,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedDelay_ConfigureAwait_True(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await Task.Delay(10, cts.Token).ConfigureAwait(true);
@@ -446,7 +450,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedYield(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
                 await Task.Yield();
@@ -463,23 +467,37 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             TaskCompletionSource<T> readyTCS = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource doneTCS = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
+            var e1Done = false;
+            var e2Done = false;
             var e1 = executor1.Execute(async () =>
             {
-                await e1Job(doneTCS.Task, readyTCS);
-                if (!readyTCS.Task.IsCompleted)
+                try
                 {
-                    readyTCS.SetResult(default);
+                    await e1Job(doneTCS.Task, readyTCS);
+                    if (!readyTCS.Task.IsCompleted)
+                    {
+                        readyTCS.SetResult(default);
+                    }
+                    await doneTCS.Task;
                 }
-                await doneTCS.Task;
+                finally
+                {
+                    e1Done = true;
+                }
             }, cts.Token);
 
             var r1 = await readyTCS.Task.ConfigureAwait(true);
 
             var e2 = executor2.Execute(async () =>
             {
-                await e2Job(r1);
-
+                try
+                {
+                    await e2Job(r1);
+                }
+                finally
+                {
+                    e2Done = true;
+                }
             }, cts.Token);
 
             try
@@ -488,9 +506,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 doneTCS.SetResult();
                 await e1;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                cts.Cancel();
+                if (ex is OperationCanceledException oce && cts.Token.IsCancellationRequested)
+                {
+                    throw;
+                }
+                Console.WriteLine("ActionsInDifferentThreads failed with: \n" + ex);
+                if (!e1Done || !e2Done)
+                {
+                    Console.WriteLine("ActionsInDifferentThreads canceling!");
+                    cts.Cancel();
+                }
                 throw;
             }
         }
@@ -498,7 +525,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads2x))]
         public async Task JSObject_CapturesAffinity(Executor executor1, Executor executor2)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var e1Job = async (Task e2done, TaskCompletionSource<JSObject> e1State) =>
             {
@@ -533,7 +560,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task WebSocketClient_ContentInSameThread(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
             var message = "hello";
@@ -556,9 +583,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
 
         [Theory, MemberData(nameof(GetTargetThreads2x))]
-        public Task WebSocketClient_ResponseCloseInDifferentThread(Executor executor1, Executor executor2)
+        public async Task WebSocketClient_ResponseCloseInDifferentThread(Executor executor1, Executor executor2)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
             var message = "hello";
@@ -587,13 +614,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
             };
 
-            return ActionsInDifferentThreads<ClientWebSocket>(executor1, executor2, e1Job, e2Job, cts);
+            await ActionsInDifferentThreads<ClientWebSocket>(executor1, executor2, e1Job, e2Job, cts);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads2x))]
-        public Task WebSocketClient_CancelInDifferentThread(Executor executor1, Executor executor2)
+        public async Task WebSocketClient_CancelInDifferentThread(Executor executor1, Executor executor2)
         {
-            var cts = new CancellationTokenSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
             var message = ".delay5sec"; // this will make the loopback server slower
@@ -620,7 +647,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 Assert.Equal(cts2.Token, ex.CancellationToken);
             };
 
-            return ActionsInDifferentThreads<ClientWebSocket>(executor1, executor2, e1Job, e2Job, cts);
+            await ActionsInDifferentThreads<ClientWebSocket>(executor1, executor2, e1Job, e2Job, cts);
         }
 
         #endregion
@@ -630,7 +657,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task HttpClient_ContentInSameThread(Executor executor)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             var uri = WebWorkerTestHelper.GetOriginUrl() + "/_framework/blazor.boot.json";
 
             await executor.Execute(async () =>
@@ -648,9 +675,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static string HelloJson = "{'hello':'world'}".Replace('\'', '"');
         private static string EchoStart = "{\"Method\":\"POST\",\"Url\":\"/Echo.ashx";
 
-        private Task HttpClient_ActionInDifferentThread(string url, Executor executor1, Executor executor2, Func<HttpResponseMessage, Task> e2Job)
+        private async Task HttpClient_ActionInDifferentThread(string url, Executor executor1, Executor executor2, Func<HttpResponseMessage, Task> e2Job)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
 
             var e1Job = async (Task e2done, TaskCompletionSource<HttpResponseMessage> e1State) =>
             {
@@ -669,7 +696,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 await e2done;
             };
-            return ActionsInDifferentThreads<HttpResponseMessage>(executor1, executor2, e1Job, e2Job, cts);
+            await ActionsInDifferentThreads<HttpResponseMessage>(executor1, executor2, e1Job, e2Job, cts);
         }
 
         [Theory, MemberData(nameof(GetTargetThreads2x))]

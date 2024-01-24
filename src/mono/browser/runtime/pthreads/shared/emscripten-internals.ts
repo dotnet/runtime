@@ -15,6 +15,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 // This is what we know about the Emscripten PThread library
 export interface PThreadLibrary {
     unusedWorkers: PThreadWorker[];
+    runningWorkers: PThreadWorker[];
     pthreads: PThreadInfoMap;
     allocateUnusedWorker: () => void;
     loadWasmModuleToWorker: (worker: Worker) => Promise<Worker>;
@@ -45,7 +46,7 @@ function isRunningPThreadWorker(w: Worker): w is PThreadWorker {
 }
 
 /// These utility functions dig into Emscripten internals
-export const Internals = !MonoWasmThreads ? null as any : {
+export const Internals = !MonoWasmThreads ? (null as any) : {
     get modulePThread(): PThreadLibrary {
         return (<any>Module).PThread as PThreadLibrary;
     },
@@ -65,10 +66,13 @@ export const Internals = !MonoWasmThreads ? null as any : {
         /// It's called when the pool of workers is empty and a new thread is created.
         Internals.modulePThread.allocateUnusedWorker();
     },
-    getUnusedWorkerPool: (): Worker[] => {
+    getUnusedWorkerPool: (): PThreadWorker[] => {
         return Internals.modulePThread.unusedWorkers;
     },
-    loadWasmModuleToWorker: (worker: Worker): Promise<Worker> => {
+    getRunningWorkers: (): PThreadWorker[] => {
+        return Internals.modulePThread.runningWorkers;
+    },
+    loadWasmModuleToWorker: (worker: PThreadWorker): Promise<PThreadWorker> => {
         return Internals.modulePThread.loadWasmModuleToWorker(worker);
     }
 };
