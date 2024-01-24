@@ -9364,7 +9364,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
             if (isPredicateRegister(reg3) &&
                 (sopt == INS_SCALABLE_OPTS_NONE || sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE))
             {
-                // and is preferred alias for mov
                 assert(opt == INS_OPTS_SCALABLE_B);
                 assert(isPredicateRegister(reg1)); // DDDD
                 assert(isPredicateRegister(reg2)); // gggg
