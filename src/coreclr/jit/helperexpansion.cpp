@@ -2123,7 +2123,7 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
         return NO_CLASS_HANDLE;
     }
 
-    if ((castResult == TypeCompareState::MustNot) && !isCastClass)
+    if ((castResult == TypeCompareState::MustNot) && isCastClass)
     {
         // Our fast path candidate never passes the type check (may happen with PGO-driven expansion),
         // we can return null if the type check against it passes. It doesn't make a lot of sense to do it
@@ -2139,16 +2139,14 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
     else
     {
         // Our likely candidate never passes the type check -> return null on successful type check
-        assert(!isCastClass);
         assert(castResult == TypeCompareState::MustNot);
         *typeCheckPassed = P_ReturnNull;
     }
 
-    if ((result == castToCls) && (*typeCheckFailed == F_CallHelper))
+    if (isCastClass && (result == castToCls) && (*typeCheckFailed == F_CallHelper))
     {
-        assert(isCastClass);
         // TODO-InlineCast: Change helper to faster CORINFO_HELP_CHKCASTCLASS_SPECIAL
-        // it won't check for null and castToCls assuming we already've done it inline.
+        // it won't check for null and castToCls assuming we've already done it inline.
     }
 
     // A common denominator class for the fast and the fallback paths
