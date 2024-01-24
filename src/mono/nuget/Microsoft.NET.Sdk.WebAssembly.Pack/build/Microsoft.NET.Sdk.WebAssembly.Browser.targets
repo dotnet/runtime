@@ -203,7 +203,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_BlazorWebAssemblyStartupMemoryCache>$(BlazorWebAssemblyStartupMemoryCache)</_BlazorWebAssemblyStartupMemoryCache>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
-      <_WasmDebugLevel>$(WasmDebugLevel)</_WasmDebugLevel>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
@@ -334,7 +333,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
     <PropertyGroup>
       <_WasmBuildBootJsonPath>$(IntermediateOutputPath)blazor.boot.json</_WasmBuildBootJsonPath>
-      <_WasmDebugLevel Condition="'$(_WasmDebugLevel)' == ''">-1</_WasmDebugLevel>
+      <_WasmBuildDebugLevel>$(WasmDebugLevel)</_WasmBuildDebugLevel>
+      <_WasmBuildDebugLevel Condition="'$(_WasmBuildDebugLevel)' == ''">-1</_WasmBuildDebugLevel>
     </PropertyGroup>
 
     <ItemGroup>
@@ -363,7 +363,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssemblyPath="@(IntermediateAssembly)"
       Resources="@(_WasmOutputWithHash)"
       DebugBuild="true"
-      DebugLevel="$(_WasmDebugLevel)"
+      DebugLevel="$(_WasmBuildDebugLevel)"
       LinkerEnabled="false"
       CacheBootResources="$(BlazorCacheBootResources)"
       OutputPath="$(_WasmBuildBootJsonPath)"
@@ -533,7 +533,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="GeneratePublishWasmBootJson" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">
     <PropertyGroup>
-      <_WasmDebugLevel Condition="'$(_WasmDebugLevel)' == ''">0</_WasmDebugLevel>
+      <_WasmPublishDebugLevel>$(WasmDebugLevel)</_WasmPublishDebugLevel>
+      <_WasmPublishDebugLevel Condition="'$(_WasmPublishDebugLevel)' == ''">0</_WasmPublishDebugLevel>
     </PropertyGroup>
 
     <ItemGroup>
@@ -569,7 +570,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssemblyPath="@(IntermediateAssembly)"
       Resources="@(_WasmPublishBootResourceWithHash)"
       DebugBuild="false"
-      DebugLevel="$(_WasmDebugLevel)"
+      DebugLevel="$(_WasmPublishDebugLevel)"
       LinkerEnabled="$(PublishTrimmed)"
       CacheBootResources="$(BlazorCacheBootResources)"
       OutputPath="$(IntermediateOutputPath)blazor.publish.boot.json"
