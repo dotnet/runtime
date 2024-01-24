@@ -1687,9 +1687,8 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 
 	/* We use the callee saved registers for global allocation */
 	regs = g_list_prepend (regs, (gpointer)AMD64_RBX);
-	if (!mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
+	if (!mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL))
 		regs = g_list_prepend (regs, (gpointer)AMD64_R12);
-	}
 	regs = g_list_prepend (regs, (gpointer)AMD64_R13);
 	regs = g_list_prepend (regs, (gpointer)AMD64_R14);
 	regs = g_list_prepend (regs, (gpointer)AMD64_R15);
@@ -1840,13 +1839,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		guint32 iregs_to_save = AMD64_CALLEE_SAVED_REGS & ~(1<<AMD64_RBP);
 		cfg->arch.saved_iregs |= iregs_to_save;
 	}
-
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-	if (mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
-		cfg->arch.saved_iregs |= (size_t)(1 << AMD64_R12);
-		cfg->used_int_regs |= (size_t)(1 << AMD64_R12);
-	}
-#endif
 
 	if (cfg->arch.omit_fp)
 		cfg->arch.reg_save_area_offset = offset;
@@ -4287,6 +4279,12 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 {
 	CallInfo *cinfo;
 	guint32 quad;
+
+	if (cfg->arch.swift_error_var) {
+		MonoInst *ins = cfg->arch.swift_error_var;
+		amd64_mov_reg_membase (code, AMD64_R11, ins->inst_basereg, ins->inst_offset, sizeof (target_mgreg_t));
+		amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_R12, sizeof (target_mgreg_t));
+	}
 
 	/* Move return value to the target register */
 	/* FIXME: do this in the local reg allocator */
@@ -8399,12 +8397,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	/* Mark the start of the epilog */
 	mono_emit_unwind_op_mark_loc (cfg, code, 0);
-
-	if (cfg->arch.swift_error_var) {
-		MonoInst *ins = cfg->arch.swift_error_var;
-		amd64_mov_reg_membase (code, AMD64_R11, ins->inst_basereg, ins->inst_offset, sizeof (target_mgreg_t));
-		amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_R12, sizeof (target_mgreg_t));
-	}
 
 	/* Save the uwind state which is needed by the out-of-line code */
 	mono_emit_unwind_op_remember_state (cfg, code);

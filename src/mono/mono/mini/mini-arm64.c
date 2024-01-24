@@ -2618,7 +2618,8 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	/* r28 is reserved for cfg->arch.args_reg */
 	/* r27 is reserved for the imt argument */
 	for (i = ARMREG_R19; i <= ARMREG_R26; ++i) {
-		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
+		if (!(mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL) && i == ARMREG_R21))
+			regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
 	}
 
 	return regs;
@@ -3722,6 +3723,12 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 {
 	CallInfo *cinfo;
 	MonoCallInst *call;
+
+	if (cfg->arch.swift_error_var) {
+		MonoInst *ins = cfg->arch.swift_error_var;
+		code = emit_ldrx (code, ARMREG_IP0, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
+		code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
+	}
 
 	call = (MonoCallInst*)ins;
 	cinfo = call->call_info;
@@ -6322,12 +6329,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 	default:
 		break;
-	}
-
-	if (cfg->arch.swift_error_var) {
-		MonoInst *ins = cfg->arch.swift_error_var;
-		code = emit_ldrx (code, ARMREG_IP0, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
-		code = emit_strx (code, ARMREG_R21, ARMREG_IP0, 0);
 	}
 
 	/* Destroy frame */
