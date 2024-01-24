@@ -207,6 +207,9 @@
     <GrpcDotnetClientVersion>2.45.0</GrpcDotnetClientVersion>
     <GrpcToolsVersion>2.45.0</GrpcToolsVersion>
     <CompilerPlatformTestingVersion>1.1.2-beta1.23323.1</CompilerPlatformTestingVersion>
+    <CompilerPlatformTestingDiffPlexVersion>1.7.2</CompilerPlatformTestingDiffPlexVersion>
+    <CompilerPlatformTestingMicrosoftVisualBasicVersion>10.2.0</CompilerPlatformTestingMicrosoftVisualBasicVersion>
+    <CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>17.0.46</CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>8.0.0-preview-20230918.1</MicrosoftPrivateIntellisenseVersion>
     <!-- Mono Cecil -->
