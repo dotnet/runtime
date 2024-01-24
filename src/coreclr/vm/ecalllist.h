@@ -488,17 +488,6 @@ FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
 FCFuncEnd()
 
-#ifdef FEATURE_COMINTEROP
-FCFuncStart(gMngdSafeArrayMarshalerFuncs)
-    FCFuncElement("CreateMarshaler", MngdSafeArrayMarshaler::CreateMarshaler)
-    FCFuncElement("ConvertSpaceToNative", MngdSafeArrayMarshaler::ConvertSpaceToNative)
-    FCFuncElement("ConvertContentsToNative", MngdSafeArrayMarshaler::ConvertContentsToNative)
-    FCFuncElement("ConvertSpaceToManaged", MngdSafeArrayMarshaler::ConvertSpaceToManaged)
-    FCFuncElement("ConvertContentsToManaged", MngdSafeArrayMarshaler::ConvertContentsToManaged)
-    FCFuncElement("ClearNative", MngdSafeArrayMarshaler::ClearNative)
-FCFuncEnd()
-#endif // FEATURE_COMINTEROP
-
 FCFuncStart(gStubHelperFuncs)
     FCFuncElement("GetDelegateTarget", StubHelpers::GetDelegateTarget)
     FCFuncElement("TryGetStringTrailByte", StubHelpers::TryGetStringTrailByte)
@@ -609,9 +598,6 @@ FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("MngdSafeArrayMarshaler", "System.StubHelpers", gMngdSafeArrayMarshalerFuncs)
-#endif // FEATURE_COMINTEROP
 FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
 FCClassElement("Object", "System", gObjectFuncs)

@@ -3389,12 +3389,6 @@ protected:
 class MngdSafeArrayMarshaler
 {
 public:
-    static FCDECL5(void, CreateMarshaler,           MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler);
-    static FCDECL3(void, ConvertSpaceToNative,      MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL4(void, ConvertContentsToNative,   MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, Object* pOriginalManagedUNSAFE);
-    static FCDECL3(void, ConvertSpaceToManaged,     MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ConvertContentsToManaged,  MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ClearNative,               MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
 
     enum StaticCheckStateFlags
     {
@@ -3410,6 +3404,13 @@ public:
     BYTE            m_fStatic;     // StaticCheckStateFlags
     BYTE            m_nolowerbounds;
 };
+
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
 #endif // FEATURE_COMINTEROP
 
 class ILReferenceCustomMarshaler : public ILMngdMarshaler

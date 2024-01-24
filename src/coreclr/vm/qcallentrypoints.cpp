@@ -308,6 +308,12 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToManaged)
     DllImportEntry(MngdFixedArrayMarshaler_ClearNativeContents)
 #ifdef FEATURE_COMINTEROP
+    DllImportEntry(MngdSafeArrayMarshaler_CreateMarshaler)
+    DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToNative)
+    DllImportEntry(MngdSafeArrayMarshaler_ConvertContentsToNative)
+    DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToManaged)
+    DllImportEntry(MngdSafeArrayMarshaler_ConvertContentsToManaged)
+    DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
     DllImportEntry(OAVariant_ChangeType)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(NativeLibrary_LoadFromPath)

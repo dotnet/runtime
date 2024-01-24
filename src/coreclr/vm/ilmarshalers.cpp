@@ -4809,11 +4809,9 @@ void ILSafeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmi
     pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_NATIVE, 4, 0);
 }
 
-
-
-FCIMPL5(void, MngdSafeArrayMarshaler::CreateMarshaler, MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
     pThis->m_pElementMT    = pMT;
     pThis->m_iRank         = iRank;
@@ -4822,30 +4820,29 @@ FCIMPL5(void, MngdSafeArrayMarshaler::CreateMarshaler, MngdSafeArrayMarshaler* p
     pThis->m_nolowerbounds = (BYTE)(dwFlags >> 24);
     pThis->m_pManagedMarshaler = pManagedMarshaler;
 }
-FCIMPLEND
 
-FCIMPL3(void, MngdSafeArrayMarshaler::ConvertSpaceToNative, MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
 {
-    FCALL_CONTRACT;
-
-    if (pThis->m_fStatic & SCSF_IsStatic)
-        return;
-
-    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
-
-    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
-
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        QCALL_CHECK;
         PRECONDITION(pThis->m_vt != VT_EMPTY);
         PRECONDITION(CheckPointer(pThis->m_pElementMT));
     }
     CONTRACTL_END;
 
-    if (*pManagedHome != NULL)
+    if (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_IsStatic)
+        return;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    BASEARRAYREF arrayRef = NULL;
+    GCPROTECT_BEGIN(arrayRef);
+    arrayRef = (BASEARRAYREF)pManagedHome.Get();
+
+    if (arrayRef != NULL)
     {
         *pNativeHome = (void *) OleVariant::CreateSafeArrayForArrayRef(&arrayRef, pThis->m_vt, pThis->m_pElementMT);
     }
@@ -4854,60 +4851,67 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertSpaceToNative, MngdSafeArrayMarshal
         *pNativeHome = NULL;
     }
 
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
+    GCPROTECT_END();
 
-FCIMPL4(void, MngdSafeArrayMarshaler::ConvertContentsToNative, MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, Object* pOriginalManagedUNSAFE)
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(pThis->m_vt != VT_EMPTY);
         PRECONDITION(CheckPointer(pThis->m_pElementMT));
     }
     CONTRACTL_END;
 
-    OBJECTREF pOriginalManaged = ObjectToOBJECTREF(pOriginalManagedUNSAFE);
-    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
-    HELPER_METHOD_FRAME_BEGIN_2(arrayRef, pOriginalManaged);
+    BEGIN_QCALL;
+    GCX_COOP();
 
-    if ((pThis->m_fStatic & SCSF_IsStatic) &&
-        (*pManagedHome != pOriginalManaged))
+    struct
+    {
+        OBJECTREF originalManaged;
+        BASEARRAYREF arrayRef;
+    } gc = {NULL, NULL};
+
+    GCPROTECT_BEGIN(gc);
+
+    gc.originalManaged = pOriginalManaged.Get();
+    gc.arrayRef = (BASEARRAYREF)pManagedHome.Get();
+
+    if ((pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_IsStatic) &&
+        (gc.arrayRef != gc.originalManaged))
     {
         COMPlusThrow(kInvalidOperationException, IDS_INVALID_REDIM);
     }
 
-    if (*pManagedHome != NULL)
+    if (gc.arrayRef != NULL)
     {
-        OleVariant::MarshalSafeArrayForArrayRef(&arrayRef,
+        OleVariant::MarshalSafeArrayForArrayRef(&gc.arrayRef,
                                                 (SAFEARRAY*)*pNativeHome,
                                                 pThis->m_vt,
                                                 pThis->m_pElementMT,
                                                 pThis->m_pManagedMarshaler,
-                                                (pThis->m_fStatic & SCSF_NativeDataValid));
+                                                (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_NativeDataValid));
     }
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(void, MngdSafeArrayMarshaler::ConvertSpaceToManaged, MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(pThis->m_vt != VT_EMPTY);
         PRECONDITION(CheckPointer(pThis->m_pElementMT));
     }
     CONTRACTL_END;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    // In the field scenario, pManagedHome points to a field inside a struct/object.
-    // Since we are setting the value of this field with SetObjectReference, we need to
-    // make sure that pManagedHome is GC-protected.
-    GCPROTECT_BEGININTERIOR(pManagedHome);
+    BEGIN_QCALL;
+    GCX_COOP();
 
     if (*pNativeHome != NULL)
     {
@@ -4943,72 +4947,72 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertSpaceToManaged, MngdSafeArrayMarsha
                                                             pThis->m_vt,
                                                             pThis->m_pElementMT);
 
-        SetObjectReference(pManagedHome, arrayRef);
+        pManagedHome.Set(arrayRef);
     }
     else
     {
-        SetObjectReference(pManagedHome, NULL);
+        pManagedHome.Set(NULL);
     }
 
-    GCPROTECT_END();
-
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(void, MngdSafeArrayMarshaler::ConvertContentsToManaged, MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(pThis->m_vt != VT_EMPTY);
         PRECONDITION(CheckPointer(pThis->m_pElementMT));
     }
     CONTRACTL_END;
 
+    BEGIN_QCALL;
+    GCX_COOP();
+
     SAFEARRAY* pNative = *(SAFEARRAY**)pNativeHome;
-    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
-    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
+    BASEARRAYREF arrayRef = NULL;
+
+    GCPROTECT_BEGIN(arrayRef);
+    arrayRef = (BASEARRAYREF) pManagedHome.Get();
 
     if (pNative && pNative->fFeatures & FADF_STATIC)
     {
-        pThis->m_fStatic |= SCSF_IsStatic;
+        pThis->m_fStatic |= MngdSafeArrayMarshaler::SCSF_IsStatic;
     }
 
     if (*pNativeHome != NULL)
     {
-        OleVariant::MarshalArrayRefForSafeArray((SAFEARRAY*)*pNativeHome,
+        OleVariant::MarshalArrayRefForSafeArray(pNative,
                                                 &arrayRef,
                                                 pThis->m_vt,
                                                 pThis->m_pManagedMarshaler,
                                                 pThis->m_pElementMT);
     }
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(void, MngdSafeArrayMarshaler::ClearNative, MngdSafeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    if (pThis->m_fStatic & SCSF_IsStatic)
+    if (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_IsStatic)
         return;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BEGIN_QCALL;
 
     if (*pNativeHome != NULL)
     {
-        GCX_PREEMP();
         _ASSERTE(GetModuleHandleA("oleaut32.dll") != NULL);
         // SafeArray has been created.  Oleaut32.dll must have been loaded.
         CONTRACT_VIOLATION(ThrowsViolation);
         SafeArrayDestroy((SAFEARRAY*)*pNativeHome);
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 #endif // FEATURE_COMINTEROP
 
