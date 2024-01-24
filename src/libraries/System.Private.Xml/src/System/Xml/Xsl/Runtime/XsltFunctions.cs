@@ -367,26 +367,25 @@ namespace System.Xml.Xsl.Runtime
         {
             try
             {
-                string locale = GetCultureInfo(lang).Name;
-
                 if (!XsdDateTime.TryParse(dateTime, XsdDateTimeFlags.AllXsd | XsdDateTimeFlags.XdrDateTime | XsdDateTimeFlags.XdrTimeNoTz, out XsdDateTime xdt))
                 {
                     return string.Empty;
                 }
 
-                var ci = new CultureInfo(locale);
-
                 DateTime dt = xdt.ToZulu();
+                CultureInfo ci = string.IsNullOrEmpty(lang) ?
+                                    CultureInfo.CurrentCulture :
+                                    GetCultureInfo(lang);
 
                 if (isDate)
                 {
                     DateOnly dateOnly = DateOnly.FromDateTime(dt);
-                    return dateOnly.ToString(format.Length != 0 ? format : null, ci);
+                    return dateOnly.ToString(!string.IsNullOrEmpty(format) ? format : null, ci);
                 }
                 else
                 {
                     TimeOnly timeOnly = TimeOnly.FromDateTime(dt);
-                    if (format.Length != 0)
+                    if (!string.IsNullOrEmpty(format))
                     {
                         return timeOnly.ToString(format, ci);
                     }
@@ -398,8 +397,8 @@ namespace System.Xml.Xsl.Runtime
                     }
                 }
             }
-            catch (ArgumentException)
-            { // Operations with DateTime can throw this exception
+            catch (Exception ex) when (ex is ArgumentException or FormatException)
+            {
                 return string.Empty;
             }
         }
