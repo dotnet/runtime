@@ -213,9 +213,7 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(Compiler*   comp,
                 uint32_t vectorTByteLength = comp->getVectorTByteLength();
 
 #if defined(TARGET_XARCH)
-                if ((vectorTByteLength == 16) ||
-                    (vectorTByteLength == 32) ||
-                    (vectorTByteLength == 64))
+                if ((vectorTByteLength == 16) || (vectorTByteLength == 32) || (vectorTByteLength == 64))
 #else
                 if (vectorTByteLength == 16)
 #endif
