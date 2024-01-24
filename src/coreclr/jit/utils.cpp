@@ -381,8 +381,8 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                 }
             }
 #if defined(TARGET_ARM64)
-            else if ((regNum == regLast) || (regNum == REG_R17)  // last register before TEB
-                                         || (regNum == REG_R28)) // last register before FP
+            else if ((regNum == regLast) || (regNum == REG_R17) // last register before TEB
+                     || (regNum == REG_R28))                    // last register before FP
 #elif defined(TARGET_LOONGARCH64)
             else if ((regNum == regLast) || (regNum == REG_A7) || (regNum == REG_T8))
 #else
