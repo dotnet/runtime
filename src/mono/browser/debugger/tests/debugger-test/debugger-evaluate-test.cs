@@ -2269,4 +2269,26 @@ namespace DebuggerTests
             myVar.MyMethod();
         }
     }
+
+    public struct EvaluateValueTypeWithObjectValueType
+    {
+        private object myObject;
+        double myDouble;
+        public EvaluateValueTypeWithObjectValueType()
+        {
+            myObject = new int();
+            myDouble = 10;
+        }
+        public int MyMethod()
+        {
+            Console.WriteLine(myDouble);
+            return (int)myObject + (int)myDouble;
+        }
+        public static void run()
+        {
+            var myVar = new EvaluateValueTypeWithObjectValueType();
+            Console.WriteLine("pause here");
+            myVar.MyMethod();
+        }
+    }
 }

@@ -5372,8 +5372,8 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	}
 
 	nfields = decode_int (buf, &buf, limit);
-		while ((f = mono_class_get_fields_internal (klass, &iter))) {
-				if (G_UNLIKELY (!f->type)) {
+	while ((f = mono_class_get_fields_internal (klass, &iter))) {
+		if (G_UNLIKELY (!f->type)) {
 			ERROR_DECL(error);
 			mono_field_resolve_type (f, error);
 			mono_error_cleanup (error);
@@ -5534,18 +5534,18 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 	}
 
 	nfields = decode_int (buf, &buf, limit);
-		while ((f = mono_class_get_fields_internal (klass, &iter))) {
-				if (G_UNLIKELY (!f->type)) {
+	while ((f = mono_class_get_fields_internal (klass, &iter))) {
+		if (G_UNLIKELY (!f->type)) {
 			ERROR_DECL(error);
 			mono_field_resolve_type (f, error);
 			mono_error_cleanup (error);
 			if (!f->type)
-							continue;
-			}
-				if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
-					continue;
-				if (mono_field_is_deleted (f))
-					continue;
+				continue;
+		}
+		if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (f))
+			continue;
 				
 		gboolean cur_field_in_extra_space = from_by_ref_value_type;
   		gboolean members_in_extra_space = cur_field_in_extra_space || m_type_is_byref (f->type) || m_class_is_byreflike (mono_class_from_mono_type_internal (f->type));
@@ -5553,8 +5553,8 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 		if (members_in_extra_space)
 			ret += field_size;
 		if (err != ERR_NONE)
-					return err;
-				nfields --;
+			return err;
+		nfields --;
 		if (CHECK_PROTOCOL_VERSION(2, 66) && inlineArraySize > 0)
 		{
 			for (int i = 1; i < inlineArraySize; i++) {
@@ -5577,8 +5577,7 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 {
 	if (type == 0)
 		type = decode_byte (buf, &buf, limit);
-		int ret = 0;
-	ErrorCode err;
+	int ret = 0;
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
 		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
 		!(type == VALUE_TYPE_ID_FIXED_ARRAY) &&

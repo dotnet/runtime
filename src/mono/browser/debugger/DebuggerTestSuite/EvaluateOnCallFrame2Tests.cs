@@ -829,5 +829,15 @@ namespace DebuggerTests
                    ("myVar.myIntArray[1]", TNumber(2)),
                    ("myVar.myCharArray[2]", TChar('a')));
            });
+        
+        [Fact]
+        public async Task EvaluateValueTypeWithObjectValueType() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateValueTypeWithObjectValueType", "run", 3, "DebuggerTests.EvaluateValueTypeWithObjectValueType.run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateValueTypeWithObjectValueType:run'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               await RuntimeEvaluateAndCheck(
+                   ("myVar.MyMethod()", TNumber(10)));
+           });
     }
 }
