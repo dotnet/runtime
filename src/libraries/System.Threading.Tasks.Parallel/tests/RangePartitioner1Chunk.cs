@@ -167,6 +167,7 @@ namespace System.Threading.Tasks.Tests
         /// Exception is expected and the enumerators are disposed
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91581", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void ExceptionOnMoveNext()
         {
             static void exceptionOnMoveNext(int length, int indexToThrow, bool isOrderable)

@@ -239,6 +239,8 @@
         <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Net.WebSockets.Client.Tests'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Numerics.Tensors.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Numerics.Tensors.Net8.Tests'">01:20:00</Timeout>
       </HelixWorkItem>
     </ItemGroup>
 
@@ -266,6 +268,8 @@
         <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Net.WebSockets.Client.Tests'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Numerics.Tensors.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Numerics.Tensors.Net8.Tests'">01:20:00</Timeout>
       </HelixWorkItem>
 
     </ItemGroup>
