@@ -79,6 +79,7 @@
 
     // Fix the stack by restoring the original return address
     ldr         lr, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    ldr         r12, [r2, #OFFSETOF__Thread__m_uHijackedReturnValueFlags]
 
     // Clear hijack state
     mov         r3, #0
@@ -129,7 +130,8 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     bne         LOCAL_LABEL(WaitForGC)
     bx          lr
 LOCAL_LABEL(WaitForGC):
-    mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0)
+    mov         r3, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0)
+    orr         r12, r3
     b           RhpWaitForGC
 NESTED_END RhpGcProbeHijack
 
