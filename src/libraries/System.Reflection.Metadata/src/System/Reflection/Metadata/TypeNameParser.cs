@@ -21,15 +21,15 @@ namespace System.Reflection.Metadata
             _parseOptions = options ?? new();
         }
 
-        public static TypeName Parse(ReadOnlySpan<char> name, TypeNameParserOptions? options = default)
+        public static TypeName Parse(ReadOnlySpan<char> name, bool allowFullyQualifiedName = true, TypeNameParserOptions? options = default)
         {
             TypeNameParser parser = new(name, options);
-            TypeName typeName = parser.Parse();
+            TypeName typeName = parser.Parse(allowFullyQualifiedName);
             // TODO: throw for non-consumed input like trailing whitespaces
             return typeName;
         }
 
-        private TypeName Parse()
+        private TypeName Parse(bool allowFullyQualifiedName)
         {
             _inputString = _inputString.TrimStart(' '); // spaces at beginning are ok, BTW Roslyn does not need that as their input comes already trimmed
 
@@ -41,7 +41,9 @@ namespace System.Reflection.Metadata
 
             _inputString = _inputString.Slice(offset);
 
-            return new (candidate);
+            AssemblyName? assemblyName = allowFullyQualifiedName ? ParseAssemblyName() : null;
+
+            return new (candidate, assemblyName);
         }
 
         // Normalizes "not found" to input length, since caller is expected to slice.
@@ -73,23 +75,53 @@ namespace System.Reflection.Metadata
 
             return (int)Math.Min((uint)offset, (uint)input.Length);
         }
+
+        private AssemblyName? ParseAssemblyName()
+        {
+            if (!_inputString.IsEmpty && _inputString[0] == ',')
+            {
+                _inputString = _inputString.Slice(1).TrimStart(' ');
+
+                // The only delimiter which can terminate an assembly name is ']'.
+                // Otherwise EOL serves as the terminator.
+                int assemblyNameLength = (int)Math.Min((uint)_inputString.IndexOf(']'), (uint)_inputString.Length);
+
+                string candidate = _inputString.Slice(0, assemblyNameLength).ToString();
+                _inputString = _inputString.Slice(assemblyNameLength);
+                // we may want to consider throwing a different exception for an empty string here
+                // TODO: make sure the parsing below is safe for untrusted input
+                return new AssemblyName(candidate);
+            }
+
+            return null;
+        }
     }
 
     public readonly struct TypeName
     {
-        internal TypeName(string? fullName) : this() => FullName = Name = fullName!;
+        internal TypeName(string name, AssemblyName? assemblyName) : this()
+        {
+            Name = name;
+            AssemblyName = assemblyName;
+            AssemblyQualifiedName = assemblyName is null ? name : $"{name}, {assemblyName.FullName}";
+        }
 
-        public string? AssemblyQualifiedName { get; }
+        public string AssemblyQualifiedName { get; } // TODO: do we really need that?
+        public AssemblyName? AssemblyName { get; } // TODO: AssemblyName is mutable, are we fine with that? Does it not offer too much?
         public bool ContainsGenericParameters { get; }
         public TypeName[] GenericTypeArguments => Array.Empty<TypeName>();
-        public string? FullName { get; }
         public bool IsArray { get; }
         public bool IsVariableBoundArrayType { get; }
         public bool IsManagedPointerType { get; } // inconsistent with Type.IsByRef
         public bool IsUnmanagedPointerType { get; } // inconsistent with Type.IsPointer
         public bool IsNested { get; } // ?? not needed right now?
+
+        /// <summary>
+        /// The name of this type, including namespace, but without the assembly name; e.g., "System.Int32".
+        /// Nested types are represented with a '+'; e.g., "MyNamespace.MyType+NestedType".
+        /// </summary>
         public string Name { get; }
-        public string? Namespace { get; }
+
         public int GetArrayRank() => 0;
     }
 

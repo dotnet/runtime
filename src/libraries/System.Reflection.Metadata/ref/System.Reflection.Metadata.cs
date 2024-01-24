@@ -2411,8 +2411,8 @@ namespace System.Reflection.Metadata
     public readonly partial struct TypeName
     {
         public string? AssemblyQualifiedName { get { throw null; } }
+        public System.Reflection.AssemblyName? AssemblyName { get { throw null; } }
         public bool ContainsGenericParameters { get { throw null; } }
-        public string? FullName { get { throw null; } }
         public System.Reflection.Metadata.TypeName[] GenericTypeArguments { get { throw null; } }
         public bool IsArray { get { throw null; } }
         public bool IsManagedPointerType { get { throw null; } }
@@ -2420,12 +2420,11 @@ namespace System.Reflection.Metadata
         public bool IsUnmanagedPointerType { get { throw null; } }
         public bool IsVariableBoundArrayType { get { throw null; } }
         public string Name { get { throw null; } }
-        public string? Namespace { get { throw null; } }
         public int GetArrayRank() { throw null; }
     }
     public ref partial struct TypeNameParser
     {
-        public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> name, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
+        public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> name, bool allowFullyQualifiedName = true, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
     }
     public partial class TypeNameParserOptions
     {
