@@ -693,35 +693,15 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             break;
 
         case BBJ_COND:
-        {
-            FlowEdge* oldEdge = fgGetPredForBlock(oldTarget, block);
-            assert(oldEdge != nullptr);
 
+            // Functionally equivalent to above
             if (block->TrueTargetIs(oldTarget))
             {
-                if (block->FalseTargetIs(oldTarget))
-                {
-                    assert(oldEdge->getDupCount() == 2);
-                    fgRemoveConditionalJump(block);
-                    assert(block->KindIs(BBJ_ALWAYS));
-                    block->SetTarget(newTarget);
-                }
-                else
-                {
-                    block->SetTrueTarget(newTarget);
-                }
+                block->SetTrueTarget(newTarget);
+                fgRemoveRefPred(oldTarget, block);
+                fgAddRefPred(newTarget, block);
             }
-            else
-            {
-                assert(block->FalseTargetIs(oldTarget));
-                block->SetFalseTarget(newTarget);
-            }
-
-            assert(oldEdge->getDupCount() == 1);
-            fgRemoveRefPred(oldTarget, block);
-            fgAddRefPred(newTarget, block);
             break;
-        }
 
         case BBJ_SWITCH:
         {
@@ -5072,17 +5052,13 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     if (curr->KindIs(BBJ_COND))
     {
+        curr->SetFalseTarget(curr->Next());
+        fgReplacePred(succ, curr, newBlock);
         if (curr->TrueTargetIs(succ))
         {
+            // Now 'curr' jumps to newBlock
             curr->SetTrueTarget(newBlock);
         }
-        else
-        {
-            assert(curr->FalseTargetIs(succ));
-            curr->SetFalseTarget(newBlock);
-        }
-
-        fgReplacePred(succ, curr, newBlock);
         fgAddRefPred(newBlock, curr);
     }
     else if (curr->KindIs(BBJ_SWITCH))
@@ -5292,12 +5268,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         /* At this point the bbPreds and bbRefs had better be zero */
         noway_assert((block->bbRefs == 0) && (block->bbPreds == nullptr));
-
-        if (bPrev->KindIs(BBJ_COND) && bPrev->FalseTargetIs(block))
-        {
-            assert(bNext != nullptr);
-            bPrev->SetFalseTarget(bNext);
-        }
     }
     else // block is empty
     {
@@ -5396,15 +5366,24 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     break;
 
                 case BBJ_COND:
-                    if (predBlock->TrueTargetIs(block))
+                    /* The links for the direct predecessor case have already been updated above */
+                    if (!predBlock->TrueTargetIs(block))
                     {
-                        predBlock->SetTrueTarget(succBlock);
+                        break;
                     }
 
-                    if (predBlock->FalseTargetIs(block))
+                    /* Check if both sides of the BBJ_COND now jump to the same block */
+                    if (predBlock->FalseTargetIs(succBlock))
                     {
-                        predBlock->SetFalseTarget(succBlock);
+                        // Make sure we are replacing "block" with "succBlock" in predBlock->bbTarget.
+                        noway_assert(predBlock->TrueTargetIs(block));
+                        predBlock->SetTrueTarget(succBlock);
+                        fgRemoveConditionalJump(predBlock);
+                        break;
                     }
+
+                    noway_assert(predBlock->TrueTargetIs(block));
+                    predBlock->SetTrueTarget(succBlock);
                     break;
 
                 case BBJ_CALLFINALLY:
@@ -5439,9 +5418,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 break;
 
             case BBJ_COND:
-                // block should not be a target anymore
-                assert(!bPrev->TrueTargetIs(block));
-                assert(!bPrev->FalseTargetIs(block));
+                bPrev->SetFalseTarget(block->Next());
 
                 /* Check if both sides of the BBJ_COND now jump to the same block */
                 if (bPrev->TrueTargetIs(bPrev->GetFalseTarget()))
@@ -5509,7 +5486,7 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
 //   Newly inserted block after bSrc that jumps to bDst,
 //   or nullptr if bSrc already falls through to bDst
 //
-BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, bool noFallThroughQuirk /* = false */)
+BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 {
     assert(bSrc != nullptr);
     assert(fgPredsComputed);
@@ -5517,18 +5494,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, b
 
     /* If bSrc falls through to a block that is not bDst, we will insert a jump to bDst */
 
-    if (bSrc->KindIs(BBJ_COND) && bSrc->FalseTargetIs(bDst) && !bSrc->NextIs(bDst))
+    if (bSrc->KindIs(BBJ_COND) && !bSrc->NextIs(bDst))
     {
-        assert(fgGetPredForBlock(bDst, bSrc) != nullptr);
-
-        // Allow the caller to decide whether to use the old logic of maintaining implicit fallthrough behavior,
-        // or to allow BBJ_COND blocks' false targets to diverge from bbNext.
-        // TODO-NoFallThrough: Remove this quirk once callers' dependencies on implicit fallthrough are gone.
-        if (noFallThroughQuirk)
-        {
-            return jmpBlk;
-        }
-
         // Add a new block after bSrc which jumps to 'bDst'
         jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
         bSrc->SetFalseTarget(jmpBlk);
@@ -5699,14 +5666,8 @@ bool Compiler::fgRenumberBlocks()
  */
 bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc /* = NULL */)
 {
-    if (bJump->KindIs(BBJ_COND))
-    {
-        assert(bJump->TrueTargetIs(bDest) || bJump->FalseTargetIs(bDest));
-    }
-    else
-    {
-        assert(bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest));
-    }
+    assert((bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest)) ||
+           (bJump->KindIs(BBJ_COND) && bJump->TrueTargetIs(bDest)));
 
     bool        result = false;
     BasicBlock* bTemp  = (bSrc == nullptr) ? bJump : bSrc;

@@ -616,7 +616,7 @@ public:
 
     bool CanRemoveJumpToNext(Compiler* compiler) const;
 
-    bool CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const;
+    bool CanRemoveJumpToFalseTarget(Compiler* compiler) const;
 
     unsigned GetTargetOffs() const
     {
@@ -669,6 +669,7 @@ public:
     {
         assert(KindIs(BBJ_COND));
         assert(bbTrueTarget != nullptr);
+        assert(target != nullptr);
         return (bbTrueTarget == target);
     }
 
@@ -695,16 +696,15 @@ public:
     {
         assert(KindIs(BBJ_COND));
         assert(bbFalseTarget != nullptr);
+        assert(target != nullptr);
         return (bbFalseTarget == target);
     }
 
     void SetCond(BasicBlock* trueTarget, BasicBlock* falseTarget)
     {
-        // Switch lowering may temporarily set a block to a BBJ_COND
-        // with a null false target if it is the last block in the list.
-        // This invalid state is eventually fixed, so allow it in the below assert.
-        assert((falseTarget != nullptr) || (falseTarget == bbNext));
         assert(trueTarget != nullptr);
+        // TODO-NoFallThrough: Allow falseTarget to diverge from bbNext
+        assert(falseTarget == bbNext);
         bbKind        = BBJ_COND;
         bbTrueTarget  = trueTarget;
         bbFalseTarget = falseTarget;
@@ -785,6 +785,31 @@ public:
         assert(KindIs(BBJ_CALLFINALLYRET));
         bbTarget = finallyContinuation;
     }
+
+#ifdef DEBUG
+
+    // Return the block target; it might be null. Only used during dumping.
+    BasicBlock* GetTargetRaw() const
+    {
+        assert(HasTarget());
+        return bbTarget;
+    }
+
+    // Return the BBJ_COND true target; it might be null. Only used during dumping.
+    BasicBlock* GetTrueTargetRaw() const
+    {
+        assert(KindIs(BBJ_COND));
+        return bbTrueTarget;
+    }
+
+    // Return the BBJ_COND false target; it might be null. Only used during dumping.
+    BasicBlock* GetFalseTargetRaw() const
+    {
+        assert(KindIs(BBJ_COND));
+        return bbFalseTarget;
+    }
+
+#endif // DEBUG
 
 private:
     BasicBlockFlags bbFlags;
@@ -910,7 +935,7 @@ public:
     static weight_t getCalledCount(Compiler* comp);
 
     // getBBWeight -- get the normalized weight of this block
-    weight_t getBBWeight(Compiler* comp);
+    weight_t getBBWeight(Compiler* comp) const;
 
     // hasProfileWeight -- Returns true if this block's weight came from profile data
     bool hasProfileWeight() const
