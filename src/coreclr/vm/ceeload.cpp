@@ -4725,13 +4725,13 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
                 _ASSERTE(pBlock->m_cookies[i].classInstCount == typeContext->m_classInst.GetNumArgs());
                 _ASSERTE(pBlock->m_cookies[i].methInstCount == typeContext->m_methodInst.GetNumArgs());
 
-                BOOL instMatch = TRUE;
+                bool instMatch = true;
 
                 for (UINT j = 0; j < pBlock->m_cookies[i].classInstCount; j++)
                 {
                     if (pBlock->m_cookies[i].classInst[j] != typeContext->m_classInst[j])
                     {
-                        instMatch = FALSE;
+                        instMatch = false;
                         break;
                     }
                 }
@@ -4742,7 +4742,7 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
                     {
                         if (pBlock->m_cookies[i].methInst[j] != typeContext->m_methodInst[j])
                         {
-                            instMatch = FALSE;
+                            instMatch = false;
                             break;
                         }
                     }
