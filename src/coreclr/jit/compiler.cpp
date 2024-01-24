@@ -3047,19 +3047,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
     }
 
-// These are left for backward compatibility, to be removed
-#ifdef DEBUG
-    if (JitConfig.JitDasmWithAlignmentBoundaries())
-    {
-        opts.disAlignment = true;
-    }
-    if (JitConfig.JitDiffableDasm())
-    {
-        opts.disDiffable = true;
-        opts.dspDiffable = true;
-    }
-#endif // DEBUG
-
 //-------------------------------------------------------------------------
 
 #ifdef DEBUG
