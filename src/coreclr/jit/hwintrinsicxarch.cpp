@@ -1613,10 +1613,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_AMD64
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                intrinsic = (simdSize == 8) ? NI_SSE2_ConvertToVector128Double
-                            : (simdSize == 16) ? NI_AVX_ConvertToVector256Double
-                            : NI_AVX512F_ConvertToVector512Double;
-
                 op1     = impSIMDPopStack();
 
                 var_types simdType = getSIMDTypeForSize(simdSize);
@@ -1632,9 +1628,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // +INF: 0b0000
                 // -VAL: 0b0000
                 // +VAL: 0b0000
-                for ( int i = 0; i < 8; i++ )
+                for ( int i = 0; i < 16; i++ )
                 {
-                    tbl->gtSimdVal.i64[i] = 0x00000088;
+                    tbl->gtSimdVal.i32[i] = 0x00000088;
                 }
 
                 // Generate first operand
