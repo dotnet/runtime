@@ -58,25 +58,25 @@ namespace InterlockedTest
 
             mem = -1;
             l = -1;
-            Equals(255, Interlocked.CompareExchange(ref Unsafe.As<long, byte>(ref l), 255, 254));
+            Equals(255, Interlocked.CompareExchange(ref Unsafe.As<long, byte>(ref l), 254, 255));
             Equals(GetValue<byte>(254), l);
-            Equals(254, CompareExchangeByte()(ref Unsafe.As<long, byte>(ref l), 254, 253));
+            Equals(254, CompareExchangeByte()(ref Unsafe.As<long, byte>(ref l), 253, 254));
             Equals(GetValue<byte>(253), l);
 
             mem = 0;
             l = 0;
-            Equals(0, Interlocked.CompareExchange(ref Unsafe.As<long, sbyte>(ref l), 0, -4));
+            Equals(0, Interlocked.CompareExchange(ref Unsafe.As<long, sbyte>(ref l), -4, 0));
             Equals(GetValue<sbyte>(-4), l);
-            Equals(-4, CompareExchangeSByte()(ref Unsafe.As<long, sbyte>(ref l), -4, -5));
+            Equals(-4, CompareExchangeSByte()(ref Unsafe.As<long, sbyte>(ref l), -5, -4));
             Equals(GetValue<sbyte>(-5), l);
 
-            Equals(251, Interlocked.CompareExchange(ref Unsafe.As<long, byte>(ref l), 10, 2));
+            Equals(251, Interlocked.CompareExchange(ref Unsafe.As<long, byte>(ref l), 2, 10));
             Equals(GetValue<byte>(251), l);
-            Equals(251, CompareExchangeByte()(ref Unsafe.As<long, byte>(ref l), 10, 2));
+            Equals(251, CompareExchangeByte()(ref Unsafe.As<long, byte>(ref l), 2, 10));
             Equals(GetValue<byte>(251), l);
-            Equals(-5, Interlocked.CompareExchange(ref Unsafe.As<long, sbyte>(ref l), 10, 2));
+            Equals(-5, Interlocked.CompareExchange(ref Unsafe.As<long, sbyte>(ref l), 2, 10));
             Equals(GetValue<sbyte>(-5), l);
-            Equals(-5, CompareExchangeSByte()(ref Unsafe.As<long, sbyte>(ref l), 10, 2));
+            Equals(-5, CompareExchangeSByte()(ref Unsafe.As<long, sbyte>(ref l), 2, 10));
             Equals(GetValue<sbyte>(-5), l);
 
             mem = 0;
@@ -95,25 +95,25 @@ namespace InterlockedTest
 
             mem = 0;
             l = 0;
-            Equals(0, Interlocked.CompareExchange(ref Unsafe.As<long, short>(ref l), 0, -2));
+            Equals(0, Interlocked.CompareExchange(ref Unsafe.As<long, short>(ref l), -2, 0));
             Equals(GetValue<short>(-2), l);
-            Equals(-2, CompareExchangeShort()(ref Unsafe.As<long, short>(ref l), -2, -3));
+            Equals(-2, CompareExchangeShort()(ref Unsafe.As<long, short>(ref l), -3, -2));
             Equals(GetValue<short>(-3), l);
 
             mem = -1;
             l = -1;
-            Equals(65535, Interlocked.CompareExchange(ref Unsafe.As<long, ushort>(ref l), 65535, 65532));
+            Equals(65535, Interlocked.CompareExchange(ref Unsafe.As<long, ushort>(ref l), 65532, 65535));
             Equals(GetValue<ushort>(65532), l);
-            Equals(65532, CompareExchangeUShort()(ref Unsafe.As<long, ushort>(ref l), 65532, 65531));
+            Equals(65532, CompareExchangeUShort()(ref Unsafe.As<long, ushort>(ref l), 65531, 65532));
             Equals(GetValue<ushort>(65531), l);
 
-            Equals(-5, Interlocked.CompareExchange(ref Unsafe.As<long, short>(ref l), 1555, 1444));
+            Equals(-5, Interlocked.CompareExchange(ref Unsafe.As<long, short>(ref l), 1444, 1555));
             Equals(GetValue<short>(-5), l);
-            Equals(-5, CompareExchangeShort()(ref Unsafe.As<long, short>(ref l), 1555, 1444));
+            Equals(-5, CompareExchangeShort()(ref Unsafe.As<long, short>(ref l), 1444, 1555));
             Equals(GetValue<short>(-5), l);
-            Equals(65531, Interlocked.CompareExchange(ref Unsafe.As<long, ushort>(ref l), 1555, 1444));
+            Equals(65531, Interlocked.CompareExchange(ref Unsafe.As<long, ushort>(ref l), 1444, 1555));
             Equals(GetValue<ushort>(65531), l);
-            Equals(65531, CompareExchangeUShort()(ref Unsafe.As<long, ushort>(ref l), 1555, 1444));
+            Equals(65531, CompareExchangeUShort()(ref Unsafe.As<long, ushort>(ref l), 1444, 1555));
             Equals(GetValue<ushort>(65531), l);
 
             mem = -1;
