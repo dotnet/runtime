@@ -3437,15 +3437,3 @@ public:
 protected:
     void EmitCreateMngdMarshaler(ILCodeStream* pslILEmit) override;
 };
-
-class MngdRefCustomMarshaler
-{
-public:
-    static FCDECL2(void, CreateMarshaler,           MngdRefCustomMarshaler* pThis, void* pCMHelper);
-    static FCDECL3(void, ConvertContentsToNative,   MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ConvertContentsToManaged,  MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ClearNative,               MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-    static FCDECL3(void, ClearManaged,              MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome);
-
-    CustomMarshalerHelper*  m_pCMHelper;
-};

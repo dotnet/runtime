@@ -4300,8 +4300,6 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_CreateMarshaler(MngdNativeArr
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    BEGIN_QCALL;
-
     // Don't check whether the input values are negative - passing negative size-controlling
     // arguments and compensating them with a positive SizeConst has always worked.
     pThis->m_pElementMT            = pMT;
@@ -4312,8 +4310,6 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_CreateMarshaler(MngdNativeArr
     pThis->m_ThrowOnUnmappableChar = (BYTE)(dwFlags >> 24);
     pThis->m_Array                 = TypeHandle();
     pThis->m_pManagedMarshaler     = pManagedMarshaler;
-
-    END_QCALL;
 }
 
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
@@ -4567,7 +4563,6 @@ void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_CreateMarshaler(MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
-    BEGIN_QCALL;
 
     // Don't check whether the input values are negative - passing negative size-controlling
     // arguments and compensating them with a positive SizeConst has always worked.
@@ -4580,8 +4575,6 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_CreateMarshaler(MngdFixedArray
     pThis->m_Array = TypeHandle();
     pThis->m_cElements = cElements;
     pThis->m_pManagedElementMarshaler = pManagedElementMarshaler;
-
-    END_QCALL;
 }
 
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
@@ -5029,17 +5022,10 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
     CONTRACTL_END;
 
     //
-    // allocate space for marshaler
+    // allocate space for marshaler state
     //
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
-
-    _ASSERTE(sizeof(MngdRefCustomMarshaler) == sizeof(void*));
-    pslILEmit->EmitLDC(TARGET_POINTER_SIZE); // sizeof(MngdRefCustomMarshaler)
-    pslILEmit->EmitLOCALLOC();
-    pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
-
-    pslILEmit->EmitLDLOC(m_dwMngdMarshalerLocalNum);    // arg to CreateMarshaler
 
     //
     // call CreateCustomMarshalerHelper
@@ -5053,95 +5039,7 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
     pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(TypeHandle::FromPtr(m_pargs->rcm.m_hndManagedType)));
     pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__TO_INTPTR, 1, 1);
 
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__CREATE_CUSTOM_MARSHALER_HELPER, 3, 1);  // arg to CreateMarshaler
+    pslILEmit->EmitCALL(METHOD__STUBHELPERS__CREATE_CUSTOM_MARSHALER_HELPER, 3, 1);  // Create the CustomMarshalerHelper
 
-    //
-    // call MngdRefCustomMarshaler::CreateMarshaler
-    //
-
-    pslILEmit->EmitCALL(METHOD__MNGD_REF_CUSTOM_MARSHALER__CREATE_MARSHALER, 2, 0);
+    pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum); // Store the CustomMarshalerHelper as our marshaler state
 }
-
-
-
-FCIMPL2(void, MngdRefCustomMarshaler::CreateMarshaler, MngdRefCustomMarshaler* pThis, void* pCMHelper)
-{
-    FCALL_CONTRACT;
-
-    pThis->m_pCMHelper = (CustomMarshalerHelper*)pCMHelper;
-}
-FCIMPLEND
-
-
-FCIMPL3(void, MngdRefCustomMarshaler::ConvertContentsToNative, MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pManagedHome));
-    }
-    CONTRACTL_END;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    *pNativeHome = pThis->m_pCMHelper->InvokeMarshalManagedToNativeMeth(*pManagedHome);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-
-FCIMPL3(void, MngdRefCustomMarshaler::ConvertContentsToManaged, MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pManagedHome));
-    }
-    CONTRACTL_END;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    SetObjectReference(pManagedHome, pThis->m_pCMHelper->InvokeMarshalNativeToManagedMeth(*pNativeHome));
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL3(void, MngdRefCustomMarshaler::ClearNative, MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    pThis->m_pCMHelper->InvokeCleanUpNativeMeth(*pNativeHome);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL3(void, MngdRefCustomMarshaler::ClearManaged, MngdRefCustomMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pManagedHome));
-    }
-    CONTRACTL_END;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    pThis->m_pCMHelper->InvokeCleanUpManagedMeth(*pManagedHome);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-

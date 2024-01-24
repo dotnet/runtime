@@ -499,14 +499,6 @@ FCFuncStart(gMngdSafeArrayMarshalerFuncs)
 FCFuncEnd()
 #endif // FEATURE_COMINTEROP
 
-FCFuncStart(gMngdRefCustomMarshalerFuncs)
-    FCFuncElement("CreateMarshaler", MngdRefCustomMarshaler::CreateMarshaler)
-    FCFuncElement("ConvertContentsToNative", MngdRefCustomMarshaler::ConvertContentsToNative)
-    FCFuncElement("ConvertContentsToManaged", MngdRefCustomMarshaler::ConvertContentsToManaged)
-    FCFuncElement("ClearNative", MngdRefCustomMarshaler::ClearNative)
-    FCFuncElement("ClearManaged", MngdRefCustomMarshaler::ClearManaged)
-FCFuncEnd()
-
 FCFuncStart(gStubHelperFuncs)
     FCFuncElement("GetDelegateTarget", StubHelpers::GetDelegateTarget)
     FCFuncElement("TryGetStringTrailByte", StubHelpers::TryGetStringTrailByte)
@@ -617,7 +609,6 @@ FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
-FCClassElement("MngdRefCustomMarshaler", "System.StubHelpers", gMngdRefCustomMarshalerFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("MngdSafeArrayMarshaler", "System.StubHelpers", gMngdSafeArrayMarshalerFuncs)
 #endif // FEATURE_COMINTEROP

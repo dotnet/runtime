@@ -754,22 +754,43 @@ namespace System.StubHelpers
     }  // class MngdSafeArrayMarshaler
 #endif // FEATURE_COMINTEROP
 
-    internal static class MngdRefCustomMarshaler
+    internal static unsafe partial class MngdRefCustomMarshaler
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void CreateMarshaler(IntPtr pMarshalState, IntPtr pCMHelper);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomMarshaler_GetMarshalerObject")]
+        private static partial void GetMarshaler(IntPtr pCMHelper, ObjectHandleOnStack retMarshaler);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ConvertContentsToNative(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
+        private static ICustomMarshaler GetMarshaler(IntPtr pCMHelper)
+        {
+            ICustomMarshaler? marshaler = null;
+            GetMarshaler(pCMHelper, ObjectHandleOnStack.Create(ref marshaler));
+            return marshaler!;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ConvertContentsToManaged(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
+        internal static unsafe void ConvertContentsToNative(IntPtr pCMHelper, ref object pManagedHome, IntPtr* pNativeHome)
+        {
+            ICustomMarshaler marshaler = GetMarshaler(pCMHelper);
+            *pNativeHome = marshaler.MarshalManagedToNative(pManagedHome);
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ClearNative(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
+        internal static void ConvertContentsToManaged(IntPtr pCMHelper, ref object pManagedHome, IntPtr* pNativeHome)
+        {
+            ICustomMarshaler marshaler = GetMarshaler(pCMHelper);
+            pManagedHome = marshaler.MarshalNativeToManaged(*pNativeHome);
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ClearManaged(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
+#pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
+        internal static void ClearNative(IntPtr pCMHelper, ref object pManagedHome, IntPtr* pNativeHome)
+        {
+            ICustomMarshaler marshaler = GetMarshaler(pCMHelper);
+            marshaler.CleanUpNativeData(*pNativeHome);
+        }
+
+        internal static void ClearManaged(IntPtr pCMHelper, ref object pManagedHome, IntPtr* pNativeHome)
+        {
+            ICustomMarshaler marshaler = GetMarshaler(pCMHelper);
+            marshaler.CleanUpManagedData(pManagedHome);
+        }
+#pragma warning restore IDE0060
     }  // class MngdRefCustomMarshaler
 
     internal struct AsAnyMarshaler

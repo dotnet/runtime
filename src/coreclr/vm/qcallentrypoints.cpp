@@ -214,6 +214,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
+    DllImportEntry(CustomMarshaler_GetMarshalerObject)
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)

@@ -1048,11 +1048,10 @@ DEFINE_METHOD(MNGD_FIXED_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertCo
 DEFINE_METHOD(MNGD_FIXED_ARRAY_MARSHALER, CLEAR_NATIVE_CONTENTS,       ClearNativeContents,        SM_IntPtr_RefObj_IntPtr_RetVoid)
 
 DEFINE_CLASS(MNGD_REF_CUSTOM_MARSHALER,  StubHelpers,                 MngdRefCustomMarshaler)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CREATE_MARSHALER,            CreateMarshaler,            SM_IntPtr_IntPtr_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertContentsToNative,    SM_IntPtr_RefObj_IntPtr_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertContentsToManaged,   SM_IntPtr_RefObj_IntPtr_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_IntPtr_RefObj_IntPtr_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED,               ClearManaged,               SM_IntPtr_RefObj_IntPtr_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertContentsToNative,    SM_IntPtr_RefObj_PtrIntPtr_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertContentsToManaged,   SM_IntPtr_RefObj_PtrIntPtr_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_IntPtr_RefObj_PtrIntPtr_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED,               ClearManaged,               SM_IntPtr_RefObj_PtrIntPtr_RetVoid)
 
 DEFINE_CLASS(ASANY_MARSHALER,            StubHelpers,                 AsAnyMarshaler)
 DEFINE_METHOD(ASANY_MARSHALER,           CTOR,                        .ctor,                      IM_IntPtr_RetVoid)
