@@ -190,7 +190,10 @@ CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees f
 CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 jit compilations
 CONFIG_INTEGER(JitDumpOSR, W("JitDumpOSR"), 1)                  // Dump OSR jit compilations
 CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Dump only OSR jit compilations with this offset
-CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
+CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1)     // Dump inline compiler phases
+CONFIG_INTEGER(JitDumpTerseNextBlock, W("JitDumpTerseNextBlock"), 0) // When dumping blocks, display "*" instead of
+                                                                     // block number for lexical "next" blocks, to
+                                                                     // reduce clutter.
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_INTEGER(JitFakeProcedureSplitting, W("JitFakeProcedureSplitting"), 0) // Do code splitting independent of VM.

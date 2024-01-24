@@ -1888,9 +1888,8 @@ static CORINFO_CLASS_HANDLE PickLikelyClass(Compiler* comp, IL_OFFSET offset, un
 //
 bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    if (!call->IsHelperCall() || !impIsCastHelperMayHaveProfileData(call->GetHelperNum()))
+    if (!call->IsHelperCall())
     {
-        // Not a cast helper we're interested in
         return false;
     }
 
@@ -1899,6 +1898,26 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         // It's not eligible for expansion (already expanded in importer)
         // To be removed once we move cast expansion here completely.
         return false;
+    }
+
+    bool isInstanceOf = false;
+    switch (call->GetHelperNum())
+    {
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+            isInstanceOf = true;
+            break;
+
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTCLASS:
+        case CORINFO_HELP_CHKCASTANY:
+            break;
+
+        default:
+            return false;
     }
 
     // Helper calls are never tail calls
@@ -1943,6 +1962,13 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     if (castResult == TypeCompareState::May)
     {
         JITDUMP("compareTypesForCast returned May for this candidate\n");
+        return false;
+    }
+
+    if ((castResult == TypeCompareState::MustNot) && !isInstanceOf)
+    {
+        // Don't expand castclass if likelyclass always fails the type check
+        // it's going to throw an exception anyway.
         return false;
     }
 

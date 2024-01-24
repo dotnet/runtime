@@ -88,6 +88,7 @@ extern "C" volatile GSCookie __security_cookie = 0;
 static RhConfig g_sRhConfig;
 RhConfig* g_pRhConfig = &g_sRhConfig;
 
+void InitializeGCEventLock();
 bool InitializeGC();
 
 static bool InitDLL(HANDLE hPalInstance)
@@ -99,6 +100,8 @@ static bool InitDLL(HANDLE hPalInstance)
     if (!InitializeInterfaceDispatch())
         return false;
 #endif
+
+    InitializeGCEventLock();
 
 #ifdef FEATURE_PERFTRACING
     // Initialize EventPipe
