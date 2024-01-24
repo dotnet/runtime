@@ -616,7 +616,7 @@ public:
 
     bool CanRemoveJumpToNext(Compiler* compiler) const;
 
-    bool CanRemoveJumpToFalseTarget(Compiler* compiler) const;
+    bool CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const;
 
     unsigned GetTargetOffs() const
     {
