@@ -696,15 +696,12 @@ public:
     {
         assert(KindIs(BBJ_COND));
         assert(bbFalseTarget != nullptr);
-        assert(target != nullptr);
         return (bbFalseTarget == target);
     }
 
     void SetCond(BasicBlock* trueTarget, BasicBlock* falseTarget)
     {
         assert(trueTarget != nullptr);
-        // TODO-NoFallThrough: Allow falseTarget to diverge from bbNext
-        assert(falseTarget == bbNext);
         bbKind        = BBJ_COND;
         bbTrueTarget  = trueTarget;
         bbFalseTarget = falseTarget;

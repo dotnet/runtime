@@ -903,11 +903,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 //
 bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 {
-    if ((block == nullptr) || (bNext == nullptr))
-    {
-        return false;
-    }
-
+    assert(block != nullptr);
     assert(block->NextIs(bNext));
 
     if (!block->KindIs(BBJ_ALWAYS) || !block->TargetIs(bNext) || block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
@@ -1039,6 +1035,13 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         {
             BasicBlock* const predBlock = preds.Pop();
             fgReplaceJumpTarget(predBlock, block, bNext);
+
+            // TODO-NoFallThrough: Update fgReplaceJumpTarget to handle BBJ_COND false target case
+            if (predBlock->KindIs(BBJ_COND) && predBlock->FalseTargetIs(bNext))
+            {
+                predBlock->SetFalseTarget(block);
+                fgAddRefPred(block, predBlock, fgRemoveRefPred(bNext, predBlock));
+            }
         }
     }
 
@@ -1682,7 +1685,16 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 break;
 
             case BBJ_COND:
-                block->SetTrueTarget(bDest->GetTarget());
+                if (block->TrueTargetIs(bDest))
+                {
+                    assert(!block->FalseTargetIs(bDest));
+                    block->SetTrueTarget(bDest->GetTarget());
+                }
+                else
+                {
+                    assert(block->FalseTargetIs(bDest));
+                    block->SetFalseTarget(bDest->GetTarget());
+                }
                 break;
 
             default:
@@ -4656,6 +4668,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             noway_assert(condTest->gtOper == GT_JTRUE);
             condTest->AsOp()->gtOp1 = gtReverseCond(condTest->AsOp()->gtOp1);
 
+            BasicBlock* trueTarget  = bPrev->GetTrueTarget();
+            BasicBlock* falseTarget = bPrev->GetFalseTarget();
+            bPrev->SetTrueTarget(falseTarget);
+            bPrev->SetFalseTarget(trueTarget);
+
             // may need to rethread
             //
             if (fgNodeThreading == NodeThreading::AllTrees)
@@ -4665,18 +4682,10 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                 fgSetStmtSeq(condTestStmt);
             }
 
-            if (bStart2 == nullptr)
-            {
-                /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
-                bPrev->SetTrueTarget(bStart);
-            }
-            else
+            if (bStart2 != nullptr)
             {
                 noway_assert(insertAfterBlk == bPrev);
                 noway_assert(insertAfterBlk->NextIs(block));
-
-                /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
-                bPrev->SetTrueTarget(block);
             }
         }
 
@@ -4808,6 +4817,7 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 // Arguments:
 //    doTailDuplication - true to attempt tail duplication optimization
 //    isPhase - true if being run as the only thing in a phase
+//    layoutFinalized - true if being run after block reordering
 //
 // Returns: true if the flowgraph has been modified
 //
@@ -4815,7 +4825,7 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 //    Debuggable code and Min Optimization JIT also introduces basic blocks
 //    but we do not optimize those!
 //
-bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
+bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPhase /* = false */, bool layoutFinalized /* = false */)
 {
 #ifdef DEBUG
     if (verbose && !isPhase)
@@ -4854,6 +4864,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
         BasicBlock* bPrev = nullptr; // the previous non-worthless block
         BasicBlock* bNext;           // the successor of the current block
         BasicBlock* bDest;           // the jump target of the current block
+        BasicBlock* bFalseDest;      // the false target of the current block (if it is a BBJ_COND)
 
         for (block = fgFirstBB; block != nullptr; block = block->Next())
         {
@@ -4887,8 +4898,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
         REPEAT:;
 
-            bNext = block->Next();
-            bDest = nullptr;
+            bNext      = block->Next();
+            bDest      = nullptr;
+            bFalseDest = nullptr;
 
             if (block->KindIs(BBJ_ALWAYS))
             {
@@ -4923,31 +4935,40 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             }
             else if (block->KindIs(BBJ_COND))
             {
-                bDest = block->GetTrueTarget();
-                if (bDest == bNext)
+                bDest      = block->GetTrueTarget();
+                bFalseDest = block->GetFalseTarget();
+                if (bDest == bFalseDest)
                 {
-                    // TODO-NoFallThrough: Fix above condition once bbFalseTarget can diverge from bbNext
-                    assert(block->FalseTargetIs(bNext));
-                    if (fgOptimizeBranchToNext(block, bNext, bPrev))
-                    {
-                        change   = true;
-                        modified = true;
-                        bDest    = nullptr;
-                    }
+                    fgRemoveConditionalJump(block);
+                    assert(block->KindIs(BBJ_ALWAYS));
+                    change = true;
+                    modified = true;
+                    bFalseDest = nullptr;
                 }
             }
 
             if (bDest != nullptr)
             {
                 // Do we have a JUMP to an empty unconditional JUMP block?
-                if (bDest->isEmpty() && bDest->KindIs(BBJ_ALWAYS) &&
-                    !bDest->TargetIs(bDest)) // special case for self jumps
+                if (bDest->KindIs(BBJ_ALWAYS) && !bDest->TargetIs(bDest) && // special case for self jumps
+                    bDest->isEmpty())
                 {
                     // TODO: Allow optimizing branches to blocks that jump to the next block
                     const bool optimizeBranch = !bDest->JumpsToNext() || !bDest->HasFlag(BBF_NONE_QUIRK);
                     if (optimizeBranch && fgOptimizeBranchToEmptyUnconditional(block, bDest))
                     {
                         change   = true;
+                        modified = true;
+                        goto REPEAT;
+                    }
+                }
+
+                if (layoutFinalized && (bFalseDest != nullptr) && bFalseDest->KindIs(BBJ_ALWAYS) && !bFalseDest->TargetIs(bFalseDest) && // special case for self jumps
+                    bFalseDest->isEmpty())
+                {
+                    if (fgOptimizeBranchToEmptyUnconditional(block, bFalseDest))
+                    {
+                        change = true;
                         modified = true;
                         goto REPEAT;
                     }
@@ -4962,17 +4983,16 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 //      bNext's jump target has a join.
                 //
                 if (block->KindIs(BBJ_COND) &&   // block is a BBJ_COND block
-                    (bNext->bbRefs == 1) &&      // No other block jumps to bNext
-                    bNext->KindIs(BBJ_ALWAYS) && // The next block is a BBJ_ALWAYS block
+                    (bFalseDest == bNext) &&     // false target is the next block
+                    (bNext->bbRefs == 1) &&      // no other block jumps to bNext
+                    bNext->KindIs(BBJ_ALWAYS) && // the next block is a BBJ_ALWAYS block
                     !bNext->JumpsToNext() &&     // and it doesn't jump to the next block (we might compact them)
                     bNext->isEmpty() &&          // and it is an empty block
                     !bNext->TargetIs(bNext) &&   // special case for self jumps
                     !bDest->IsFirstColdBlock(this) &&
                     !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
                 {
-                    // bbFalseTarget cannot be null
                     assert(block->FalseTargetIs(bNext));
-                    assert(bNext != nullptr);
 
                     // case (a)
                     //
@@ -5046,15 +5066,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                             JITDUMP("\nMoving " FMT_BB " after " FMT_BB " to enable reversal\n", bDest->bbNum,
                                     bNext->bbNum);
 
-                            // If bDest can fall through we'll need to create a jump
-                            // block after it too. Remember where to jump to.
-                            //
-                            BasicBlock* const bDestNext = bDest->Next();
-
-                            // Once bbFalseTarget and bbNext can diverge, this assert will hit
-                            // TODO-NoFallThrough: Remove fall-through for BBJ_COND below
-                            assert(!bDest->KindIs(BBJ_COND) || bDest->FalseTargetIs(bDestNext));
-
                             // Move bDest
                             //
                             if (ehIsBlockEHLast(bDest))
@@ -5072,15 +5083,16 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
                             // Add fall through fixup block, if needed.
                             //
-                            if (bDest->KindIs(BBJ_COND))
+                            if (!layoutFinalized && bDest->KindIs(BBJ_COND) && !bDest->NextIs(bDest->GetFalseTarget()))
                             {
-                                BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true, bDestNext);
+                                BasicBlock* const bDestFalseTarget = bDest->GetFalseTarget();
+                                BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true, bDestFalseTarget);
                                 bDest->SetFalseTarget(bFixup);
-                                bFixup->inheritWeight(bDestNext);
+                                bFixup->inheritWeight(bDestFalseTarget);
 
-                                fgRemoveRefPred(bDestNext, bDest);
+                                fgRemoveRefPred(bDestFalseTarget, bDest);
                                 fgAddRefPred(bFixup, bDest);
-                                fgAddRefPred(bDestNext, bFixup);
+                                fgAddRefPred(bDestFalseTarget, bFixup);
                             }
                         }
                     }
@@ -5243,7 +5255,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 switch (block->GetKind())
                 {
                     case BBJ_COND:
-                        if (block->TrueTargetIs(block))
+                        if (block->TrueTargetIs(block) || block->FalseTargetIs(block))
                         {
                             fgRemoveBlock(block, /* unreachable */ true);
 
