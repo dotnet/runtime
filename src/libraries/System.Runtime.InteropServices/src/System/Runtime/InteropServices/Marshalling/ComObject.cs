@@ -7,6 +7,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
@@ -21,6 +22,9 @@ namespace System.Runtime.InteropServices.Marshalling
         private readonly void* _instancePointer;
 
         private readonly object? _runtimeCallableWrapper;
+
+        // This is an int so we can use the Interlocked APIs to update it.
+        private volatile int _released;
 
         /// <summary>
         /// Initialize ComObject instance.
@@ -77,8 +81,9 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </remarks>
         public void FinalRelease()
         {
-            if (UniqueInstance)
+            if (UniqueInstance && Interlocked.CompareExchange(ref _released, 1, 0) == 0)
             {
+                GC.SuppressFinalize(this);
                 CacheStrategy.Clear(IUnknownStrategy);
                 IUnknownStrategy.Release(_instancePointer);
             }
@@ -110,6 +115,8 @@ namespace System.Runtime.InteropServices.Marshalling
 
         private bool LookUpVTableInfo(RuntimeTypeHandle handle, out IIUnknownCacheStrategy.TableInfo result, out int qiHResult)
         {
+            ObjectDisposedException.ThrowIf(_released != 0, this);
+
             qiHResult = 0;
             if (!CacheStrategy.TryGetTableInfo(handle, out result))
             {

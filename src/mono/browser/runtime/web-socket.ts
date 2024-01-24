@@ -131,6 +131,11 @@ export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer
     if (ws[wasm_ws_is_aborted] || ws[wasm_ws_close_sent]) {
         return rejectedPromise("InvalidState: The WebSocket is not connected.");
     }
+    if (ws.readyState == WebSocket.CLOSED) {
+        // this is server initiated close but not partial close
+        // because CloseOutputAsync_ServerInitiated_CanSend expectations, we don't fail here
+        return resolvedPromise();
+    }
 
     const buffer_view = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
     const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_view, message_type, end_of_message);

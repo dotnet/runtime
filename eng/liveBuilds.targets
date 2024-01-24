@@ -204,7 +204,6 @@
         $(LibrariesNativeArtifactsPath)dotnet.runtime.js;
         $(LibrariesNativeArtifactsPath)dotnet.runtime.js.map;
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
-        $(LibrariesNativeArtifactsPath)dotnet-legacy.d.ts;
         $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.native.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.native.js.symbols;

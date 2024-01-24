@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -683,6 +686,220 @@ namespace System.IO.Tests
             Task t = ttw.FlushAsync(cts.Token);
             Assert.Equal(TaskStatus.Canceled, t.Status);
             Assert.Equal(cts.Token, (await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t)).CancellationToken);
+        }
+
+        [Fact]
+        public void CreateBroadcasting_InvalidInputs_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("writers", () => TextWriter.CreateBroadcasting(null));
+            AssertExtensions.Throws<ArgumentNullException>("writers", () => TextWriter.CreateBroadcasting([null]));
+            AssertExtensions.Throws<ArgumentNullException>("writers", () => TextWriter.CreateBroadcasting([new StringWriter(), null]));
+            AssertExtensions.Throws<ArgumentNullException>("writers", () => TextWriter.CreateBroadcasting([null, new StringWriter()]));
+        }
+
+        [Fact]
+        public void CreateBroadcasting_DefersToFirstWriterForProperties()
+        {
+            using TextWriter writer1 = new IndentedTextWriter(TextWriter.Null, "    ");
+            using TextWriter writer2 = new StreamWriter(Stream.Null, Encoding.UTF32);
+
+            Assert.Same(CultureInfo.InvariantCulture, TextWriter.CreateBroadcasting(writer1, writer2).FormatProvider);
+            Assert.Same(Encoding.UTF32, TextWriter.CreateBroadcasting(writer2, writer1).Encoding);
+        }
+
+        [Fact]
+        public async Task CreateBroadcasting_DelegatesToAllWriters()
+        {
+            Assert.Same(TextWriter.Null, TextWriter.CreateBroadcasting());
+
+            using StringWriter sw1 = new(), sw2 = new(), oracle = new();
+            using TextWriter broadcasting = TextWriter.CreateBroadcasting(sw1, TextWriter.Null, sw2);
+
+            oracle.Write(true);
+            broadcasting.Write(true);
+
+            oracle.Write('a');
+            broadcasting.Write('a');
+
+            oracle.Write((char[])null);
+            broadcasting.Write((char[])null);
+            oracle.Write(new char[] { 'b', 'c' });
+            broadcasting.Write(new char[] { 'b', 'c' });
+
+            oracle.Write(42m);
+            broadcasting.Write(42m);
+
+            oracle.Write(43d);
+            broadcasting.Write(43d);
+
+            oracle.Write(44f);
+            broadcasting.Write(44f);
+
+            oracle.Write(45);
+            broadcasting.Write(45);
+
+            oracle.Write(46L);
+            broadcasting.Write(46L);
+
+            oracle.Write(DayOfWeek.Monday);
+            broadcasting.Write(DayOfWeek.Monday);
+
+            oracle.Write((string)null);
+            broadcasting.Write((string)null);
+            oracle.Write("Tuesday");
+            broadcasting.Write("Tuesday");
+
+            oracle.Write((StringBuilder)null);
+            broadcasting.Write((StringBuilder)null);
+            oracle.Write(new StringBuilder("Wednesday"));
+            broadcasting.Write(new StringBuilder("Wednesday"));
+
+            oracle.Write(47u);
+            broadcasting.Write(47u);
+
+            oracle.Write(48ul);
+            broadcasting.Write(48ul);
+
+            oracle.Write("Thursday".AsSpan());
+            broadcasting.Write("Thursday".AsSpan());
+
+            oracle.Write(" {0} ", "Friday");
+            broadcasting.Write(" {0} ", "Friday");
+
+            oracle.Write(" {0}{1} ", "Saturday", "Sunday");
+            broadcasting.Write(" {0}{1} ", "Saturday", "Sunday");
+
+            oracle.Write(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
+            broadcasting.Write(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
+
+            oracle.Write(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
+            broadcasting.Write(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
+
+            oracle.WriteLine();
+            broadcasting.WriteLine();
+
+            oracle.WriteLine(true);
+            broadcasting.WriteLine(true);
+
+            oracle.WriteLine('a');
+            broadcasting.WriteLine('a');
+
+            oracle.WriteLine((char[])null);
+            broadcasting.WriteLine((char[])null);
+            oracle.WriteLine(new char[] { 'b', 'c' });
+            broadcasting.WriteLine(new char[] { 'b', 'c' });
+
+            oracle.WriteLine(42m);
+            broadcasting.WriteLine(42m);
+
+            oracle.WriteLine(43d);
+            broadcasting.WriteLine(43d);
+
+            oracle.WriteLine(44f);
+            broadcasting.WriteLine(44f);
+
+            oracle.WriteLine(45);
+            broadcasting.WriteLine(45);
+
+            oracle.WriteLine(46L);
+            broadcasting.WriteLine(46L);
+
+            oracle.WriteLine(DayOfWeek.Monday);
+            broadcasting.WriteLine(DayOfWeek.Monday);
+
+            oracle.WriteLine((string)null);
+            broadcasting.WriteLine((string)null);
+            oracle.WriteLine("Tuesday");
+            broadcasting.WriteLine("Tuesday");
+
+            oracle.WriteLine((StringBuilder)null);
+            broadcasting.WriteLine((StringBuilder)null);
+            oracle.WriteLine(new StringBuilder("Wednesday"));
+            broadcasting.WriteLine(new StringBuilder("Wednesday"));
+
+            oracle.WriteLine(47u);
+            broadcasting.WriteLine(47u);
+
+            oracle.WriteLine(48ul);
+            broadcasting.WriteLine(48ul);
+
+            oracle.WriteLine("Thursday".AsSpan());
+            broadcasting.WriteLine("Thursday".AsSpan());
+
+            oracle.WriteLine(" {0} ", "Friday");
+            broadcasting.WriteLine(" {0} ", "Friday");
+
+            oracle.WriteLine(" {0}{1} ", "Saturday", "Sunday");
+            broadcasting.WriteLine(" {0}{1} ", "Saturday", "Sunday");
+
+            oracle.WriteLine(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
+            broadcasting.WriteLine(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
+
+            oracle.WriteLine(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
+            broadcasting.WriteLine(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
+
+            await oracle.WriteAsync('a');
+            await broadcasting.WriteAsync('a');
+
+            await oracle.WriteAsync((char[])null);
+            await broadcasting.WriteAsync((char[])null);
+            await oracle.WriteAsync(new char[] { 'b', 'c' });
+            await broadcasting.WriteAsync(new char[] { 'b', 'c' });
+
+            await oracle.WriteAsync((string)null);
+            await broadcasting.WriteAsync((string)null);
+            await oracle.WriteAsync("Tuesday");
+            await broadcasting.WriteAsync("Tuesday");
+
+            await oracle.WriteAsync((StringBuilder)null);
+            await broadcasting.WriteAsync((StringBuilder)null);
+            await oracle.WriteAsync(new StringBuilder("Wednesday"));
+            await broadcasting.WriteAsync(new StringBuilder("Wednesday"));
+
+            await oracle.WriteLineAsync();
+            await broadcasting.WriteLineAsync();
+
+            await oracle.WriteLineAsync('a');
+            await broadcasting.WriteLineAsync('a');
+
+            await oracle.WriteLineAsync((char[])null);
+            await broadcasting.WriteLineAsync((char[])null);
+            await oracle.WriteLineAsync(new char[] { 'b', 'c' });
+            await broadcasting.WriteLineAsync(new char[] { 'b', 'c' });
+
+            await oracle.WriteLineAsync((string)null);
+            await broadcasting.WriteLineAsync((string)null);
+            await oracle.WriteLineAsync("Tuesday");
+            await broadcasting.WriteLineAsync("Tuesday");
+
+            await oracle.WriteLineAsync((StringBuilder)null);
+            await broadcasting.WriteLineAsync((StringBuilder)null);
+            await oracle.WriteLineAsync(new StringBuilder("Wednesday"));
+            await broadcasting.WriteLineAsync(new StringBuilder("Wednesday"));
+
+            string expected = oracle.ToString();
+            Assert.Equal(expected, sw1.ToString());
+            Assert.Equal(expected, sw2.ToString());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        public void CreateBroadcasting_AllMethodsOverridden()
+        {
+            HashSet<string> exempted = ["Close", "Dispose", "get_NewLine", "set_NewLine"];
+
+            HashSet<MethodInfo> baseMethods =
+                typeof(TextWriter)
+                .GetMethods(BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Instance)
+                .Where(m => m.IsVirtual)
+                .Where(m => !exempted.Contains(m.Name))
+                .ToHashSet();
+
+            foreach (MethodInfo derivedMethod in TextWriter.CreateBroadcasting(TextWriter.Null, TextWriter.Null).GetType().GetMethods(BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Instance))
+            {
+                baseMethods.Remove(derivedMethod.GetBaseDefinition());
+            }
+
+            Assert.Empty(baseMethods);
         }
 
         private sealed class TrackingTextWriter : TextWriter

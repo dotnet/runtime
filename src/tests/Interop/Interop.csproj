@@ -48,7 +48,6 @@
     <CMakeProjectReference Include="MarshalAPI/**/CMakeLists.txt" />
     <CMakeProjectReference Include="PInvoke/**/CMakeLists.txt" />
 
-    <WindowsOnlyCMakeProjectReference Include="MarshalAPI/IUnknown/**/CMakeLists.txt" />
     <WindowsOnlyCMakeProjectReference Include="PInvoke/Attributes/LCID/**/CMakeLists.txt" />
     <WindowsOnlyCMakeProjectReference Include="PInvoke/BestFitMapping/**/CMakeLists.txt" />
     <WindowsOnlyCMakeProjectReference Include="PInvoke/Variant/**/CMakeLists.txt" />
