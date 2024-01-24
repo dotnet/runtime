@@ -4817,7 +4817,6 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 // Arguments:
 //    doTailDuplication - true to attempt tail duplication optimization
 //    isPhase - true if being run as the only thing in a phase
-//    layoutFinalized - true if being run after block reordering
 //
 // Returns: true if the flowgraph has been modified
 //
@@ -4825,7 +4824,7 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 //    Debuggable code and Min Optimization JIT also introduces basic blocks
 //    but we do not optimize those!
 //
-bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPhase /* = false */, bool layoutFinalized /* = false */)
+bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPhase /* = false */)
 {
 #ifdef DEBUG
     if (verbose && !isPhase)
@@ -4963,17 +4962,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                     }
                 }
 
-                if (layoutFinalized && (bFalseDest != nullptr) && bFalseDest->KindIs(BBJ_ALWAYS) && !bFalseDest->TargetIs(bFalseDest) && // special case for self jumps
-                    bFalseDest->isEmpty())
-                {
-                    if (fgOptimizeBranchToEmptyUnconditional(block, bFalseDest))
-                    {
-                        change = true;
-                        modified = true;
-                        goto REPEAT;
-                    }
-                }
-
                 // Check for cases where reversing the branch condition may enable
                 // other flow opts.
                 //
@@ -5083,7 +5071,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
                             // Add fall through fixup block, if needed.
                             //
-                            if (!layoutFinalized && bDest->KindIs(BBJ_COND) && !bDest->NextIs(bDest->GetFalseTarget()))
+                            if (bDest->KindIs(BBJ_COND) && !bDest->NextIs(bDest->GetFalseTarget()))
                             {
                                 BasicBlock* const bDestFalseTarget = bDest->GetFalseTarget();
                                 BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true, bDestFalseTarget);
