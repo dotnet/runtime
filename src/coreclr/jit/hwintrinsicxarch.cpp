@@ -1563,7 +1563,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                                 : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, retNode1, intrinsic, simdBaseJitType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+                // retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             }
 #endif // TARGET_AMD64
             break;
@@ -1575,39 +1575,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
-
-            //Enable this code when we have a way of saturating SSE conversions
-            /*switch (simdSize)
-            {
-                case 16:
-                    intrinsic = NI_SSE2_ConvertToVector128Int32WithTruncation;
-                    break;
-                case 32:
-                    intrinsic = NI_AVX_ConvertToVector256Int32WithTruncation;
-                    break;
-                case 64:
-                    intrinsic = NI_AVX512F_ConvertToVector512Int32WithTruncation;
-                    break;
-                default:
-                    unreached();
-            }
-
-            op1     = impSIMDPopStack();
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);*/
 #ifdef TARGET_AMD64
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                intrinsic = (simdSize == 8) ? NI_SSE2_ConvertToVector128Double
-                            : (simdSize == 16) ? NI_AVX_ConvertToVector256Double
-                            : NI_AVX512F_ConvertToVector512Double;
-
                 op1     = impSIMDPopStack();
-                op1 = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-                simdSize *= 2;
-
-                // op1     = impSIMDPopStack();
-                // CorInfoType fieldType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
-                CorInfoType fieldType = CORINFO_TYPE_DOUBLE;
+                CorInfoType fieldType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
 
                 var_types simdType = getSIMDTypeForSize(simdSize);
                 // Generate the control table for VFIXUPIMMSD
@@ -1622,9 +1594,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // +INF: 0b0000
                 // -VAL: 0b0000
                 // +VAL: 0b0000
-                for ( int i = 0; i < 8; i++ )
+                for ( int i = 0; i < 16; i++ )
                 {
-                    tbl->gtSimdVal.i64[i] = 0x00000088;
+                    tbl->gtSimdVal.i32[i] = 0x00000088;
                 }
 
                 // Generate first operand
@@ -1637,20 +1609,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 //                     nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
                 
                 //run vfixupimmsd base on table and no flags reporting
-                GenTree* retNode1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
+                GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
                                                             NI_AVX512F_Fixup, fieldType, simdSize);
 
-                GenTree* min_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeD(static_cast<double>(INT32_MIN)), fieldType, simdSize);
-                GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeD(static_cast<double>(INT32_MAX)), fieldType, simdSize);
-                GenTree* saturate_min = gtNewSimdMaxNode(simdType, min_val, retNode1, fieldType, simdSize);
-                GenTree* saturate_val = gtNewSimdMinNode(simdType, saturate_min, max_val, fieldType, simdSize);
+                GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT32_MAX)), fieldType, simdSize);
+                GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT32_MAX, TYP_INT), CORINFO_TYPE_INT, simdSize);
+                //we will be using the input value twice
+                GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
 
-                intrinsic = (simdSize == 16) ? NI_SSE2_ConvertToVector128Int32
-                          : (simdSize == 32) ? NI_AVX_ConvertToVector128Int32
-                                             : NI_AVX512F_ConvertToVector256Int32;
+                //usage 1 --> compare with max value of integer
+                saturate_val = gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, fieldType, simdSize);
+                //cast it
 
-                retNode = gtNewSimdHWIntrinsicNode(retType, saturate_val, intrinsic, fieldType, simdSize);
+                intrinsic = (simdSize == 16) ? NI_SSE2_ConvertToVector128Int32WithTruncation
+                                             : (simdSize == 32) ? NI_AVX_ConvertToVector256Int32WithTruncation
+                                                                : NI_AVX512F_ConvertToVector512Int32WithTruncation;
 
+                retNode = gtNewSimdHWIntrinsicNode(retType, saturate_valDup, intrinsic, simdBaseJitType, simdSize);
+
+                //usage 2 --> use thecompared mask with input value and max value to blend
+                retNode = gtNewSimdCndSelNode(simdType, saturate_val, max_valDup, retNode, CORINFO_TYPE_INT, simdSize);
             }
 #endif // TARGET_AMD64
             break;

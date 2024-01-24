@@ -333,13 +333,13 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             {
                 break;
             }
-            if (srcType == TYP_FLOAT && dstType == TYP_INT)
-            {
-                oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
-                tree = gtNewCastNode(dstType, oper, false, dstType);
-                return fgMorphTree(tree);
-                // srcType = TYP_DOUBLE;
-            }
+            // if (srcType == TYP_FLOAT && dstType == TYP_INT)
+            // {
+            //     oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
+            //     tree = gtNewCastNode(dstType, oper, false, dstType);
+            //     return fgMorphTree(tree);
+            //     // srcType = TYP_DOUBLE;
+            // }
             CorInfoType fieldType = (srcType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
 
             if ( compOpportunisticallyDependsOn(InstructionSet_AVX512F) )
@@ -417,6 +417,27 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                         GenTree* max_val = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewDconNodeD(static_cast<double>(INT32_MAX)), fieldType, 16);
                         GenTree* saturate_min = gtNewSimdMaxNode(TYP_SIMD16, min_val, saturate_val, fieldType, 16);
                         saturate_val = gtNewSimdMinNode(TYP_SIMD16, saturate_min, max_val, fieldType, 16);
+                    }
+                    else if (srcType == TYP_FLOAT && dstType == TYP_INT)
+                    {
+                        //get the max value vector
+                        GenTree* max_val = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewDconNodeF(static_cast<float>(INT32_MAX)), fieldType, 16);
+                        GenTree* max_valDup = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewIconNode(INT32_MAX, TYP_INT), CORINFO_TYPE_INT, 16);
+                        //we will be using the input value twice
+                        GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
+
+                        //usage 1 --> compare with max value of integer
+                        saturate_val = gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, saturate_val, max_val, fieldType, 16);
+                        GenTree* retNode1 = gtNewSimdHWIntrinsicNode(srcType, saturate_valDup, NI_Vector128_ToScalar, fieldType, 16);
+                        //cast it
+                        tree = gtNewCastNode(dstType, retNode1, false, dstType);
+                        tree->SetSaturatedConversion();
+                        GenTree* tree1 = gtNewSimdCreateBroadcastNode(TYP_SIMD16, tree, CORINFO_TYPE_INT, 16);
+
+                        //usage 2 --> use thecompared mask with input value and max value to blend
+                        saturate_val = gtNewSimdCndSelNode(TYP_SIMD16, saturate_val, max_valDup, tree1, CORINFO_TYPE_INT, 16);
+                        saturate_val = gtNewSimdHWIntrinsicNode(dstType, saturate_val, NI_Vector128_ToScalar, CORINFO_TYPE_INT, 16);
+                        return fgMorphTree(saturate_val);
                     }
                     // Convert to scalar
                     // Here, we try to insert a Vector128 to Scalar node so that the input 
