@@ -945,12 +945,6 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         return false;
     }
 
-    // Don't compact away any loop entry blocks that we added in optCanonicalizeLoops
-    if (block->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-    {
-        return false;
-    }
-
     // We don't want to compact blocks that are in different Hot/Cold regions
     //
     if (fgInDifferentRegions(block, bNext))
@@ -1362,11 +1356,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         block->RemoveFlags(BBF_NONE_QUIRK);
     }
 
-    if (optLoopTableValid)
-    {
-        fgUpdateLoopsAfterCompacting(block, bNext);
-    }
-
 #if DEBUG
     if (verbose && 0)
     {
@@ -1382,66 +1371,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         fgDebugCheckBBlist();
     }
 #endif // DEBUG
-}
-
-//-------------------------------------------------------------
-// fgUpdateLoopsAfterCompacting: Update the loop table after block compaction.
-//
-// Arguments:
-//    block - target of compaction.
-//    bNext - bbNext of `block`. This block has been removed.
-//
-void Compiler::fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext)
-{
-    /* Check if the removed block is not part the loop table */
-    noway_assert(bNext);
-
-    for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
-    {
-        /* Some loops may have been already removed by
-         * loop unrolling or conditional folding */
-
-        if (optLoopTable[loopNum].lpIsRemoved())
-        {
-            continue;
-        }
-
-        /* Check the loop head (i.e. the block preceding the loop) */
-
-        if (optLoopTable[loopNum].lpHead == bNext)
-        {
-            optLoopTable[loopNum].lpHead = block;
-        }
-
-        /* Check the loop bottom */
-
-        if (optLoopTable[loopNum].lpBottom == bNext)
-        {
-            optLoopTable[loopNum].lpBottom = block;
-        }
-
-        /* Check the loop exit */
-
-        if (optLoopTable[loopNum].lpExit == bNext)
-        {
-            noway_assert(optLoopTable[loopNum].lpExitCnt == 1);
-            optLoopTable[loopNum].lpExit = block;
-        }
-
-        /* Check the loop entry */
-
-        if (optLoopTable[loopNum].lpEntry == bNext)
-        {
-            optLoopTable[loopNum].lpEntry = block;
-        }
-
-        /* Check the loop top */
-
-        if (optLoopTable[loopNum].lpTop == bNext)
-        {
-            optLoopTable[loopNum].lpTop = block;
-        }
-    }
 }
 
 //-------------------------------------------------------------
@@ -1505,9 +1434,6 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
         }
         noway_assert(block->bbStmtList == nullptr);
     }
-
-    // Next update the loop table and bbWeights
-    optUpdateLoopsBeforeRemoveBlock(block);
 
     // Mark the block as removed
     block->SetFlags(BBF_REMOVED);
@@ -4871,10 +4797,6 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
     constexpr bool isPhase     = true;
     const bool     madeChanges = fgUpdateFlowGraph(doTailDup, isPhase);
 
-    // The loop table is no longer valid.
-    optLoopTableValid         = false;
-    optLoopsRequirePreHeaders = false;
-
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -5206,12 +5128,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
                         /* Mark the block as removed */
                         bNext->SetFlags(BBF_REMOVED);
-
-                        if (optLoopTableValid)
-                        {
-                            // Update the loop table if we removed the bottom of a loop, for example.
-                            fgUpdateLoopsAfterCompacting(block, bNext);
-                        }
 
                         // If this is the first Cold basic block update fgFirstColdBlock
                         if (bNext->IsFirstColdBlock(this))

@@ -3366,5 +3366,12 @@ namespace Internal.JitInterface
             // stable e.g. mark calls as no-return if their IL has no rets.
             return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+        {
+            // Implemented for NativeAOT only for now.
+        }
+#pragma warning restore CA1822 // Mark members as static
     }
 }

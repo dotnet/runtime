@@ -3642,12 +3642,33 @@ Define_InterlockMethod(
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
 
+#if defined(HOST_X86)
+
+// 64-bit __atomic_exchange_n is not expanded as a compiler intrinsic on Linux x86.
+// Use inline implementation instead.
+
+inline LONGLONG InterlockedExchange64(LONGLONG volatile * Target, LONGLONG Value)
+{
+    LONGLONG Old;
+
+    do {
+        Old = *Target;
+    } while (__sync_val_compare_and_swap(Target, Old, Value) != Old);
+
+    return Old;
+}
+
+#else
+
 Define_InterlockMethod(
     LONGLONG,
     InterlockedExchange64(IN OUT LONGLONG volatile *Target, IN LONGLONG Value),
     InterlockedExchange64(Target, Value),
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
+
+#endif
+
 
 /*++
 Function:
@@ -3685,7 +3706,6 @@ Define_InterlockMethod(
 #define InterlockedCompareExchangeAcquire InterlockedCompareExchange
 #define InterlockedCompareExchangeRelease InterlockedCompareExchange
 
-// See the 32-bit variant in interlock2.s
 Define_InterlockMethod(
     LONGLONG,
     InterlockedCompareExchange64(IN OUT LONGLONG volatile *Destination, IN LONGLONG Exchange, IN LONGLONG Comperand),

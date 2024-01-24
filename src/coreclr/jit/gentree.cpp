@@ -6908,7 +6908,6 @@ bool GenTree::OperIsImplicitIndir() const
 //------------------------------------------------------------------------------
 // OperExceptions: Get exception set this tree may throw.
 //
-//
 // Arguments:
 //    comp      -  Compiler instance
 //
@@ -6945,11 +6944,9 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
             ExceptionSetFlags exSetFlags = ExceptionSetFlags::None;
 
-            GenTree* op2 = this->gtGetOp2();
-
-            if (!(this->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) && !op2->IsNeverZero())
+            if (!(this->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) && !this->gtGetOp2()->gtSkipReloadOrCopy()->IsNeverZero())
             {
-                exSetFlags = ExceptionSetFlags::DivideByZeroException;
+                exSetFlags |= ExceptionSetFlags::DivideByZeroException;
             }
 
             if (this->OperIs(GT_DIV, GT_MOD) && this->CanDivOrModPossiblyOverflow(comp))
@@ -10771,6 +10768,8 @@ const char* GenTree::gtGetHandleKindString(GenTreeFlags flags)
             return "GTF_ICON_FIELD_SEQ";
         case GTF_ICON_STATIC_ADDR_PTR:
             return "GTF_ICON_STATIC_ADDR_PTR";
+        case GTF_ICON_SECREL_OFFSET:
+            return "GTF_ICON_SECREL_OFFSET";
         default:
             return "ILLEGAL!";
     }
@@ -11999,6 +11998,9 @@ void Compiler::gtDispConst(GenTree* tree)
                             break;
                         case GTF_ICON_STATIC_ADDR_PTR:
                             printf(" static base addr cell");
+                            break;
+                        case GTF_ICON_SECREL_OFFSET:
+                            printf(" relative offset in section");
                             break;
                         default:
                             printf(" UNKNOWN");
@@ -13910,22 +13912,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
                     (cls2Hnd == NO_CLASS_HANDLE) ? " cls2" : "");
         }
 
-        // We can't answer the equality comparison definitively at jit
-        // time, but can still simplify the comparison.
-        //
-        // Find out how we can compare the two handles.
-        // NOTE: We're potentially passing NO_CLASS_HANDLE, but the runtime knows what to do with it here.
-        CorInfoInlineTypeCheck inliningKind =
-            info.compCompHnd->canInlineTypeCheck(cls1Hnd, CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN);
-
-        // If the first type needs helper, check the other type: it might be okay with a simple compare.
-        if (inliningKind == CORINFO_INLINE_TYPECHECK_USE_HELPER)
-        {
-            inliningKind = info.compCompHnd->canInlineTypeCheck(cls2Hnd, CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN);
-        }
-
-        assert(inliningKind == CORINFO_INLINE_TYPECHECK_PASS);
-
         GenTree* compare = gtNewOperNode(oper, TYP_INT, op1ClassFromHandle, op2ClassFromHandle);
 
         // Drop any now-irrelevant flags
@@ -13962,9 +13948,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
         arg2 = gtNewMethodTableLookup(arg2);
 
-        assert(info.compCompHnd->canInlineTypeCheck(nullptr, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE) ==
-               CORINFO_INLINE_TYPECHECK_PASS);
-
         GenTree* compare = gtNewOperNode(oper, TYP_INT, arg1, arg2);
 
         // Drop any now-irrelevant flags
@@ -13997,15 +13980,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
-    // Ask the VM if this type can be equality tested by a simple method
-    // table comparison.
-    CorInfoInlineTypeCheck typeCheckInliningResult =
-        info.compCompHnd->canInlineTypeCheck(clsHnd, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
-    if (typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_NONE)
-    {
-        return tree;
-    }
-
     // We're good to go.
     JITDUMP("Optimizing compare of obj.GetType()"
             " and type-from-handle to compare method table pointer\n");
@@ -14032,7 +14006,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
     // if both classes are "final" (e.g. System.String[]) we can replace the comparison
     // with `true/false` + null check.
-    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || impIsClassExact(objCls)))
+    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || info.compCompHnd->isExactType(objCls)))
     {
         TypeCompareState tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
         if (tcs != TypeCompareState::May)
@@ -14063,7 +14037,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     GenTree* const objMT = gtNewMethodTableLookup(objOp);
 
     // Compare the two method tables
-    assert(typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_PASS);
     GenTree* const compare = gtNewOperNode(oper, TYP_INT, objMT, knownMT);
 
     // Drop any now irrelevant flags
@@ -18583,7 +18556,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         }
         else
         {
-            *pIsExact = impIsClassExact(objClass);
+            *pIsExact = info.compCompHnd->isExactType(objClass);
         }
     }
 
@@ -24486,58 +24459,113 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
     GenTree*       tmp       = nullptr;
 
 #if defined(TARGET_XARCH)
-    assert(!varTypeIsByte(simdBaseType) && !varTypeIsLong(simdBaseType));
-    assert(simdSize != 64);
 
-    // HorizontalAdd combines pairs so we need log2(vectorLength) passes to sum all elements together.
-    unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
-    int      haddCount    = genLog2(vectorLength);
+    if (simdSize == 64)
+    {
+        assert(IsBaselineVector512IsaSupportedDebugOnly());
+        GenTree* op1Dup = fgMakeMultiUse(&op1);
+        op1             = gtNewSimdGetUpperNode(TYP_SIMD32, op1, simdBaseJitType, simdSize);
+        op1Dup          = gtNewSimdGetLowerNode(TYP_SIMD32, op1Dup, simdBaseJitType, simdSize);
+        simdSize        = simdSize / 2;
+        op1             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1, op1Dup, simdBaseJitType, simdSize);
+    }
 
     if (simdSize == 32)
     {
-        // Minus 1 because for the last pass we split the vector to low / high and add them together.
-        haddCount -= 1;
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+        GenTree* op1Dup = fgMakeMultiUse(&op1);
+        op1             = gtNewSimdGetUpperNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
+        op1Dup          = gtNewSimdGetLowerNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize);
+        simdSize        = simdSize / 2;
+        op1             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseJitType, simdSize);
+    }
 
-        if (varTypeIsFloating(simdBaseType))
+    assert(simdSize == 16);
+
+    if (varTypeIsFloating(simdBaseType))
+    {
+        if (simdBaseType == TYP_FLOAT)
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-            intrinsic = NI_AVX_HorizontalAdd;
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
+            GenTree* op1Shuffled = fgMakeMultiUse(&op1);
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+                // The permute below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
+                op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode((int)0b10110001, TYP_INT), NI_AVX_Permute,
+                                               simdBaseJitType, simdSize);
+                // The add below now results in [0 + 1, 1 + 0, 2 + 3, 3 + 2]
+                op1         = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseJitType, simdSize);
+                op1Shuffled = fgMakeMultiUse(&op1);
+                // The permute below gives us  [0 + 1, 1 + 0, 2 + 3, 3 + 2] -> [2 + 3, 3 + 2, 0 + 1, 1 + 0]
+                op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode((int)0b01001110, TYP_INT), NI_AVX_Permute,
+                                               simdBaseJitType, simdSize);
+            }
+            else
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_SSE));
+                // The shuffle below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b10110001, TYP_INT),
+                                               NI_SSE_Shuffle, simdBaseJitType, simdSize);
+                op1Shuffled = fgMakeMultiUse(&op1Shuffled);
+                // The add below now results in [0 + 1, 1 + 0, 2 + 3, 3 + 2]
+                op1         = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseJitType, simdSize);
+                op1Shuffled = fgMakeMultiUse(&op1);
+                // The shuffle below gives us  [0 + 1, 1 + 0, 2 + 3, 3 + 2] -> [2 + 3, 3 + 2, 0 + 1, 1 + 0]
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b01001110, TYP_INT),
+                                               NI_SSE_Shuffle, simdBaseJitType, simdSize);
+                op1Shuffled = fgMakeMultiUse(&op1Shuffled);
+            }
+            // Finally adding the results gets us [(0 + 1) + (2 + 3), (1 + 0) + (3 + 2), (2 + 3) + (0 + 1), (3 + 2) + (1
+            // + 0)]
+            op1 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseJitType, simdSize);
+            return gtNewSimdToScalarNode(type, op1, simdBaseJitType, simdSize);
         }
         else
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-            intrinsic = NI_AVX2_HorizontalAdd;
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
+            GenTree* op1Shuffled = fgMakeMultiUse(&op1);
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+                // The permute below gives us  [0, 1] -> [1, 0]
+                op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode((int)0b0001, TYP_INT), NI_AVX_Permute,
+                                               simdBaseJitType, simdSize);
+            }
+            else
+            {
+                // The shuffle below gives us  [0, 1] -> [1, 0]
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op1Shuffled, gtNewIconNode((int)0b0001, TYP_INT),
+                                               NI_SSE2_Shuffle, simdBaseJitType, simdSize);
+                op1Shuffled = fgMakeMultiUse(&op1Shuffled);
+            }
+            // Finally adding the results gets us [0 + 1, 1 + 0]
+            op1 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseJitType, simdSize);
+            return gtNewSimdToScalarNode(type, op1, simdBaseJitType, simdSize);
         }
     }
-    else if (varTypeIsFloating(simdBaseType))
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_SSE3));
-        intrinsic = NI_SSE3_HorizontalAdd;
-    }
-    else
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_SSSE3));
-        intrinsic = NI_SSSE3_HorizontalAdd;
-    }
 
-    for (int i = 0; i < haddCount; i++)
+    unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+    int      shiftCount   = genLog2(vectorLength);
+    int      typeSize     = genTypeSize(simdBaseType);
+    int      shiftVal     = (typeSize * vectorLength) / 2;
+
+    // The reduced sum is calculated for integer values using a combination of shift + add
+    // For e.g. consider a 32 bit integer. This means we have 4 values in a XMM register
+    // After the first shift + add -> [(0 + 2), (1 + 3), ...]
+    // After the second shift + add -> [(0 + 2 + 1 + 3), ...]
+    GenTree* opShifted = nullptr;
+    while (shiftVal >= typeSize)
     {
-        tmp = fgMakeMultiUse(&op1);
-        op1 = gtNewSimdHWIntrinsicNode(simdType, op1, tmp, intrinsic, simdBaseJitType, simdSize);
-    }
-
-    if (simdSize == 32)
-    {
-        intrinsic = (simdBaseType == TYP_FLOAT) ? NI_SSE_Add : NI_SSE2_Add;
-
-        tmp = fgMakeMultiUse(&op1);
-        op1 = gtNewSimdGetUpperNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
-
-        tmp = gtNewSimdGetLowerNode(TYP_SIMD16, tmp, simdBaseJitType, simdSize);
-        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, tmp, intrinsic, simdBaseJitType, 16);
+        tmp       = fgMakeMultiUse(&op1);
+        opShifted = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(shiftVal, TYP_INT),
+                                             NI_SSE2_ShiftRightLogical128BitLane, simdBaseJitType, simdSize);
+        op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, opShifted, tmp, simdBaseJitType, simdSize);
+        shiftVal = shiftVal / 2;
     }
 
-    return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, 16);
+    return gtNewSimdToScalarNode(type, op1, simdBaseJitType, simdSize);
+
 #elif defined(TARGET_ARM64)
     switch (simdBaseType)
     {
@@ -24665,6 +24693,52 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
+}
+#endif // TARGET_XARCH
+
+#if defined(TARGET_XARCH)
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdToScalarNode: Creates a new simd ToScalar node.
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created.
+//    op1                 - The SIMD operand.
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic.
+//    simdSize            - The size of the SIMD type of the intrinsic.
+//
+// Returns:
+//    The created node that has the ToScalar implementation.
+//
+GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
+{
+
+#if defined(TARGET_X86)
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    if (varTypeIsLong(simdBaseType))
+    {
+        // We need SSE41 to handle long, use software fallback
+        assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
+
+        // Create a GetElement node which handles decomposition
+        GenTree* op2 = gtNewIconNode(0);
+        return gtNewSimdGetElementNode(type, op1, op2, simdBaseJitType, simdSize);
+    }
+#endif // TARGET_X86
+    // Ensure MOVD/MOVQ support exists
+    assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
+    NamedIntrinsic intrinsic = NI_Vector128_ToScalar;
+
+    if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        intrinsic = NI_Vector256_ToScalar;
+    }
+    else if (simdSize == 64)
+    {
+        assert(IsBaselineVector512IsaSupportedDebugOnly());
+        intrinsic = NI_Vector512_ToScalar;
+    }
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
 }
 #endif // TARGET_XARCH
 
@@ -27111,8 +27185,8 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
     if (this->gtFlags & GTF_DIV_MOD_NO_OVERFLOW)
         return false;
 
-    GenTree* op1 = this->gtGetOp1();
-    GenTree* op2 = this->gtGetOp2();
+    GenTree* op1 = this->gtGetOp1()->gtSkipReloadOrCopy();
+    GenTree* op2 = this->gtGetOp2()->gtSkipReloadOrCopy();
 
     // If the divisor is known to never be '-1', we cannot overflow.
     if (op2->IsNeverNegativeOne(comp))
