@@ -3235,15 +3235,8 @@ private :
     DWORD m_dwSavedSizeArg;
 };
 
-class MngdNativeArrayMarshaler
+struct MngdNativeArrayMarshaler
 {
-public:
-    static void DoClearNativeContents(MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements);
-    enum
-    {
-        FLAG_NATIVE_DATA_VALID = 0x40000000
-    };
-
     MethodTable*            m_pElementMT;
     TypeHandle              m_Array;
     PCODE                   m_pManagedMarshaler;
@@ -3253,12 +3246,10 @@ public:
     VARTYPE                 m_vt;
 };
 
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_CreateMarshaler(MngdNativeArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, PCODE pManagedMarshaler);
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements);
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements);
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements);
 
 class ILFixedArrayMarshaler : public ILMngdMarshaler
@@ -3301,14 +3292,8 @@ protected:
     void EmitCreateMngdMarshaler(ILCodeStream* pslILEmit) override;
 };
 
-class MngdFixedArrayMarshaler
+struct MngdFixedArrayMarshaler
 {
-public:
-    enum
-    {
-        FLAG_NATIVE_DATA_VALID = 0x40000000
-    };
-
     MethodTable* m_pElementMT;
     PCODE        m_pManagedElementMarshaler;
     TypeHandle   m_Array;
@@ -3319,7 +3304,6 @@ public:
     UINT32       m_cElements;
 };
 
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_CreateMarshaler(MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler);
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);

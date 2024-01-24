@@ -3901,14 +3901,16 @@ void ILNativeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     dwFlags |= (((DWORD)mops.bestfitmapping)        << 16);
     dwFlags |= (((DWORD)mops.throwonunmappablechar) << 24);
 
+    pslILEmit->EmitLDC(dwFlags);
+
     if (!IsCLRToNative(m_dwMarshalFlags) && IsOut(m_dwMarshalFlags) && IsIn(m_dwMarshalFlags))
     {
-        // Unmanaged->managed in/out is the only case where we expect the native buffer to contain valid data.
-        _ASSERTE((dwFlags & MngdNativeArrayMarshaler::FLAG_NATIVE_DATA_VALID) == 0);
-        dwFlags |= MngdNativeArrayMarshaler::FLAG_NATIVE_DATA_VALID;
+        pslILEmit->EmitLDC(1);
     }
-
-    pslILEmit->EmitLDC(dwFlags);
+    else
+    {
+        pslILEmit->EmitLDC(0);
+    }
 
     if (mops.elementType == VT_RECORD && !mops.methodTable->IsBlittable())
     {
@@ -4296,22 +4298,6 @@ void ILNativeArrayMarshaler::EmitNewSavedSizeArgLocal(ILCodeStream* pslILEmit)
     pslILEmit->EmitSTLOC(m_dwSavedSizeArg);
 }
 
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_CreateMarshaler(MngdNativeArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, PCODE pManagedMarshaler)
-{
-    QCALL_CONTRACT_NO_GC_TRANSITION;
-
-    // Don't check whether the input values are negative - passing negative size-controlling
-    // arguments and compensating them with a positive SizeConst has always worked.
-    pThis->m_pElementMT            = pMT;
-    pThis->m_vt                    = (VARTYPE)(dwFlags);
-    pThis->m_NativeDataValid       = (BYTE)((dwFlags & MngdNativeArrayMarshaler::FLAG_NATIVE_DATA_VALID) != 0);
-    dwFlags &= ~MngdNativeArrayMarshaler::FLAG_NATIVE_DATA_VALID;
-    pThis->m_BestFitMap            = (BYTE)(dwFlags >> 16);
-    pThis->m_ThrowOnUnmappableChar = (BYTE)(dwFlags >> 24);
-    pThis->m_Array                 = TypeHandle();
-    pThis->m_pManagedMarshaler     = pManagedMarshaler;
-}
-
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
 {
     QCALL_CONTRACT;
@@ -4460,28 +4446,6 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(Mngd
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements)
-{
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-    GCX_COOP();
-
-    if (*pNativeHome != NULL)
-    {
-        OBJECTREF managedHome = NULL;
-        GCPROTECT_BEGIN(managedHome);
-        managedHome = pManagedHome.Get();
-        MngdNativeArrayMarshaler::DoClearNativeContents(pThis, &managedHome, pNativeHome, cElements);
-        {
-            GCX_PREEMP();
-            CoTaskMemFree(*pNativeHome);
-        }
-        GCPROTECT_END();
-    }
-
-    END_QCALL;
-}
-
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements)
 {
     QCALL_CONTRACT;
@@ -4491,21 +4455,6 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativ
     OBJECTREF managedHome = NULL;
     GCPROTECT_BEGIN(managedHome);
     managedHome = pManagedHome.Get();
-    MngdNativeArrayMarshaler::DoClearNativeContents(pThis, &managedHome, pNativeHome, cElements);
-    GCPROTECT_END();
-
-    END_QCALL;
-}
-
-void MngdNativeArrayMarshaler::DoClearNativeContents(MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
 
     if (*pNativeHome != NULL)
     {
@@ -4516,9 +4465,10 @@ void MngdNativeArrayMarshaler::DoClearNativeContents(MngdNativeArrayMarshaler* p
             pMarshaler->ClearOleArray(*pNativeHome, cElements, pThis->m_pElementMT, pThis->m_pManagedMarshaler);
         }
     }
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-
-
 
 void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 {
@@ -4557,24 +4507,6 @@ void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     }
 
     pslILEmit->EmitCALL(METHOD__MNGD_FIXED_ARRAY_MARSHALER__CREATE_MARSHALER, 5, 0);
-}
-
-
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_CreateMarshaler(MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler)
-{
-    QCALL_CONTRACT_NO_GC_TRANSITION;
-
-    // Don't check whether the input values are negative - passing negative size-controlling
-    // arguments and compensating them with a positive SizeConst has always worked.
-    pThis->m_pElementMT = pMT;
-    pThis->m_vt = (VARTYPE)(dwFlags);
-    pThis->m_NativeDataValid = (BYTE)((dwFlags & MngdFixedArrayMarshaler::FLAG_NATIVE_DATA_VALID) != 0);
-    dwFlags &= ~MngdFixedArrayMarshaler::FLAG_NATIVE_DATA_VALID;
-    pThis->m_BestFitMap = (BYTE)(dwFlags >> 16);
-    pThis->m_ThrowOnUnmappableChar = (BYTE)(dwFlags >> 24);
-    pThis->m_Array = TypeHandle();
-    pThis->m_cElements = cElements;
-    pThis->m_pManagedElementMarshaler = pManagedElementMarshaler;
 }
 
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
@@ -5005,9 +4937,6 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarsha
 
     if (*pNativeHome != NULL)
     {
-        _ASSERTE(GetModuleHandleA("oleaut32.dll") != NULL);
-        // SafeArray has been created.  Oleaut32.dll must have been loaded.
-        CONTRACT_VIOLATION(ThrowsViolation);
         SafeArrayDestroy((SAFEARRAY*)*pNativeHome);
     }
 
