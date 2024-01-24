@@ -1010,14 +1010,19 @@ public:
         regMaskTP regMask = RBM_NONE;
         if (GetRegNum() != REG_STK)
         {
-            if (varTypeUsesIntReg(this))
+            if (varTypeUsesFloatReg(this))
             {
-                regMask = genRegMask(GetRegNum());
+                regMask = genRegMaskFloat(GetRegNum() ARM_ARG(TypeGet()));
             }
             else
             {
-                assert(varTypeUsesFloatReg(this));
-                regMask = genRegMaskFloat(GetRegNum() ARM_ARG(TypeGet()));
+#ifdef TARGET_XARCH
+                assert(varTypeUsesIntReg(this) || varTypeUsesMaskReg(this));
+#else
+                assert(varTypeUsesIntReg(this));
+#endif
+
+                regMask = genRegMask(GetRegNum());
             }
         }
         return regMask;
@@ -4907,7 +4912,6 @@ private:
     bool impIsImplicitTailCallCandidate(
         OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, int prefixFlags, bool isRecursive);
 
-    bool impIsClassExact(CORINFO_CLASS_HANDLE classHnd);
     bool impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array);
 
     methodPointerInfo* impAllocateMethodPointerInfo(const CORINFO_RESOLVED_TOKEN& token, mdToken tokenConstrained);
@@ -7901,8 +7905,7 @@ public:
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
         assert(type != TYP_STRUCT);
-        assert((type < TYP_SIMD32) || (type == TYP_SIMD32) || (type == TYP_SIMD64));
-        return type >= TYP_SIMD32;
+        return (type == TYP_SIMD32) || (type == TYP_SIMD64);
     }
 #elif defined(TARGET_ARM64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
