@@ -368,7 +368,7 @@ inline unsigned Compiler::ehGetIndex(EHblkDsc* ehDsc)
  * Return the EH descriptor for the most nested 'try' region this BasicBlock is a member of
  * (or nullptr if this block is not in a 'try' region).
  */
-inline EHblkDsc* Compiler::ehGetBlockTryDsc(BasicBlock* block)
+inline EHblkDsc* Compiler::ehGetBlockTryDsc(const BasicBlock* block)
 {
     if (!block->hasTryIndex())
     {
@@ -382,7 +382,7 @@ inline EHblkDsc* Compiler::ehGetBlockTryDsc(BasicBlock* block)
  * Return the EH descriptor for the most nested filter or handler region this BasicBlock is a member of
  * (or nullptr if this block is not in a filter or handler region).
  */
-inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
+inline EHblkDsc* Compiler::ehGetBlockHndDsc(const BasicBlock* block)
 {
     if (!block->hasHndIndex())
     {
@@ -3496,7 +3496,7 @@ inline void Compiler::compUpdateLife(VARSET_VALARG_TP newLife)
  *  the cookie associated with the given basic block.
  */
 
-inline void* emitCodeGetCookie(BasicBlock* block)
+inline void* emitCodeGetCookie(const BasicBlock* block)
 {
     assert(block);
     return block->bbEmitCookie;

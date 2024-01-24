@@ -41,7 +41,7 @@ void emitDispInst(instruction ins);
 void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false, bool isAddrOffset = false);
 void emitDispFloatZero();
 void emitDispFloatImm(ssize_t imm8);
-void emitDispImmOptsLSL12(ssize_t imm, insOpts opt);
+void emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmount);
 void emitDispCond(insCond cond);
 void emitDispFlags(insCflags flags);
 void emitDispBarrier(insBarrier barrier);
@@ -539,6 +539,9 @@ static code_t insEncodeUimm7_20_to_14(ssize_t imm);
 // Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
 static code_t insEncodeUimm4From1_19_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
+static code_t insEncodeImm8_12_to_5(ssize_t imm);
+
 // Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
 // This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
 static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift, size_t imm);
@@ -620,6 +623,12 @@ static bool isValidUimm7(ssize_t value)
 static bool isValidUimm8(ssize_t value)
 {
     return (0 <= value) && (value <= 0xFFLL);
+};
+
+// Returns true if 'value' is a legal signed immediate 8 bit encoding (such as for SMAX, SMIN).
+static bool isValidSimm8(ssize_t value)
+{
+    return (-128 <= value) && (value <= 127);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 12 bit encoding (such as for CMP, CMN).
@@ -1116,11 +1125,12 @@ void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE);
 
-void emitIns_R_I(instruction ins,
-                 emitAttr    attr,
-                 regNumber   reg,
-                 ssize_t     imm,
-                 insOpts opt = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
+void emitIns_R_I(instruction     ins,
+                 emitAttr        attr,
+                 regNumber       reg,
+                 ssize_t         imm,
+                 insOpts         opt  = INS_OPTS_NONE,
+                 insScalableOpts sopt = INS_SCALABLE_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                      DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt = INS_OPTS_NONE);

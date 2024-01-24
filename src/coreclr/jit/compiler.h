@@ -2691,10 +2691,10 @@ public:
     unsigned short bbFindInnermostHandlerRegionContainingTryRegion(unsigned tryIndex);
 
     // Returns true if "block" is the start of a try region.
-    bool bbIsTryBeg(BasicBlock* block);
+    bool bbIsTryBeg(const BasicBlock* block);
 
     // Returns true if "block" is the start of a handler or filter region.
-    bool bbIsHandlerBeg(BasicBlock* block);
+    bool bbIsHandlerBeg(const BasicBlock* block);
 
     bool ehHasCallableHandlers();
 
@@ -2712,11 +2712,11 @@ public:
 
     // Return the EH descriptor for the most nested 'try' region this BasicBlock is a member of (or nullptr if this
     // block is not in a 'try' region).
-    EHblkDsc* ehGetBlockTryDsc(BasicBlock* block);
+    EHblkDsc* ehGetBlockTryDsc(const BasicBlock* block);
 
     // Return the EH descriptor for the most nested filter or handler region this BasicBlock is a member of (or nullptr
     // if this block is not in a filter or handler region).
-    EHblkDsc* ehGetBlockHndDsc(BasicBlock* block);
+    EHblkDsc* ehGetBlockHndDsc(const BasicBlock* block);
 
     // Return the EH descriptor for the most nested region that may handle exceptions raised in this BasicBlock (or
     // nullptr if this block's exceptions propagate to caller).
@@ -3733,7 +3733,10 @@ public:
 #ifndef TARGET_64BIT
     VARSET_TP lvaLongVars; // set of long (64-bit) variables
 #endif
-    VARSET_TP lvaFloatVars; // set of floating-point (32-bit and 64-bit) variables
+    VARSET_TP lvaFloatVars; // set of floating-point (32-bit and 64-bit) or SIMD variables
+#ifdef TARGET_XARCH
+    VARSET_TP lvaMaskVars; // set of mask variables
+#endif // TARGET_XARCH
 
     unsigned lvaCurEpoch; // VarSets are relative to a specific set of tracked var indices.
                           // It that changes, this changes.  VarSets from different epochs
@@ -5556,7 +5559,7 @@ public:
     // Assign the proper value number to the tree
     void fgValueNumberTreeConst(GenTree* tree);
 
-    // If the constant has a field sequence associated with it, then register 
+    // If the constant has a field sequence associated with it, then register
     void fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree);
 
     // If the VN store has been initialized, reassign the
@@ -5919,7 +5922,7 @@ public:
 
     void fgCompactBlocks(BasicBlock* block, BasicBlock* bNext);
 
-    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, bool noFallThroughQuirk = false);
+    BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst);
 
     bool fgRenumberBlocks();
 
@@ -5965,6 +5968,8 @@ public:
     bool fgOptimizeBranch(BasicBlock* bJump);
 
     bool fgOptimizeSwitchBranches(BasicBlock* block);
+
+    bool fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev);
 
     bool fgOptimizeSwitchJumps();
 #ifdef DEBUG
@@ -6032,7 +6037,7 @@ public:
 
     void fgDispBBLiveness(BasicBlock* block);
     void fgDispBBLiveness();
-    void fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth = 0);
+    void fgTableDispBasicBlock(const BasicBlock* block, const BasicBlock* nextBlock = nullptr, int blockTargetFieldWidth = 21, int ibcColWidth = 0);
     void fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, bool dumpTrees);
     void fgDispBasicBlocks(bool dumpTrees = false);
     void fgDumpStmtTree(const BasicBlock* block, Statement* stmt);
@@ -6690,9 +6695,16 @@ protected:
         int m_loopVarInOutCount;
         int m_loopVarCount;
         int m_hoistedExprCount;
-        int m_loopVarFPCount;
+
         int m_loopVarInOutFPCount;
+        int m_loopVarFPCount;
         int m_hoistedFPExprCount;
+
+#ifdef TARGET_XARCH
+        int m_loopVarInOutMskCount;
+        int m_loopVarMskCount;
+        int m_hoistedMskExprCount;
+#endif // TARGET_XARCH
 
         // Get the VN cache for current loop
         VNSet* GetHoistedInCurLoop(Compiler* comp)
@@ -6742,7 +6754,7 @@ protected:
     // written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopSideEffects();
 
-    // Compute the sets of long and float vars (lvaLongVars, lvaFloatVars).
+    // Compute the sets of long and float vars (lvaLongVars, lvaFloatVars, lvaMaskVars).
     void optComputeInterestingVarSets();
 
 private:
