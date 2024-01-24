@@ -2813,8 +2813,8 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                node->ResetHWIntrinsicId(NI_AVX512F_BlendVariableMask, comp, condition->AsHWIntrinsic()->Op(1),
-                                         selectFalse, selectTrue);
+                node->ResetHWIntrinsicId(NI_AVX512F_BlendVariableMask, comp, selectFalse, selectTrue,
+                                         condition->AsHWIntrinsic()->Op(1));
 
                 BlockRange().Remove(op1);
                 BlockRange().Remove(op4);
