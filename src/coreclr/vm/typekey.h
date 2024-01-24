@@ -217,7 +217,7 @@ public:
         return u.asFnPtr.m_pRetAndArgTypes;
     }
 
-    BOOL Equals(TypeKey *pKey) const
+    BOOL Equals(const TypeKey *pKey) const
     {
         WRAPPER_NO_CONTRACT;
         return TypeKey::Equals(this, pKey);

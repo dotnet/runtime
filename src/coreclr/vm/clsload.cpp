@@ -216,7 +216,7 @@ Module * ClassLoader::ComputeLoaderModule(MethodTable * pMT,
                                methodInst);
 }
 /*static*/
-Module *ClassLoader::ComputeLoaderModule(TypeKey *typeKey)
+Module *ClassLoader::ComputeLoaderModule(const TypeKey *typeKey)
 {
     CONTRACTL
     {
@@ -729,7 +729,7 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
 }
 
 /*static*/
-void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(TypeKey *pKey,
+void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(const TypeKey *pKey,
                                                            UINT resIDWhy)
 {
     STATIC_CONTRACT_THROWS;
@@ -743,7 +743,7 @@ void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(TypeKey *pKey,
 
 #endif
 
-TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
+TypeHandle ClassLoader::LoadConstructedTypeThrowing(const TypeKey *pKey,
                                                     LoadTypesFlag fLoadTypes /*= LoadTypes*/,
                                                     ClassLoadLevel level /*=CLASS_LOADED*/,
                                                     const InstantiationContext *pInstContext /*=NULL*/)
@@ -873,7 +873,7 @@ void ClassLoader::TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 }
 
 /* static */
-TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey, EETypeHashTable *pTable)
+TypeHandle ClassLoader::LookupTypeKey(const TypeKey *pKey, EETypeHashTable *pTable)
 {
     CONTRACTL {
         NOTHROW;
@@ -890,7 +890,7 @@ TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey, EETypeHashTable *pTable)
 }
 
 /* static */
-TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey)
+TypeHandle ClassLoader::LookupInLoaderModule(const TypeKey *pKey)
 {
     CONTRACTL {
         NOTHROW;
@@ -910,7 +910,7 @@ TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey)
 
 
 /* static */
-TypeHandle ClassLoader::LookupTypeHandleForTypeKey(TypeKey *pKey)
+TypeHandle ClassLoader::LookupTypeHandleForTypeKey(const TypeKey *pKey)
 {
     CONTRACTL
     {
@@ -2606,7 +2606,7 @@ ClassLoader::LoadApproxParentThrowing(
 // Perform a single phase of class loading
 // It is the caller's responsibility to lock
 /*static*/
-TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd, ClassLoadLevel currentLevel)
+TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle typeHnd, ClassLoadLevel currentLevel)
 {
     CONTRACTL
     {
@@ -2680,7 +2680,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
 // For canonical instantiations of generic types, create a brand new method table
 // For other constructed types, create a type desc and template method table if necessary
 // For all other types, create a method table
-TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracker* pamTracker)
+TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMemTracker* pamTracker)
 {
     CONTRACT(TypeHandle)
     {
@@ -2795,7 +2795,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
 // particular, exact parent info (base class and interfaces) is loaded
 // in a later phase
 /*static*/
-TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
+TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
 {
     CONTRACTL
     {
@@ -2995,7 +2995,7 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
 
 
 //
-TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
+TypeHandle ClassLoader::LoadTypeHandleForTypeKey(const TypeKey *pTypeKey,
                                                  TypeHandle typeHnd,
                                                  ClassLoadLevel targetLevel/*=CLASS_LOADED*/,
                                                  const InstantiationContext *pInstContext/*=NULL*/)
@@ -3051,7 +3051,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
 }
 
 //
-TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(TypeKey *pTypeKey,
+TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(const TypeKey *pTypeKey,
                                                        ClassLoadLevel targetLevel/*=CLASS_LOADED*/,
                                                        const InstantiationContext *pInstContext/*=NULL*/)
 {
@@ -3136,7 +3136,7 @@ public:
 //
 TypeHandle
 ClassLoader::LoadTypeHandleForTypeKey_Body(
-    TypeKey *                         pTypeKey,
+    const TypeKey *                         pTypeKey,
     TypeHandle                        typeHnd,
     ClassLoadLevel                    targetLevel)
 {
@@ -3222,7 +3222,7 @@ retry:
         }
 
         // Result of other thread loading the class
-        HRESULT hr = pLoadingEntry->DelayForProgress();
+        HRESULT hr = pLoadingEntry->DelayForProgress(&typeHnd);
 
         if (FAILED(hr)) {
 
@@ -3256,9 +3256,6 @@ retry:
 
             pLoadingEntry->ThrowException();
         }
-
-        // Get a pointer to the EEClass being loaded
-        typeHnd = pLoadingEntry->GetTypeHandle();
 
         if (!typeHnd.IsNull())
         {
