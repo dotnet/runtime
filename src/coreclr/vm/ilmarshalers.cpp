@@ -4501,7 +4501,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativ
     END_QCALL;
 }
 
-extern "C" void MngdNativeArrayMarshaler::DoClearNativeContents(MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements)
+void MngdNativeArrayMarshaler::DoClearNativeContents(MngdNativeArrayMarshaler* pThis, OBJECTREF* pManagedHome, void** pNativeHome, INT32 cElements)
 {
     CONTRACTL
     {
@@ -4564,48 +4564,56 @@ void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 }
 
 
-FCIMPL5(void, MngdFixedArrayMarshaler::CreateMarshaler, MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler)
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_CreateMarshaler(MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+    BEGIN_QCALL;
 
     // Don't check whether the input values are negative - passing negative size-controlling
     // arguments and compensating them with a positive SizeConst has always worked.
     pThis->m_pElementMT = pMT;
     pThis->m_vt = (VARTYPE)(dwFlags);
-    pThis->m_NativeDataValid = (BYTE)((dwFlags & FLAG_NATIVE_DATA_VALID) != 0);
-    dwFlags &= ~FLAG_NATIVE_DATA_VALID;
+    pThis->m_NativeDataValid = (BYTE)((dwFlags & MngdFixedArrayMarshaler::FLAG_NATIVE_DATA_VALID) != 0);
+    dwFlags &= ~MngdFixedArrayMarshaler::FLAG_NATIVE_DATA_VALID;
     pThis->m_BestFitMap = (BYTE)(dwFlags >> 16);
     pThis->m_ThrowOnUnmappableChar = (BYTE)(dwFlags >> 24);
     pThis->m_Array = TypeHandle();
     pThis->m_cElements = cElements;
     pThis->m_pManagedElementMarshaler = pManagedElementMarshaler;
+
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(void, MngdFixedArrayMarshaler::ConvertSpaceToNative, MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome)
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
 
-    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
+    BASEARRAYREF arrayRef = NULL;
+    GCPROTECT_BEGIN(arrayRef);
+    arrayRef = (BASEARRAYREF)pManagedHome.Get();
 
     if (arrayRef != NULL && arrayRef->GetNumComponents() < pThis->m_cElements)
     {
         COMPlusThrow(kArgumentException, IDS_WRONGSIZEARRAY_IN_NSTRUCT);
     }
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToNative, MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome)
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
 
-    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
+    BASEARRAYREF arrayRef = NULL;
+    GCPROTECT_BEGIN(arrayRef);
+    arrayRef = (BASEARRAYREF)pManagedHome.Get();
 
     if (pThis->m_vt == VTHACK_ANSICHAR)
     {
@@ -4652,21 +4660,18 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToNative, MngdFixedArrayMa
         }
     }
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(void, MngdFixedArrayMarshaler::ConvertSpaceToManaged, MngdFixedArrayMarshaler* pThis,
-    OBJECTREF* pManagedHome, void* pNativeHome)
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToManaged(MngdFixedArrayMarshaler* pThis,
+    QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BEGIN_QCALL;
 
-    // In the field scenario, pManagedHome points to a field inside a struct/object.
-    // Since we are setting the value of this field with SetObjectReference, we need to
-    // make sure that pManagedHome is GC-protected.
-    GCPROTECT_BEGININTERIOR(pManagedHome);
+    GCX_COOP();
 
     // <TODO>@todo: lookup this class before marshal time</TODO>
     if (pThis->m_Array.IsNull())
@@ -4681,21 +4686,22 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertSpaceToManaged, MngdFixedArrayMars
     //
 
     OBJECTREF arrayRef = AllocateSzArray(pThis->m_Array, pThis->m_cElements);
-    SetObjectReference(pManagedHome, arrayRef);
+    pManagedHome.Set(arrayRef);
 
-    GCPROTECT_END();
-
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToManaged, MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome)
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
 
-    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
+    BASEARRAYREF arrayRef = NULL;
+
+    GCPROTECT_BEGIN(arrayRef);
+    arrayRef = (BASEARRAYREF)pManagedHome.Get();
 
     if (pThis->m_vt == VTHACK_ANSICHAR)
     {
@@ -4726,15 +4732,15 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ConvertContentsToManaged, MngdFixedArrayM
         }
     }
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(void, MngdFixedArrayMarshaler::ClearNativeContents, MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome)
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ClearNativeContents(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BEGIN_QCALL;
 
     const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, FALSE);
 
@@ -4743,11 +4749,8 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ClearNativeContents, MngdFixedArrayMarsha
         pMarshaler->ClearOleArray(pNativeHome, pThis->m_cElements, pThis->m_pElementMT, pThis->m_pManagedElementMarshaler);
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
-
-
 
 #ifdef FEATURE_COMINTEROP
 void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)

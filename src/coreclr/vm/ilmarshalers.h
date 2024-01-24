@@ -3304,13 +3304,6 @@ protected:
 class MngdFixedArrayMarshaler
 {
 public:
-    static FCDECL5(void, CreateMarshaler,           MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler);
-    static FCDECL3(void, ConvertSpaceToNative,      MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome);
-    static FCDECL3(void, ConvertContentsToNative,   MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome);
-    static FCDECL3(void, ConvertSpaceToManaged,     MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome);
-    static FCDECL3(void, ConvertContentsToManaged,  MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome);
-    static FCDECL3(void, ClearNativeContents,       MngdFixedArrayMarshaler* pThis, OBJECTREF* pManagedHome, void* pNativeHome);
-
     enum
     {
         FLAG_NATIVE_DATA_VALID = 0x40000000
@@ -3325,6 +3318,13 @@ public:
     VARTYPE      m_vt;
     UINT32       m_cElements;
 };
+
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_CreateMarshaler(MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler);
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ClearNativeContents(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
 
 #ifdef FEATURE_COMINTEROP
 class ILSafeArrayMarshaler : public ILMngdMarshaler

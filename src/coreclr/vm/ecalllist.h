@@ -488,15 +488,6 @@ FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
 FCFuncEnd()
 
-FCFuncStart(gMngdFixedArrayMarshalerFuncs)
-    FCFuncElement("CreateMarshaler", MngdFixedArrayMarshaler::CreateMarshaler)
-    FCFuncElement("ConvertSpaceToNative", MngdFixedArrayMarshaler::ConvertSpaceToNative)
-    FCFuncElement("ConvertContentsToNative", MngdFixedArrayMarshaler::ConvertContentsToNative)
-    FCFuncElement("ConvertSpaceToManaged", MngdFixedArrayMarshaler::ConvertSpaceToManaged)
-    FCFuncElement("ConvertContentsToManaged", MngdFixedArrayMarshaler::ConvertContentsToManaged)
-    FCFuncElement("ClearNativeContents", MngdFixedArrayMarshaler::ClearNativeContents)
-FCFuncEnd()
-
 #ifdef FEATURE_COMINTEROP
 FCFuncStart(gMngdSafeArrayMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdSafeArrayMarshaler::CreateMarshaler)
@@ -626,7 +617,6 @@ FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
-FCClassElement("MngdFixedArrayMarshaler", "System.StubHelpers", gMngdFixedArrayMarshalerFuncs)
 FCClassElement("MngdRefCustomMarshaler", "System.StubHelpers", gMngdRefCustomMarshalerFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("MngdSafeArrayMarshaler", "System.StubHelpers", gMngdSafeArrayMarshalerFuncs)
