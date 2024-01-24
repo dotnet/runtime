@@ -1130,6 +1130,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm7(emitGetInsSC(id)));       // iiiii
             break;
 
+        case IF_SVE_DD_2A: // ................ .......gggg.DDDD -- SVE predicate first active
+        case IF_SVE_DG_2A: // ................ .......gggg.DDDD -- SVE predicate read from FFR (predicated)
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
+            assert(isPredicateRegister(id->idReg1())); // DDDD
+            assert(isPredicateRegister(id->idReg2())); // gggg
+            break;
+
         case IF_SVE_GE_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE2 character match
             elemsize = id->idOpSize();
             assert(isScalableVectorSize(elemsize));
@@ -7394,6 +7401,21 @@ void emitter::emitIns_R_R(instruction     ins,
                 assert(isValidVectorElemsize(size));
                 fmt = IF_DV_2L;
             }
+            break;
+
+        case INS_sve_pfirst:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isPredicateRegister(reg1)); // DDDD
+            assert(isPredicateRegister(reg2)); // gggg
+            fmt = IF_SVE_DD_2A;
+            break;
+
+        case INS_sve_rdffr:
+        case INS_sve_rdffrs:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isPredicateRegister(reg1)); // DDDD
+            assert(isPredicateRegister(reg2)); // gggg
+            fmt = IF_SVE_DG_2A;
             break;
 
         case INS_sve_cntp:
@@ -14598,7 +14620,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_IN_4A:
         case IF_SVE_IX_4A:
         case IF_SVE_HI_3A:
-        case IF_SVE_DG_2A:
         case IF_SVE_IO_3A:
         case IF_SVE_IP_4A:
         case IF_SVE_IQ_3A:
@@ -14758,21 +14779,25 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_AJ_3A:
         case IF_SVE_AL_3A:
         case IF_SVE_CL_3A:
-        case IF_SVE_DD_2A:
         case IF_SVE_DF_2A:
         case IF_SVE_GS_3A:
         case IF_SVE_HJ_3A:
         case IF_SVE_IY_4A:
             return PREDICATE_NONE;
 
+        case IF_SVE_DD_2A:
+            assert((regpos >= 1) && (regpos <= 3));
+            return ((regpos == 2) ? PREDICATE_NONE : PREDICATE_SIZED);
+
         case IF_SVE_CX_4A:
         case IF_SVE_CX_4A_A:
         case IF_SVE_CY_3A:
         case IF_SVE_CY_3B:
+        case IF_SVE_DG_2A:
         case IF_SVE_GE_4A:
         case IF_SVE_HT_4A:
             assert((regpos == 1) || (regpos == 2));
-            return (regpos == 1 ? PREDICATE_SIZED : PREDICATE_ZERO);
+            return ((regpos == 1) ? PREDICATE_SIZED : PREDICATE_ZERO);
 
         default:
             break;
@@ -17196,6 +17221,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_V_9_to_5(id->idReg3());                  // nnnnn
             code |= insEncodeUimm7_20_to_14(imm);                         // iiiii
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_DD_2A: // ................ .......gggg.DDDD -- SVE predicate first active
+        case IF_SVE_DG_2A: // ................ .......gggg.DDDD -- SVE predicate read from FFR (predicated)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
+            code |= insEncodeReg_P_8_to_5(id->idReg2()); // gggg
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -20054,6 +20087,18 @@ void emitter::emitDispInsHelp(
             emitDispImm(emitGetInsSC(id), false, (fmt == IF_SVE_CY_3B));                           // iiiii
             break;
 
+        // <Pdn>.B, <Pg>, <Pdn>.B
+        case IF_SVE_DD_2A: // ................ .......gggg.DDDD -- SVE predicate first active
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt, 1), id->idInsOpt(), true);  // DDDD
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt, 2), id->idInsOpt(), true);  // gggg
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt, 3), id->idInsOpt(), false); // DDDD
+            break;
+
+        case IF_SVE_DG_2A: // ................ .......gggg.DDDD -- SVE predicate read from FFR (predicated)
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt, 1), id->idInsOpt(), true);  // DDDD
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt, 2), id->idInsOpt(), false); // gggg
+            break;
+
         // <Zda>.<T>, <Pg>/M, <Zn>.<Tb>
         case IF_SVE_EQ_3A: // ........xx...... ...gggnnnnnddddd -- SVE2 integer pairwise add and accumulate long
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                    // ddddd
@@ -22830,6 +22875,31 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_CY_3B: // ........xx.iiiii ii.gggnnnnn.DDDD -- SVE integer compare with unsigned immediate
             result.insLatency    = PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case IF_SVE_DD_2A: // ................ .......gggg.DDDD -- SVE predicate first active
+            result.insLatency    = PERFSCORE_LATENCY_3C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+
+        case IF_SVE_DG_2A: // ................ .......gggg.DDDD -- SVE predicate read from FFR (predicated)
+            switch (ins)
+            {
+                case INS_sve_rdffr:
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    break;
+
+                case INS_sve_rdffrs:
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         case IF_SVE_GE_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE2 character match
