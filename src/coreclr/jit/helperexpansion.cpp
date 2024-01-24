@@ -2048,8 +2048,8 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
             {
                 // CHKCASTARRAY against exact classes is already handled above, so it's not exact here.
                 //
-                //   (int[])obj - can we use int[] as a guess? No, it's an overhead if obj is uint[] or any int-backed
-                //   enum
+                //   (int[])obj - can we use int[] as a guess? No! It's an overhead if obj is uint[]
+                //                or any int-backed enum
                 //
                 return NO_CLASS_HANDLE;
             }
@@ -2064,7 +2064,7 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
             else if (helper == CORINFO_HELP_CHKCASTANY)
             {
                 // Same as CORINFO_HELP_CHKCASTCLASS above, the only difference - let's check castToCls for
-                // being non-abstract and non-interface first as it makes no sense to speculate on them.
+                // being non-abstract and non-interface first as it makes no sense to speculate on those.
                 if ((comp->info.compCompHnd->getClassAttribs(castToCls) &
                      (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0)
                 {
@@ -2081,15 +2081,15 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
             {
                 // ISINSTANCEOFARRAY against exact classes is already handled above, so it's not exact here.
                 //
-                //  obj is int[] - can we use int[] as a guess? No, it's an overhead if obj is uint[] or any int-backed
-                //  enum[]
+                //  obj is int[] - can we use int[] as a guess? No! It's an overhead if obj is uint[]
+                //                 or any int-backed enum[]
                 return NO_CLASS_HANDLE;
             }
             else if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
             {
                 // ISINSTANCEOFCLASS against exact classes is already handled above, so it's not exact here.
                 //
-                //  obj is MyClass - can we use MyClass as a guess? No, it's an overhead for any other type except
+                //  obj is MyClass - can we use MyClass as a guess? No! It's an overhead for any other type except
                 //                   MyClass and its subclasses - chances of hitting that overhead are too high.
                 //
                 return NO_CLASS_HANDLE;
@@ -2108,18 +2108,19 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
 
     if (result == NO_CLASS_HANDLE)
     {
+        // TODO-InlineCast: null coming from PGO data could be a hint for us to only expand the null check
         return NO_CLASS_HANDLE;
     }
 
     const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(result, castToCls);
     if (castResult == TypeCompareState::May)
     {
-        // TODO-InlineCast: revise this logic
+        // TODO-InlineCast: do we need to check for May here? Conservatively assume that we do.
         JITDUMP("compareTypesForCast returned May for this candidate\n");
         return NO_CLASS_HANDLE;
     }
 
-    if ((castResult == TypeCompareState::MustNot) && isCastClass)
+    if ((castResult == TypeCompareState::MustNot) && !isCastClass)
     {
         // Our fast path candidate never passes the type check (may happen with PGO-driven expansion),
         // we can return null if the type check against it passes. It doesn't make a lot of sense to do it
@@ -2144,7 +2145,7 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
     {
         assert(isCastClass);
         // TODO-InlineCast: Change helper to faster CORINFO_HELP_CHKCASTCLASS_SPECIAL
-        // it won't check for null and castToCls assuming we already did it inline.
+        // it won't check for null and castToCls assuming we already've done it inline.
     }
 
     // A common denominator class for the fast and the fallback paths
