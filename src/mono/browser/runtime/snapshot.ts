@@ -3,7 +3,7 @@
 
 import ProductVersion from "consts:productVersion";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
 
 export const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
@@ -46,6 +46,9 @@ export async function openCache(): Promise<Cache | null> {
 
 export async function checkMemorySnapshotSize(): Promise<void> {
     try {
+        if (!ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
+            return;
+        }
         if (!runtimeHelpers.config.startupMemoryCache) {
             // we could start downloading DLLs because snapshot is disabled
             return;
