@@ -3567,6 +3567,7 @@ void ExceptionTracker::PopTrackerIfEscaping(
     }
     CONTRACTL_END;
 
+    _ASSERTE(!g_isNewExceptionHandlingEnabled);
     Thread*                 pThread  = GetThread();
     ThreadExceptionState*   pExState = pThread->GetExceptionState();
     ExceptionTracker*       pTracker = (ExceptionTracker*)pExState->m_pCurrentTracker;
@@ -6101,7 +6102,7 @@ void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFr
     // Instead, we rely on the END_SO_TOLERANT_CODE macro to call ClearExceptionStateAfterSO().  Of course,
     // we may leak in the UMThunkStubCommon() case where we don't have this macro lower on the stack
     // (stack grows up).
-    if (!fIsSO)
+    if (!fIsSO && !g_isNewExceptionHandlingEnabled)
     {
         ExceptionTracker::PopTrackerIfEscaping(MemoryStackFp);
     }
@@ -8432,7 +8433,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                 else
                 {
 #ifdef HOST_WINDOWS
-                    RaiseFailFastException(NULL, NULL, 0);
+                    RaiseFailFastException(pTopExInfo->m_ptrs.ExceptionRecord, NULL, 0);
 #else
                     CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);
 #endif
@@ -8507,7 +8508,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                             {
                                 retVal = MoveToNextNonSkippedFrame(pThis);
                             }
-                            while ((retVal == SWA_CONTINUE) && pThis->m_crawl.GetRegisterSet()->SP != pPrevExInfo->m_regDisplay.SP);
+                            while ((retVal == SWA_CONTINUE) && !(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD && pThis->m_crawl.GetRegisterSet()->SP == pPrevExInfo->m_regDisplay.SP));
                             _ASSERTE(retVal != SWA_FAILED);
 
                             pThis->ResetNextExInfoForSP(pThis->m_crawl.GetRegisterSet()->SP);
