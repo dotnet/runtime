@@ -176,22 +176,23 @@ namespace System
                         pDestMT,
                         obj);
                 }
-                else if (obj is null)
+                else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
                 {
+                    GC.KeepAlive(obj);
                     ThrowHelper.ThrowInvalidCastException_DownCastArrayElement();
                 }
                 else if (pDestMT->ContainsGCPointers)
                 {
                     Buffer.BulkMoveWithWriteBarrier(
                         ref dest,
-                        ref CastHelpers.Unbox(pDestMT, obj),
+                        ref obj.GetRawData(),
                         destSize);
                 }
                 else
                 {
                     Buffer.Memmove(
                         ref dest,
-                        ref CastHelpers.Unbox(pDestMT, obj),
+                        ref obj.GetRawData(),
                         destSize);
                 }
             }
