@@ -5344,7 +5344,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
             // See if we can sharpen exactness by looking for final classes
             if (!isExact)
             {
-                isExact = eeIsClassExact(fromClass);
+                isExact = info.compCompHnd->isExactType(fromClass);
             }
 
             // Cast to exact type will fail. Handle case where we have
@@ -5411,7 +5411,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     // Optimistically assume the jit should expand this as an inline test
     bool shouldExpandInline = true;
-    bool isClassExact       = eeIsClassExact(pResolvedToken->hClass);
+    bool isClassExact       = info.compCompHnd->isExactType(pResolvedToken->hClass);
 
     // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
     // We can convert constant-ish tokens of nullable to its underlying type.
@@ -6811,7 +6811,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 if (opts.OptimizationEnabled() && (gtGetArrayElementClassHandle(impStackTop(1).val) == ldelemClsHnd) &&
-                    eeIsClassExact(ldelemClsHnd))
+                    info.compCompHnd->isExactType(ldelemClsHnd))
                 {
                     JITDUMP("\nldelema of T[] with T exact: skipping covariant check\n");
                     goto ARR_LD;
@@ -13646,7 +13646,7 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
         return true;
     }
 
-    const bool arrayTypeIsSealed = eeIsClassExact(arrayElementHandle);
+    const bool arrayTypeIsSealed = info.compCompHnd->isExactType(arrayElementHandle);
 
     if ((!arrayIsExact && !arrayTypeIsSealed) || (arrayElementHandle == NO_CLASS_HANDLE))
     {

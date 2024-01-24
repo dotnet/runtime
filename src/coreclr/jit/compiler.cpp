@@ -3659,6 +3659,12 @@ void Compiler::dumpRegMask(regMaskTP regs) const
     {
         printf("[allDouble]");
     }
+#ifdef TARGET_XARCH
+    else if (regs == RBM_ALLMASK)
+    {
+        printf("[allMask]");
+    }
+#endif // TARGET_XARCH
     else
     {
         dspRegMask(regs);
@@ -5318,8 +5324,8 @@ bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 
     if (top->Prev()->isBBCallFinallyPairTail())
     {
-        // If the previous block is the BBJ_ALWAYS of a
-        // BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we can't add alignment
+        // If the previous block is the BBJ_CALLFINALLYRET of a
+        // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, then we can't add alignment
         // because we can't add instructions in that block. In the
         // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
         // reported EH, as above.

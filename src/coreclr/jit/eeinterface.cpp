@@ -570,42 +570,6 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd, char* buffer, 
 }
 
 //------------------------------------------------------------------------
-// eeIsClassExact: check if a class handle can only describe values
-//    of exactly one class.
-//
-// Arguments:
-//    classHnd - handle for class in question
-//
-// Return value:
-//    true if class is final and not subject to special casting from
-//    variance or similar.
-//
-// Note:
-//    We are conservative on arrays of primitive types here.
-//
-bool Compiler::eeIsClassExact(CORINFO_CLASS_HANDLE clsHnd)
-{
-    DWORD flags     = info.compCompHnd->getClassAttribs(clsHnd);
-    DWORD flagsMask = CORINFO_FLG_FINAL | CORINFO_FLG_VARIANCE | CORINFO_FLG_ARRAY;
-
-    if ((flags & flagsMask) == CORINFO_FLG_FINAL)
-    {
-        return true;
-    }
-    if ((flags & flagsMask) == (CORINFO_FLG_FINAL | CORINFO_FLG_ARRAY))
-    {
-        CORINFO_CLASS_HANDLE arrayElementHandle = nullptr;
-        CorInfoType          type               = info.compCompHnd->getChildType(clsHnd, &arrayElementHandle);
-
-        if ((type == CORINFO_TYPE_CLASS) || (type == CORINFO_TYPE_VALUECLASS))
-        {
-            return eeIsClassExact(arrayElementHandle);
-        }
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------
 // eeGetShortClassName: Returns class name with no instantiation.
 //
 // Arguments:

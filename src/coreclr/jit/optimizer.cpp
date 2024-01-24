@@ -393,11 +393,11 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 // Arguments:
 //      pInitBlock - [IN/OUT] *pInitBlock is the loop head block on entry, and is set to the initBlock on exit,
 //                   if `**ppInit` is non-null.
-//      bottom     - Loop bottom block
-//      top        - Loop top block
-//      ppInit     - The init stmt of the loop if found.
-//      ppTest     - The test stmt of the loop if found.
-//      ppIncr     - The incr stmt of the loop if found.
+//      cond       - A BBJ_COND block that exits the loop
+//      header     - Loop header block
+//      ppInit     - [out] The init stmt of the loop if found.
+//      ppTest     - [out] The test stmt of the loop if found.
+//      ppIncr     - [out] The incr stmt of the loop if found.
 //
 //  Return Value:
 //      The results are put in "ppInit", "ppTest" and "ppIncr" if the method
@@ -406,25 +406,15 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //      to nullptr. Return value will never be false if `init` is not found.
 //
 //  Operation:
-//      Check if the "test" stmt is last stmt in the loop "bottom". Try to find the "incr" stmt.
-//      Check previous stmt of "test" to get the "incr" stmt. If it is not found it could be a loop of the
-//      below form.
-//
-//                     +-------<-----------------<-----------+
-//                     |                                     |
-//                     v                                     |
-//      BBinit(head) -> BBcond(top) -> BBLoopBody(bottom) ---^
-//
-//      Check if the "incr" tree is present in the loop "top" node as the last stmt.
-//      Also check if the "test" tree is assigned to a tmp node and the tmp is used
-//      in the jtrue condition.
+//      Check if the "test" stmt is last stmt in an exiting BBJ_COND block of the loop. Try to find the "incr" stmt.
+//      Check previous stmt of "test" to get the "incr" stmt.
 //
 //  Note:
 //      This method just retrieves what it thinks is the "test" node,
 //      the callers are expected to verify that "iterVar" is used in the test.
 //
 bool Compiler::optExtractInitTestIncr(
-    BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr)
+    BasicBlock** pInitBlock, BasicBlock* cond, BasicBlock* header, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr)
 {
     assert(pInitBlock != nullptr);
     assert(ppInit != nullptr);
@@ -433,8 +423,8 @@ bool Compiler::optExtractInitTestIncr(
 
     // Check if last two statements in the loop body are the increment of the iterator
     // and the loop termination test.
-    noway_assert(bottom->bbStmtList != nullptr);
-    Statement* testStmt = bottom->lastStmt();
+    noway_assert(cond->bbStmtList != nullptr);
+    Statement* testStmt = cond->lastStmt();
     noway_assert(testStmt != nullptr && testStmt->GetNextStmt() == nullptr);
 
     Statement* newTestStmt;
@@ -444,7 +434,7 @@ bool Compiler::optExtractInitTestIncr(
     }
 
     // Check if we have the incr stmt before the test stmt, if we don't,
-    // check if incr is part of the loop "top".
+    // check if incr is part of the loop "header".
     Statement* incrStmt = testStmt->GetPrevStmt();
 
     // If we've added profile instrumentation, we may need to skip past a BB counter update.
@@ -472,7 +462,7 @@ bool Compiler::optExtractInitTestIncr(
         // If we are rebuilding the loops, we would already have the pre-header block introduced
         // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
         // little harder for the possible loop initialization statement.
-        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->TargetIs(top) && (initBlock->countOfInEdges() == 1) &&
+        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->TargetIs(header) && (initBlock->countOfInEdges() == 1) &&
             !initBlock->IsFirst() && initBlock->Prev()->bbFallsThrough())
         {
             initBlock = initBlock->Prev();
@@ -1374,6 +1364,19 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     if (!iterInfo.HasConstInit || !iterInfo.HasConstLimit)
     {
         // Don't print to the JitDump about this common case.
+        return false;
+    }
+
+    // The loop test must be both an exit and a backedge.
+    // FlowGraphNaturalLoop::AnalyzeIteration ensures it is an exit but we must
+    // make sure it is a backedge so that we can legally redirect it to the
+    // next iteration. If it isn't a backedge then redirecting it would skip
+    // all code between the loop test and the backedge.
+    assert(loop->ContainsBlock(iterInfo.TestBlock->GetTrueTarget()) !=
+           loop->ContainsBlock(iterInfo.TestBlock->GetFalseTarget()));
+    if (!iterInfo.TestBlock->TrueTargetIs(loop->GetHeader()) && !iterInfo.TestBlock->FalseTargetIs(loop->GetHeader()))
+    {
+        JITDUMP("Failed to unroll loop " FMT_LP ": test block is not a backedge\n", loop->GetIndex());
         return false;
     }
 
@@ -2433,7 +2436,7 @@ PhaseStatus Compiler::optOptimizeLayout()
 {
     noway_assert(opts.OptimizationEnabled());
 
-    fgUpdateFlowGraph();
+    fgUpdateFlowGraph(/* doTailDuplication */ false);
     fgReorderBlocks(/* useProfile */ true);
     fgUpdateFlowGraph();
 
@@ -3096,29 +3099,47 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
                 header->bbNum, enterBlock->bbNum, preheader->bbNum);
 
         fgReplaceJumpTarget(enterBlock, preheader, header);
+
+        // Fix up fall through
+        if (enterBlock->KindIs(BBJ_COND) && enterBlock->NextIs(header))
+        {
+            FlowEdge*   edge      = fgRemoveRefPred(header, enterBlock);
+            BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, enterBlock, true, preheader);
+            fgAddRefPred(preheader, newAlways, edge);
+            fgAddRefPred(newAlways, enterBlock, edge);
+
+            JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " to preheader\n", newAlways->bbNum,
+                    enterBlock->bbNum);
+            enterBlock->SetFalseTarget(newAlways);
+        }
     }
 
-    // For BBJ_COND blocks preceding header, fgReplaceJumpTarget set their false targets to preheader.
-    // Direct fallthrough to preheader by inserting a jump after the block.
-    // TODO-NoFallThrough: Remove this, and just rely on fgReplaceJumpTarget to do the fixup
-    BasicBlock* fallthroughSource = header->Prev();
-    if (fallthroughSource->KindIs(BBJ_COND) && fallthroughSource->FalseTargetIs(preheader))
+    // Fix up potential fallthrough into the preheader.
+    BasicBlock* fallthroughSource = preheader->Prev();
+    if ((fallthroughSource != nullptr) && fallthroughSource->KindIs(BBJ_COND))
     {
-        FlowEdge*   edge      = fgRemoveRefPred(preheader, fallthroughSource);
-        BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, fallthroughSource, true, preheader);
-        fgAddRefPred(preheader, newAlways, edge);
-        fgAddRefPred(newAlways, fallthroughSource, edge);
+        if (!loop->ContainsBlock(fallthroughSource))
+        {
+            // Either unreachable or an enter edge. The new fallthrough into
+            // the preheader is what we want. We still need to update refs
+            // which fgReplaceJumpTarget doesn't do for fallthrough.
+            FlowEdge* old = fgRemoveRefPred(header, fallthroughSource);
+            fgAddRefPred(preheader, fallthroughSource, old);
+        }
+        else
+        {
+            // For a backedge we need to make sure we're still going to the head,
+            // and not falling into the preheader.
+            FlowEdge*   edge      = fgRemoveRefPred(header, fallthroughSource);
+            BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, fallthroughSource, true, header);
+            fgAddRefPred(header, newAlways, edge);
+            fgAddRefPred(newAlways, fallthroughSource, edge);
 
-        JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " to preheader\n", newAlways->bbNum,
-                fallthroughSource->bbNum);
-        fallthroughSource->SetFalseTarget(newAlways);
-    }
+            JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " over preheader\n", newAlways->bbNum,
+                    fallthroughSource->bbNum);
+        }
 
-    // Make sure false target is set correctly for fallthrough into preheader.
-    if (!preheader->IsFirst())
-    {
-        fallthroughSource = preheader->Prev();
-        assert(!fallthroughSource->KindIs(BBJ_COND) || fallthroughSource->FalseTargetIs(preheader));
+        fallthroughSource->SetFalseTarget(fallthroughSource->Next());
     }
 
     optSetPreheaderWeight(loop, preheader);
@@ -4011,6 +4032,39 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         hoistCtxt->m_hoistedFPExprCount  = 0;
     }
 
+#ifdef TARGET_XARCH
+    if (!VarSetOps::IsEmpty(this, lvaMaskVars))
+    {
+        VARSET_TP loopMskVars(VarSetOps::Intersection(this, loopVars, lvaMaskVars));
+        VARSET_TP inOutMskVars(VarSetOps::Intersection(this, sideEffs.VarInOut, lvaMaskVars));
+
+        hoistCtxt->m_loopVarMskCount      = VarSetOps::Count(this, loopMskVars);
+        hoistCtxt->m_loopVarInOutMskCount = VarSetOps::Count(this, inOutMskVars);
+        hoistCtxt->m_hoistedMskExprCount  = 0;
+        hoistCtxt->m_loopVarCount -= hoistCtxt->m_loopVarMskCount;
+        hoistCtxt->m_loopVarInOutCount -= hoistCtxt->m_loopVarInOutMskCount;
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("  INOUT-MSK(%d)=", hoistCtxt->m_loopVarInOutMskCount);
+            dumpConvertedVarSet(this, inOutMskVars);
+
+            printf("\n  LOOPV-MSK(%d)=", hoistCtxt->m_loopVarMskCount);
+            dumpConvertedVarSet(this, loopMskVars);
+
+            printf("\n");
+        }
+#endif
+    }
+    else // lvaMaskVars is empty
+    {
+        hoistCtxt->m_loopVarMskCount      = 0;
+        hoistCtxt->m_loopVarInOutMskCount = 0;
+        hoistCtxt->m_hoistedMskExprCount  = 0;
+    }
+#endif // TARGET_XARCH
+
     // Find the set of definitely-executed blocks.
     // Ideally, the definitely-executed blocks are the ones that post-dominate the entry block.
     // Until we have post-dominators, we'll special-case for single-exit blocks.
@@ -4130,7 +4184,10 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
 
     optHoistLoopBlocks(loop, &defExec, hoistCtxt);
 
-    const unsigned numHoisted = hoistCtxt->m_hoistedFPExprCount + hoistCtxt->m_hoistedExprCount;
+    unsigned numHoisted = hoistCtxt->m_hoistedFPExprCount + hoistCtxt->m_hoistedExprCount;
+#ifdef TARGET_XARCH
+    numHoisted += hoistCtxt->m_hoistedMskExprCount;
+#endif // TARGET_XARCH
     return numHoisted > 0;
 }
 
@@ -4162,6 +4219,20 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* l
         }
 #endif
     }
+#ifdef TARGET_XARCH
+    else if (varTypeUsesMaskReg(tree))
+    {
+        hoistedExprCount = hoistCtxt->m_hoistedMskExprCount;
+        loopVarCount     = hoistCtxt->m_loopVarMskCount;
+        varInOutCount    = hoistCtxt->m_loopVarInOutMskCount;
+
+        availRegCount = CNT_CALLEE_SAVED_MASK;
+        if (!loopContainsCall)
+        {
+            availRegCount += CNT_CALLEE_TRASH_MASK - 1;
+        }
+    }
+#endif // TARGET_XARCH
     else
     {
         assert(varTypeUsesFloatReg(tree));
@@ -5025,7 +5096,7 @@ void Compiler::optHoistCandidate(GenTree*              tree,
     optPerformHoistExpr(tree, treeBb, loop);
 
     // Increment lpHoistedExprCount or lpHoistedFPExprCount
-    if (!varTypeIsFloating(tree->TypeGet()))
+    if (varTypeUsesIntReg(tree))
     {
         hoistCtxt->m_hoistedExprCount++;
 #ifndef TARGET_64BIT
@@ -5036,8 +5107,15 @@ void Compiler::optHoistCandidate(GenTree*              tree,
         }
 #endif
     }
-    else // Floating point expr hoisted
+#ifdef TARGET_XARCH
+    else if (varTypeUsesMaskReg(tree))
     {
+        hoistCtxt->m_hoistedMskExprCount++;
+    }
+#endif // TARGET_XARCH
+    else
+    {
+        assert(varTypeUsesFloatReg(tree));
         hoistCtxt->m_hoistedFPExprCount++;
     }
 
@@ -5288,6 +5366,9 @@ void Compiler::optComputeInterestingVarSets()
 #ifndef TARGET_64BIT
     VarSetOps::AssignNoCopy(this, lvaLongVars, VarSetOps::MakeEmpty(this));
 #endif
+#ifdef TARGET_XARCH
+    VarSetOps::AssignNoCopy(this, lvaMaskVars, VarSetOps::MakeEmpty(this));
+#endif
 
     for (unsigned i = 0; i < lvaCount; i++)
     {
@@ -5304,6 +5385,12 @@ void Compiler::optComputeInterestingVarSets()
                 VarSetOps::AddElemD(this, lvaLongVars, varDsc->lvVarIndex);
             }
 #endif
+#ifdef TARGET_XARCH
+            else if (varTypeUsesMaskReg(varDsc->lvType))
+            {
+                VarSetOps::AddElemD(this, lvaMaskVars, varDsc->lvVarIndex);
+            }
+#endif // TARGET_XARCH
         }
     }
 }

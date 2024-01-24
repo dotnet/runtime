@@ -1944,7 +1944,7 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
     //
 
     // 1) If "cast to" class is already exact we can go ahead and make some decisions
-    const bool isCastToExact = comp->eeIsClassExact(castToCls);
+    const bool isCastToExact = comp->info.compCompHnd->isExactType(castToCls);
     if (isCastToExact && ((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY)))
     {
         // (string)obj
@@ -1971,7 +1971,8 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
     {
         // 2) If VM can tell us the exact class for this "cast to" class - use it.
         // Just make sure the class is truly exact.
-        if ((comp->info.compCompHnd->getExactClasses(castToCls, 1, &result) == 1) && comp->eeIsClassExact(result))
+        if ((comp->info.compCompHnd->getExactClasses(castToCls, 1, &result) == 1) &&
+            comp->info.compCompHnd->isExactType(result))
         {
             if (isCastClass)
             {
