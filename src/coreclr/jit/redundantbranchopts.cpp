@@ -2038,10 +2038,18 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
+        if (!prevTree->OperIs(GT_STORE_LCL_VAR))
+        {
+            JITDUMP(" -- prev tree not STORE_LCL_VAR\n");
+            break;
+        }
+
+        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
+
         // If prevTree has side effects, bail, unless it is in the immediately preceding statement.
         // We'll handle exceptional side effects with VNs below.
         //
-        if ((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0)
+        if (((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0) || ((prevTreeData->gtFlags & GTF_ASG) != 0))
         {
             if (prevStmt->GetNextStmt() != stmt)
             {
@@ -2053,28 +2061,11 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             sideEffect = true;
         }
 
-        if (!prevTree->OperIs(GT_STORE_LCL_VAR))
-        {
-            JITDUMP(" -- prev tree not STORE_LCL_VAR\n");
-            break;
-        }
-
-        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
-
         // If we are seeing PHIs we have run out of interesting stmts.
         //
         if (prevTreeData->OperIs(GT_PHI))
         {
             JITDUMP(" -- prev tree is a phi\n");
-            break;
-        }
-
-        // Bail if value has an embedded assignment. We could handle this
-        // if we generalized the interference check we run below.
-        //
-        if ((prevTreeData->gtFlags & GTF_ASG) != 0)
-        {
-            JITDUMP(" -- prev tree RHS has embedded assignment\n");
             break;
         }
 
@@ -2101,6 +2092,14 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         }
 
         definedLocals[definedLocalsCount++] = prevTreeLclNum;
+
+        // Heuristic: only forward sub a relop
+        //
+        if (!prevTreeData->OperIsCompare())
+        {
+            JITDUMP(" -- prev tree is not relop\n");
+            continue;
+        }
 
         // If the normal liberal VN of RHS is the normal liberal VN of the current tree, or is "related",
         // consider forward sub.
@@ -2148,7 +2147,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
-            if (gtHasRef(prevTreeData, definedLocals[i]))
+            if (gtTreeHasLocalRead(prevTreeData, definedLocals[i]))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
                 interferes = true;
@@ -2161,12 +2160,10 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
-        // Heuristic: only forward sub a relop
-        //
-        if (!prevTreeData->OperIsCompare())
+        if (gtMayHaveStoreInterference(prevTreeData, tree))
         {
-            JITDUMP(" -- prev tree is not relop\n");
-            continue;
+            JITDUMP(" -- prev tree has an embedded store that interferes with [%06u]\n", dspTreeID(tree));
+            break;
         }
 
         // If the lcl defined here is live out, forward sub is problematic.
@@ -2191,7 +2188,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             // replacing.
             for (Statement* cur = prevStmt->GetNextStmt(); cur != stmt; cur = cur->GetNextStmt())
             {
-                if (gtHasRef(cur->GetRootNode(), prevTreeLclNum))
+                if (gtTreeHasLocalRead(cur->GetRootNode(), prevTreeLclNum))
                 {
                     JITDUMP("-- prev tree has GTF_GLOB_REF and " FMT_STMT " has an interfering use\n", cur->GetID());
                     hasExtraUses = true;

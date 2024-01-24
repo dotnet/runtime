@@ -6329,8 +6329,7 @@ DONE:
 //   False if there is no interference. Returns true if there is any GT_LCL_VAR
 //   or GT_LCL_FLD in "tree" whose value depends on a local stored in
 //   "treeWithStores". May also return true in cases without interference if
-//   the trees are too large and the function runs out of budget, or in
-//   MinOpts.
+//   the trees are too large and the function runs out of budget.
 //
 bool Compiler::gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree)
 {
