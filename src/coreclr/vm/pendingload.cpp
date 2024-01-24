@@ -14,21 +14,14 @@
 
 #ifdef PENDING_TYPE_LOAD_TABLE_STATS
 
-LONG pendingTypeLoadEntryDynamicAllocations = 0;
+static LONG pendingTypeLoadEntryDynamicAllocations = 0;
 void PendingTypeLoadEntryDynamicAlloc()
 {
     InterlockedIncrement(&pendingTypeLoadEntryDynamicAllocations);
 }
 #endif // PENDING_TYPE_LOAD_TABLE_STATS
 
-static BYTE s_PendingTypeLoadTable[sizeof(PendingTypeLoadTable)];
-
-/*static*/
-PendingTypeLoadTable* PendingTypeLoadTable::GetTable()
-{
-    LIMITED_METHOD_CONTRACT;
-    return reinterpret_cast<PendingTypeLoadTable*>(&s_PendingTypeLoadTable);
-}
+PendingTypeLoadTable PendingTypeLoadTable::s_table;
 
 #ifdef _DEBUG
 void PendingTypeLoadTable::Shard::Dump()

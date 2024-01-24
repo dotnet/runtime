@@ -105,8 +105,6 @@ extern DWORD g_fEEShutDown;
 extern Volatile<LONG> g_ShutdownCrstUsageCount;
 extern Volatile<LONG> g_fForbidEnterEE;
 
-class PendingTypeLoadTable;
-
 // The CRST.
 class CrstBase
 {

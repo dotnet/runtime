@@ -31,7 +31,7 @@ void PendingTypeLoadEntryDynamicAlloc();
 // This is a singleton
 class PendingTypeLoadTable
 {
-    static void CallCrstEnter(Crst* pCrst)
+    static void CallCrstEnter(CrstBase* pCrst)
     {
         pCrst->Enter(INDEBUG(Crst::CRST_NO_LEVEL_CHECK));
     }
@@ -41,34 +41,34 @@ public:
     class Entry
     {
         friend class PendingTypeLoadTable;
-    private:
+    protected:
         Entry()
-            : m_Crst(
-                    CrstPendingTypeLoadEntry,
-                    CrstFlags(CRST_HOST_BREAKABLE|CRST_UNSAFE_SAMELEVEL)
-                    ),
-              m_typeKey(TypeKey::InvalidTypeKey()),
+            : m_typeKey(TypeKey::InvalidTypeKey()),
               m_fIsPreallocated(true)
         {
         }
 
-        Entry(Entry *pNext, DWORD hash, const TypeKey& typeKey, TypeHandle typeHnd)
-            : m_Crst(
-                    CrstPendingTypeLoadEntry,
-                    CrstFlags(CRST_HOST_BREAKABLE|CRST_UNSAFE_SAMELEVEL)
-                    ),
-              m_typeKey(typeKey),
+        Entry(const TypeKey& typeKey)
+            : m_typeKey(typeKey),
               m_fIsPreallocated(false)
         {
 #ifdef PENDING_TYPE_LOAD_TABLE_STATS
             PendingTypeLoadEntryDynamicAlloc();
 #endif // PENDING_TYPE_LOAD_TABLE_STATS
-            Init(pNext, hash, typeHnd);
         }
+
+    protected:
 
         void SetTypeKey(const TypeKey& typeKey)
         {
             m_typeKey = typeKey;
+        }
+
+        void InitCrst()
+        {
+            WRAPPER_NO_CONTRACT;
+            m_Crst.Init(CrstPendingTypeLoadEntry,
+                        CrstFlags(CRST_HOST_BREAKABLE|CRST_UNSAFE_SAMELEVEL));
         }
 
         void Init(Entry *pNext, DWORD hash, TypeHandle typeHnd)
@@ -126,6 +126,7 @@ public:
         }
 
     public:
+
     #ifdef _DEBUG
         BOOL HasLock()
         {
@@ -252,7 +253,10 @@ public:
                     VolatileStore(&m_fIsUnused, true);
                 }
                 else
-                    delete this;
+                {
+                    // Call the derived type with a destructor
+                    delete static_cast<DynamicallyAllocatedEntry*>(this);
+                }
             }
         }
 
@@ -272,9 +276,9 @@ public:
             return m_hrResult;
         }
 
-    private:
+    protected:
         Entry*              m_pNext;
-        Crst                m_Crst;
+        CrstStatic          m_Crst; // While this isn't a static, we use CrstStatic, so that Entry structs can be part of a static variable
 
     public:
         // Result of loading; this is first created in the CREATE stage of class loading
@@ -303,6 +307,31 @@ public:
         bool                m_fIsUnused = true;
     };
 
+    class DynamicallyAllocatedEntry : public Entry
+    {
+    public:
+        DynamicallyAllocatedEntry(const TypeKey& typeKey) : Entry(typeKey)
+        {
+            InitCrst();
+        }
+
+        void Init(Entry *pNext, DWORD hash, TypeHandle typeHnd)
+        {
+            WRAPPER_NO_CONTRACT;
+            Entry::Init(pNext, hash, typeHnd);
+        }
+
+        ~DynamicallyAllocatedEntry()
+        {
+            WRAPPER_NO_CONTRACT;
+            m_Crst.Destroy();
+        }
+    };
+
+    class StaticallyAllocatedEntry : public Entry
+    {
+    };
+
     struct Shard
     {
         friend class PendingTypeLoadTable;
@@ -311,15 +340,24 @@ public:
         static constexpr int PreallocatedEntryCount = 2;
 
 private:
-        Shard() : m_shardCrst(CrstUnresolvedClassLock)
+        Shard()
         {}
 
         Entry *m_pLinkedListOfActiveEntries = NULL;
-        Crst                  m_shardCrst;
+        CrstStatic m_shardCrst;
         Entry  m_preAllocatedEntries[PreallocatedEntryCount];
 
+        void Init()
+        {
+            m_shardCrst.Init(CrstUnresolvedClassLock);
+            for (int i = 0; i < PreallocatedEntryCount; i++)
+            {
+                m_preAllocatedEntries[i].InitCrst();
+            }
+        }
+
 public:
-        Crst* GetCrst()
+        CrstBase* GetCrst()
         {
             LIMITED_METHOD_CONTRACT;
             return &m_shardCrst;
@@ -371,7 +409,11 @@ public:
                 }
             }
             if (result == NULL)
-                result = new Entry(m_pLinkedListOfActiveEntries, hash, typeKey, typeHnd);
+            {
+                NewHolder<DynamicallyAllocatedEntry> dynamicResult(new DynamicallyAllocatedEntry(typeKey));
+                dynamicResult->Init(m_pLinkedListOfActiveEntries, hash, typeHnd);
+                result = dynamicResult.Extract();
+            }
             
             m_pLinkedListOfActiveEntries = result;
             return result;
@@ -385,15 +427,21 @@ public:
     // This number chosen by experimentation with a fairly complex ASP.NET application that would naturally use about 40,000 Entry structures on startup.
     // Entry allocations were shifted to about 11 during that startup phase.
     static constexpr int PendingTypeLoadTableShardCount = 31;
-    Shard     m_shards[PendingTypeLoadTableShardCount]; 
+    Shard     m_shards[PendingTypeLoadTableShardCount];
+
+    static PendingTypeLoadTable s_table;
 
 public:
-    static PendingTypeLoadTable* GetTable();
+    static PendingTypeLoadTable* GetTable()
+    {
+        return &s_table;
+    }
 
     static void Init()
     {
         STANDARD_VM_CONTRACT;
-        new(GetTable())PendingTypeLoadTable();
+        for (int i = 0; i < PendingTypeLoadTableShardCount; i++)
+            GetTable()->m_shards[i].Init();
     }
 
     Shard* GetShard(const TypeKey &typeKey, ClassLoader* pClassLoader, DWORD *pHashCodeForType)
