@@ -1725,7 +1725,7 @@ namespace System.Configuration
                 // Validate the loaded and converted value
                 prop.Validate(propertyValue);
             }
-            catch (ConfigurationException ce)
+            catch (ConfigurationErrorsException ce)
             {
                 // If the error is incomplete - complete it :)
                 if (string.IsNullOrEmpty(ce.Filename)) ce = new ConfigurationErrorsException(ce.Message, reader);
