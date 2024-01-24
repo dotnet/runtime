@@ -2577,8 +2577,41 @@ namespace System.Text.RegularExpressions
                 // technically backtracking, it's appropriate to have a timeout check.
                 EmitTimeoutCheckIfNeeded();
 
-                // Emit the child.
                 RegexNode child = node.Child(0);
+
+                // Ensure we're able to uncapture anything captured by the child.
+                // Note that this differs ever so slightly from the source generator.  The source
+                // generator only defines a local for capturePos if not in a loop (as it calls to a helper
+                // method where the argument acts implicitly as a local), but the compiler
+                // needs to store the popped stack value somewhere so that it can repeatedly compare
+                // that value against Crawlpos, so capturePos is always declared if there are captures.
+                bool isInLoop = false;
+                LocalBuilder? capturePos = analysis.MayContainCapture(child) ? DeclareInt32() : null;
+                if (capturePos is not null)
+                {
+                    // If we're inside a loop, push the current crawl position onto the stack,
+                    // so that each iteration tracks its own value. Otherwise, store it into a local.
+                    isInLoop = analysis.IsInLoop(node);
+                    if (isInLoop)
+                    {
+                        EmitStackResizeIfNeeded(1);
+                        EmitStackPush(() =>
+                        {
+                            // base.Crawlpos();
+                            Ldthis();
+                            Call(s_crawlposMethod);
+                        });
+                    }
+                    else
+                    {
+                        // capturePos = base.Crawlpos();
+                        Ldthis();
+                        Call(s_crawlposMethod);
+                        Stloc(capturePos);
+                    }
+                }
+
+                // Emit the child.
                 if (analysis.MayBacktrack(child))
                 {
                     // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
@@ -2607,6 +2640,20 @@ namespace System.Text.RegularExpressions
                 Stloc(pos);
                 SliceInputSpan();
                 sliceStaticPos = startingTextSpanPos;
+
+                // And uncapture anything if necessary. Negative lookaround captures don't persist beyond the lookaround.
+                if (capturePos is not null)
+                {
+                    if (isInLoop)
+                    {
+                        // capturepos = base.runstack[--stackpos];
+                        EmitStackPop();
+                        Stloc(capturePos);
+                    }
+
+                    // while (base.Crawlpos() > capturepos) base.Uncapture();
+                    EmitUncaptureUntil(capturePos);
+                }
 
                 doneLabel = originalDoneLabel;
             }
