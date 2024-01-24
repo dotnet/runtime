@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override bool ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
-            ReadOnlySpan<byte> propertyName = reader.GetSpan();
+            ReadOnlySpan<byte> propertyName = reader.GetUnescapedSpan();
             if (!(Utf8Parser.TryParse(propertyName, out bool value, out int bytesConsumed)
                   && propertyName.Length == bytesConsumed))
             {

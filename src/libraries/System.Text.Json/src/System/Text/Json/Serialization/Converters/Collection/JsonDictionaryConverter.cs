@@ -256,10 +256,19 @@ namespace System.Text.Json.Serialization
 
                         if (state.Current.CanContainMetadata)
                         {
-                            ReadOnlySpan<byte> propertyName = reader.GetSpan();
+                            ReadOnlySpan<byte> propertyName = reader.GetUnescapedSpan();
                             if (JsonSerializer.IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
                             {
-                                ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                                if (options.AllowOutOfOrderMetadataProperties)
+                                {
+                                    reader.SkipWithVerify();
+                                    state.Current.EndElement();
+                                    continue;
+                                }
+                                else
+                                {
+                                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                                }
                             }
                         }
 

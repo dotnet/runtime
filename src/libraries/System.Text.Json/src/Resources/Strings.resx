@@ -439,8 +439,8 @@
   <data name="MetadataDuplicateIdFound" xml:space="preserve">
     <value>The value of the '$id' metadata property '{0}' conflicts with an existing identifier.</value>
   </data>
-  <data name="MetadataIdIsNotFirstProperty" xml:space="preserve">
-    <value>The metadata property '$id' must be the first reference preservation property in the JSON object.</value>
+  <data name="MetadataIdCannotBeCombinedWithRef" xml:space="preserve">
+    <value>The metadata property '$id' cannot be used together with '$ref' metadata properties.</value>
   </data>
   <data name="MetadataInvalidReferenceToValueType" xml:space="preserve">
     <value>Invalid reference to value type '{0}'.</value>
@@ -477,8 +477,8 @@
   <data name="UnmappedJsonProperty" xml:space="preserve">
     <value>The JSON property '{0}' could not be mapped to any .NET member contained in type '{1}'.</value>
   </data>
-  <data name="MetadataDuplicateTypeProperty" xml:space="preserve">
-    <value>Deserialized object contains a duplicate type discriminator metadata property.</value>
+  <data name="DuplicateMetadataProperty" xml:space="preserve">
+    <value>Deserialized object contains a duplicate '{0}' metadata property.</value>
   </data>
   <data name="MultipleMembersBindWithConstructorParameter" xml:space="preserve">
     <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in the deserialization constructor.</value>

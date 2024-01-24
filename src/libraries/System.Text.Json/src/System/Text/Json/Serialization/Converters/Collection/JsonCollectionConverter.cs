@@ -267,7 +267,17 @@ namespace System.Text.Json.Serialization
                         if (reader.TokenType != JsonTokenType.EndObject)
                         {
                             Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
-                            ThrowHelper.ThrowJsonException_MetadataInvalidPropertyInArrayMetadata(ref state, typeToConvert, reader);
+                            if (options.AllowOutOfOrderMetadataProperties)
+                            {
+                                Debug.Assert(JsonSerializer.IsMetadataPropertyName(reader.GetUnescapedSpan(), jsonTypeInfo.PolymorphicTypeResolver), "should only be hit if metadata property.");
+                                bool result = reader.TrySkipPartial(reader.CurrentDepth - 1); // skip to the end of the object
+                                Debug.Assert(result, "Metadata reader must have buffered all contents.");
+                                Debug.Assert(reader.TokenType is JsonTokenType.EndObject);
+                            }
+                            else
+                            {
+                                ThrowHelper.ThrowJsonException_MetadataInvalidPropertyInArrayMetadata(ref state, typeToConvert, reader);
+                            }
                         }
                     }
                 }
