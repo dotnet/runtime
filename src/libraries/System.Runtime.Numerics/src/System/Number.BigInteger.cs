@@ -466,9 +466,9 @@ namespace System
             if (value.IsEmpty)
             {
                 // There's nothing beyond significant leading block. Return it as the result.
-                if ((int)(leading ^ signBits) < 0 || (int)leading == int.MinValue)
+                if ((int)(leading ^ signBits) < 0)
                 {
-                    // The sign of result differs with leading digit, or it's int.MinValue.
+                    // The sign of result differs with leading digit.
                     // Require to store in _bits.
                     result = new BigInteger((int)signBits | 1, [leading]);
                     return ParsingStatus.OK;
@@ -476,7 +476,7 @@ namespace System
                 else
                 {
                     // Small value that fits in _sign.
-                    result = new BigInteger((int)leading, null);
+                    result = new BigInteger((int)leading);
                     return ParsingStatus.OK;
                 }
             }
