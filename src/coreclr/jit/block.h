@@ -669,7 +669,6 @@ public:
     {
         assert(KindIs(BBJ_COND));
         assert(bbTrueTarget != nullptr);
-        assert(target != nullptr);
         return (bbTrueTarget == target);
     }
 

@@ -843,8 +843,7 @@ void BasicBlock::CopyTarget(Compiler* compiler, const BasicBlock* from)
             SetEhf(new (compiler, CMK_BasicBlock) BBehfDesc(compiler, from->GetEhfTargets()));
             break;
         case BBJ_COND:
-            // TODO-NoFallThrough: Copy false target, too?
-            SetCond(from->GetTrueTarget(), Next());
+            SetCond(from->GetTrueTarget(), from->GetFalseTarget());
             break;
         case BBJ_ALWAYS:
             SetKindAndTarget(from->GetKind(), from->GetTarget());
@@ -885,8 +884,7 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             from->bbEhfTargets = nullptr; // Make sure nobody uses the descriptor after this.
             break;
         case BBJ_COND:
-            // TODO-NoFallThrough: Copy false target, too?
-            SetCond(from->GetTrueTarget(), Next());
+            SetCond(from->GetTrueTarget(), from->GetFalseTarget());
             break;
         case BBJ_ALWAYS:
             SetKindAndTarget(from->GetKind(), from->GetTarget());

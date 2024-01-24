@@ -1035,13 +1035,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         {
             BasicBlock* const predBlock = preds.Pop();
             fgReplaceJumpTarget(predBlock, block, bNext);
-
-            // TODO-NoFallThrough: Update fgReplaceJumpTarget to handle BBJ_COND false target case
-            if (predBlock->KindIs(BBJ_COND) && predBlock->FalseTargetIs(bNext))
-            {
-                predBlock->SetFalseTarget(block);
-                fgAddRefPred(block, predBlock, fgRemoveRefPred(bNext, predBlock));
-            }
         }
     }
 
@@ -3630,6 +3623,23 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         }
     }
 
+    // If we will be reordering blocks, re-establish implicit fallthrough for BBJ_COND blocks
+    if (useProfile)
+    {
+        for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+        {
+            if (block->KindIs(BBJ_COND) && !block->NextIs(block->GetFalseTarget()))
+            {
+                BasicBlock* jmpBlk = fgConnectFallThrough(block, block->GetFalseTarget());
+                assert(jmpBlk != nullptr);
+                assert(block->NextIs(jmpBlk));
+
+                // Skip next block
+                block = jmpBlk;
+            }
+        }
+    }
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -3689,6 +3699,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         }
         else if (bPrev->KindIs(BBJ_COND))
         {
+            assert(bPrev->FalseTargetIs(block));
             bDest          = bPrev->GetTrueTarget();
             forwardBranch  = fgIsForwardBranch(bPrev, bDest);
             backwardBranch = !forwardBranch;

@@ -693,15 +693,34 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             break;
 
         case BBJ_COND:
+        {
+            FlowEdge* oldEdge = fgGetPredForBlock(oldTarget, block);
+            assert(oldEdge != nullptr);
 
-            // Functionally equivalent to above
             if (block->TrueTargetIs(oldTarget))
             {
-                block->SetTrueTarget(newTarget);
-                fgRemoveRefPred(oldTarget, block);
-                fgAddRefPred(newTarget, block);
+                if (block->FalseTargetIs(oldTarget))
+                {
+                    assert(oldEdge->getDupCount() == 2);
+                    fgRemoveConditionalJump(block);
+                    assert(block->KindIs(BBJ_ALWAYS));
+                    block->SetTarget(newTarget);
+                }
+                else
+                {
+                    block->SetTrueTarget(newTarget);
+                }
             }
+            else
+            {
+                assert(block->FalseTargetIs(oldTarget));
+                block->SetFalseTarget(newTarget);
+            }
+
+            assert(oldEdge->getDupCount() == 1);
+            fgAddRefPred(newTarget, block, fgRemoveRefPred(oldTarget, block));
             break;
+        }
 
         case BBJ_SWITCH:
         {
@@ -6067,11 +6086,15 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     // We have decided to insert the block(s) after fgLastBlock
     fgMoveBlocksAfter(bStart, bLast, insertAfterBlk);
 
-    // If bPrev falls through, we will insert a jump to block
-    fgConnectFallThrough(bPrev, bStart);
+    if (bPrev->KindIs(BBJ_ALWAYS) && bPrev->JumpsToNext())
+    {
+        bPrev->SetFlags(BBF_NONE_QUIRK);
+    }
 
-    // If bLast falls through, we will insert a jump to bNext
-    fgConnectFallThrough(bLast, bNext);
+    if (bLast->KindIs(BBJ_ALWAYS) && bLast->JumpsToNext())
+    {
+        bLast->SetFlags(BBF_NONE_QUIRK);
+    }
 
 #endif // !FEATURE_EH_FUNCLETS
 
@@ -6961,9 +6984,6 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
             }
         }
     }
-
-    /* If afterBlk falls through, we insert a jump around newBlk */
-    fgConnectFallThrough(afterBlk, newBlk->Next());
 
 #ifdef DEBUG
     fgVerifyHandlerTab();

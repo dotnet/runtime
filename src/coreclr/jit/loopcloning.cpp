@@ -2043,25 +2043,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // bottomNext
     BasicBlock* bottom  = loop->GetLexicallyBottomMostBlock();
     BasicBlock* newPred = bottom;
-    if (bottom->KindIs(BBJ_COND))
-    {
-        // TODO-NoFallThrough: Shouldn't need new BBJ_ALWAYS block once bbFalseTarget can diverge from bbNext
-        BasicBlock* bottomNext = bottom->Next();
-        assert(bottom->FalseTargetIs(bottomNext));
-        JITDUMP("Create branch around cloned loop\n");
-        BasicBlock* bottomRedirBlk = fgNewBBafter(BBJ_ALWAYS, bottom, /*extendRegion*/ true, bottomNext);
-        JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", bottomRedirBlk->bbNum, bottom->bbNum);
-        bottomRedirBlk->bbWeight = bottomRedirBlk->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-
-        bottom->SetFalseTarget(bottomRedirBlk);
-        fgAddRefPred(bottomRedirBlk, bottom);
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomRedirBlk->bbNum);
-        fgReplacePred(bottomNext, bottom, bottomRedirBlk);
-        JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomNext->bbNum,
-                bottomRedirBlk->bbNum, bottomNext->bbNum);
-
-        newPred = bottomRedirBlk;
-    }
 
     // Create a new preheader for the slow loop immediately before the slow
     // loop itself. All failed conditions will branch to the slow preheader.
@@ -2112,37 +2093,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         newPred = newBlk;
         blockMap->Set(blk, newBlk);
 
-        // If the block falls through to a block outside the loop then we may
-        // need to insert a new block to redirect.
-        // Skip this for the bottom block; we duplicate the slow loop such that
-        // the bottom block will fall through to the bottom's original next.
-        if ((blk != bottom) && blk->bbFallsThrough() && !loop->ContainsBlock(blk->Next()))
-        {
-            if (blk->KindIs(BBJ_COND))
-            {
-                BasicBlock* targetBlk = blk->GetFalseTarget();
-                assert(blk->NextIs(targetBlk));
-
-                // Need to insert a block.
-                BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /* extendRegion */ true, targetBlk);
-                newRedirBlk->copyEHRegion(newPred);
-                newRedirBlk->bbWeight = blk->Next()->bbWeight;
-                newRedirBlk->CopyFlags(blk->Next(), (BBF_RUN_RARELY | BBF_PROF_WEIGHT));
-                newRedirBlk->scaleBBWeight(slowPathWeightScaleFactor);
-
-                JITDUMP(FMT_BB " falls through to " FMT_BB "; inserted redirection block " FMT_BB "\n", blk->bbNum,
-                        blk->Next()->bbNum, newRedirBlk->bbNum);
-                // This block isn't part of the loop, so below loop won't add
-                // refs for it.
-                fgAddRefPred(targetBlk, newRedirBlk);
-                newPred = newRedirBlk;
-            }
-            else
-            {
-                assert(!"Cannot handle fallthrough");
-            }
-        }
-
         return BasicBlockVisit::Continue;
     });
 
@@ -2165,7 +2115,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         // Now redirect the new block according to "blockMap".
         optRedirectBlock(newblk, blockMap);
 
-        // Add predecessor edges for the new successors, as well as the fall-through paths.
+        // Add predecessor edges for the new successors.
         switch (newblk->GetKind())
         {
             case BBJ_ALWAYS:
