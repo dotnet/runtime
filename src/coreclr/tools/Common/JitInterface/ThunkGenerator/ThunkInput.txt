@@ -202,7 +202,6 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
     size_t printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     bool isValueClass(CORINFO_CLASS_HANDLE cls)
-    CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source)
     uint32_t getClassAttribs(CORINFO_CLASS_HANDLE cls)
     CORINFO_MODULE_HANDLE getClassModule(CORINFO_CLASS_HANDLE cls)
     CORINFO_ASSEMBLY_HANDLE getModuleAssembly(CORINFO_MODULE_HANDLE mod)

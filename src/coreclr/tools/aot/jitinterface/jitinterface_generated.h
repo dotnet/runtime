@@ -51,7 +51,6 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getTypeInstantiationArgument)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, unsigned index);
     size_t (* printClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     bool (* isValueClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    CorInfoInlineTypeCheck (* canInlineTypeCheck)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
     uint32_t (* getClassAttribs)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_MODULE_HANDLE (* getClassModule)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_ASSEMBLY_HANDLE (* getModuleAssembly)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE mod);
@@ -589,16 +588,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->isValueClass(_thisHandle, &pException, cls);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CorInfoInlineTypeCheck canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CorInfoInlineTypeCheck temp = _callbacks->canInlineTypeCheck(_thisHandle, &pException, cls, source);
     if (pException != nullptr) throw pException;
     return temp;
 }

@@ -980,19 +980,6 @@ enum CorInfoInline
     INLINE_NEVER                    = -2,   // This method should never be inlined, regardless of context
 };
 
-enum CorInfoInlineTypeCheck
-{
-    CORINFO_INLINE_TYPECHECK_NONE       = 0x00000000, // It's not okay to compare type's vtable with a native type handle
-    CORINFO_INLINE_TYPECHECK_PASS       = 0x00000001, // It's okay to compare type's vtable with a native type handle
-    CORINFO_INLINE_TYPECHECK_USE_HELPER = 0x00000002, // Use a specialized helper to compare type's vtable with native type handle
-};
-
-enum CorInfoInlineTypeCheckSource
-{
-    CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE = 0x00000000, // Type handle comes from the vtable
-    CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN  = 0x00000001, // Type handle comes from an ldtoken
-};
-
 // If you add more values here, keep it in sync with TailCallTypeMap in ..\vm\ClrEtwAll.man
 // and the string enum in CEEInfo::reportTailCallDecision in ..\vm\JITInterface.cpp
 enum CorInfoTailCall
@@ -2399,11 +2386,6 @@ public:
 
     // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_VALUECLASS, except faster.
     virtual bool isValueClass(CORINFO_CLASS_HANDLE cls) = 0;
-
-    // Decides how the JIT should do the optimization to inline the check for
-    //     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
-    //     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
-    virtual CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source) = 0;
 
     // return flags (a bitfield of CorInfoFlags values)
     virtual uint32_t getClassAttribs (

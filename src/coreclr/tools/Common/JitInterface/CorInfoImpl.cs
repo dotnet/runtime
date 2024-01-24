@@ -2008,15 +2008,6 @@ namespace Internal.JitInterface
             return HandleToObject(cls).IsValueType;
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_STRUCT_* cls, CorInfoInlineTypeCheckSource source)
-#pragma warning restore CA1822 // Mark members as static
-        {
-            // TODO: when we support multiple modules at runtime, this will need to do more work
-            // NOTE: cls can be null
-            return CorInfoInlineTypeCheck.CORINFO_INLINE_TYPECHECK_PASS;
-        }
-
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);

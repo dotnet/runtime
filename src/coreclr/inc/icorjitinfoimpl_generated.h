@@ -189,10 +189,6 @@ size_t printClassName(
 bool isValueClass(
           CORINFO_CLASS_HANDLE cls) override;
 
-CorInfoInlineTypeCheck canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source) override;
-
 uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls) override;
 

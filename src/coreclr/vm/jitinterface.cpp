@@ -3814,18 +3814,6 @@ bool CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 /*********************************************************************/
-// Decides how the JIT should do the optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType()
-//     GetTypeFromHandle(X) == GetTypeFromHandle(Y)
-//
-// This will enable to use directly the typehandle instead of going through getClassByHandle
-CorInfoInlineTypeCheck CEEInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE clsHnd, CorInfoInlineTypeCheckSource source)
-{
-    LIMITED_METHOD_CONTRACT;
-    return CORINFO_INLINE_TYPECHECK_PASS;
-}
-
-/*********************************************************************/
 uint32_t CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
 {
     CONTRACTL {

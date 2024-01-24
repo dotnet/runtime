@@ -4998,41 +4998,6 @@ CorInfoType MethodContext::repGetFieldType(CORINFO_FIELD_HANDLE  field,
     return (CorInfoType)value.B;
 }
 
-void MethodContext::recCanInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
-                                          CorInfoInlineTypeCheckSource source,
-                                          CorInfoInlineTypeCheck       result)
-{
-    if (CanInlineTypeCheck == nullptr)
-        CanInlineTypeCheck = new LightWeightMap<DLD, DWORD>();
-
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(cls);
-    key.B = (DWORD)source;
-
-    DWORD value = (DWORD)result;
-    CanInlineTypeCheck->Add(key, value);
-    DEBUG_REC(dmpCanInlineTypeCheck(key, value));
-}
-void MethodContext::dmpCanInlineTypeCheck(DLD key, DWORD value)
-{
-    printf("CanInlineTypeCheck key cls-%016" PRIX64 " src-%08X, value res-%u", key.A, key.B, value);
-}
-CorInfoInlineTypeCheck MethodContext::repCanInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
-                                                            CorInfoInlineTypeCheckSource source)
-{
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(cls);
-    key.B = (DWORD)source;
-
-    DWORD value = LookupByKeyOrMiss(CanInlineTypeCheck, key, ": key %016" PRIX64 "", key.A);
-
-    DEBUG_REP(dmpCanInlineTypeCheck(key, value));
-    CorInfoInlineTypeCheck result = (CorInfoInlineTypeCheck)value;
-    return result;
-}
-
 void MethodContext::recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent,
                                                   CORINFO_METHOD_HANDLE method,
                                                   bool                  result)

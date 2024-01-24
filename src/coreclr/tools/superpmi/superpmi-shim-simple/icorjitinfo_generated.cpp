@@ -300,13 +300,6 @@ bool interceptor_ICJI::isValueClass(
     return original_ICorJitInfo->isValueClass(cls);
 }
 
-CorInfoInlineTypeCheck interceptor_ICJI::canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source)
-{
-    return original_ICorJitInfo->canInlineTypeCheck(cls, source);
-}
-
 uint32_t interceptor_ICJI::getClassAttribs(
           CORINFO_CLASS_HANDLE cls)
 {

@@ -627,12 +627,6 @@ public:
                                 CORINFO_CLASS_HANDLE* structType,
                                 CORINFO_CLASS_HANDLE  memberParent);
 
-    void recCanInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
-                               CorInfoInlineTypeCheckSource source,
-                               CorInfoInlineTypeCheck       result);
-    void dmpCanInlineTypeCheck(DLD key, DWORD value);
-    CorInfoInlineTypeCheck repCanInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
-
     void recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method, bool result);
     void dmpSatisfiesMethodConstraints(DLDL key, DWORD value);
     bool repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method);
@@ -1110,7 +1104,7 @@ enum mcPackets
     Packet_GetHeapClassSize = 170,
     Packet_CanAllocateOnStack = 171,
     Packet_GetStaticFieldCurrentClass = 172,
-    Packet_CanInlineTypeCheck = 173,
+    // Packet_CanInlineTypeCheck = 173,
     Packet_IsMoreSpecificType = 174,
     Packet_GetStringLiteral = 175,
     PacketCR_SetPatchpointInfo = 176,

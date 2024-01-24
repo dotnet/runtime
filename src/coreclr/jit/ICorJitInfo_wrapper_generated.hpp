@@ -406,16 +406,6 @@ bool WrapICorJitInfo::isValueClass(
     return temp;
 }
 
-CorInfoInlineTypeCheck WrapICorJitInfo::canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source)
-{
-    API_ENTER(canInlineTypeCheck);
-    CorInfoInlineTypeCheck temp = wrapHnd->canInlineTypeCheck(cls, source);
-    API_LEAVE(canInlineTypeCheck);
-    return temp;
-}
-
 uint32_t WrapICorJitInfo::getClassAttribs(
           CORINFO_CLASS_HANDLE cls)
 {
