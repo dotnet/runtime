@@ -16,6 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "allocacheck.h" // for alloca
+#include "hwintrinsic.h"
 
 //-------------------------------------------------------------
 // fgMorphInit: prepare for running the morph phases
@@ -10953,6 +10954,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             return andnNode;
         }
+
         default:
         {
             break;

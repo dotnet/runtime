@@ -1133,7 +1133,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         case NI_Vector128_ConditionalSelect:
         case NI_Vector256_ConditionalSelect:
-        case NI_Vector512_ConditionalSelect:
         {
             return LowerHWIntrinsicCndSel(node);
         }
@@ -1832,6 +1831,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 return next;
             }
             break;
+        }
+
+        case NI_AVX512F_TernaryLogic:
+        case NI_AVX512F_VL_TernaryLogic:
+        {
+            return LowerHWIntrinsicTernaryLogic(node);
         }
 
         default:
@@ -2687,6 +2692,144 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 
     BlockRange().Remove(node);
     return LowerNode(tmp4);
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicCndSel: Lowers an AVX512 TernaryLogic call
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
+{
+    assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+
+    var_types   simdType        = node->gtType;
+    CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+    var_types   simdBaseType    = node->GetSimdBaseType();
+    unsigned    simdSize        = node->GetSimdSize();
+
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(simdSize != 0);
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+    GenTree* op3 = node->Op(3);
+    GenTree* op4 = node->Op(4);
+
+    if (op4->IsCnsIntOrI())
+    {
+        uint8_t control = static_cast<uint8_t>(op4->AsIntConCommon()->IconValue());
+
+        switch (control)
+        {
+            case 0xAC: // A ? C : B; (C & A) | (B & ~A)
+            case 0xB8: // B ? C : A; (C & B) | (A & ~B)
+            case 0xD8: // C ? B : A; (B & C) | (A & ~C)
+            case 0xCA: // A ? B : C; (B & A) | (C & ~A)
+            case 0xE2: // B ? A : C; (A & B) | (C & ~B)
+            case 0xE4: // C ? A : B; (A & C) | (B & ~C)
+            {
+                // For the operations that work as a conditional select, we want
+                // to try and optimize it to use BlendVariableMask when the condition
+                // is already a TYP_MASK
+
+                const TernaryLogicInfo& ternLogInfo = TernaryLogicInfo::lookup(control);
+
+                assert(ternLogInfo.oper1 == TernaryLogicOperKind::Select);
+                assert(ternLogInfo.oper2 == TernaryLogicOperKind::Select);
+                assert(ternLogInfo.oper3 == TernaryLogicOperKind::Cond);
+
+                GenTree* condition   = nullptr;
+                GenTree* selectTrue  = nullptr;
+                GenTree* selectFalse = nullptr;
+
+                if (ternLogInfo.oper1Use == TernaryLogicUseFlags::A)
+                {
+                    selectTrue = op1;
+
+                    if (ternLogInfo.oper2Use == TernaryLogicUseFlags::B)
+                    {
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::C);
+
+                        selectFalse = op2;
+                        condition   = op3;
+                    }
+                    else
+                    {
+                        assert(ternLogInfo.oper2Use == TernaryLogicUseFlags::C);
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::B);
+
+                        selectFalse = op3;
+                        condition   = op2;
+                    }
+                }
+                else if (ternLogInfo.oper1Use == TernaryLogicUseFlags::B)
+                {
+                    selectTrue = op2;
+
+                    if (ternLogInfo.oper2Use == TernaryLogicUseFlags::A)
+                    {
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::C);
+
+                        selectFalse = op1;
+                        condition   = op3;
+                    }
+                    else
+                    {
+                        assert(ternLogInfo.oper2Use == TernaryLogicUseFlags::C);
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::A);
+
+                        selectFalse = op3;
+                        condition   = op1;
+                    }
+                }
+                else
+                {
+                    assert(ternLogInfo.oper1Use == TernaryLogicUseFlags::C);
+
+                    selectTrue = op3;
+
+                    if (ternLogInfo.oper2Use == TernaryLogicUseFlags::A)
+                    {
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::B);
+
+                        selectFalse = op1;
+                        condition   = op2;
+                    }
+                    else
+                    {
+                        assert(ternLogInfo.oper2Use == TernaryLogicUseFlags::B);
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::A);
+
+                        selectFalse = op2;
+                        condition   = op1;
+                    }
+                }
+
+                if (!condition->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+                {
+                    break;
+                }
+
+                node->ResetHWIntrinsicId(NI_AVX512F_BlendVariableMask, comp, condition->AsHWIntrinsic()->Op(1),
+                                         selectFalse, selectTrue);
+
+                BlockRange().Remove(op1);
+                BlockRange().Remove(op4);
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+    }
+
+    ContainCheckHWIntrinsic(node);
+    return node->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
