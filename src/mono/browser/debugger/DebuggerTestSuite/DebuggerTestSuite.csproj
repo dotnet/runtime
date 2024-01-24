@@ -16,6 +16,9 @@
     <!-- Set RunSettingsFilePath property which is read by VSTest. -->
     <RunSettingsFilePath Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(OutputPath).runsettings</RunSettingsFilePath>
     <RunSettingsFilePath Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsObjDir)vscode\.runsettings</RunSettingsFilePath>
+
+    <!-- Serilog.Extensions.Logging.File brings in NS1.x dependencies -->
+    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
@@ -56,6 +59,7 @@
                       SkipGetTargetFrameworkProperties="true"
                       />
 
+    <PackageReference Include="Serilog.Extensions.Logging.File" Version="2.0.0" />
     <!-- needed for ConditionalFact etc -->
     <ProjectReference Include="$(RepoRoot)src\libraries\Common\tests\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
