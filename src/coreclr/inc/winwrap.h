@@ -263,5 +263,4 @@ WszCreateProcess(
 #define InterlockedCompareExchange8 _InterlockedCompareExchange8
 
 #endif // HOST_WINDOWS
-
 #endif  // __WIN_WRAP_H__
