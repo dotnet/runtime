@@ -129,75 +129,38 @@ namespace System.Globalization
             return idx;
         }
 
-        // there are chars that are ignored by ICU hashing algorithm but not ignored by invariant hashing
-        // Control: 59 (out of 1105)
-        // Format: 43 (out of 731)
-        // NonSpacingMark: 195 (out of 18105)
-        // EnclosingMark: 5 (out of 221) // 0488, 0489, A670, A671, A672
-        // ModifierLetter: 2 (out of 4012) // 0640, 07FA
-        // SpacingCombiningMark: 4 (out of 4420) // 0F3E, 0F3F, 1CE1, 1CF7
-        // OtherPunctuation: 4 (out of 7004) // 180A, 1CD3, 10F86 (\uD803\uDC00), 10F87 (\uD803\uDF87)
-        // OtherLetter: 683 (out of 784142)
-        // OtherNotAssigned: 3581 (out of 24718)
-        // UppercaseLetter: 4 (out of 19159) // 10591 (\uD801\uDC91), 10592 (\uD801\uDC92), 10594 (\uD801\uDC94), 10595 (\uD801\uDC95)
-        // LowercaseLetter: 24 (out of 24565) // 10597 -  105AF
-        // OtherNumber: 1 (out of 5100) // 10FC6 (\uD843\uDFC6)
-        // PrivateUse: 614 (out of 108800)
-        // total: 5219 chars
-        // skipping more characters than ICU would lead to hashes with smaller distribution and more collisions in hash tables
+        // there are chars that ignored by JS Equal function. ICU has its own set of ignored unicodes as well (5219 chars)
+        // Control: 65 (out of 1105)
+        // SpaceSeparator: 17 (out of 289)
+        // OtherPunctuation: 628 (out of 7004)
+        // OpenPunctuation: 79 (out of 1343)
+        // ClosePunctuation: 77 (out of 1309)
+        // DashPunctuation: 26 (out of 425)
+        // ConnectorPunctuation: 10 (out of 170)
+        // InitialQuotePunctuation: 12 (out of 204)
+        // Format: 170 (out of 731)
+        // FinalQuotePunctuation: 10 (out of 170)
+        // NonSpacingMark: 708 (out of 18105)
+        // EnclosingMark: 5 (out of 221)) // 0488, 0489, A670, A671, A672
+        // ModifierLetter: 3 (out of 4012)
+        // OtherLetter: 2 (out of 784142)
+        // SpacingCombiningMark: 12 (out of 4420)
+        // LineSeparator: 1 (out of 17)
+        // ParagraphSeparator: 1 (out of 17)
+        // total: 1826
+        // we can skip them by checking for the remaining UnicodeCategories
+        // skipping more characters than JS's localeCompare leads to hashes with smaller distribution and more collisions in hash tables
         // but it makes the behavior correct and consistent with locale-aware equals, which is acceptable tradeoff
-        private static bool ShouldBeSkipped(UnicodeCategory category, char value)
-        {
-            switch (category)
-            {
-                case UnicodeCategory.Control:
-                case UnicodeCategory.Format:
-                case UnicodeCategory.NonSpacingMark:
-                case UnicodeCategory.OtherLetter:
-                case UnicodeCategory.OtherNotAssigned:
-                case UnicodeCategory.PrivateUse:
-                {
-                    return true;
-                }
-                case UnicodeCategory.LowercaseLetter:
-                {
-                    // some skipped unicodes, e.g. from Elbasan script, are surrogates
-                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
-                    return 0x10597 <= codePoint && codePoint <= 0x105AF;
-                }
-                case UnicodeCategory.UppercaseLetter:
-                {
-                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
-                    return 0x10591 <= codePoint && codePoint <= 0x10595;
-                }
-                case UnicodeCategory.OtherNumber:
-                {
-                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
-                    return codePoint == 0x10FC6;
-                }
-                case UnicodeCategory.OtherPunctuation:
-                {
-                    if (value == '\u180A' || value == '\u1CD3')
-                        return true;
-                    int codePoint = char.ConvertToUtf32(value.ToString(), 0);
-                    return codePoint == 0x10F86 || codePoint == 0x10F87;
-                }
-                case UnicodeCategory.EnclosingMark:
-                {
-                    return value == '\u0488' || value == '\u0489' || value == '\uA670' || value == '\uA671' || value == '\uA672';
-                }
-                case UnicodeCategory.ModifierLetter:
-                {
-                    return value == '\u0640' || value == '\u07FA';
-                }
-                case UnicodeCategory.SpacingCombiningMark:
-                {
-                    return value == '\u0F3E' || value == '\u0F3F' || value == '\u1CE1' || value == '\u1CF7';
-                }
-                default:
-                    return false;
-            }
-        }
+        private static bool ShouldNotBeSkipped(UnicodeCategory category) =>
+            category == UnicodeCategory.LowercaseLetter ||
+            category == UnicodeCategory.UppercaseLetter ||
+            category == UnicodeCategory.TitlecaseLetter ||
+            category == UnicodeCategory.CurrencySymbol ||
+            category == UnicodeCategory.DecimalDigitNumber ||
+            category == UnicodeCategory.LetterNumber ||
+            category == UnicodeCategory.MathSymbol ||
+            category == UnicodeCategory.ModifierSymbol;
+
 
         private ReadOnlySpan<char> SanitizeForInvariantHash(ReadOnlySpan<char> source, CompareOptions options)
         {
@@ -206,11 +169,10 @@ namespace System.Globalization
             foreach (char c in source)
             {
                 UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (ShouldBeSkipped(category, c))
+                if (ShouldNotBeSkipped(category))
                 {
-                    continue;
+                    result[resultIndex++] = c;
                 }
-                result[resultIndex++] = c;
             }
             if ((options & CompareOptions.IgnoreCase) != 0)
             {
