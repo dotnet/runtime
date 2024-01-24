@@ -1827,17 +1827,17 @@ PhaseStatus Compiler::fgLateCastExpansion()
     return fgExpandHelper<&Compiler::fgLateCastExpansionForCall>(skipForRarelyRunBlocks);
 }
 
-enum TypeCheckFailedAction
+enum class TypeCheckFailedAction
 {
-    F_ReturnNull,
-    F_CallHelper,
-    F_CallHelper_AlwaysThrows
+    ReturnNull,
+    CallHelper,
+    CallHelper_AlwaysThrows
 };
 
-enum TypeCheckPassedAction
+enum class TypeCheckPassedAction
 {
-    P_ReturnObj,
-    P_ReturnNull,
+    ReturnObj,
+    ReturnNull,
 };
 
 //------------------------------------------------------------------------------
@@ -1849,7 +1849,7 @@ enum TypeCheckPassedAction
 //    comp               - Compiler instance
 //    castHelper         - Cast helper call to expand
 //    commonCls          - [out] Common denominator class for the fast and the fallback paths.
-//    likelihood         - [out] Likelihood of successful type check (0..100)
+//    likelihood         - [out] Likelihood of successful type check [0..100]
 //    typeCheckFailed    - [out] Action to perform if the type check fails
 //    typeCheckPassed    - [out] Action to perform if the type check passes
 //
@@ -1905,14 +1905,6 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
             return NO_CLASS_HANDLE;
     }
 
-    // Assume that the type check will pass with 50% probability by default
-    *likelihood = 50;
-
-    // Assume that in the slow path (fallback) we'll always invoke the helper.
-    // In some cases we can optimize this further e.g. either mark it additionally
-    // as no-return (BBJ_THROW) or simply return null.
-    *typeCheckFailed = F_CallHelper;
-
     // result is the class we're going to use as a guess for the type check.
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
 
@@ -1929,6 +1921,18 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
         return NO_CLASS_HANDLE;
     }
 
+    // Assume that the type check will pass with 50% probability by default
+    *likelihood = 50;
+
+    // Assume that in the slow path (fallback) we'll always invoke the helper.
+    // In some cases we can optimize this further e.g. either mark it additionally
+    // as no-return (BBJ_THROW) or simply return null.
+    *typeCheckFailed = TypeCheckFailedAction::CallHelper;
+
+    // A common denominator class for the fast and the fallback paths
+    // can be used as a class for LCL_VAR storing the result of the expansion.
+    *commonCls = castToCls;
+
     //
     // Now we need to figure out what class to use for the fast path, we have 4 options:
     //  1) If "cast to" class is already exact we can go ahead and make some decisions
@@ -1940,8 +1944,6 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
     //
 
     // 1) If "cast to" class is already exact we can go ahead and make some decisions
-    // even without PGO data/getExactClasses/speculations.
-
     const bool isCastToExact = comp->eeIsClassExact(castToCls);
     if (isCastToExact && ((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY)))
     {
@@ -1949,7 +1951,7 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
         // (string[])obj
         //
         // Fallbacks for these expansions always throw InvalidCastException
-        *typeCheckFailed = F_CallHelper_AlwaysThrows;
+        *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
 
         // Assume that exceptions are rare
         *likelihood = 100;
@@ -1963,7 +1965,7 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
         // obj is string[]
         //
         // Fallbacks for these expansions simply return null
-        *typeCheckFailed = F_ReturnNull;
+        *typeCheckFailed = TypeCheckFailedAction::ReturnNull;
     }
     else
     {
@@ -1974,7 +1976,7 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
             if (isCastClass)
             {
                 // Fallback call is only needed for castclass and only to throw InvalidCastException
-                *typeCheckFailed = F_CallHelper_AlwaysThrows;
+                *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
 
                 // Assume that exceptions are rare
                 *likelihood = 100;
@@ -1982,12 +1984,15 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
             else
             {
                 // Fallback for isinst simply returns null here
-                *typeCheckFailed = F_ReturnNull;
+                *typeCheckFailed = TypeCheckFailedAction::ReturnNull;
             }
+
+            // Update the common denominator class to be more exact
+            *commonCls = result;
         }
         else
         {
-            // 3) Check PGO data
+            // 3) Consult with PGO data
             LikelyClassMethodRecord likelyClasses[MAX_GDV_TYPE_CHECKS];
             unsigned                likelyClassCount =
                 getLikelyClasses(likelyClasses, MAX_GDV_TYPE_CHECKS, comp->fgPgoSchema, comp->fgPgoSchemaCount,
@@ -2031,7 +2036,7 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
 
                 // Validate static profile data
                 if ((comp->info.compCompHnd->getClassAttribs(result) &
-                     (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT | CORINFO_FLG_STATIC)) != 0)
+                     (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0)
                 {
                     // Possible scenario: someone changed Foo to be an interface/abstract class/static class,
                     // but static profile data still reports it as a normal likely class.
@@ -2122,38 +2127,37 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
         JITDUMP("compareTypesForCast returned May for this candidate\n");
         return NO_CLASS_HANDLE;
     }
-
-    if ((castResult == TypeCompareState::MustNot) && isCastClass)
-    {
-        // Our fast path candidate never passes the type check (may happen with PGO-driven expansion),
-        // we can return null if the type check against it passes. It doesn't make a lot of sense to do it
-        // for castclass as its fallback call is going to throw an exception anyway.
-        return NO_CLASS_HANDLE;
-    }
-
-    if (castResult == TypeCompareState::Must)
+    else if (castResult == TypeCompareState::Must)
     {
         // return actual object on successful type check
-        *typeCheckPassed = P_ReturnObj;
+        *typeCheckPassed = TypeCheckPassedAction::ReturnObj;
+    }
+    else if (castResult == TypeCompareState::MustNot)
+    {
+        // Our likely candidate never passes the type check (may happen with PGO-driven expansion),
+        if (!isCastClass)
+        {
+            // return null on successful type check
+            *typeCheckPassed = TypeCheckPassedAction::ReturnNull;
+        }
+        else
+        {
+            // give up on castclass - it's going to throw InvalidCastException anyway
+            return NO_CLASS_HANDLE;
+        }
     }
     else
     {
-        // Our likely candidate never passes the type check -> return null on successful type check
-        assert(castResult == TypeCompareState::MustNot);
-        *typeCheckPassed = P_ReturnNull;
+        unreached();
     }
 
-    if (isCastClass && (result == castToCls) && (*typeCheckFailed == F_CallHelper))
+    if (isCastClass && (result == castToCls) && (*typeCheckFailed == TypeCheckFailedAction::CallHelper))
     {
         // TODO-InlineCast: Change helper to faster CORINFO_HELP_CHKCASTCLASS_SPECIAL
         // it won't check for null and castToCls assuming we've already done it inline.
     }
 
-    // A common denominator class for the fast and the fallback paths
-    // can be used as a class for LCL_VAR storing the result of the expansion.
-    *commonCls = castToCls;
-
-    // Exact class for the fast path's type check.
+    assert(result != NO_CLASS_HANDLE);
     return result;
 }
 
@@ -2210,9 +2214,12 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //     if (tmp->pMT == likelyCls)
     //         goto typeCheckSucceedBb;
     //
-    // fallbackBb (BBJ_ALWAYS):                     [weight: <profile>]
+    // fallbackBb (BBJ_ALWAYS):                     [weight: <profile> or 0]
     //     tmp = helper_call(expectedCls, obj);
     //     goto lastBb;
+    //     // NOTE: as an optimization we can omit the call and return null instead
+    //     // or mark the call as no-return in certain cases.
+    //
     //
     // typeCheckSucceedBb (BBJ_ALWAYS):             [weight: <profile>]
     //     no-op (or tmp = null; in case of 'MustNot')
@@ -2246,12 +2253,13 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     // Block 3: fallbackBb
     BasicBlock* fallbackBb;
-    if (typeCheckFailedAction == F_CallHelper_AlwaysThrows)
+    if (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_AlwaysThrows)
     {
         // fallback call is used only to throw InvalidCastException
-        fallbackBb = fgNewBBFromTreeAfter(BBJ_THROW, typeCheckBb, gtUnusedValNode(call), debugInfo, nullptr, true);
+        call->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        fallbackBb = fgNewBBFromTreeAfter(BBJ_THROW, typeCheckBb, call, debugInfo, nullptr, true);
     }
-    else if (typeCheckFailedAction == F_ReturnNull)
+    else if (typeCheckFailedAction == TypeCheckFailedAction::ReturnNull)
     {
         // if fallback call is not needed, we just assign null to tmp
         GenTree* fallbackTree = gtNewTempStore(tmpNum, gtNewNull());
@@ -2265,13 +2273,13 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     // Block 4: typeCheckSucceedBb
     GenTree* typeCheckSucceedTree;
-    if (typeCheckPassedAction == P_ReturnNull)
+    if (typeCheckPassedAction == TypeCheckPassedAction::ReturnNull)
     {
         typeCheckSucceedTree = gtNewTempStore(tmpNum, gtNewNull());
     }
     else
     {
-        assert(typeCheckPassedAction == P_ReturnObj);
+        assert(typeCheckPassedAction == TypeCheckPassedAction::ReturnObj);
         // No-op because tmp was already assigned to obj
         typeCheckSucceedTree = gtNewNothingNode();
     }
@@ -2293,7 +2301,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     fgAddRefPred(fallbackBb, typeCheckBb);
     fgAddRefPred(lastBb, typeCheckSucceedBb);
     fgAddRefPred(typeCheckSucceedBb, typeCheckBb);
-    if (typeCheckFailedAction != F_CallHelper_AlwaysThrows)
+    if (typeCheckFailedAction != TypeCheckFailedAction::CallHelper_AlwaysThrows)
     {
         // if fallbackBb is BBJ_THROW then it has no successors
         fgAddRefPred(lastBb, fallbackBb);
@@ -2307,7 +2315,9 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     nullcheckBb->inheritWeight(firstBb);
     typeCheckBb->inheritWeightPercentage(nullcheckBb, 50);
     fallbackBb->inheritWeightPercentage(typeCheckBb,
-                                        (typeCheckFailedAction == F_CallHelper_AlwaysThrows) ? 0 : 100 - likelihood);
+                                        (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_AlwaysThrows)
+                                            ? 0
+                                            : 100 - likelihood);
     typeCheckSucceedBb->inheritWeightPercentage(typeCheckBb, likelihood);
     lastBb->inheritWeight(firstBb);
 
