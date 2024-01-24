@@ -380,7 +380,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 throw new NotImplementedException($"Unknown {nameof(assertOptions.GlobalizationMode)} = {assertOptions.GlobalizationMode}");
         }
 
-        IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "*.*");
+        IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "*");
         AssertFileNames(expected, actual);
         if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
         {
@@ -476,8 +476,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     private void AssertFileNames(IEnumerable<string> expected, IEnumerable<string> actual)
     {
-        expected = expected.Order().Select(f => Path.GetFileName(f)).Distinct();
-        var actualFileNames = actual.Order().Select(f => Path.GetFileName(f));
+        expected = expected.Select(f => Path.GetFileName(f)).Distinct();
+        var actualFileNames = actual.Select(f => Path.GetFileName(f));
         Assert.All(expected, item => Assert.Contains(item, actualFileNames));
     }
 
