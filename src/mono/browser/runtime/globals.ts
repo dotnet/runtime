@@ -15,7 +15,7 @@ import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers,
 export let Module: DotnetModuleInternal;
 export let INTERNAL: any;
 
-// keep in sync with src\mono\wasm\runtime\loader\globals.ts and src\mono\wasm\test-main.js
+// keep in sync with src\mono\browser\runtime\loader\globals.ts and src\mono\browser\test-main.js
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
 export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
@@ -96,7 +96,7 @@ export function createPromiseController<T>(afterResolve?: () => void, afterRejec
 }
 
 // this will abort the program if the condition is false
-// see src\mono\wasm\runtime\rollup.config.js
+// see src\mono\browser\runtime\rollup.config.js
 // we inline the condition, because the lambda could allocate closure on hot path otherwise
 export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (condition) return;
