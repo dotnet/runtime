@@ -13912,22 +13912,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
                     (cls2Hnd == NO_CLASS_HANDLE) ? " cls2" : "");
         }
 
-        // We can't answer the equality comparison definitively at jit
-        // time, but can still simplify the comparison.
-        //
-        // Find out how we can compare the two handles.
-        // NOTE: We're potentially passing NO_CLASS_HANDLE, but the runtime knows what to do with it here.
-        CorInfoInlineTypeCheck inliningKind =
-            info.compCompHnd->canInlineTypeCheck(cls1Hnd, CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN);
-
-        // If the first type needs helper, check the other type: it might be okay with a simple compare.
-        if (inliningKind == CORINFO_INLINE_TYPECHECK_USE_HELPER)
-        {
-            inliningKind = info.compCompHnd->canInlineTypeCheck(cls2Hnd, CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN);
-        }
-
-        assert(inliningKind == CORINFO_INLINE_TYPECHECK_PASS);
-
         GenTree* compare = gtNewOperNode(oper, TYP_INT, op1ClassFromHandle, op2ClassFromHandle);
 
         // Drop any now-irrelevant flags
@@ -13964,9 +13948,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
         arg2 = gtNewMethodTableLookup(arg2);
 
-        assert(info.compCompHnd->canInlineTypeCheck(nullptr, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE) ==
-               CORINFO_INLINE_TYPECHECK_PASS);
-
         GenTree* compare = gtNewOperNode(oper, TYP_INT, arg1, arg2);
 
         // Drop any now-irrelevant flags
@@ -13999,15 +13980,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
-    // Ask the VM if this type can be equality tested by a simple method
-    // table comparison.
-    CorInfoInlineTypeCheck typeCheckInliningResult =
-        info.compCompHnd->canInlineTypeCheck(clsHnd, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
-    if (typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_NONE)
-    {
-        return tree;
-    }
-
     // We're good to go.
     JITDUMP("Optimizing compare of obj.GetType()"
             " and type-from-handle to compare method table pointer\n");
@@ -14034,7 +14006,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
     // if both classes are "final" (e.g. System.String[]) we can replace the comparison
     // with `true/false` + null check.
-    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || impIsClassExact(objCls)))
+    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || info.compCompHnd->isExactType(objCls)))
     {
         TypeCompareState tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
         if (tcs != TypeCompareState::May)
@@ -14065,7 +14037,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     GenTree* const objMT = gtNewMethodTableLookup(objOp);
 
     // Compare the two method tables
-    assert(typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_PASS);
     GenTree* const compare = gtNewOperNode(oper, TYP_INT, objMT, knownMT);
 
     // Drop any now irrelevant flags
@@ -18585,7 +18556,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         }
         else
         {
-            *pIsExact = impIsClassExact(objClass);
+            *pIsExact = info.compCompHnd->isExactType(objClass);
         }
     }
 
