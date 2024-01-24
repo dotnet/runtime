@@ -8236,7 +8236,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
         LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
 #ifdef HOST_WINDOWS
         CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
-        RaiseFailFastException(pExInfo->m_ptrs.ExceptionRecord, pExInfo->m_ptrs.ContextRecord, 0);
+        RaiseFailFastException(pExInfo->m_ptrs.ExceptionRecord, NULL, 0);
 #else
         CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
 #endif
