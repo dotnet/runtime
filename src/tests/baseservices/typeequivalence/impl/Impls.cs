@@ -130,3 +130,8 @@ public class OnlyLoadOnceCaller
         return s.Field;
     }
 }
+
+public static class TestsExactTypeOptimizationsHelper
+{
+    public static TestValueType[] s_arrayInstance;
+}
