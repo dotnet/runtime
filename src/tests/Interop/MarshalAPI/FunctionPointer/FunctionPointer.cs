@@ -113,7 +113,7 @@ public partial class FunctionPtr
         Assert.Equal(expectedValue, outVar);
     }
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    [UnmanagedCallersOnly]
     static int UnmanagedExportedFunction(float arg)
     {
         return Convert.ToInt32(arg);
@@ -123,12 +123,12 @@ public partial class FunctionPtr
     {
         internal static unsafe T GenericCalli<U>(void* fnptr, U arg)
         {
-            return ((delegate* unmanaged[Cdecl]<U, T>)fnptr)(arg);
+            return ((delegate* unmanaged<U, T>)fnptr)(arg);
         }
 
         internal static unsafe BlittableGeneric<T> WrappedGenericCalli<U>(void* fnptr, U arg)
         {
-            return ((delegate* unmanaged[Cdecl]<U, BlittableGeneric<T>>)fnptr)(arg);
+            return ((delegate* unmanaged<U, BlittableGeneric<T>>)fnptr)(arg);
         }
     }
 
@@ -144,23 +144,26 @@ public partial class FunctionPtr
         int outVar = 0;
         int expectedValue = 42;
 
+        Console.WriteLine("Testing GenericCalli with int return type");
         unsafe
         {
-            outVar = GenericCaller<int>.GenericCalli((delegate* unmanaged[Cdecl]<float, int>)&UnmanagedExportedFunction, 42.0f);
+            outVar = GenericCaller<int>.GenericCalli((delegate* unmanaged<float, int>)&UnmanagedExportedFunction, 42.0f);
         }
         Assert.Equal(expectedValue, outVar);
         
         outVar = 0;
+        Console.WriteLine("Testing GenericCalli with BlittableGeneric<int> return type");
         unsafe
         {
-            outVar = GenericCaller<int>.WrappedGenericCalli((delegate* unmanaged[Cdecl]<float, int>)&UnmanagedExportedFunction, 42.0f).X;
+            outVar = GenericCaller<int>.WrappedGenericCalli((delegate* unmanaged<float, int>)&UnmanagedExportedFunction, 42.0f).X;
         }
         Assert.Equal(expectedValue, outVar);
 
         outVar = 0;
+        Console.WriteLine("Testing GenericCalli with BlittableGeneric<string> return type");
         unsafe
         {
-            outVar = GenericCaller<string>.WrappedGenericCalli((delegate* unmanaged[Cdecl]<float, int>)&UnmanagedExportedFunction, 42.0f).X;
+            outVar = GenericCaller<string>.WrappedGenericCalli((delegate* unmanaged<float, int>)&UnmanagedExportedFunction, 42.0f).X;
         }
         Assert.Equal(expectedValue, outVar);
     }
@@ -176,9 +179,12 @@ public partial class FunctionPtr
             {
                 lib = NativeLibrary.Load(nameof(FunctionPointerNative));
                 nint fnptr = NativeLibrary.GetExport(lib, "ReturnParameter");
-                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<int>.GenericCalli((delegate* unmanaged[Cdecl]<string, int>)fnptr, "test"));
-                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged[Cdecl]<int, string>)fnptr, "test"));
-                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged[Cdecl]<string, string>)fnptr, "test"));
+                Console.WriteLine("Testing GenericCalli with string as parameter type");
+                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<int>.GenericCalli((delegate* unmanaged<string, int>)fnptr, "test"));
+                Console.WriteLine("Testing GenericCalli with string as return type");
+                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged<int, string>)fnptr, "test"));
+                Console.WriteLine("Testing GenericCalli with string as both parameter and return type");
+                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged<string, string>)fnptr, "test"));
             }
             finally
             {
