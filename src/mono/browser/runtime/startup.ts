@@ -31,6 +31,7 @@ import { mono_wasm_main_thread_ptr, mono_wasm_pthread_ptr } from "./pthreads/sha
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 import { localHeapViewU8 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
+import { runtimeList } from "./exports";
 
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
@@ -187,6 +188,8 @@ export function preRunWorker() {
     // signal next stage
     runtimeHelpers.runtimeReady = true;
     runtimeHelpers.afterPreRun.promise_control.resolve();
+    exportedRuntimeAPI.runtimeId = loaderHelpers.config.runtimeId!;
+    runtimeList.registerRuntime(exportedRuntimeAPI);
 }
 
 async function preRunAsync(userPreRun: (() => void)[]) {
@@ -260,7 +263,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         if (!ENVIRONMENT_IS_WORKER) {
             Module.runtimeKeepalivePush();
         }
-        runtimeHelpers.runtimeReady = true;
 
         if (runtimeHelpers.config.virtualWorkingDirectory) {
             const FS = Module.FS;
@@ -279,11 +281,13 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         bindings_init();
         jiterpreter_allocate_tables();
-        runtimeHelpers.runtimeReady = true;
 
         if (ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER) {
             Module.runtimeKeepalivePush();
         }
+
+        runtimeHelpers.runtimeReady = true;
+        runtimeList.registerRuntime(exportedRuntimeAPI);
 
         if (MonoWasmThreads) {
             runtimeHelpers.javaScriptExports.install_main_synchronization_context();

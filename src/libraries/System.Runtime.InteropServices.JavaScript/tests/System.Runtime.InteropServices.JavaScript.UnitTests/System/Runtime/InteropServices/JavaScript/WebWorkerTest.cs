@@ -465,30 +465,40 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         private async Task ActionsInDifferentThreads<T>(Executor executor1, Executor executor2, Func<Task, TaskCompletionSource<T>, Task> e1Job, Func<T, Task> e2Job, CancellationTokenSource cts)
         {
-            TaskCompletionSource<T> readyTCS = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-            TaskCompletionSource doneTCS = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<T> job1ReadyTCS = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource job2DoneTCS = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var e1Done = false;
             var e2Done = false;
-            var e1 = executor1.Execute(async () =>
+            var e1Failed = false;
+            Task e1;
+            Task e2;
+            T r1;
+
+            async Task ActionsInDifferentThreads1()
             {
                 try
                 {
-                    await e1Job(doneTCS.Task, readyTCS);
-                    if (!readyTCS.Task.IsCompleted)
+                    await e1Job(job2DoneTCS.Task, job1ReadyTCS);
+                    if (!job1ReadyTCS.Task.IsCompleted)
                     {
-                        readyTCS.SetResult(default);
+                        job1ReadyTCS.SetResult(default);
                     }
-                    await doneTCS.Task;
+                    await job2DoneTCS.Task;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("ActionsInDifferentThreads1 failed\n" + ex);
+                    job1ReadyTCS.SetResult(default);
+                    e1Failed = true;
+                    throw;
                 }
                 finally
                 {
                     e1Done = true;
                 }
-            }, cts.Token);
+            }
 
-            var r1 = await readyTCS.Task.ConfigureAwait(true);
-
-            var e2 = executor2.Execute(async () =>
+            async Task ActionsInDifferentThreads2()
             {
                 try
                 {
@@ -498,16 +508,26 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 {
                     e2Done = true;
                 }
-            }, cts.Token);
+            }
+
+
+            e1 = executor1.Execute(ActionsInDifferentThreads1, cts.Token);
+            r1 = await job1ReadyTCS.Task.ConfigureAwait(true);
+            if (e1Failed || e1.IsFaulted)
+            {
+                await e1;
+            }
+            e2 = executor2.Execute(ActionsInDifferentThreads2, cts.Token);
 
             try
             {
                 await e2;
-                doneTCS.SetResult();
+                job2DoneTCS.SetResult();
                 await e1;
             }
             catch (Exception ex)
             {
+                job2DoneTCS.TrySetException(ex);
                 if (ex is OperationCanceledException oce && cts.Token.IsCancellationRequested)
                 {
                     throw;

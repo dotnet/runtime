@@ -83,6 +83,7 @@ export type MonoConfigInternal = MonoConfig & {
     asyncFlushOnExit?: boolean
     exitAfterSnapshot?: number
     loadAllSatelliteResources?: boolean
+    runtimeId?: number
 };
 
 export type RunArguments = {
@@ -231,50 +232,6 @@ export type BrowserProfilerOptions = {
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & EmscriptenModuleInternal;
-
-// see src/mono/wasm/driver.c MARSHAL_TYPE_xxx and Runtime.cs MarshalType
-export const enum MarshalType {
-    NULL = 0,
-    INT = 1,
-    FP64 = 2,
-    STRING = 3,
-    VT = 4,
-    DELEGATE = 5,
-    TASK = 6,
-    OBJECT = 7,
-    BOOL = 8,
-    ENUM = 9,
-    URI = 22,
-    SAFEHANDLE = 23,
-    ARRAY_BYTE = 10,
-    ARRAY_UBYTE = 11,
-    ARRAY_UBYTE_C = 12,
-    ARRAY_SHORT = 13,
-    ARRAY_USHORT = 14,
-    ARRAY_INT = 15,
-    ARRAY_UINT = 16,
-    ARRAY_FLOAT = 17,
-    ARRAY_DOUBLE = 18,
-    FP32 = 24,
-    UINT32 = 25,
-    INT64 = 26,
-    UINT64 = 27,
-    CHAR = 28,
-    STRING_INTERNED = 29,
-    VOID = 30,
-    ENUM64 = 31,
-    POINTER = 32,
-    SPAN_BYTE = 33,
-}
-
-// see src/mono/wasm/driver.c MARSHAL_ERROR_xxx and Runtime.cs
-export const enum MarshalError {
-    BUFFER_TOO_SMALL = 512,
-    NULL_CLASS_POINTER = 513,
-    NULL_TYPE_POINTER = 514,
-    UNSUPPORTED_TYPE = 515,
-    FIRST = BUFFER_TOO_SMALL
-}
 
 // Evaluates whether a value is nullish (same definition used as the ?? operator,
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
