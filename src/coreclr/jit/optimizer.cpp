@@ -1827,6 +1827,8 @@ void Compiler::optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum,
             DoLclVarsOnly = true,
         };
 
+        bool MadeChanges = false;
+
         ReplaceVisitor(Compiler* comp, unsigned lclNum, ssize_t cnsVal)
             : GenTreeVisitor(comp), m_lclNum(lclNum), m_cnsVal(cnsVal)
         {
@@ -1836,7 +1838,8 @@ void Compiler::optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum,
         {
             if ((*use)->OperIs(GT_LCL_VAR) && ((*use)->AsLclVarCommon()->GetLclNum() == m_lclNum))
             {
-                *use = m_compiler->gtNewIconNode(m_cnsVal, genActualType(*use));
+                *use        = m_compiler->gtNewIconNode(m_cnsVal, genActualType(*use));
+                MadeChanges = true;
             }
 
             return fgWalkResult::WALK_CONTINUE;
@@ -1848,6 +1851,16 @@ void Compiler::optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum,
     for (Statement* stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+
+        if (visitor.MadeChanges)
+        {
+            // Replacing locals with constants can change whether we consider
+            // something to have side effects. For example, `fgAddrCouldBeNull`
+            // can switch from true to false if the address changes from
+            // ADD(LCL_ADDR, LCL_VAR) -> ADD(LCL_ADDR, CNS_INT).
+            gtUpdateStmtSideEffects(stmt);
+            visitor.MadeChanges = false;
+        }
     }
 }
 
