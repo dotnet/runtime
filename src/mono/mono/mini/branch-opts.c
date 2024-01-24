@@ -1463,7 +1463,7 @@ mono_optimize_branches (MonoCompile *cfg)
 				}
 
 				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
-					if (bb->last_ins->inst_false_bb && bb->last_ins->inst_false_bb->out_of_line && (bb->region == bb->last_ins->inst_false_bb->region) && !cfg->disable_out_of_line_bblocks) {
+					if (!COMPILE_LLVM (cfg) && bb->last_ins->inst_false_bb && bb->last_ins->inst_false_bb->out_of_line && (bb->region == bb->last_ins->inst_false_bb->region) && !cfg->disable_out_of_line_bblocks) {
 						/* Reverse the branch */
 						bb->last_ins->opcode = GUINT32_TO_OPCODE (mono_reverse_branch_op (bb->last_ins->opcode));
 						bbn = bb->last_ins->inst_false_bb;
