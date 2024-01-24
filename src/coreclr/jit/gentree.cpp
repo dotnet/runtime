@@ -22646,18 +22646,7 @@ GenTree* Compiler::gtNewSimdGetElementNode(
 
     if (useToScalar)
     {
-        intrinsicId = NI_Vector128_ToScalar;
-
-        if (simdSize == 64)
-        {
-            intrinsicId = NI_Vector512_ToScalar;
-        }
-        else if (simdSize == 32)
-        {
-            intrinsicId = NI_Vector256_ToScalar;
-        }
-
-        return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize);
+        return gtNewSimdToScalarNode(type, op1, simdBaseJitType, simdSize);
     }
 
     switch (simdBaseType)
@@ -22700,14 +22689,7 @@ GenTree* Compiler::gtNewSimdGetElementNode(
 #elif defined(TARGET_ARM64)
     if (op2->IsIntegralConst(0))
     {
-        intrinsicId = NI_Vector128_ToScalar;
-
-        if (simdSize == 8)
-        {
-            intrinsicId = NI_Vector64_ToScalar;
-        }
-
-        return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize);
+        return gtNewSimdToScalarNode(type, op1, simdBaseJitType, simdSize);
     }
 
     if (simdSize == 8)
@@ -24604,7 +24586,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
         case TYP_USHORT:
         {
             tmp = gtNewSimdHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize);
-            return gtNewSimdHWIntrinsicNode(type, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8);
+            return gtNewSimdToScalarNode(type, tmp, simdBaseJitType, 8);
         }
 
         case TYP_INT:
@@ -24619,7 +24601,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
             {
                 tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 16);
             }
-            return gtNewSimdHWIntrinsicNode(type, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8);
+            return gtNewSimdToScalarNode(type, tmp, simdBaseJitType, 8);
         }
 
         case TYP_FLOAT:
@@ -24641,7 +24623,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
                                                    simdSize);
                 }
             }
-            return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
+            return gtNewSimdToScalarNode(type, op1, simdBaseJitType, simdSize);
         }
 
         case TYP_DOUBLE:
@@ -24653,7 +24635,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
                 op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseJitType,
                                                simdSize);
             }
-            return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector64_ToScalar, simdBaseJitType, 8);
+            return gtNewSimdToScalarNode(type, op1, simdBaseJitType, 8);
         }
         default:
         {
@@ -24725,7 +24707,6 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
 }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH)
 //----------------------------------------------------------------------------------------------
 // Compiler::gtNewSimdToScalarNode: Creates a new simd ToScalar node.
 //
@@ -24740,9 +24721,19 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
 //
 GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+    assert(varTypeIsArithmetic(type));
 
-#if defined(TARGET_X86)
+    assert(op1 != nullptr);
+    assert(varTypeIsSIMD(op1));
+
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#ifdef TARGET_XARCH
+#if defined(TARGET_X86)
     if (varTypeIsLong(simdBaseType))
     {
         // We need SSE41 to handle long, use software fallback
@@ -24753,23 +24744,37 @@ GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, CorInfoTy
         return gtNewSimdGetElementNode(type, op1, op2, simdBaseJitType, simdSize);
     }
 #endif // TARGET_X86
-    // Ensure MOVD/MOVQ support exists
-    assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
-    NamedIntrinsic intrinsic = NI_Vector128_ToScalar;
 
-    if (simdSize == 32)
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-        intrinsic = NI_Vector256_ToScalar;
-    }
-    else if (simdSize == 64)
+    if (simdSize == 64)
     {
         assert(IsBaselineVector512IsaSupportedDebugOnly());
         intrinsic = NI_Vector512_ToScalar;
     }
+    else if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        intrinsic = NI_Vector256_ToScalar;
+    }
+    else
+    {
+        intrinsic = NI_Vector128_ToScalar;
+    }
+#elif defined(TARGET_ARM64)
+    if (simdSize == 8)
+    {
+        intrinsic = NI_Vector64_ToScalar;
+    }
+    else
+    {
+        intrinsic = NI_Vector128_ToScalar;
+    }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
 }
-#endif // TARGET_XARCH
 
 GenTree* Compiler::gtNewSimdUnOpNode(
     genTreeOps op, var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
