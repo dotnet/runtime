@@ -402,7 +402,7 @@ namespace System.Diagnostics.Tracing
 #endif
                 ThreadPoolIODequeue(
                     (IntPtr)nativeOverlapped,
-                    overlapped;
+                    overlapped);
             }
         }
 
