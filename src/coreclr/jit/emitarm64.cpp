@@ -1592,6 +1592,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isPredicateRegister(id->idReg2())); // ggg
             assert(isGeneralRegister(id->idReg3()));   // nnnnn
             assert(isVectorRegister(id->idReg4()));    // mmmmm
+            assert(isScalableVectorSize(elemsize));
             break;
 
         default:
