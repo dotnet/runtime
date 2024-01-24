@@ -677,7 +677,7 @@ namespace System.Reflection
                 {
                     if (!parser.ValidateProlog())
                     {
-                        throw new ArgumentException(SR.Arg_CustomAttributeFormatException);
+                        throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
                     }
 
                     ParseCtorArgs(ref parser, ref customAttributeCtorParameters, customAttributeModule);
@@ -729,7 +729,7 @@ namespace System.Reflection
                 if (namedArgFieldOrProperty is not CustomAttributeEncoding.Field
                     && namedArgFieldOrProperty is not CustomAttributeEncoding.Property)
                 {
-                    throw new ArgumentOutOfRangeException(SR.Arg_CustomAttributeFormatException);
+                    throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
                 }
 
                 // Parse the encoded type for the named argument.
@@ -740,7 +740,7 @@ namespace System.Reflection
                 // Argument name must be non-null and non-empty.
                 if (string.IsNullOrEmpty(argName))
                 {
-                    throw new ArgumentOutOfRangeException(SR.Arg_CustomAttributeFormatException);
+                    throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
                 }
 
                 // Update the appropriate named argument element.
@@ -790,12 +790,12 @@ namespace System.Reflection
 
                 if (parameterToUpdate is null)
                 {
-                    throw new ArgumentException(SR.Arg_CustomAttributeUnknownNamedArgument);
+                    throw new BadImageFormatException(SR.Arg_CustomAttributeUnknownNamedArgument);
                 }
 
                 if (parameterToUpdate.EncodedArgument is not null)
                 {
-                    throw new ArgumentException(SR.Arg_CustomAttributeDuplicateNamedArgument);
+                    throw new BadImageFormatException(SR.Arg_CustomAttributeDuplicateNamedArgument);
                 }
 
                 parameterToUpdate.EncodedArgument = ParseCustomAttributeValue(ref parser, argType, module);
@@ -867,7 +867,7 @@ namespace System.Reflection
                     break;
                 }
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new BadImageFormatException();
             }
 
             return arg;
@@ -894,13 +894,13 @@ namespace System.Reflection
                 string? enumTypeMaybe = parser.GetString();
                 if (enumTypeMaybe is null)
                 {
-                    throw new ArgumentNullException();
+                    throw new BadImageFormatException();
                 }
 
                 enumType = TypeNameParser.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
                 if (enumType is null || !enumType.IsEnum)
                 {
-                    throw new ArgumentOutOfRangeException();
+                    throw new BadImageFormatException();
                 }
 
                 enumTag = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding((RuntimeType)enumType.GetEnumUnderlyingType());
@@ -934,7 +934,7 @@ namespace System.Reflection
 
             private ReadOnlySpan<byte> ReadData(int size)
             {
-                var tmp = PeekData(size);
+                ReadOnlySpan<byte> tmp = PeekData(size);
                 Debug.Assert(size <= (_blob.Length - _curr));
                 _curr += size;
                 return tmp;
@@ -942,7 +942,7 @@ namespace System.Reflection
 
             public byte GetU1()
             {
-                var tmp = ReadData(sizeof(byte));
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(byte));
                 return tmp[0];
             }
 
@@ -950,7 +950,7 @@ namespace System.Reflection
 
             public ushort GetU2()
             {
-                var tmp = ReadData(sizeof(ushort));
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(ushort));
                 return BinaryPrimitives.ReadUInt16LittleEndian(tmp);
             }
 
@@ -958,7 +958,7 @@ namespace System.Reflection
 
             public uint GetU4()
             {
-                var tmp = ReadData(sizeof(uint));
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(uint));
                 return BinaryPrimitives.ReadUInt32LittleEndian(tmp);
             }
 
@@ -966,7 +966,7 @@ namespace System.Reflection
 
             public ulong GetU8()
             {
-                var tmp = ReadData(sizeof(ulong));
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(ulong));
                 return BinaryPrimitives.ReadUInt64LittleEndian(tmp);
             }
 
@@ -974,7 +974,7 @@ namespace System.Reflection
 
             public float GetR4()
             {
-                var tmp = ReadData(sizeof(float));
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(float));
                 return BinaryPrimitives.ReadSingleLittleEndian(tmp);
             }
 
@@ -985,7 +985,7 @@ namespace System.Reflection
 
             public double GetR8()
             {
-                var tmp = ReadData(sizeof(double));
+                ReadOnlySpan<byte> tmp = ReadData(sizeof(double));
                 return BinaryPrimitives.ReadDoubleLittleEndian(tmp);
             }
 
@@ -1017,7 +1017,7 @@ namespace System.Reflection
                     return string.Empty;
                 }
 
-                var utf8ByteSpan = ReadData(length);
+                ReadOnlySpan<byte> utf8ByteSpan = ReadData(length);
                 return Encoding.UTF8.GetString(utf8ByteSpan);
             }
 
