@@ -1060,7 +1060,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     HWIntrinsicCategory    category        = HWIntrinsicInfo::lookupCategory(intrinsic);
     CORINFO_InstructionSet isa             = HWIntrinsicInfo::lookupIsa(intrinsic);
     int                    numArgs         = sig->numArgs;
-    var_types              retType         = JITtype2varType(sig->retType);
+    var_types              retType         = genActualType(JITtype2varType(sig->retType));
     CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
     GenTree*               retNode         = nullptr;
 
@@ -1426,6 +1426,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:
+                    case NI_AVX2_BroadcastVector128ToVector256:
+                    case NI_AVX512F_BroadcastVector128ToVector512:
+                    case NI_AVX512F_BroadcastVector256ToVector512:
                     {
                         // These intrinsics have both pointer and vector overloads
                         // We want to be able to differentiate between them so lets

@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(RepoTasksDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
-    <ProjectReference Include="$(RepoRoot)src\mono\wasm\host\WasmAppHost.csproj" />
+    <ProjectReference Include="$(WasmProjectRoot)host\WasmAppHost.csproj" />
     <PackageFile Include="build\*.props;build\*.targets;build\*.web.config" TargetPath="build" />
   </ItemGroup>
 

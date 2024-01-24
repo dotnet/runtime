@@ -384,6 +384,9 @@ namespace System
         public static System.Array CreateInstance(System.Type elementType, int[] lengths, int[] lowerBounds) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static System.Array CreateInstance(System.Type elementType, params long[] lengths) { throw null; }
+        public static System.Array CreateInstanceFromArrayType(System.Type arrayType, int length) { throw null; }
+        public static System.Array CreateInstanceFromArrayType(System.Type arrayType, params int[] lengths) { throw null; }
+        public static System.Array CreateInstanceFromArrayType(System.Type arrayType, int[] lengths, int[] lowerBounds) { throw null; }
         public static T[] Empty<T>() { throw null; }
         public static bool Exists<T>(T[] array, System.Predicate<T> match) { throw null; }
         public static void Fill<T>(T[] array, T value) { }
@@ -1284,7 +1287,9 @@ namespace System
         public static string ToHexString(byte[] inArray) { throw null; }
         public static string ToHexString(byte[] inArray, int offset, int length) { throw null; }
         public static string ToHexString(System.ReadOnlySpan<byte> bytes) { throw null; }
-        public static bool TryToHexString(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static string ToHexStringLower(byte[] inArray) { throw null; }
+        public static string ToHexStringLower(byte[] inArray, int offset, int length) { throw null; }
+        public static string ToHexStringLower(System.ReadOnlySpan<byte> bytes) { throw null; }
         public static short ToInt16(bool value) { throw null; }
         public static short ToInt16(byte value) { throw null; }
         public static short ToInt16(char value) { throw null; }
@@ -1577,6 +1582,8 @@ namespace System
         public static bool TryFromBase64Chars(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, out int bytesWritten) { throw null; }
         public static bool TryFromBase64String(string s, System.Span<byte> bytes, out int bytesWritten) { throw null; }
         public static bool TryToBase64Chars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten, System.Base64FormattingOptions options = System.Base64FormattingOptions.None) { throw null; }
+        public static bool TryToHexString(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryToHexStringLower(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
     }
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
     public readonly partial struct DateOnly : System.IComparable, System.IComparable<System.DateOnly>, System.IEquatable<System.DateOnly>, System.IFormattable, System.IParsable<System.DateOnly>, System.ISpanFormattable, System.ISpanParsable<System.DateOnly>, System.IUtf8SpanFormattable
@@ -6161,6 +6168,8 @@ namespace System
         public System.Reflection.MethodInfo? GetMethod(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Reflection.MethodInfo? GetMethod(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
+        public System.Reflection.MethodInfo? GetMethod(string name, int genericParameterCount, System.Reflection.BindingFlags bindingAttr, System.Type[] types) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Reflection.MethodInfo? GetMethod(string name, int genericParameterCount, System.Type[] types) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -10379,6 +10388,7 @@ namespace System.IO
         public virtual System.IFormatProvider FormatProvider { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string NewLine { get { throw null; } set { } }
+        public static System.IO.TextWriter CreateBroadcasting(params System.IO.TextWriter[] writers) { throw null; }
         public virtual void Close() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -12443,10 +12453,10 @@ namespace System.Runtime
         private object _dummy;
         private int _dummyPrimitive;
         public DependentHandle(object? target, object? dependent) { throw null; }
-        public object? Dependent { get { throw null; } set { } }
-        public bool IsAllocated { get { throw null; } }
-        public object? Target { get { throw null; } set { } }
-        public (object? Target, object? Dependent) TargetAndDependent { get { throw null; } }
+        public object? Dependent { readonly get { throw null; } set { } }
+        public readonly bool IsAllocated { get { throw null; } }
+        public object? Target { readonly get { throw null; } set { } }
+        public readonly (object? Target, object? Dependent) TargetAndDependent { get { throw null; } }
         public void Dispose() { }
     }
     public enum GCLargeObjectHeapCompactionMode
@@ -12606,6 +12616,10 @@ namespace System.Runtime.CompilerServices
     public partial class CallConvStdcall
     {
         public CallConvStdcall() { }
+    }
+    public partial class CallConvSwift
+    {
+        public CallConvSwift() { }
     }
     public partial class CallConvSuppressGCTransition
     {
@@ -13469,16 +13483,16 @@ namespace System.Runtime.InteropServices
     public partial struct GCHandle : System.IEquatable<System.Runtime.InteropServices.GCHandle>
     {
         private int _dummyPrimitive;
-        public bool IsAllocated { get { throw null; } }
-        public object? Target { get { throw null; } set { } }
-        public System.IntPtr AddrOfPinnedObject() { throw null; }
+        public readonly bool IsAllocated { get { throw null; } }
+        public object? Target { readonly get { throw null; } set { } }
+        public readonly System.IntPtr AddrOfPinnedObject() { throw null; }
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value) { throw null; }
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value, System.Runtime.InteropServices.GCHandleType type) { throw null; }
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
-        public bool Equals(System.Runtime.InteropServices.GCHandle other) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
+        public readonly bool Equals(System.Runtime.InteropServices.GCHandle other) { throw null; }
         public void Free() { }
         public static System.Runtime.InteropServices.GCHandle FromIntPtr(System.IntPtr value) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
         public static explicit operator System.Runtime.InteropServices.GCHandle (System.IntPtr value) { throw null; }
         public static explicit operator System.IntPtr (System.Runtime.InteropServices.GCHandle value) { throw null; }
@@ -13802,6 +13816,22 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { }
             public static ref T GetPinnableReference(System.Span<T> managed) { throw null; }
         }
+    }
+}
+namespace System.Runtime.InteropServices.Swift
+{
+    [System.CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftSelf
+    {
+        public SwiftSelf(void* value) { }
+        public void* Value { get; }
+    }
+
+    [System.CLSCompliantAttribute(false)]
+    public readonly unsafe struct SwiftError
+    {
+        public SwiftError(void* value) { }
+        public void* Value { get; }
     }
 }
 namespace System.Runtime.Remoting
@@ -14927,6 +14957,8 @@ namespace System.Text
         public System.Text.StringBuilder Replace(char oldChar, char newChar, int startIndex, int count) { throw null; }
         public System.Text.StringBuilder Replace(string oldValue, string? newValue) { throw null; }
         public System.Text.StringBuilder Replace(string oldValue, string? newValue, int startIndex, int count) { throw null; }
+        public System.Text.StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue) { throw null; }
+        public System.Text.StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, int startIndex, int count) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         public string ToString(int startIndex, int length) { throw null; }
@@ -15321,6 +15353,7 @@ namespace System.Threading.Tasks
         public System.Threading.Tasks.Task Task { get { throw null; } }
         public void SetCanceled() { }
         public void SetCanceled(System.Threading.CancellationToken cancellationToken) { }
+        public void SetFromTask(System.Threading.Tasks.Task completedTask) { throw null; }
         public void SetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { }
         public void SetException(System.Exception exception) { }
         public void SetResult() { }
@@ -15328,6 +15361,7 @@ namespace System.Threading.Tasks
         public bool TrySetCanceled(System.Threading.CancellationToken cancellationToken) { throw null; }
         public bool TrySetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { throw null; }
         public bool TrySetException(System.Exception exception) { throw null; }
+        public bool TrySetFromTask(System.Threading.Tasks.Task completedTask) { throw null; }
         public bool TrySetResult() { throw null; }
     }
     public partial class TaskCompletionSource<TResult>
@@ -15339,11 +15373,13 @@ namespace System.Threading.Tasks
         public System.Threading.Tasks.Task<TResult> Task { get { throw null; } }
         public void SetCanceled() { }
         public void SetCanceled(System.Threading.CancellationToken cancellationToken) { }
+        public void SetFromTask(System.Threading.Tasks.Task<TResult> completedTask) { throw null; }
         public void SetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { }
         public void SetException(System.Exception exception) { }
         public void SetResult(TResult result) { }
         public bool TrySetCanceled() { throw null; }
         public bool TrySetCanceled(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public bool TrySetFromTask(System.Threading.Tasks.Task<TResult> completedTask) { throw null; }
         public bool TrySetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { throw null; }
         public bool TrySetException(System.Exception exception) { throw null; }
         public bool TrySetResult(TResult result) { throw null; }

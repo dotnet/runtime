@@ -3,8 +3,8 @@
 
 using System.Collections;
 using System.ComponentModel;
-using System.Data.SqlTypes;
 using System.Data.Common;
+using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;

@@ -367,7 +367,15 @@ export function backback(arg1, arg2, arg3) {
     // console.log('backback A')
     return (brg1, brg2) => {
         // console.log('backback B')
-        return arg1(brg1 + arg2, brg2 + arg3);
+        try {
+            var res = arg1(brg1 + arg2, brg2 + arg3);
+            // console.log('backback C')
+            return res
+        }
+        catch (e) {
+            // console.log('backback E ' + e)
+            throw e;
+        }
     }
 }
 

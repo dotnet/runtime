@@ -161,6 +161,10 @@ while (($# > 0)); do
       nor2r=true
       shift 1
       ;;
+    --experimentname)
+      experimentname=$2
+      shift 2
+      ;;
     --compare)
       compare=true
       shift 1
@@ -254,6 +258,7 @@ while (($# > 0)); do
       echo "  --nodynamicpgo                 Set for No dynamic PGO runs"
       echo "  --physicalpromotion            Set for runs with physical promotion"
       echo "  --nor2r                        Set for No R2R runs"
+      echo "  --experimentname <value>       Set Experiment Name"
       echo ""
       exit 1
       ;;
@@ -293,16 +298,16 @@ if [[ "$internal" == true ]]; then
     extra_benchmark_dotnet_arguments=
 
     if [[ "$logical_machine" == "perfiphone12mini" ]]; then
-        queue=OSX.1015.Amd64.Iphone.Perf
+        queue=OSX.13.Amd64.Iphone.Perf
     elif [[ "$logical_machine" == "perfampere" ]]; then
-        queue=Ubuntu.2004.Arm64.Perf
+        queue=Ubuntu.2204.Arm64.Perf
     elif [[ "$logical_machine" == "cloudvm" ]]; then
         queue=Ubuntu.2204.Amd64
     elif [[ "$architecture" == "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
         if [[ "$logical_machine" == "perfowl" ]]; then
-            queue=Ubuntu.1804.Amd64.Owl.Perf
+            queue=Ubuntu.2204.Amd64.Owl.Perf
         elif [[ "$logical_machine" == "perftiger_crossgen" ]]; then
             queue=Ubuntu.1804.Amd64.Tiger.Perf
         else
@@ -378,6 +383,13 @@ fi
 
 if [[ "$nor2r" == "true" ]]; then
     configurations="$configurations R2RType=nor2r"
+fi
+
+if [[ ! -z "$experimentname" ]]; then
+    configurations="$configurations ExperimentName=$experimentname"
+    if [[ "$experimentname" == "memoryRandomization" ]]; then
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --memoryRandomization true"
+    fi
 fi
 
 if [[ "$(echo "$hybridglobalization" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then # convert to lowercase to test
@@ -477,6 +489,10 @@ fi
 
 if [[ "$nor2r" == "true" ]]; then
     setup_arguments="$setup_arguments --no-r2r"
+fi
+
+if [[ ! -z "$experimentname" ]]; then
+    setup_arguments="$setup_arguments --experiment-name '$experimentname'"
 fi
 
 if [[ "$monoaot" == "true" ]]; then

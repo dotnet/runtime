@@ -1,10 +1,24 @@
-<Project>
+<Project TreatAsLocalProperty="TargetOS;TargetArchitecture">
   <PropertyGroup>
+    <!-- Reset TargetOS/TargetArchitecture so they default to the host,
+         as the tests build for the host architecture, and not wasm -->
+    <TargetOS />
+    <TargetArchitecture />
+
     <!-- needs to be set early -->
     <Scenario>BuildWasmApps</Scenario>
     <IsTestProject>true</IsTestProject>
     <AssemblyBeingTested>Wasi.Build.Tests</AssemblyBeingTested>
+
+    <RIDForWorkload>wasi-wasm</RIDForWorkload>
+    <TargetOSForWorkload>wasi</TargetOSForWorkload>
+    <TargetArchitectureForWorkload>wasm</TargetArchitectureForWorkload>
   </PropertyGroup>
 
   <Import Project="..\..\..\libraries\Directory.Build.props" />
+  <PropertyGroup>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
 </Project>

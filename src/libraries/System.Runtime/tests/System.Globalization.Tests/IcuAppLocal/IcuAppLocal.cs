@@ -10,7 +10,7 @@ namespace System.Globalization.Tests
 {
     public class IcuAppLocalTests
     {
-        private static bool SupportsIcuPackageDownload => RemoteExecutor.IsSupported &&
+        private static bool SupportsIcuPackageDownload => PlatformDetection.IsNotHybridGlobalizationOnApplePlatform && RemoteExecutor.IsSupported &&
                                                           ((PlatformDetection.IsWindows && !PlatformDetection.IsArmProcess) ||
                                                            (PlatformDetection.IsLinux && (PlatformDetection.IsX64Process || PlatformDetection.IsArm64Process) &&
                                                            !PlatformDetection.IsAlpine && !PlatformDetection.IsLinuxBionic));

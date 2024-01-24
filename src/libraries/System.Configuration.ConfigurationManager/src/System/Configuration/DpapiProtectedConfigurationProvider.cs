@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
-using System.Runtime.Versioning;
 
 namespace System.Configuration
 {

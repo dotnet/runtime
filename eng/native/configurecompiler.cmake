@@ -68,9 +68,6 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
   add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
-  # Load all imported DLLs from the System32 directory.
-  add_linker_flag(/DEPENDENTLOADFLAG:0x800)
-
   # Linker flags
   #
   set (WINDOWS_SUBSYSTEM_VERSION 6.01)
@@ -564,6 +561,11 @@ if (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wimplicit-fallthrough)
   endif()
 
+  # VLAs are non standard in C++, aren't available on Windows and
+  # are a warning by default since clang 18.
+  # For consistency, enable warnings for all compiler versions.
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wvla>)
+
   #These seem to indicate real issues
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 
@@ -765,9 +767,6 @@ if (MSVC)
   # Compile options for targeting windows
 
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/nologo>) # Suppress Startup Banner
-  # /W3 is added by default by CMake, so remove it
-  string(REPLACE "/W3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  string(REPLACE "/W3" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
   # [[! Microsoft.Security.SystemsADM.10086 !]] - SDL required warnings
   # set default warning level to 4 but allow targets to override it.
@@ -781,9 +780,7 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GS>) # Explicitly enable the buffer security checks
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/fp:precise>) # Enable precise floating point
 
-  # disable C++ RTTI
-  # /GR is added by default by CMake, so remove it manually.
-  string(REPLACE "/GR " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  # Disable C++ RTTI
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
 
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FC>) # use full pathnames in diagnostics

@@ -17,12 +17,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	public readonly record struct TrimAnalysisMethodCallPattern
 	{
-		public IMethodSymbol CalledMethod { init; get; }
-		public MultiValue Instance { init; get; }
-		public ImmutableArray<MultiValue> Arguments { init; get; }
-		public IOperation Operation { init; get; }
-		public ISymbol OwningSymbol { init; get; }
-		public FeatureContext FeatureContext { init; get; }
+		public IMethodSymbol CalledMethod { get; init; }
+		public MultiValue Instance { get; init; }
+		public ImmutableArray<MultiValue> Arguments { get; init; }
+		public IOperation Operation { get; init; }
+		public ISymbol OwningSymbol { get; init; }
+		public FeatureContext FeatureContext { get; init; }
 
 		public TrimAnalysisMethodCallPattern (
 			IMethodSymbol calledMethod,

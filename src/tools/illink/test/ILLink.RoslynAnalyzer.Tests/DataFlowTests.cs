@@ -170,7 +170,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task GenericParameterDataFlow ()
 		{
-			return RunTest (nameof (GenericParameterDataFlow));
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task GenericParameterWarningLocation ()
+		{
+			return RunTest ();
 		}
 
 		[Fact]

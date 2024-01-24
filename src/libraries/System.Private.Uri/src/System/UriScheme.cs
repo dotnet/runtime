@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System
 {

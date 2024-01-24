@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 using Internal.Runtime.Augments;
@@ -13,43 +13,32 @@ using Internal.Runtime.CompilerServices;
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    ///     Hooks for System.Private.Interop.dll code to access internal functionality in System.Private.CoreLib.dll.
-    ///
-    ///     Methods added to InteropExtensions should also be added to the System.Private.CoreLib.InteropServices contract
-    ///     in order to be accessible from System.Private.Interop.dll.
+    ///     Hooks for interop code to access internal functionality in System.Private.CoreLib.dll.
     /// </summary>
-    [CLSCompliant(false)]
-    public static class InteropExtensions
+    internal static unsafe class InteropExtensions
     {
-        internal static bool MightBeBlittable(this EETypePtr eeType)
+        internal static bool MightBeBlittable(this RuntimeTypeHandle handle)
         {
             //
             // This is used as the approximate implementation of MethodTable::IsBlittable(). It  will err in the direction of declaring
             // things blittable since it is used for argument validation only.
             //
-            return !eeType.ContainsGCPointers;
+            return !handle.ToMethodTable()->ContainsGCPointers;
         }
 
         public static bool IsBlittable(this RuntimeTypeHandle handle)
         {
-            return handle.ToEETypePtr().MightBeBlittable();
-        }
-
-        public static bool IsBlittable(this object obj)
-        {
-            return obj.GetEETypePtr().MightBeBlittable();
+            return handle.MightBeBlittable();
         }
 
         public static bool IsGenericType(this RuntimeTypeHandle handle)
         {
-            EETypePtr eeType = handle.ToEETypePtr();
-            return eeType.IsGeneric;
+            return handle.ToMethodTable()->IsGeneric;
         }
 
         public static bool IsGenericTypeDefinition(this RuntimeTypeHandle handle)
         {
-            EETypePtr eeType = handle.ToEETypePtr();
-            return eeType.IsGenericTypeDefinition;
+            return handle.ToMethodTable()->IsGenericTypeDefinition;
         }
 
         //
@@ -69,32 +58,32 @@ namespace System.Runtime.InteropServices
 
         public static int GetValueTypeSize(this RuntimeTypeHandle handle)
         {
-            return (int)handle.ToEETypePtr().ValueTypeSize;
+            return (int)handle.ToMethodTable()->ValueTypeSize;
         }
 
         public static bool IsValueType(this RuntimeTypeHandle handle)
         {
-            return handle.ToEETypePtr().IsValueType;
+            return handle.ToMethodTable()->IsValueType;
         }
 
         public static bool IsEnum(this RuntimeTypeHandle handle)
         {
-            return handle.ToEETypePtr().IsEnum;
+            return handle.ToMethodTable()->IsEnum;
         }
 
         public static bool IsInterface(this RuntimeTypeHandle handle)
         {
-            return handle.ToEETypePtr().IsInterface;
+            return handle.ToMethodTable()->IsInterface;
         }
 
         public static bool AreTypesAssignable(RuntimeTypeHandle sourceType, RuntimeTypeHandle targetType)
         {
-            return RuntimeImports.AreTypesAssignable(sourceType.ToEETypePtr(), targetType.ToEETypePtr());
+            return RuntimeImports.AreTypesAssignable(sourceType.ToMethodTable(), targetType.ToMethodTable());
         }
 
         public static RuntimeTypeHandle GetTypeHandle(this object target)
         {
-            return new RuntimeTypeHandle(target.GetEETypePtr());
+            return new RuntimeTypeHandle(target.GetMethodTable());
         }
     }
 }

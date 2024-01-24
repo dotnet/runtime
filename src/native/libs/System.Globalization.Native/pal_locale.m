@@ -36,8 +36,7 @@ char* DetectDefaultAppleLocaleName(void)
     return strdup([localeName UTF8String]);
 }
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 {
     @autoreleasepool
@@ -135,7 +134,7 @@ static const char* getISO3LanguageByLangCode(const char* langCode)
     return LANGUAGES_3[offset];
 }
 
-const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData)
+const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData, const char* currentUILocaleName)
 {
     @autoreleasepool
     {
@@ -152,6 +151,12 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
         {
             ///// <summary>localized name of locale, eg "German (Germany)" in UI language (corresponds to LOCALE_SLOCALIZEDDISPLAYNAME)</summary>
             case LocaleString_LocalizedDisplayName:
+            {
+                NSString *currUILocaleName = [NSString stringWithFormat:@"%s", currentUILocaleName == NULL ? GlobalizationNative_GetDefaultLocaleNameNative() : currentUILocaleName];
+                NSLocale *currentUILocale = [[NSLocale alloc] initWithLocaleIdentifier:currUILocaleName];
+                value = [currentUILocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier];
+                break;
+            }
             /// <summary>Display name (language + country usually) in English, eg "German (Germany)" (corresponds to LOCALE_SENGLISHDISPLAYNAME)</summary>
             case LocaleString_EnglishDisplayName:
                 value = [gbLocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier];
@@ -162,6 +167,12 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
                 break;
             /// <summary>Language Display Name for a language, eg "German" in UI language (corresponds to LOCALE_SLOCALIZEDLANGUAGENAME)</summary>
             case LocaleString_LocalizedLanguageName:
+            {
+                NSString *currUILocaleName = [NSString stringWithFormat:@"%s", currentUILocaleName == NULL ? GlobalizationNative_GetDefaultLocaleNameNative() : currentUILocaleName];
+                NSLocale *currentUILocale = [[NSLocale alloc] initWithLocaleIdentifier:currUILocaleName];
+                value = [currentUILocale localizedStringForLanguageCode:currentLocale.languageCode];
+                break;
+            }
             /// <summary>English name of language, eg "German" (corresponds to LOCALE_SENGLISHLANGUAGENAME)</summary>
             case LocaleString_EnglishLanguageName:
                 value = [gbLocale localizedStringForLanguageCode:currentLocale.languageCode];
@@ -754,9 +765,6 @@ int32_t GlobalizationNative_GetLocalesNative(UChar* value, int32_t length)
     }
 }
 
-#endif
-
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path)
 {
     @autoreleasepool
@@ -781,24 +789,31 @@ const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
 {
     @autoreleasepool
     {
-        NSLocale *currentLocale = [NSLocale currentLocale];
-        NSString *localeName = @"";
-
-        if (!currentLocale)
+        if (NSLocale.preferredLanguages.count > 0)
         {
-            return strdup([localeName UTF8String]);
-        }
-
-        if ([currentLocale.languageCode length] > 0 && [currentLocale.countryCode length] > 0)
-        {
-            localeName = [NSString stringWithFormat:@"%@-%@", currentLocale.languageCode, currentLocale.countryCode];
+            return strdup([NSLocale.preferredLanguages[0] UTF8String]);
         }
         else
         {
-            localeName = currentLocale.localeIdentifier;
-        }
+            NSLocale *currentLocale = [NSLocale currentLocale];
+            NSString *localeName = @"";
 
-        return strdup([localeName UTF8String]);
+            if (!currentLocale)
+            {
+                return strdup([localeName UTF8String]);
+            }
+
+            if ([currentLocale.languageCode length] > 0 && [currentLocale.countryCode length] > 0)
+            {
+                localeName = [NSString stringWithFormat:@"%@-%@", currentLocale.languageCode, currentLocale.countryCode];
+            }
+            else
+            {
+                localeName = currentLocale.localeIdentifier;
+            }
+
+            return strdup([localeName UTF8String]);
+        }
     }
 }
 
@@ -822,3 +837,4 @@ int32_t GlobalizationNative_IsPredefinedLocaleNative(const char* localeName)
     }
 }
 #endif
+

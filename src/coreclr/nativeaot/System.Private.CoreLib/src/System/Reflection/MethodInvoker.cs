@@ -1,10 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Reflection.Core.Execution;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.MethodInfos;
+
+using Internal.Reflection.Core.Execution;
+
 using static System.Reflection.DynamicInvokeInfo;
 
 namespace System.Reflection
@@ -52,7 +54,7 @@ namespace System.Reflection
                 ThrowForArgCountMismatch();
             }
 
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, new Span<object?>());
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, default);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

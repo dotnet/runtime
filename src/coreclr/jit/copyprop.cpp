@@ -110,12 +110,12 @@ int Compiler::optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDs
 {
     int score = 0;
 
-    if (lclVarDsc->lvVolatileHint)
+    if (lclVarDsc->lvHasExceptionalUsesHint)
     {
         score += 4;
     }
 
-    if (copyVarDsc->lvVolatileHint)
+    if (copyVarDsc->lvHasExceptionalUsesHint)
     {
         score -= 4;
     }
@@ -462,9 +462,7 @@ PhaseStatus Compiler::optVnCopyProp()
 
     public:
         CopyPropDomTreeVisitor(Compiler* compiler)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree)
-            , m_curSsaName(compiler->getAllocator(CMK_CopyProp))
-            , m_madeChanges(false)
+            : DomTreeVisitor(compiler), m_curSsaName(compiler->getAllocator(CMK_CopyProp)), m_madeChanges(false)
         {
         }
 
@@ -487,7 +485,7 @@ PhaseStatus Compiler::optVnCopyProp()
 
         void PropagateCopies()
         {
-            WalkTree();
+            WalkTree(m_compiler->m_domTree);
 
 #ifdef DEBUG
             // Verify the definitions remaining are only those we pushed for parameters.

@@ -246,6 +246,27 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => GetEntries(invalid));
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsRelativeToCurrentDrivePath()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                string testRootDir = GetTestFilePath();
+                Directory.CreateDirectory(testRootDir);
+                Directory.SetCurrentDirectory(testRootDir);
+
+                const string TestSubdir = "foo";
+                Directory.CreateDirectory(Path.Combine(testRootDir, TestSubdir));
+
+                string currentDrive = testRootDir.Substring(0, 2);
+                string[] results = GetEntries(currentDrive);
+
+                string result = Assert.Single(results);
+                Assert.Equal(currentDrive + TestSubdir, result);
+            }).Dispose();
+        }
+
         [Theory,
             InlineData("         "),
             InlineData(" "),

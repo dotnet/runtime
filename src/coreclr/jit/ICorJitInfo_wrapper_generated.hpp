@@ -21,6 +21,15 @@ bool WrapICorJitInfo::isIntrinsic(
     return temp;
 }
 
+bool WrapICorJitInfo::notifyMethodInfoUsage(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    API_ENTER(notifyMethodInfoUsage);
+    bool temp = wrapHnd->notifyMethodInfoUsage(ftn);
+    API_LEAVE(notifyMethodInfoUsage);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -939,6 +948,14 @@ void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
     API_ENTER(getThreadLocalStaticBlocksInfo);
     wrapHnd->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
     API_LEAVE(getThreadLocalStaticBlocksInfo);
+}
+
+void WrapICorJitInfo::getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+{
+    API_ENTER(getThreadLocalStaticInfo_NativeAOT);
+    wrapHnd->getThreadLocalStaticInfo_NativeAOT(pInfo);
+    API_LEAVE(getThreadLocalStaticInfo_NativeAOT);
 }
 
 bool WrapICorJitInfo::isFieldStatic(

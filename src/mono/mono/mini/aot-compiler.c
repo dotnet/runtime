@@ -3918,10 +3918,20 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
-			if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT || info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL)
+			switch (info->subtype) {
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT:
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL:
 				encode_method_ref (acfg, info->d.runtime_invoke.method, p, &p);
-			else if (info->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL)
+				break;
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL:
 				encode_signature (acfg, info->d.runtime_invoke.sig, p, &p);
+				break;
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC:
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
 			break;
 		}
 		case MONO_WRAPPER_DELEGATE_INVOKE:
@@ -4693,6 +4703,11 @@ contains_disable_reflection_attribute (MonoCustomAttrInfo *cattr)
 	return TRUE;
 }
 
+/*
+ * mono_aot_can_specialize:
+ *
+ *   Return whenever a method only has explicit callers in the same AOT compilation unit.
+ */
 gboolean
 mono_aot_can_specialize (MonoMethod *method)
 {
@@ -4703,48 +4718,53 @@ mono_aot_can_specialize (MonoMethod *method)
 		return FALSE;
 
 	// If it's not private, we can't specialize
-	if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE)
+	if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE && ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_ASSEM))
 		return FALSE;
 
-	// If it has the attribute disabling the specialization, we can't specialize
-	//
-	// Set by linker, indicates that the method can be found through reflection
-	// and that call-site specialization shouldn't be done.
-	//
-	// Important that this attribute is used for *nothing else*
-	//
-	// If future authors make use of it (to disable more optimizations),
-	// change this place to use a new attribute.
+	if (!strcmp (method->name, ".cctor"))
+		return FALSE;
+
+	if (m_method_is_virtual (method))
+		return FALSE;
+
+	if (method->is_inflated)
+		return FALSE;
+
+	gboolean has_cattr = FALSE;
+
+	/*
+	 * When the linker is ran with the --explicit-reflection option, it will mark types/methods
+	 * which have no indirect access with the DisablePrivateReflection attribute.
+	 */
 	ERROR_DECL (cattr_error);
-	MonoCustomAttrInfo *cattr = mono_custom_attrs_from_class_checked (method->klass, cattr_error);
+	MonoCustomAttrInfo *cattr;
 
-	if (!is_ok (cattr_error)) {
-		mono_error_cleanup (cattr_error);
-		goto cleanup_false;
-	} else if (cattr && contains_disable_reflection_attribute (cattr)) {
-		goto cleanup_true;
-	}
-
-	cattr = mono_custom_attrs_from_method_checked (method, cattr_error);
-
-	if (!is_ok (cattr_error)) {
-		mono_error_cleanup (cattr_error);
-		goto cleanup_false;
-	} else if (cattr && contains_disable_reflection_attribute (cattr)) {
-		goto cleanup_true;
-	} else {
-		goto cleanup_false;
-	}
-
-cleanup_false:
+	cattr = mono_custom_attrs_from_class_checked (method->klass, cattr_error);
+	if (is_ok (cattr_error) && cattr && contains_disable_reflection_attribute (cattr))
+		has_cattr = TRUE;
+	mono_error_cleanup (cattr_error);
 	if (cattr)
 		mono_custom_attrs_free (cattr);
+
+	if (!has_cattr) {
+		cattr = mono_custom_attrs_from_method_checked (method, cattr_error);
+		if (is_ok (cattr_error) && cattr && contains_disable_reflection_attribute (cattr))
+			has_cattr = TRUE;
+		mono_error_cleanup (cattr_error);
+		if (cattr)
+			mono_custom_attrs_free (cattr);
+	}
+
+	if (!has_cattr)
+		return FALSE;
+
+	/*
+	 * FIXME: Methods called from generic methods also need to be excluded, since
+	 * instances could be generated in other compilation units.
+	 */
 	return FALSE;
 
-cleanup_true:
-	if (cattr)
-		mono_custom_attrs_free (cattr);
-	return TRUE;
+	//return TRUE;
 }
 
 static gboolean
@@ -6668,6 +6688,9 @@ compute_line_numbers (MonoMethod *method, int code_size, MonoDebugMethodJitInfo 
 			mono_debug_free_source_location (loc);
 			continue;
 		}
+		if (loc->row > 0xffffff)
+			// FIXME: Invalid debug info
+			continue;
 		prev_line = loc->row;
 		//printf ("D: %s:%d il=%x native=%x\n", loc->source_file, loc->row, il_offset, i);
 		if (first)
@@ -7301,6 +7324,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_field_info (acfg, patch_info->data.field, p, &p);
 		break;
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
+	case MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG:
 		break;
 	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT:
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT:
@@ -9143,45 +9167,46 @@ can_encode_class (MonoAotCompile *acfg, MonoClass *klass)
 static gboolean
 can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 {
-		if (method->wrapper_type) {
-			switch (method->wrapper_type) {
-			case MONO_WRAPPER_NONE:
-			case MONO_WRAPPER_STELEMREF:
-			case MONO_WRAPPER_ALLOC:
-			case MONO_WRAPPER_OTHER:
-			case MONO_WRAPPER_WRITE_BARRIER:
-			case MONO_WRAPPER_DELEGATE_INVOKE:
-			case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
-			case MONO_WRAPPER_DELEGATE_END_INVOKE:
-			case MONO_WRAPPER_SYNCHRONIZED:
-			case MONO_WRAPPER_MANAGED_TO_NATIVE:
-				break;
-			case MONO_WRAPPER_MANAGED_TO_MANAGED:
-			case MONO_WRAPPER_NATIVE_TO_MANAGED:
-			case MONO_WRAPPER_CASTCLASS: {
-				WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+	if (method->wrapper_type) {
+		switch (method->wrapper_type) {
+		case MONO_WRAPPER_NONE:
+		case MONO_WRAPPER_STELEMREF:
+		case MONO_WRAPPER_ALLOC:
+		case MONO_WRAPPER_OTHER:
+		case MONO_WRAPPER_WRITE_BARRIER:
+		case MONO_WRAPPER_DELEGATE_INVOKE:
+		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
+		case MONO_WRAPPER_DELEGATE_END_INVOKE:
+		case MONO_WRAPPER_SYNCHRONIZED:
+		case MONO_WRAPPER_MANAGED_TO_NATIVE:
+			break;
+		case MONO_WRAPPER_MANAGED_TO_MANAGED:
+		case MONO_WRAPPER_NATIVE_TO_MANAGED:
+		case MONO_WRAPPER_CASTCLASS:
+		case MONO_WRAPPER_RUNTIME_INVOKE: {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
-				if (info)
+			if (info)
+				return TRUE;
+			else
+				return FALSE;
+			break;
+		}
+		default:
+			printf ("Skip: %s\n", mono_method_full_name (method, TRUE));
+			return FALSE;
+		}
+	} else {
+		if (!method->token) {
+			/* The method is part of a constructed type like Int[,].Set (). */
+			if (!g_hash_table_lookup (acfg->token_info_hash, method)) {
+				if (m_class_get_rank (method->klass))
 					return TRUE;
-				else
-					return FALSE;
-				break;
-			}
-			default:
-				//printf ("Skip (wrapper call): %d -> %s\n", patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
 				return FALSE;
 			}
-		} else {
-			if (!method->token) {
-				/* The method is part of a constructed type like Int[,].Set (). */
-				if (!g_hash_table_lookup (acfg->token_info_hash, method)) {
-					if (m_class_get_rank (method->klass))
-						return TRUE;
-					return FALSE;
-				}
-			}
 		}
-		return TRUE;
+	}
+	return TRUE;
 }
 
 static gboolean
@@ -14584,6 +14609,10 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_GC_SAFE_POINT_FLAG;
+	add_preinit_slot (acfg, ji);
+
+	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG;
 	add_preinit_slot (acfg, ji);
 
 	if (!acfg->aot_opts.llvm_only) {

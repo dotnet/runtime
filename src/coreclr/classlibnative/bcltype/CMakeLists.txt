@@ -4,7 +4,6 @@ set(BCLTYPE_SOURCES
     arraynative.cpp
     oavariant.cpp
     objectnative.cpp
-    stringnative.cpp
     system.cpp
     varargsnative.cpp
     variant.cpp

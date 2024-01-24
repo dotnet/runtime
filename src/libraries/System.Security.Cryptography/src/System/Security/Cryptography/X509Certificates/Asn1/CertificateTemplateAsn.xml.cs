@@ -15,12 +15,12 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         internal int TemplateMajorVersion;
         internal int? TemplateMinorVersion;
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 

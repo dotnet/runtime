@@ -14,6 +14,8 @@
 
     <!-- The test is looking for debugger attributes we would have stripped with NativeAOT -->
     <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
+    <!-- Same for ILLink -->
+    <DebuggerSupport>true</DebuggerSupport>
   </PropertyGroup>
 
   <!--
@@ -153,6 +155,7 @@
     <Compile Include="System\StringTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
     <Compile Include="System\Text\CompositeFormatTests.cs" />
+    <Compile Include="System\Text\StringBuilderReplaceTests.cs" />
     <Compile Include="System\TimeOnlyTests.cs" />
     <Compile Include="System\TimeoutExceptionTests.cs" />
     <Compile Include="System\TimeSpanTests.cs" />

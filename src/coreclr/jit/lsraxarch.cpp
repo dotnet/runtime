@@ -436,6 +436,19 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_XORR:
         case GT_XAND:
+            if (!tree->IsUnusedValue())
+            {
+                // if tree's value is used, we'll emit a cmpxchg-loop idiom (requires RAX)
+                buildInternalIntRegisterDefForNode(tree, availableIntRegs & ~RBM_RAX);
+                BuildUse(tree->gtGetOp1(), availableIntRegs & ~RBM_RAX);
+                BuildUse(tree->gtGetOp2(), availableIntRegs & ~RBM_RAX);
+                BuildDef(tree, RBM_RAX);
+                buildInternalRegisterUses();
+                srcCount = 2;
+                assert(dstCount == 1);
+                break;
+            }
+            FALLTHROUGH;
         case GT_XADD:
         case GT_XCHG:
         {
@@ -1394,6 +1407,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 sizeRegMask    = RBM_RCX;
                 break;
 
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for offsetReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                break;
+
 #ifdef TARGET_AMD64
             case GenTreeBlk::BlkOpKindHelper:
                 dstAddrRegMask = RBM_ARG_0;
@@ -2122,6 +2140,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 buildInternalIntRegisterDefForNode(intrinsicTree);
                 buildInternalIntRegisterDefForNode(intrinsicTree);
             }
+        }
+
+        if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) &&
+            numArgs == HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) && !lastOp->IsCnsIntOrI())
+        {
+            buildInternalIntRegisterDefForNode(intrinsicTree);
+            buildInternalIntRegisterDefForNode(intrinsicTree);
         }
 
         // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it

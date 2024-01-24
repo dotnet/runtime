@@ -5,8 +5,8 @@
 // This is where we group together all the internal calls.
 //
 
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 
@@ -21,10 +21,10 @@ namespace System.Runtime
         VTableOffset = 0x2,
     }
 
-    internal struct DispatchCellInfo
+    internal unsafe struct DispatchCellInfo
     {
         public DispatchCellType CellType;
-        public EETypePtr InterfaceType;
+        public MethodTable* InterfaceType;
         public ushort InterfaceSlot;
         public byte HasCache;
         public uint MetadataToken;
@@ -66,7 +66,7 @@ namespace System.Runtime
         }
 
         [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern void RhpCollect(int generation, InternalGCCollectionMode mode, Interop.BOOL lowMemoryP);
 
         [RuntimeExport("RhGetGcTotalMemory")]
@@ -76,7 +76,7 @@ namespace System.Runtime
         }
 
         [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static extern long RhpGetGcTotalMemory();
 
         [RuntimeExport("RhStartNoGCRegion")]
@@ -209,11 +209,11 @@ namespace System.Runtime
 
         [RuntimeImport(Redhawk.BaseName, "RhpSfiInit")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, bool instructionFault);
+        internal static extern unsafe bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, bool instructionFault, bool* fIsExceptionIntercepted);
 
         [RuntimeImport(Redhawk.BaseName, "RhpSfiNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke);
+        internal static extern unsafe bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
 
         //
         // Miscellaneous helpers.
@@ -278,28 +278,28 @@ namespace System.Runtime
         // Block the current thread until at least one object needs to be finalized (returns true) or
         // memory is low (returns false and the finalizer thread should initiate a garbage collection).
         [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static extern uint RhpWaitForFinalizerRequest();
 
         // Indicate that the current round of finalizations is complete.
         [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static extern void RhpSignalFinalizationComplete(uint fCount);
 
         [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static extern ulong RhpGetTickCount64();
 
         // Enters a no GC region, possibly doing a blocking GC if there is not enough
         // memory available to satisfy the caller's request.
         [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static extern int RhpStartNoGCRegion(long totalSize, Interop.BOOL hasLohSize, long lohSize, Interop.BOOL disallowFullBlockingGC);
 
         // Exits a no GC region, possibly doing a GC to clean up the garbage that
         // the caller allocated.
         [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static extern int RhpEndNoGCRegion();
     }
 }

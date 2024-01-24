@@ -91,14 +91,14 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(structure);
 
-            return SizeOfHelper(structure.GetType(), throwIfNotMarshalable: true);
+            return SizeOfHelper((RuntimeType)structure.GetType(), throwIfNotMarshalable: true);
         }
 
         public static int SizeOf<T>(T structure)
         {
             ArgumentNullException.ThrowIfNull(structure);
 
-            return SizeOfHelper(structure.GetType(), throwIfNotMarshalable: true);
+            return SizeOfHelper((RuntimeType)structure.GetType(), throwIfNotMarshalable: true);
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the SizeOf<T> overload instead.")]
@@ -107,21 +107,21 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(t);
 
-            if (t is not RuntimeType)
+            if (t is not RuntimeType rt)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
             }
-            if (t.IsGenericType)
+            if (rt.IsGenericType)
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
-            return SizeOfHelper(t, throwIfNotMarshalable: true);
+            return SizeOfHelper(rt, throwIfNotMarshalable: true);
         }
 
         public static int SizeOf<T>()
         {
-            Type t = typeof(T);
+            RuntimeType t = (RuntimeType)typeof(T);
             if (t.IsGenericType)
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(T));
@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices
             return SizeOfHelper(t, throwIfNotMarshalable: true);
         }
 
-        public static unsafe int QueryInterface(IntPtr pUnk, ref readonly Guid iid, out IntPtr ppv)
+        public static unsafe int QueryInterface(IntPtr pUnk, in Guid iid, out IntPtr ppv)
         {
             ArgumentNullException.ThrowIfNull(pUnk);
 
@@ -440,7 +440,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteInt16(Object, Int32, Char) may be unavailable in future releases.")]
-        public static void WriteInt16([In, Out]object ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
+        public static void WriteInt16([In, Out] object ptr, int ofs, char val) => WriteInt16(ptr, ofs, (short)val);
 
         public static void WriteInt16(IntPtr ptr, char val) => WriteInt16(ptr, 0, (short)val);
 
@@ -585,15 +585,23 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void PtrToStructure(IntPtr ptr, object structure)
         {
+            ArgumentNullException.ThrowIfNull(ptr);
+            ArgumentNullException.ThrowIfNull(structure);
+
             PtrToStructureHelper(ptr, structure, allowValueClasses: false);
         }
 
         public static void PtrToStructure<T>(IntPtr ptr, [DisallowNull] T structure)
         {
-            PtrToStructureHelper(ptr, structure, allowValueClasses: false);
+            ArgumentNullException.ThrowIfNull(ptr);
+
+            object boxedStructure = structure;
+            ArgumentNullException.ThrowIfNull(boxedStructure, nameof(structure));
+
+            PtrToStructureHelper(ptr, boxedStructure, allowValueClasses: false);
         }
 
-        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]T>(IntPtr ptr)
+        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
             {
@@ -1086,11 +1094,11 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(t);
 
             ArgumentNullException.ThrowIfNull(ptr);
-            if (t is not RuntimeType)
+            if (t is not RuntimeType rt)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
             }
-            if (t.IsGenericType)
+            if (rt.IsGenericType)
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
@@ -1098,20 +1106,20 @@ namespace System.Runtime.InteropServices
             // For backward compatibility, we allow lookup of existing delegate to
             // function pointer mappings using abstract MulticastDelegate type. We will check
             // for the non-abstract delegate type later if no existing mapping is found.
-            if (t.BaseType != typeof(MulticastDelegate) && t != typeof(MulticastDelegate))
+            if (rt.BaseType != typeof(MulticastDelegate) && rt != typeof(MulticastDelegate))
             {
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(t));
             }
 
-            return GetDelegateForFunctionPointerInternal(ptr, t);
+            return GetDelegateForFunctionPointerInternal(ptr, rt);
         }
 
         public static TDelegate GetDelegateForFunctionPointer<TDelegate>(IntPtr ptr)
         {
             ArgumentNullException.ThrowIfNull(ptr);
 
-            Type t = typeof(TDelegate);
-            if (t.IsGenericType)
+            RuntimeType rt = (RuntimeType)typeof(TDelegate);
+            if (rt.IsGenericType)
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(TDelegate));
             }
@@ -1119,12 +1127,12 @@ namespace System.Runtime.InteropServices
             // For backward compatibility, we allow lookup of existing delegate to
             // function pointer mappings using abstract MulticastDelegate type. We will check
             // for the non-abstract delegate type later if no existing mapping is found.
-            if (t.BaseType != typeof(MulticastDelegate) && t != typeof(MulticastDelegate))
+            if (rt.BaseType != typeof(MulticastDelegate) && rt != typeof(MulticastDelegate))
             {
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(TDelegate));
             }
 
-            return (TDelegate)(object)GetDelegateForFunctionPointerInternal(ptr, t);
+            return (TDelegate)(object)GetDelegateForFunctionPointerInternal(ptr, rt);
         }
 
         [RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]

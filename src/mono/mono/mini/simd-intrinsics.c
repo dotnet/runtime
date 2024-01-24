@@ -1475,10 +1475,23 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			ins->inst_c1 = arg0_type;
 			return ins;
 		} else {
-			if (!COMPILE_LLVM (cfg))
-				// FIXME:
-				return NULL;
-			return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
+			if (COMPILE_LLVM (cfg))
+				return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
+			
+			// SSSE3 does not support i64
+			if (is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3) && 
+				!(arg0_type == MONO_TYPE_I8 || (TARGET_SIZEOF_VOID_P == 8 && arg0_type == MONO_TYPE_I)))
+				return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
+
+			MonoInst *zero = emit_xzero (cfg, klass);
+			MonoInst *neg = emit_simd_ins (cfg, klass, OP_XBINOP, zero->dreg, args [0]->dreg);
+			neg->inst_c0 = OP_ISUB;
+			neg->inst_c1 = arg0_type;
+			
+			MonoInst *ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, neg->dreg);
+			ins->inst_c0 = OP_IMAX;
+			ins->inst_c1 = arg0_type;
+			return ins;
 		}
 #elif defined(TARGET_WASM)
 		if (type_enum_is_float(arg0_type)) {
@@ -1699,6 +1712,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			if (!COMPILE_LLVM (cfg))
 				return NULL;
 #endif
+			if (COMPILE_LLVM (cfg)) {
+				/*
+				 * The sregs are half size, and the dreg is full size
+				 * which can cause problems if mono_handle_global_vregs () is trying to
+				 * spill them since it uses ins->klass to create the variable.
+				 * So create variables for them here.
+				 * This is not a problem for the JIT since that only has 1 simd type right now.
+				 */
+				mono_compile_create_var_for_vreg (cfg, fsig->params [0], OP_LOCAL, args [0]->dreg);
+				mono_compile_create_var_for_vreg (cfg, fsig->params [1], OP_LOCAL, args [1]->dreg);
+			}
+
 			return emit_simd_ins (cfg, klass, OP_XCONCAT, args [0]->dreg, args [1]->dreg);
 		}
 		else if (is_elementwise_create_overload (fsig, etype))
@@ -3825,7 +3850,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_StorePairNonTemporal, OP_ARM64_STNP},
 	{SN_StorePairScalar, OP_ARM64_STP_SCALAR},
 	{SN_StorePairScalarNonTemporal, OP_ARM64_STNP_SCALAR},
-	{SN_StoreSelectedScalar, OP_ARM64_ST1_SCALAR},
+	{SN_StoreSelectedScalar},
 	{SN_Subtract, OP_XBINOP, OP_ISUB, None, None, OP_XBINOP, OP_FSUB},
 	{SN_SubtractHighNarrowingLower, OP_ARM64_SUBHN},
 	{SN_SubtractHighNarrowingUpper, OP_ARM64_SUBHN2},
@@ -4059,6 +4084,11 @@ emit_arm64_intrinsics (
 			ret->inst_c0 = iid;
 			ret->inst_c1 = etype->type;
 			return ret;
+		}
+		case SN_StoreSelectedScalar: {
+			if (!is_intrinsics_vector_type (fsig->params [1]))
+				return NULL;
+			return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_ST1_SCALAR, 0, arg0_type, fsig, args);
 		}
 		case SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:
 		case SN_MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh:

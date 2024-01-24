@@ -183,18 +183,6 @@ namespace Internal.Runtime
             }
         }
 
-        /// <summary>
-        /// Gets a value indicating whether writable data is supported.
-        /// </summary>
-        internal static bool SupportsWritableData
-        {
-            get
-            {
-                // For now just key this off of SupportsRelativePointer to avoid this on both CppCodegen and WASM.
-                return SupportsRelativePointers;
-            }
-        }
-
         [Intrinsic]
         internal static extern MethodTable* Of<T>();
 
@@ -1180,11 +1168,9 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(SupportsWritableData);
-
                 uint offset = GetFieldOffset(EETypeField.ETF_WritableData);
 
-                if (!IsDynamicType)
+                if (!IsDynamicType && SupportsRelativePointers)
                     return (void*)GetField<RelativePointer>(offset).Value;
                 else
                     return (void*)GetField<Pointer>(offset).Value;
@@ -1192,8 +1178,7 @@ namespace Internal.Runtime
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert(IsDynamicType && SupportsWritableData);
-
+                Debug.Assert(IsDynamicType);
                 GetField<IntPtr>(EETypeField.ETF_WritableData) = (IntPtr)value;
             }
 #endif
@@ -1275,14 +1260,11 @@ namespace Internal.Runtime
             cbOffset += relativeOrFullPointerOffset;
 
             // Followed by writable data.
-            if (SupportsWritableData)
+            if (eField == EETypeField.ETF_WritableData)
             {
-                if (eField == EETypeField.ETF_WritableData)
-                {
-                    return cbOffset;
-                }
-                cbOffset += relativeOrFullPointerOffset;
+                return cbOffset;
             }
+            cbOffset += relativeOrFullPointerOffset;
 
             // Followed by pointer to the dispatch map
             if (eField == EETypeField.ETF_DispatchMap)
@@ -1414,13 +1396,13 @@ namespace Internal.Runtime
                 (IntPtr.Size * cVirtuals) +
                 (sizeof(MethodTable*) * cInterfaces) +
                 sizeof(IntPtr) + // TypeManager
-                (SupportsWritableData ? sizeof(IntPtr) : 0) + // WritableData
+                sizeof(IntPtr) + // WritableData
                 (fHasDispatchMap ? sizeof(UIntPtr) : 0) +
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
                 cFunctionPointerTypeParameters * sizeof(IntPtr) +
-                (fHasGenericInfo ? sizeof(IntPtr)*2 : 0) + // pointers to GenericDefinition and GenericComposition
+                (fHasGenericInfo ? sizeof(IntPtr) * 2 : 0) + // pointers to GenericDefinition and GenericComposition
                 (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
                 (fHasGcStatics ? sizeof(IntPtr) : 0) +  // pointer to data
                 (fHasThreadStatics ? sizeof(IntPtr) : 0)); // threadstatic index cell
