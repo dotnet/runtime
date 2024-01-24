@@ -659,19 +659,36 @@ namespace System.StubHelpers
 
     internal static partial class MngdFixedArrayMarshaler
     {
+        private struct MarshalerState
+        {
+#pragma warning disable CA1823, IDE0044 // not used by managed code
+            internal IntPtr m_pElementMT;
+            internal IntPtr m_pManagedElementMarshaler;
+            internal IntPtr m_Array;
+            internal Interop.BOOL m_NativeDataValid;
+            internal Interop.BOOL m_BestFitMap;
+            internal Interop.BOOL m_ThrowOnUnmappableChar;
+            internal ushort m_vt;
+            internal uint m_cElements;
+#pragma warning restore CA1823
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_CreateMarshaler")]
         [SuppressGCTransition]
         internal static partial void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, int cElements, IntPtr pManagedMarshaler);
 
-        internal static void ConvertSpaceToNative(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome)
+        internal static unsafe void ConvertSpaceToNative(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome)
         {
-            object managedHome = pManagedHome;
-            ObjectHandleOnStack pManagedHomeAddr = ObjectHandleOnStack.Create(ref managedHome);
-            ConvertSpaceToNative(pMarshalState, pManagedHomeAddr, pNativeHome);
-        }
+            // We don't actually need to allocate native space here as the space is inline in the native layout.
+            // However, we need to validate that we can fit the contents of the managed array in the native space.
+            Array arr = (Array)pManagedHome;
+            MarshalerState* pState = (MarshalerState*)pMarshalState;
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ConvertSpaceToNative")]
-        private static partial void ConvertSpaceToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
+            if ((uint)arr.Length > pState->m_cElements)
+            {
+                throw new ArgumentException(SR.Argument_WrongSizeArrayInNativeStruct);
+            }
+        }
 
         internal static void ConvertContentsToNative(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome)
         {

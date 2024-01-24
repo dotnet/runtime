@@ -4584,26 +4584,6 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_CreateMarshaler(MngdFixedArray
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
-{
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    BASEARRAYREF arrayRef = NULL;
-    GCPROTECT_BEGIN(arrayRef);
-    arrayRef = (BASEARRAYREF)pManagedHome.Get();
-
-    if (arrayRef != NULL && arrayRef->GetNumComponents() < pThis->m_cElements)
-    {
-        COMPlusThrow(kArgumentException, IDS_WRONGSIZEARRAY_IN_NSTRUCT);
-    }
-
-    GCPROTECT_END();
-    END_QCALL;
-}
-
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
 {
     QCALL_CONTRACT;

@@ -3320,7 +3320,6 @@ public:
 };
 
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_CreateMarshaler(MngdFixedArrayMarshaler* pThis, MethodTable* pMT, UINT32 dwFlags, UINT32 cElements, PCODE pManagedElementMarshaler);
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);

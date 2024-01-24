@@ -302,7 +302,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdNativeArrayMarshaler_ClearNative)
     DllImportEntry(MngdNativeArrayMarshaler_ClearNativeContents)
     DllImportEntry(MngdFixedArrayMarshaler_CreateMarshaler)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertSpaceToNative)
     DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToNative)
     DllImportEntry(MngdFixedArrayMarshaler_ConvertSpaceToManaged)
     DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToManaged)
