@@ -2093,14 +2093,6 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         definedLocals[definedLocalsCount++] = prevTreeLclNum;
 
-        // Heuristic: only forward sub a relop
-        //
-        if (!prevTreeData->OperIsCompare())
-        {
-            JITDUMP(" -- prev tree is not relop\n");
-            continue;
-        }
-
         // If the normal liberal VN of RHS is the normal liberal VN of the current tree, or is "related",
         // consider forward sub.
         //
@@ -2164,6 +2156,14 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         {
             JITDUMP(" -- prev tree has an embedded store that interferes with [%06u]\n", dspTreeID(tree));
             break;
+        }
+
+        // Heuristic: only forward sub a relop
+        //
+        if (!prevTreeData->OperIsCompare())
+        {
+            JITDUMP(" -- prev tree is not relop\n");
+            continue;
         }
 
         // If the lcl defined here is live out, forward sub is problematic.
