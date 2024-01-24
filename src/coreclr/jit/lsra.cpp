@@ -1695,6 +1695,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         case TYP_SIMD64:
+        case TYP_MASK:
 #endif // TARGET_XARCH
         {
             return !varDsc->lvPromoted;

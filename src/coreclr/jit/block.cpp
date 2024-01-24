@@ -626,6 +626,25 @@ void BasicBlock::dspSuccs(Compiler* compiler)
 // things strictly.
 void BasicBlock::dspKind() const
 {
+    auto dspBlockNum = [](const BasicBlock* b) -> const char* {
+        static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
+        static int  nextBufferIndex = 0;
+
+        auto& buffer    = buffers[nextBufferIndex];
+        nextBufferIndex = (nextBufferIndex + 1) % ArrLen(buffers);
+
+        if (b == nullptr)
+        {
+            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), "NULL");
+        }
+        else
+        {
+            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), FMT_BB, b->bbNum);
+        }
+
+        return buffer;
+    };
+
     switch (bbKind)
     {
         case BBJ_EHFINALLYRET:
@@ -644,7 +663,7 @@ void BasicBlock::dspKind() const
 
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
-                    printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
                 }
             }
 
@@ -657,11 +676,11 @@ void BasicBlock::dspKind() const
             break;
 
         case BBJ_EHFILTERRET:
-            printf(" -> " FMT_BB " (fltret)", bbTarget->bbNum);
+            printf(" -> %s (fltret)", dspBlockNum(bbTarget));
             break;
 
         case BBJ_EHCATCHRET:
-            printf(" -> " FMT_BB " (cret)", bbTarget->bbNum);
+            printf(" -> %s (cret)", dspBlockNum(bbTarget));
             break;
 
         case BBJ_THROW:
@@ -675,28 +694,28 @@ void BasicBlock::dspKind() const
         case BBJ_ALWAYS:
             if (HasFlag(BBF_KEEP_BBJ_ALWAYS))
             {
-                printf(" -> " FMT_BB " (ALWAYS)", bbTarget->bbNum);
+                printf(" -> %s (ALWAYS)", dspBlockNum(bbTarget));
             }
             else
             {
-                printf(" -> " FMT_BB " (always)", bbTarget->bbNum);
+                printf(" -> %s (always)", dspBlockNum(bbTarget));
             }
             break;
 
         case BBJ_LEAVE:
-            printf(" -> " FMT_BB " (leave)", bbTarget->bbNum);
+            printf(" -> %s (leave)", dspBlockNum(bbTarget));
             break;
 
         case BBJ_CALLFINALLY:
-            printf(" -> " FMT_BB " (callf)", bbTarget->bbNum);
+            printf(" -> %s (callf)", dspBlockNum(bbTarget));
             break;
 
         case BBJ_CALLFINALLYRET:
-            printf(" -> " FMT_BB " (callfr)", bbTarget->bbNum);
+            printf(" -> %s (callfr)", dspBlockNum(bbTarget));
             break;
 
         case BBJ_COND:
-            printf(" -> " FMT_BB " (cond)", bbTarget->bbNum);
+            printf(" -> %s,%s (cond)", dspBlockNum(bbTrueTarget), dspBlockNum(bbFalseTarget));
             break;
 
         case BBJ_SWITCH:
@@ -708,7 +727,7 @@ void BasicBlock::dspKind() const
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
-                printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
 
                 const bool isDefault = bbSwtTargets->bbsHasDefault && (i == jumpCnt - 1);
                 if (isDefault)
