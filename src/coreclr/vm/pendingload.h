@@ -124,8 +124,7 @@ public:
         static constexpr int PreallocatedEntryCount = 2;
 
 private:
-        Shard()
-        {}
+        Shard() = default;
 
         Entry *m_pLinkedListOfActiveEntries = NULL;
         CrstStatic m_shardCrst;
