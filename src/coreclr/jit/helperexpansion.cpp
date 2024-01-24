@@ -1871,96 +1871,119 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
     // Helper calls are never tail calls
     assert(!castHelper->IsTailCall());
 
-    bool alwaysNeedsFallbackCall = false;
+    // is it "castclass" or "isinst"?
     bool isCastClass;
-    switch (castHelper->GetHelperNum())
+
+    const unsigned helper = castHelper->GetHelperNum();
+    switch (helper)
     {
         case CORINFO_HELP_CHKCASTARRAY:
         case CORINFO_HELP_CHKCASTANY:
-            // these helpers imply type variance
-            alwaysNeedsFallbackCall = true;
-            FALLTHROUGH;
         case CORINFO_HELP_CHKCASTINTERFACE:
         case CORINFO_HELP_CHKCASTCLASS:
             isCastClass = true;
             break;
 
         case CORINFO_HELP_ISINSTANCEOFARRAY:
-        case CORINFO_HELP_ISINSTANCEOFANY:
-            // these helpers imply type variance
-            alwaysNeedsFallbackCall = true;
-            FALLTHROUGH;
-        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
         case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
             isCastClass = false;
             break;
 
-        // These are ignored:
+        // These are never expanded:
         // CORINFO_HELP_ISINSTANCEOF_EXCEPTION
         // CORINFO_HELP_CHKCASTCLASS_SPECIAL
+        // CORINFO_HELP_READYTORUN_ISINSTANCEOF,
+        // CORINFO_HELP_READYTORUN_CHKCAST,
+
+        // Other helper calls are not cast helpers
 
         default:
             return NO_CLASS_HANDLE;
     }
 
     // Assume that the type check will pass with 50% probability by default
-    // only PGO can change this assumption
     *likelihood = 50;
 
+    // isinst cast helpers never throw
+    *typeCheckFailed = isCastClass ? F_CallHelper_MayThrow : F_CallHelper_NeverThrows;
+
+    // result is the class we're going to use as a guess for the type check.
+    CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
+
+    // First, let's grab the expected class we're casting to/checking instance of:
     // E.g. "call CORINFO_HELP_ISINSTANCEOFCLASS(castToCls, obj)"
     GenTree*             clsArg    = castHelper->gtArgs.GetUserArgByIndex(0)->GetNode();
     CORINFO_CLASS_HANDLE castToCls = comp->gtGetHelperArgClassHandle(clsArg);
     if (castToCls == NO_CLASS_HANDLE)
     {
         // clsArg doesn't represent a class handle - bail out
-        // TODO-InlineCast: use VN if it's available (depends on when this phase is executed)
+        // TODO-InlineCast: if CSE becomes a problem - move the whole phase after assertion prop,
+        // so we can still rely on VN to get the class handle.
         JITDUMP("clsArg is not a constant handle - bail out.\n");
         return NO_CLASS_HANDLE;
     }
 
-    // result is the exact class handle we're going to use for the type check
-    CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
+    //
+    // Now we need to figure out what class to use for the fast path, we have 4 options:
+    //  1) If "cast to" class is already exact we can go ahead and make some decisions
+    //  2) If VM can tell us the exact class for this class/interface via getExactClasses - use it
+    //     e.g. NativeAOT can promise us that for e.g. "foo is IMyInterface" foo can only ever be
+    //     MyImpl and no other implementation of IMyInterface can be loaded dynamically.
+    //  3) If we have PGO data and there is a dominating candidate - use it.
+    //  4) Try to speculate and make optimistic guesses
+    //
 
-    // If "cast to" class is already exact, we don't need to do anything
-    // in case if the cast helper doesn't imply type variance. If it does - we still
-    // can inline it, we just can't remove the fallback call or convert it to no-return.
-    if (comp->eeIsClassExact(castToCls))
+    // 1) If "cast to" class is already exact we can go ahead and make some decisions
+    // even without PGO data/getExactClasses/speculations.
+
+    const bool isCastToExact = comp->eeIsClassExact(castToCls);
+    if (isCastToExact && ((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY)))
     {
-        if (alwaysNeedsFallbackCall)
-        {
-            // VM told us the class is exact but the cast helper implies type variance
-            // keep the fallback call then.
-            *typeCheckFailed = isCastClass ? F_CallHelper_MayThrow : F_CallHelper_NeverThrows;
-        }
-        else
-        {
-            // Fallback call is only needed for castclass and only to throw InvalidCastException
-            *typeCheckFailed = isCastClass ? F_CallHelper_AlwaysThrows : F_ReturnNull;
-        }
-        result = castToCls;
+        // (string)obj
+        // (string[])obj
+        //
+        // Fallbacks for these expansions always throw InvalidCastException
+        *typeCheckFailed = F_CallHelper_AlwaysThrows;
+
+        // Assume that exceptions are rare
+        *likelihood = 100;
+
+        // We're done, there is no need in consulting with PGO data
+    }
+    else if (isCastToExact &&
+             ((helper == CORINFO_HELP_ISINSTANCEOFARRAY) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS)))
+    {
+        // obj is string
+        // obj is string[]
+        //
+        // Fallbacks for these expansions simply return null
+        *typeCheckFailed = F_ReturnNull;
     }
     else
     {
-        // If VM can tell us the exact class for this "cast to" class, use it
-        // E.g. we're casting to IMyInterface and there is only one implementation of it
-        // (and VM is not going to load more types dynamically)
-        if (comp->info.compCompHnd->getExactClasses(castToCls, 1, &result) == 1)
+        // 2) If VM can tell us the exact class for this "cast to" class - use it.
+        // Just make sure the class is truly exact.
+        if ((comp->info.compCompHnd->getExactClasses(castToCls, 1, &result) == 1) && comp->eeIsClassExact(result))
         {
-            if (alwaysNeedsFallbackCall)
+            if (isCastClass)
             {
-                // VM told us the class is exact but the cast helper implies type variance
-                // keep the fallback call then.
-                *typeCheckFailed = isCastClass ? F_CallHelper_MayThrow : F_CallHelper_NeverThrows;
+                // Fallback call is only needed for castclass and only to throw InvalidCastException
+                *typeCheckFailed = F_CallHelper_AlwaysThrows;
+
+                // Assume that exceptions are rare
+                *likelihood = 100;
             }
             else
             {
-                // Fallback call is only needed for castclass and only to throw InvalidCastException
-                *typeCheckFailed = isCastClass ? F_CallHelper_AlwaysThrows : F_ReturnNull;
+                // Fallback for isinst simply returns null here
+                *typeCheckFailed = F_ReturnNull;
             }
         }
         else
         {
-            // Check PGO data
+            // 3) Check PGO data
             LikelyClassMethodRecord likelyClasses[MAX_GDV_TYPE_CHECKS];
             unsigned                likelyClassCount =
                 getLikelyClasses(likelyClasses, MAX_GDV_TYPE_CHECKS, comp->fgPgoSchema, comp->fgPgoSchemaCount,
@@ -1968,9 +1991,6 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
 
             if (likelyClassCount != 0)
             {
-// TODO-InlineCast: We have no PGO data, but we still can speculate, e.g. for "(MyClass)obj"
-// we guess for MyClass itself if possible. That is what importer does.
-
 #ifdef DEBUG
                 // Print all the candidates and their likelihoods to the log
                 for (UINT32 i = 0; i < likelyClassCount; i++)
@@ -2016,13 +2036,72 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
                     return NO_CLASS_HANDLE;
                 }
             }
+            //
+            // 4) Last chance: let's try to speculate!
+            //
+            else if (helper == CORINFO_HELP_CHKCASTINTERFACE)
+            {
+                // Nothing to speculate here, e.g. (IDisposable)obj
+                return NO_CLASS_HANDLE;
+            }
+            else if (helper == CORINFO_HELP_CHKCASTARRAY)
+            {
+                // CHKCASTARRAY against exact classes is already handled above, so it's not exact here.
+                //
+                //   (int[])obj - can we use int[] as a guess? No, it's an overhead if obj is uint[] or any int-backed
+                //   enum
+                //
+                return NO_CLASS_HANDLE;
+            }
+            else if (helper == CORINFO_HELP_CHKCASTCLASS)
+            {
+                // CHKCASTCLASS against exact classes is already handled above, so it's not exact here.
+                //
+                // let's use castToCls as a guess, we might regress some cases, but at least we know that unrelated
+                // types are going to throw InvalidCastException, so we can assume the overhead happens rarely.
+                result = castToCls;
+            }
+            else if (helper == CORINFO_HELP_CHKCASTANY)
+            {
+                // Same as CORINFO_HELP_CHKCASTCLASS above, the only difference - let's check castToCls for
+                // being non-abstract and non-interface first as it makes no sense to speculate on them.
+                if ((comp->info.compCompHnd->getClassAttribs(castToCls) &
+                     (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0)
+                {
+                    return NO_CLASS_HANDLE;
+                }
+                result = castToCls;
+            }
+            else if (helper == CORINFO_HELP_ISINSTANCEOFINTERFACE)
+            {
+                // Nothing to speculate here, e.g. obj is IDisposable
+                return NO_CLASS_HANDLE;
+            }
+            else if (helper == CORINFO_HELP_ISINSTANCEOFARRAY)
+            {
+                // ISINSTANCEOFARRAY against exact classes is already handled above, so it's not exact here.
+                //
+                //  obj is int[] - can we use int[] as a guess? No, it's an overhead if obj is uint[] or any int-backed
+                //  enum[]
+                return NO_CLASS_HANDLE;
+            }
+            else if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
+            {
+                // ISINSTANCEOFCLASS against exact classes is already handled above, so it's not exact here.
+                //
+                //  obj is MyClass - can we use MyClass as a guess? No, it's an overhead for any other type except
+                //                   MyClass and its subclasses - chances of hitting that overhead are too high.
+                //
+                return NO_CLASS_HANDLE;
+            }
+            else if (helper == CORINFO_HELP_ISINSTANCEOFANY)
+            {
+                // ditto + type variance, etc.
+                return NO_CLASS_HANDLE;
+            }
             else
             {
-                // There is no PGO data, but we still can speculate, e.g. for "(MyClass)obj"
-                // we guess for MyClass itself if possible. That is what importer does.
-
-                // TODO-InlineCast: implement it, this is the last missing piece to get rid of the importer's cast
-                // expansion
+                unreached();
             }
         }
     }
@@ -2063,6 +2142,7 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
 
     if ((result == castToCls) && (*typeCheckFailed == F_CallHelper_MayThrow))
     {
+        assert(isCastClass);
         // TODO-InlineCast: Change helper to faster CORINFO_HELP_CHKCASTCLASS_SPECIAL
         // it won't check for null and castToCls assuming we already did it inline.
     }
