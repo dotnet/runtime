@@ -8154,6 +8154,8 @@ static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExIn
 
 static void UnwindPastFrame(REGDISPLAY* pRD, Frame* pFrame)
 {
+    return;
+
     if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
     {
         if (InlinedCallFrame::FrameHasActiveCall(pFrame))
@@ -8246,7 +8248,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
     pThread->FillRegDisplay(pRD, pStackwalkCtx);
 
     new (pThis) StackFrameIterator();
-    result = pThis->Init(pThread, pFrame, pRD, THREAD_EXECUTING_MANAGED_CODE) != FALSE;
+    result = pThis->Init(pThread, pFrame, pRD, THREAD_EXECUTING_MANAGED_CODE | UNWIND_FLOATS) != FALSE;
 
     if (result && (pExInfo->m_passNumber == 1))
     {

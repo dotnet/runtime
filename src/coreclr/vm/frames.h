@@ -513,7 +513,7 @@ public:
     // UpdateRegDisplay is generally used to fill out the REGDISPLAY parameter, some
     // overrides (e.g., code:ResumableFrame::UpdateRegDisplay) will actually READ what
     // you pass in. So be sure to pass in a valid or zeroed out REGDISPLAY.
-    virtual void UpdateRegDisplay(const PREGDISPLAY)
+    virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false)
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return;
@@ -755,6 +755,10 @@ protected:
         LIMITED_METHOD_CONTRACT;
     }
 
+#ifndef DACCESS_COMPILE
+    void UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP);
+#endif // DACCESS_COMPILE
+
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
     virtual ~Frame() { LIMITED_METHOD_CONTRACT; }
 
@@ -796,7 +800,7 @@ public:
         return TRUE;
     }
 
-    virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
+    virtual void UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats = false);
 
     virtual unsigned GetFrameAttribs() {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1001,7 +1005,7 @@ public:
         return TRUE;
     }
 
-    virtual void UpdateRegDisplay(const PREGDISPLAY);
+    virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
 #ifdef TARGET_X86
     void UpdateRegDisplayHelper(const PREGDISPLAY, UINT cbStackPop);
 #endif
@@ -1120,7 +1124,7 @@ public:
         return TRUE;
     }
 
-    virtual void UpdateRegDisplay(const PREGDISPLAY);
+    virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
 
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_DTOR(FaultingExceptionFrame)
@@ -1202,7 +1206,7 @@ public:
         return TRUE;
     }
 
-    virtual void UpdateRegDisplay(const PREGDISPLAY);
+    virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
 
     virtual DebuggerEval * GetDebuggerEval();
 
@@ -1289,7 +1293,7 @@ public:
         return TRUE;
     }
 
-    virtual void UpdateRegDisplay(const PREGDISPLAY);
+    virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
 
     virtual Interception GetInterception()
     {
@@ -2063,7 +2067,7 @@ public:
     }
 
 #ifdef TARGET_X86
-    virtual void UpdateRegDisplay(const PREGDISPLAY);
+    virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
 #endif // TARGET_X86
 
     BOOL TraceFrame(Thread *thread, BOOL fromPatch,
@@ -2107,7 +2111,7 @@ public:
         return TRUE;
     }
 
-    virtual void UpdateRegDisplay(const PREGDISPLAY);
+    virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
     virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
 
     // HijackFrames are created by trip functions. See OnHijackTripThread()
@@ -2202,7 +2206,7 @@ public:
     PTR_BYTE GetGCRefMap();
 
 #ifdef TARGET_X86
-    virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
+    virtual void UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats = false);
     virtual PCODE GetReturnAddress();
 #endif // TARGET_X86
 
@@ -2345,7 +2349,7 @@ public:
     Interception GetInterception();
 
 #ifdef TARGET_X86
-    virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
+    virtual void UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats = false);
 #endif
 
     // Keep as last entry in class
@@ -2367,7 +2371,7 @@ public:
     virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
 
 #ifdef TARGET_X86
-    virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
+    virtual void UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats = false);
 #endif
 
     virtual ETransitionType GetTransitionType()
@@ -2894,7 +2898,7 @@ public:
 #endif // defined(TARGET_X86) || defined(TARGET_ARM)
     }
 
-    virtual void UpdateRegDisplay(const PREGDISPLAY);
+    virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
 
     // m_Datum contains MethodDesc ptr or
     // - on 64 bit host: CALLI target address (if lowest bit is set)
@@ -3060,7 +3064,7 @@ public:
         return TRUE;
     }
 
-    virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
+    virtual void UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats = false);
 
 private:
     // Keep as last entry in class

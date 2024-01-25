@@ -464,6 +464,18 @@ void Frame::PopIfChained()
 }
 #endif // TARGET_UNIX && !DACCESS_COMPILE
 
+void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
+{
+    while (GetSP(pRD->pCurrentContext) != targetSP)
+    {
+#ifdef TARGET_UNIX
+        PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+#else
+        Thread::VirtualUnwindCallFrame(pRD);
+#endif
+    }
+}
+
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------

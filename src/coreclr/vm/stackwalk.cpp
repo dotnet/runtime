@@ -1379,7 +1379,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
                 else
                 {
                     // unwind the REGDISPLAY using the transition frame and check the EBP
-                    m_crawl.pFrame->UpdateRegDisplay(&tmpRD);
+                    m_crawl.pFrame->UpdateRegDisplay(&tmpRD, m_flags & UNWIND_FLOATS);
                     if (GetRegdisplayFP(&tmpRD) != curEBP)
                     {
                         break;
@@ -1406,7 +1406,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
                     m_crawl.isIPadjusted = false;
                 }
 
-                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD);
+                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
 // #ifdef FEATURE_EH_FUNCLETS
 //                 if ((m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) == 0)
 //                 {
@@ -2732,7 +2732,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
             if (m_crawl.isFrameless)
             {
-                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD);
+                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
 // #ifdef FEATURE_EH_FUNCLETS
 //                 if ((m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) == 0)
 //                 {
