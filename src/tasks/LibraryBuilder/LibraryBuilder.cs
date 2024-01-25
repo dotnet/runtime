@@ -200,13 +200,26 @@ public class LibraryBuilderTask : AppBuilderTask
         foreach (ITaskItem lib in RuntimeLibraries)
         {
             string ext = Path.GetExtension(lib.ItemSpec);
+            string libName = Path.GetFileNameWithoutExtension(lib.ItemSpec);
 
             if (ext == ".so" || ext == ".dylib")
             {
+                // temporary solution, exclude HybridGlobalization from static linking ,
+                // until we figure out how to link it properly depending on the hybrid globalization mode
+                if(libName.Contains("HybridGlobalization"))
+                {
+                    continue;
+                }
                 libs.Add(lib.ItemSpec);
             }
             else
             {
+                // temporary solution, exclude HybridGlobalization from static linking ,
+                // until we figure out how to link it properly depending on the hybrid globalization mode
+                if(libName.Contains("HybridGlobalization"))
+                {
+                    continue;
+                }
                 sources.Add(lib.ItemSpec);
             }
         }
