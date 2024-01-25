@@ -112,7 +112,6 @@ export function export_internal(): any {
 export function cwraps_internal(internal: any): void {
     Object.assign(internal, {
         mono_wasm_exit: cwraps.mono_wasm_exit,
-        mono_wasm_enable_on_demand_gc: cwraps.mono_wasm_enable_on_demand_gc,
         mono_wasm_profiler_init_aot: profiler_c_functions.mono_wasm_profiler_init_aot,
         mono_wasm_profiler_init_browser: profiler_c_functions.mono_wasm_profiler_init_browser,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,

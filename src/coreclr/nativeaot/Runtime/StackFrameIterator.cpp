@@ -21,6 +21,7 @@
 #include "threadstore.inl"
 #include "thread.inl"
 #include "stressLog.h"
+#include "CommonMacros.inl"
 
 #include "shash.h"
 #include "RuntimeInstance.h"
@@ -75,7 +76,7 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, PointerToRhpRethrow2);
 #ifdef DACCESS_COMPILE
 #define EQUALS_RETURN_ADDRESS(x, func_name) ((x) == g_ ## func_name ## Addr)
 #else
-#define EQUALS_RETURN_ADDRESS(x, func_name) (((x)) == (PointerTo ## func_name))
+#define EQUALS_RETURN_ADDRESS(x, func_name) (((x)) == (PTR_VOID)PCODEToPINSTR((PCODE)PointerTo ## func_name))
 #endif
 
 #ifdef DACCESS_COMPILE
@@ -178,7 +179,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
 #if !defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of regdisplay
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
-    m_RegDisplay.SetIP((PCODE)pFrame->m_RIP);
+    m_RegDisplay.SetIP((PCODE)PCODEToPINSTR((PCODE)pFrame->m_RIP));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     PTR_UIntNative pPreservedRegsCursor = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_PreservedRegs);
@@ -384,9 +385,9 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     //
     // control state
     //
-    SetControlPC(dac_cast<PTR_VOID>(pCtx->GetIp()));
     m_RegDisplay.SP   = pCtx->GetSp();
-    m_RegDisplay.IP   = pCtx->GetIp();
+    m_RegDisplay.IP   = PCODEToPINSTR(pCtx->GetIp());
+    SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
 #ifdef TARGET_ARM
     //
@@ -609,6 +610,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 
     m_RegDisplay.pR0 = (PTR_UIntNative)PTR_TO_REG(pCtx, R0);
     m_RegDisplay.pR1 = (PTR_UIntNative)PTR_TO_REG(pCtx, R1);
+    m_RegDisplay.pR2 = (PTR_UIntNative)PTR_TO_REG(pCtx, R2);
+    m_RegDisplay.pR3 = (PTR_UIntNative)PTR_TO_REG(pCtx, R3);
     m_RegDisplay.pR4 = (PTR_UIntNative)PTR_TO_REG(pCtx, R4);
     m_RegDisplay.pR5 = (PTR_UIntNative)PTR_TO_REG(pCtx, R5);
     m_RegDisplay.pR6 = (PTR_UIntNative)PTR_TO_REG(pCtx, R6);
@@ -991,7 +994,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #endif
 
 #if !defined(TARGET_ARM64)
-    m_RegDisplay.SetIP(*SP++);
+    m_RegDisplay.SetIP(PCODEToPINSTR(*SP++));
 #endif
 
     m_RegDisplay.SetSP((uintptr_t)dac_cast<TADDR>(SP));
@@ -1174,7 +1177,7 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
     stackFrame->UnwindNonVolatileRegisters(&m_RegDisplay);
 
     PTR_UIntNative addressOfPushedCallerIP = stackFrame->get_AddressOfPushedCallerIP();
-    m_RegDisplay.SetIP(*addressOfPushedCallerIP);
+    m_RegDisplay.SetIP(PCODEToPINSTR(*addressOfPushedCallerIP));
     m_RegDisplay.SetSP((uintptr_t)dac_cast<TADDR>(stackFrame->get_CallerSP()));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
@@ -1265,9 +1268,9 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
 
-    m_RegDisplay.SetIP(pContext->IP);
+    m_RegDisplay.SetIP(PCODEToPINSTR(pContext->IP));
     m_RegDisplay.SetSP(pContext->GetSp());
-    SetControlPC(dac_cast<PTR_VOID>(pContext->IP));
+    SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
 
     // We expect the throw site to be in managed code, and since this function's notion of how to unwind
     // through the stub is brittle relative to the stub itself, we want to check as soon as we can.
@@ -1357,7 +1360,7 @@ UnwindOutOfCurrentManagedFrame:
         // if the thread is safe to walk, it better not have a hijack in place.
         ASSERT(!m_pThread->IsHijacked());
 
-        SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
+        SetControlPC(dac_cast<PTR_VOID>(PCODEToPINSTR(m_RegDisplay.GetIP())));
 
         PTR_VOID collapsingTargetFrame = NULL;
 
@@ -1717,6 +1720,11 @@ bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocatio
 
 void StackFrameIterator::SetControlPC(PTR_VOID controlPC)
 {
+#if TARGET_ARM
+    // Ensure that PC doesn't have the Thumb bit set. This needs to be
+    // consistent for EQUALS_RETURN_ADDRESS to work.
+    ASSERT(((uintptr_t)controlPC & 1) == 0);
+#endif
     m_OriginalControlPC = m_ControlPC = controlPC;
 }
 
