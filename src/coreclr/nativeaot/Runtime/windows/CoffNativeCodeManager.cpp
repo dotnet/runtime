@@ -38,7 +38,7 @@ typedef struct _RUNTIME_FUNCTION {
     DWORD UnwindData;
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 
-typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+typedef struct _X86_KNONVOLATILE_CONTEXT_POINTERS {
 
     // The ordering of these fields should be aligned with that
     // of corresponding fields in CONTEXT
@@ -53,7 +53,10 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
     PDWORD Ebp;
 
-} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+} X86_KNONVOLATILE_CONTEXT_POINTERS, *PX86_KNONVOLATILE_CONTEXT_POINTERS;
+
+#define KNONVOLATILE_CONTEXT_POINTERS X86_KNONVOLATILE_CONTEXT_POINTERS
+#define PKNONVOLATILE_CONTEXT_POINTERS PX86_KNONVOLATILE_CONTEXT_POINTERS
 
 typedef struct _UNWIND_INFO {
     ULONG FunctionLength;
@@ -813,6 +816,8 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *ppvRetAddrLocation = (PTR_PTR_VOID)contextPointers.Lr;
     return true;
 #else
+    EstablisherFrame = 0;
+    HandlerData = NULL;
     return false;
 #endif // defined(TARGET_AMD64)
 }
