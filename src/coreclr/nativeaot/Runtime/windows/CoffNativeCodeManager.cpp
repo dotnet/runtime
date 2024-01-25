@@ -351,6 +351,7 @@ uint32_t CoffNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID 
 
 bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
 {
+#ifdef USE_GC_INFO_DECODER
     MethodInfo pMethodInfo;
     if (!FindMethodInfo(pvAddress, &pMethodInfo))
     {
@@ -367,6 +368,11 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
     );
 
     return decoder.IsInterruptible();
+#else
+    // x86 has custom GC info, see DecodeGCHdrInfo in eetwain.cpp
+    PORTABILITY_ASSERT("IsSafePoint");
+    RhFailFast();
+#endif
 }
 
 void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
@@ -375,6 +381,7 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                                        GCEnumContext * hCallback,
                                        bool            isActiveStackFrame)
 {
+#ifdef USE_GC_INFO_DECODER
     PTR_UInt8 gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
 
@@ -415,6 +422,12 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     {
         assert(false);
     }
+#else
+    // x86 has custom GC info, see EnumGcRefs in eetwain.cpp
+    PORTABILITY_ASSERT("EnumGcRefs");
+    RhFailFast();
+#endif
+
 }
 
 uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(MethodInfo * pMethodInfo, REGDISPLAY * pRegisterSet)
@@ -439,6 +452,7 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
             p += sizeof(int32_t);
 
+#ifdef USE_GC_INFO_DECODER
         GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
         assert(slot != NO_REVERSE_PINVOKE_FRAME);
@@ -459,6 +473,10 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
         // Reverse PInvoke case.  The embedded reverse PInvoke frame is guaranteed to reside above
         // all outgoing arguments.
         upperBound = dac_cast<TADDR>(basePointer + slot);
+#else
+        PORTABILITY_ASSERT("GetConservativeUpperBoundForOutgoingArgs");
+        RhFailFast();
+#endif
     }
     else
     {
@@ -552,6 +570,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
             p += sizeof(int32_t);
 
+#ifdef USE_GC_INFO_DECODER
         GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
         assert(slot != NO_REVERSE_PINVOKE_FRAME);
@@ -573,6 +592,10 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         {
             return true;
         }
+#else
+        PORTABILITY_ASSERT("GetConservativeUpperBoundForOutgoingArgs");
+        RhFailFast();
+#endif
     }
     else
     {
@@ -709,6 +732,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
                                                 PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                                 GCRefKind *     pRetValueKind)      // out
 {
+#ifdef USE_GC_INFO_DECODER
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
     size_t unwindDataBlobSize;
@@ -820,6 +844,10 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     HandlerData = NULL;
     return false;
 #endif // defined(TARGET_AMD64)
+#else // defined(USE_GC_INFO_DECODER)
+    PORTABILITY_ASSERT("GetReturnAddressHijackInfo");
+    RhFailFast();
+#endif 
 }
 
 PTR_VOID CoffNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC)

@@ -1825,6 +1825,8 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 #ifdef TARGET_X86
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFunclet2))
     {
+        PORTABILITY_ASSERT("CategorizeUnadjustedReturnAddress");
+#if 0
         // See if it is a filter funclet based on the caller of RhpCallFunclet
         PTR_UIntNative SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
         PTR_UIntNative ControlPC = *SP++;
@@ -1833,6 +1835,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
             return InFilterFuncletInvokeThunk;
         }
         else
+#endif
         {
             return InFuncletInvokeThunk;
         }
