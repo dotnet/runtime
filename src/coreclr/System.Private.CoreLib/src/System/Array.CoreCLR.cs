@@ -171,29 +171,19 @@ namespace System
 
                 if (pDestMT->IsNullable)
                 {
-                    CastHelpers.Unbox_Nullable(
-                        ref dest,
-                        pDestMT,
-                        obj);
+                    CastHelpers.Unbox_Nullable(ref dest, pDestMT, obj);
                 }
                 else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
                 {
-                    GC.KeepAlive(obj);
                     ThrowHelper.ThrowInvalidCastException_DownCastArrayElement();
                 }
                 else if (pDestMT->ContainsGCPointers)
                 {
-                    Buffer.BulkMoveWithWriteBarrier(
-                        ref dest,
-                        ref obj.GetRawData(),
-                        destSize);
+                    Buffer.BulkMoveWithWriteBarrier(ref dest, ref obj.GetRawData(), destSize);
                 }
                 else
                 {
-                    Buffer.Memmove(
-                        ref dest,
-                        ref obj.GetRawData(),
-                        destSize);
+                    Buffer.Memmove(ref dest, ref obj.GetRawData(), destSize);
                 }
             }
         }
