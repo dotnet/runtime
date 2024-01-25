@@ -139,7 +139,7 @@ void EHContext::UpdateFrame(PREGDISPLAY regs)
 }
 #endif // FEATURE_EH_FUNCLETS
 
-void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -211,7 +211,7 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
     RETURN;
 }
 
-void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -391,7 +391,7 @@ EXTERN_C MachState* STDCALL HelperMethodFrameConfirmState(HelperMethodFrame* fra
 }
 #endif
 
-void ExternalMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void ExternalMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -411,7 +411,7 @@ void ExternalMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 
-void StubDispatchFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void StubDispatchFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -468,7 +468,7 @@ PCODE StubDispatchFrame::GetReturnAddress()
     return retAddress;
 }
 
-void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -521,7 +521,7 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     RETURN;
 }
 
-void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -615,7 +615,7 @@ TADDR ResumableFrame::GetReturnAddressPtr()
     return dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Eip);
 }
 
-void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -696,7 +696,7 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
 //  -> HijackFrame::UpdateRegDisplay should restore all the registers pushed by OnHijackTripThread
-void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL {
         NOTHROW;
@@ -753,7 +753,7 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 #endif  // FEATURE_HIJACK
 
-void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -774,7 +774,7 @@ void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 #ifndef UNIX_X86_ABI
-void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -822,7 +822,7 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 #endif // !UNIX_X86_ABI
 
 #ifdef FEATURE_READYTORUN
-void DynamicHelperFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void DynamicHelperFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     WRAPPER_NO_CONTRACT;
     UpdateRegDisplayHelper(pRD, 0);

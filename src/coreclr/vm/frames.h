@@ -756,7 +756,9 @@ protected:
     }
 
 #ifndef DACCESS_COMPILE
+#if !defined(TARGET_X86) || defined(TARGET_UNIX)
     void UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP);
+#endif // !TARGET_X86 || TARGET_UNIX
 #endif // DACCESS_COMPILE
 
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
