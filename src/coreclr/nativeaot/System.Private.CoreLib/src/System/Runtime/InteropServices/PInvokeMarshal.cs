@@ -21,8 +21,7 @@ namespace System.Runtime.InteropServices
     /// This PInvokeMarshal class should provide full public Marshal
     /// implementation for all things related to P/Invoke marshalling
     /// </summary>
-    [CLSCompliant(false)]
-    public partial class PInvokeMarshal
+    internal static partial class PInvokeMarshal
     {
         [ThreadStatic]
         internal static int t_lastError;
