@@ -56,9 +56,9 @@ export async function interp_pgo_save_data() {
 
         const savedInCache = await storeInterpPgoTable(data);
         if (savedInCache) {
-            mono_log_error("Failed to save interp_pgo table (Failed to store in cache)");
-        } else {
             mono_log_info("Saved interp_pgo table to cache");
+        } else {
+            mono_log_error("Failed to save interp_pgo table (Failed to store in cache)");
         }
 
         Module._free(pData);
