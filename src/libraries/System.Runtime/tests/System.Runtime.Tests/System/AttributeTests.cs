@@ -167,7 +167,7 @@ namespace System.Tests
 
             string stringArg = cad.ConstructorArguments[0].Value as string;
             Assert.NotNull(stringArg);
-            Assert.Equal("\uFFFD\uFFFD", stringArg);
+            Assert.Equal("\uFFFD\uFFFD\uFFFD", stringArg);
         }
 
         public static IEnumerable<object[]> Equals_TestData()
