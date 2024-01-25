@@ -13,7 +13,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 using Internal.IntrinsicSupport;
-using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 

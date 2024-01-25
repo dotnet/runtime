@@ -882,7 +882,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, sw2.ToString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void CreateBroadcasting_AllMethodsOverridden()
         {
             HashSet<string> exempted = ["Close", "Dispose", "get_NewLine", "set_NewLine"];
