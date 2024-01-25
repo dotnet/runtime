@@ -338,6 +338,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
             });
             thread.Start();
+            tcs.Task.ContinueWith((t) => { thread.Join(); }, cancellationToken, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
             return tcs.Task;
         }
 

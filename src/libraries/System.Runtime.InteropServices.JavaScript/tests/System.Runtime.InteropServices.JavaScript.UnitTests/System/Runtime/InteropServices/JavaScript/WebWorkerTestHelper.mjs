@@ -1,13 +1,25 @@
 let dllExports;
 
-const runtime = getDotnetRuntime(0);
+let runtime = getDotnetRuntime(0);
 
 let jsState = {};
 
 export async function setup() {
-    dllExports = await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
-    jsState.id = getRndInteger(0, 1000);
-    jsState.tid = getTid();
+    try {
+        if (!runtime) {
+            throw new Error("runtime is null or undefined");
+        }
+        dllExports = await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
+        if (!dllExports) {
+            throw new Error("dllExports is null or undefined");
+        }
+        jsState.id = getRndInteger(0, 1000);
+        jsState.tid = getTid();
+    }
+    catch (e) {
+        console.error("MONO_WASM: WebWorkerTestHelper.setup failed: " + e.toString());
+        throw e;
+    }
 }
 
 export function getState() {
@@ -15,12 +27,21 @@ export function getState() {
 }
 
 export function validateState(state) {
-    const isvalid = state.tid === jsState.tid && state.id === jsState.id;
-    if (!isvalid) {
-        console.log("Expected: ", JSON.stringify(jsState));
-        console.log("Actual: ", JSON.stringify(state));
+    try {
+        if (!state) {
+            throw new Error("state is null or undefined");
+        }
+        const isvalid = state.tid === jsState.tid && state.id === jsState.id;
+        if (!isvalid) {
+            console.log("Expected: ", JSON.stringify(jsState));
+            console.log("Actual: ", JSON.stringify(state));
+        }
+        return isvalid;
     }
-    return isvalid;
+    catch (e) {
+        console.error("MONO_WASM: WebWorkerTestHelper.validateState failed: " + e.toString());
+        throw e;
+    }
 }
 
 export async function promiseState() {
