@@ -166,6 +166,7 @@ IF_DEF(MRW_SHF,         IS_GM_RW,                            DSP_CNS)  // r/w   
 IF_DEF(MRD_RRD,         IS_GM_RD|IS_R1_RD,                   DSP)      // read  [mem], read  reg1
 IF_DEF(MWR_RRD,         IS_GM_WR|IS_R1_RD,                   DSP)      // write [mem], read  reg1
 IF_DEF(MRW_RRD,         IS_GM_RW|IS_R1_RD,                   DSP)      // r/w   [mem], read  reg1
+IF_DEF(MRW_RRW,         IS_GM_RW|IS_R1_RW,                   DSP)      // r/w   [mem], r/w   reg1 - for XCHG [mem], reg1
 
 IF_DEF(MRD_RRD_CNS,     IS_GM_RD|IS_R1_RD,                   DSP_CNS)  // read  [mem], read  reg1,  const
 IF_DEF(MWR_RRD_CNS,     IS_GM_WR|IS_R1_RD,                   DSP_CNS)  // write [mem], read  reg1,  const
@@ -213,6 +214,7 @@ IF_DEF(SRW_SHF,         IS_SF_RW,                            CNS)      // r/w   
 IF_DEF(SRD_RRD,         IS_SF_RD|IS_R1_RD,                   NONE)     // read  [stk], read  reg1
 IF_DEF(SWR_RRD,         IS_SF_WR|IS_R1_RD,                   NONE)     // write [stk], read  reg1
 IF_DEF(SRW_RRD,         IS_SF_RW|IS_R1_RD,                   NONE)     // r/w   [stk], read  reg1
+IF_DEF(SRW_RRW,         IS_SF_RW|IS_R1_RW,                   NONE)     // r/w   [stk], read  reg1 - for XCHG [stk], reg1
 
 IF_DEF(SRD_RRD_CNS,     IS_SF_RD|IS_R1_RD,                   CNS)      // read  [stk], read  reg1,  const
 IF_DEF(SWR_RRD_CNS,     IS_SF_WR|IS_R1_RD,                   CNS)      // write [stk], read  reg1,  const
@@ -257,6 +259,7 @@ IF_DEF(ARW_SHF,         IS_AM_RW,                            AMD_CNS)  // r/w   
 IF_DEF(ARD_RRD,         IS_AM_RD|IS_R1_RD,                   AMD)      // read  [adr], read  reg1
 IF_DEF(AWR_RRD,         IS_AM_WR|IS_R1_RD,                   AMD)      // write [adr], read  reg1
 IF_DEF(ARW_RRD,         IS_AM_RW|IS_R1_RD,                   AMD)      // r/w   [adr], read  reg1
+IF_DEF(ARW_RRW,         IS_AM_RW|IS_R1_RW,                   AMD)      // r/w   [adr], r/w   reg1 - for XCHG [adr], reg1
 
 IF_DEF(ARD_RRD_CNS,     IS_AM_RD|IS_R1_RD,                   AMD_CNS)  // read  [adr], read  reg1, const
 IF_DEF(AWR_RRD_CNS,     IS_AM_WR|IS_R1_RD,                   AMD_CNS)  // write [adr], read  reg1, const

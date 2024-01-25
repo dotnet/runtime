@@ -151,34 +151,5 @@ namespace Internal.Reflection.Extensions.NonPortable
                 return array;
             }
         }
-
-        //
-        // Only public instance fields can be targets of named arguments.
-        //
-        private static bool IsValidNamedArgumentTarget(this FieldInfo fieldInfo)
-        {
-            if ((fieldInfo.Attributes & (FieldAttributes.FieldAccessMask | FieldAttributes.Static | FieldAttributes.Literal)) !=
-                FieldAttributes.Public)
-                return false;
-            return true;
-        }
-
-        //
-        // Only public read/write instance properties can be targets of named arguments.
-        //
-        private static bool IsValidNamedArgumentTarget(this PropertyInfo propertyInfo)
-        {
-            MethodInfo? getter = propertyInfo.GetMethod;
-            MethodInfo? setter = propertyInfo.SetMethod;
-            if (getter == null)
-                return false;
-            if ((getter.Attributes & (MethodAttributes.Static | MethodAttributes.MemberAccessMask)) != MethodAttributes.Public)
-                return false;
-            if (setter == null)
-                return false;
-            if ((setter.Attributes & (MethodAttributes.Static | MethodAttributes.MemberAccessMask)) != MethodAttributes.Public)
-                return false;
-            return true;
-        }
     }
 }
