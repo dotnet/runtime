@@ -1997,6 +1997,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					offset += sizeof (target_mgreg_t);;
 
 					cfg->arch.swift_error_var = ins;
+					cfg->used_int_regs |= (size_t)(1 << AMD64_R12);
 				}
 				break;
 			default:

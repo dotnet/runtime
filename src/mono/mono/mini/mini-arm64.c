@@ -2882,6 +2882,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += size;
 
 			cfg->arch.swift_error_var = ins;
+			cfg->used_int_regs |= 1 << ARMREG_R21;
 			break;
 		}
 		default:
