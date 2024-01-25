@@ -2408,19 +2408,21 @@ namespace System.Reflection.Metadata
         public int PackingSize { get { throw null; } }
         public int Size { get { throw null; } }
     }
-    public readonly partial struct TypeName
+    public sealed class TypeName
     {
-        public string? AssemblyQualifiedName { get { throw null; } }
+        public string AssemblyQualifiedName { get { throw null; } }
         public System.Reflection.AssemblyName? AssemblyName { get { throw null; } }
-        public bool ContainsGenericParameters { get { throw null; } }
-        public System.Reflection.Metadata.TypeName[] GenericTypeArguments { get { throw null; } }
         public bool IsArray { get { throw null; } }
+        public bool IsConstructedGenericType { get { throw null; } }
+        public bool IsElementalType { get { throw null; } }
         public bool IsManagedPointerType { get { throw null; } }
-        public bool IsNested { get { throw null; } }
         public bool IsUnmanagedPointerType { get { throw null; } }
         public bool IsVariableBoundArrayType { get { throw null; } }
         public string Name { get { throw null; } }
+        public TypeName? UnderlyingType { get { throw null; } }
         public int GetArrayRank() { throw null; }
+        public System.Reflection.Metadata.TypeName[] GetGenericArguments() { throw null; }
+
     }
     public ref partial struct TypeNameParser
     {

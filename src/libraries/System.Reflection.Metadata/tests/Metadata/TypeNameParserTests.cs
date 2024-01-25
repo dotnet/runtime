@@ -40,13 +40,14 @@ namespace System.Reflection.Metadata.Tests.Metadata
                 "System.Int32",
                 "mscorlib",
                 new Version(4, 0, 0, 0),
+                "",
                 "b77a5c561934e089"
             };
         }
 
         [Theory]
         [MemberData(nameof(TypeNamesWithAssemblyNames))]
-        public void TypeNameCanContainAssemblyName(string input, string typeName, string assemblyName, Version assemblyVersion, string assemblyPublicKeyToken)
+        public void TypeNameCanContainAssemblyName(string input, string typeName, string assemblyName, Version assemblyVersion, string assemblyCulture, string assemblyPublicKeyToken)
         {
             TypeName parsed = TypeNameParser.Parse(input.AsSpan(), allowFullyQualifiedName: true);
 
@@ -54,6 +55,7 @@ namespace System.Reflection.Metadata.Tests.Metadata
             Assert.NotNull(parsed.AssemblyName);
             Assert.Equal(assemblyName, parsed.AssemblyName.Name);
             Assert.Equal(assemblyVersion, parsed.AssemblyName.Version);
+            Assert.Equal(assemblyCulture, parsed.AssemblyName.CultureName);
             Assert.Equal(GetPublicKeyToken(assemblyPublicKeyToken), parsed.AssemblyName.GetPublicKeyToken());
 
             static byte[] GetPublicKeyToken(string assemblyPublicKeyToken)
@@ -73,6 +75,35 @@ namespace System.Reflection.Metadata.Tests.Metadata
             {
                 if (hex >= '0' && hex <= '9') return (byte)(hex - '0');
                 else return (byte)(hex - 'a' + 10);
+            }
+        }
+
+        public static IEnumerable<object[]> SimpleGenericTypes()
+        {
+            yield return new object[]
+            {
+                "System.Collections.Generic.List[[System.Int32,System.UInt32,System.Boolean]]",
+                "System.Collections.Generic.List",
+                new string[] { "System.Int32", "System.UInt32", "System.Boolean" }
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(SimpleGenericTypes))]
+        public void GenericArgumentsAreSupported(string input, string typeName, string[] typeNames)
+        {
+            TypeName parsed = TypeNameParser.Parse(input.AsSpan(), allowFullyQualifiedName: true);
+
+            Assert.Equal(typeName, parsed.Name);
+            Assert.True(parsed.IsConstructedGenericType);
+            Assert.False(parsed.IsElementalType);
+
+            for (int i = 0; i < typeNames.Length; i++)
+            {
+                TypeName genericArg = parsed.GetGenericArguments()[i];
+                Assert.Equal(typeName, genericArg.Name);
+                Assert.True(genericArg.IsElementalType);
+                Assert.False(genericArg.IsConstructedGenericType);
             }
         }
 
