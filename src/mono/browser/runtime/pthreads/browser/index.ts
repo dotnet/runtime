@@ -109,11 +109,12 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
         resolvePromises(pthreadId, thread);
     }
     else if (isMonoWorkerMessageMonoAttached(data)) {
-        const pthreadId = data[monoSymbol].threadId;
+        const monoData = data[monoSymbol];
+        const pthreadId = monoData.threadId;
         const worker = Internals.getWorker(pthreadId) as PThreadWorker;
-        worker.managedThreadPool = data[monoSymbol].isThreadPoolThread;
-        worker.browserEventLoop = data[monoSymbol].isExternalEventLoop;
-        worker.threadName = data[monoSymbol].threadName;
+        worker.managedThreadPool = monoData.isThreadPoolThread;
+        worker.browserEventLoop = monoData.isExternalEventLoop;
+        worker.threadName = data[monoData.threadName;
     }
     else if (isMonoWorkerMessageEnabledInterop(data)) {
         const pthreadId = data[monoSymbol].threadId;
