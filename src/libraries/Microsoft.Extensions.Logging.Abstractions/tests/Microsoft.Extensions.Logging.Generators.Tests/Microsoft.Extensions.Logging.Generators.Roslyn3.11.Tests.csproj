@@ -3,6 +3,8 @@
   <PropertyGroup>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_3_11)</RoslynApiVersion>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
+    <!-- this Roslyn version brings in NS1.x dependencies -->
+    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
   </PropertyGroup>
 
   <ItemGroup>

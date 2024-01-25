@@ -23,6 +23,7 @@
     <!-- Opt-in/out repo features -->
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
+    <FlagNetStandard1XDependencies Condition="'$(FlagNetStandard1XDependencies)' == ''">true</FlagNetStandard1XDependencies>
     <!-- Use SDK compilers in full source-build. -->
     <UsingToolMicrosoftNetCompilers Condition="'$(DotNetBuildFromSourceFlavor)' != 'Product'">true</UsingToolMicrosoftNetCompilers>
   </PropertyGroup>
@@ -129,6 +130,7 @@
     <SystemIOFileSystemAccessControlVersion>5.0.0</SystemIOFileSystemAccessControlVersion>
     <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
     <SystemReflectionMetadataVersion>8.0.0</SystemReflectionMetadataVersion>
+    <SystemReflectionMetadataLoadContextVersion>8.0.0</SystemReflectionMetadataLoadContextVersion>
     <SystemSecurityAccessControlVersion>6.0.0</SystemSecurityAccessControlVersion>
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
@@ -164,6 +166,7 @@
     <optimizationlinuxarm64MIBCRuntimeVersion>1.0.0-prerelease.24071.2</optimizationlinuxarm64MIBCRuntimeVersion>
     <optimizationPGOCoreCLRVersion>1.0.0-prerelease.24071.2</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
+    <MicrosoftDiaSymReaderVersion>2.0.0</MicrosoftDiaSymReaderVersion>
     <MicrosoftDiaSymReaderNativeVersion>16.11.29-beta1.23404.4</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta4.23407.1</SystemCommandLineVersion>
     <TraceEventVersion>3.1.7</TraceEventVersion>
@@ -187,7 +190,7 @@
     <MicrosoftDotNetXHarnessCLIVersion>9.0.0-prerelease.24066.3</MicrosoftDotNetXHarnessCLIVersion>
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>9.0.0-alpha.0.24065.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
-    <NUnitTestAdapterVersion>4.1.0</NUnitTestAdapterVersion>
+    <NUnit3TestAdapterVersion>4.5.0</NUnit3TestAdapterVersion>
     <CoverletCollectorVersion>6.0.0</CoverletCollectorVersion>
     <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
     <NewtonsoftJsonBsonVersion>1.0.2</NewtonsoftJsonBsonVersion>
@@ -195,6 +198,7 @@
     <MoqVersion>4.18.4</MoqVersion>
     <FluentAssertionsVersion>6.7.0</FluentAssertionsVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
+    <CommandLineParserVersion>2.9.1</CommandLineParserVersion>
     <!-- Android gRPC client tests -->
     <GoogleProtobufVersion>3.19.4</GoogleProtobufVersion>
     <GrpcAspNetCoreVersion>2.46.0</GrpcAspNetCoreVersion>
@@ -204,6 +208,9 @@
     <GrpcDotnetClientVersion>2.45.0</GrpcDotnetClientVersion>
     <GrpcToolsVersion>2.45.0</GrpcToolsVersion>
     <CompilerPlatformTestingVersion>1.1.2-beta1.23323.1</CompilerPlatformTestingVersion>
+    <CompilerPlatformTestingDiffPlexVersion>1.7.2</CompilerPlatformTestingDiffPlexVersion>
+    <CompilerPlatformTestingMicrosoftVisualBasicVersion>10.2.0</CompilerPlatformTestingMicrosoftVisualBasicVersion>
+    <CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>17.0.46</CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>8.0.0-preview-20230918.1</MicrosoftPrivateIntellisenseVersion>
     <!-- Mono Cecil -->
