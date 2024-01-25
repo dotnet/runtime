@@ -28,7 +28,7 @@ public class DebugLevelTests : AppTestBase
         CopyTestAsset("WasmBasicTestApp", "DebugLevelTests_BuildWithDefaultLevel");
         BuildProject(configuration);
 
-        var result = await RunSdkStyleApp(new(
+        var result = await RunSdkStyleAppForBuild(new(
             Configuration: configuration,
             TestScenario: "DebugLevelTest"
         ));
