@@ -5518,6 +5518,77 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             // If the class is exact, the jit can expand the IsInst check inline.
             canExpandInline = isClassExact;
         }
+
+        // Check if this cast helper have some profile data
+        if (impIsCastHelperMayHaveProfileData(helper))
+        {
+            const int               maxLikelyClasses = 32;
+            LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
+            unsigned                likelyClassCount =
+                getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+
+            if (likelyClassCount > 0)
+            {
+#ifdef DEBUG
+                for (UINT32 i = 0; i < likelyClassCount; i++)
+                {
+                    const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
+                    JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+                            likelyClasses[i].likelihood);
+                }
+
+                // Optional stress mode to pick a random known class, rather than
+                // the most likely known class.
+                if (JitConfig.JitRandomGuardedDevirtualization() != 0)
+                {
+                    // Reuse the random inliner's random state.
+                    CLRRandom* const random =
+                        impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+
+                    unsigned index          = static_cast<unsigned>(random->Next(static_cast<int>(likelyClassCount)));
+                    likelyClasses[0].handle = likelyClasses[index].handle;
+                    likelyClasses[0].likelihood = 100;
+                    likelyClassCount            = 1;
+                }
+#endif
+
+                LikelyClassMethodRecord likelyClass = likelyClasses[0];
+                CORINFO_CLASS_HANDLE    likelyCls   = (CORINFO_CLASS_HANDLE)likelyClass.handle;
+
+                // if there is a dominating candidate with >= 40% likelihood, use it
+                const unsigned likelihoodMinThreshold = 40;
+                if ((likelyCls != NO_CLASS_HANDLE) && (likelyClass.likelihood > likelihoodMinThreshold))
+                {
+                    TypeCompareState castResult =
+                        info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass);
+
+                    // If case of MustNot we still can optimize isinst (only), e.g.:
+                    //
+                    //   bool objIsDisposable = obj is IDisposable;
+                    //
+                    // when the profile tells us that obj is mostly Int32, hence, never implements that interface.
+                    // for castclass it makes little sense as it will always throw a cast exception anyway.
+                    if ((castResult == TypeCompareState::Must) ||
+                        (castResult == TypeCompareState::MustNot && !isCastClass))
+                    {
+                        bool isAbstract = (info.compCompHnd->getClassAttribs(likelyCls) &
+                                           (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
+                        // If it's abstract it means we most likely deal with a stale PGO data so bail out.
+                        if (!isAbstract)
+                        {
+                            JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
+                                    eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
+
+                            reversedMTCheck    = castResult == TypeCompareState::MustNot;
+                            canExpandInline    = true;
+                            partialExpand      = true;
+                            exactCls           = likelyCls;
+                            fastPathLikelihood = likelyClass.likelihood;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     const bool expandInline = canExpandInline && shouldExpandInline;
@@ -5547,12 +5618,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 call->gtHandleHistogramProfileCandidateInfo = pInfo;
                 compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
             }
-        }
-        else if (impIsCastHelperMayHaveProfileData(helper))
-        {
-            // Leave a note for fgLateCastExpand to expand this helper call
-            call->gtCallMoreFlags |= GTF_CALL_M_CAST_CAN_BE_EXPANDED;
-            call->gtCastHelperILOffset = ilOffset;
         }
         return call;
     }
