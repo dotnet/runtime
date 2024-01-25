@@ -12911,6 +12911,7 @@ GOT_DSP:
 #endif
                     if (id->idIsTlsGD())
                     {
+                        addlDelta = -4;
                         emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_TLSGD,
                                                           addlDelta);
                     }

@@ -622,11 +622,13 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     else if (TargetOS::IsUnix)
     {
         // Code sequence to access thread local variable on linux/x64:
+        //      data16
+        //      lea      rdi, 0x7FE5C418CD28  ; tlsRootObject
+        //      data16 data16
+        //      call     _tls_get_addr
         //
-        //      mov      rdi, 0x7FE5C418CD28  ; tlsRootObject
-        //      mov      rax, 0x7FE5C47AFDB0  ; _tls_get_addr
-        //      call     rax
-        //
+        // This sequence along with `data16` prefix is expected by the linker so it
+        // will patch these with TLS access.
         GenTree* tls_get_addr_val =
             gtNewIconHandleNode((size_t)threadStaticInfo.tlsGetAddrFtnPtr.handle, GTF_ICON_FTN_ADDR);
         tls_get_addr_val->SetContained();
