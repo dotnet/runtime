@@ -84,7 +84,7 @@ namespace System.SpanTests
 
             var span = new Span<string>(actual);
             span.Fill("d");
-            Assert.Equal<string>(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
         [Fact]

@@ -409,15 +409,6 @@ bool MyICJI::isValueClass(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repIsValueClass(cls);
 }
 
-// Decides how the JIT should do the optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
-//     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
-CorInfoInlineTypeCheck MyICJI::canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source)
-{
-    jitInstance->mc->cr->AddCall("canInlineTypeCheck");
-    return jitInstance->mc->repCanInlineTypeCheck(cls, source);
-}
-
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 uint32_t MyICJI::getClassAttribs(CORINFO_CLASS_HANDLE cls)
 {
@@ -762,6 +753,13 @@ bool MyICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE 
 {
     jitInstance->mc->cr->AddCall("isMoreSpecificType");
     return jitInstance->mc->repIsMoreSpecificType(cls1, cls2);
+}
+
+// Returns true if a class handle can only describe values of exactly one type.
+bool MyICJI::isExactType(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("isExactType");
+    return jitInstance->mc->repIsExactType(cls);
 }
 
 // Returns TypeCompareState::Must if cls is known to be an enum.

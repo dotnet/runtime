@@ -16,8 +16,6 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TargetsWindows</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'browser'">$(DefineConstants);TARGETS_BROWSER</DefineConstants>
-    <!-- Active issue https://github.com/dotnet/runtime/issues/96173 -->
-    <_XUnitBackgroundExec>false</_XUnitBackgroundExec>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">

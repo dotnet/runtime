@@ -5935,7 +5935,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
 
                     // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
-                    if ((op2->gtFlags & GTF_ASG) != 0)
+                    if (gtMayHaveStoreInterference(op2, op1))
                     {
                         // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
                         allowReversal = false;
@@ -6316,6 +6316,135 @@ DONE:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+//------------------------------------------------------------------------
+// gtMayHaveStoreInterference: Check if two trees may interfere because of a
+// store in one of the trees.
+//
+// Parameters:
+//   treeWithStores - Tree that may have stores in it
+//   tree           - Tree that may be reading from a local stored to in "treeWithStores"
+//
+// Returns:
+//   False if there is no interference. Returns true if there is any GT_LCL_VAR
+//   or GT_LCL_FLD in "tree" whose value depends on a local stored in
+//   "treeWithStores". May also return true in cases without interference if
+//   the trees are too large and the function runs out of budget.
+//
+bool Compiler::gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree)
+{
+    if (((treeWithStores->gtFlags & GTF_ASG) == 0) || tree->IsInvariant())
+    {
+        return false;
+    }
+
+    class Visitor final : public GenTreeVisitor<Visitor>
+    {
+        GenTree* m_readTree;
+        unsigned m_numStoresChecked = 0;
+
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        Visitor(Compiler* compiler, GenTree* readTree) : GenTreeVisitor(compiler), m_readTree(readTree)
+        {
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & GTF_ASG) == 0)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (node->OperIsLocalStore())
+            {
+                // Check up to 8 stores before we bail with a conservative
+                // answer. Avoids quadratic behavior in case we have a large
+                // number of stores (e.g. created by physical promotion or by
+                // call args morphing).
+                if ((m_numStoresChecked >= 8) ||
+                    m_compiler->gtTreeHasLocalRead(m_readTree, node->AsLclVarCommon()->GetLclNum()))
+                {
+                    return WALK_ABORT;
+                }
+
+                m_numStoresChecked++;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(this, tree);
+    return visitor.WalkTree(&treeWithStores, nullptr) == WALK_ABORT;
+}
+
+//------------------------------------------------------------------------
+// gtTreeHasLocalRead: Check if a tree has a read of the specified local,
+// taking promotion into account.
+//
+// Parameters:
+//   tree   - The tree to check.
+//   lclNum - The local to look for.
+//
+// Returns:
+//   True if there is any GT_LCL_VAR or GT_LCL_FLD node whose value depends on
+//   "lclNum".
+//
+bool Compiler::gtTreeHasLocalRead(GenTree* tree, unsigned lclNum)
+{
+    class Visitor final : public GenTreeVisitor<Visitor>
+    {
+    public:
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        unsigned   m_lclNum;
+        LclVarDsc* m_lclDsc;
+
+        Visitor(Compiler* compiler, unsigned lclNum) : GenTreeVisitor(compiler), m_lclNum(lclNum)
+        {
+            m_lclDsc = compiler->lvaGetDesc(lclNum);
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+
+            if (node->OperIsLocalRead())
+            {
+                if (node->AsLclVarCommon()->GetLclNum() == m_lclNum)
+                {
+                    return WALK_ABORT;
+                }
+
+                if (m_lclDsc->lvIsStructField && (node->AsLclVarCommon()->GetLclNum() == m_lclDsc->lvParentLcl))
+                {
+                    return WALK_ABORT;
+                }
+
+                if (m_lclDsc->lvPromoted && (node->AsLclVarCommon()->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
+                    (node->AsLclVarCommon()->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
+                {
+                    return WALK_ABORT;
+                }
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(this, lclNum);
+    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+}
 
 #ifdef DEBUG
 bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
@@ -6908,7 +7037,6 @@ bool GenTree::OperIsImplicitIndir() const
 //------------------------------------------------------------------------------
 // OperExceptions: Get exception set this tree may throw.
 //
-//
 // Arguments:
 //    comp      -  Compiler instance
 //
@@ -6945,11 +7073,9 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
             ExceptionSetFlags exSetFlags = ExceptionSetFlags::None;
 
-            GenTree* op2 = this->gtGetOp2();
-
-            if (!(this->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) && !op2->IsNeverZero())
+            if (!(this->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) && !this->gtGetOp2()->gtSkipReloadOrCopy()->IsNeverZero())
             {
-                exSetFlags = ExceptionSetFlags::DivideByZeroException;
+                exSetFlags |= ExceptionSetFlags::DivideByZeroException;
             }
 
             if (this->OperIs(GT_DIV, GT_MOD) && this->CanDivOrModPossiblyOverflow(comp))
@@ -13915,22 +14041,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
                     (cls2Hnd == NO_CLASS_HANDLE) ? " cls2" : "");
         }
 
-        // We can't answer the equality comparison definitively at jit
-        // time, but can still simplify the comparison.
-        //
-        // Find out how we can compare the two handles.
-        // NOTE: We're potentially passing NO_CLASS_HANDLE, but the runtime knows what to do with it here.
-        CorInfoInlineTypeCheck inliningKind =
-            info.compCompHnd->canInlineTypeCheck(cls1Hnd, CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN);
-
-        // If the first type needs helper, check the other type: it might be okay with a simple compare.
-        if (inliningKind == CORINFO_INLINE_TYPECHECK_USE_HELPER)
-        {
-            inliningKind = info.compCompHnd->canInlineTypeCheck(cls2Hnd, CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN);
-        }
-
-        assert(inliningKind == CORINFO_INLINE_TYPECHECK_PASS);
-
         GenTree* compare = gtNewOperNode(oper, TYP_INT, op1ClassFromHandle, op2ClassFromHandle);
 
         // Drop any now-irrelevant flags
@@ -13967,9 +14077,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
         arg2 = gtNewMethodTableLookup(arg2);
 
-        assert(info.compCompHnd->canInlineTypeCheck(nullptr, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE) ==
-               CORINFO_INLINE_TYPECHECK_PASS);
-
         GenTree* compare = gtNewOperNode(oper, TYP_INT, arg1, arg2);
 
         // Drop any now-irrelevant flags
@@ -14002,15 +14109,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
-    // Ask the VM if this type can be equality tested by a simple method
-    // table comparison.
-    CorInfoInlineTypeCheck typeCheckInliningResult =
-        info.compCompHnd->canInlineTypeCheck(clsHnd, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
-    if (typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_NONE)
-    {
-        return tree;
-    }
-
     // We're good to go.
     JITDUMP("Optimizing compare of obj.GetType()"
             " and type-from-handle to compare method table pointer\n");
@@ -14037,7 +14135,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
     // if both classes are "final" (e.g. System.String[]) we can replace the comparison
     // with `true/false` + null check.
-    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || impIsClassExact(objCls)))
+    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || info.compCompHnd->isExactType(objCls)))
     {
         TypeCompareState tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
         if (tcs != TypeCompareState::May)
@@ -14068,7 +14166,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     GenTree* const objMT = gtNewMethodTableLookup(objOp);
 
     // Compare the two method tables
-    assert(typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_PASS);
     GenTree* const compare = gtNewOperNode(oper, TYP_INT, objMT, knownMT);
 
     // Drop any now irrelevant flags
@@ -18588,7 +18685,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         }
         else
         {
-            *pIsExact = impIsClassExact(objClass);
+            *pIsExact = info.compCompHnd->isExactType(objClass);
         }
     }
 
@@ -22649,18 +22746,7 @@ GenTree* Compiler::gtNewSimdGetElementNode(
 
     if (useToScalar)
     {
-        intrinsicId = NI_Vector128_ToScalar;
-
-        if (simdSize == 64)
-        {
-            intrinsicId = NI_Vector512_ToScalar;
-        }
-        else if (simdSize == 32)
-        {
-            intrinsicId = NI_Vector256_ToScalar;
-        }
-
-        return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize);
+        return gtNewSimdToScalarNode(type, op1, simdBaseJitType, simdSize);
     }
 
     switch (simdBaseType)
@@ -22703,14 +22789,7 @@ GenTree* Compiler::gtNewSimdGetElementNode(
 #elif defined(TARGET_ARM64)
     if (op2->IsIntegralConst(0))
     {
-        intrinsicId = NI_Vector128_ToScalar;
-
-        if (simdSize == 8)
-        {
-            intrinsicId = NI_Vector64_ToScalar;
-        }
-
-        return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize);
+        return gtNewSimdToScalarNode(type, op1, simdBaseJitType, simdSize);
     }
 
     if (simdSize == 8)
@@ -24607,7 +24686,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
         case TYP_USHORT:
         {
             tmp = gtNewSimdHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize);
-            return gtNewSimdHWIntrinsicNode(type, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8);
+            return gtNewSimdToScalarNode(type, tmp, simdBaseJitType, 8);
         }
 
         case TYP_INT:
@@ -24622,7 +24701,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
             {
                 tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 16);
             }
-            return gtNewSimdHWIntrinsicNode(type, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8);
+            return gtNewSimdToScalarNode(type, tmp, simdBaseJitType, 8);
         }
 
         case TYP_FLOAT:
@@ -24644,7 +24723,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
                                                    simdSize);
                 }
             }
-            return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
+            return gtNewSimdToScalarNode(type, op1, simdBaseJitType, simdSize);
         }
 
         case TYP_DOUBLE:
@@ -24656,7 +24735,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
                 op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseJitType,
                                                simdSize);
             }
-            return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector64_ToScalar, simdBaseJitType, 8);
+            return gtNewSimdToScalarNode(type, op1, simdBaseJitType, 8);
         }
         default:
         {
@@ -24728,7 +24807,6 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
 }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH)
 //----------------------------------------------------------------------------------------------
 // Compiler::gtNewSimdToScalarNode: Creates a new simd ToScalar node.
 //
@@ -24743,9 +24821,19 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
 //
 GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+    assert(varTypeIsArithmetic(type));
 
-#if defined(TARGET_X86)
+    assert(op1 != nullptr);
+    assert(varTypeIsSIMD(op1));
+
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#ifdef TARGET_XARCH
+#if defined(TARGET_X86)
     if (varTypeIsLong(simdBaseType))
     {
         // We need SSE41 to handle long, use software fallback
@@ -24756,23 +24844,37 @@ GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, CorInfoTy
         return gtNewSimdGetElementNode(type, op1, op2, simdBaseJitType, simdSize);
     }
 #endif // TARGET_X86
-    // Ensure MOVD/MOVQ support exists
-    assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
-    NamedIntrinsic intrinsic = NI_Vector128_ToScalar;
 
-    if (simdSize == 32)
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-        intrinsic = NI_Vector256_ToScalar;
-    }
-    else if (simdSize == 64)
+    if (simdSize == 64)
     {
         assert(IsBaselineVector512IsaSupportedDebugOnly());
         intrinsic = NI_Vector512_ToScalar;
     }
+    else if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        intrinsic = NI_Vector256_ToScalar;
+    }
+    else
+    {
+        intrinsic = NI_Vector128_ToScalar;
+    }
+#elif defined(TARGET_ARM64)
+    if (simdSize == 8)
+    {
+        intrinsic = NI_Vector64_ToScalar;
+    }
+    else
+    {
+        intrinsic = NI_Vector128_ToScalar;
+    }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
 }
-#endif // TARGET_XARCH
 
 GenTree* Compiler::gtNewSimdUnOpNode(
     genTreeOps op, var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
@@ -27217,8 +27319,8 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
     if (this->gtFlags & GTF_DIV_MOD_NO_OVERFLOW)
         return false;
 
-    GenTree* op1 = this->gtGetOp1();
-    GenTree* op2 = this->gtGetOp2();
+    GenTree* op1 = this->gtGetOp1()->gtSkipReloadOrCopy();
+    GenTree* op2 = this->gtGetOp2()->gtSkipReloadOrCopy();
 
     // If the divisor is known to never be '-1', we cannot overflow.
     if (op2->IsNeverNegativeOne(comp))

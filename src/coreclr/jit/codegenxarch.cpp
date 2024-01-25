@@ -1466,13 +1466,6 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_test, reg, reg, genActualType(op));
     inst_JMP(EJ_jne, compiler->compCurBB->GetTrueTarget());
-
-    // If we cannot fall into the false target, emit a jump to it
-    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
-    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
-    {
-        inst_JMP(EJ_jmp, falseTarget);
-    }
 }
 
 //------------------------------------------------------------------------
@@ -6176,17 +6169,17 @@ void CodeGen::genCall(GenTreeCall* call)
         {
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_ENTER_STATIC:
-                noway_assert(compiler->syncStartEmitCookie == NULL);
+                noway_assert(compiler->syncStartEmitCookie == nullptr);
                 compiler->syncStartEmitCookie =
                     GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-                noway_assert(compiler->syncStartEmitCookie != NULL);
+                noway_assert(compiler->syncStartEmitCookie != nullptr);
                 break;
             case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_MON_EXIT_STATIC:
-                noway_assert(compiler->syncEndEmitCookie == NULL);
+                noway_assert(compiler->syncEndEmitCookie == nullptr);
                 compiler->syncEndEmitCookie =
                     GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-                noway_assert(compiler->syncEndEmitCookie != NULL);
+                noway_assert(compiler->syncEndEmitCookie != nullptr);
                 break;
             default:
                 break;

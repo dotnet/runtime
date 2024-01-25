@@ -16,7 +16,6 @@ This library supports several architecture/operating-system combinations:
 | Linux   | SuperH       | ✓      |
 | Linux   | IA-64        | ✓      |
 | Linux   | PARISC       | Works well, but C library missing unwind-info |
-| Linux   | Tilegx       | 64-bit mode only |
 | Linux   | MIPS         | ✓      |
 | Linux   | RISC-V       | 64-bit only |
 | Linux   | LoongArch    | 64-bit only |
@@ -26,6 +25,8 @@ This library supports several architecture/operating-system combinations:
 | FreeBSD | AArch64      | ✓      |
 | FreeBSD | PPC32        | ✓      |
 | FreeBSD | PPC64        | ✓      |
+| QNX     | Aarch64      | ✓      |
+| QNX     | x86-64       | ✓      |
 | Solaris | x86-64       | ✓      |
 
 ## Libc Requirements
@@ -52,7 +53,6 @@ such dependencies
 |    riscv     |     p      |      p     |
 |    s390x     |     p      |      p     |
 |    sh        |     r      |            |
-|    tilegx    |     r      |      r     |
 |    x86       |     p      |      r     |
 |    x86_64    |     p      |      p     |
 
@@ -200,10 +200,5 @@ commands:
 
 ## Contacting the Developers
 
-Please direct all questions regarding this library to <libunwind-devel@nongnu.org>.
-
-You can do this by sending an email to <libunwind-request@nongnu.org> with
-a body of "subscribe libunwind-devel", or you can subscribe and manage your
-subscription via the web-interface at <https://savannah.nongnu.org/mail/?group=libunwind>.
-
-You can also interact on our GitHub page: <https://github.com/libunwind/libunwind>.
+Please raise issues and pull requests through the GitHub repository:
+<https://github.com/libunwind/libunwind>.

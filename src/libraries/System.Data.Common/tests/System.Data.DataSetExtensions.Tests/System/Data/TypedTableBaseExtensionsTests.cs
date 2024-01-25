@@ -44,7 +44,7 @@ namespace System.Data.Tests
             public TestTypedTable() : base() { }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void ElementAtOrDefault_ValidIndex()
         {
             TypedTableBase<DataRow> table = new TestTypedTable<DataRow>();
@@ -54,7 +54,7 @@ namespace System.Data.Tests
             Assert.Same(zero, table.ElementAtOrDefault(0));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void ElementAtOrDefault_InvalidIndex()
         {
             TypedTableBase<DataRow> table = new TestTypedTable<DataRow>();
@@ -64,7 +64,7 @@ namespace System.Data.Tests
             Assert.Same(default(DataRow), table.ElementAtOrDefault(1));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Select_ToListOfInts()
         {
             TypedTableBase<DataRow> table = new TestTypedTable<DataRow>();

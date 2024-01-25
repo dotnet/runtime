@@ -41,10 +41,6 @@ namespace System.Threading.Tasks
         /// The task is running but has not yet completed.
         /// </summary>
         Running,
-        // /// <summary>
-        // /// The task is currently blocked in a wait state.
-        // /// </summary>
-        // Blocked,
         /// <summary>
         /// The task has finished executing and is implicitly waiting for
         /// attached child tasks to complete.

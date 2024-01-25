@@ -16,7 +16,6 @@
     },
     "exclude": [
         "dotnet.d.ts",
-        "dotnet-legacy.d.ts",
         "diagnostics-mock.d.ts",
         "bin"
     ]
