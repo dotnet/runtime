@@ -15,12 +15,12 @@ EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
     uint64_t ret;
     if (val < two63)
     {
-        ret = (__int64)(val);
+        ret = (int64_t)(val);
     }
     else
     {
         // subtract 0x8000000000000000, do the convert then add it back again
-        ret = (__int64)(val - two63) + I64(0x8000000000000000);
+        ret = (int64_t)(val - two63) + I64(0x8000000000000000);
     }
     return ret;
 }
