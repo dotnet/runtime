@@ -608,6 +608,8 @@
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewNative.cs" />
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewSymbolsBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewTypesBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiNative.cs" />
     <Compile Include="Compiler\ObjectWriter\LegacyObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWritingOptions.cs" />

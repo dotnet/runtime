@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 using static ILCompiler.DependencyAnalysis.RelocType;
+using static ILCompiler.ObjectWriter.EabiNative;
 using static ILCompiler.ObjectWriter.ElfNative;
 
 namespace ILCompiler.ObjectWriter
@@ -41,6 +42,8 @@ namespace ILCompiler.ObjectWriter
 
         // Symbol table
         private readonly Dictionary<string, uint> _symbolNameToIndex = new();
+
+        private static readonly ObjectNodeSection ArmAttributesSection = new ObjectNodeSection(".ARM.attributes", SectionType.ReadOnly, null);
 
         public ElfObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
@@ -78,6 +81,10 @@ namespace ILCompiler.ObjectWriter
             {
                 type = SHT_PROGBITS;
                 flags = SHF_ALLOC | SHF_WRITE | SHF_TLS;
+            }
+            else if (section == ArmAttributesSection)
+            {
+                type = SHT_ARM_ATTRIBUTES;
             }
             else
             {
@@ -411,6 +418,34 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
                     relocationStream.Write(relocationEntry);
                 }
+            }
+        }
+
+        private protected override void EmitSectionsAndLayout()
+        {
+            if (_machine == EM_ARM)
+            {
+                // Emit EABI attributes section
+                // (Addenda to, and Errata in, the ABI for the Arm Architecture, 2023Q3)
+                SectionWriter sectionWriter = GetOrCreateSection(ArmAttributesSection);
+                EabiAttributesBuilder attributesBuilder = new EabiAttributesBuilder(sectionWriter);
+                attributesBuilder.StartSection("aeabi");
+                attributesBuilder.WriteAttribute(Tag_conformance, "2.09");
+                attributesBuilder.WriteAttribute(Tag_CPU_name, "arm7tdmi");
+                attributesBuilder.WriteAttribute(Tag_CPU_arch, 2); // Arm v4T / Arm7TDMI
+                attributesBuilder.WriteAttribute(Tag_ARM_ISA_use, 1); // Yes
+                attributesBuilder.WriteAttribute(Tag_THUMB_ISA_use, 3); // Yes, determined by Tag_CPU_arch / Tag_CPU_arch_profile
+                attributesBuilder.WriteAttribute(Tag_ABI_PCS_R9_use, 0); // R9 is callee-saved register
+                attributesBuilder.WriteAttribute(Tag_ABI_PCS_RW_data, 1); // PC-relative
+                attributesBuilder.WriteAttribute(Tag_ABI_PCS_RO_data, 1); // PC-relative
+                attributesBuilder.WriteAttribute(Tag_ABI_PCS_GOT_use, 2); // indirect
+                attributesBuilder.WriteAttribute(Tag_ABI_FP_denormal, 1);
+                attributesBuilder.WriteAttribute(Tag_ABI_FP_exceptions, 0); // Unused
+                attributesBuilder.WriteAttribute(Tag_ABI_FP_number_model, 3); // IEEE 754
+                attributesBuilder.WriteAttribute(Tag_ABI_align_needed, 1); // 8-byte
+                attributesBuilder.WriteAttribute(Tag_ABI_align_preserved, 1); // 8-byte
+                attributesBuilder.WriteAttribute(Tag_CPU_unaligned_access, 0); // None
+                attributesBuilder.EndSection();
             }
         }
 
