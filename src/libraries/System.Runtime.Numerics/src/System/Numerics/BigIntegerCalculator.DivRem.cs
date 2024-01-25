@@ -640,6 +640,7 @@ namespace System.Numerics
                                 stackalloc uint[StackAllocThreshold]
                                 : bbFromPool = ArrayPool<uint>.Shared.Rent(left12.Length)).Slice(0, left12.Length);
                 b1.CopyTo(bb.Slice(halfN));
+                r1.Clear();
 
                 SubtractSelf(bb, b1);
                 SubtractSelf(r1, bb);
