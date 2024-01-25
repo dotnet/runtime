@@ -16,8 +16,10 @@ namespace System.Globalization
 
         private TextInfo thisTextInfo => _thisTextInfo ??= new CultureInfo(m_name).TextInfo;
 
-        private static bool LocalizedHashCodeSupportsCompareOptions(CompareOptions options) =>
-            options == CompareOptions.IgnoreCase || options == CompareOptions.None;
+        private bool LocalizedHashCodeSupportsCompareOptions(CompareOptions options) =>
+            (m_name.Split('-')[0] == "ja") ?
+                options == CompareOptions.IgnoreCase || options == CompareOptions.IgnoreKanaType :
+                options == CompareOptions.IgnoreCase || options == CompareOptions.None;
         private static void AssertHybridOnWasm(CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

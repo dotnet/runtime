@@ -98,42 +98,47 @@ namespace System.Globalization.Tests
             }
         }
 
-        public static IEnumerable<object[]> CheckHashingOfSkippedChars_TestData()
+        public static IEnumerable<object[]> CharsIgnoredByEqualFunction()
         {
-            // one char from each ignored category that is skipped on ICU
-            yield return new object[] { '\u0008', s_invariantCompare }; // Control: BACKSPACE
-            yield return new object[] { '\u200B', s_invariantCompare }; // Format: ZERO WIDTH SPACE
-            yield return new object[] { '\u180A', s_invariantCompare }; // OtherPunctuation: MONGOLIAN NIRUGU
-            yield return new object[] { '\uFE73', s_invariantCompare }; // OtherLetter: THAI CHARACTER PAIYANNOI
-            yield return new object[] { '\u0F3E', s_invariantCompare }; // SpacingCombiningMark: "TIBETAN MARK GTER YIG MGO UM RTAGS GNYIS
-            yield return new object[] { '\u0640', s_invariantCompare }; // ModifierLetter: ARABIC TATWEEL
-            yield return new object[] { '\u0488', s_invariantCompare }; // EnclosingMark: COMBINING CYRILLIC HUNDRED THOUSANDS SIGN
-            yield return new object[] { '\u034F', s_invariantCompare }; // NonSpacingMark: DIAERESIS
-            CompareInfo thaiCmpInfo = new CultureInfo("th-TH").CompareInfo;
-            yield return new object[] { '\u0020', thaiCmpInfo }; // SpaceSeparator: SPACE
-            yield return new object[] { '\u0028', thaiCmpInfo }; // OpenPunctuation: LEFT PARENTHESIS
-            yield return new object[] { '\u007D', thaiCmpInfo }; // ClosePunctuation: RIGHT PARENTHESIS
-            yield return new object[] { '\u2013', thaiCmpInfo }; // DashPunctuation: EN DASH
-            yield return new object[] { '\u005F', thaiCmpInfo }; // ConnectorPunctuation: LOW LINE
-            yield return new object[] { '\u2018', thaiCmpInfo }; // InitialQuotePunctuation: LEFT SINGLE QUOTATION MARK
-            yield return new object[] { '\u2019', thaiCmpInfo }; // FinalQuotePunctuation: RIGHT SINGLE QUOTATION MARK
-            yield return new object[] { '\u2028', thaiCmpInfo }; // LineSeparator: LINE SEPARATOR
-            yield return new object[] { '\u2029', thaiCmpInfo }; // ParagraphSeparator: PARAGRAPH SEPARATOR
+            string str1 = "ab";
+            // browser supports 240 cultures (e.g. "en-US"), out of which 54 neutral cultures (e.g. "en")
+            CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.NeutralCultures);
+            List<int> ignoredCodepoints = new();
+            foreach(var culture in cultures)
+            {
+                // japanese with None is not supported, JS always ignores Kana when localeCompare is used
+                CompareOptions options = culture.Name == "ja" ?
+                    CompareOptions.IgnoreKanaType :
+                    CompareOptions.None;
+                CompareInfo cmpInfo = culture.CompareInfo;
+                var hashCode1 = cmpInfo.GetHashCode(str1, options);
+                for(int codePoint = 0; codePoint < 0x10FFFF; codePoint++)
+                {
+                    char character = (char)codePoint;
+					string str2 = $"a{character}b";
+                    // in HybridGlobalization CompareInfo.Compare uses JS's localeCompare()
+                    if (cmpInfo.Compare(str1, str2, options) == 0)
+                    {
+                        // do not test same codepoint with different cultures
+                        if (!ignoredCodepoints.Contains(codePoint))
+                        {
+                            ignoredCodepoints.Add(codePoint);
+                            yield return new object[] { hashCode1, str2, cmpInfo, options };
+                        }
+                    }
+                }
+            }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
-        [MemberData(nameof(CheckHashingOfSkippedChars_TestData))]
-        public void CheckHashingOfSkippedChars(char character, CompareInfo cmpInfo)
+        // In non-hybrid we have hashing and Equal function from the same source - ICU4C, so this test is not necessary
+        // Hybrid has Equal function from JS and hashing from managed invariant algorithm, they might start diverging at some point
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
+        [MemberData(nameof(CharsIgnoredByEqualFunction))]
+        public void CheckHashingOfSkippedChars(int hashCode1, string str2, CompareInfo cmpInfo, CompareOptions options)
         {
-            string str1 = $"a{character}b";
-            string str2 = "ab";
-            CompareOptions options = CompareOptions.None;
-            var hashCode1 = cmpInfo.GetHashCode(str1, options);
             var hashCode2 = cmpInfo.GetHashCode(str2, options);
             bool areHashCodesEqual = hashCode1 == hashCode2;
             Assert.True(areHashCodesEqual);
-            StringComparer stringComparer = new CustomComparer(cmpInfo, options);
-            TryAddToCustomDictionary(stringComparer, str1, str2, areHashCodesEqual);
         }
     }
 }
