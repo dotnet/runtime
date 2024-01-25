@@ -246,7 +246,7 @@ namespace System
             for (int i = 0; i < length; i++)
             {
                 ref byte srcElement = ref Unsafe.Add(ref srcData, (nuint)i * srcElSize);
-                ref byte destElement = ref Unsafe.Add(ref data, (nuint)i * srcElSize);
+                ref byte destElement = ref Unsafe.Add(ref data, (nuint)i * destElSize);
 
                 switch (srcElType)
                 {
