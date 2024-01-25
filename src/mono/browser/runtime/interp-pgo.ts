@@ -16,17 +16,19 @@ export async function getInterpPgoTable(): Promise<ArrayBuffer | undefined> {
     return await getCacheEntry(cacheKey);
 }
 
-async function storeInterpPgoTable(memory: ArrayBuffer) {
+async function storeInterpPgoTable(memory: ArrayBuffer): Promise<boolean> {
     const cacheKey = await getCacheKey(tablePrefix);
     if (!cacheKey)
-        return;
+        return false;
 
     await storeCacheEntry(cacheKey, memory, "application/octet-stream");
 
     cleanupCache(tablePrefix, cacheKey); // no await
+
+    return true;
 }
 
-export async function interp_pgo_save_data () {
+export async function interp_pgo_save_data() {
     const cacheKey = await getCacheKey(tablePrefix);
     if (!cacheKey) {
         mono_log_error("Failed to save interp_pgo table (No cache key)");
@@ -52,16 +54,20 @@ export async function interp_pgo_save_data () {
         const u8 = localHeapViewU8();
         const data = u8.slice(pData, pData + expectedSize);
 
-        await storeInterpPgoTable(data);
+        const savedInCache = await storeInterpPgoTable(data);
+        if (savedInCache) {
+            mono_log_error("Failed to save interp_pgo table (Failed to store in cache)");
+        } else {
+            mono_log_info("Saved interp_pgo table to cache");
+        }
 
-        mono_log_info("Saved interp_pgo table to cache");
         Module._free(pData);
     } catch (exc) {
         mono_log_error(`Failed to save interp_pgo table: ${exc}`);
     }
 }
 
-export async function interp_pgo_load_data () {
+export async function interp_pgo_load_data() {
     const data = await getInterpPgoTable();
     if (!data) {
         mono_log_info("Failed to load interp_pgo table (No table found in cache)");

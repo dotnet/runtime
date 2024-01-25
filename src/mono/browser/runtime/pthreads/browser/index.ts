@@ -3,7 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 
-import { monoSymbol, makeMonoThreadMessageApplyMonoConfig, isMonoWorkerMessagePreload, MonoWorkerMessage, isMonoWorkerMessageEnabledInterop, isMonoWorkerMessageChannelCreated } from "../shared";
+import { monoSymbol, makeMonoThreadMessageApplyMonoConfig, isMonoWorkerMessagePreload, MonoWorkerMessage, isMonoWorkerMessageEnabledInterop, isMonoWorkerMessageChannelCreated, isMonoWorkerMessageMonoAttached } from "../shared";
 import { pthreadPtr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
 import { Internals, PThreadWorker } from "../shared/emscripten-internals";
@@ -108,6 +108,13 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
         port.start();
         resolvePromises(pthreadId, thread);
     }
+    else if (isMonoWorkerMessageMonoAttached(data)) {
+        const pthreadId = data[monoSymbol].threadId;
+        const worker = Internals.getWorker(pthreadId) as PThreadWorker;
+        worker.managedThreadPool = data[monoSymbol].isThreadPoolThread;
+        worker.browserEventLoop = data[monoSymbol].isExternalEventLoop;
+        worker.threadName = data[monoSymbol].threadName;
+    }
     else if (isMonoWorkerMessageEnabledInterop(data)) {
         const pthreadId = data[monoSymbol].threadId;
         const worker = Internals.getWorker(pthreadId) as PThreadWorker;
@@ -169,7 +176,7 @@ export async function instantiateWasmPThreadWorkerPool(): Promise<void> {
 export function cancelThreads() {
     const workers: PThreadWorker[] = Internals.getRunningWorkers();
     for (const worker of workers) {
-        if (worker.interopInstalled) {
+        if (worker.browserEventLoop) {
             worker.postMessage({ cmd: "cancel" });
         }
     }

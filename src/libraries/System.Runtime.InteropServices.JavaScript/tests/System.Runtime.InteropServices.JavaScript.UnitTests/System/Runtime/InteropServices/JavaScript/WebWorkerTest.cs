@@ -250,7 +250,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.False(shouldNotHitPost);
         }
 
-#if !DEBUG
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96628#issuecomment-1907602744")]
         [Fact]
         // this will say something like `JSSynchronizationContext is still installed on worker 0x4ff0030.` in the console during shutdown.
         public async Task JSWebWorker_Abandon_Running()
@@ -299,8 +299,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             // it should not prevent mono and the test suite from exiting
         }
-#endif
-
 
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task Executor_Propagates(Executor executor)

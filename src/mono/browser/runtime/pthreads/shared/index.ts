@@ -27,6 +27,8 @@ export const MainThread: PThreadInfo = {
 
 const enum WorkerMonoCommandType {
     enabledInterop = "notify_enabled_interop",
+    monoAttached = "notify_mono_attached",
+    monoDetached = "notify_mono_detached",
     channelCreated = "channel_created",
     preload = "preload",
 }
@@ -93,6 +95,23 @@ export interface MonoWorkerMessageChannelCreated extends MonoWorkerMessage {
     };
 }
 
+export interface MonoWorkerMessageMonoAttached extends MonoWorkerMessage {
+    [monoSymbol]: {
+        monoCmd: WorkerMonoCommandType.monoAttached;
+        threadId: pthreadPtr;
+        threadName: string;
+        isExternalEventLoop: boolean;
+        isThreadPoolThread: boolean;
+    };
+}
+
+export interface MonoWorkerMessageMonoDetached extends MonoWorkerMessage {
+    [monoSymbol]: {
+        monoCmd: WorkerMonoCommandType.monoDetached;
+        threadId: pthreadPtr;
+    };
+}
+
 export interface MonoWorkerMessageEnabledInterop extends MonoWorkerMessage {
     [monoSymbol]: {
         monoCmd: WorkerMonoCommandType.enabledInterop;
@@ -116,6 +135,28 @@ export function makeChannelCreatedMonoMessage(threadId: pthreadPtr, port: Messag
         }
     };
 }
+
+export function makeMonoAttachedMessage(threadId: pthreadPtr, threadName: string, isExternalEventLoop: boolean, isThreadPoolThread: boolean): MonoWorkerMessageMonoAttached {
+    return {
+        [monoSymbol]: {
+            monoCmd: WorkerMonoCommandType.monoAttached,
+            threadName,
+            isExternalEventLoop,
+            isThreadPoolThread,
+            threadId: threadId,
+        }
+    };
+}
+
+export function makeMonoDetachedMessage(threadId: pthreadPtr): MonoWorkerMessageMonoDetached {
+    return {
+        [monoSymbol]: {
+            monoCmd: WorkerMonoCommandType.monoDetached,
+            threadId: threadId,
+        }
+    };
+}
+
 export function makeEnabledInteropMonoMessage(threadId: pthreadPtr): MonoWorkerMessageEnabledInterop {
     return {
         [monoSymbol]: {
@@ -143,6 +184,26 @@ export function isMonoWorkerMessageEnabledInterop(message: MonoWorkerMessage): m
     if (isMonoWorkerMessage(message)) {
         const monoMessage = message[monoSymbol];
         if (monoMessage.monoCmd === WorkerMonoCommandType.enabledInterop) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export function isMonoWorkerMessageMonoAttached(message: MonoWorkerMessage): message is MonoWorkerMessageMonoAttached {
+    if (isMonoWorkerMessage(message)) {
+        const monoMessage = message[monoSymbol];
+        if (monoMessage.monoCmd === WorkerMonoCommandType.monoAttached) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export function isMonoWorkerMessageMonoDetached(message: MonoWorkerMessage): message is MonoWorkerMessageMonoDetached {
+    if (isMonoWorkerMessage(message)) {
+        const monoMessage = message[monoSymbol];
+        if (monoMessage.monoCmd === WorkerMonoCommandType.monoDetached) {
             return true;
         }
     }

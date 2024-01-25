@@ -29,7 +29,10 @@ export interface PThreadLibrary {
 export interface PThreadWorker extends Worker {
     pthread_ptr: pthreadPtr;
     loaded: boolean;
-    interopInstalled: boolean;
+    threadName: string;
+    interopInstalled: boolean; // this is JSWebWorker
+    browserEventLoop: boolean; // this is JSWebWorker or managed thread pool
+    managedThreadPool: boolean; // this is managed thread pool
 }
 
 interface PThreadObject {

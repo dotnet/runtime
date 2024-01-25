@@ -99,5 +99,8 @@ function allocateUnusedWorker(): PThreadWorker {
     Internals.getUnusedWorkerPool().push(worker);
     worker.loaded = false;
     worker.interopInstalled = false;
+    worker.browserEventLoop = false;
+    worker.managedThreadPool = false;
+    worker.threadName = "Unnamed";
     return worker;
 }

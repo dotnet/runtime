@@ -24,7 +24,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportExportTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" Condition="'$(FeatureWasmThreads)' != 'true'"/>
     <Compile Include="System\Runtime\InteropServices\JavaScript\Utils.cs" />
     <None Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JSImportGenerator\JSImports.g.cs" />

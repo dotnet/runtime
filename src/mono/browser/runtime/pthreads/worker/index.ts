@@ -6,7 +6,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { ENVIRONMENT_IS_PTHREAD, mono_assert, loaderHelpers } from "../../globals";
-import { makeChannelCreatedMonoMessage, mono_wasm_pthread_ptr, set_thread_info } from "../shared";
+import { makeChannelCreatedMonoMessage, makeMonoAttachedMessage, makeMonoDetachedMessage, mono_wasm_pthread_ptr, set_thread_info } from "../shared";
 import type { pthreadPtr } from "../shared/types";
 import { is_nullish } from "../../types/internal";
 import type { MonoThreadMessage } from "../shared";
@@ -18,8 +18,10 @@ import {
     WorkerThreadEventTarget
 } from "./events";
 import { postRunWorker, preRunWorker } from "../../startup";
-import { mono_log_debug, mono_set_thread_name } from "../../logging";
+import { mono_log_debug } from "../../logging";
 import { jiterpreter_allocate_tables } from "../../jiterpreter-support";
+import { CharPtr } from "../../types/emscripten";
+import { utf8ToString } from "../../strings";
 
 // re-export some of the events types
 export {
@@ -81,18 +83,28 @@ function setupChannelToMainThread(pthread_ptr: pthreadPtr): PThreadSelf {
     return pthread_self;
 }
 
+let threadName: string | undefined;
 
 /// This is an implementation detail function.
 /// Called in the worker thread (not main thread) from mono when a pthread becomes attached to the mono runtime.
-export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void {
+export function mono_wasm_pthread_on_pthread_attached(pthread_id: number, thread_name: CharPtr, background_thread: number, threadpool_thread: number, external_eventloop: number, debugger_thread: number): void {
     if (!MonoWasmThreads) return;
     mono_assert(pthread_self !== null && pthread_self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
-    const threadName = `0x${pthread_id.toString(16)}-worker`;
-    mono_set_thread_name(threadName);
+    const name = utf8ToString(thread_name);
+    const threadType = (name == ".NET Timer") ? "timr"
+        : (name == ".NET Long Running Task") ? "long"
+            : (name == ".NET TP Gate") ? "gate"
+                : debugger_thread ? "dbgr"
+                    : threadpool_thread ? "pool"
+                        : external_eventloop ? "jsww"
+                            : background_thread ? "back"
+                                : "norm";
+    threadName = `0x${pthread_id.toString(16).padStart(8, "0")}-${threadType}${name}`;
     loaderHelpers.mono_set_thread_name(threadName);
     preRunWorker();
     set_thread_info(pthread_id, true, false, false);
     jiterpreter_allocate_tables();
+    self.postMessage(makeMonoAttachedMessage(pthread_id, threadName, external_eventloop !== 0, threadpool_thread !== 0));
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, pthread_self));
 }
 
@@ -101,9 +113,9 @@ export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void 
     if (!MonoWasmThreads) return;
     postRunWorker();
     set_thread_info(pthread_id, false, false, false);
-    const threadName = `0x${pthread_id.toString(16)}-worker-detached`;
-    mono_set_thread_name(threadName);
+    threadName = threadName + "=>detached";
     loaderHelpers.mono_set_thread_name(threadName);
+    self.postMessage(makeMonoDetachedMessage(pthread_id));
 }
 
 /// This is an implementation detail function.

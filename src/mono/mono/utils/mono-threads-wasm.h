@@ -76,7 +76,7 @@ extern GSList *jobs;
 
 // Called from register_thread when a pthread attaches to the runtime
 void
-mono_threads_wasm_on_thread_attached (void);
+mono_threads_wasm_on_thread_attached (pthread_t tid, const char* thread_name, gboolean background_thread, gboolean threadpool_thread, gboolean external_eventloop, gboolean debugger_thread);
 
 void
 mono_threads_wasm_on_thread_detached (void);

@@ -22,7 +22,7 @@ import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { checkMemorySnapshotSize, getMemorySnapshot, storeMemorySnapshot } from "./snapshot";
 import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
-import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_name } from "./logging";
+import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
 
 // threads
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool, cancelThreads } from "./pthreads/browser";
@@ -368,7 +368,6 @@ async function mono_wasm_init_threads() {
         return;
     }
     const threadName = `0x${mono_wasm_main_thread_ptr().toString(16)}-main`;
-    mono_set_thread_name(threadName);
     loaderHelpers.mono_set_thread_name(threadName);
     await instantiateWasmPThreadWorkerPool();
     await mono_wasm_init_diagnostics();
