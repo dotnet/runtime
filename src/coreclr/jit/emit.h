@@ -975,19 +975,25 @@ protected:
                 iiaEncodedInstrCount = (count << iaut_SHIFT) | iaut_INST_COUNT;
             }
 
-#ifdef TARGET_ARMARCH
-
+#ifdef TARGET_ARM
             struct
             {
-#ifdef TARGET_ARM64
-                // For 64-bit architecture this 32-bit structure can pack with these unsigned bit fields
-                emitLclVarAddr iiaLclVar;
-                unsigned       _idRegBit : 1; // Reg3 is scaled by idOpSize bits
-                GCtype         _idGCref2 : 2;
-#endif
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
+#elif defined(TARGET_ARM64)
+            struct
+            {
+                // This 32-bit structure can pack with these unsigned bit fields
+                emitLclVarAddr iiaLclVar;
+                unsigned       _idRegBit : 1; // Reg3 is scaled by idOpSize bits
+                GCtype         _idGCref2 : 2;
+                regNumber      _idReg3 : REGNUM_BITS;
+                regNumber      _idReg4 : REGNUM_BITS;
+            };
+
+            insSvePattern _idSvePattern;
+
 #elif defined(TARGET_XARCH)
             struct
             {
@@ -1159,7 +1165,7 @@ protected:
             _idCodeSize = sz;
         }
 #elif defined(TARGET_RISCV64)
-        unsigned  idCodeSize() const
+        unsigned idCodeSize() const
         {
             return _idCodeSize;
         }
@@ -1436,6 +1442,26 @@ protected:
         {
             assert(!idIsSmallDsc());
             idAddr()->_idRegBit = val ? 1 : 0;
+        }
+        bool idOptionalShift() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idRegBit == 1);
+        }
+        void idOptionalShift(bool val)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idRegBit = val ? 1 : 0;
+        }
+        insSvePattern idSvePattern() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idSvePattern);
+        }
+        void idSvePattern(insSvePattern idSvePattern)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idSvePattern = idSvePattern;
         }
 #endif // TARGET_ARM64
 
@@ -2508,7 +2534,7 @@ private:
                              DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
     void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
-    void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
+    bool emitSetLoopBackEdge(const BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig,
                                                   size_t offset DEBUG_ARG(bool isAlignAdjusted)
