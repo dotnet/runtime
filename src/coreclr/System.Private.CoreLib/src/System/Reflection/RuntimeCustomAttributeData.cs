@@ -255,7 +255,7 @@ namespace System.Reflection
             if (m_ctor!.DeclaringType!.IsGenericType)
             {
                 MetadataImport metadataScope = scope.MetadataImport;
-                var attributeType = scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null)!;
+                Type attributeType = scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null)!;
                 m_ctor = (RuntimeConstructorInfo)scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
             }
 
@@ -725,7 +725,7 @@ namespace System.Reflection
             for (int i = 0; i < argCount; ++i)
             {
                 // Determine if a field or property.
-                var namedArgFieldOrProperty = parser.GetTag();
+                CustomAttributeEncoding namedArgFieldOrProperty = parser.GetTag();
                 if (namedArgFieldOrProperty is not CustomAttributeEncoding.Field
                     && namedArgFieldOrProperty is not CustomAttributeEncoding.Property)
                 {
@@ -745,9 +745,9 @@ namespace System.Reflection
 
                 // Update the appropriate named argument element.
                 CustomAttributeNamedParameter? parameterToUpdate = null;
-                foreach (var namedParam in customAttributeNamedParameters)
+                foreach (CustomAttributeNamedParameter namedParam in customAttributeNamedParameters)
                 {
-                    var namedArgType = namedParam.CustomAttributeType;
+                    CustomAttributeType namedArgType = namedParam.CustomAttributeType;
                     if (namedArgType.EncodedType != CustomAttributeEncoding.Object)
                     {
                         if (namedArgType.EncodedType != argType.EncodedType)
@@ -1085,9 +1085,9 @@ namespace System.Reflection
         public static CustomAttributeType CreateFromType(RuntimeType parameterType)
         {
             Debug.Assert(parameterType is not null);
-            var encodedType = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding(parameterType);
-            var encodedArrayType = CustomAttributeEncoding.Undefined;
-            var encodedEnumType = CustomAttributeEncoding.Undefined;
+            CustomAttributeEncoding encodedType = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding(parameterType);
+            CustomAttributeEncoding encodedArrayType = CustomAttributeEncoding.Undefined;
+            CustomAttributeEncoding encodedEnumType = CustomAttributeEncoding.Undefined;
             Type? enumType = null;
 
             if (encodedType == CustomAttributeEncoding.Array)
