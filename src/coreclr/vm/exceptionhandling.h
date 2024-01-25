@@ -51,8 +51,13 @@ typedef DPTR(ExInfo) PTR_ExInfo;
 // InlinedCallFrame::m_Datum field for details).
 enum class InlinedCallFrameMarker
 {
+#ifdef HOST_64BIT
     ExceptionHandlingHelper = 2,
     SecondPassFuncletCaller = 4,
+#else // HOST_64BIT
+    ExceptionHandlingHelper = 1,
+    SecondPassFuncletCaller = 2,
+#endif // HOST_64BIT
     Mask = ExceptionHandlingHelper | SecondPassFuncletCaller
 };
 

@@ -466,6 +466,7 @@ void Frame::PopIfChained()
 
 void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
 {
+    _ASSERTE(!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)));
     while (GetSP(pRD->pCurrentContext) != targetSP)
     {
 #ifdef TARGET_UNIX
