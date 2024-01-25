@@ -48,6 +48,8 @@ void emitDispBarrier(insBarrier barrier);
 void emitDispShiftOpts(insOpts opt);
 void emitDispExtendOpts(insOpts opt);
 void emitDispSveExtendOpts(insOpts opt);
+void emitDispSveExtendOptsModN(insOpts opt, int n);
+void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts opt, insFormat fmt);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
@@ -504,6 +506,14 @@ static int insGetSveReg1ListSize(instruction ins);
 // Returns the predicate type for the given SVE format.
 // Register position is required for instructions with multiple predicates.
 static PredicateType insGetPredicateType(insFormat fmt, int regpos = 0);
+
+// Returns true if the SVE instruction has a LSL addr.
+// This is for formats that have [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
+static bool insSveIsLsl(instruction ins, insFormat fmt);
+
+// Returns 0, 1, 2 or 3 depending on the instruction and format.
+// This is for formats that have [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
+static int insSveGetLslOrModN(instruction ins, insFormat fmt);
 
 // Returns true if the specified instruction can encode the 'dtype' field.
 static bool canEncodeSveElemsize_dtype(instruction ins);
