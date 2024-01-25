@@ -170,8 +170,7 @@ namespace System.Tests
 
             // Validate that each character is 'invalid'.
             // The runtimes are inconsistent with respect to conversion
-            // failure modes with respect to length so we just validate
-            // each character.
+            // failure modes so we just validate each character.
             foreach (char c in stringArg)
             {
                 Assert.Equal('\uFFFD', c);
