@@ -739,6 +739,13 @@ namespace Wasm.Build.Tests
                 public struct SingleI64Struct {
                     public Int64 Value;
                 }
+                public struct PairStruct {
+                    public int A, B;
+                }
+                [System.Runtime.CompilerServices.InlineArray(2)]
+                public struct MyInlineArray {
+                    public int element0;
+                }
 
                 public class Test
                 {
@@ -765,6 +772,16 @@ namespace Wasm.Build.Tests
                         var res = indirect(sds);
                         Console.WriteLine(""s (s)="" + res.Value);
 
+                        var pair = new PairStruct { A = 1, B = 2 };
+                        var paires = accept_and_return_pair(pair);
+                        Console.WriteLine(""B="" + paires.B);
+
+                        MyInlineArray ia = new ();
+                        for (int i = 0; i < 2; i++)
+                            ia[i] = i;
+                        var iares = accept_and_return_inlinearray(ia);
+                        Console.WriteLine(""[1]="" + iares[1]);
+
                         return (int)res.Value;
                     }
 
@@ -782,6 +799,12 @@ namespace Wasm.Build.Tests
 
                     [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_i64_struct"")]
                     public static extern Int64 direct64(Int64 arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_pair"")]
+                    public static extern PairStruct accept_and_return_pair(PairStruct arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_inlinearray"")]
+                    public static extern MyInlineArray accept_and_return_inlinearray(MyInlineArray arg);
                 }";
 
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";

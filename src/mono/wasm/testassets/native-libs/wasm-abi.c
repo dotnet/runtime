@@ -27,3 +27,23 @@ TResI64 accept_and_return_i64_struct (TResI64 arg) {
     TResI64 result = { ~arg.value };
     return result;
 }
+
+typedef struct {
+    int A, B;
+} PairStruct;
+
+PairStruct accept_and_return_pair (PairStruct arg) {
+    arg.A *= 2;
+    arg.B *= 2;
+    return arg;
+}
+
+typedef struct {
+    int elements[2];
+} MyInlineArray;
+
+MyInlineArray accept_and_return_inlinearray (MyInlineArray arg) {
+    for (int i = 0; i < 2; i++)
+        arg.elements[i] *= 2;
+    return arg;
+}
