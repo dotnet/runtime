@@ -25,8 +25,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include "_UCD_internal.h"
 
 int
-_UCD_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
-                   int write, void *arg)
+_UCD_access_fpreg (unw_addr_space_t  as UNUSED,
+                   unw_regnum_t      reg UNUSED,
+                   unw_fpreg_t      *val UNUSED,
+                   int               write,
+                   void             *arg)
 {
   struct UCD_info *ui UNUSED = arg;
 

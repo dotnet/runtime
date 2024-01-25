@@ -34,19 +34,19 @@ namespace System
         }
 
         public ArgumentOutOfRangeException(string? paramName, string? message)
-            : base(message, paramName)
+            : base(message ?? SR.Arg_ArgumentOutOfRangeException, paramName)
         {
             HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public ArgumentOutOfRangeException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_ArgumentOutOfRangeException, innerException)
         {
             HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public ArgumentOutOfRangeException(string? paramName, object? actualValue, string? message)
-            : base(message, paramName)
+            : base(message ?? SR.Arg_ArgumentOutOfRangeException, paramName)
         {
             _actualValue = actualValue;
             HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;

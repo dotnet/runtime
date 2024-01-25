@@ -411,9 +411,17 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
         // instruction selection due to different memory placement at runtime.
         if (EA_IS_RELOC(origAttr) && genDataIndirAddrCanBeEncodedAsPCRelOffset(imm))
         {
-            // We will use lea so displacement and not immediate will be relocatable
-            size = EA_SET_FLG(EA_REMOVE_FLG(size, EA_CNS_RELOC_FLG), EA_DSP_RELOC_FLG);
-            GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            if (!EA_IS_CNS_SEC_RELOC(origAttr))
+            {
+                // We will use lea so displacement and not immediate will be relocatable
+                size = EA_SET_FLG(EA_REMOVE_FLG(size, EA_CNS_RELOC_FLG), EA_DSP_RELOC_FLG);
+                GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            }
+            else
+            {
+                // For section constant, the immediate will be relocatable
+                GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            }
         }
         else
         {
@@ -614,6 +622,11 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (targetType == TYP_BYREF)
             {
                 attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+            }
+
+            if (con->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+            {
+                attr = EA_SET_FLG(attr, EA_CNS_SEC_RELOC);
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
@@ -4411,6 +4424,7 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
 void CodeGen::genLockedInstructions(GenTreeOp* node)
 {
     assert(node->OperIs(GT_XADD, GT_XCHG, GT_XORR, GT_XAND));
+    assert(node->OperIs(GT_XCHG) || !varTypeIsSmall(node->TypeGet()));
 
     GenTree* addr = node->gtGetOp1();
     GenTree* data = node->gtGetOp2();
@@ -4418,7 +4432,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
 
     assert(addr->isUsedFromReg());
     assert(data->isUsedFromReg());
-    assert((size == EA_4BYTE) || (size == EA_PTRSIZE) || (size == EA_GCREF));
+    assert((size <= EA_PTRSIZE) || (size == EA_GCREF));
 
     genConsumeOperands(node);
 
@@ -4486,7 +4500,15 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
         instGen(INS_lock);
     }
 
-    GetEmitter()->emitIns_AR_R(ins, size, node->GetRegNum(), addr->GetRegNum(), 0);
+    regNumber targetReg = node->GetRegNum();
+    GetEmitter()->emitIns_AR_R(ins, size, targetReg, addr->GetRegNum(), 0);
+
+    if (varTypeIsSmall(node->TypeGet()))
+    {
+        instruction mov = varTypeIsSigned(node->TypeGet()) ? INS_movsx : INS_movzx;
+        GetEmitter()->emitIns_Mov(mov, size, targetReg, targetReg, /* canSkip */ false);
+    }
+
     genProduceReg(node);
 }
 
@@ -4502,6 +4524,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
 
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
+    emitAttr  size       = emitTypeSize(tree->TypeGet());
 
     GenTree* location  = tree->Addr();      // arg1
     GenTree* value     = tree->Data();      // arg2
@@ -4522,10 +4545,18 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     // location is Rm
     instGen(INS_lock);
 
-    GetEmitter()->emitIns_AR_R(INS_cmpxchg, emitTypeSize(targetType), value->GetRegNum(), location->GetRegNum(), 0);
+    GetEmitter()->emitIns_AR_R(INS_cmpxchg, size, value->GetRegNum(), location->GetRegNum(), 0);
 
     // Result is in RAX
-    inst_Mov(targetType, targetReg, REG_RAX, /* canSkip */ true);
+    if (varTypeIsSmall(tree->TypeGet()))
+    {
+        instruction mov = varTypeIsSigned(tree->TypeGet()) ? INS_movsx : INS_movzx;
+        GetEmitter()->emitIns_Mov(mov, size, targetReg, REG_RAX, /* canSkip */ false);
+    }
+    else
+    {
+        inst_Mov(targetType, targetReg, REG_RAX, /* canSkip */ true);
+    }
 
     genProduceReg(tree);
 }
@@ -6156,17 +6187,17 @@ void CodeGen::genCall(GenTreeCall* call)
         {
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_ENTER_STATIC:
-                noway_assert(compiler->syncStartEmitCookie == NULL);
+                noway_assert(compiler->syncStartEmitCookie == nullptr);
                 compiler->syncStartEmitCookie =
                     GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-                noway_assert(compiler->syncStartEmitCookie != NULL);
+                noway_assert(compiler->syncStartEmitCookie != nullptr);
                 break;
             case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_MON_EXIT_STATIC:
-                noway_assert(compiler->syncEndEmitCookie == NULL);
+                noway_assert(compiler->syncEndEmitCookie == nullptr);
                 compiler->syncEndEmitCookie =
                     GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-                noway_assert(compiler->syncEndEmitCookie != NULL);
+                noway_assert(compiler->syncEndEmitCookie != nullptr);
                 break;
             default:
                 break;

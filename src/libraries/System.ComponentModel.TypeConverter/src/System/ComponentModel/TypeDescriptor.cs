@@ -33,7 +33,6 @@ namespace System.ComponentModel
                                                                                           // A value of `null` indicates initialization is in progress.
                                                                                           // A value of s_initializedDefaultProvider indicates the provider is initialized.
         private static readonly object s_initializedDefaultProvider = new object();
-        private static readonly object s_defaultProviderSyncObject = new object();
 
         private static WeakHashtable? s_associationTable;
         private static int s_metadataVersion;                          // a version stamp for our metadata. Used by property descriptors to know when to rebuild attributes.
@@ -271,7 +270,10 @@ namespace System.ComponentModel
                 return;
             }
 
-            lock (s_defaultProviderSyncObject)
+            // Lock on s_providerTable even though s_providerTable is not modified here.
+            // Using a single lock prevents deadlocks since other methods that call into or are called
+            // by this method also lock on s_providerTable and the ordering of the locks may be different.
+            lock (s_providerTable)
             {
                 AddDefaultProvider(type);
             }
@@ -279,7 +281,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Add the default provider, if it exists.
-        /// For threading, this is always called under a 'lock (s_defaultProviderSyncObject)'.
+        /// For threading, this is always called under a 'lock (s_providerTable)'.
         /// </summary>
         private static void AddDefaultProvider(Type type)
         {
@@ -326,11 +328,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The CreateAssocation method creates an association between two objects.
+        /// The CreateAssociation method creates an association between two objects.
         /// Once an association is created, a designer or other filtering mechanism
         /// can add properties that route to either object into the primary object's
         /// property set. When a property invocation is made against the primary
-        /// object, GetAssocation will be called to resolve the actual object
+        /// object, GetAssociation will be called to resolve the actual object
         /// instance that is related to its type parameter.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]

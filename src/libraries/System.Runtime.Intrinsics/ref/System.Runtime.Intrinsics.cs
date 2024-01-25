@@ -155,6 +155,8 @@ namespace System.Runtime.Intrinsics
         public static bool EqualsAll<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static bool EqualsAny<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Equals<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Exp(System.Runtime.Intrinsics.Vector128<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> Exp(System.Runtime.Intrinsics.Vector128<float> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint ExtractMostSignificantBits<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Double> Floor(System.Runtime.Intrinsics.Vector128<System.Double> vector) { throw null; }
@@ -185,6 +187,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Log(System.Runtime.Intrinsics.Vector128<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> Log(System.Runtime.Intrinsics.Vector128<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Log2(System.Runtime.Intrinsics.Vector128<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Log2(System.Runtime.Intrinsics.Vector128<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Max<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
@@ -484,6 +488,8 @@ namespace System.Runtime.Intrinsics
         public static bool EqualsAll<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static bool EqualsAny<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Equals<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<double> Exp(System.Runtime.Intrinsics.Vector256<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<float> Exp(System.Runtime.Intrinsics.Vector256<float> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint ExtractMostSignificantBits<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Double> Floor(System.Runtime.Intrinsics.Vector256<System.Double> vector) { throw null; }
@@ -514,6 +520,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<double> Log(System.Runtime.Intrinsics.Vector256<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<float> Log(System.Runtime.Intrinsics.Vector256<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> Log2(System.Runtime.Intrinsics.Vector256<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> Log2(System.Runtime.Intrinsics.Vector256<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Max<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
@@ -813,6 +821,8 @@ namespace System.Runtime.Intrinsics
         public static bool EqualsAll<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static bool EqualsAny<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Equals<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Exp(System.Runtime.Intrinsics.Vector512<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Exp(System.Runtime.Intrinsics.Vector512<float> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong ExtractMostSignificantBits<T>(this System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<System.Double> Floor(System.Runtime.Intrinsics.Vector512<System.Double> vector) { throw null; }
@@ -843,6 +853,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Log(System.Runtime.Intrinsics.Vector512<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Log(System.Runtime.Intrinsics.Vector512<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Log2(System.Runtime.Intrinsics.Vector512<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Log2(System.Runtime.Intrinsics.Vector512<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Max<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
@@ -1116,6 +1128,8 @@ namespace System.Runtime.Intrinsics
         public static bool EqualsAll<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static bool EqualsAny<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Equals<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<double> Exp(System.Runtime.Intrinsics.Vector64<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> Exp(System.Runtime.Intrinsics.Vector64<float> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint ExtractMostSignificantBits<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Double> Floor(System.Runtime.Intrinsics.Vector64<System.Double> vector) { throw null; }
@@ -1144,6 +1158,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<double> Log(System.Runtime.Intrinsics.Vector64<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> Log(System.Runtime.Intrinsics.Vector64<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> Log2(System.Runtime.Intrinsics.Vector64<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> Log2(System.Runtime.Intrinsics.Vector64<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Max<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
@@ -5176,6 +5192,7 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<uint> Abs(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> Abs(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Add(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Add(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> Add(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> Add(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Add(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
@@ -6009,6 +6026,13 @@ namespace System.Runtime.Intrinsics.X86
         OrderedGreaterThanOrEqualNonSignaling = (byte)29,
         OrderedGreaterThanNonSignaling = (byte)30,
         UnorderedTrueSignaling = (byte)31,
+    }
+    public enum FloatRoundingMode : byte
+    {
+        ToEven = 0x08,
+        ToNegativeInfinity = 0x09,
+        ToPositiveInfinity = 0x0A,
+        ToZero = 0x0B,
     }
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Fma : System.Runtime.Intrinsics.X86.Avx

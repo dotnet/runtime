@@ -18,20 +18,7 @@ namespace System.Net
 
             task.ContinueWith(completedTask =>
             {
-                bool shouldInvokeCallback = false;
-
-                if (completedTask.IsFaulted)
-                {
-                    shouldInvokeCallback = tcs.TrySetException(completedTask.Exception!.InnerExceptions);
-                }
-                else if (completedTask.IsCanceled)
-                {
-                    shouldInvokeCallback = tcs.TrySetCanceled();
-                }
-                else
-                {
-                    shouldInvokeCallback = tcs.TrySetResult(completedTask.Result);
-                }
+                bool shouldInvokeCallback = tcs.TrySetFromTask(completedTask);
 
                 // Only invoke the callback if it exists AND we were able to transition the TCS
                 // to the terminal state. If we couldn't transition the task it is because it was

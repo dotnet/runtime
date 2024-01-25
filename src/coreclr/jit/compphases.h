@@ -98,6 +98,7 @@ CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS2,      "Compute edge weights (2, f
 CompPhaseNameMacro(PHASE_STRESS_SPLIT_TREE,          "Stress gtSplitTree",             false, -1, false)
 CompPhaseNameMacro(PHASE_EXPAND_RTLOOKUPS,           "Expand runtime lookups",         false, -1, true)
 CompPhaseNameMacro(PHASE_EXPAND_STATIC_INIT,         "Expand static init",             false, -1, true)
+CompPhaseNameMacro(PHASE_EXPAND_CASTS,               "Expand casts",                   false, -1, true)
 CompPhaseNameMacro(PHASE_EXPAND_TLS,                 "Expand TLS access",              false, -1, true)
 CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,            "Insert GC Polls",                false, -1, true)
 CompPhaseNameMacro(PHASE_CREATE_THROW_HELPERS,       "Create throw helper blocks",     false, -1, true)

@@ -49,7 +49,7 @@ namespace System.Globalization.Tests
             // Slovak
             yield return new object[] { s_slovakCompare, "ch", "h", 0, 1, CompareOptions.None, -1, 0 };
             // Android has its own ICU, which doesn't work well with slovak
-            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic && !PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic && !PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { s_slovakCompare, "hore chodit", "HO", 11, 12, CompareOptions.IgnoreCase, 0, 2 };
             }
@@ -104,7 +104,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "AA\u200DA", "\u200d", 3, 4, CompareOptions.None, 4, 0};
 
             // Ignore symbols
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, 5, 6 };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 12, 13, CompareOptions.None, 10, 2 };
@@ -120,7 +120,7 @@ namespace System.Globalization.Tests
             }
 
             // Inputs where matched length does not equal value string length
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 22, 23, supportedIgnoreCaseIgnoreNonSpaceOptions, 12, 7 };
                 yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 20, 21, supportedIgnoreCaseIgnoreNonSpaceOptions, 11, 6 };
