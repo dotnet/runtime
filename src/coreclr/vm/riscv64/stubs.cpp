@@ -1564,7 +1564,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
 
     *(DWORD*)p = UTypeInstr(0x17, RegT0, 0);// auipc t0, 0
     p += 4;
-    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegT0, 16);// ld a1, 16(t0)
+    *(DWORD*)p = ITypeInstr(0x3, 0x3, RegA0, RegT0, 16);// ld a0, 16(t0)
     p += 4;
     *(DWORD*)p = ITypeInstr(0x3, 0x3, RegT0, RegT0, 24);// ld t0, 24(t0)
     p += 4;
