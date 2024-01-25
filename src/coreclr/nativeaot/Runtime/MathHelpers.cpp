@@ -12,10 +12,10 @@
 FORCEINLINE int64_t FastDbl2Lng(double val)
 {
 #ifdef TARGET_X86
-    return HCCALL1_V(JIT_Dbl2Lng, val);
-#else
-    return((__int64) val);
+    PORTABILITY_ASSERT("FastDbl2Lng");
+//    return HCCALL1_V(JIT_Dbl2Lng, val);
 #endif
+    return((__int64) val);
 }
 
 EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
