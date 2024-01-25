@@ -71,8 +71,8 @@ FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
 
     PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
 
-	// Set a flag against the TES to indicate this is a foreign exception raise.
-	pCurTES->SetRaisingForeignException();
+    // Set a flag against the TES to indicate this is a foreign exception raise.
+    pCurTES->SetRaisingForeignException();
 }
 FCIMPLEND
 
@@ -1490,6 +1490,22 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
 
 #include <optsmallperfcritical.h>
 
+FCIMPL2(FC_UINT8_RET,COMInterlocked::Exchange8, UINT8 *location, UINT8 value)
+{
+    FCALL_CONTRACT;
+
+    return (UINT8)InterlockedExchange8((CHAR *) location, (CHAR)value);
+}
+FCIMPLEND
+
+FCIMPL2(FC_INT16_RET,COMInterlocked::Exchange16, INT16 *location, INT16 value)
+{
+    FCALL_CONTRACT;
+
+    return InterlockedExchange16((SHORT *) location, value);
+}
+FCIMPLEND
+
 FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
@@ -1503,6 +1519,22 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
     FCALL_CONTRACT;
 
     return InterlockedExchange64((INT64 *) location, value);
+}
+FCIMPLEND
+
+FCIMPL3(FC_UINT8_RET, COMInterlocked::CompareExchange8, UINT8* location, UINT8 value, UINT8 comparand)
+{
+    FCALL_CONTRACT;
+
+    return (UINT8)InterlockedCompareExchange8((CHAR*)location, (CHAR)value, (CHAR)comparand);
+}
+FCIMPLEND
+
+FCIMPL3(FC_INT16_RET, COMInterlocked::CompareExchange16, INT16* location, INT16 value, INT16 comparand)
+{
+    FCALL_CONTRACT;
+
+    return InterlockedCompareExchange16((SHORT*)location, value, comparand);
 }
 FCIMPLEND
 
