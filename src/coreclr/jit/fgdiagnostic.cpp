@@ -3431,21 +3431,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                 assert(doesMethodHaveRecursiveTailcall());
                 assert(block->HasFlag(BBF_RECURSIVE_TAILCALL));
             }
-
-            for (CallArg& arg : call->gtArgs.Args())
-            {
-                // TODO-Cleanup: this is a patch for a violation in our GTF_ASG propagation.
-                // see https://github.com/dotnet/runtime/issues/13758
-                if (arg.GetEarlyNode() != nullptr)
-                {
-                    actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
-                }
-
-                if (arg.GetLateNode() != nullptr)
-                {
-                    actualFlags |= arg.GetLateNode()->gtFlags & GTF_ASG;
-                }
-            }
         }
         break;
 
