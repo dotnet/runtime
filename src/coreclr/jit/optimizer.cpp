@@ -1622,7 +1622,9 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
 
             // Now clone block state and statements from `from` block to `to` block.
             //
-            BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval);
+            BasicBlock::CloneBlockState(this, newBlock, block);
+
+            optReplaceScalarUsesWithConst(newBlock, lvar, lval);
 
             newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
 
@@ -1796,6 +1798,70 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
 #endif // DEBUG
 
     return true;
+}
+
+//-----------------------------------------------------------------------------
+// optReplaceScalarUsesWithConst: Replace all GT_LCL_VAR occurrences of a local
+// with a constant.
+//
+// Arguments:
+//   block   - The block to replace in
+//   lclNum  - The local to replace
+//   cnsVal  - The constant to replace with
+//
+// Remarks:
+//   This is used to replace the loop iterator with the constant value when
+//   unrolling.
+//
+void Compiler::optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum, ssize_t cnsVal)
+{
+    class ReplaceVisitor final : public GenTreeVisitor<ReplaceVisitor>
+    {
+        unsigned m_lclNum;
+        ssize_t  m_cnsVal;
+
+    public:
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        bool MadeChanges = false;
+
+        ReplaceVisitor(Compiler* comp, unsigned lclNum, ssize_t cnsVal)
+            : GenTreeVisitor(comp), m_lclNum(lclNum), m_cnsVal(cnsVal)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            if ((*use)->OperIs(GT_LCL_VAR) && ((*use)->AsLclVarCommon()->GetLclNum() == m_lclNum))
+            {
+                *use        = m_compiler->gtNewIconNode(m_cnsVal, genActualType(*use));
+                MadeChanges = true;
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    ReplaceVisitor visitor(this, lclNum, cnsVal);
+
+    for (Statement* stmt : block->Statements())
+    {
+        visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+
+        if (visitor.MadeChanges)
+        {
+            // Replacing locals with constants can change whether we consider
+            // something to have side effects. For example, `fgAddrCouldBeNull`
+            // can switch from true to false if the address changes from
+            // ADD(LCL_ADDR, LCL_VAR) -> ADD(LCL_ADDR, CNS_INT).
+            gtUpdateStmtSideEffects(stmt);
+            visitor.MadeChanges = false;
+        }
+    }
 }
 
 Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* tree)
@@ -2436,7 +2502,7 @@ PhaseStatus Compiler::optOptimizeLayout()
 {
     noway_assert(opts.OptimizationEnabled());
 
-    fgUpdateFlowGraph();
+    fgUpdateFlowGraph(/* doTailDuplication */ false);
     fgReorderBlocks(/* useProfile */ true);
     fgUpdateFlowGraph();
 
@@ -3099,29 +3165,47 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
                 header->bbNum, enterBlock->bbNum, preheader->bbNum);
 
         fgReplaceJumpTarget(enterBlock, preheader, header);
+
+        // Fix up fall through
+        if (enterBlock->KindIs(BBJ_COND) && enterBlock->NextIs(header))
+        {
+            FlowEdge*   edge      = fgRemoveRefPred(header, enterBlock);
+            BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, enterBlock, true, preheader);
+            fgAddRefPred(preheader, newAlways, edge);
+            fgAddRefPred(newAlways, enterBlock, edge);
+
+            JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " to preheader\n", newAlways->bbNum,
+                    enterBlock->bbNum);
+            enterBlock->SetFalseTarget(newAlways);
+        }
     }
 
-    // For BBJ_COND blocks preceding header, fgReplaceJumpTarget set their false targets to preheader.
-    // Direct fallthrough to preheader by inserting a jump after the block.
-    // TODO-NoFallThrough: Remove this, and just rely on fgReplaceJumpTarget to do the fixup
-    BasicBlock* fallthroughSource = header->Prev();
-    if (fallthroughSource->KindIs(BBJ_COND) && fallthroughSource->FalseTargetIs(preheader))
+    // Fix up potential fallthrough into the preheader.
+    BasicBlock* fallthroughSource = preheader->Prev();
+    if ((fallthroughSource != nullptr) && fallthroughSource->KindIs(BBJ_COND))
     {
-        FlowEdge*   edge      = fgRemoveRefPred(preheader, fallthroughSource);
-        BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, fallthroughSource, true, preheader);
-        fgAddRefPred(preheader, newAlways, edge);
-        fgAddRefPred(newAlways, fallthroughSource, edge);
+        if (!loop->ContainsBlock(fallthroughSource))
+        {
+            // Either unreachable or an enter edge. The new fallthrough into
+            // the preheader is what we want. We still need to update refs
+            // which fgReplaceJumpTarget doesn't do for fallthrough.
+            FlowEdge* old = fgRemoveRefPred(header, fallthroughSource);
+            fgAddRefPred(preheader, fallthroughSource, old);
+        }
+        else
+        {
+            // For a backedge we need to make sure we're still going to the head,
+            // and not falling into the preheader.
+            FlowEdge*   edge      = fgRemoveRefPred(header, fallthroughSource);
+            BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, fallthroughSource, true, header);
+            fgAddRefPred(header, newAlways, edge);
+            fgAddRefPred(newAlways, fallthroughSource, edge);
 
-        JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " to preheader\n", newAlways->bbNum,
-                fallthroughSource->bbNum);
-        fallthroughSource->SetFalseTarget(newAlways);
-    }
+            JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " over preheader\n", newAlways->bbNum,
+                    fallthroughSource->bbNum);
+        }
 
-    // Make sure false target is set correctly for fallthrough into preheader.
-    if (!preheader->IsFirst())
-    {
-        fallthroughSource = preheader->Prev();
-        assert(!fallthroughSource->KindIs(BBJ_COND) || fallthroughSource->FalseTargetIs(preheader));
+        fallthroughSource->SetFalseTarget(fallthroughSource->Next());
     }
 
     optSetPreheaderWeight(loop, preheader);
@@ -3692,7 +3776,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
 #endif
 
     // Create a copy of the expression and mark it for CSE's.
-    GenTree* hoistExpr = gtCloneExpr(origExpr, GTF_MAKE_CSE);
+    GenTree* hoistExpr = gtCloneExpr(origExpr);
 
     // The hoist Expr does not have to computed into a specific register,
     // so clear the RegNum if it was set in the original expression
@@ -3701,9 +3785,9 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
     // Copy any loop memory dependence.
     optCopyLoopMemoryDependence(origExpr, hoistExpr);
 
-    // At this point we should have a cloned expression, marked with the GTF_MAKE_CSE flag
+    // At this point we should have a cloned expression
+    hoistExpr->gtFlags |= GTF_MAKE_CSE;
     assert(hoistExpr != origExpr);
-    assert(hoistExpr->gtFlags & GTF_MAKE_CSE);
 
     // The value of the expression isn't used.
     GenTree* hoist = gtUnusedValNode(hoistExpr);
@@ -4014,6 +4098,39 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         hoistCtxt->m_hoistedFPExprCount  = 0;
     }
 
+#ifdef TARGET_XARCH
+    if (!VarSetOps::IsEmpty(this, lvaMaskVars))
+    {
+        VARSET_TP loopMskVars(VarSetOps::Intersection(this, loopVars, lvaMaskVars));
+        VARSET_TP inOutMskVars(VarSetOps::Intersection(this, sideEffs.VarInOut, lvaMaskVars));
+
+        hoistCtxt->m_loopVarMskCount      = VarSetOps::Count(this, loopMskVars);
+        hoistCtxt->m_loopVarInOutMskCount = VarSetOps::Count(this, inOutMskVars);
+        hoistCtxt->m_hoistedMskExprCount  = 0;
+        hoistCtxt->m_loopVarCount -= hoistCtxt->m_loopVarMskCount;
+        hoistCtxt->m_loopVarInOutCount -= hoistCtxt->m_loopVarInOutMskCount;
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("  INOUT-MSK(%d)=", hoistCtxt->m_loopVarInOutMskCount);
+            dumpConvertedVarSet(this, inOutMskVars);
+
+            printf("\n  LOOPV-MSK(%d)=", hoistCtxt->m_loopVarMskCount);
+            dumpConvertedVarSet(this, loopMskVars);
+
+            printf("\n");
+        }
+#endif
+    }
+    else // lvaMaskVars is empty
+    {
+        hoistCtxt->m_loopVarMskCount      = 0;
+        hoistCtxt->m_loopVarInOutMskCount = 0;
+        hoistCtxt->m_hoistedMskExprCount  = 0;
+    }
+#endif // TARGET_XARCH
+
     // Find the set of definitely-executed blocks.
     // Ideally, the definitely-executed blocks are the ones that post-dominate the entry block.
     // Until we have post-dominators, we'll special-case for single-exit blocks.
@@ -4133,7 +4250,10 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
 
     optHoistLoopBlocks(loop, &defExec, hoistCtxt);
 
-    const unsigned numHoisted = hoistCtxt->m_hoistedFPExprCount + hoistCtxt->m_hoistedExprCount;
+    unsigned numHoisted = hoistCtxt->m_hoistedFPExprCount + hoistCtxt->m_hoistedExprCount;
+#ifdef TARGET_XARCH
+    numHoisted += hoistCtxt->m_hoistedMskExprCount;
+#endif // TARGET_XARCH
     return numHoisted > 0;
 }
 
@@ -4165,6 +4285,20 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* l
         }
 #endif
     }
+#ifdef TARGET_XARCH
+    else if (varTypeUsesMaskReg(tree))
+    {
+        hoistedExprCount = hoistCtxt->m_hoistedMskExprCount;
+        loopVarCount     = hoistCtxt->m_loopVarMskCount;
+        varInOutCount    = hoistCtxt->m_loopVarInOutMskCount;
+
+        availRegCount = CNT_CALLEE_SAVED_MASK;
+        if (!loopContainsCall)
+        {
+            availRegCount += CNT_CALLEE_TRASH_MASK - 1;
+        }
+    }
+#endif // TARGET_XARCH
     else
     {
         assert(varTypeUsesFloatReg(tree));
@@ -5028,7 +5162,7 @@ void Compiler::optHoistCandidate(GenTree*              tree,
     optPerformHoistExpr(tree, treeBb, loop);
 
     // Increment lpHoistedExprCount or lpHoistedFPExprCount
-    if (!varTypeIsFloating(tree->TypeGet()))
+    if (varTypeUsesIntReg(tree))
     {
         hoistCtxt->m_hoistedExprCount++;
 #ifndef TARGET_64BIT
@@ -5039,8 +5173,15 @@ void Compiler::optHoistCandidate(GenTree*              tree,
         }
 #endif
     }
-    else // Floating point expr hoisted
+#ifdef TARGET_XARCH
+    else if (varTypeUsesMaskReg(tree))
     {
+        hoistCtxt->m_hoistedMskExprCount++;
+    }
+#endif // TARGET_XARCH
+    else
+    {
+        assert(varTypeUsesFloatReg(tree));
         hoistCtxt->m_hoistedFPExprCount++;
     }
 
@@ -5291,6 +5432,9 @@ void Compiler::optComputeInterestingVarSets()
 #ifndef TARGET_64BIT
     VarSetOps::AssignNoCopy(this, lvaLongVars, VarSetOps::MakeEmpty(this));
 #endif
+#ifdef TARGET_XARCH
+    VarSetOps::AssignNoCopy(this, lvaMaskVars, VarSetOps::MakeEmpty(this));
+#endif
 
     for (unsigned i = 0; i < lvaCount; i++)
     {
@@ -5307,6 +5451,12 @@ void Compiler::optComputeInterestingVarSets()
                 VarSetOps::AddElemD(this, lvaLongVars, varDsc->lvVarIndex);
             }
 #endif
+#ifdef TARGET_XARCH
+            else if (varTypeUsesMaskReg(varDsc->lvType))
+            {
+                VarSetOps::AddElemD(this, lvaMaskVars, varDsc->lvVarIndex);
+            }
+#endif // TARGET_XARCH
         }
     }
 }
