@@ -1340,7 +1340,10 @@ typedef enum {
 	PINVOKE_ARG_R8 = 3,
 	PINVOKE_ARG_R4 = 4,
 	PINVOKE_ARG_VTYPE = 5,
-	PINVOKE_ARG_SCALAR_VTYPE = 6
+	PINVOKE_ARG_SCALAR_VTYPE = 6,
+	// This isn't ifdefed so it's easier to write code that handles it without sprinkling
+	//  800 ifdefs in this file
+	PINVOKE_ARG_WASM_VALUETYPE_RESULT = 7,
 } PInvokeArgType;
 
 typedef struct {
@@ -1475,9 +1478,15 @@ retry:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
 			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+			break;
+		case MONO_TYPE_VALUETYPE:
+#ifdef HOST_WASM
+			info->ret_pinvoke_type = PINVOKE_ARG_WASM_VALUETYPE_RESULT;
+#else
+			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+#endif
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
@@ -1503,6 +1512,15 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 	margs->ilen = info->ilen;
 	margs->flen = info->flen;
 
+	size_t int_i = 0;
+	size_t int_f = 0;
+
+	if (info->ret_pinvoke_type == PINVOKE_ARG_WASM_VALUETYPE_RESULT) {
+		// Allocate an empty arg0 for the address of the return value
+		margs->ilen++;
+		int_i++;
+	}
+
 	if (margs->ilen > 0) {
 		if (margs->ilen <= 8)
 			margs->iargs = margs->iargs_buf;
@@ -1516,9 +1534,6 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 		else
 			margs->fargs = g_malloc0 (sizeof (double) * margs->flen);
 	}
-
-	size_t int_i = 0;
-	size_t int_f = 0;
 
 	for (int i = 0; i < sig->param_count; i++) {
 		guint32 offset = get_arg_offset (frame->imethod, sig, i);
@@ -1578,6 +1593,13 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 	}
 
 	switch (info->ret_pinvoke_type) {
+	case PINVOKE_ARG_WASM_VALUETYPE_RESULT:
+		// We pass the return value address in arg0 so fill it in, we already
+		//  reserved space for it earlier.
+		margs->iargs[0] = (gpointer*)frame->retval;
+		// The return type is void so retval should be NULL
+		margs->retval = NULL;
+		break;
 	case PINVOKE_ARG_INT:
 		margs->retval = (gpointer*)frame->retval;
 		margs->is_float_ret = 0;
