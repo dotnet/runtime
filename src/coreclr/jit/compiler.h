@@ -1010,14 +1010,19 @@ public:
         regMaskTP regMask = RBM_NONE;
         if (GetRegNum() != REG_STK)
         {
-            if (varTypeUsesIntReg(this))
+            if (varTypeUsesFloatReg(this))
             {
-                regMask = genRegMask(GetRegNum());
+                regMask = genRegMaskFloat(GetRegNum() ARM_ARG(TypeGet()));
             }
             else
             {
-                assert(varTypeUsesFloatReg(this));
-                regMask = genRegMaskFloat(GetRegNum() ARM_ARG(TypeGet()));
+#ifdef TARGET_XARCH
+                assert(varTypeUsesIntReg(this) || varTypeUsesMaskReg(this));
+#else
+                assert(varTypeUsesIntReg(this));
+#endif
+
+                regMask = genRegMask(GetRegNum());
             }
         }
         return regMask;
@@ -3227,11 +3232,13 @@ public:
                                        GenTree*    op4,
                                        CorInfoType simdBaseJitType,
                                        unsigned    simdSize);
-    GenTree* gtNewSimdToScalarNode(var_types   type,
-                                       GenTree*    op1,
-                                       CorInfoType simdBaseJitType,
-                                       unsigned    simdSize);
 #endif // TARGET_XARCH
+
+
+    GenTree* gtNewSimdToScalarNode(var_types   type,
+                                   GenTree*    op1,
+                                   CorInfoType simdBaseJitType,
+                                   unsigned    simdSize);
 
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
                                var_types   type,
@@ -4907,7 +4914,6 @@ private:
     bool impIsImplicitTailCallCandidate(
         OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, int prefixFlags, bool isRecursive);
 
-    bool impIsClassExact(CORINFO_CLASS_HANDLE classHnd);
     bool impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array);
 
     methodPointerInfo* impAllocateMethodPointerInfo(const CORINFO_RESOLVED_TOKEN& token, mdToken tokenConstrained);
@@ -7901,8 +7907,7 @@ public:
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
         assert(type != TYP_STRUCT);
-        assert((type < TYP_SIMD32) || (type == TYP_SIMD32) || (type == TYP_SIMD64));
-        return type >= TYP_SIMD32;
+        return (type == TYP_SIMD32) || (type == TYP_SIMD64);
     }
 #elif defined(TARGET_ARM64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
@@ -8829,10 +8834,13 @@ public:
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_XARCH)
-        // TODO-XArch: Add support for 512-bit Vector<T>
-        assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT512));
-
-        if (compExactlyDependsOn(InstructionSet_VectorT256))
+        if (compExactlyDependsOn(InstructionSet_VectorT512))
+        {
+            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT256));
+            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
+            return ZMM_REGSIZE_BYTES;
+        }
+        else if (compExactlyDependsOn(InstructionSet_VectorT256))
         {
             assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
             return YMM_REGSIZE_BYTES;
