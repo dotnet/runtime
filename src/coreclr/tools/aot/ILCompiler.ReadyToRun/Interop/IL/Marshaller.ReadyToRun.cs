@@ -120,20 +120,6 @@ namespace Internal.TypeSystem.Interop
             if (MarshalHelpers.ShouldCheckForPendingException(targetMethod.Context.Target, metadata))
                 return true;
 
-            if (targetMethod.GetPInvokeMethodCallingConventions() == UnmanagedCallingConventions.Swift)
-            {
-                // Swift calling convention has strict rules about value types that the JIT does not implement.
-                // Skip stub generation of Swift methods with value types to allow an exception at runtime.
-                foreach (var param in targetMethod.Signature)
-                {
-                    if (param is { IsValueType: true, IsEnum: false, IsPrimitive: false }
-                        && !MarshalHelpers.IsSwiftIntrinsicValueType(param))
-                    {
-                        return true;
-                    }
-                }
-            }
-
             var marshallers = GetMarshallersForMethod(targetMethod);
             for (int i = 0; i < marshallers.Length; i++)
             {
@@ -146,20 +132,6 @@ namespace Internal.TypeSystem.Interop
 
         public static bool IsMarshallingRequired(MethodSignature methodSig, ModuleDesc moduleContext, UnmanagedCallingConventions callingConvention)
         {
-            if (callingConvention == UnmanagedCallingConventions.Swift)
-            {
-                // Swift calling convention has strict rules about value types that the JIT does not implement.
-                // Skip stub generation of Swift methods with value types to allow an exception at runtime.
-                foreach (var param in methodSig)
-                {
-                    if (param is { IsValueType: true, IsEnum: false, IsPrimitive: false }
-                        && !MarshalHelpers.IsSwiftIntrinsicValueType(param))
-                    {
-                        return true;
-                    }
-                }
-            }
-
             Marshaller[] marshallers = GetMarshallersForSignature(methodSig, Array.Empty<ParameterMetadata>(), moduleContext);
             for (int i = 0; i < marshallers.Length; i++)
             {
@@ -172,20 +144,6 @@ namespace Internal.TypeSystem.Interop
 
         public static bool IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
         {
-            if (methodSig.GetStandaloneMethodSignatureCallingConventions() == UnmanagedCallingConventions.Swift)
-            {
-                // Swift calling convention has strict rules about value types that the JIT does not implement.
-                // Skip stub generation of Swift methods with value types to allow an exception at runtime.
-                foreach (var param in methodSig)
-                {
-                    if (param is { IsValueType: true, IsEnum: false, IsPrimitive: false }
-                        && !MarshalHelpers.IsSwiftIntrinsicValueType(param))
-                    {
-                        return true;
-                    }
-                }
-            }
-
             Marshaller[] marshallers = GetMarshallersForSignature(methodSig, paramMetadata, moduleContext);
             for (int i = 0; i < marshallers.Length; i++)
             {

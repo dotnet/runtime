@@ -3167,41 +3167,6 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
     return S_FALSE;
 }
 
-namespace
-{
-    bool IsSwiftIntrinsicValueType(TypeHandle hnd)
-    {
-        STANDARD_VM_CONTRACT;
-
-        _ASSERTE(hnd.IsValueType());
-        MethodTable* pMT = hnd.GetMethodTable();
-        if (!pMT->IsIntrinsicType())
-            return false;
-
-        LPCUTF8 namespaceName;
-        LPCUTF8 className = pMT->GetFullyQualifiedNameInfo(&namespaceName);
-
-        // We treat the .NET vector types as projections of the Swift SIMD intrinsic types.
-        if ((strcmp(className, "Vector512`1") == 0) || (strcmp(className, "Vector256`1") == 0) ||
-            (strcmp(className, "Vector128`1") == 0) || (strcmp(className, "Vector64`1") == 0))
-        {
-            _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
-            return true;
-        }
-
-        // The SwiftSelf type is an intrinsic type that represents the Swift self register.
-        if (strcmp(className, "SwiftSelf") == 0)
-        {
-            _ASSERTE(strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0);
-            return true;
-        }
-
-        // We don't need to treat the SwiftError type as an intrinsic here as it should always be passed
-        // as a SwiftError* parameter.
-        return false;
-    }
-}
-
 // Either MD or signature & module must be given.
 /*static*/
 BOOL NDirect::MarshalingRequired(
@@ -3375,15 +3340,6 @@ BOOL NDirect::MarshalingRequired(
                     // When the runtime runtime marshalling system is enabled, we do special handling
                     // for any types that aren't blittable or enums.
                     return TRUE;
-                }
-
-                if (callConv == CorInfoCallConvExtension::Swift && !hndArgType.IsEnum())
-                {
-                    // Swift has a very complicated struct lowering algorithm that would be prohibitively expensive to implement in RyuJIT.
-                    // Instead, we implement it in the projection layer. The runtime and JIT should only see pre-lowered, LLVM-IR-equivalent
-                    // signatures.
-                    // Require marshalling here so we can easily throw an exception during IL Stub generation.
-                    return !IsSwiftIntrinsicValueType(hndArgType);
                 }
 
                 if (i > 0)
@@ -4377,22 +4333,6 @@ static void CreateNDirectStubAccessMetadata(
         if (msig.HasThis() && !SF_IsDelegateStub(*pdwStubFlags))
         {
             COMPlusThrow(kInvalidProgramException, VLDTR_E_FMD_PINVOKENOTSTATIC);
-        }
-    }
-
-    if (unmgdCallConv == CorInfoCallConvExtension::Swift)
-    {
-        // Swift has a very complicated lowering algorithm for structs. The .NET JIT does not support it,
-        // so throw an exception here if we encounter a signature that uses any value types.
-
-        for (int i = 0; i < (*pNumArgs); i++)
-        {
-            TypeHandle hnd;
-            if (msig.NextArgNormalized(&hnd) == ELEMENT_TYPE_VALUETYPE
-                && !IsSwiftIntrinsicValueType(hnd))
-            {
-                COMPlusThrow(kNotSupportedException, IDS_EE_NDIRECT_SWIFT_VALUETYPE);
-            }
         }
     }
 }

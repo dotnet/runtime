@@ -20,7 +20,6 @@ namespace Internal.IL.Stubs
         private readonly PInvokeILEmitterConfiguration _pInvokeILEmitterConfiguration;
         private readonly PInvokeMetadata _pInvokeMetadata;
         private readonly PInvokeFlags _flags;
-        private readonly UnmanagedCallingConventions _callingConvention;
         private readonly InteropStateManager _interopStateManager;
 
         private PInvokeILEmitter(MethodDesc targetMethod, PInvokeILEmitterConfiguration pinvokeILEmitterConfiguration, InteropStateManager interopStateManager)
@@ -39,17 +38,10 @@ namespace Internal.IL.Stubs
             if (_targetMethod is DelegateMarshallingMethodThunk delegateMethod)
             {
                 _flags = ((EcmaType)delegateMethod.DelegateType.GetTypeDefinition()).GetDelegatePInvokeFlags();
-                _callingConvention = delegateMethod.DelegateType.GetDelegateCallingConventions();
-            }
-            else if (targetMethod is CalliMarshallingMethodThunk calliMethod)
-            {
-                _flags = _pInvokeMetadata.Flags;
-                _callingConvention = calliMethod.TargetSignature.GetStandaloneMethodSignatureCallingConventions();
             }
             else
             {
                 _flags = _pInvokeMetadata.Flags;
-                _callingConvention = _targetMethod.GetPInvokeMethodCallingConventions();
             }
             _marshallers = InitializeMarshallers(targetMethod, interopStateManager, _flags);
         }
@@ -387,20 +379,6 @@ namespace Internal.IL.Stubs
         {
             if (_targetMethod.HasCustomAttribute("System.Runtime.InteropServices", "LCIDConversionAttribute"))
                 throw new NotSupportedException();
-
-            if (_callingConvention == UnmanagedCallingConventions.Swift)
-            {
-                // Swift calling convention has strict rules about value types that the JIT does not implement.
-                // Throw an exception if we encounter a value type that is not a primitive (and as such needs this lowering logic applied).
-                foreach (var marshaller in _marshallers)
-                {
-                    if (marshaller.ManagedType is { IsValueType: true, IsEnum: false, IsPrimitive: false } param
-                        && !MarshalHelpers.IsSwiftIntrinsicValueType(param))
-                    {
-                        throw new NotSupportedException();
-                    }
-                }
-            }
 
             PInvokeILCodeStreams pInvokeILCodeStreams = new PInvokeILCodeStreams();
             ILEmitter emitter = pInvokeILCodeStreams.Emitter;

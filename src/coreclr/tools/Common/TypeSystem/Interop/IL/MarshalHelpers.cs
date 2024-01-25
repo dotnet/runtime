@@ -972,23 +972,5 @@ namespace Internal.TypeSystem.Interop
         {
             return module.Assembly is not EcmaAssembly assembly || !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
         }
-
-        public static bool IsSwiftIntrinsicValueType(TypeDesc type)
-        {
-            Debug.Assert(type.IsValueType && !type.IsPrimitive && !type.IsEnum);
-            if (!type.IsIntrinsic)
-                return false;
-
-            if (type is not DefType defType)
-                return false;
-
-            if (VectorFieldLayoutAlgorithm.IsVectorType(defType))
-                return true;
-
-            if (defType is { Namespace: "System.Runtime.InteropServices.Swift", Name: "SwiftSelf" })
-                return true;
-
-            return false;
-        }
     }
 }
