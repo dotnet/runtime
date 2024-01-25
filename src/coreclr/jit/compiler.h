@@ -6786,10 +6786,15 @@ public:
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
+
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     bool optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR);
     void optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicBlock* prevTestBlock, BasicBlock* target);
     void optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum, ssize_t cnsVal);
+
+    PhaseStatus optPeelLoops();
+    bool optPeelLoop(FlowGraphNaturalLoop* loop);
+
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
 
@@ -9966,6 +9971,7 @@ public:
         STRESS_MODE(DBL_ALN)                                                                    \
         STRESS_MODE(LCL_FLDS)                                                                   \
         STRESS_MODE(UNROLL_LOOPS)                                                               \
+        STRESS_MODE(PEEL_LOOPS)                                                                 \
         STRESS_MODE(MAKE_CSE)                                                                   \
         STRESS_MODE(LEGACY_INLINE)                                                              \
         STRESS_MODE(CLONE_EXPR)                                                                 \

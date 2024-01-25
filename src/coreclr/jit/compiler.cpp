@@ -4838,6 +4838,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
 
+        // Peel loops
+        //
+        DoPhase(this, PHASE_PEEL_LOOPS, &Compiler::optPeelLoops);
+
         // Compute dominators and exceptional entry blocks
         //
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);

@@ -71,6 +71,7 @@ CompPhaseNameMacro(PHASE_ZERO_INITS,                 "Redundant zero Inits",    
 CompPhaseNameMacro(PHASE_FIND_LOOPS,                 "Find loops",                     false, -1, false)
 CompPhaseNameMacro(PHASE_CLONE_LOOPS,                "Clone loops",                    false, -1, false)
 CompPhaseNameMacro(PHASE_UNROLL_LOOPS,               "Unroll loops",                   false, -1, false)
+CompPhaseNameMacro(PHASE_PEEL_LOOPS,                 "Peel loops",                     false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_MDARR,                "Morph array ops",                false, -1, false)
 CompPhaseNameMacro(PHASE_HOIST_LOOP_CODE,            "Hoist loop code",                false, -1, false)
 CompPhaseNameMacro(PHASE_MARK_LOCAL_VARS,            "Mark local vars",                false, -1, false)

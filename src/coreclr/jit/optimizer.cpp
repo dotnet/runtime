@@ -1794,6 +1794,134 @@ void Compiler::optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum,
     }
 }
 
+//-----------------------------------------------------------------------------
+// optPeelLoops: Peel loops by duplicating the loop body once.
+//
+// Returns:
+//   Suitable phase status.
+//
+PhaseStatus Compiler::optPeelLoops()
+{
+    if (m_loops->NumLoops() == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+// if ((JitConfig.JitEnableLoopPeeling() == 0) && !compStressCompile(STRESS_PEEL_LOOPS, 25))
+//{
+//    return PhaseStatus::MODIFIED_NOTHING;
+//}
+
+#ifdef DEBUG
+    static ConfigMethodRange s_range;
+    s_range.EnsureInit(JitConfig.JitEnableLoopPeelingRange());
+
+    if (!s_range.Contains(info.compMethodHash()))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
+
+    unsigned numPeeled = 0;
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+    {
+        if (loop->GetParent() != nullptr)
+        {
+            continue;
+        }
+
+        if (optPeelLoop(loop))
+        {
+            numPeeled++;
+        }
+    }
+
+    JITDUMP("Peeled %u loops\n", numPeeled);
+    if (numPeeled == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    fgInvalidateDfsTree();
+    m_dfsTree = fgComputeDfs();
+    m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+    fgRenumberBlocks();
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//-----------------------------------------------------------------------------
+// optPeelLoop: Peel the specified loop by duplicating its loop body once
+// before the loop.
+//
+// Returns:
+//   True if the loop was peeled and the flow graph was changed; otherwise false.
+//
+bool Compiler::optPeelLoop(FlowGraphNaturalLoop* loop)
+{
+    JITDUMP("Considering peeling ");
+    DBEXEC(verbose, FlowGraphNaturalLoop::Dump(loop));
+
+    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
+
+    INDEBUG(const char* reason);
+    if (!loop->CanDuplicate(INDEBUG(&reason)))
+    {
+        JITDUMP("  Cannot peel: %s\n", reason);
+        return false;
+    }
+
+    if (!BasicBlock::sameEHRegion(preheader, loop->GetHeader()))
+    {
+        JITDUMP("  Cannot peel: preheader and header are in different EH regions\n");
+        return false;
+    }
+
+    // Make a new pre-header block for the fast loop.
+    JITDUMP("Create new preheader block for fast loop\n");
+
+    BasicBlock* newPreheader =
+        fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true, /*jumpDest*/ loop->GetHeader());
+    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", newPreheader->bbNum, preheader->bbNum);
+    newPreheader->inheritWeight(preheader);
+    newPreheader->SetFlags(BBF_LOOP_PREHEADER);
+
+    if (newPreheader->JumpsToNext())
+    {
+        newPreheader->SetFlags(BBF_NONE_QUIRK);
+    }
+
+    fgAddRefPred(loop->GetHeader(), newPreheader);
+
+    assert(preheader->KindIs(BBJ_ALWAYS));
+    assert(preheader->TargetIs(loop->GetHeader()));
+
+    preheader->RemoveFlags(BBF_LOOP_PREHEADER);
+
+    // Now duplicate the loop blocks after the old preeheader but before the
+    // new preheader. This will be the singly peeled iteration.
+    BasicBlock*     insertAfter = preheader;
+    BlockToBlockMap blockMap(getAllocator(CMK_LoopPeel));
+    weight_t        scale = 1;
+    if (!loop->GetHeader()->isRunRarely() && !fgProfileWeightsEqual(loop->GetHeader()->getBBWeight(this), 0))
+    {
+        scale = preheader->getBBWeight(this) / loop->GetHeader()->getBBWeight(this);
+    }
+
+    loop->Duplicate(&insertAfter, &blockMap, scale, /* bottomNeedsRedirection */ true);
+
+    // Redirect all backedges to the new preheader we created. This removes the
+    // loop structure of the duplicate.
+    for (FlowEdge* backedge : loop->BackEdges())
+    {
+        fgReplaceJumpTarget(blockMap[backedge->getSourceBlock()], newPreheader, blockMap[loop->GetHeader()]);
+    }
+
+    // Finally, the old preheader now jumps to the first peeled iteration.
+    fgReplaceJumpTarget(preheader, blockMap[loop->GetHeader()], loop->GetHeader());
+    return true;
+}
+
 Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* tree)
 {
     class CountTreeInfoVisitor : public GenTreeVisitor<CountTreeInfoVisitor>
