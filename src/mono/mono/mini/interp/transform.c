@@ -743,10 +743,45 @@ interp_add_conv (TransformData *td, StackInfo *sp, InterpInst *prev_ins, int typ
 	interp_ins_set_dreg (new_inst, sp->var);
 }
 
-static void
+static int
+try_fold_two_arg_branch (TransformData *td, int mint_op)
+{
+	InterpInst *src2 = td->last_ins;
+	if (!src2 || !MINT_IS_LDC_I4 (src2->opcode) || src2->dreg != td->sp [1].var)
+		return -1;
+	InterpInst *src1 = interp_prev_ins (src2);
+	if (!src1 || !MINT_IS_LDC_I4 (src1->opcode) || src1->dreg != td->sp [0].var)
+		return -1;
+
+	gint32 val1 = interp_get_const_from_ldc_i4 (src1);
+	gint32 val2 = interp_get_const_from_ldc_i4 (src2);
+
+	int result = -1;
+	switch (mint_op) {
+		case MINT_BEQ_I4: result = val1 == val2; break;
+		case MINT_BGE_I4: result = val1 >= val2; break;
+		case MINT_BGT_I4: result = val1 > val2; break;
+		case MINT_BLT_I4: result = val1 < val2; break;
+		case MINT_BLE_I4: result = val1 <= val2; break;
+
+		case MINT_BNE_UN_I4: result = val1 != val2; break;
+		case MINT_BGE_UN_I4: result = (guint32)val1 >= (guint32)val2; break;
+		case MINT_BGT_UN_I4: result = (guint32)val1 > (guint32)val2; break;
+		case MINT_BLE_UN_I4: result = (guint32)val1 <= (guint32)val2; break;
+		case MINT_BLT_UN_I4: result = (guint32)val1 < (guint32)val2; break;
+		default:
+			return -1;
+	}
+	interp_clear_ins (src1);
+	interp_clear_ins (src2);
+
+	return result;
+}
+
+static gboolean
 two_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 {
-	CHECK_STACK_RET_VOID(td, 2);
+	CHECK_STACK_RET (td, 2, TRUE);
 	int type1 = td->sp [-1].type == STACK_TYPE_O || td->sp [-1].type == STACK_TYPE_MP ? STACK_TYPE_I : td->sp [-1].type;
 	int type2 = td->sp [-2].type == STACK_TYPE_O || td->sp [-2].type == STACK_TYPE_MP ? STACK_TYPE_I : td->sp [-2].type;
 
@@ -770,10 +805,25 @@ two_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 	int long_op = mint_op + type1 - STACK_TYPE_I4;
 	td->sp -= 2;
 	if (offset) {
-		handle_branch (td, long_op, offset + inst_size);
-		interp_ins_set_sregs2 (td->last_ins, td->sp [0].var, td->sp [1].var);
+		int cond_result = try_fold_two_arg_branch (td, mint_op);
+		if (cond_result != -1) {
+			if (cond_result) {
+				handle_branch (td, MINT_BR, offset + inst_size);
+				return FALSE;
+			} else {
+				// branch condition always false, it is a NOP
+				int target = GPTRDIFF_TO_INT (td->ip + offset + inst_size - td->il_code);
+				td->offset_to_bb [target]->jump_targets--;
+				return TRUE;
+			}
+		} else {
+			handle_branch (td, long_op, offset + inst_size);
+			interp_ins_set_sregs2 (td->last_ins, td->sp [0].var, td->sp [1].var);
+			return TRUE;
+		}
 	} else {
 		interp_add_ins (td, MINT_NOP);
+		return TRUE;
 	}
 }
 
@@ -5356,102 +5406,102 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BEQ:
-			two_arg_branch (td, MINT_BEQ_I4, read32 (td->ip + 1), 5);
+			link_bblocks = two_arg_branch (td, MINT_BEQ_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BEQ_S:
-			two_arg_branch (td, MINT_BEQ_I4, (gint8) td->ip [1], 2);
+			link_bblocks = two_arg_branch (td, MINT_BEQ_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGE:
-			two_arg_branch (td, MINT_BGE_I4, read32 (td->ip + 1), 5);
+			link_bblocks = two_arg_branch (td, MINT_BGE_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGE_S:
-			two_arg_branch (td, MINT_BGE_I4, (gint8) td->ip [1], 2);
+			link_bblocks = two_arg_branch (td, MINT_BGE_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGT:
-			two_arg_branch (td, MINT_BGT_I4, read32 (td->ip + 1), 5);
+			link_bblocks = two_arg_branch (td, MINT_BGT_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGT_S:
-			two_arg_branch (td, MINT_BGT_I4, (gint8) td->ip [1], 2);
+			link_bblocks = two_arg_branch (td, MINT_BGT_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLT:
-			two_arg_branch (td, MINT_BLT_I4, read32 (td->ip + 1), 5);
+			link_bblocks = two_arg_branch (td, MINT_BLT_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLT_S:
-			two_arg_branch (td, MINT_BLT_I4, (gint8) td->ip [1], 2);
+			link_bblocks = two_arg_branch (td, MINT_BLT_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLE:
-			two_arg_branch (td, MINT_BLE_I4, read32 (td->ip + 1), 5);
+			link_bblocks = two_arg_branch (td, MINT_BLE_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLE_S:
-			two_arg_branch (td, MINT_BLE_I4, (gint8) td->ip [1], 2);
+			link_bblocks = two_arg_branch (td, MINT_BLE_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BNE_UN:
-			two_arg_branch (td, MINT_BNE_UN_I4, read32 (td->ip + 1), 5);
+			link_bblocks = two_arg_branch (td, MINT_BNE_UN_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BNE_UN_S:
-			two_arg_branch (td, MINT_BNE_UN_I4, (gint8) td->ip [1], 2);
+			link_bblocks = two_arg_branch (td, MINT_BNE_UN_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGE_UN:
-			two_arg_branch (td, MINT_BGE_UN_I4, read32 (td->ip + 1), 5);
+			link_bblocks = two_arg_branch (td, MINT_BGE_UN_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGE_UN_S:
-			two_arg_branch (td, MINT_BGE_UN_I4, (gint8) td->ip [1], 2);
+			link_bblocks = two_arg_branch (td, MINT_BGE_UN_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGT_UN:
-			two_arg_branch (td, MINT_BGT_UN_I4, read32 (td->ip + 1), 5);
+			link_bblocks = two_arg_branch (td, MINT_BGT_UN_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGT_UN_S:
-			two_arg_branch (td, MINT_BGT_UN_I4, (gint8) td->ip [1], 2);
+			link_bblocks = two_arg_branch (td, MINT_BGT_UN_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLE_UN:
-			two_arg_branch (td, MINT_BLE_UN_I4, read32 (td->ip + 1), 5);
+			link_bblocks = two_arg_branch (td, MINT_BLE_UN_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLE_UN_S:
-			two_arg_branch (td, MINT_BLE_UN_I4, (gint8) td->ip [1], 2);
+			link_bblocks = two_arg_branch (td, MINT_BLE_UN_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLT_UN:
-			two_arg_branch (td, MINT_BLT_UN_I4, read32 (td->ip + 1), 5);
+			link_bblocks = two_arg_branch (td, MINT_BLT_UN_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
 			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLT_UN_S:
-			two_arg_branch (td, MINT_BLT_UN_I4, (gint8) td->ip [1], 2);
+			link_bblocks = two_arg_branch (td, MINT_BLT_UN_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
 			CHECK_FALLTHRU ();
 			break;
