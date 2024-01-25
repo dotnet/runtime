@@ -91,6 +91,7 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number, thread
     if (!MonoWasmThreads) return;
     mono_assert(pthread_self !== null && pthread_self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
     const name = utf8ToString(thread_name);
+    // FIXME: this is a hack to get constant length thread names
     const threadType = (name == ".NET Timer") ? "timr"
         : (name == ".NET Long Running Task") ? "long"
             : (name == ".NET TP Gate") ? "gate"

@@ -44,7 +44,7 @@ export function mono_log_error(msg: string, ...data: any) {
     console.error(prefix + msg, ...data);
 }
 let tick = "";
-const last = new Date().valueOf();
+let last = new Date().valueOf();
 function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
     return function (...args: any[]) {
         try {
@@ -70,6 +70,7 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
                         const now = new Date();
                         if (last !== now.valueOf()) {
                             tick = now.toISOString().substring(11, 23);
+                            last = now.valueOf();
                         }
                         payload = `[${threadNamePrefix} ${tick}] ${payload}`;
                     }
