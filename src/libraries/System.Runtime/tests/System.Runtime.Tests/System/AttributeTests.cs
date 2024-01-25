@@ -176,7 +176,6 @@ namespace System.Tests
             {
                 Assert.Equal('\uFFFD', c);
             }
-
         }
 
         public static IEnumerable<object[]> Equals_TestData()
