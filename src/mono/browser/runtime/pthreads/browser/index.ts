@@ -114,7 +114,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
         const worker = Internals.getWorker(pthreadId) as PThreadWorker;
         worker.managedThreadPool = monoData.isThreadPoolThread;
         worker.browserEventLoop = monoData.isExternalEventLoop;
-        worker.threadName = data[monoData.threadName;
+        worker.threadName = monoData.threadName;
     }
     else if (isMonoWorkerMessageEnabledInterop(data)) {
         const pthreadId = data[monoSymbol].threadId;
