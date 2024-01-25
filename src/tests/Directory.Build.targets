@@ -555,6 +555,8 @@
          so the default for the test tree is partial. -->
     <TrimMode Condition="'$(EnableAggressiveTrimming)' != 'true'">partial</TrimMode>
 
+    <IlcTreatWarningsAsErrors>false</IlcTreatWarningsAsErrors>
+
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(TargetOS)' != '$(HostOS)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>

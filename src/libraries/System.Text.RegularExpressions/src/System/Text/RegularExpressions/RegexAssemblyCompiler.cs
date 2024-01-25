@@ -27,7 +27,6 @@ namespace System.Text.RegularExpressions
 
         private readonly AssemblyBuilder _assembly;
         private readonly ModuleBuilder _module;
-        private readonly MethodInfo _save;
 
         internal RegexAssemblyCompiler(AssemblyName an, CustomAttributeBuilder[]? attribs, string? resourceFile)
         {
@@ -37,16 +36,8 @@ namespace System.Text.RegularExpressions
                 throw new PlatformNotSupportedException();
             }
 
-            // TODO: Use public API when it's available: https://github.com/dotnet/runtime/issues/15704
-            Type abType = Type.GetType("System.Reflection.Emit.AssemblyBuilderImpl, System.Reflection.Emit", throwOnError: true)!;
-            MethodInfo defineDynamicAssembly = abType.GetMethod("DefinePersistedAssembly",
-                BindingFlags.NonPublic | BindingFlags.Static,
-                [typeof(AssemblyName), typeof(Assembly), typeof(List<CustomAttributeBuilder>)]) ??
-                throw new InvalidOperationException("Could not find method AssemblyBuilderImpl.DefinePersistedAssembly");
-            _assembly = (AssemblyBuilder?)defineDynamicAssembly.Invoke(null, [an, typeof(object).Assembly, attribs is not null ? new List<CustomAttributeBuilder>(attribs) : null]) ??
+            _assembly = AssemblyBuilder.DefinePersistedAssembly(an, typeof(object).Assembly, attribs is not null ? new List<CustomAttributeBuilder>(attribs) : null) ??
                 throw new InvalidOperationException("DefinePersistedAssembly returned null");
-            _save = abType.GetMethod("Save", BindingFlags.NonPublic | BindingFlags.Instance, [typeof(string)]) ??
-                throw new InvalidOperationException("Could not find method AssemblyBuilderImpl.Save");
 
             _module = _assembly.DefineDynamicModule(an.Name + ".dll");
         }
@@ -242,7 +233,7 @@ namespace System.Text.RegularExpressions
                 fileName += ".dll";
             }
 
-            _save.Invoke(_assembly, [fileName]); // TODO: Use public API when it's available: https://github.com/dotnet/runtime/issues/15704
+            _assembly.Save(fileName);
         }
 
         /// <summary>Begins the definition of a new type with a specified base class</summary>
