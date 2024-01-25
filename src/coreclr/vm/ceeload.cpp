@@ -4735,15 +4735,16 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
 
                 for (UINT j = 0; j < leftTypeContext.m_classInst.GetNumArgs(); j++)
                 {
-                    if (leftTypeContext.m_classInst[j] != typeContext->m_classInst[j])
-                    {
-                        instMatch = false;
-                        break;
-                    }
-                    else if (leftTypeContext.m_classInst[j].GetAssembly()->IsCollectible()
+                    if (leftTypeContext.m_classInst[j].GetAssembly()->IsCollectible()
                         && leftTypeContext.m_classInst[j].GetLoaderAllocator()->IsUnloaded())
                     {
                         pBlock->m_cookies[i].SetUnloaded();
+                        instMatch = false;
+                        break;
+                    }
+
+                    if (leftTypeContext.m_classInst[j] != typeContext->m_classInst[j])
+                    {
                         instMatch = false;
                         break;
                     }
@@ -4753,15 +4754,16 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
                 {
                     for (UINT j = 0; j < leftTypeContext.m_methodInst.GetNumArgs(); j++)
                     {
-                        if (leftTypeContext.m_methodInst[j] != typeContext->m_methodInst[j])
-                        {
-                            instMatch = false;
-                            break;
-                        }
-                        else if (leftTypeContext.m_methodInst[j].GetAssembly()->IsCollectible()
+                        if (leftTypeContext.m_methodInst[j].GetAssembly()->IsCollectible()
                             && leftTypeContext.m_methodInst[j].GetLoaderAllocator()->IsUnloaded())
                         {
                             pBlock->m_cookies[i].SetUnloaded();
+                            instMatch = false;
+                            break;
+                        }
+
+                        if (leftTypeContext.m_methodInst[j] != typeContext->m_methodInst[j])
+                        {
                             instMatch = false;
                             break;
                         }
