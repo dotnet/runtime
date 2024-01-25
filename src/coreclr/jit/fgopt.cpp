@@ -4951,8 +4951,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                 {
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
-                    change = true;
-                    modified = true;
+                    change     = true;
+                    modified   = true;
                     bFalseDest = nullptr;
                 }
             }

@@ -694,14 +694,15 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
 
         case BBJ_COND:
         {
-            FlowEdge* oldEdge = fgGetPredForBlock(oldTarget, block);
+            FlowEdge* oldEdge = fgRemoveRefPred(oldTarget, block);
             assert(oldEdge != nullptr);
 
             if (block->TrueTargetIs(oldTarget))
             {
                 if (block->FalseTargetIs(oldTarget))
                 {
-                    assert(oldEdge->getDupCount() == 2);
+                    // Above call to fgRemoveRefPred decremented count from 2
+                    assert(oldEdge->getDupCount() == 1);
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
                     block->SetTarget(newTarget);
@@ -710,15 +711,20 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
                 {
                     block->SetTrueTarget(newTarget);
                 }
+
+                // TODO-NoFallThrough: Proliferate weight from oldEdge
+                // (we avoid doing so when updating the true target to reduce diffs for now, as a quirk)
+                fgAddRefPred(newTarget, block);
             }
             else
             {
                 assert(block->FalseTargetIs(oldTarget));
                 block->SetFalseTarget(newTarget);
+                fgAddRefPred(newTarget, block, oldEdge);
             }
 
-            assert(oldEdge->getDupCount() == 1);
-            fgAddRefPred(newTarget, block, fgRemoveRefPred(oldTarget, block));
+            // block should not have any edges to oldTarget by now
+            assert(oldEdge->getDupCount() == 0);
             break;
         }
 

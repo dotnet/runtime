@@ -4375,8 +4375,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
             BasicBlock* predBlock = predEdge->getSourceBlock();
             if (dfsTree->Contains(predBlock) && !dfsTree->IsAncestor(header, predBlock))
             {
-                JITDUMP(FMT_BB " -> " FMT_BB " is an entry edge\n", predBlock->bbNum,
-                        loop->m_header->bbNum);
+                JITDUMP(FMT_BB " -> " FMT_BB " is an entry edge\n", predBlock->bbNum, loop->m_header->bbNum);
                 loop->m_entryEdges.push_back(predEdge);
             }
         }
