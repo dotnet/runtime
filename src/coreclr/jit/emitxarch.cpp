@@ -4487,9 +4487,9 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
 }
 
 /*****************************************************************************
-     *
-     *  Add a NOP instruction of the given size.
-     */
+*
+*  Add a data16 instruction of the 1 byte.
+*/
 
 void emitter::emitIns_Data16()
 {
