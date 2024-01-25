@@ -5575,10 +5575,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
     {
         bSrc->SetFlags(BBF_NONE_QUIRK);
     }
-    else if (bSrc->KindIs(BBJ_COND) && bSrc->NextIs(bDst))
-    {
-        bSrc->SetFalseTarget(bDst);
-    }
 
     return jmpBlk;
 }
