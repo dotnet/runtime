@@ -39,7 +39,7 @@ PendingTypeLoadTable::Entry::Entry(const TypeKey& typeKey)
 #endif // PENDING_TYPE_LOAD_TABLE_STATS
 }
 
-void PendingTypeLoadTable::Entry::SetTypeKey(const TypeKey& typeKey)
+void PendingTypeLoadTable::Entry::SetTypeKey(TypeKey typeKey)
 {
     m_typeKey = typeKey;
 }
@@ -250,7 +250,7 @@ HRESULT PendingTypeLoadTable::Entry::DelayForProgress(TypeHandle* typeHndWithPro
         }
     }
 
-    return m_hrResult;
+    return hr;
 }
 
 void PendingTypeLoadTable::Shard::Init()

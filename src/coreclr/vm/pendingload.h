@@ -36,7 +36,7 @@ public:
 
     protected:
 
-        void SetTypeKey(const TypeKey& typeKey);
+        void SetTypeKey(TypeKey typeKey);
         void InitCrst();
         void Init(Entry *pNext, DWORD hash, TypeHandle typeHnd);
         void Reset();
