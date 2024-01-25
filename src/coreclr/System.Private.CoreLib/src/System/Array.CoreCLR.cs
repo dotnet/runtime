@@ -157,7 +157,7 @@ namespace System
 
             MethodTable* pDestMT = destTH.AsMethodTable();
             nuint destSize = pDestArrayMT->ComponentSize;
-            ref object? srcData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<object?[]>(sourceArray)), sourceIndex);
+            ref object? srcData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray)), sourceIndex);
             ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destSize);
 
             for (int i = 0; i < length; i++)
@@ -211,7 +211,7 @@ namespace System
 
             nuint srcSize = pSrcArrayMT->ComponentSize;
             ref byte data = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcSize);
-            ref object? destData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<object?[]>(destinationArray)), destinationIndex);
+            ref object? destData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray)), destinationIndex);
 
             for (int i = 0; i < length; i++)
             {
@@ -225,8 +225,8 @@ namespace System
         {
             void* destTH = RuntimeHelpers.GetMethodTable(destinationArray)->ElementType;
 
-            ref object? srcData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<object?[]>(sourceArray)), sourceIndex);
-            ref object? destData = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<object?[]>(destinationArray)), destinationIndex);
+            ref object? srcData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray)), sourceIndex);
+            ref object? destData = ref Unsafe.Add(ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray)), destinationIndex);
 
             for (int i = 0; i < length; i++)
             {
