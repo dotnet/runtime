@@ -675,12 +675,7 @@ public:
     BasicBlock* GetFalseTarget() const
     {
         assert(KindIs(BBJ_COND));
-
-        // So long as bbFalseTarget tracks bbNext in SetNext(), it is possible for bbFalseTarget to be null
-        // if this block is unlinked from the block list.
-        // So check bbNext before triggering the assert if bbFalseTarget is null.
-        // TODO-NoFallThrough: Remove IsLast() check once bbFalseTarget isn't hard-coded to bbNext
-        assert((bbFalseTarget != nullptr) || IsLast());
+        assert(bbFalseTarget != nullptr);
         return bbFalseTarget;
     }
 
