@@ -214,8 +214,6 @@ extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSi
 
 extern "C" int QCALLTYPE GCInterface_EndNoGCRegion();
 
-extern "C" int QCALLTYPE GCInterface_GetGenerationWR(LPVOID handle);
-
 extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
 
 extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);

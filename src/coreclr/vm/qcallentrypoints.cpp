@@ -243,7 +243,6 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_WaitForFullGCComplete)
     DllImportEntry(GCInterface_StartNoGCRegion)
     DllImportEntry(GCInterface_EndNoGCRegion)
-    DllImportEntry(GCInterface_GetGenerationWR)
     DllImportEntry(GCInterface_GetTotalMemory)
     DllImportEntry(GCInterface_Collect)
     DllImportEntry(GCInterface_WaitForPendingFinalizers)

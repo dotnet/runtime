@@ -287,13 +287,17 @@ namespace System
         //
         public static int GetGeneration(WeakReference wo)
         {
-            int result = GetGenerationWR(wo.WeakHandle);
+            // Note - This throws an NRE if given a null weak reference.
+            object? obj = GCHandle.InternalGet(wo.WeakHandle);
             KeepAlive(wo);
-            return result;
-        }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetGenerationWR")]
-        private static partial int GetGenerationWR(IntPtr handle);
+            if (obj is null)
+            {
+                throw new ArgumentNullException(nameof(wo));
+            }
+
+            return GetGeneration(obj);
+        }
 
         // Returns the maximum GC generation.  Currently assumes only 1 heap.
         //
