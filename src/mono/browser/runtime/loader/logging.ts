@@ -66,7 +66,7 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
                         // muting emscripten noise
                         return;
                     }
-                    if (payload.indexOf("MONO_WASM: ") === 0) {
+                    if (payload.indexOf("MONO_WASM: ") === 0 || payload.indexOf("[MONO]") === 0) {
                         const now = new Date();
                         if (last !== now.valueOf()) {
                             tick = now.toISOString().substring(11, 23);

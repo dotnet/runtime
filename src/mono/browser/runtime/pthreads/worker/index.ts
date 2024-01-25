@@ -99,12 +99,12 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number, thread
                         : external_eventloop ? "jsww"
                             : background_thread ? "back"
                                 : "norm";
-    threadName = `0x${pthread_id.toString(16).padStart(8, "0")}-${threadType}${name}`;
+    threadName = `0x${pthread_id.toString(16).padStart(8, "0")}-${threadType}`;
     loaderHelpers.mono_set_thread_name(threadName);
     preRunWorker();
     set_thread_info(pthread_id, true, false, false);
     jiterpreter_allocate_tables();
-    self.postMessage(makeMonoAttachedMessage(pthread_id, threadName, external_eventloop !== 0, threadpool_thread !== 0));
+    self.postMessage(makeMonoAttachedMessage(pthread_id, name, external_eventloop !== 0, threadpool_thread !== 0));
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, pthread_self));
 }
 
