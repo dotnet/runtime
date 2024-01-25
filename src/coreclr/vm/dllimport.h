@@ -58,11 +58,11 @@ public:
 #endif // _DEBUG
     
 #ifndef DACCESS_COMPILE
-    void InitTypeContext(TypeHandle* classInst, DWORD classInstCount, TypeHandle* methInst, DWORD methInstCount)
+    void InitTypeContext(const SigTypeContext typeContext)
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_typeContext = SigTypeContext(Instantiation(classInst, classInstCount), Instantiation(methInst, methInstCount));
+        m_typeContext = typeContext;
     }
 #endif
 };

@@ -6066,7 +6066,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     }
 
     StubSigDesc sigDesc(pMD, signature, pVASigCookie->pModule);
-    sigDesc.InitTypeContext(pVASigCookie->classInst, pVASigCookie->classInstCount, pVASigCookie->methInst, pVASigCookie->methInstCount);
+    sigDesc.InitTypeContext(pVASigCookie->typeContext);
 
     MethodDesc* pStubMD = NDirect::CreateCLRToNativeILStub(&sigDesc,
                                     nlType,
