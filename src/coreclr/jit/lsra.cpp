@@ -3260,13 +3260,18 @@ bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, R
     return canSpill;
 }
 
-// Grab a register to use to copy and then immediately use.
+// ----------------------------------------------------------
+// assignCopyRegMinimal: Grab a register to use to copy and then immediately use.
 // This is called only for localVar intervals that already have a register
 // assignment that is not compatible with the current RefPosition.
 // This is not like regular assignment, because we don't want to change
 // any preferences or existing register assignments.
-// Prefer a free register that's got the earliest next use.
-// Otherwise, spill something with the farthest next use
+//
+// Arguments:
+//   refPosition     - Refposition within the interval for which register needs to be selected.
+//
+//  Return Values:
+//      Register bit selected (a single register) and REG_NA if no register was selected.
 //
 regNumber LinearScan::assignCopyRegMinimal(RefPosition* refPosition)
 {
@@ -5004,103 +5009,7 @@ void LinearScan::allocateRegistersMinimal()
                 delayRegsToFree = RBM_NONE;
 
 #ifdef DEBUG
-                // Validate the current state just after we've freed the registers. This ensures that any pending
-                // freed registers will have had their state updated to reflect the intervals they were holding.
-                for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-                {
-                    regMaskTP regMask = genRegMask(reg);
-                    // If this isn't available or if it's still waiting to be freed (i.e. it was in
-                    // delayRegsToFree and so now it's in regsToFree), then skip it.
-                    if ((regMask & allAvailableRegs & ~regsToFree) == RBM_NONE)
-                    {
-                        continue;
-                    }
-                    RegRecord* physRegRecord    = getRegisterRecord(reg);
-                    Interval*  assignedInterval = physRegRecord->assignedInterval;
-                    if (assignedInterval != nullptr)
-                    {
-                        bool         isAssignedReg     = (assignedInterval->physReg == reg);
-                        RefPosition* recentRefPosition = assignedInterval->recentRefPosition;
-                        // If we have a copyReg or a moveReg, we might have assigned this register to an Interval,
-                        // but that isn't considered its assignedReg.
-                        if (recentRefPosition != nullptr)
-                        {
-                            // For copyReg or moveReg, we don't have anything further to assert.
-                            if (recentRefPosition->copyReg || recentRefPosition->moveReg)
-                            {
-                                continue;
-                            }
-                            assert(assignedInterval->isConstant == isRegConstant(reg, assignedInterval->registerType));
-                            if (assignedInterval->isActive)
-                            {
-                                // If this is not the register most recently allocated, it must be from a copyReg,
-                                // it was placed there by the inVarToRegMap or it might be one of the upper vector
-                                // save/restore refPosition.
-                                // In either case it must be a lclVar.
-
-                                if (!isAssignedToInterval(assignedInterval, physRegRecord))
-                                {
-                                    // We'd like to assert that this was either set by the inVarToRegMap, or by
-                                    // a copyReg, but we can't traverse backward to check for a copyReg, because
-                                    // we only have recentRefPosition, and there may be a previous RefPosition
-                                    // at the same Location with a copyReg.
-
-                                    bool sanityCheck = assignedInterval->isLocalVar;
-                                    // For upper vector interval, make sure it was one of the save/restore only.
-                                    if (assignedInterval->IsUpperVector())
-                                    {
-                                        sanityCheck |= (recentRefPosition->refType == RefTypeUpperVectorSave) ||
-                                                       (recentRefPosition->refType == RefTypeUpperVectorRestore);
-                                    }
-
-                                    assert(sanityCheck);
-                                }
-                                if (isAssignedReg)
-                                {
-                                    assert(nextIntervalRef[reg] == assignedInterval->getNextRefLocation());
-                                    assert(!isRegAvailable(reg, assignedInterval->registerType));
-                                    assert((recentRefPosition == nullptr) ||
-                                           (spillCost[reg] == getSpillWeight(physRegRecord)));
-                                }
-                                else
-                                {
-                                    assert((nextIntervalRef[reg] == MaxLocation) ||
-                                           isRegBusy(reg, assignedInterval->registerType));
-                                }
-                            }
-                            else
-                            {
-                                if ((assignedInterval->physReg == reg) && !assignedInterval->isConstant)
-                                {
-                                    assert(nextIntervalRef[reg] == assignedInterval->getNextRefLocation());
-                                }
-                                else
-                                {
-                                    assert(nextIntervalRef[reg] == MaxLocation);
-                                    assert(isRegAvailable(reg, assignedInterval->registerType));
-                                    assert(spillCost[reg] == 0);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Available registers should not hold constants
-                        assert(isRegAvailable(reg, physRegRecord->registerType));
-                        assert(!isRegConstant(reg, physRegRecord->registerType) || spillAlways());
-                        assert(nextIntervalRef[reg] == MaxLocation);
-                        assert(spillCost[reg] == 0);
-                    }
-                    LsraLocation thisNextFixedRef = physRegRecord->getNextRefLocation();
-                    assert(nextFixedRef[reg] == thisNextFixedRef);
-#ifdef TARGET_ARM
-                    // If this is occupied by a double interval, skip the corresponding float reg.
-                    if ((assignedInterval != nullptr) && (assignedInterval->registerType == TYP_DOUBLE))
-                    {
-                        reg = REG_NEXT(reg);
-                    }
-#endif
-                }
+                verifyFreeRegisters(regsToFree);
 #endif // DEBUG
             }
         }
@@ -5783,112 +5692,9 @@ void LinearScan::allocateRegisters()
                 }
                 regsToFree      = delayRegsToFree;
                 delayRegsToFree = RBM_NONE;
-
 #ifdef DEBUG
-                // Validate the current state just after we've freed the registers. This ensures that any pending
-                // freed registers will have had their state updated to reflect the intervals they were holding.
-                for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-                {
-                    regMaskTP regMask = genRegMask(reg);
-                    // If this isn't available or if it's still waiting to be freed (i.e. it was in
-                    // delayRegsToFree and so now it's in regsToFree), then skip it.
-                    if ((regMask & allAvailableRegs & ~regsToFree) == RBM_NONE)
-                    {
-                        continue;
-                    }
-                    RegRecord* physRegRecord    = getRegisterRecord(reg);
-                    Interval*  assignedInterval = physRegRecord->assignedInterval;
-                    if (assignedInterval != nullptr)
-                    {
-                        bool         isAssignedReg     = (assignedInterval->physReg == reg);
-                        RefPosition* recentRefPosition = assignedInterval->recentRefPosition;
-                        // If we have a copyReg or a moveReg, we might have assigned this register to an Interval,
-                        // but that isn't considered its assignedReg.
-                        if (recentRefPosition != nullptr)
-                        {
-                            if (recentRefPosition->refType == RefTypeExpUse)
-                            {
-                                // We don't update anything on these, as they're just placeholders to extend the
-                                // lifetime.
-                                continue;
-                            }
-                            // For copyReg or moveReg, we don't have anything further to assert.
-                            if (recentRefPosition->copyReg || recentRefPosition->moveReg)
-                            {
-                                continue;
-                            }
-                            assert(assignedInterval->isConstant == isRegConstant(reg, assignedInterval->registerType));
-                            if (assignedInterval->isActive)
-                            {
-                                // If this is not the register most recently allocated, it must be from a copyReg,
-                                // it was placed there by the inVarToRegMap or it might be one of the upper vector
-                                // save/restore refPosition.
-                                // In either case it must be a lclVar.
-
-                                if (!isAssignedToInterval(assignedInterval, physRegRecord))
-                                {
-                                    // We'd like to assert that this was either set by the inVarToRegMap, or by
-                                    // a copyReg, but we can't traverse backward to check for a copyReg, because
-                                    // we only have recentRefPosition, and there may be a previous RefPosition
-                                    // at the same Location with a copyReg.
-
-                                    bool sanityCheck = assignedInterval->isLocalVar;
-                                    // For upper vector interval, make sure it was one of the save/restore only.
-                                    if (assignedInterval->IsUpperVector())
-                                    {
-                                        sanityCheck |= (recentRefPosition->refType == RefTypeUpperVectorSave) ||
-                                                       (recentRefPosition->refType == RefTypeUpperVectorRestore);
-                                    }
-
-                                    assert(sanityCheck);
-                                }
-                                if (isAssignedReg)
-                                {
-                                    assert(nextIntervalRef[reg] == assignedInterval->getNextRefLocation());
-                                    assert(!isRegAvailable(reg, assignedInterval->registerType));
-                                    assert((recentRefPosition == nullptr) ||
-                                           (spillCost[reg] == getSpillWeight(physRegRecord)));
-                                }
-                                else
-                                {
-                                    assert((nextIntervalRef[reg] == MaxLocation) ||
-                                           isRegBusy(reg, assignedInterval->registerType));
-                                }
-                            }
-                            else
-                            {
-                                if ((assignedInterval->physReg == reg) && !assignedInterval->isConstant)
-                                {
-                                    assert(nextIntervalRef[reg] == assignedInterval->getNextRefLocation());
-                                }
-                                else
-                                {
-                                    assert(nextIntervalRef[reg] == MaxLocation);
-                                    assert(isRegAvailable(reg, assignedInterval->registerType));
-                                    assert(spillCost[reg] == 0);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Available registers should not hold constants
-                        assert(isRegAvailable(reg, physRegRecord->registerType));
-                        assert(!isRegConstant(reg, physRegRecord->registerType) || spillAlways());
-                        assert(nextIntervalRef[reg] == MaxLocation);
-                        assert(spillCost[reg] == 0);
-                    }
-                    LsraLocation thisNextFixedRef = physRegRecord->getNextRefLocation();
-                    assert(nextFixedRef[reg] == thisNextFixedRef);
-#ifdef TARGET_ARM
-                    // If this is occupied by a double interval, skip the corresponding float reg.
-                    if ((assignedInterval != nullptr) && (assignedInterval->registerType == TYP_DOUBLE))
-                    {
-                        reg = REG_NEXT(reg);
-                    }
+                verifyFreeRegisters(regsToFree);
 #endif
-                }
-#endif // DEBUG
             }
         }
         prevLocation = currentLocation;
@@ -11739,6 +11545,117 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
         assert(foundUse);
 
         node = use.User();
+    }
+}
+
+// verifyFreeRegisters: Validate the current state just after we've freed the registers.
+//   This ensures that any pending freed registers will have had their state updated to
+//   reflect the intervals they were holding.
+//
+// Arguments:
+//   regsToFree - Registers that were just freed.
+//
+void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
+{
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    {
+        regMaskTP regMask = genRegMask(reg);
+        // If this isn't available or if it's still waiting to be freed (i.e. it was in
+        // delayRegsToFree and so now it's in regsToFree), then skip it.
+        if ((regMask & allAvailableRegs & ~regsToFree) == RBM_NONE)
+        {
+            continue;
+        }
+        RegRecord* physRegRecord    = getRegisterRecord(reg);
+        Interval*  assignedInterval = physRegRecord->assignedInterval;
+        if (assignedInterval != nullptr)
+        {
+            bool         isAssignedReg     = (assignedInterval->physReg == reg);
+            RefPosition* recentRefPosition = assignedInterval->recentRefPosition;
+            // If we have a copyReg or a moveReg, we might have assigned this register to an Interval,
+            // but that isn't considered its assignedReg.
+            if (recentRefPosition != nullptr)
+            {
+                if (recentRefPosition->refType == RefTypeExpUse)
+                {
+                    // We don't update anything on these, as they're just placeholders to extend the
+                    // lifetime.
+                    continue;
+                }
+
+                // For copyReg or moveReg, we don't have anything further to assert.
+                if (recentRefPosition->copyReg || recentRefPosition->moveReg)
+                {
+                    continue;
+                }
+                assert(assignedInterval->isConstant == isRegConstant(reg, assignedInterval->registerType));
+                if (assignedInterval->isActive)
+                {
+                    // If this is not the register most recently allocated, it must be from a copyReg,
+                    // it was placed there by the inVarToRegMap or it might be one of the upper vector
+                    // save/restore refPosition.
+                    // In either case it must be a lclVar.
+
+                    if (!isAssignedToInterval(assignedInterval, physRegRecord))
+                    {
+                        // We'd like to assert that this was either set by the inVarToRegMap, or by
+                        // a copyReg, but we can't traverse backward to check for a copyReg, because
+                        // we only have recentRefPosition, and there may be a previous RefPosition
+                        // at the same Location with a copyReg.
+
+                        bool sanityCheck = assignedInterval->isLocalVar;
+                        // For upper vector interval, make sure it was one of the save/restore only.
+                        if (assignedInterval->IsUpperVector())
+                        {
+                            sanityCheck |= (recentRefPosition->refType == RefTypeUpperVectorSave) ||
+                                           (recentRefPosition->refType == RefTypeUpperVectorRestore);
+                        }
+
+                        assert(sanityCheck);
+                    }
+                    if (isAssignedReg)
+                    {
+                        assert(nextIntervalRef[reg] == assignedInterval->getNextRefLocation());
+                        assert(!isRegAvailable(reg, assignedInterval->registerType));
+                        assert((recentRefPosition == nullptr) || (spillCost[reg] == getSpillWeight(physRegRecord)));
+                    }
+                    else
+                    {
+                        assert((nextIntervalRef[reg] == MaxLocation) || isRegBusy(reg, assignedInterval->registerType));
+                    }
+                }
+                else
+                {
+                    if ((assignedInterval->physReg == reg) && !assignedInterval->isConstant)
+                    {
+                        assert(nextIntervalRef[reg] == assignedInterval->getNextRefLocation());
+                    }
+                    else
+                    {
+                        assert(nextIntervalRef[reg] == MaxLocation);
+                        assert(isRegAvailable(reg, assignedInterval->registerType));
+                        assert(spillCost[reg] == 0);
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Available registers should not hold constants
+            assert(isRegAvailable(reg, physRegRecord->registerType));
+            assert(!isRegConstant(reg, physRegRecord->registerType) || spillAlways());
+            assert(nextIntervalRef[reg] == MaxLocation);
+            assert(spillCost[reg] == 0);
+        }
+        LsraLocation thisNextFixedRef = physRegRecord->getNextRefLocation();
+        assert(nextFixedRef[reg] == thisNextFixedRef);
+#ifdef TARGET_ARM
+        // If this is occupied by a double interval, skip the corresponding float reg.
+        if ((assignedInterval != nullptr) && (assignedInterval->registerType == TYP_DOUBLE))
+        {
+            reg = REG_NEXT(reg);
+        }
+#endif
     }
 }
 
