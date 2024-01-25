@@ -171,7 +171,7 @@ namespace System
 
                 if (pDestMT->IsNullable)
                 {
-                    CastHelpers.Unbox_Nullable(ref dest, pDestMT, obj);
+                    RuntimeHelpers.Unbox_Nullable(ref dest, pDestMT, obj);
                 }
                 else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
                 {
