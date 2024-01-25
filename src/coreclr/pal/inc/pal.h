@@ -3639,24 +3639,42 @@ Define_InterlockMethod(
     CHAR,
     InterlockedExchange8(IN OUT CHAR volatile *Target, CHAR Value),
     InterlockedExchange8(Target, Value),
+#ifdef __clang__
+    return __sync_swap(pDst, iValue); 
+#elif ATOMIC_CHAR_LOCK_FREE == 2
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+#else
+#error Lock free atomic int8 support is required.
+#endif
 )
 
 Define_InterlockMethod(
     SHORT,
     InterlockedExchange16(IN OUT SHORT volatile *Target, SHORT Value),
     InterlockedExchange16(Target, Value),
+#ifdef __clang__
+    return __sync_swap(pDst, iValue); 
+#elif ATOMIC_SHORT_LOCK_FREE == 2
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+#else
+#error Lock free atomic int16 support is required.
+#endif
 )
 
 Define_InterlockMethod(
     LONG,
     InterlockedExchange(IN OUT LONG volatile *Target, LONG Value),
     InterlockedExchange(Target, Value),
+#ifdef __clang__
+    return __sync_swap(pDst, iValue); 
+#elif ATOMIC_INT_LOCK_FREE == 2
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+#else
+#error Lock free atomic int32 support is required.
+#endif
 )
 
-#if defined(HOST_X86)
+#if defined(HOST_X86) && defined(__clang__)
 
 // 64-bit __atomic_exchange_n is not expanded as a compiler intrinsic on Linux x86.
 // Use inline implementation instead.
@@ -3678,11 +3696,16 @@ Define_InterlockMethod(
     LONGLONG,
     InterlockedExchange64(IN OUT LONGLONG volatile *Target, IN LONGLONG Value),
     InterlockedExchange64(Target, Value),
+#ifdef __clang__
+    return __sync_swap(pDst, iValue); 
+#elif ATOMIC_LLONG_LOCK_FREE == 2
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+#else
+#error Lock free atomic int64 support is required.
+#endif
 )
 
 #endif
-
 
 /*++
 Function:
