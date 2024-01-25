@@ -7157,22 +7157,6 @@ WORD MethodTable::GetNumHandleRegularStatics()
     return GetClass()->GetNumHandleRegularStatics();
 }
 
-//==========================================================================================
-WORD MethodTable::GetNumBoxedRegularStatics()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return GetClass()->GetNumBoxedRegularStatics();
-}
-
-//==========================================================================================
-WORD MethodTable::GetNumBoxedThreadStatics ()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return GetClass()->GetNumBoxedThreadStatics();
-}
-
 #ifdef _DEBUG
 //==========================================================================================
 // Returns true if pointer to the parent method table has been initialized/restored already.
@@ -7181,8 +7165,7 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    // workaround: Type loader accesses partially initialized datastructures that interferes with IBC logging.
-    // Once type loader is fixed to do not access partially  initialized datastructures, this can go away.
+    // workaround: Type loader accesses partially initialized datastructures
     if (!GetAuxiliaryData()->IsParentMethodTablePointerValid())
         return FALSE;
 
@@ -8614,8 +8597,6 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
         }
     }
 #endif
-
-    // IBC logging is not needed here - slots in ngen images are immutable.
 
 #ifdef TARGET_ARM
     // Ensure on ARM that all target addresses are marked as thumb code.

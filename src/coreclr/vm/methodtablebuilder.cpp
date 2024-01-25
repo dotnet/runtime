@@ -115,7 +115,7 @@ MethodTableBuilder::CreateClass( Module *pModule,
     }
     else
     {
-        pEEClass = new (pAllocator->GetLowFrequencyHeap(), pamTracker) EEClass(sizeof(EEClass));
+        pEEClass = new (pAllocator->GetLowFrequencyHeap(), pamTracker) EEClass();
     }
 
     DWORD dwAttrClass = 0;
@@ -1153,8 +1153,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 
     if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
     {
-        // TODO-XARCH: The JIT needs to be updated to support 64-byte Vector<T>
-        numInstanceFieldBytes = 32;
+        numInstanceFieldBytes = 64;
     }
     else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
     {
@@ -1765,7 +1764,13 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
         if (bmtFP->NumInlineArrayElements != 0)
         {
-            GetLayoutInfo()->m_cbManagedSize *= bmtFP->NumInlineArrayElements;
+            INT64 extendedSize = (INT64)GetLayoutInfo()->m_cbManagedSize * (INT64)bmtFP->NumInlineArrayElements;
+            if (extendedSize > FIELD_OFFSET_LAST_REAL_OFFSET)
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+            }
+
+            GetLayoutInfo()->m_cbManagedSize = (UINT32)extendedSize;
         }
 
         bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
@@ -1836,6 +1841,11 @@ MethodTableBuilder::BuildMethodTableThrowing(
     if (bmtFP->NumRegularStaticGCBoxedFields != 0)
     {
         pMT->SetHasBoxedRegularStatics();
+    }
+
+    if (bmtFP->NumThreadStaticGCBoxedFields != 0)
+    {
+        pMT->SetHasBoxedThreadStatics();
     }
 
     if (bmtFP->fIsByRefLikeType)
@@ -2751,7 +2761,7 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
             }
-            if (strnlen(strMethodName, MAX_CLASS_NAME) >= MAX_CLASS_NAME)
+            if(IsStrLongerThan(strMethodName,MAX_CLASS_NAME))
             {
                 BuildMethodTableThrowException(BFA_METHOD_NAME_TOO_LONG);
             }
@@ -4057,8 +4067,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
                         }
 
-                        if (strnlen((char *)pszClassName, MAX_CLASS_NAME) >= MAX_CLASS_NAME
-                            || strnlen((char *)pszNameSpace, MAX_CLASS_NAME) >= MAX_CLASS_NAME
+                        if (IsStrLongerThan((char *)pszClassName, MAX_CLASS_NAME)
+                            || IsStrLongerThan((char *)pszNameSpace, MAX_CLASS_NAME)
                             || (strlen(pszClassName) + strlen(pszNameSpace) + 1 >= MAX_CLASS_NAME))
                         {
                             BuildMethodTableThrowException(BFA_TYPEREG_NAME_TOO_LONG, mdMethodDefNil);
@@ -7897,12 +7907,6 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
     }
     SetNumHandleRegularStatics(static_cast<WORD>(dwNumHandleStatics));
 
-    if (!FitsIn<WORD>(bmtFP->NumRegularStaticGCBoxedFields))
-    {   // Overflow.
-        BuildMethodTableThrowException(IDS_EE_TOOMANYFIELDS);
-    }
-    SetNumBoxedRegularStatics(static_cast<WORD>(bmtFP->NumRegularStaticGCBoxedFields));
-
     // Tell the module to give us the offsets we'll be using and commit space for us
     // if necessary
     DWORD dwNonGCOffset, dwGCOffset;
@@ -8016,13 +8020,6 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
     }
 
     SetNumHandleThreadStatics(static_cast<WORD>(dwNumHandleStatics));
-
-    if (!FitsIn<WORD>(bmtFP->NumThreadStaticGCBoxedFields))
-    {   // Overflow.
-        BuildMethodTableThrowException(IDS_EE_TOOMANYFIELDS);
-    }
-
-    SetNumBoxedThreadStatics(static_cast<WORD>(bmtFP->NumThreadStaticGCBoxedFields));
 
     // Tell the module to give us the offsets we'll be using and commit space for us
     // if necessary
@@ -8447,9 +8444,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         if (bmtFP->NumInlineArrayElements > 1)
         {
             INT64 extendedSize = (INT64)dwNumInstanceFieldBytes * (INT64)bmtFP->NumInlineArrayElements;
-            // limit the max size of array instance to 1MiB
-            const INT64 maxSize = 1024 * 1024;
-            if (extendedSize > maxSize)
+            if (extendedSize > FIELD_OFFSET_LAST_REAL_OFFSET)
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
             }
@@ -10359,8 +10354,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo, static_cast<WORD>(dwNonVirtualSlots), S_SIZE_T(dispatchMapAllocationSize));
 
-    // This also disables IBC logging until the type is sufficiently initialized so
-    // it needs to be done early
     pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
     if (bmtVT->pDispatchMapBuilder->Count() > 0)
@@ -10814,7 +10807,7 @@ MethodTableBuilder::SetupMethodTable2(
     pMT->SetCl(GetCl());
 
     // The type is sufficiently initialized for most general purpose accessor methods to work.
-    // Mark the type as restored to avoid avoid asserts. Note that this also enables IBC logging.
+    // Mark the type as restored to avoid avoid asserts.
     pMT->GetAuxiliaryDataForWrite()->SetIsRestoredForBuildMethodTable();
 
 #ifdef _DEBUG

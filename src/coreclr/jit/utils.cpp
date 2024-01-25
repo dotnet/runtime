@@ -453,6 +453,55 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
         regPrev = regNum;
     }
 
+#ifdef TARGET_XARCH
+    if (strlen(sep) > 0)
+    {
+        // We've already printed something.
+        sep = " ";
+    }
+    inRegRange = false;
+    regPrev    = REG_NA;
+    regHead    = REG_NA;
+    for (regNumber regNum = REG_MASK_FIRST; regNum <= REG_MASK_LAST; regNum = REG_NEXT(regNum))
+    {
+        regMaskTP regBit = genRegMask(regNum);
+
+        if (regMask & regBit)
+        {
+            if (!inRegRange || (regNum == REG_MASK_LAST))
+            {
+                const char* nam = getRegName(regNum);
+                printf("%s%s", sep, nam);
+                minSiz -= strlen(sep) + strlen(nam);
+                sep     = "-";
+                regHead = regNum;
+            }
+            inRegRange = true;
+        }
+        else
+        {
+            if (inRegRange)
+            {
+                if (regPrev != regHead)
+                {
+                    const char* nam = getRegName(regPrev);
+                    printf("%s%s", sep, nam);
+                    minSiz -= (strlen(sep) + strlen(nam));
+                }
+                sep = " ";
+            }
+            inRegRange = false;
+        }
+
+        if (regBit > regMask)
+        {
+            break;
+        }
+
+        regPrev = regNum;
+    }
+#endif // TARGET_XARCH
+
     printf("]");
 
     while ((int)minSiz > 0)
@@ -1557,6 +1606,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
 
                 // These do not invoke static class constructors
                 //

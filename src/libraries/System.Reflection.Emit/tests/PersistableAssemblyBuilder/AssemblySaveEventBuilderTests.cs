@@ -16,7 +16,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 EventBuilder eventType = type.DefineEvent("TestEvent", EventAttributes.SpecialName, typeof(int));
                 MethodBuilder addMethod = type.DefineMethod("AddMethod", MethodAttributes.Public | MethodAttributes.SpecialName);
                 MethodBuilder addMethod2 = type.DefineMethod("AddMethod2", MethodAttributes.Public | MethodAttributes.HideBySig, typeof(int), Type.EmptyTypes);
@@ -42,29 +42,32 @@ namespace System.Reflection.Emit.Tests
                 otherILGenerator.Emit(OpCodes.Ret);
                 eventType.AddOtherMethod(otherMethod);
                 type.CreateType();
-                saveMethod.Invoke(ab, new[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                EventInfo eventFromDisk = typeFromDisk.GetEvent("TestEvent");
-                Assert.Equal(addMethod2.Name, eventFromDisk.AddMethod.Name);
-                Assert.Equal(raiseMethod.Name, eventFromDisk.RaiseMethod.Name);
-                Assert.Equal(removeMethod.Name, eventFromDisk.RemoveMethod.Name);
-                Assert.Equal(typeof(int).FullName, eventFromDisk.EventHandlerType.FullName);
-                Assert.NotNull(typeFromDisk.GetMethod("OtherMethod", BindingFlags.NonPublic | BindingFlags.Instance));
-                Assert.Equal(EventAttributes.SpecialName, eventFromDisk.Attributes);
-                IList<CustomAttributeData> caData = eventFromDisk.GetCustomAttributesData();
-                Assert.Equal(1, caData.Count);
-                Assert.Equal(typeof(IntPropertyAttribute).FullName, caData[0].AttributeType.FullName);
-                Assert.Equal(1, caData[0].ConstructorArguments.Count);
-                Assert.Equal(9, caData[0].ConstructorArguments[0].Value);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    EventInfo eventFromDisk = typeFromDisk.GetEvent("TestEvent");
+                    Assert.Equal(addMethod2.Name, eventFromDisk.AddMethod.Name);
+                    Assert.Equal(raiseMethod.Name, eventFromDisk.RaiseMethod.Name);
+                    Assert.Equal(removeMethod.Name, eventFromDisk.RemoveMethod.Name);
+                    Assert.Equal(typeof(int).FullName, eventFromDisk.EventHandlerType.FullName);
+                    Assert.NotNull(typeFromDisk.GetMethod("OtherMethod", BindingFlags.NonPublic | BindingFlags.Instance));
+                    Assert.Equal(EventAttributes.SpecialName, eventFromDisk.Attributes);
+                    IList<CustomAttributeData> caData = eventFromDisk.GetCustomAttributesData();
+                    Assert.Equal(1, caData.Count);
+                    Assert.Equal(typeof(IntPropertyAttribute).FullName, caData[0].AttributeType.FullName);
+                    Assert.Equal(1, caData[0].ConstructorArguments.Count);
+                    Assert.Equal(9, caData[0].ConstructorArguments[0].Value);
+                }
             }
         }
 
         [Fact]
         public void Set_NullValue_ThrowsArgumentNullException()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(string));
 
             AssertExtensions.Throws<ArgumentNullException>("eventtype", () => type.DefineEvent("EventTypeNull", EventAttributes.None, null));
@@ -78,7 +81,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void Set_WhenTypeAlreadyCreated_ThrowsInvalidOperationException()
         {
-            AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(int));
 
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.SpecialName, typeof(int), null);

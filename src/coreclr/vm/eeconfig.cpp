@@ -185,18 +185,9 @@ HRESULT EEConfig::Init()
     dwDisableStackwalkCache = 1;
 #endif // TARGET_X86
 
-    szZapBBInstr     = NULL;
-    szZapBBInstrDir  = NULL;
-
 #ifdef _DEBUG
     // interop logging
     m_TraceWrapper = 0;
-#endif
-
-#ifdef _DEBUG
-    dwNgenForceFailureMask  = 0;
-    dwNgenForceFailureCount = 0;
-    dwNgenForceFailureKind  = 0;
 #endif
 
 #ifdef _DEBUG
@@ -274,8 +265,6 @@ HRESULT EEConfig::Cleanup()
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
-
-    delete[] szZapBBInstr;
 
     if (pReadyToRunExcludeList)
         delete pReadyToRunExcludeList;
@@ -492,24 +481,6 @@ HRESULT EEConfig::sync()
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
     DoubleArrayToLargeObjectHeapThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
 #endif
-
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ZapBBInstr, (LPWSTR*)&szZapBBInstr));
-    if (szZapBBInstr)
-    {
-        szZapBBInstr = NarrowWideChar((LPWSTR)szZapBBInstr);
-
-        // If szZapBBInstr only contains white space, then there's nothing to instrument (this
-        // is the case with some test cases, and it's easier to fix all of them here).
-        LPWSTR pStr = (LPWSTR) szZapBBInstr;
-        while (*pStr == W(' ')) pStr++;
-        if (*pStr == 0)
-            szZapBBInstr = NULL;
-    }
-
-    if (szZapBBInstr != NULL)
-    {
-        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapBBInstrDir, &szZapBBInstrDir));
-    }
 
     dwDisableStackwalkCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
 

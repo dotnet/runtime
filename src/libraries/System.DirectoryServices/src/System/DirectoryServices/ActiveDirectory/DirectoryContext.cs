@@ -209,13 +209,13 @@ namespace System.DirectoryServices.ActiveDirectory
                     DomainControllerInfo domainControllerInfo;
                     errorCode = Locator.DsGetDcNameWrapper(null, tmpTarget, null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
 
-                    if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                    if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                     {
                         // try with force rediscovery
 
                         errorCode = Locator.DsGetDcNameWrapper(null, tmpTarget, null, (long)PrivateLocatorFlags.DirectoryServicesRequired | (long)LocatorOptions.ForceRediscovery, out domainControllerInfo);
 
-                        if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                        if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                         {
                             contextIsValid = false;
                         }
@@ -231,7 +231,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             contextIsValid = true;
                         }
                     }
-                    else if (errorCode == NativeMethods.ERROR_INVALID_DOMAIN_NAME_FORMAT)
+                    else if (errorCode == Interop.Errors.ERROR_INVALID_DOMAINNAME)
                     {
                         // we can get this error if the target it server:port (not a valid domain)
                         contextIsValid = false;
@@ -258,13 +258,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 DomainControllerInfo domainControllerInfo;
                 errorCode = Locator.DsGetDcNameWrapper(null, context.Name, null, (long)(PrivateLocatorFlags.GCRequired | PrivateLocatorFlags.DirectoryServicesRequired), out domainControllerInfo);
 
-                if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                 {
                     // try with force rediscovery
 
                     errorCode = Locator.DsGetDcNameWrapper(null, context.Name, null, (long)((PrivateLocatorFlags.GCRequired | PrivateLocatorFlags.DirectoryServicesRequired)) | (long)LocatorOptions.ForceRediscovery, out domainControllerInfo);
 
-                    if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                    if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                     {
                         contextIsValid = false;
                     }
@@ -280,7 +280,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         contextIsValid = true;
                     }
                 }
-                else if (errorCode == NativeMethods.ERROR_INVALID_DOMAIN_NAME_FORMAT)
+                else if (errorCode == Interop.Errors.ERROR_INVALID_DOMAINNAME)
                 {
                     // we can get this error if the target it server:port (not a valid forest)
                     contextIsValid = false;
@@ -306,13 +306,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 DomainControllerInfo domainControllerInfo;
                 errorCode = Locator.DsGetDcNameWrapper(null, context.Name, null, (long)PrivateLocatorFlags.OnlyLDAPNeeded, out domainControllerInfo);
 
-                if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                 {
                     // try with force rediscovery
 
                     errorCode = Locator.DsGetDcNameWrapper(null, context.Name, null, (long)PrivateLocatorFlags.OnlyLDAPNeeded | (long)LocatorOptions.ForceRediscovery, out domainControllerInfo);
 
-                    if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                    if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                     {
                         contextIsValid = false;
                     }
@@ -325,7 +325,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         contextIsValid = true;
                     }
                 }
-                else if (errorCode == NativeMethods.ERROR_INVALID_DOMAIN_NAME_FORMAT)
+                else if (errorCode == Interop.Errors.ERROR_INVALID_DOMAINNAME)
                 {
                     // we can get this error if the target it server:port (not a valid application partition)
                     contextIsValid = false;
@@ -474,7 +474,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //
             // if there is no forest associated with the logged on domain, then we return false
             //
-            else if (errorCode != NativeMethods.ERROR_NO_SUCH_DOMAIN)
+            else if (errorCode != Interop.Errors.ERROR_NO_SUCH_DOMAIN)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(errorCode);
             }
@@ -550,12 +550,12 @@ namespace System.DirectoryServices.ActiveDirectory
             return serverName;
         }
 
-        internal static string GetLoggedOnDomain()
+        internal static unsafe string GetLoggedOnDomain()
         {
             string? domainName = null;
 
-            NegotiateCallerNameRequest requestBuffer = default;
-            int requestBufferLength = (int)Marshal.SizeOf(requestBuffer);
+            Interop.Secur32.NegotiateCallerNameRequest requestBuffer = default;
+            int requestBufferLength = sizeof(Interop.Secur32.NegotiateCallerNameRequest);
 
             IntPtr pResponseBuffer = IntPtr.Zero;
             NegotiateCallerNameResponse responseBuffer = new NegotiateCallerNameResponse();
@@ -563,12 +563,12 @@ namespace System.DirectoryServices.ActiveDirectory
             uint protocolStatus;
             uint result;
 
-            LsaLogonProcessSafeHandle lsaHandle;
+            Interop.Secur32.LsaLogonProcessSafeHandle lsaHandle;
 
             //
-            // since we are using safe handles, we don't need to explicitly call NativeMethods.LsaDeregisterLogonProcess(lsaHandle)
+            // since we are using safe handles, we don't need to explicitly call Interop.Secur32.LsaDeregisterLogonProcess(lsaHandle)
             //
-            result = NativeMethods.LsaConnectUntrusted(out lsaHandle);
+            result = Interop.Secur32.LsaConnectUntrusted(out lsaHandle);
 
             if (result == 0)
             {
@@ -577,7 +577,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 //
                 requestBuffer.messageType = NativeMethods.NegGetCallerName;
 
-                result = NativeMethods.LsaCallAuthenticationPackage(lsaHandle, 0, requestBuffer, requestBufferLength, out pResponseBuffer, out responseBufferLength, out protocolStatus);
+                result = Interop.Secur32.LsaCallAuthenticationPackage(lsaHandle, 0, requestBuffer, requestBufferLength, out pResponseBuffer, out responseBufferLength, out protocolStatus);
 
                 try
                 {
@@ -599,7 +599,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         {
                             throw new OutOfMemoryException();
                         }
-                        else if ((result == 0) && (global::Interop.Advapi32.LsaNtStatusToWinError(protocolStatus) == NativeMethods.ERROR_NO_SUCH_LOGON_SESSION))
+                        else if ((result == 0) && (global::Interop.Advapi32.LsaNtStatusToWinError(protocolStatus) == Interop.Errors.ERROR_NO_SUCH_LOGON_SESSION))
                         {
                             // If this is a directory user, extract domain info from username
                             if (!Utils.IsSamUser())
@@ -621,7 +621,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (pResponseBuffer != IntPtr.Zero)
                     {
-                        NativeMethods.LsaFreeReturnBuffer(pResponseBuffer);
+                        Interop.Secur32.LsaFreeReturnBuffer(pResponseBuffer);
                     }
                 }
             }
@@ -659,11 +659,11 @@ namespace System.DirectoryServices.ActiveDirectory
             // Locator.DsGetDcNameWrapper internally passes the ReturnDNSName flag when calling DsGetDcName
             //
             errorCode = Locator.DsGetDcNameWrapper(null, domainName, null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
-            if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+            if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
             {
                 // try again with force rediscovery
                 errorCode = Locator.DsGetDcNameWrapper(null, domainName, null, (long)((long)PrivateLocatorFlags.DirectoryServicesRequired | (long)LocatorOptions.ForceRediscovery), out domainControllerInfo);
-                if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                 {
                     return null;
                 }

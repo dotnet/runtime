@@ -7,7 +7,6 @@
 // -- this javascript file is evaluated by emcc during compilation! --
 
 // because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
-const DISABLE_LEGACY_JS_INTEROP = process.env.DISABLE_LEGACY_JS_INTEROP === "1";
 const WASM_ENABLE_SIMD = process.env.WASM_ENABLE_SIMD === "1";
 const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
 const ENABLE_BROWSER_PROFILER = process.env.ENABLE_BROWSER_PROFILER === "1";
@@ -83,12 +82,7 @@ function injectDependencies() {
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_threads_imports);
     #endif
 
-    if (!DISABLE_LEGACY_JS_INTEROP) {
-        createWasmImportStubsFrom(methodIndexByName.mono_wasm_legacy_interop_imports);
-    }
-
     DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
-        `linkerDisableLegacyJsInterop: ${DISABLE_LEGACY_JS_INTEROP ? "true" : "false"},` +
         `linkerWasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
         `linkerWasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
         `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
