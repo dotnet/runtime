@@ -11,8 +11,10 @@ using WasmAppBuilder;
 
 internal static class SignatureMapper
 {
-    private static char? TypeToChar(Type t, LogAdapter log)
+    internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct)
     {
+        isByRefStruct = false;
+
         char? c = null;
         if (t.Namespace == "System") {
             c = t.Name switch
@@ -52,7 +54,7 @@ internal static class SignatureMapper
             else if (t.IsInterface)
                 c = 'I';
             else if (t.IsEnum)
-                c = TypeToChar(t.GetEnumUnderlyingType(), log);
+                c = TypeToChar(t.GetEnumUnderlyingType(), log, out _);
             else if (t.IsPointer)
                 c = 'I';
             else if (PInvokeTableGenerator.IsFunctionPointer(t))
@@ -61,9 +63,11 @@ internal static class SignatureMapper
             {
                 var fields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                 if (fields.Length == 1)
-                    return TypeToChar(fields[0].FieldType, log);
+                    return TypeToChar(fields[0].FieldType, log, out isByRefStruct);
                 else if (PInvokeTableGenerator.IsBlittable(t, log))
                     c = 'I';
+
+                isByRefStruct = true;
             }
             else
                 log.Warning("WASM0064", $"Unsupported parameter type '{t.Name}'");
@@ -74,15 +78,20 @@ internal static class SignatureMapper
 
     public static string? MethodToSignature(MethodInfo method, LogAdapter log)
     {
-        string? result = TypeToChar(method.ReturnType, log)?.ToString();
+        string? result = TypeToChar(method.ReturnType, log, out bool resultIsByRef)?.ToString();
         if (result == null)
         {
             return null;
         }
 
+        if (resultIsByRef) {
+            // WASM abi passes a result-pointer in slot 0 instead of returning struct results
+            result = "VI";
+        }
+
         foreach (var parameter in method.GetParameters())
         {
-            char? parameterChar = TypeToChar(parameter.ParameterType, log);
+            char? parameterChar = TypeToChar(parameter.ParameterType, log, out _);
             if (parameterChar == null)
             {
                 return null;
