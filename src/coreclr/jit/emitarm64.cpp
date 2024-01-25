@@ -14793,10 +14793,12 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_CX_4A_A:
         case IF_SVE_CY_3A:
         case IF_SVE_CY_3B:
-        case IF_SVE_DG_2A:
         case IF_SVE_GE_4A:
         case IF_SVE_HT_4A:
             assert((regpos == 1) || (regpos == 2));
+            return ((regpos == 1) ? PREDICATE_SIZED : PREDICATE_ZERO);
+
+        case IF_SVE_DG_2A:
             return ((regpos == 1) ? PREDICATE_SIZED : PREDICATE_ZERO);
 
         default:
