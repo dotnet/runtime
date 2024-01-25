@@ -5410,6 +5410,176 @@ bool FlowGraphNaturalLoop::HasDef(unsigned lclNum)
 }
 
 //------------------------------------------------------------------------
+// CanDuplicate: Check if this loop can be duplicated.
+//
+// Parameters:
+//   reason - If this function returns false, the reason why.
+//
+// Returns:
+//   True if the loop can be duplicated.
+//
+// Remarks:
+//   We currently do not support duplicating loops with EH constructs in them.
+//
+bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
+{
+#ifdef DEBUG
+    const char* localReason;
+    if (reason == nullptr)
+    {
+        reason = &localReason;
+    }
+#endif
+
+    Compiler*       comp   = m_dfsTree->GetCompiler();
+    BasicBlockVisit result = VisitLoopBlocks([=](BasicBlock* block) {
+        if (comp->bbIsTryBeg(block))
+        {
+            INDEBUG(*reason = "Loop has a `try` begin");
+            return BasicBlockVisit::Abort;
+        }
+
+        return BasicBlockVisit::Continue;
+    });
+
+    return result != BasicBlockVisit::Abort;
+}
+
+//------------------------------------------------------------------------
+// Duplicate: Duplicate the blocks of this loop, inserting them after `insertAfter`.
+//
+// Parameters:
+//   insertAfter            - [in, out] Block to insert duplicated blocks after; updated to last block inserted.
+//   map                    - A map that will have mappings from loop blocks to duplicated blocks added to it.
+//   weightScale            - Factor to scale weight of new blocks by
+//   bottomNeedsRedirection - Whether or not to insert a redirection block for the bottom block in case of fallthrough
+//
+// Remarks:
+//   Due to fallthrough this block may need to insert blocks with no
+//   corresponding source block in "map".
+//
+void FlowGraphNaturalLoop::Duplicate(BasicBlock**     insertAfter,
+                                     BlockToBlockMap* map,
+                                     weight_t         weightScale,
+                                     bool             bottomNeedsRedirection)
+{
+    assert(CanDuplicate(nullptr));
+
+    Compiler* comp = m_dfsTree->GetCompiler();
+
+    BasicBlock* bottom = GetLexicallyBottomMostBlock();
+
+    VisitLoopBlocksLexical([=](BasicBlock* blk) {
+        // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
+        // with BasicBlock::CopyTarget().
+        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /*extendRegion*/ true);
+        JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum,
+                (*insertAfter)->bbNum);
+
+        BasicBlock::CloneBlockState(comp, newBlk, blk);
+
+        // We're going to create the preds below, which will set the bbRefs properly,
+        // so clear out the cloned bbRefs field.
+        newBlk->bbRefs = 0;
+
+        newBlk->scaleBBWeight(weightScale);
+
+        // If the loop we're cloning contains nested loops, we need to clear the pre-header bit on
+        // any nested loop pre-header blocks, since they will no longer be loop pre-headers.
+        //
+        // TODO-Cleanup: BBF_LOOP_PREHEADER can be removed; we do not attempt
+        // to keep it up to date anymore when we do FG changes.
+        //
+        if (newBlk->HasFlag(BBF_LOOP_PREHEADER))
+        {
+            JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);
+            newBlk->RemoveFlags(BBF_LOOP_PREHEADER);
+        }
+
+        *insertAfter = newBlk;
+        map->Set(blk, newBlk, BlockToBlockMap::Overwrite);
+
+        // If the block falls through to a block outside the loop then we may
+        // need to insert a new block to redirect.
+        // Skip this once we get to the bottom block if our cloned version is
+        // going to fall into the right version anyway.
+        if (blk->bbFallsThrough() && !ContainsBlock(blk->Next()) && ((blk != bottom) || bottomNeedsRedirection))
+        {
+            if (blk->KindIs(BBJ_COND))
+            {
+                BasicBlock* targetBlk = blk->GetFalseTarget();
+                assert(blk->NextIs(targetBlk));
+
+                // Need to insert a block.
+                BasicBlock* newRedirBlk =
+                    comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /* extendRegion */ true, targetBlk);
+                newRedirBlk->copyEHRegion(*insertAfter);
+                newRedirBlk->bbWeight = blk->Next()->bbWeight;
+                newRedirBlk->CopyFlags(blk->Next(), (BBF_RUN_RARELY | BBF_PROF_WEIGHT));
+                newRedirBlk->scaleBBWeight(weightScale);
+
+                JITDUMP(FMT_BB " falls through to " FMT_BB "; inserted redirection block " FMT_BB "\n", blk->bbNum,
+                        blk->Next()->bbNum, newRedirBlk->bbNum);
+                // This block isn't part of the loop, so below loop won't add
+                // refs for it.
+                comp->fgAddRefPred(targetBlk, newRedirBlk);
+                *insertAfter = newRedirBlk;
+            }
+            else
+            {
+                assert(!"Cannot handle fallthrough");
+            }
+        }
+
+        return BasicBlockVisit::Continue;
+    });
+
+    // Now go through the new blocks, remapping their jump targets within the loop
+    // and updating the preds lists.
+    VisitLoopBlocks([=](BasicBlock* blk) {
+        BasicBlock* newBlk = nullptr;
+        bool        b      = map->Lookup(blk, &newBlk);
+        assert(b && newBlk != nullptr);
+
+        // Jump target should not be set yet
+        assert(!newBlk->HasInitializedTarget());
+
+        // First copy the jump destination(s) from "blk".
+        newBlk->CopyTarget(comp, blk);
+
+        // Now redirect the new block according to "blockMap".
+        comp->optRedirectBlock(newBlk, map);
+
+        // Add predecessor edges for the new successors, as well as the fall-through paths.
+        switch (newBlk->GetKind())
+        {
+            case BBJ_ALWAYS:
+            case BBJ_CALLFINALLY:
+            case BBJ_CALLFINALLYRET:
+                comp->fgAddRefPred(newBlk->GetTarget(), newBlk);
+                break;
+
+            case BBJ_COND:
+                comp->fgAddRefPred(newBlk->GetFalseTarget(), newBlk);
+                comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
+                break;
+
+            case BBJ_SWITCH:
+                for (BasicBlock* const switchDest : newBlk->SwitchTargets())
+                {
+                    comp->fgAddRefPred(switchDest, newBlk);
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        return BasicBlockVisit::Continue;
+    });
+}
+
+//------------------------------------------------------------------------
 // IterConst: Get the constant with which the iterator is modified
 //
 // Returns:
