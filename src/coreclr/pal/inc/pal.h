@@ -3674,7 +3674,7 @@ Define_InterlockMethod(
 #endif
 )
 
-#if defined(HOST_X86) && defined(__clang__)
+#if defined(HOST_X86) && (defined(__clang__) || ATOMIC_LLONG_LOCK_FREE == 2)
 
 // 64-bit __atomic_exchange_n is not expanded as a compiler intrinsic on Linux x86.
 // Use inline implementation instead.
