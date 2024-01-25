@@ -20,6 +20,14 @@ public class DebugLevelTests : AppTestBase
     {
     }
 
+    private void AssertDebugLevel(RunResult result, int value) 
+    {
+        Assert.Collection(
+            result.TestOutput,
+            m => Assert.Equal($"WasmDebugLevel: {value}", m)
+        );
+    }
+
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
@@ -32,9 +40,55 @@ public class DebugLevelTests : AppTestBase
             Configuration: configuration,
             TestScenario: "DebugLevelTest"
         ));
-        Assert.Collection(
-            result.TestOutput,
-            m => Assert.Equal("WasmDebugLevel: -1", m)
-        );
+        AssertDebugLevel(result, -1);
+    }
+
+    [Theory]
+    [InlineData("Debug", 1)]
+    [InlineData("Release", 1)]
+    [InlineData("Debug", 0)]
+    [InlineData("Release", 0)]
+    public async Task BuildWithExplicitValue(string configuration, int debugLevel)
+    {
+        CopyTestAsset("WasmBasicTestApp", "DebugLevelTests_BuildWithExplicitValue");
+        BuildProject(configuration, $"-p:WasmDebugLevel={debugLevel}");
+
+        var result = await RunSdkStyleAppForBuild(new(
+            Configuration: configuration,
+            TestScenario: "DebugLevelTest"
+        ));
+        AssertDebugLevel(result, debugLevel);
+    }
+
+    [Theory]
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public async Task PublishWithDefaultLevel(string configuration)
+    {
+        CopyTestAsset("WasmBasicTestApp", "DebugLevelTests_PublishWithDefaultLevel");
+        PublishProject(configuration);
+
+        var result = await RunSdkStyleAppForPublish(new(
+            Configuration: configuration,
+            TestScenario: "DebugLevelTest"
+        ));
+        AssertDebugLevel(result, 0);
+    }
+
+    [Theory]
+    [InlineData("Debug", 1)]
+    [InlineData("Release", 1)]
+    [InlineData("Debug", -1)]
+    [InlineData("Release", -1)]
+    public async Task PublishWithExplicitValue(string configuration, int debugLevel)
+    {
+        CopyTestAsset("WasmBasicTestApp", "DebugLevelTests_PublishWithExplicitValue");
+        PublishProject(configuration, $"-p:WasmDebugLevel={debugLevel}");
+
+        var result = await RunSdkStyleAppForPublish(new(
+            Configuration: configuration,
+            TestScenario: "DebugLevelTest"
+        ));
+        AssertDebugLevel(result, debugLevel);
     }
 }
