@@ -1138,6 +1138,24 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
             switch (id->idIns())
             {
+                case INS_sve_and:
+                case INS_sve_ands:
+                case INS_sve_bic:
+                case INS_sve_bics:
+                case INS_sve_eor:
+                case INS_sve_eors:
+                case INS_sve_nand:
+                case INS_sve_nands:
+                case INS_sve_nor:
+                case INS_sve_nors:
+                case INS_sve_orn:
+                case INS_sve_orns:
+                case INS_sve_orr:
+                case INS_sve_orrs:
+                case INS_sve_sel:
+                    assert(isPredicateRegister(id->idReg4())); // MMMM
+                    break;
+
                 case INS_sve_mov:
                 case INS_sve_movs:
                 case INS_sve_not:
@@ -1146,7 +1164,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                     break;
 
                 default:
-                    assert(isPredicateRegister(id->idReg4())); // MMMM
+                    unreached();
                     break;
             }
 
