@@ -35,6 +35,8 @@ public class ParallelCrashTester
         testProcess.StartInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
         testProcess.StartInfo.Arguments = $"ParallelCrash.dll {arg}";
         testProcess.StartInfo.UseShellExecute = false;
+        // Disable creating dump since the target process is expected to crash
+        testProcess.StartInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
         testProcess.Start();
         testProcess.WaitForExit();
 

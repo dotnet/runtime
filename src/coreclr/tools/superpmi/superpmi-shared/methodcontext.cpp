@@ -4998,41 +4998,6 @@ CorInfoType MethodContext::repGetFieldType(CORINFO_FIELD_HANDLE  field,
     return (CorInfoType)value.B;
 }
 
-void MethodContext::recCanInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
-                                          CorInfoInlineTypeCheckSource source,
-                                          CorInfoInlineTypeCheck       result)
-{
-    if (CanInlineTypeCheck == nullptr)
-        CanInlineTypeCheck = new LightWeightMap<DLD, DWORD>();
-
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(cls);
-    key.B = (DWORD)source;
-
-    DWORD value = (DWORD)result;
-    CanInlineTypeCheck->Add(key, value);
-    DEBUG_REC(dmpCanInlineTypeCheck(key, value));
-}
-void MethodContext::dmpCanInlineTypeCheck(DLD key, DWORD value)
-{
-    printf("CanInlineTypeCheck key cls-%016" PRIX64 " src-%08X, value res-%u", key.A, key.B, value);
-}
-CorInfoInlineTypeCheck MethodContext::repCanInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
-                                                            CorInfoInlineTypeCheckSource source)
-{
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(cls);
-    key.B = (DWORD)source;
-
-    DWORD value = LookupByKeyOrMiss(CanInlineTypeCheck, key, ": key %016" PRIX64 "", key.A);
-
-    DEBUG_REP(dmpCanInlineTypeCheck(key, value));
-    CorInfoInlineTypeCheck result = (CorInfoInlineTypeCheck)value;
-    return result;
-}
-
 void MethodContext::recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent,
                                                   CORINFO_METHOD_HANDLE method,
                                                   bool                  result)
@@ -5912,6 +5877,28 @@ bool MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     DWORD value = LookupByKeyOrMiss(IsMoreSpecificType, key, ": key %016" PRIX64 " %016" PRIX64 "", key.A, key.B);
 
     DEBUG_REP(dmpIsMoreSpecificType(key, value));
+    return value != 0;
+}
+
+void MethodContext::recIsExactType(CORINFO_CLASS_HANDLE cls, bool result)
+{
+    if (IsExactType == nullptr)
+        IsExactType = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = result ? 1 : 0;
+    IsExactType->Add(key, value);
+    DEBUG_REC(dmpIsExactType(key, value));
+}
+void MethodContext::dmpIsExactType(DWORDLONG key, DWORD value)
+{
+    printf("IsExactType key cls-%016" PRIX64 ", value res-%u", key, value);
+}
+bool MethodContext::repIsExactType(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(IsExactType, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsExactType(key, value));
     return value != 0;
 }
 
