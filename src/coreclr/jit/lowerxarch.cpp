@@ -2816,7 +2816,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                 node->ResetHWIntrinsicId(NI_AVX512F_BlendVariableMask, comp, selectFalse, selectTrue,
                                          condition->AsHWIntrinsic()->Op(1));
 
-                BlockRange().Remove(op1);
+                BlockRange().Remove(condition);
                 BlockRange().Remove(op4);
                 break;
             }
