@@ -22,7 +22,7 @@
     // incoming register values into it.
     PROLOG_VPUSH        "{d0-d3}"           // Save d0-d3 which can have the floating point return value
     PROLOG_STACK_ALLOC  4                   // Padding for 8-byte alignment
-    PROLOG_PUSH         "{r0-r1}"           // Save return registers
+    PROLOG_PUSH         "{r0,r1}"           // Save return registers
     PROLOG_STACK_ALLOC  4                   // Space for caller's SP
     PROLOG_PUSH         "{r4-r10}"          // Save non-volatile registers
     PROLOG_STACK_ALLOC  8                   // Space for flags and Thread*
