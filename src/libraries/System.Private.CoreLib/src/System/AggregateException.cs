@@ -40,7 +40,7 @@ namespace System
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         public AggregateException(string? message)
-            : base(message)
+            : base(message ?? SR.AggregateException_ctor_DefaultMessage)
         {
             _innerExceptions = Array.Empty<Exception>();
         }
@@ -54,7 +54,7 @@ namespace System
         /// <exception cref="ArgumentNullException">The <paramref name="innerException"/> argument
         /// is null.</exception>
         public AggregateException(string? message, Exception innerException)
-            : base(message, innerException)
+            : base(message ?? SR.AggregateException_ctor_DefaultMessage, innerException)
         {
             ArgumentNullException.ThrowIfNull(innerException);
 
@@ -120,7 +120,7 @@ namespace System
         }
 
         private AggregateException(string? message, Exception[] innerExceptions, bool cloneExceptions) :
-            base(message, innerExceptions.Length > 0 ? innerExceptions[0] : null)
+            base(message ?? SR.AggregateException_ctor_DefaultMessage, innerExceptions.Length > 0 ? innerExceptions[0] : null)
         {
             _innerExceptions = cloneExceptions ? new Exception[innerExceptions.Length] : innerExceptions;
 

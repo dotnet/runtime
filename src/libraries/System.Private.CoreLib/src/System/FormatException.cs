@@ -21,13 +21,13 @@ namespace System
         }
 
         public FormatException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_FormatException)
         {
             HResult = HResults.COR_E_FORMAT;
         }
 
         public FormatException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_FormatException, innerException)
         {
             HResult = HResults.COR_E_FORMAT;
         }

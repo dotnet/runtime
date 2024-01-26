@@ -24,7 +24,7 @@
     <!-- Keep these underscored targets in sync with the root Directory.Build.props -->
     <_NetCoreAppCurrent>net9.0</_NetCoreAppCurrent>
     <TargetFramework>$(_NetCoreAppCurrent)</TargetFramework>
-    <_NetCoreAppToolCurrent>net8.0</_NetCoreAppToolCurrent>
+    <_NetCoreAppToolCurrent>net9.0</_NetCoreAppToolCurrent>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
   </PropertyGroup>
 
