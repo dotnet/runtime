@@ -816,34 +816,77 @@ namespace System
         // or are otherwise mitigated
         internal unsafe int GetNonRandomizedHashCode()
         {
+            uint hash1 = (5381 << 16) + 5381;
+            uint hash2 = hash1;
+
             fixed (char* src = &_firstChar)
             {
                 Debug.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
-                Debug.Assert(((int)src) % 4 == 0, "Managed string should start at 4 bytes boundary");
+                Debug.Assert(((int) src) % 4 == 0, "Managed string should start at 4 bytes boundary");
 
-                uint hash1 = (5381 << 16) + 5381;
-                uint hash2 = hash1;
-
-                uint* ptr = (uint*)src;
+                uint* ptr = (uint*) src;
                 int length = this.Length;
+
+                // We "normalize to lowercase" every char by ORing with 0x0020. This casts
+                // a very wide net because it will change, e.g., '^' to '~'. But that should
+                // be ok because we expect this to be very rare in practice.
+
+                if(Vector128.IsHardwareAccelerated && length >= 2 * Vector128<ushort>.Count)
+                {
+                    Vector128<uint> hashVector = Vector128.Create(hash1);
+                    while(length > 4)
+                    {
+                        Vector128<uint> srcVec = Vector128.Load(ptr);
+                        length -= 8;
+                        hashVector = Vector128.Xor(Vector128.Add(hashVector, RotateLeft(hashVector, 5)), srcVec);
+                        ptr += 4;
+                    }
+
+                    uint hashed1 = hashVector.GetElement(0);
+                    uint hashed2 = hashVector.GetElement(1);
+                    uint hashed3 = hashVector.GetElement(2);
+                    uint hashed4 = hashVector.GetElement(3);
+
+                    if (length > 2)
+                    {
+                        uint p0 = ptr[0];
+                        uint p1 = ptr[1];
+
+                        length -= 4;
+                        hashed3 = (BitOperations.RotateLeft(hashed3, 5) + hashed3) ^ (p0);
+                        hashed4 = (BitOperations.RotateLeft(hashed4, 5) + hashed4) ^ (p1);
+                        ptr += 2;
+                    }
+                    if (length > 0)
+                    {
+                        uint p0 = ptr[0];
+                        hashed4 = (BitOperations.RotateLeft(hashed4, 5) + hashed4) ^ (p0);
+                    }
+
+                    uint res = (((BitOperations.RotateLeft(hashed1, 5) + hashed1)) ^ hashed3) + 1566083941 * (((BitOperations.RotateLeft(hashed2, 5) + hashed2)) ^ hashed4);
+                    return (int)res;
+                }
 
                 while (length > 2)
                 {
+                    uint p0 = ptr[0];
+                    uint p1 = ptr[1];
                     length -= 4;
                     // Where length is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
-                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ ptr[0];
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ ptr[1];
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0);
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1);
                     ptr += 2;
                 }
 
                 if (length > 0)
                 {
+                    uint p0 = ptr[0];
                     // Where length is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ ptr[0];
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0);
                 }
-
-                return (int)(hash1 + (hash2 * 1566083941));
             }
+
+            return (int)(hash1 + (hash2 * 1566083941));
         }
 
         internal unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase()
