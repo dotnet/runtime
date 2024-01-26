@@ -194,6 +194,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (lastOp->isContained())
                 {
                     assert(lastOp->IsCnsIntOrI());
+
                     int8_t mode = static_cast<int8_t>(lastOp->AsIntCon()->IconValue());
                     instOptions = AddEmbRoundingMode(instOptions, mode);
                 }
@@ -207,14 +208,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     emitAttr simdSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
                     assert(simdSize != 0);
 
+                    genConsumeMultiOpOperands(node);
+                    genConsumeRegs(lastOp);
+
                     switch (numArgs)
                     {
                         case 2:
                         {
-                            genConsumeRegs(node->Op(1));
-                            genConsumeRegs(node->Op(2));
-                            genConsumeRegs(lastOp);
-
                             auto emitSwCase = [&](int8_t i) {
                                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
                                 genHWIntrinsic_R_R_RM(node, ins, simdSize, newInstOptions);
@@ -231,6 +231,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             unreached();
                         }
                     }
+
+                    genProduceReg(node);
+                    return;
                 }
             }
         }
@@ -558,6 +561,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 unreached();
                 break;
         }
+
         genProduceReg(node);
         return;
     }
