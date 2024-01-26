@@ -114,16 +114,25 @@ FCIMPL2(FC_BOOL_RET, ArrayNative::IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst
 FCIMPLEND
 
 
+// Return values for CanAssignArrayType
+enum AssignArrayEnum
+{
+    AssignWrongType,
+    AssignMustCast,
+    AssignBoxValueClassOrPrimitive,
+    AssignUnboxValueClass,
+    AssignPrimitiveWiden,
+};
+
 // Returns an enum saying whether you can copy an array of srcType into destType.
-ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const TypeHandle srcTH, const TypeHandle destTH)
+AssignArrayEnum CanAssignArrayType(const TypeHandle srcTH, const TypeHandle destTH)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(srcTH != NULL);
-        PRECONDITION(destTH != NULL);
+        PRECONDITION(!srcTH.IsNull());
+        PRECONDITION(!destTH.IsNull());
     }
     CONTRACTL_END;
 
@@ -190,7 +199,7 @@ extern "C" int QCALLTYPE Array_CanAssignArrayType(void* srcTH, void* destTH)
 
     BEGIN_QCALL;
 
-    ret = ArrayNative::CanAssignArrayType(TypeHandle::FromPtr(srcTH), TypeHandle::FromPtr(destTH));
+    ret = CanAssignArrayType(TypeHandle::FromPtr(srcTH), TypeHandle::FromPtr(destTH));
 
     END_QCALL;
 

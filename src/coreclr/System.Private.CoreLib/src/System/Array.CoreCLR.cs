@@ -134,6 +134,7 @@ namespace System
             }
         }
 
+        // Must match the definition in arraynative.cpp
         private enum AssignArrayEnum
         {
             AssignWrongType,

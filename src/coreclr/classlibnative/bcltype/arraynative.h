@@ -39,19 +39,6 @@ public:
     // This method will acquire data to create a span from a TypeHandle
     // to a field.
     static FCDECL3_VVI(void*, GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetTypeUnsafe, INT32* count);
-
-    // Return values for CanAssignArrayType
-    enum AssignArrayEnum
-    {
-        AssignWrongType,
-        AssignMustCast,
-        AssignBoxValueClassOrPrimitive,
-        AssignUnboxValueClass,
-        AssignPrimitiveWiden,
-    };
-
-    // The following functions are all helpers for ArrayCopy
-    static AssignArrayEnum CanAssignArrayType(const TypeHandle pSrc, const TypeHandle pDest);
 };
 
 extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray);
