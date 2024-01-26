@@ -2,7 +2,6 @@
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <MonoAotIncompatible>true</MonoAotIncompatible>
-    <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

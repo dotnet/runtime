@@ -5,6 +5,7 @@
     <MergedWrapperProjectReference Remove="*/**/*_do.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_r.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_ro.??proj" />
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

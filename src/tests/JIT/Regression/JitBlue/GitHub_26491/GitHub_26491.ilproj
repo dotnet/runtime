@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <MonoAotIncompatible>true</MonoAotIncompatible>
-    <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GitHub_26491.il" />

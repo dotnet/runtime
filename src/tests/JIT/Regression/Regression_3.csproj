@@ -2,6 +2,7 @@
   <ItemGroup>
     <MergedWrapperProjectReference Include="JitBlue/**/*.??proj" />
     <MergedWrapperProjectReference Remove="JitBlue/Runtime_*/**/*.??proj" />
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
