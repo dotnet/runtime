@@ -11,10 +11,8 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'browser'">SR.SystemRuntimeInteropServicesJavaScript_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == '' and '$(FeatureWasmThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
-    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
     <DefineConstants Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(DefineConstants);ENABLE_JS_INTEROP_BY_VALUE</DefineConstants>
     <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>

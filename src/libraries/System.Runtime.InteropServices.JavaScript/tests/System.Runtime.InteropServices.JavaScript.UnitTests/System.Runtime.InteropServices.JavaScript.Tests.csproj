@@ -1,15 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Condition="'$(TargetOS)' == 'browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
   <PropertyGroup>
-    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
-    <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
-    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- to see timing and which test aborted the runtime -->

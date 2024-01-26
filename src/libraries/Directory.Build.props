@@ -94,6 +94,12 @@
     <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(TargetsMobile)' != 'true' and '$(MonoForceInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />
 
   <!-- Use msbuild path functions as that property is used in bash scripts. -->
