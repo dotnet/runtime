@@ -1484,6 +1484,7 @@ retry:
 		case MONO_TYPE_VALUETYPE:
 #ifdef HOST_WASM
 			info->ret_pinvoke_type = PINVOKE_ARG_WASM_VALUETYPE_RESULT;
+			info->ilen++;
 #else
 			info->ret_pinvoke_type = PINVOKE_ARG_INT;
 #endif
@@ -1517,7 +1518,7 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 
 	if (info->ret_pinvoke_type == PINVOKE_ARG_WASM_VALUETYPE_RESULT) {
 		// Allocate an empty arg0 for the address of the return value
-		margs->ilen++;
+		// info->ilen was already increased earlier
 		int_i++;
 	}
 
@@ -1596,6 +1597,7 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 	case PINVOKE_ARG_WASM_VALUETYPE_RESULT:
 		// We pass the return value address in arg0 so fill it in, we already
 		//  reserved space for it earlier.
+		g_printf ("wasm valuetype result address == %d\n", frame->retval);
 		margs->iargs[0] = (gpointer*)frame->retval;
 		// The return type is void so retval should be NULL
 		margs->retval = NULL;
@@ -1817,8 +1819,14 @@ ves_pinvoke_method (
 	g_free (ccontext.stack);
 #else
 	// Only the vt address has been returned, we need to copy the entire content on interp stack
-	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (call_info->ret_mono_type))
-		stackval_from_data (call_info->ret_mono_type, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
+	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (call_info->ret_mono_type)) {
+#ifdef HOST_WASM
+		if (call_info->ret_pinvoke_type == PINVOKE_ARG_WASM_VALUETYPE_RESULT)
+			;
+		else
+#endif
+			stackval_from_data (call_info->ret_mono_type, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
+	}
 
 	if (margs.iargs != margs.iargs_buf)
 		g_free (margs.iargs);
