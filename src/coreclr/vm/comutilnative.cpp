@@ -795,33 +795,6 @@ extern "C" int QCALLTYPE GCInterface_EndNoGCRegion()
     return retVal;
 }
 
-/*===============================GetGenerationWR================================
-**Action: Returns the generation in which the object pointed to by a WeakReference is found.
-**Returns:
-**Arguments: args->handle -- the OBJECTHANDLE to the object which we're locating.
-**Exceptions: ArgumentException if handle points to an object which is not accessible.
-==============================================================================*/
-FCIMPL1(int, GCInterface::GetGenerationWR, LPVOID handle)
-{
-    FCALL_CONTRACT;
-
-    int iRetVal = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    OBJECTREF temp;
-    temp = ObjectFromHandle((OBJECTHANDLE) handle);
-    if (temp == NULL)
-        COMPlusThrowArgumentNull(W("wo"));
-
-    iRetVal = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(OBJECTREFToObject(temp));
-
-    HELPER_METHOD_FRAME_END();
-
-    return iRetVal;
-}
-FCIMPLEND
-
 FCIMPL0(int, GCInterface::GetLastGCPercentTimeInGC)
 {
     FCALL_CONTRACT;
