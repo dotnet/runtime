@@ -1517,7 +1517,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
 
     if (pMT->GetClass()->HasVTableMethodImpl())
     {
-        MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, FALSE));
+        MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, MethodDataComputeOptions::CacheOnly));
 
         for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
         {
@@ -1577,7 +1577,8 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
                     pMT->SetSlot(j, pMT->GetSlot(i));
                     _ASSERT(pMT->GetMethodDescForSlot(j) == pMD);
 
-                    hMTData->UpdateImplMethodDesc(pMD, j);
+                    if (!hMTData.IsNull())
+                        hMTData->UpdateImplMethodDesc(pMD, j);
                 }
             }
         }
