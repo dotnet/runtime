@@ -312,9 +312,9 @@ struct MethodTableAuxiliaryData
         enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0001,     // Is any field type or sub field type overrode Equals or GetHashCode
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
 
-        enum_flag_Unrestored                = 0x0004,
+        // enum_unused                      = 0x0004,
         enum_flag_HasApproxParent           = 0x0010,
-        enum_flag_UnrestoredTypeKey         = 0x0020,
+        // enum_unused                      = 0x0020,
         enum_flag_IsNotFullyLoaded          = 0x0040,
         enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
@@ -339,7 +339,7 @@ struct MethodTableAuxiliaryData
             int16_t m_offsetToNonVirtualSlots;
         };
     };
-    
+
 
     PTR_Module m_pLoaderModule;
 
@@ -400,27 +400,13 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        m_dwFlags |= (MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey |
-                      MethodTableAuxiliaryData::enum_flag_Unrestored |
-                      MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded |
+        m_dwFlags |= (MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded |
                       MethodTableAuxiliaryData::enum_flag_HasApproxParent);
-    }
-
-    void SetIsRestoredForBuildMethodTable()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        m_dwFlags &= ~(MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey |
-                       MethodTableAuxiliaryData::enum_flag_Unrestored);
     }
 
     void SetIsRestoredForBuildArrayMethodTable()
     {
         LIMITED_METHOD_CONTRACT;
-
-        // Used only during method table initialization - no need for logging or Interlocked Exchange.
-        SetIsRestoredForBuildMethodTable();
 
         // Array's parent is always precise
         m_dwFlags &= ~(MethodTableAuxiliaryData::enum_flag_HasApproxParent);
@@ -912,39 +898,17 @@ public:
     void SetHasClassConstructor();
     WORD GetClassConstructorSlot();
 
-    void GetSavedExtent(TADDR *ppStart, TADDR *ppEnd);
-
-    //-------------------------------------------------------------------
-    // Save/Fixup/Restore/NeedsRestore
-    //
-    // Restore this method table if it's not already restored
-    // This is done by forcing a class load which in turn calls the Restore method
-    // The pending list is required for restoring types that reference themselves through
-    // instantiations of the superclass or interfaces e.g. System.Int32 : IComparable<System.Int32>
-
     void AllocateRegularStaticBoxes();
     void AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle);
     static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, bool canBeFrozen = false);
 
     void CheckRestore();
 
-    inline BOOL HasUnrestoredTypeKey() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey) != 0;
-    }
-
-    // Actually do the restore actions on the method table
-    void Restore();
-
-    void SetIsRestored();
-
     inline BOOL IsRestored()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return !(GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_Unrestored);
+        return TRUE;
     }
 
     //-------------------------------------------------------------------
@@ -1042,12 +1006,6 @@ public:
 
         if (dwFlags & MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded)
         {
-            if (dwFlags & MethodTableAuxiliaryData::enum_flag_UnrestoredTypeKey)
-                return CLASS_LOAD_UNRESTOREDTYPEKEY;
-
-            if (dwFlags & MethodTableAuxiliaryData::enum_flag_Unrestored)
-                return CLASS_LOAD_UNRESTORED;
-
             if (dwFlags & MethodTableAuxiliaryData::enum_flag_HasApproxParent)
                 return CLASS_LOAD_APPROXPARENTS;
 
@@ -2924,13 +2882,13 @@ protected:
         static UINT32 GetObjectSize(MethodTable *pMT, MethodDataComputeOptions computeOptions);
 
         // Constructor. Make sure you have allocated enough memory using GetObjectSize.
-        inline MethodDataObject(MethodTable *pMT, MethodDataComputeOptions computeOptions) : 
+        inline MethodDataObject(MethodTable *pMT, MethodDataComputeOptions computeOptions) :
             MethodData(pMT, pMT),
             m_numMethods(ComputeNumMethods(pMT, computeOptions)),
             m_virtualsOnly(computeOptions == MethodDataComputeOptions::NoCacheVirtualsOnly)
             { WRAPPER_NO_CONTRACT; _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly); Init(NULL); }
 
-        inline MethodDataObject(MethodTable *pMT, MethodData *pParentData, MethodDataComputeOptions computeOptions) : 
+        inline MethodDataObject(MethodTable *pMT, MethodData *pParentData, MethodDataComputeOptions computeOptions) :
             MethodData(pMT, pMT),
             m_numMethods(ComputeNumMethods(pMT, computeOptions)),
             m_virtualsOnly(computeOptions == MethodDataComputeOptions::NoCacheVirtualsOnly)

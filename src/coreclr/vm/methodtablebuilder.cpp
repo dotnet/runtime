@@ -10235,7 +10235,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 // Helper to create a new method table. This is the only
 // way to allocate a new MT. Don't try calling new / ctor.
 // Called from SetupMethodTable
-// This needs to be kept consistent with MethodTable::GetSavedExtent()
 MethodTable * MethodTableBuilder::AllocateNewMT(
     Module *pLoaderModule,
     DWORD dwVtableSlots,
@@ -10805,10 +10804,6 @@ MethodTableBuilder::SetupMethodTable2(
     }
 
     pMT->SetCl(GetCl());
-
-    // The type is sufficiently initialized for most general purpose accessor methods to work.
-    // Mark the type as restored to avoid avoid asserts.
-    pMT->GetAuxiliaryDataForWrite()->SetIsRestoredForBuildMethodTable();
 
 #ifdef _DEBUG
     // Store status if we tried to inject duplicate interfaces

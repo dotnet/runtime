@@ -414,29 +414,6 @@ void MethodTable::SetClassInitError()
 }
 
 //==========================================================================================
-// mark the class as having been restored.
-void MethodTable::SetIsRestored()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END
-
-    PRECONDITION(!IsFullyLoaded());
-
-    InterlockedAnd((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, ~MethodTableAuxiliaryData::enum_flag_Unrestored);
-
-#ifndef DACCESS_COMPILE
-    if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
-    {
-        ETW::MethodLog::MethodTableRestored(this);
-    }
-#endif
-}
-
-//==========================================================================================
 // mark as COM object type (System.__ComObject and types deriving from it)
 void MethodTable::SetComObjectType()
 {
@@ -515,7 +492,7 @@ BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
     if (rid != pMT->GetTypeDefRid())
         return FALSE;
 
-    // Types without RIDs are unrelated to each other. This case is taken for arrays. 
+    // Types without RIDs are unrelated to each other. This case is taken for arrays.
     if (rid == 0)
         return FALSE;
 
@@ -711,14 +688,14 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
 
     if (hasGenericStatics)
         prependedAllocationSpace = prependedAllocationSpace + sizeof(GenericsStaticsInfo);
-    
+
     cbAuxiliaryData = cbAuxiliaryData + S_SIZE_T(prependedAllocationSpace) + extraAllocation;
     if (cbAuxiliaryData.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
     BYTE* pAuxiliaryDataRegion = (BYTE *)
         pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(cbAuxiliaryData));
-    
+
     MethodTableAuxiliaryData * pMTAuxiliaryData;
     pMTAuxiliaryData = (MethodTableAuxiliaryData *)(pAuxiliaryDataRegion + prependedAllocationSpace);
 
@@ -4849,35 +4826,6 @@ OBJECTREF MethodTable::GetManagedClassObject()
 }
 
 #endif //!DACCESS_COMPILE
-
-//==========================================================================================
-// This needs to stay consistent with AllocateNewMT() and MethodTable::Save()
-//
-// <TODO> protect this via some asserts as we've had one hard-to-track-down
-// bug already </TODO>
-//
-void MethodTable::GetSavedExtent(TADDR *pStart, TADDR *pEnd)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    TADDR start;
-
-    if (ContainsPointers())
-        start = dac_cast<TADDR>(this) - CGCDesc::GetCGCDescFromMT(this)->GetSize();
-    else
-        start = dac_cast<TADDR>(this);
-
-    TADDR end = dac_cast<TADDR>(this) + GetEndOffsetOfOptionalMembers();
-
-    _ASSERTE(start && end && (start < end));
-    *pStart = start;
-    *pEnd = end;
-}
 
 //==========================================================================================
 void MethodTable::CheckRestore()
