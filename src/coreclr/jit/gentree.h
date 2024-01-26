@@ -470,6 +470,7 @@ enum GenTreeFlags : unsigned int
     GTF_CALL_NULLCHECK          = 0x08000000, // GT_CALL -- must check instance pointer for null
     GTF_CALL_POP_ARGS           = 0x04000000, // GT_CALL -- caller pop arguments?
     GTF_CALL_HOISTABLE          = 0x02000000, // GT_CALL -- call is hoistable
+    GTF_TLS_GET_ADDR            = 0x01000000, // GT_CALL -- call is tls_get_addr
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
@@ -536,6 +537,7 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
     GTF_ICON_STATIC_ADDR_PTR    = 0x13000000, // GT_CNS_INT -- constant is a pointer to a static base address
     GTF_ICON_SECREL_OFFSET      = 0x14000000, // GT_CNS_INT -- constant is an offset in a certain section.
+    GTF_ICON_TLSGD_OFFSET       = 0x15000000, // GT_CNS_INT -- constant is an argument to tls_get_addr.
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count

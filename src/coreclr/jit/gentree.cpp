@@ -10843,6 +10843,8 @@ const char* GenTree::gtGetHandleKindString(GenTreeFlags flags)
             return "GTF_ICON_STATIC_ADDR_PTR";
         case GTF_ICON_SECREL_OFFSET:
             return "GTF_ICON_SECREL_OFFSET";
+        case GTF_ICON_TLSGD_OFFSET:
+            return "GTF_ICON_TLSGD_OFFSET";
         default:
             return "ILLEGAL!";
     }
@@ -10946,6 +10948,10 @@ void Compiler::gtDispNodeName(GenTree* tree)
         else if (tree->AsCall()->IsR2RRelativeIndir())
         {
             gtfType = " r2r_ind";
+        }
+        else if (tree->gtFlags & GTF_TLS_GET_ADDR)
+        {
+            gtfType = " _tls_get_addr";
         }
 #endif // FEATURE_READYTORUN
         else if (tree->gtFlags & GTF_CALL_UNMANAGED)
@@ -12074,6 +12080,9 @@ void Compiler::gtDispConst(GenTree* tree)
                             break;
                         case GTF_ICON_SECREL_OFFSET:
                             printf(" relative offset in section");
+                            break;
+                        case GTF_ICON_TLSGD_OFFSET:
+                            printf(" tls global dynamic offset");
                             break;
                         default:
                             printf(" UNKNOWN");

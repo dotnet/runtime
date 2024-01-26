@@ -65,6 +65,7 @@ UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code, int val);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code, int val);
 
+BYTE* emitOutputData16(BYTE* dst);
 BYTE* emitOutputNOP(BYTE* dst, size_t nBytes);
 BYTE* emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst);
 BYTE* emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
@@ -582,6 +583,8 @@ void emitInsRMW(instruction inst, emitAttr attr, GenTreeStoreInd* storeInd, GenT
 void emitInsRMW(instruction inst, emitAttr attr, GenTreeStoreInd* storeInd);
 
 void emitIns_Nop(unsigned size);
+
+void emitIns_Data16();
 
 void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val);
 
