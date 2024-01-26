@@ -22,7 +22,7 @@ namespace System.Runtime
     //      E.g., the class and methods are marked internal assuming that only the base class library needs them
     //            but if a class library wants to factor differently (such as putting the GCHandle methods in an
     //            optional library, those methods can be moved to a different file/namespace/dll
-    public static partial class RuntimeImports
+    internal static partial class RuntimeImports
     {
         private const string RuntimeLibrary = "*";
 
