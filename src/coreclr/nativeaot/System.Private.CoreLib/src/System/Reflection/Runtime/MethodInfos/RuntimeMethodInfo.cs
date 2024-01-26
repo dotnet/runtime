@@ -23,10 +23,6 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     internal abstract partial class RuntimeMethodInfo : MethodInfo
     {
-        protected RuntimeMethodInfo()
-        {
-        }
-
         public abstract override MethodAttributes Attributes
         {
             get;
