@@ -8604,6 +8604,34 @@ GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenT
 }
 
 //------------------------------------------------------------------------------
+// gtNewStoreDynBlkNode : Create a dynamic block store node.
+//
+// Arguments:
+//    addr       - Destionation address
+//    data       - Value to store (init val or indirection representing a location)
+//
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_STORE_BLK node.
+//
+GenTreeStoreDynBlk* Compiler::gtNewStoreDynBlkNode(GenTree*     addr,
+                                                   GenTree*     data,
+                                                   GenTree*     dynamicSize,
+                                                   GenTreeFlags indirFlags)
+{
+    assert((indirFlags & GTF_IND_INVARIANT) == 0);
+    assert(data->IsInitVal() || data->OperIs(GT_IND));
+
+    GenTreeStoreDynBlk* store = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(addr, data, dynamicSize);
+    store->gtFlags |= GTF_ASG;
+    gtInitializeIndirNode(store, indirFlags);
+    gtInitializeStoreNode(store, data);
+
+    return store;
+}
+
+//------------------------------------------------------------------------------
 // gtNewStoreIndNode : Create an indirect store node.
 //
 // Arguments:
@@ -9663,7 +9691,7 @@ DONE:
     assert(copy->gtOper == oper);
 
     copy->gtVNPair = tree->gtVNPair; // A cloned tree gets the original's Value number pair
-    copy->gtFlags |= tree->gtFlags;
+    copy->gtFlags  = tree->gtFlags;
 
 #if defined(DEBUG)
     // Non-node debug flags should be propagated from 'tree' to 'copy'
@@ -10706,7 +10734,7 @@ bool GenTree::Precedes(GenTree* other)
 //
 void GenTree::SetIndirExceptionFlags(Compiler* comp)
 {
-    assert(OperIsIndirOrArrMetaData() && (OperIsSimple() || OperIs(GT_CMPXCHG)));
+    assert(OperIsIndirOrArrMetaData() && (OperIsSimple() || OperIs(GT_CMPXCHG, GT_STORE_DYN_BLK)));
 
     if (IndirMayFault(comp))
     {
@@ -10723,9 +10751,15 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     {
         gtFlags |= gtGetOp2()->gtFlags & GTF_EXCEPT;
     }
-    if (OperIs(GT_CMPXCHG))
+    else if (OperIs(GT_CMPXCHG))
     {
+        gtFlags |= AsCmpXchg()->Data()->gtFlags & GTF_EXCEPT;
         gtFlags |= AsCmpXchg()->Comparand()->gtFlags & GTF_EXCEPT;
+    }
+    else if (OperIs(GT_STORE_DYN_BLK))
+    {
+        gtFlags |= AsStoreDynBlk()->Data()->gtFlags & GTF_EXCEPT;
+        gtFlags |= AsStoreDynBlk()->gtDynamicSize->gtFlags & GTF_EXCEPT;
     }
 }
 
