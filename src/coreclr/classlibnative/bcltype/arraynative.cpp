@@ -125,7 +125,7 @@ enum AssignArrayEnum
 };
 
 // Returns an enum saying whether you can copy an array of srcType into destType.
-AssignArrayEnum CanAssignArrayType(const TypeHandle srcTH, const TypeHandle destTH)
+static AssignArrayEnum CanAssignArrayType(const TypeHandle srcTH, const TypeHandle destTH)
 {
     CONTRACTL
     {
