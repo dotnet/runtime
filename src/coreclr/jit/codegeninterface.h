@@ -175,7 +175,6 @@ public:
 
 #ifdef DEBUG
     bool genWriteBarrierUsed;
-    void WriteBarrierExtraSuperPmiQueries();
 #endif
 
     // The following property indicates whether the current method sets up
