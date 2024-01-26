@@ -78,19 +78,45 @@ namespace System.Reflection.Metadata.Tests.Metadata
             }
         }
 
-        public static IEnumerable<object[]> SimpleGenericTypes()
+        public static IEnumerable<object[]> GenericArgumentsAreSupported_Arguments()
         {
             yield return new object[]
             {
-                "System.Collections.Generic.List[[System.Int32,System.UInt32,System.Boolean]]",
-                "System.Collections.Generic.List",
-                new string[] { "System.Int32", "System.UInt32", "System.Boolean" }
+                "Generic`1[[A]]",
+                "Generic`1",
+                new string[] { "A" },
+                null
+            };
+            yield return new object[]
+            {
+                "Generic`3[[A],[B],[C]]",
+                "Generic`3",
+                new string[] { "A", "B", "C" },
+                null
+            };
+            yield return new object[]
+            {
+                "Generic`1[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
+                "Generic`1",
+                new string[] { "System.Int32" },
+                new AssemblyName[] { new AssemblyName("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089") }
+            };
+            yield return new object[]
+            {
+                "Generic`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089], [System.Boolean, mscorlib, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
+                "Generic`2",
+                new string[] { "System.Int32", "System.Boolean" },
+                new AssemblyName[]
+                {
+                    new AssemblyName("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"),
+                    new AssemblyName("mscorlib, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")
+                }
             };
         }
 
         [Theory]
-        [MemberData(nameof(SimpleGenericTypes))]
-        public void GenericArgumentsAreSupported(string input, string typeName, string[] typeNames)
+        [MemberData(nameof(GenericArgumentsAreSupported_Arguments))]
+        public void GenericArgumentsAreSupported(string input, string typeName, string[] typeNames, AssemblyName[]? assemblyNames)
         {
             TypeName parsed = TypeNameParser.Parse(input.AsSpan(), allowFullyQualifiedName: true);
 
@@ -101,10 +127,58 @@ namespace System.Reflection.Metadata.Tests.Metadata
             for (int i = 0; i < typeNames.Length; i++)
             {
                 TypeName genericArg = parsed.GetGenericArguments()[i];
-                Assert.Equal(typeName, genericArg.Name);
+                Assert.Equal(typeNames[i], genericArg.Name);
                 Assert.True(genericArg.IsElementalType);
                 Assert.False(genericArg.IsConstructedGenericType);
+
+                if (assemblyNames is not null)
+                {
+                    Assert.Equal(assemblyNames[i].FullName, genericArg.AssemblyName.FullName);
+                }
             }
+        }
+
+        public static IEnumerable<object[]> DecoratorsAreSupported_Arguments()
+        {
+            yield return new object[]
+            {
+                "TypeName*", "TypeName", false, -1, false, true
+            };
+            yield return new object[]
+            {
+                "TypeName&", "TypeName", false, -1, true, false
+            };
+            yield return new object[]
+            {
+                "TypeName[]", "TypeName", true, 1, false, false
+            };
+            yield return new object[]
+            {
+                "TypeName[,,,]", "TypeName", true, 4, false, false
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(DecoratorsAreSupported_Arguments))]
+        public void DecoratorsAreSupported(string input, string typeNameWithoutDecorators, bool isArray, int arrayRank, bool isByRef, bool isPointer)
+        {
+            TypeName parsed = TypeNameParser.Parse(input.AsSpan(), allowFullyQualifiedName: true);
+
+            Assert.Equal(input, parsed.Name);
+            Assert.Equal(isArray, parsed.IsArray);
+            if (isArray) Assert.Equal(arrayRank, parsed.GetArrayRank());
+            Assert.Equal(isByRef, parsed.IsManagedPointerType);
+            Assert.Equal(isPointer, parsed.IsUnmanagedPointerType);
+            Assert.False(parsed.IsElementalType);
+
+            TypeName underlyingType = parsed.UnderlyingType;
+            Assert.NotNull(underlyingType);
+            Assert.Equal(typeNameWithoutDecorators, underlyingType.Name);
+            Assert.True(underlyingType.IsElementalType);
+            Assert.False(underlyingType.IsArray);
+            Assert.False(underlyingType.IsManagedPointerType);
+            Assert.False(underlyingType.IsUnmanagedPointerType);
+            Assert.Null(underlyingType.UnderlyingType);
         }
 
         internal sealed class NonAsciiNotAllowed : TypeNameParserOptions
