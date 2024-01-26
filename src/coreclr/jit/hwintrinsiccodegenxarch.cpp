@@ -199,7 +199,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-                    var_types baseType  = node->GetSimdBaseType();
+                    var_types baseType = node->GetSimdBaseType();
 
                     instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
                     assert(ins != INS_invalid);
@@ -221,7 +221,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             };
                             regNumber baseReg = node->ExtractTempReg();
                             regNumber offsReg = node->GetSingleTempReg();
-                            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+                            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
+                                                            emitSwCase);
                             break;
                         }
 

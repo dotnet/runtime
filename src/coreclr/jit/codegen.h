@@ -1561,7 +1561,13 @@ public:
     void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2);
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
     void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival);
-    void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW, insOpts instOptions);
+    void inst_RV_RV_TT(instruction ins,
+                       emitAttr    size,
+                       regNumber   targetReg,
+                       regNumber   op1Reg,
+                       GenTree*    op2,
+                       bool        isRMW,
+                       insOpts     instOptions);
     void inst_RV_RV_TT_IV(
         instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, int8_t ival, bool isRMW);
 #endif

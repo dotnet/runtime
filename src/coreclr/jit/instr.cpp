@@ -1253,8 +1253,8 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
     emitter* emit = GetEmitter();
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
 
-    // TODO-XArch-CQ: Commutative operations can have op1 be contained
-    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+// TODO-XArch-CQ: Commutative operations can have op1 be contained
+// TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
