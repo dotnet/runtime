@@ -73,13 +73,31 @@ namespace ILCompiler
                 case ReadyToRunHelper.WriteBarrier_EAX:
                     mangledName = "RhpAssignRefEAX";
                     break;
+                case ReadyToRunHelper.WriteBarrier_EBX:
+                    mangledName = "RhpAssignRefEBX";
+                    break;
                 case ReadyToRunHelper.WriteBarrier_ECX:
+                    mangledName = "RhpAssignRefECX";
+                    break;
+                case ReadyToRunHelper.WriteBarrier_EDI:
+                    mangledName = "RhpAssignRefECX";
+                    break;
+                case ReadyToRunHelper.WriteBarrier_ESI:
                     mangledName = "RhpAssignRefECX";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EAX:
                     mangledName = "RhpCheckedAssignRefEAX";
                     break;
+                case ReadyToRunHelper.CheckedWriteBarrier_EBX:
+                    mangledName = "RhpCheckedAssignRefEAX";
+                    break;
                 case ReadyToRunHelper.CheckedWriteBarrier_ECX:
+                    mangledName = "RhpCheckedAssignRefECX";
+                    break;
+                case ReadyToRunHelper.CheckedWriteBarrier_EDI:
+                    mangledName = "RhpCheckedAssignRefECX";
+                    break;
+                case ReadyToRunHelper.CheckedWriteBarrier_ESI:
                     mangledName = "RhpCheckedAssignRefECX";
                     break;
 

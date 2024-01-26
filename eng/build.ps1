@@ -12,7 +12,7 @@ Param(
   [string]$testscope,
   [switch]$testnobuild,
   [ValidateSet("x86","x64","arm","arm64","wasm")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
-  [Parameter(Position=0)][string][Alias('s')]$subset,
+  [string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
@@ -128,6 +128,13 @@ function Get-Help() {
 if ($help) {
   Get-Help
   exit 0
+}
+
+# check the first argument if subset is not explicitly passed in
+if (-not $PSBoundParameters.ContainsKey("subset") -and $properties.Length -gt 0 -and $properties[0] -match '^[a-zA-Z\.\+]+$') {
+  $subset = $properties[0]
+  $PSBoundParameters.Add("subset", $subset)
+  $properties = $properties | Select-Object -Skip 1
 }
 
 if ($subset -eq 'help') {

@@ -21,7 +21,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "ja-JP" };
             yield return new object[] { "ar-SA" };
             yield return new object[] { "xx-XX" };
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { "de-AT-1901" };
             }
@@ -33,19 +33,19 @@ namespace System.Globalization.Tests
             yield return new object[] { "zh-Hant-CN" };
             yield return new object[] { "zh-Hant-SG" };
 
-            if (PlatformDetection.IsIcuGlobalization || PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsIcuGlobalization || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
             {
                 if (PlatformDetection.IsNotWindows)
                 {
                     yield return new object[] { "x\u0000X-Yy", "x" }; // Null byte
-                    if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+                    if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                     {
                         yield return new object[] { "zh-cmn", "zh-CMN" };
                         yield return new object[] { "zh-CMN-HANS" };
                         yield return new object[] { "zh-cmn-Hant", "zh-CMN-HANT" };
                     }
                 }
-                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {
                     yield return new object[] { "sgn-BE-FR" };
                 }

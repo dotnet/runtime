@@ -55,7 +55,7 @@ namespace MonoTests.System.Data
             return row;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Field_T_DBNullFieldValue()
         {
             DataRow row = SetupRow();
@@ -69,7 +69,7 @@ namespace MonoTests.System.Data
             Assert.Null(i);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Field_T_DBNullFieldValue_ValueType()
         {
             DataRow row = SetupRow();
