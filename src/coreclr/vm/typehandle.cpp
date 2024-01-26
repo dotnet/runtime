@@ -1024,7 +1024,7 @@ BOOL TypeHandle::IsRestored() const
     }
     else
     {
-        return AsTypeDesc()->IsRestored();
+        return TRUE;
     }
 }
 
@@ -1034,7 +1034,7 @@ BOOL TypeHandle::HasUnrestoredTypeKey()  const
     SUPPORTS_DAC;
 
     if (IsTypeDesc())
-        return AsTypeDesc()->HasUnrestoredTypeKey();
+        return FALSE;
     else
         return AsMethodTable()->HasUnrestoredTypeKey();
 }

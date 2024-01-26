@@ -499,8 +499,6 @@ public:
     // Does this type have zap-encoded components (generic arguments, etc)?
     BOOL HasUnrestoredTypeKey() const;
 
-    void DoRestoreTypeKey();
-
     void CheckRestore() const;
     BOOL IsExternallyVisible() const;
 
