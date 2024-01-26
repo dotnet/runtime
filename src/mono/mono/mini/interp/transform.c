@@ -349,10 +349,11 @@ enum_type:
 	return -1;
 }
 
-// This doesn't allocate a new var, but marks the existing var as renamable,
-// allocating space for additional var data.
+// This marks the var as renamable, allocating space for additional data.
+// The original var data (InterpVar) will have an index that points to this
+// additional data.
 int
-interp_create_renamable_var (TransformData *td, int var)
+interp_make_var_renamable (TransformData *td, int var)
 {
 	// Check if already allocated
 	if (td->vars [var].ext_index != -1)
@@ -4876,7 +4877,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			g_free (name);
 		}
 
-		if (td->optimized) {
+		if (td->optimized && !td->disable_ssa) {
 			// Add arg defining instructions for SSA machinery
 			for (int i = 0; i < num_args; i++) {
 				interp_add_ins (td, MINT_DEF_ARG);
@@ -6225,8 +6226,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 					// First arg is dummy var, it is null when passed to the ctor
 					call_args [0] = interp_create_var (td, get_type_from_stack (stack_type [ret_mt], NULL));
-					// Make sure this arg is defined for SSA optimizations
-					interp_add_ins (td, MINT_DEF);
+					if (!td->disable_ssa) {
+						// Make sure this arg is defined for SSA optimizations
+						interp_add_ins (td, MINT_DEF);
+					}
 					td->last_ins->dreg = call_args [0];
 					for (int i = 0; i < csignature->param_count; i++) {
 						call_args [i + 1] = td->sp [i].var;
@@ -9016,11 +9019,11 @@ retry:
 			g_free (td->var_values);
 			td->var_values = NULL;
 		}
+		interp_squash_initlocals (td);
 #if HOST_BROWSER
 		if (mono_interp_opt & INTERP_OPT_JITERPRETER)
 			jiterp_insert_entry_points (rtm, td);
 #endif
-		interp_squash_initlocals (td);
 	}
 
 	generate_compacted_code (rtm, td);

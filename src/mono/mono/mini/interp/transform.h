@@ -323,7 +323,7 @@ typedef struct
 	InterpBasicBlock **offset_to_bb;
 	InterpBasicBlock *entry_bb, *cbb;
 	InterpBasicBlock **bblocks; // ordering of bblocks in reverse postorder dfs
-	int bblocks_count;
+	int bblocks_count_no_eh;
 	int bblocks_count_eh;
 	InterpBasicBlock **idoms; // immediate dominator for each bblock, index from reverse postorder dfs
 	int bb_count;
@@ -530,7 +530,7 @@ int
 interp_create_var (TransformData *td, MonoType *type);
 
 int
-interp_create_renamable_var (TransformData *td, int var);
+interp_make_var_renamable (TransformData *td, int var);
 
 int
 interp_create_renamed_fixed_var (TransformData *td, int var_index, int renamable_var_index);

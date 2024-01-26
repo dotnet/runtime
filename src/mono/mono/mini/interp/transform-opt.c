@@ -569,7 +569,7 @@ interp_compute_dfs_indexes (TransformData *td)
 		bb->dfs_index = -1;
 	// Sort bblocks in reverse postorder
 	int dfs_index = dfs_visit (td);
-	td->bblocks_count = dfs_index;
+	td->bblocks_count_no_eh = dfs_index;
 
 	// Visit also bblocks reachable from eh handlers. These bblocks are not linked
 	// to the main cfg (where we do dominator computation, ssa transformation etc)
@@ -591,7 +591,7 @@ interp_compute_dfs_indexes (TransformData *td)
 		g_print ("\nBASIC BLOCK GRAPH:\n");
 		for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 			GString* bb_info = interp_get_bb_links (bb);
-			g_print ("BB%d: DFS%s(%d), %s\n", bb->index, (bb->dfs_index >= td->bblocks_count) ? "_EH" : "" , bb->dfs_index, bb_info->str);
+			g_print ("BB%d: DFS%s(%d), %s\n", bb->index, (bb->dfs_index >= td->bblocks_count_no_eh) ? "_EH" : "" , bb->dfs_index, bb_info->str);
 			g_string_free (bb_info, TRUE);
 		}
 	}
@@ -615,7 +615,7 @@ is_bblock_ssa_cfg (TransformData *td, InterpBasicBlock *bb)
 	// bblocks with uninitialized dfs_index are unreachable
 	if (bb->dfs_index == -1)
 		return FALSE;
-	if (bb->dfs_index < td->bblocks_count)
+	if (bb->dfs_index < td->bblocks_count_no_eh)
 		return TRUE;
 	return FALSE;
 }
@@ -623,14 +623,14 @@ is_bblock_ssa_cfg (TransformData *td, InterpBasicBlock *bb)
 static void
 interp_compute_dominators (TransformData *td)
 {
-	InterpBasicBlock **idoms = (InterpBasicBlock**)mono_mempool_alloc0 (td->opt_mempool, sizeof (InterpBasicBlock*) * td->bblocks_count);
+	InterpBasicBlock **idoms = (InterpBasicBlock**)mono_mempool_alloc0 (td->opt_mempool, sizeof (InterpBasicBlock*) * td->bblocks_count_no_eh);
 
 	idoms [0] = td->entry_bb;
 	gboolean changed = TRUE;
 	while (changed) {
 		changed = FALSE;
 		// all bblocks in reverse post order except entry
-		for (int i = 1; i < td->bblocks_count; i++) {
+		for (int i = 1; i < td->bblocks_count_no_eh; i++) {
 			InterpBasicBlock *bb = td->bblocks [i];
 			InterpBasicBlock *new_idom = NULL;
 			// pick candidate idom from first processed predecessor of it
@@ -661,7 +661,7 @@ interp_compute_dominators (TransformData *td)
 	td->idoms = idoms;
 
 	// Build `dominated` bblock list for each bblock
-	for (int i = 1; i < td->bblocks_count; i++) {
+	for (int i = 1; i < td->bblocks_count_no_eh; i++) {
 		InterpBasicBlock *bb = td->bblocks [i];
 		InterpBasicBlock *idom = td->idoms [i];
 		if (idom)
@@ -698,15 +698,15 @@ interp_compute_dominators (TransformData *td)
 static void
 interp_compute_dominance_frontier (TransformData *td)
 {
-	int bitsize = mono_bitset_alloc_size (td->bblocks_count, 0);
-	char *mem = (char *)mono_mempool_alloc0 (td->opt_mempool, bitsize * td->bblocks_count);
+	int bitsize = mono_bitset_alloc_size (td->bblocks_count_no_eh, 0);
+	char *mem = (char *)mono_mempool_alloc0 (td->opt_mempool, bitsize * td->bblocks_count_no_eh);
 
-	for (int i = 0; i < td->bblocks_count; i++) {
-		td->bblocks [i]->dfrontier = mono_bitset_mem_new (mem, td->bblocks_count, 0);
+	for (int i = 0; i < td->bblocks_count_no_eh; i++) {
+		td->bblocks [i]->dfrontier = mono_bitset_mem_new (mem, td->bblocks_count_no_eh, 0);
 		mem += bitsize;
 	}
 
-	for (int i = 0; i < td->bblocks_count; i++) {
+	for (int i = 0; i < td->bblocks_count_no_eh; i++) {
 		InterpBasicBlock *bb = td->bblocks [i];
 
 		if (bb->in_count > 1) {
@@ -718,7 +718,7 @@ interp_compute_dominance_frontier (TransformData *td)
 				g_assert (p->dfs_index || p == td->entry_bb);
 
 				while (p != td->idoms [bb->dfs_index]) {
-					g_assert (bb->dfs_index < td->bblocks_count);
+					g_assert (bb->dfs_index < td->bblocks_count_no_eh);
 					mono_bitset_set_fast (p->dfrontier, bb->dfs_index);
 					p = td->idoms [p->dfs_index];
 				}
@@ -779,7 +779,7 @@ interp_compute_eh_vars (TransformData *td)
 
 	// EH bblocks are stored separately and are not reachable from the non-EF control flow
 	// path. Any var reachable from EH bblocks will not be in SSA form.
-	for (int i = td->bblocks_count; i < td->bblocks_count_eh; i++) {
+	for (int i = td->bblocks_count_no_eh; i < td->bblocks_count_eh; i++) {
 		InterpBasicBlock *bb = td->bblocks [i];
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			if (ins->opcode == MINT_LDLOCA_S)
@@ -916,7 +916,7 @@ interp_compute_global_vars (TransformData *td)
 				if (!var_data->declare_bbs) {
 					var_data->declare_bbs = g_slist_prepend (NULL, bb);
 				} else {
-					int ext_index = interp_create_renamable_var (td, ins->dreg);
+					int ext_index = interp_make_var_renamable (td, ins->dreg);
 					if (!g_slist_find (var_data->declare_bbs, bb)) {
 						// Var defined in multiple bblocks, it is ssa global
 						var_data->declare_bbs = g_slist_prepend (var_data->declare_bbs, bb);
@@ -976,9 +976,9 @@ static void
 compute_gen_kill_sets (TransformData *td)
 {
 	int bitsize = mono_bitset_alloc_size (td->renamable_vars_size, 0);
-	char *mem = (char *)mono_mempool_alloc0 (td->opt_mempool, bitsize * td->bblocks_count * 4);
+	char *mem = (char *)mono_mempool_alloc0 (td->opt_mempool, bitsize * td->bblocks_count_no_eh * 4);
 
-	for (int i = 0; i < td->bblocks_count; i++) {
+	for (int i = 0; i < td->bblocks_count_no_eh; i++) {
 		InterpBasicBlock *bb = td->bblocks [i];
 
 		bb->gen_set = mono_bitset_mem_new (mem, td->renamable_vars_size, 0);
@@ -1032,7 +1032,7 @@ interp_compute_pruned_ssa_liveness (TransformData *td)
 	gboolean changed = TRUE;
 	while (changed) {
 		changed = FALSE;
-		for (int i = 0; i < td->bblocks_count; i++) {
+		for (int i = 0; i < td->bblocks_count_no_eh; i++) {
 			InterpBasicBlock *bb = td->bblocks [i];
 			guint32 prev_count = mono_bitset_count (bb->live_out_set);
 			recompute_live_out (td, bb);
@@ -1165,7 +1165,7 @@ insert_phi_nodes (TransformData *td)
 static void
 insert_tiering_defs (TransformData *td)
 {
-	for (int i = 0; i < td->bblocks_count; i++) {
+	for (int i = 0; i < td->bblocks_count_no_eh; i++) {
 		InterpBasicBlock *bb = td->bblocks [i];
 		if (!bb->patchpoint_bb)
 			continue;
@@ -1348,8 +1348,8 @@ rename_vars_in_bb_end (TransformData *td, InterpBasicBlock *bb)
 				g_assert (td->vars [renamed_var].renamed_ssa_fixed);
 				int renamed_var_ext = td->vars [renamed_var].ext_index;
 				if (!td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks) {
-					gpointer mem = mono_mempool_alloc0 (td->opt_mempool, mono_bitset_alloc_size (td->bblocks_count, 0));
-					td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks = mono_bitset_mem_new (mem, td->bblocks_count, 0);
+					gpointer mem = mono_mempool_alloc0 (td->opt_mempool, mono_bitset_alloc_size (td->bblocks_count_no_eh, 0));
+					td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks = mono_bitset_mem_new (mem, td->bblocks_count_no_eh, 0);
 				}
 
 				mono_bitset_set_fast (td->renamed_fixed_vars [renamed_var_ext].live_out_bblocks, bb->dfs_index);
@@ -1387,8 +1387,8 @@ static void
 rename_vars (TransformData *td)
 {
 	int next_stack_index = 0;
-	InterpBasicBlock **stack = (InterpBasicBlock**)g_malloc0 (sizeof (InterpBasicBlock*) * td->bblocks_count);
-	gboolean *bb_status = (gboolean*)g_malloc0 (sizeof (InterpBasicBlock*) * td->bblocks_count);
+	InterpBasicBlock **stack = (InterpBasicBlock**)g_malloc0 (sizeof (InterpBasicBlock*) * td->bblocks_count_no_eh);
+	gboolean *bb_status = (gboolean*)g_malloc0 (sizeof (InterpBasicBlock*) * td->bblocks_count_no_eh);
 
 	stack [next_stack_index++] = td->entry_bb;
 
@@ -1425,7 +1425,7 @@ rename_vars (TransformData *td)
 			MonoBitSet *live_out_bblocks = td->renamed_fixed_vars [i].live_out_bblocks;
 			if (live_out_bblocks) {
 				int j;
-				mono_bitset_foreach_bit (live_out_bblocks, j, td->bblocks_count) {
+				mono_bitset_foreach_bit (live_out_bblocks, j, td->bblocks_count_no_eh) {
 					g_print (" BB%d", td->bblocks [j]->index);
 				}
 			}
@@ -2744,7 +2744,7 @@ interp_cprop (TransformData *td)
 			gint32 *sregs;
 			gint32 dreg;
 			// LIVENESS_MARKER is set only for non-eh bblocks
-			if (bb->dfs_index >= td->bblocks_count || bb->dfs_index == -1 || (ins->flags & INTERP_INST_FLAG_LIVENESS_MARKER))
+			if (bb->dfs_index >= td->bblocks_count_no_eh || bb->dfs_index == -1 || (ins->flags & INTERP_INST_FLAG_LIVENESS_MARKER))
 				current_liveness.ins_index++;
 
 			if (interp_ins_is_nop (ins))
@@ -3337,7 +3337,7 @@ interp_super_instructions (TransformData *td)
 		current_liveness.ins_index = 0;
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int opcode = ins->opcode;
-			if (bb->dfs_index >= td->bblocks_count || bb->dfs_index == -1 || (ins->flags & INTERP_INST_FLAG_LIVENESS_MARKER))
+			if (bb->dfs_index >= td->bblocks_count_no_eh || bb->dfs_index == -1 || (ins->flags & INTERP_INST_FLAG_LIVENESS_MARKER))
 				current_liveness.ins_index++;
 			if (MINT_IS_NOP (opcode))
 				continue;
@@ -3804,7 +3804,7 @@ interp_prepare_no_ssa_opt (TransformData *td)
 		bb->dfs_index = i;
 		i++;
 	}
-	td->bblocks_count = 0;
+	td->bblocks_count_no_eh = 0;
 	td->bblocks_count_eh = i;
 }
 
