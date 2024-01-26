@@ -74,7 +74,7 @@
                       Properties="@(_DefaultPropsForNuGetBuild, ';');"
                       Dependencies="$(_DefaultRuntimePackNuGetPath)"
                       Descriptor="single threaded runtime pack"
-                      Condition='$(WasmEnableThreads)' != 'true' />
+                      Condition="'$(WasmEnableThreads)' != 'true'" />
     </ItemGroup>
 
     <Message
