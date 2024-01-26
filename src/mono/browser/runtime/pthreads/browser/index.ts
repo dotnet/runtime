@@ -95,6 +95,7 @@ function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>):
             port = message.port!;
             thread = new ThreadImpl(pthreadId, worker, port);
             worker.thread = thread;
+            worker.info.isRunning = true;
             resolvePromises(pthreadId, thread);
         // fall through
         case WorkerToMainMessageType.enabledInterop:

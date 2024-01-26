@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
+import BuildConfiguration from "consts:configuration";
 
 import { onWorkerLoadInitiated } from "../browser";
 import { afterThreadInitTLS } from "../worker";
-import { PThreadLibrary, PThreadWorker, getUnusedWorkerPool } from "./emscripten-internals";
+import { PThreadLibrary, PThreadWorker, getRunningWorkers, getUnusedWorkerPool } from "./emscripten-internals";
 import { loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_warn } from "../../logging";
 
@@ -57,6 +58,9 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
             originalReturnWorkerToPool(worker);
         }
     };
+    if (BuildConfiguration === "Debug") {
+        (globalThis as any).dumpThreads = dumpThreads;
+    }
 }
 
 let availableThreadCount = 0;
@@ -111,4 +115,23 @@ function allocateUnusedWorker(): PThreadWorker {
         threadName: "",
     };
     return worker;
+}
+
+
+export function dumpThreads(): void {
+    if (!MonoWasmThreads) return;
+    // eslint-disable-next-line no-console
+    console.log("Running workers:");
+    getRunningWorkers().forEach((worker) => {
+        // eslint-disable-next-line no-console
+        console.log(`${worker.info.threadName}: isRunning:${worker.info.isRunning} isAttached:${worker.info.isAttached} isExternalEventLoop:${worker.info.isExternalEventLoop}  ${JSON.stringify(worker.info)}`);
+    });
+
+    // eslint-disable-next-line no-console
+    console.log("Unused workers:");
+    getUnusedWorkerPool().forEach((worker) => {
+        // eslint-disable-next-line no-console
+        console.log(`${worker.info.threadName}: isRunning:${worker.info.isRunning} isAttached:${worker.info.isAttached} isExternalEventLoop:${worker.info.isExternalEventLoop}  ${JSON.stringify(worker.info)}`);
+    });
+
 }

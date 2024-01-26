@@ -26,9 +26,6 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" Condition="'$(FeatureWasmThreads)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Utils.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.Http.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.WebSocket.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestBase.cs" />
     <None Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JSImportGenerator\JSImports.g.cs" />
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JsExportGenerator\JSExports.g.cs" />
@@ -38,7 +35,10 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureWasmThreads)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestBase.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.Http.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.WebSocket.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.cs" />
     <None Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
