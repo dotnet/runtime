@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
+using static Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
@@ -156,6 +157,40 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var allServices = provider.GetKeyedServices<IService>(KeyedService.AnyKey).ToList();
             Assert.Equal(5, allServices.Count);
             Assert.Equal(new[] { service1, service2, service3, service4 }, allServices.Skip(1));
+        }
+
+        [Fact]
+        public void ResolveKeyedServicesAnyKeyConsistency()
+        {
+            var serviceCollection = new ServiceCollection();
+            var service = new Service("first-service");
+            serviceCollection.AddKeyedSingleton<IService>("first-service", service);
+
+            var provider1 = CreateServiceProvider(serviceCollection);
+            Assert.Null(provider1.GetKeyedService<IService>(KeyedService.AnyKey));
+            Assert.Equal(new[] { service }, provider1.GetKeyedServices<IService>(KeyedService.AnyKey));
+
+            var provider2 = CreateServiceProvider(serviceCollection);
+            Assert.Equal(new[] { service }, provider2.GetKeyedServices<IService>(KeyedService.AnyKey));
+            Assert.Null(provider2.GetKeyedService<IService>(KeyedService.AnyKey));
+        }
+
+        [Fact]
+        public void ResolveKeyedServicesAnyKeyConsistencyWithAnyKeyRegistration()
+        {
+            var serviceCollection = new ServiceCollection();
+            var service = new Service("first-service");
+            var any = new Service("any");
+            serviceCollection.AddKeyedSingleton<IService>("first-service", service);
+            serviceCollection.AddKeyedSingleton<IService>(KeyedService.AnyKey, (sp, key) => any);
+
+            var provider1 = CreateServiceProvider(serviceCollection);
+            Assert.Same(any, provider1.GetKeyedService<IService>(KeyedService.AnyKey));
+            Assert.Equal(new[] { service, any }, provider1.GetKeyedServices<IService>(KeyedService.AnyKey));
+
+            var provider2 = CreateServiceProvider(serviceCollection);
+            Assert.Equal(new[] { service, any }, provider2.GetKeyedServices<IService>(KeyedService.AnyKey));
+            Assert.Same(any, provider2.GetKeyedService<IService>(KeyedService.AnyKey));
         }
 
         [Fact]
