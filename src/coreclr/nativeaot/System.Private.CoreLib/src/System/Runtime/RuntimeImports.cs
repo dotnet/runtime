@@ -822,6 +822,14 @@ namespace System.Runtime
         // Interlocked helpers
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg8")]
+        internal static extern byte InterlockedCompareExchange(ref byte location1, byte value, byte comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg16")]
+        internal static extern short InterlockedCompareExchange(ref short location1, short value, short comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
         internal static extern int InterlockedCompareExchange(ref int location1, int value, int comparand);
 
@@ -1106,28 +1114,11 @@ namespace System.Runtime
 
         internal struct RhCorElementTypeInfo
         {
-            public RhCorElementTypeInfo(ushort widenMask, bool isPrimitive = false)
-            {
-                RhCorElementTypeInfoFlags flags = RhCorElementTypeInfoFlags.IsValid;
-                if (isPrimitive)
-                    flags |= RhCorElementTypeInfoFlags.IsPrimitive;
-                _flags = flags;
-                _widenMask = widenMask;
-            }
-
             public bool IsPrimitive
             {
                 get
                 {
                     return 0 != (_flags & RhCorElementTypeInfoFlags.IsPrimitive);
-                }
-            }
-
-            public bool IsFloat
-            {
-                get
-                {
-                    return 0 != (_flags & RhCorElementTypeInfoFlags.IsFloat);
                 }
             }
 
