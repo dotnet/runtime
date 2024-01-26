@@ -131,6 +131,7 @@ namespace System.Net
                 ThrowDisposedException();
 
             [StackTraceHidden]
+            [DoesNotReturn]
             static void ThrowDisposedException() => throw new ObjectDisposedException(nameof(HttpClientContentStream));
         }
     }
