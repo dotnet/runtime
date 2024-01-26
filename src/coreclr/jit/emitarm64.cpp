@@ -14992,7 +14992,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*****************************************************************************
  *
  *  Returns 0, 1, 2 or 3 depending on the instruction and format.
- *  This is for formats that have [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
+ *  This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
  */
 
 /*static*/ int emitter::insSveGetLslOrModN(instruction ins, insFormat fmt)
