@@ -12009,7 +12009,8 @@ MethodTableBuilder::GatherGenericsInfo(
     mdTypeDef         cl,
     Instantiation     inst,
     bmtGenericsInfo * bmtGenericsInfo,
-    StackingAllocator*pStackingAllocator)
+    StackingAllocator*pStackingAllocator,
+    AllocMemTracker * pamTracker)
 {
     CONTRACTL
     {
@@ -12086,9 +12087,12 @@ MethodTableBuilder::GatherGenericsInfo(
             if (FAILED(hr))
                 pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
 
-            // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type
-            // to break type recursion dead-locks
-            CrstHolder ch(&pModule->GetClassLoader()->m_AvailableTypesLock);
+            uint8_t* pTypeVarTypeDescMemory = NULL;
+            if (bmtGenericsInfo->fTypicalInstantiation)
+            {
+                // Allocate the memory for all of the TypeVarTypeDescs at once
+                pTypeVarTypeDescMemory = (uint8_t*)pamTracker->Track(pModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numGenericArgs) * S_SIZE_T(sizeof(TypeVarTypeDesc))));
+            }
 
             for (unsigned int i = 0; i < numGenericArgs; i++)
             {
@@ -12101,18 +12105,9 @@ MethodTableBuilder::GatherGenericsInfo(
 
                 if (bmtGenericsInfo->fTypicalInstantiation)
                 {
-                    // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
-                    // instances so that we do not leak by allocating them all over again, if the type
-                    // repeatedly fails to load.
-                    TypeVarTypeDesc* pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
-                    if (pTypeVarTypeDesc == NULL)
-                    {
-                        // Do NOT use the alloc tracker for this memory as we need it stay allocated even if the load fails.
-                        void* mem = (void*)pModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
-                        pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, cl, i, tkTyPar);
-
-                        pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
-                    }
+                    // Unlike Generic Method Definition handling of typical instantiations, there is only ever one typical instantiation of a type
+                    // so we can just allocate the args here
+                    TypeVarTypeDesc* pTypeVarTypeDesc = new (pTypeVarTypeDescMemory + (sizeof(TypeVarTypeDesc) * i)) TypeVarTypeDesc(pModule, cl, i, tkTyPar);
                     pDestInst[i] = TypeHandle(pTypeVarTypeDesc);
                 }
 
@@ -12293,7 +12288,7 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     ACQUIRE_STACKING_ALLOCATOR(pStackingAllocator);
 
     // Gather up generics info
-    MethodTableBuilder::GatherGenericsInfo(pModule, cl, inst, &genericsInfo, pStackingAllocator);
+    MethodTableBuilder::GatherGenericsInfo(pModule, cl, inst, &genericsInfo, pStackingAllocator, pamTracker);
 
     Module * pLoaderModule = pModule;
     if (!inst.IsEmpty())

@@ -155,6 +155,26 @@ void LookupMap<TYPE>::AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TA
     }
 }
 
+#ifndef DACCESS_COMPILE
+// Stores an association in a map. Grows the map as necessary. Does not support flags
+// Add is done via Interlocked operation, so generally a lock isn't needed around use of this api
+// Returns the value that is actually stored in the LookupMap (either the old value or the new one)
+template<typename TYPE>
+TYPE LookupMap<TYPE>::AddElementInterlocked(ModuleBase *pModule, DWORD rid, TYPE value)
+{
+    DPTR(typename TYPE) pElement = dac_cast<DPTR(typename TYPE)>(GetElementPtr(rid));
+    if (pElement == NULL)
+    {
+        pElement = dac_cast<DPTR(typename TYPE)>(GrowMap(pModule, rid));
+    }
+
+    TYPE oldValue = InterlockedCompareExchangeT(pElement, value, NULL);
+    if (oldValue == NULL)
+        return value;
+    else
+        return oldValue;
+}
+#endif
 
 // Ensures that the map has space for this element
 template<typename TYPE>

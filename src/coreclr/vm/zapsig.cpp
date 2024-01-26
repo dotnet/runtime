@@ -37,12 +37,6 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
         // thing will happen in code:SigPointer.GetTypeHandleThrowing
         elemType = (CorElementType) ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG;
     }
-    else if (elemType == ELEMENT_TYPE_VAR || elemType == ELEMENT_TYPE_MVAR)
-    {
-        // Enable encoding of type variables for R2R signature only.
-        if (context.externalTokens == ZapSig::NormalTokens)
-            elemType = (CorElementType) ELEMENT_TYPE_VAR_ZAPSIG;
-    }
 
     pSigBuilder->AppendElementType(elemType);
 
@@ -86,26 +80,6 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
         case ELEMENT_TYPE_VAR:
             //                    _ASSERTE(!"Cannot encode ET_VAR in a ZapSig");
             return FALSE;
-
-        case ELEMENT_TYPE_VAR_ZAPSIG:
-            {
-                TypeVarTypeDesc * pTypeVarDesc = dac_cast<PTR_TypeVarTypeDesc>(desc);
-                Module * pVarTypeModule = pTypeVarDesc->GetModule();
-                if (pVarTypeModule != this->context.pInfoModule)
-                {
-                    DWORD index = (*this->pfnEncodeModule)(this->context.pModuleContext, pVarTypeModule);
-
-                    if (index == ENCODE_MODULE_FAILED)
-                        return FALSE;
-
-                    // emit the ET_MODULE_ZAPSIG escape
-                    pSigBuilder->AppendElementType((CorElementType) ELEMENT_TYPE_MODULE_ZAPSIG);
-                    // emit the module index
-                    pSigBuilder->AppendData(index);
-                }
-                pSigBuilder->AppendData(RidFromToken(pTypeVarDesc->GetToken()));
-                break;
-            }
 
         default:
             _ASSERTE(!"Bad type");
@@ -371,17 +345,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
             unsigned varNum = CorSigUncompressData(pSig);
             RETURN(varNum == (dac_cast<PTR_TypeVarTypeDesc>(handle.AsTypeDesc())->GetIndex()));
-        }
-
-        case ELEMENT_TYPE_VAR_ZAPSIG:
-        {
-            if (!handle.IsGenericVariable())
-                RETURN(FALSE);
-
-            TypeVarTypeDesc *pTypeVarTypeDesc = handle.AsGenericVariable();
-
-            unsigned rid = CorSigUncompressData(pSig);
-            RETURN(TokenFromRid(rid, mdtGenericParam) == pTypeVarTypeDesc->GetToken() && pModule == pTypeVarTypeDesc->GetModule());
         }
 
         // These take an additional argument, which is the element type

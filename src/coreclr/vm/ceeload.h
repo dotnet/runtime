@@ -246,6 +246,11 @@ public:
         AddElement(pModule, rid, value, 0);
     }
 
+    // Stores an association in a map. Grows the map as necessary. Does not support flags
+    // Add is done via Interlocked operation, so generally a lock isn't needed around use of this api
+    // Returns the value that is actually stored in the LookupMap (either the old value or the new one)
+    TYPE AddElementInterlocked(ModuleBase *pModule, DWORD rid, TYPE value);
+
     void AddElementWithFlags(ModuleBase * pModule, DWORD rid, TYPE value, TADDR flags)
     {
         WRAPPER_NO_CONTRACT;
@@ -728,6 +733,8 @@ private:
     LookupMap<PTR_FieldDesc>        m_FieldDefToDescMap;
 
     // Linear mapping from GenericParam token to TypeVarTypeDesc*
+    // Only used for Generic Method TypeVarTypeDesc structures (There are potentially many
+    // methods with the typical instantiation, but for types there can only be one)
     LookupMap<PTR_TypeVarTypeDesc>  m_GenericParamToDescMap;
 
     // IL stub cache with fabricated MethodTable parented by this module.
@@ -1262,6 +1269,7 @@ public:
 
     MethodDesc *LookupMemberRefAsMethod(mdMemberRef token);
 
+    // Lookup a pre-existing GenericParam TypeVarTypeDesc. Only used for Generic Method TypeVarTypeDescs
     PTR_TypeVarTypeDesc LookupGenericParam(mdGenericParam token)
     {
         WRAPPER_NO_CONTRACT;
@@ -1270,12 +1278,13 @@ public:
         return m_GenericParamToDescMap.GetElement(RidFromToken(token));
     }
 #ifndef DACCESS_COMPILE
-    void StoreGenericParamThrowing(mdGenericParam token, TypeVarTypeDesc *value)
+    // Store a GenericParam TypeVarTypeDesc. Only used for Generic Method TypeVarTypeDescs
+    TypeVarTypeDesc *StoreGenericParamThrowing(mdGenericParam token, TypeVarTypeDesc *value)
     {
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE(TypeFromToken(token) == mdtGenericParam);
-        m_GenericParamToDescMap.AddElement(this, RidFromToken(token), value);
+        return m_GenericParamToDescMap.AddElementInterlocked(this, RidFromToken(token), value);
     }
 #endif // !DACCESS_COMPILE
 

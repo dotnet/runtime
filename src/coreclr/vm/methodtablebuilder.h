@@ -92,7 +92,8 @@ public:
                                    mdTypeDef cl,
                                    Instantiation inst,
                                    bmtGenericsInfo *bmtGenericsInfo,
-                                   StackingAllocator *pStackingAllocator);
+                                   StackingAllocator *pStackingAllocator,
+                                   AllocMemTracker * pamTracker);
 
     MethodTable *
     BuildMethodTableThrowing(
