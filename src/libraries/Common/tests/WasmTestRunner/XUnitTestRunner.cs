@@ -1054,10 +1054,7 @@ internal class MyXUnitTestRunner : MyXunitTestRunnerBase
 
     private async Task<XElement> Run(Assembly assembly, string assemblyPath)
     {
-        //MF: XunitFrontController is checking file existence
         using (var frontController = new XunitFrontController(AppDomainSupport, assemblyPath, null, false))
-        // var diagnosticSink = new MyConsoleDiagnosticMessageSink();
-        // using (var frontController = new Xunit2(AppDomainSupport.Denied, new NullSourceInformationProvider(), assemblyPath, configFileName: null, shadowCopy: false, shadowCopyFolder: null, diagnosticMessageSink: diagnosticSink, verifyTestAssemblyExists: false))
         {
             using (var discoverySink = new TestDiscoverySink())
             {
