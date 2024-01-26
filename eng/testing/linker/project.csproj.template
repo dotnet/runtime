@@ -98,4 +98,8 @@
 
   <Import Project="{NativeSanitizersTargets}" />
 
+  <ItemGroup>
+    <Content Include="@(SanitizerRuntimeToCopy->'{SanitizerRuntimeFolder}/%(Identity)')" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
