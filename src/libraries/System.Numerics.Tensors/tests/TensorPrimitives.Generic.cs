@@ -19,7 +19,8 @@ namespace System.Numerics.Tensors.Tests
     public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float> { }
     public class HalfGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<Half>
     {
-        protected override void AssertEqualTolerance(Half expected, Half actual) => AssertEqualTolerance(expected, actual, Half.CreateTruncating(0.001));
+        protected override void AssertEqualTolerance(Half expected, Half actual, Half? tolerance = null) =>
+            base.AssertEqualTolerance(expected, actual, tolerance ?? Half.CreateTruncating(0.001));
     }
     public class NFloatGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<NFloat> { }
 
@@ -158,9 +159,9 @@ namespace System.Numerics.Tensors.Tests
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Log10P1), new Func<T, T>(T.Log10P1) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.RadiansToDegrees), new Func<T, T>(T.RadiansToDegrees) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Reciprocal), new Func<T, T>(f => T.One / f) };
-            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.ReciprocalEstimate), new Func<T, T>(T.ReciprocalEstimate) };
+            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.ReciprocalEstimate), new Func<T, T>(T.ReciprocalEstimate), T.CreateTruncating(1.171875e-02) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.ReciprocalSqrt), new Func<T, T>(f => T.One / T.Sqrt(f)) };
-            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.ReciprocalSqrtEstimate), new Func<T, T>(T.ReciprocalSqrtEstimate) };
+            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.ReciprocalSqrtEstimate), new Func<T, T>(T.ReciprocalSqrtEstimate), T.CreateTruncating(1.171875e-02) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Round), new Func<T, T>(T.Round) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Sin), new Func<T, T>(T.Sin) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Sinh), new Func<T, T>(T.Sinh) };
@@ -174,7 +175,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        public void SpanDestinationFunctions_AllLengths(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod)
+        public void SpanDestinationFunctions_AllLengths(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
@@ -185,14 +186,14 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    AssertEqualTolerance(expectedMethod(x[i]), destination[i]);
+                    AssertEqualTolerance(expectedMethod(x[i]), destination[i], tolerance);
                 }
             });
         }
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        public void SpanDestinationFunctions_InPlace(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod)
+        public void SpanDestinationFunctions_InPlace(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
@@ -203,14 +204,14 @@ namespace System.Numerics.Tensors.Tests
 
                 for (int i = 0; i < tensorLength; i++)
                 {
-                    AssertEqualTolerance(expectedMethod(xOrig[i]), x[i]);
+                    AssertEqualTolerance(expectedMethod(xOrig[i]), x[i], tolerance);
                 }
             });
         }
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        public void SpanDestinationFunctions_SpecialValues(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod)
+        public void SpanDestinationFunctions_SpecialValues(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
@@ -222,7 +223,7 @@ namespace System.Numerics.Tensors.Tests
                     tensorPrimitivesMethod(x.Span, destination.Span);
                     for (int i = 0; i < tensorLength; i++)
                     {
-                        AssertEqualTolerance(expectedMethod(x[i]), destination[i]);
+                        AssertEqualTolerance(expectedMethod(x[i]), destination[i], tolerance);
                     }
                 }, x);
             });
@@ -230,7 +231,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        public void SpanDestinationFunctions_ValueRange(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod)
+        public void SpanDestinationFunctions_ValueRange(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-100f), ConvertFromSingle(100f), ConvertFromSingle(3f)), arg =>
             {
@@ -243,14 +244,15 @@ namespace System.Numerics.Tensors.Tests
                 T expected = expectedMethod(arg.Element);
                 foreach (T actual in dest)
                 {
-                    AssertEqualTolerance(expected, actual);
+                    AssertEqualTolerance(expected, actual, tolerance);
                 }
             });
         }
 
+#pragma warning disable xUnit1026 // Theory methods should use all of their parameters
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        public void SpanDestinationFunctions_ThrowsForTooShortDestination(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> _)
+        public void SpanDestinationFunctions_ThrowsForTooShortDestination(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> _, T? __ = null)
         {
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
@@ -263,12 +265,13 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
-        public void SpanDestinationFunctions_ThrowsForOverlapppingInputsWithOutputs(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> _)
+        public void SpanDestinationFunctions_ThrowsForOverlapppingInputsWithOutputs(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> _, T? __ = null)
         {
             T[] array = new T[10];
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(0, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => tensorPrimitivesMethod(array.AsSpan(1, 2), array.AsSpan(2, 2)));
         }
+#pragma warning restore xUnit1026
         #endregion
 
         #region Span,Span -> Destination
@@ -1065,6 +1068,21 @@ namespace System.Numerics.Tensors.Tests
                 }
             });
         }
+
+        [Fact]
+        public void Round_InvalidMode_Throws()
+        {
+            T[] x = new T[10];
+            AssertExtensions.Throws<ArgumentException>("mode", () => TensorPrimitives.Round(x.AsSpan(), (MidpointRounding)(-1), x.AsSpan()));
+            AssertExtensions.Throws<ArgumentException>("mode", () => TensorPrimitives.Round(x.AsSpan(), (MidpointRounding)5, x.AsSpan()));
+        }
+
+        [Fact]
+        public void Round_InvalidDigits_Throws()
+        {
+            T[] x = new T[10];
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("digits", () => TensorPrimitives.Round(x.AsSpan(), -1, x.AsSpan()));
+        }
         #endregion
     }
 
@@ -1620,10 +1638,10 @@ namespace System.Numerics.Tensors.Tests
             }
         }
 
-        protected override void AssertEqualTolerance(T expected, T actual) => AssertEqualTolerance(expected, actual, T.CreateTruncating(0.0001));
-
-        protected override void AssertEqualTolerance(T expected, T actual, T tolerance)
+        protected override void AssertEqualTolerance(T expected, T actual, T? tolerance = null)
         {
+            tolerance ??= T.CreateTruncating(0.0001);
+
             T diff = T.Abs(expected - actual);
             if (diff > tolerance && diff > T.Max(T.Abs(expected), T.Abs(actual)) * tolerance)
             {

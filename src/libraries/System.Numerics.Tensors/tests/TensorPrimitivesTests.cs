@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Numerics.Tensors.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97295", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public abstract class TensorPrimitivesTests<T> where T : unmanaged, IEquatable<T>
     {
         #region Abstract Methods Under Test
@@ -114,9 +115,7 @@ namespace System.Numerics.Tensors.Tests
 
         protected abstract T NextRandom();
 
-        protected abstract void AssertEqualTolerance(T expected, T actual);
-
-        protected abstract void AssertEqualTolerance(T expected, T actual, T tolerance);
+        protected abstract void AssertEqualTolerance(T expected, T actual, T? tolerance = null);
 
         protected abstract IEnumerable<(int Length, T Element)> VectorLengthAndIteratedRange(T min, T max, T increment);
 
