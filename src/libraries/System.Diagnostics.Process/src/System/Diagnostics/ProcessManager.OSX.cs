@@ -39,7 +39,19 @@ namespace System.Diagnostics
                 // Ignored
             }
 
-            // Fallback to empty string if the process name could not be retrieved
+            // Try to get the task info. This can fail if the user permissions don't permit
+            // this user context to query the specified process
+            Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(pid);
+
+            // If we could not get the process name from its path, attempt to use the old 15-char
+            // limited process name
+            if (string.IsNullOrEmpty(processName) && info != null)
+            {
+                Interop.libproc.proc_taskallinfo temp = info.Value;
+                unsafe { processName = Marshal.PtrToStringUTF8(new IntPtr(temp.pbsd.pbi_comm)); }
+            }
+
+            // Fallback to empty string if the process name could not be retrieved in any way
             processName ??= "";
 
             if (!string.IsNullOrEmpty(processNameFilter) && !string.Equals(processName, processNameFilter, StringComparison.OrdinalIgnoreCase))
@@ -53,9 +65,6 @@ namespace System.Diagnostics
                 ProcessName = processName,
             };
 
-            // Try to get the task info. This can fail if the user permissions don't permit
-            // this user context to query the specified process
-            Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(pid);
             if (info.HasValue)
             {
                 // Set the values we have; all the other values don't have meaning or don't exist on OSX
