@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <TargetFramework Condition="'$(WasmEnableThreads)' != 'true'">$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFrameworks Condition="'$(WasmEnableThreads)' == 'true'">$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>

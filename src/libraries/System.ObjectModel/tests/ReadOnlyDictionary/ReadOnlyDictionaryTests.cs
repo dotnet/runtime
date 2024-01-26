@@ -243,13 +243,13 @@ namespace System.Collections.ObjectModel.Tests
             Assert.Equal(dict.Count, itemArray.Length);
 
             DebuggerAttributes.ValidateDebuggerDisplayReferences(dict.Keys);
-            info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>.KeyCollection), new Type[] { typeof(int) }, dict.Keys);
+            info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(dict.Keys);
             itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
             int[] items = itemProperty.GetValue(info.Instance) as int[];
             Assert.Equal(dict.Keys, items);
 
             DebuggerAttributes.ValidateDebuggerDisplayReferences(dict.Values);
-            info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>.KeyCollection), new Type[] { typeof(int) }, dict.Values);
+            info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(dict.Values);
             itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
             items = itemProperty.GetValue(info.Instance) as int[];
             Assert.Equal(dict.Values, items);
@@ -259,7 +259,7 @@ namespace System.Collections.ObjectModel.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void DebuggerAttribute_NullDictionary_ThrowsArgumentNullException()
         {
-            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() =>   DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>), null));
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() =>   DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(ReadOnlyDictionary<int, int>)));
             ArgumentNullException argumentNullException = Assert.IsType<ArgumentNullException>(ex.InnerException);
             Assert.Equal("dictionary", argumentNullException.ParamName);
         }
@@ -268,7 +268,7 @@ namespace System.Collections.ObjectModel.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void DebuggerAttribute_NullDictionaryKeys_ThrowsArgumentNullException()
         {
-            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>.KeyCollection), new Type[] { typeof(int) }, null));
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(ReadOnlyDictionary<int, int>.KeyCollection)));
             ArgumentNullException argumentNullException = Assert.IsType<ArgumentNullException>(ex.InnerException);
             Assert.Equal("collection", argumentNullException.ParamName);
         }
