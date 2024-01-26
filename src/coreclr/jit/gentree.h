@@ -4583,7 +4583,7 @@ public:
 #endif
     }
 
-    bool IsMismatchArgType() const
+    bool IsMismatchedArgType() const
     {
 #ifdef TARGET_RISCV64
         return isValidIntArgReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
