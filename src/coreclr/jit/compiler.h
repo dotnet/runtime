@@ -2188,6 +2188,9 @@ public:
 
     bool HasDef(unsigned lclNum);
 
+    bool CanDuplicate(INDEBUG(const char** reason));
+    void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale, bool bottomNeedsRedirection);
+
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoop* loop);
 #endif // DEBUG
@@ -6785,6 +6788,7 @@ public:
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     bool optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR);
+    void optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicBlock* prevTestBlock, BasicBlock* target);
     void optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum, ssize_t cnsVal);
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
