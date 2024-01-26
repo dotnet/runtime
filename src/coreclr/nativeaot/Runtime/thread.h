@@ -94,7 +94,7 @@ struct ThreadBuffer
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
-    uintptr_t               m_uHijackedReturnValueFlags;            
+    uintptr_t               m_uHijackedReturnValueFlags;
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     Object*                 m_pThreadLocalStatics;
@@ -102,7 +102,7 @@ struct ThreadBuffer
     GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
-    EEThreadId              m_threadId;                             // OS thread ID
+    uint64_t                m_threadId;                             // OS thread ID
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
     NATIVE_CONTEXT*         m_interruptedContext;                   // context for an asynchronously interrupted thread.
 #ifdef FEATURE_SUSPEND_REDIRECTION
@@ -171,7 +171,7 @@ private:
     // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
     // Thus they cannot have any parameters or return anything.
     //
-    typedef void HijackFunc();
+    typedef void FASTCALL HijackFunc();
 
     void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
@@ -193,9 +193,16 @@ private:
     //
     PInvokeTransitionFrame* GetTransitionFrame();
 
-    void GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & sfIter);
+    void GcScanRootsWorker(ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData, StackFrameIterator & sfIter);
+
+    // Tracks the amount of bytes that were reserved for threads in their gc_alloc_context and went unused when they died.
+    // Used for GC.GetTotalAllocatedBytes
+    static uint64_t s_DeadThreadsNonAllocBytes;
 
 public:
+
+    static uint64_t GetDeadThreadsNonAllocBytes();
+
     // First phase of thread destructor, disposes stuff related to GC.
     // Executed with thread store lock taken so GC cannot happen.
     void Detach();
@@ -207,15 +214,9 @@ public:
 
     gc_alloc_context *  GetAllocContext();
 
-#ifndef DACCESS_COMPILE
     uint64_t            GetPalThreadIdForLogging();
-    bool                IsCurrentThread();
 
-    void                GcScanRoots(void * pfnEnumCallback, void * pvCallbackData);
-#else
-    typedef void GcScanRootsCallbackFunc(PTR_RtuObjectRef ppObject, void* token, uint32_t flags);
-    bool GcScanRoots(GcScanRootsCallbackFunc * pfnCallback, void * token, PTR_PAL_LIMITED_CONTEXT pInitialContext);
-#endif
+    void                GcScanRoots(ScanFunc* pfnEnumCallback, ScanContext * pvCallbackData);
 
     void                Hijack();
     void                Unhijack();
@@ -273,6 +274,10 @@ public:
     // Do not use anywhere else.
     void                DeferTransitionFrame();
 
+    // Setup the m_pDeferredTransitionFrame field for GC helpers entered from native helper thread
+    // code (e.g. ETW or EventPipe threads). Do not use anywhere else.
+    void                SetDeferredTransitionFrameForNativeHelperThread();
+
     //
     // GC support APIs - do not use except from GC itself
     //
@@ -318,36 +323,5 @@ public:
 typedef DPTR(Object) PTR_Object;
 typedef DPTR(PTR_Object) PTR_PTR_Object;
 #endif // !__GCENV_BASE_INCLUDED__
-#ifdef DACCESS_COMPILE
-
-// The DAC uses DebuggerEnumGcRefContext in place of a GCCONTEXT when doing reference
-// enumeration. The GC passes through additional data in the ScanContext which the debugger
-// neither has nor needs. While we could refactor the GC code to make an interface
-// with less coupling, that might affect perf or make integration messier. Instead
-// we use some typedefs so DAC and runtime can get strong yet distinct types.
-
-
-// Ideally we wouldn't need this wrapper, but PromoteCarefully needs access to the
-// thread and a promotion field. We aren't assuming the user's token will have this data.
-struct DacScanCallbackData
-{
-    Thread* thread_under_crawl;               // the thread being scanned
-    bool promotion;                           // are we emulating the GC promote phase or relocate phase?
-                                              // different references are reported for each
-    void* token;                              // the callback data passed to GCScanRoots
-    void* pfnUserCallback;                    // the callback passed in to GcScanRoots
-    uintptr_t stack_limit;                    // Lowest point on the thread stack that the scanning logic is permitted to read
-};
-
-typedef DacScanCallbackData EnumGcRefScanContext;
-typedef void EnumGcRefCallbackFunc(PTR_PTR_Object, EnumGcRefScanContext* callbackData, uint32_t flags);
-
-#else // DACCESS_COMPILE
-struct ScanContext;
-typedef void promote_func(PTR_PTR_Object, ScanContext*, unsigned);
-typedef promote_func EnumGcRefCallbackFunc;
-typedef ScanContext  EnumGcRefScanContext;
-
-#endif // DACCESS_COMPILE
 
 #endif // __thread_h__

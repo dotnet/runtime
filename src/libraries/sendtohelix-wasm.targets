@@ -1,4 +1,31 @@
 <Project>
+  <Import Project="$(RepositoryEngineeringDir)testing\workloads-testing.targets" />
+
+  <PropertyGroup>
+    <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
+
+    <BrowserBuildTargetsDir>$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'build'))</BrowserBuildTargetsDir>
+    <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmBuildTargetsDir>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;BUILT_NUGETS_PATH=%HELIX_CORRELATION_PAYLOAD%/built-nugets&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;BUILT_NUGETS_PATH=$HELIX_CORRELATION_PAYLOAD/built-nugets&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;DOTNET_SKIP_WORKLOAD_INTEGRITY_CHECK=1&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;DOTNET_SKIP_WORKLOAD_INTEGRITY_CHECK=1&quot;" />
+  </ItemGroup>
+
   <Target Name="_AddWorkItemsForBuildWasmApps" Condition="'$(Scenario)' == 'BuildWasmApps'">
     <PropertyGroup>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>

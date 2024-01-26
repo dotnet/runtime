@@ -482,7 +482,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         // We don't share small offset constants when they require a reloc
         // Also, we don't share non-null const gc handles
         //
-        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) && ((tree->IsIntegralConst(0)) || !varTypeIsGC(tree)))
+        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) && (tree->IsIntegralConst(0) || !varTypeIsGC(tree)))
         {
             // Here we make constants that have the same upper bits use the same key
             //
@@ -708,43 +708,18 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 //------------------------------------------------------------------------
 // optValnumCSE_Locate: Locate CSE candidates and assign them indices.
 //
+// Arguments:
+//    heuristic to consult in assessing candidates
+//
 // Returns:
 //    true if there are any CSE candidates, false otherwise
 //
-bool Compiler::optValnumCSE_Locate()
+bool Compiler::optValnumCSE_Locate(CSE_HeuristicCommon* heuristic)
 {
-    bool enableConstCSE = true;
-
-    int configValue = JitConfig.JitConstCSE();
-
-    // all platforms - disable CSE of constant values when config is 1
-    if (configValue == CONST_CSE_DISABLE_ALL)
-    {
-        enableConstCSE = false;
-    }
-
-#if !defined(TARGET_ARM64)
-    // non-ARM64 platforms - disable by default
-    //
-    enableConstCSE = false;
-
-    // Check for the two enable cases for all platforms
-    //
-    if ((configValue == CONST_CSE_ENABLE_ALL) || (configValue == CONST_CSE_ENABLE_ALL_NO_SHARING))
-    {
-        enableConstCSE = true;
-    }
-#endif
-
     for (BasicBlock* const block : Blocks())
     {
         /* Make the block publicly available */
-
         compCurBB = block;
-
-        // Ensure that the BBF_MARKED flag is clear.
-        // Everyone who uses this flag is required to clear it afterwards.
-        noway_assert(!block->HasFlag(BBF_MARKED));
 
         /* Walk the statement trees in this basic block */
         for (Statement* const stmt : block->NonPhiStatements())
@@ -763,49 +738,7 @@ bool Compiler::optValnumCSE_Locate()
                     optCseUpdateCheckedBoundMap(tree);
                 }
 
-                // Don't allow CSE of constants if it is disabled
-                if (tree->IsIntegralConst())
-                {
-                    if (!enableConstCSE &&
-                        // Unconditionally allow these constant handles to be CSE'd
-                        !tree->IsIconHandle(GTF_ICON_STATIC_HDL) && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) &&
-                        !tree->IsIconHandle(GTF_ICON_STR_HDL) && !tree->IsIconHandle(GTF_ICON_OBJ_HDL))
-                    {
-                        continue;
-                    }
-                }
-
-                // Don't allow non-SIMD struct CSEs under a return; we don't fully
-                // re-morph these if we introduce a CSE assignment, and so may create
-                // IR that lower is not yet prepared to handle.
-                //
-                if (isReturn && varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
-                {
-                    continue;
-                }
-
-                if (!optIsCSEcandidate(tree))
-                {
-                    continue;
-                }
-
-                ValueNum valueVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
-                if (ValueNumStore::isReservedVN(valueVN) && (valueVN != ValueNumStore::VNForNull()))
-                {
-                    continue;
-                }
-
-                // We want to CSE simple constant leaf nodes, but we don't want to
-                // CSE non-leaf trees that compute CSE constant values.
-                // Instead we let the Value Number based Assertion Prop phase handle them.
-                //
-                // Here, unlike the rest of optCSE, we use the conservative value number
-                // rather than the liberal one, since the conservative one
-                // is what the Value Number based Assertion Prop will use
-                // and the point is to avoid optimizing cases that it will
-                // handle.
-                //
-                if (!tree->OperIsLeaf() && vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)))
+                if (!heuristic->ConsiderTree(tree, isReturn))
                 {
                     continue;
                 }
@@ -1679,11 +1612,15 @@ void Compiler::optValnumCSE_Availability()
     }
 }
 
-//  The following class handles the CSE heuristics
-//  we use a complex set of heuristic rules
-//  to determine if it is likely to be profitable to perform this CSE
+//------------------------------------------------------------------------
+// CSE_HeuristicCommon: construct basic CSE heuristic
 //
-
+// Arguments;
+//  pCompiler - compiler instance
+//
+// Notes:
+//  This creates the basic CSE heuristic. It never does any CSEs.
+//
 CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler) : m_pCompiler(pCompiler)
 {
     m_addCSEcount = 0; /* Count of the number of LclVars for CSEs that we added */
@@ -1691,9 +1628,332 @@ CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler) : m_pCompiler(pCom
     sortSiz       = 0;
     madeChanges   = false;
     codeOptKind   = m_pCompiler->compCodeOpt();
+
+    enableConstCSE = true;
+
+    int configValue = JitConfig.JitConstCSE();
+
+    // all platforms - disable CSE of constant values when config is 1
+    if (configValue == CONST_CSE_DISABLE_ALL)
+    {
+        enableConstCSE = false;
+    }
+
+#if !defined(TARGET_ARM64)
+    // non-ARM64 platforms - disable by default
+    //
+    enableConstCSE = false;
+
+    // Check for the two enable cases for all platforms
+    //
+    if ((configValue == CONST_CSE_ENABLE_ALL) || (configValue == CONST_CSE_ENABLE_ALL_NO_SHARING))
+    {
+        enableConstCSE = true;
+    }
+#endif
+
+    JITDUMP("CONST CSE is %s\n", enableConstCSE ? "enabled" : "disabled");
+}
+
+//------------------------------------------------------------------------
+// CanConsiderTree: check if this tree can be a CSE candidate
+//
+// Arguments:
+//   tree - tree in question
+//   isReturn - true if tree is part of a return statement
+//
+// Returns:
+//    true if this tree can be a CSE candidate
+//
+// Notes:
+//   This currently does both legality and profitability checks.
+//   Eventually it should just do legality checks.
+//
+bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
+{
+    // Don't allow CSE of constants if it is disabled
+    //
+    if (tree->IsIntegralConst())
+    {
+        if (!enableConstCSE &&
+            // Unconditionally allow these constant handles to be CSE'd
+            !tree->IsIconHandle(GTF_ICON_STATIC_HDL) && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) &&
+            !tree->IsIconHandle(GTF_ICON_STR_HDL) && !tree->IsIconHandle(GTF_ICON_OBJ_HDL))
+        {
+            return false;
+        }
+    }
+
+    // Don't allow non-SIMD struct CSEs under a return; we don't fully
+    // re-morph these if we introduce a CSE assignment, and so may create
+    // IR that lower is not yet prepared to handle.
+    //
+    if (isReturn && varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
+    {
+        return false;
+    }
+
+    // No good if the expression contains side effects or if it was marked as DONT CSE
+    //
+    if (tree->gtFlags & (GTF_ASG | GTF_DONT_CSE))
+    {
+        return false;
+    }
+
+    var_types type = tree->TypeGet();
+
+    if (type == TYP_VOID)
+    {
+        return false;
+    }
+
+    unsigned cost;
+    if (codeOptKind == Compiler::SMALL_CODE)
+    {
+        cost = tree->GetCostSz();
+    }
+    else
+    {
+        cost = tree->GetCostEx();
+    }
+
+    //  Don't bother if the potential savings are very low
+    //
+    if (cost < Compiler::MIN_CSE_COST)
+    {
+        return false;
+    }
+
+    genTreeOps oper = tree->OperGet();
+
+#if !CSE_CONSTS
+    //  Don't bother with constants
+    //
+    if (tree->OperIsConst())
+    {
+        return false;
+    }
+#endif
+
+    // Check for special cases
+    //
+    switch (oper)
+    {
+        case GT_CALL:
+        {
+            GenTreeCall* const call = tree->AsCall();
+
+            // Don't mark calls to allocation helpers as CSE candidates.
+            // Marking them as CSE candidates usually blocks CSEs rather than enables them.
+            // A typical case is:
+            // [1] GT_IND(x) = GT_CALL ALLOC_HELPER
+            // ...
+            // [2] y = GT_IND(x)
+            // ...
+            // [3] z = GT_IND(x)
+            // If we mark CALL ALLOC_HELPER as a CSE candidate, we later discover
+            // that it can't be a CSE def because GT_INDs in [2] and [3] can cause
+            // more exceptions (NullRef) so we abandon this CSE.
+            // If we don't mark CALL ALLOC_HELPER as a CSE candidate, we are able
+            // to use GT_IND(x) in [2] as a CSE def.
+            if ((call->gtCallType == CT_HELPER) &&
+                Compiler::s_helperCallProperties.IsAllocator(m_pCompiler->eeGetHelperNum(call->gtCallMethHnd)))
+            {
+                return false;
+            }
+
+            // If we have a simple helper call with no other persistent side-effects
+            // then we allow this tree to be a CSE candidate
+            //
+            if (m_pCompiler->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS | GTF_IS_IN_CSE))
+            {
+                return false;
+            }
+        }
+        break;
+
+        case GT_IND:
+            // TODO-CQ: Review this...
+            /* We try to cse GT_ARR_ELEM nodes instead of GT_IND(GT_ARR_ELEM).
+                Doing the first allows cse to also kick in for code like
+                "GT_IND(GT_ARR_ELEM) = GT_IND(GT_ARR_ELEM) + xyz", whereas doing
+                the second would not allow it */
+
+            if (tree->AsOp()->gtOp1->gtOper == GT_ARR_ELEM)
+            {
+                return false;
+            }
+            break;
+
+        case GT_CNS_LNG:
+#ifndef TARGET_64BIT
+            return false; // Don't CSE 64-bit constants on 32-bit platforms
+#endif
+        case GT_CNS_INT:
+        case GT_CNS_DBL:
+        case GT_CNS_STR:
+        case GT_CNS_VEC:
+            break;
+
+        case GT_ARR_ELEM:
+        case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
+            break;
+
+        case GT_LCL_VAR:
+            return false; // Can't CSE a volatile LCL_VAR
+
+        case GT_NEG:
+        case GT_NOT:
+        case GT_BSWAP:
+        case GT_BSWAP16:
+        case GT_CAST:
+        case GT_BITCAST:
+            break;
+
+        case GT_SUB:
+        case GT_DIV:
+        case GT_MOD:
+        case GT_UDIV:
+        case GT_UMOD:
+        case GT_OR:
+        case GT_AND:
+        case GT_XOR:
+        case GT_RSH:
+        case GT_RSZ:
+        case GT_ROL:
+        case GT_ROR:
+            break;
+
+        case GT_ADD: // Check for ADDRMODE flag on these Binary Operators
+        case GT_MUL:
+        case GT_LSH:
+            if ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0)
+            {
+                return false;
+            }
+            break;
+
+        case GT_EQ:
+        case GT_NE:
+        case GT_LT:
+        case GT_LE:
+        case GT_GE:
+        case GT_GT:
+            break;
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
+            assert(hwIntrinsicNode != nullptr);
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->GetHWIntrinsicId());
+
+            switch (category)
+            {
+#ifdef TARGET_XARCH
+                case HW_Category_SimpleSIMD:
+                case HW_Category_IMM:
+                case HW_Category_Scalar:
+                case HW_Category_SIMDScalar:
+                case HW_Category_Helper:
+                    break;
+#elif defined(TARGET_ARM64)
+                case HW_Category_SIMD:
+                case HW_Category_SIMDByIndexedElement:
+                case HW_Category_ShiftLeftByImmediate:
+                case HW_Category_ShiftRightByImmediate:
+                case HW_Category_Scalar:
+                case HW_Category_Helper:
+                    break;
+#endif
+
+                case HW_Category_MemoryLoad:
+                case HW_Category_MemoryStore:
+                case HW_Category_Special:
+                default:
+                    return false;
+            }
+
+            if (hwIntrinsicNode->OperIsMemoryStore())
+            {
+                // NI_BMI2_MultiplyNoFlags, etc...
+                return false;
+            }
+            if (hwIntrinsicNode->OperIsMemoryLoad())
+            {
+                // NI_AVX2_BroadcastScalarToVector128, NI_AVX2_GatherVector128, etc...
+                return false;
+            }
+        }
+        break;
+
+#endif // FEATURE_HW_INTRINSICS
+
+        case GT_INTRINSIC:
+            break;
+
+        case GT_BLK:
+        case GT_LCL_FLD:
+            // TODO-1stClassStructs: support CSE for enregisterable TYP_STRUCTs.
+            if (!varTypeIsEnregisterable(type))
+            {
+                return false;
+            }
+            break;
+
+        case GT_COMMA:
+            break;
+
+        case GT_COLON:
+        case GT_QMARK:
+        case GT_NOP:
+        case GT_RETURN:
+            return false; // Currently the only special nodes that we hit
+                          // that we know that we don't want to CSE
+
+        default:
+            return false;
+    }
+
+    ValueNumStore* const vnStore = m_pCompiler->GetValueNumStore();
+
+    ValueNum valueVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
+    if (ValueNumStore::isReservedVN(valueVN) && (valueVN != ValueNumStore::VNForNull()))
+    {
+        return false;
+    }
+
+    // We want to CSE simple constant leaf nodes, but we don't want to
+    // CSE non-leaf trees that compute CSE constant values.
+    // Instead we let the Value Number based Assertion Prop phase handle them.
+    //
+    // Here, unlike the rest of optCSE, we use the conservative value number
+    // rather than the liberal one, since the conservative one
+    // is what the Value Number based Assertion Prop will use
+    // and the point is to avoid optimizing cases that it will
+    // handle.
+    //
+    if (!tree->OperIsLeaf() && vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 #ifdef DEBUG
+//------------------------------------------------------------------------
+// CSE_HeuristicRandom: construct random CSE heuristic
+//
+// Arguments;
+//  pCompiler - compiler instance
+//
+// Notes:
+//  This creates the random CSE heuristic. It does CSEs randomly, with some
+//  predetermined likelihood (set by config or by stress).
+//
 CSE_HeuristicRandom::CSE_HeuristicRandom(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
 {
     m_cseRNG.Init(m_pCompiler->info.compMethodHash());
@@ -1712,8 +1972,32 @@ CSE_HeuristicRandom::CSE_HeuristicRandom(Compiler* pCompiler) : CSE_HeuristicCom
         JITDUMP("JitRandomCSE is ON; using random bias=%d.\n", m_bias);
     }
 }
+
+//------------------------------------------------------------------------
+// ConsiderTree: check if this tree can be a CSE candidate
+//
+// Arguments:
+//   tree - tree in question
+//   isReturn - true if tree is part of a return statement
+//
+// Returns:
+//    true if this tree can be a CSE candidate
+//
+bool CSE_HeuristicRandom::ConsiderTree(GenTree* tree, bool isReturn)
+{
+    return CanConsiderTree(tree, isReturn);
+}
 #endif
 
+//------------------------------------------------------------------------
+// CSE_Heuristic: construct standard CSE heuristic
+//
+// Arguments;
+//  pCompiler - compiler instance
+//
+// Notes:
+//  This creates the standard CSE heuristic.
+//
 CSE_Heuristic::CSE_Heuristic(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
 {
     aggressiveRefCnt = 0;
@@ -1723,6 +2007,25 @@ CSE_Heuristic::CSE_Heuristic(Compiler* pCompiler) : CSE_HeuristicCommon(pCompile
     hugeFrame        = false;
 }
 
+//------------------------------------------------------------------------
+// ConsiderTree: check if this tree can be a CSE candidate
+//
+// Arguments:
+//   tree - tree in question
+//   isReturn - true if tree is part of a return statement
+//
+// Returns:
+//    true if this tree can be a CSE candidate
+//
+bool CSE_Heuristic::ConsiderTree(GenTree* tree, bool isReturn)
+{
+    return CanConsiderTree(tree, isReturn);
+}
+
+//------------------------------------------------------------------------
+// Initialize: initialize the standard CSE heuristic
+//
+// Notes:
 // Perform the Initialization step for our CSE Heuristics. Determine the various cut off values to use for
 // the aggressive, moderate and conservative CSE promotions. Count the number of enregisterable variables.
 // Determine if the method has a large or huge stack frame.
@@ -1970,6 +2273,13 @@ void CSE_Heuristic::Initialize()
 #endif
 }
 
+//------------------------------------------------------------------------
+// SortCandidates: standard heuristic candidate sort
+//
+// Notes:
+//  Copies candidates to the sorted table, and then sorts (ranks) them from
+//  most appealing to least appealing, based on heuristic criteria.
+//
 void CSE_Heuristic::SortCandidates()
 {
     /* Create an expression table sorted by decreasing cost */
@@ -2062,7 +2372,7 @@ bool CSE_HeuristicRandom::PromotionCheck(CSE_Candidate* candidate)
 }
 
 //------------------------------------------------------------------------
-// SortCandidate: fillin the CSE sort tab
+// SortCandidate: fill in the CSE sort tab
 //
 void CSE_HeuristicRandom::SortCandidates()
 {
@@ -3181,10 +3491,10 @@ void CSE_HeuristicCommon::ConsiderCandidates()
 // optValnumCSE_Heuristic: Perform common sub-expression elimination
 //    based on profitabiliy heuristic
 //
-// Returns:
-//    true if changes were made
+// Arguments:
+//    heurisic -- CSE heuristic to use
 //
-bool Compiler::optValnumCSE_Heuristic()
+void Compiler::optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic)
 {
 #ifdef DEBUG
     if (verbose)
@@ -3195,9 +3505,24 @@ bool Compiler::optValnumCSE_Heuristic()
     }
 #endif // DEBUG
 
-    // Determine which heuristic to use...
-    //
-    CSE_HeuristicCommon* heuristic = nullptr;
+    heuristic->Initialize();
+    heuristic->SortCandidates();
+    heuristic->ConsiderCandidates();
+    heuristic->Cleanup();
+}
+
+//------------------------------------------------------------------------
+// optGetCSEheuristic: created or return the CSE heuristic for this method
+//
+// Returns:
+//    The heuristic that will be used for CSE decisions.
+//
+CSE_HeuristicCommon* Compiler::optGetCSEheuristic()
+{
+    if (optCSEheuristic != nullptr)
+    {
+        return optCSEheuristic;
+    }
 
 #ifdef DEBUG
     bool useRandomHeuristic = false;
@@ -3215,22 +3540,17 @@ bool Compiler::optValnumCSE_Heuristic()
 
     if (useRandomHeuristic)
     {
-        heuristic = new (this, CMK_CSE) CSE_HeuristicRandom(this);
+        optCSEheuristic = new (this, CMK_CSE) CSE_HeuristicRandom(this);
     }
 #endif
 
-    if (heuristic == nullptr)
+    if (optCSEheuristic == nullptr)
     {
         JITDUMP("Using standard CSE heuristic\n");
-        heuristic = new (this, CMK_CSE) CSE_Heuristic(this);
+        optCSEheuristic = new (this, CMK_CSE) CSE_Heuristic(this);
     }
 
-    heuristic->Initialize();
-    heuristic->SortCandidates();
-    heuristic->ConsiderCandidates();
-    heuristic->Cleanup();
-
-    return heuristic->MadeChanges();
+    return optCSEheuristic;
 }
 
 //------------------------------------------------------------------------
@@ -3241,7 +3561,6 @@ bool Compiler::optValnumCSE_Heuristic()
 //
 PhaseStatus Compiler::optOptimizeValnumCSEs()
 {
-
 #ifdef DEBUG
     if (optConfigDisableCSE())
     {
@@ -3250,251 +3569,51 @@ PhaseStatus Compiler::optOptimizeValnumCSEs()
     }
 #endif
 
+    // Determine which heuristic to use...
+    //
+    CSE_HeuristicCommon* const heuristic = optGetCSEheuristic();
+
     optValnumCSE_phase = true;
     optCSEweight       = -1.0f;
     bool madeChanges   = false;
 
     optValnumCSE_Init();
 
-    if (optValnumCSE_Locate())
+    if (optValnumCSE_Locate(heuristic))
     {
         optValnumCSE_InitDataFlow();
         optValnumCSE_DataFlow();
         optValnumCSE_Availability();
-        madeChanges = optValnumCSE_Heuristic();
+        optValnumCSE_Heuristic(heuristic);
     }
 
     optValnumCSE_phase = false;
 
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return heuristic->MadeChanges() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
-/*****************************************************************************
- *
- *  The following determines whether the given expression is a worthy CSE
- *  candidate.
- */
-bool Compiler::optIsCSEcandidate(GenTree* tree)
+//------------------------------------------------------------------------
+// optIsCSEcandidate: Determine if this tree is a possible CSE candidate
+//
+// Arguments:
+//   tree - tree in question
+//   isReturn - true if this tree is part of a return statement.
+//    If this is unknown then pass false (also the default value).
+//
+// Returns:
+//   True if so
+//
+// Notes:
+//   Useful to invoke upstream of CSE if you're trying to anticipate what
+//   trees might be eligible for CSEs. A return value of false means the
+//   tree will not be CSE'd; a return value of true means the tree might
+//   be CSE'd.
+//
+//   Consults the CSE policy that will be used.
+//
+bool Compiler::optIsCSEcandidate(GenTree* tree, bool isReturn)
 {
-    /* No good if the expression contains side effects or if it was marked as DONT CSE */
-
-    if (tree->gtFlags & (GTF_ASG | GTF_DONT_CSE))
-    {
-        return false;
-    }
-
-    var_types  type = tree->TypeGet();
-    genTreeOps oper = tree->OperGet();
-
-    if (type == TYP_VOID)
-    {
-        return false;
-    }
-
-    unsigned cost;
-    if (compCodeOpt() == SMALL_CODE)
-    {
-        cost = tree->GetCostSz();
-    }
-    else
-    {
-        cost = tree->GetCostEx();
-    }
-
-    /* Don't bother if the potential savings are very low */
-    if (cost < MIN_CSE_COST)
-    {
-        return false;
-    }
-
-#if !CSE_CONSTS
-    /* Don't bother with constants */
-    if (tree->OperIsConst())
-    {
-        return false;
-    }
-#endif
-
-    /* Check for some special cases */
-
-    switch (oper)
-    {
-        case GT_CALL:
-
-            GenTreeCall* call;
-            call = tree->AsCall();
-
-            // Don't mark calls to allocation helpers as CSE candidates.
-            // Marking them as CSE candidates usually blocks CSEs rather than enables them.
-            // A typical case is:
-            // [1] GT_IND(x) = GT_CALL ALLOC_HELPER
-            // ...
-            // [2] y = GT_IND(x)
-            // ...
-            // [3] z = GT_IND(x)
-            // If we mark CALL ALLOC_HELPER as a CSE candidate, we later discover
-            // that it can't be a CSE def because GT_INDs in [2] and [3] can cause
-            // more exceptions (NullRef) so we abandon this CSE.
-            // If we don't mark CALL ALLOC_HELPER as a CSE candidate, we are able
-            // to use GT_IND(x) in [2] as a CSE def.
-            if ((call->gtCallType == CT_HELPER) &&
-                s_helperCallProperties.IsAllocator(eeGetHelperNum(call->gtCallMethHnd)))
-            {
-                return false;
-            }
-
-            // If we have a simple helper call with no other persistent side-effects
-            // then we allow this tree to be a CSE candidate
-            //
-            if (gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS | GTF_IS_IN_CSE) == false)
-            {
-                return true;
-            }
-            else
-            {
-                // Calls generally cannot be CSE-ed
-                return false;
-            }
-
-        case GT_IND:
-            // TODO-CQ: Review this...
-            /* We try to cse GT_ARR_ELEM nodes instead of GT_IND(GT_ARR_ELEM).
-                Doing the first allows cse to also kick in for code like
-                "GT_IND(GT_ARR_ELEM) = GT_IND(GT_ARR_ELEM) + xyz", whereas doing
-                the second would not allow it */
-
-            return (tree->AsOp()->gtOp1->gtOper != GT_ARR_ELEM);
-
-        case GT_CNS_LNG:
-#ifndef TARGET_64BIT
-            return false; // Don't CSE 64-bit constants on 32-bit platforms
-#endif
-        case GT_CNS_INT:
-        case GT_CNS_DBL:
-        case GT_CNS_STR:
-        case GT_CNS_VEC:
-            return true; // We reach here only when CSE_CONSTS is enabled
-
-        case GT_ARR_ELEM:
-        case GT_ARR_LENGTH:
-        case GT_MDARR_LENGTH:
-        case GT_MDARR_LOWER_BOUND:
-            return true;
-
-        case GT_LCL_VAR:
-            return false; // Can't CSE a volatile LCL_VAR
-
-        case GT_NEG:
-        case GT_NOT:
-        case GT_BSWAP:
-        case GT_BSWAP16:
-        case GT_CAST:
-        case GT_BITCAST:
-            return true; // CSE these Unary Operators
-
-        case GT_SUB:
-        case GT_DIV:
-        case GT_MOD:
-        case GT_UDIV:
-        case GT_UMOD:
-        case GT_OR:
-        case GT_AND:
-        case GT_XOR:
-        case GT_RSH:
-        case GT_RSZ:
-        case GT_ROL:
-        case GT_ROR:
-            return true; // CSE these Binary Operators
-
-        case GT_ADD: // Check for ADDRMODE flag on these Binary Operators
-        case GT_MUL:
-        case GT_LSH:
-            if ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0)
-            {
-                return false;
-            }
-            return true;
-
-        case GT_EQ:
-        case GT_NE:
-        case GT_LT:
-        case GT_LE:
-        case GT_GE:
-        case GT_GT:
-            return true; // Allow the CSE of Comparison operators
-
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HWINTRINSIC:
-        {
-            GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
-            assert(hwIntrinsicNode != nullptr);
-            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->GetHWIntrinsicId());
-
-            switch (category)
-            {
-#ifdef TARGET_XARCH
-                case HW_Category_SimpleSIMD:
-                case HW_Category_IMM:
-                case HW_Category_Scalar:
-                case HW_Category_SIMDScalar:
-                case HW_Category_Helper:
-                    break;
-#elif defined(TARGET_ARM64)
-                case HW_Category_SIMD:
-                case HW_Category_SIMDByIndexedElement:
-                case HW_Category_ShiftLeftByImmediate:
-                case HW_Category_ShiftRightByImmediate:
-                case HW_Category_Scalar:
-                case HW_Category_Helper:
-                    break;
-#endif
-
-                case HW_Category_MemoryLoad:
-                case HW_Category_MemoryStore:
-                case HW_Category_Special:
-                default:
-                    return false;
-            }
-
-            if (hwIntrinsicNode->OperIsMemoryStore())
-            {
-                // NI_BMI2_MultiplyNoFlags, etc...
-                return false;
-            }
-            if (hwIntrinsicNode->OperIsMemoryLoad())
-            {
-                // NI_AVX2_BroadcastScalarToVector128, NI_AVX2_GatherVector128, etc...
-                return false;
-            }
-
-            return true; // allow Hardware Intrinsics to be CSE-ed
-        }
-
-#endif // FEATURE_HW_INTRINSICS
-
-        case GT_INTRINSIC:
-            return true; // allow Intrinsics to be CSE-ed
-
-        case GT_BLK:
-        case GT_LCL_FLD:
-            // TODO-1stClassStructs: support CSE for enregisterable TYP_STRUCTs.
-            return varTypeIsEnregisterable(type);
-
-        case GT_COMMA:
-            return true; // Allow GT_COMMA nodes to be CSE-ed.
-
-        case GT_COLON:
-        case GT_QMARK:
-        case GT_NOP:
-        case GT_RETURN:
-            return false; // Currently the only special nodes that we hit
-                          // that we know that we don't want to CSE
-
-        default:
-            break; // Any new nodes that we might add later...
-    }
-
-    return false;
+    return optGetCSEheuristic()->ConsiderTree(tree, isReturn);
 }
 
 #ifdef DEBUG
@@ -3627,12 +3746,8 @@ void Compiler::optOptimizeCSEs()
 
 void Compiler::optCleanupCSEs()
 {
-    // We must clear the BBF_MARKED flag.
     for (BasicBlock* const block : Blocks())
     {
-        // And clear the "marked" flag on the block.
-        block->RemoveFlags(BBF_MARKED);
-
         // Walk the statement trees in this basic block.
         for (Statement* const stmt : block->NonPhiStatements())
         {
@@ -3657,8 +3772,6 @@ void Compiler::optEnsureClearCSEInfo()
 {
     for (BasicBlock* const block : Blocks())
     {
-        assert(!block->HasFlag(BBF_MARKED));
-
         for (Statement* const stmt : block->NonPhiStatements())
         {
             for (GenTree* tree = stmt->GetRootNode(); tree; tree = tree->gtPrev)

@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3}{unw\_backtrace}{David Mosberger-Tang}{Programming Library}{unw\_backtrace}unw\_backtrace -- return backtrace for the calling program
+\begin{Name}{3libunwind}{unw\_backtrace}{David Mosberger-Tang}{Programming Library}{unw\_backtrace}unw\_backtrace -- return backtrace for the calling program
 \end{Name}
 
 \section{Synopsis}
@@ -34,8 +34,8 @@ calling \Func{backtrace}() is linked against \Prog{libunwind}, it may end up
 calling \Func{unw\_backtrace}().
 
 In case you want to obtain the backtrace from a specific \Type{unw\_context\_t},
-you can call \Func{unw\_backtrace2} with that context passing \Const{0} for flag. 
-If the \Type{unw\_context_t} is known to be a signal frame (i.e., from the third argument
+you can call \Func{unw\_backtrace2} with that context passing \Const{0} for flag.
+If the \Type{unw\_context\_t} is known to be a signal frame (i.e., from the third argument
 in a sigaction handler on linux), \Func{unw\_backtrace2} can be used to collect
 only the frames before the signal frame passing the \Const{UNW\_INIT\_SIGNAL\_FRAME} flag.
 
@@ -47,8 +47,8 @@ stored.
 
 \section{See Also}
 
-\SeeAlso{libunwind(3)},
-\SeeAlso{unw\_step(3)}
+\SeeAlso{libunwind}(3libunwind),
+\SeeAlso{unw\_step}(3libunwind)
 
 \section{Author}
 

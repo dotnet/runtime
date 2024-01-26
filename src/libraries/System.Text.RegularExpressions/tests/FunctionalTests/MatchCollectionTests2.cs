@@ -109,7 +109,7 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void ICollectionOfT_CopyTo()
         {
-            string[] expected = new[] { "t", "t" };
+            string[] expected = ["t", "t"];
             ICollection<Match> collection = CreateCollection();
 
             Match[] array = new Match[collection.Count];

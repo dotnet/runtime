@@ -75,27 +75,27 @@ bool EHblkDsc::InHndRegionILRange(BasicBlock* pBlk)
 }
 
 // HasCatchHandler: returns 'true' for either try/catch, or try/filter/filter-handler.
-bool EHblkDsc::HasCatchHandler()
+bool EHblkDsc::HasCatchHandler() const
 {
     return (ebdHandlerType == EH_HANDLER_CATCH) || (ebdHandlerType == EH_HANDLER_FILTER);
 }
 
-bool EHblkDsc::HasFilter()
+bool EHblkDsc::HasFilter() const
 {
     return ebdHandlerType == EH_HANDLER_FILTER;
 }
 
-bool EHblkDsc::HasFinallyHandler()
+bool EHblkDsc::HasFinallyHandler() const
 {
     return ebdHandlerType == EH_HANDLER_FINALLY;
 }
 
-bool EHblkDsc::HasFaultHandler()
+bool EHblkDsc::HasFaultHandler() const
 {
     return (ebdHandlerType == EH_HANDLER_FAULT) || (ebdHandlerType == EH_HANDLER_FAULT_WAS_FINALLY);
 }
 
-bool EHblkDsc::HasFinallyOrFaultHandler()
+bool EHblkDsc::HasFinallyOrFaultHandler() const
 {
     return HasFinallyHandler() || HasFaultHandler();
 }
@@ -594,9 +594,9 @@ unsigned short Compiler::bbFindInnermostCommonTryRegion(BasicBlock* bbOne, Basic
 // most nested try region it is a member of. Thus, we only need to check the EH
 // table entry related to the try index stored on the block.
 //
-bool Compiler::bbIsTryBeg(BasicBlock* block)
+bool Compiler::bbIsTryBeg(const BasicBlock* block)
 {
-    EHblkDsc* ehDsc = ehGetBlockTryDsc(block);
+    const EHblkDsc* ehDsc = ehGetBlockTryDsc(block);
     return (ehDsc != nullptr) && (block == ehDsc->ebdTryBeg);
 }
 
@@ -605,9 +605,9 @@ bool Compiler::bbIsTryBeg(BasicBlock* block)
 // of the most nested handler or filter region it is in. Thus, we only need to look at the EH
 // descriptor corresponding to the handler index on the block.
 //
-bool Compiler::bbIsHandlerBeg(BasicBlock* block)
+bool Compiler::bbIsHandlerBeg(const BasicBlock* block)
 {
-    EHblkDsc* ehDsc = ehGetBlockHndDsc(block);
+    const EHblkDsc* ehDsc = ehGetBlockHndDsc(block);
     return (ehDsc != nullptr) && ((block == ehDsc->ebdHndBeg) || (ehDsc->HasFilter() && (block == ehDsc->ebdFilter)));
 }
 
@@ -2168,6 +2168,12 @@ bool Compiler::fgNormalizeEHCase2()
                             newTryStart->bbRefs++;
                         }
 
+                        // Same for OSR's protected entry BB.
+                        if (insertBeforeBlk == fgEntryBB)
+                        {
+                            fgEntryBB = newTryStart;
+                        }
+
                         JITDUMP("'try' begin for EH#%u and EH#%u are same block; inserted new " FMT_BB " before " FMT_BB
                                 " "
                                 "as new 'try' begin for EH#%u.\n",
@@ -2250,8 +2256,9 @@ bool Compiler::fgNormalizeEHCase2()
                             //
                             fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
 
-                            if (predBlock->NextIs(newTryStart) && predBlock->bbFallsThrough())
+                            if (predBlock->NextIs(newTryStart) && predBlock->KindIs(BBJ_COND))
                             {
+                                predBlock->SetFalseTarget(newTryStart);
                                 fgRemoveRefPred(insertBeforeBlk, predBlock);
                                 fgAddRefPred(newTryStart, predBlock);
                             }
@@ -3459,7 +3466,7 @@ void Compiler::fgVerifyHandlerTab()
         }
 
         // Check for legal block types
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
             case BBJ_EHFINALLYRET:
             {
@@ -4031,7 +4038,7 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
                                                           // trying to decide how to split up the predecessor edges.
         if (predBlock->KindIs(BBJ_CALLFINALLY))
         {
-            assert(predBlock->HasJumpTo(block));
+            assert(predBlock->TargetIs(block));
 
             // A BBJ_CALLFINALLY predecessor of the handler can only come from the corresponding try,
             // not from any EH clauses nested in this handler. However, we represent the BBJ_CALLFINALLY
@@ -4321,7 +4328,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #endif // FEATURE_EH_FUNCLETS
 
             // If this is a handler for a filter, the last block of the filter will end with
-            // a BBJ_EHFILTERRET block that has a bbJumpDest that jumps to the first block of
+            // a BBJ_EHFILTERRET block that has a bbTarget that jumps to the first block of
             // its handler. So we need to update it to keep things in sync.
             //
             if (HBtab->HasFilter())
@@ -4329,17 +4336,17 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 BasicBlock* bFilterLast = HBtab->BBFilterLast();
                 assert(bFilterLast != nullptr);
                 assert(bFilterLast->KindIs(BBJ_EHFILTERRET));
-                assert(bFilterLast->HasJumpTo(block));
+                assert(bFilterLast->TargetIs(block));
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("EH#%u: Updating bbJumpDest for filter ret block: " FMT_BB " => " FMT_BB "\n",
+                    printf("EH#%u: Updating bbTarget for filter ret block: " FMT_BB " => " FMT_BB "\n",
                            ehGetIndex(HBtab), bFilterLast->bbNum, bPrev->bbNum);
                 }
 #endif // DEBUG
-                // Change the bbJumpDest for bFilterLast from the old first 'block' to the new first 'bPrev'
-                fgRemoveRefPred(bFilterLast->GetJumpDest(), bFilterLast);
-                bFilterLast->SetJumpDest(bPrev);
+                // Change the bbTarget for bFilterLast from the old first 'block' to the new first 'bPrev'
+                fgRemoveRefPred(bFilterLast->GetTarget(), bFilterLast);
+                bFilterLast->SetTarget(bPrev);
                 fgAddRefPred(bPrev, bFilterLast);
             }
         }

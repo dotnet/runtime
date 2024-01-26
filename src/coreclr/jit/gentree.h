@@ -194,7 +194,7 @@ inline AssertionIndex GetAssertionIndex(unsigned index)
 
 class AssertionInfo
 {
-    // true if the assertion holds on the bbNext edge instead of the bbJumpDest edge (for GT_JTRUE nodes)
+    // true if the assertion holds on the bbNext edge instead of the bbTarget edge (for GT_JTRUE nodes)
     unsigned short m_isNextEdgeAssertion : 1;
     // 1-based index of the assertion
     unsigned short m_assertionIndex : 15;
@@ -453,8 +453,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_LIVENESS_MASK     = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 
-    GTF_VAR_ITERATOR      = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
-    GTF_VAR_MOREUSES      = 0x00800000, // GT_LCL_VAR -- this node has additonal uses, for example due to cloning
+    GTF_VAR_MOREUSES      = 0x00800000, // GT_LCL_VAR -- this node has additional uses, for example due to cloning
     GTF_VAR_CONTEXT       = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
     GTF_VAR_EXPLICIT_INIT = 0x00200000, // GT_LCL_VAR -- this node is an "explicit init" store. Valid until rationalization.
 
@@ -536,6 +535,7 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_STATIC_BOX_PTR     = 0x10000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
     GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
     GTF_ICON_STATIC_ADDR_PTR    = 0x13000000, // GT_CNS_INT -- constant is a pointer to a static base address
+    GTF_ICON_SECREL_OFFSET      = 0x14000000, // GT_CNS_INT -- constant is an offset in a certain section.
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
@@ -554,6 +554,12 @@ enum GenTreeFlags : unsigned int
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
+
+    GTF_HW_ER_MASK                = 0x30000000, // Bits used by handle types below 
+    GTF_HW_ER_TO_EVEN             = 0x00000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToEven (Default) "{rn-sae}"
+    GTF_HW_ER_TO_NEGATIVEINFINITY = 0x10000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToNegativeInfinity "{rd-sae}"
+    GTF_HW_ER_TO_POSITIVEINFINITY = 0x20000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToPositiveInfinity "{ru-sae}"
+    GTF_HW_ER_TO_ZERO             = 0x30000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToZero "{rz-sae}"
 
 };
 
@@ -2224,6 +2230,43 @@ public:
         return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
+#ifdef FEATURE_HW_INTRINSICS
+
+    void ClearEmbRoundingMode()
+    {
+        assert(gtOper == GT_HWINTRINSIC);
+        gtFlags &= ~GTF_HW_ER_MASK;
+    }
+    // Set GenTreeFlags on HardwareIntrinsic node to specify the FloatRoundingMode.
+    // mode can be one of the values from System.Runtime.Intrinsics.X86.FloatRoundingMode.
+    void SetEmbRoundingMode(uint8_t mode)
+    {
+        assert(gtOper == GT_HWINTRINSIC);
+        ClearEmbRoundingMode();
+        switch (mode)
+        {
+            case 0x09:
+                gtFlags |= GTF_HW_ER_TO_NEGATIVEINFINITY;
+                break;
+            case 0x0A:
+                gtFlags |= GTF_HW_ER_TO_POSITIVEINFINITY;
+                break;
+            case 0x0B:
+                gtFlags |= GTF_HW_ER_TO_ZERO;
+                break;
+            default:
+                break;
+        }
+    }
+
+    uint8_t GetEmbRoundingMode()
+    {
+        assert(gtOper == GT_HWINTRINSIC);
+        return (uint8_t)((gtFlags & GTF_HW_ER_MASK) >> 28);
+    }
+
+#endif // FEATURE_HW_INTRINSICS
+
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
     void ClearIconHandleMask()
     {
@@ -2244,6 +2287,7 @@ public:
 
 #ifdef DEBUG
     static int gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);
+    static const char* gtGetHandleKindString(GenTreeFlags flags);
 #endif
 
     // cast operations
@@ -4078,6 +4122,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXPANDED_EARLY          = 0x00800000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x01000000, // this call has late devirtualzation info
     GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x02000000, // ldvirtftn on an interface type
+    GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4551,7 +4596,7 @@ public:
     void SetMultiRegNums();
 
     // Return number of stack slots that this argument is taking.
-    // This value is not meaningful on macOS arm64 where multiple arguments can
+    // This value is not meaningful on Apple arm64 where multiple arguments can
     // be passed in the same stack slot.
     unsigned GetStackSlotsNumber() const
     {
@@ -5351,6 +5396,10 @@ struct GenTreeCall final : public GenTree
     {
         return IsVirtualStub() && (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
     }
+    bool IsSpecialIntrinsic() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0;
+    }
 
     bool IsR2RRelativeIndir() const
     {
@@ -5582,8 +5631,9 @@ struct GenTreeCall final : public GenTree
 
     CORINFO_CLASS_HANDLE gtRetClsHnd; // The return type handle of the call if it is a struct; always available
     union {
-        void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
-        CORINFO_CLASS_HANDLE gtInitClsHnd;       // Used by static init helpers, represents a class they init
+        void*                gtStubCallStubAddr;   // GTF_CALL_VIRT_STUB - these are never inlined
+        CORINFO_CLASS_HANDLE gtInitClsHnd;         // Used by static init helpers, represents a class they init
+        IL_OFFSET            gtCastHelperILOffset; // Used by cast helpers to save corresponding IL offset
     };
 
     union {
@@ -5641,6 +5691,8 @@ struct GenTreeCall final : public GenTree
     }
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
+
+    bool IsSpecialIntrinsic(Compiler* compiler, NamedIntrinsic ni) const;
 
     CorInfoHelpFunc GetHelperNum() const;
 
@@ -5794,21 +5846,42 @@ struct GenTreeFptrVal : public GenTree
 /* gtQmark */
 struct GenTreeQmark : public GenTreeOp
 {
-    GenTreeQmark(var_types type, GenTree* cond, GenTreeColon* colon) : GenTreeOp(GT_QMARK, type, cond, colon)
+    unsigned gtThenLikelihood;
+
+    GenTreeQmark(var_types type, GenTree* cond, GenTreeColon* colon, unsigned thenLikelihood = 50)
+        : GenTreeOp(GT_QMARK, type, cond, colon), gtThenLikelihood(thenLikelihood)
     {
         // These must follow a specific form.
         assert((cond != nullptr) && cond->TypeIs(TYP_INT));
         assert((colon != nullptr) && colon->OperIs(GT_COLON));
     }
 
-    GenTree* ThenNode()
+    GenTree* ThenNode() const
     {
         return gtOp2->AsColon()->ThenNode();
     }
 
-    GenTree* ElseNode()
+    GenTree* ElseNode() const
     {
         return gtOp2->AsColon()->ElseNode();
+    }
+
+    unsigned ThenNodeLikelihood() const
+    {
+        assert(gtThenLikelihood <= 100);
+        return gtThenLikelihood;
+    }
+
+    unsigned ElseNodeLikelihood() const
+    {
+        assert(gtThenLikelihood <= 100);
+        return 100 - gtThenLikelihood;
+    }
+
+    void SetThenNodeLikelihood(unsigned thenLikelihood)
+    {
+        assert(thenLikelihood <= 100);
+        gtThenLikelihood = thenLikelihood;
     }
 
 #if DEBUGGABLE_GENTREE
@@ -6281,6 +6354,7 @@ public:
 };
 
 #ifdef FEATURE_HW_INTRINSICS
+
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
     GenTreeHWIntrinsic(var_types              type,
@@ -7329,6 +7403,7 @@ public:
 #ifdef TARGET_XARCH
         BlkOpKindRepInstr,
 #endif
+        BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
     } gtBlkOpKind;
@@ -7337,12 +7412,20 @@ public:
     bool gtBlkOpGcUnsafe;
 #endif
 
-#ifdef TARGET_XARCH
+    bool ContainsReferences()
+    {
+        return (m_layout != nullptr) && m_layout->HasGCPtr();
+    }
+
     bool IsOnHeapAndContainsReferences()
     {
-        return (m_layout != nullptr) && m_layout->HasGCPtr() && !Addr()->OperIs(GT_LCL_ADDR);
+        return ContainsReferences() && !Addr()->OperIs(GT_LCL_ADDR);
     }
-#endif
+
+    bool IsZeroingGcPointersOnHeap()
+    {
+        return OperIs(GT_STORE_BLK) && Data()->IsIntegralConst(0) && IsOnHeapAndContainsReferences();
+    }
 
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, nullptr)
@@ -7353,6 +7436,10 @@ public:
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, data)
     {
+        if (data->IsIntegralConst(0))
+        {
+            data->gtFlags |= GTF_DONT_CSE;
+        }
         Initialize(layout);
     }
 
@@ -8868,7 +8955,6 @@ inline bool GenTree::OperIsCopyBlkOp()
 //    long constants in a target-independent way.
 
 inline bool GenTree::IsIntegralConst(ssize_t constVal) const
-
 {
     if ((gtOper == GT_CNS_INT) && (AsIntConCommon()->IconValue() == constVal))
     {
@@ -9286,9 +9372,9 @@ inline GenTree* GenTree::gtCommaStoreVal()
 inline GenTree* GenTree::gtSkipReloadOrCopy()
 {
     // There can be only one reload or copy (we can't have a reload/copy of a reload/copy)
-    if (gtOper == GT_RELOAD || gtOper == GT_COPY)
+    if (OperIs(GT_RELOAD, GT_COPY))
     {
-        assert(gtGetOp1()->OperGet() != GT_RELOAD && gtGetOp1()->OperGet() != GT_COPY);
+        assert(!gtGetOp1()->OperIs(GT_RELOAD, GT_COPY));
         return gtGetOp1();
     }
     return this;

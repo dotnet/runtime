@@ -190,10 +190,13 @@ protected:
     BasicBlock* genPendingCallLabel;
 
     void**    codePtr;
+    void*     codePtrRW;
     uint32_t* nativeSizeOfCode;
     unsigned  codeSize;
     void*     coldCodePtr;
+    void*     coldCodePtrRW;
     void*     consPtr;
+    void*     consPtrRW;
 
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
@@ -262,7 +265,7 @@ protected:
     void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
 #endif
     void genEnregisterIncomingStackArgs();
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 #else
     void genEnregisterOSRArgsAndLocals();
@@ -341,6 +344,10 @@ protected:
     void genOSRRecordTier0CalleeSavedRegistersAndFrame();
     void genOSRSaveRemainingCalleeSavedRegisters();
 #endif // TARGET_AMD64
+
+#if defined(TARGET_RISCV64)
+    void genStackProbe(ssize_t frameSize, regNumber rOffset, regNumber rLimit, regNumber rPageSize);
+#endif
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
@@ -447,11 +454,11 @@ protected:
         regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
-        int fiSP_to_FPRA_save_delta;         // FP/RA register save offset from SP (positive)
+        int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
+        int fiCalleeSavedPadding;            // CalleeSaved offset padding (positive)
         int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
         int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
-        int fiFrameType;                     // Funclet frame types are numbered. See genFuncletProlog() for details.
-        int fiSpDelta1;                      // Stack pointer delta 1 (negative)
+        int fiSpDelta;                       // Stack pointer delta (negative)
     };
 
     FuncletFrameInfoDsc genFuncletInfo;
@@ -639,17 +646,20 @@ protected:
 
     void genGeneratePrologsAndEpilogs();
 
-#if defined(DEBUG) && defined(TARGET_ARM64)
-    void genArm64EmitterUnitTests();
+#if defined(DEBUG)
+    void genEmitterUnitTests();
+
+#if defined(TARGET_ARM64)
+    void genArm64EmitterUnitTestsGeneral();
+    void genArm64EmitterUnitTestsAdvSimd();
+    void genArm64EmitterUnitTestsSve();
 #endif
 
-#if defined(DEBUG) && defined(TARGET_LOONGARCH64)
-    void genLoongArch64EmitterUnitTests();
+#if defined(TARGET_AMD64)
+    void genAmd64EmitterUnitTestsSse2();
 #endif
 
-#if defined(DEBUG) && defined(LATE_DISASM) && defined(TARGET_AMD64)
-    void genAmd64EmitterUnitTests();
-#endif
+#endif // defined(DEBUG)
 
 #ifdef TARGET_ARM64
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
@@ -965,6 +975,7 @@ protected:
     void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp);
     void genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
     void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
+    void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
     void genHWIntrinsic_R_R_RM(
         GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTree* op2);
     void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
@@ -1234,6 +1245,7 @@ protected:
 #ifndef TARGET_X86
     void genCodeForInitBlkHelper(GenTreeBlk* initBlkNode);
 #endif
+    void genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     void genJumpTable(GenTree* tree);

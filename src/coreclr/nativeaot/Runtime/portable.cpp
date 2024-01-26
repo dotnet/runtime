@@ -12,7 +12,6 @@
 #include "rhassert.h"
 
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "shash.h"
 #include "varint.h"
 #include "holder.h"
@@ -366,6 +365,18 @@ COOP_PINVOKE_HELPER(Object *, RhpCheckedXchg, (Object ** location, Object * valu
     Object * ret = (Object *)PalInterlockedExchangePointer((void * volatile *)location, value);
     InlineCheckedWriteBarrier(location, value);
     return ret;
+}
+
+COOP_PINVOKE_HELPER(uint8_t, RhpLockCmpXchg8, (uint8_t * location, uint8_t value, uint8_t comparand))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
+}
+
+COOP_PINVOKE_HELPER(int16_t, RhpLockCmpXchg16, (int16_t * location, int16_t value, int16_t comparand))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
 }
 
 COOP_PINVOKE_HELPER(int32_t, RhpLockCmpXchg32, (int32_t * location, int32_t value, int32_t comparand))

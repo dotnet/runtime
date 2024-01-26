@@ -5,7 +5,12 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
+[UnconditionalSuppressMessage("Trimming", "IL2055", Justification = "MakeGenericType - Intentional")]
+[UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "MakeGenericMethod - Intentional")]
+[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType/MakeGenericMethod - Intentional")]
+[UnconditionalSuppressMessage("AOT", "IL3054", Justification = "Generic expansion aborted - Intentional")]
 class Generics
 {
     internal static int Run()

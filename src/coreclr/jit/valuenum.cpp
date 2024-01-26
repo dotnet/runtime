@@ -2765,16 +2765,9 @@ ValueNum ValueNumStore::VNForMapStore(ValueNum map, ValueNum index, ValueNum val
 {
     assert(MapIsPrecise(map));
 
-    BasicBlock* const     bb     = m_pComp->compCurBB;
-    FlowGraphNaturalLoop* bbLoop = m_pComp->m_blockToLoop->GetLoop(bb);
-
-    // TODO-Quirk: Remove
-    while ((bbLoop != nullptr) && (m_pComp->m_newToOldLoop[bbLoop->GetIndex()] == nullptr))
-    {
-        bbLoop = bbLoop->GetParent();
-    }
-
-    unsigned loopIndex = bbLoop == nullptr ? UINT_MAX : bbLoop->GetIndex();
+    BasicBlock* const     bb        = m_pComp->compCurBB;
+    FlowGraphNaturalLoop* bbLoop    = m_pComp->m_blockToLoop->GetLoop(bb);
+    unsigned              loopIndex = bbLoop == nullptr ? UINT_MAX : bbLoop->GetIndex();
 
     ValueNum const result = VNForFunc(TypeOfVN(map), VNF_MapStore, map, index, value, loopIndex);
 
@@ -4024,66 +4017,66 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
             }
             break;
         }
-            {
 #ifdef TARGET_64BIT
-                case TYP_REF:
-                case TYP_BYREF:
+        case TYP_REF:
+        case TYP_BYREF:
 #endif
-                case TYP_LONG:
-                    INT64 arg0Val = GetConstantInt64(arg0VN);
-                    assert(!checkedCast || !CheckedOps::CastFromLongOverflows(arg0Val, castToType, srcIsUnsigned));
+        case TYP_LONG:
+        {
+            INT64 arg0Val = GetConstantInt64(arg0VN);
+            assert(!checkedCast || !CheckedOps::CastFromLongOverflows(arg0Val, castToType, srcIsUnsigned));
 
-                    switch (castToType)
+            switch (castToType)
+            {
+                case TYP_BYTE:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(INT8(arg0Val));
+                case TYP_UBYTE:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(UINT8(arg0Val));
+                case TYP_SHORT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(INT16(arg0Val));
+                case TYP_USHORT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(UINT16(arg0Val));
+                case TYP_INT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(INT32(arg0Val));
+                case TYP_UINT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(UINT32(arg0Val));
+                case TYP_LONG:
+                case TYP_ULONG:
+                    assert(typ == TYP_LONG);
+                    return arg0VN;
+                case TYP_BYREF:
+                    assert(typ == TYP_BYREF);
+                    return VNForByrefCon((target_size_t)arg0Val);
+                case TYP_FLOAT:
+                    assert(typ == TYP_FLOAT);
+                    if (srcIsUnsigned)
                     {
-                        case TYP_BYTE:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(INT8(arg0Val));
-                        case TYP_UBYTE:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(UINT8(arg0Val));
-                        case TYP_SHORT:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(INT16(arg0Val));
-                        case TYP_USHORT:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(UINT16(arg0Val));
-                        case TYP_INT:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(INT32(arg0Val));
-                        case TYP_UINT:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(UINT32(arg0Val));
-                        case TYP_LONG:
-                        case TYP_ULONG:
-                            assert(typ == TYP_LONG);
-                            return arg0VN;
-                        case TYP_BYREF:
-                            assert(typ == TYP_BYREF);
-                            return VNForByrefCon((target_size_t)arg0Val);
-                        case TYP_FLOAT:
-                            assert(typ == TYP_FLOAT);
-                            if (srcIsUnsigned)
-                            {
-                                return VNForFloatCon(FloatingPointUtils::convertUInt64ToFloat(UINT64(arg0Val)));
-                            }
-                            else
-                            {
-                                return VNForFloatCon(float(arg0Val));
-                            }
-                        case TYP_DOUBLE:
-                            assert(typ == TYP_DOUBLE);
-                            if (srcIsUnsigned)
-                            {
-                                return VNForDoubleCon(FloatingPointUtils::convertUInt64ToDouble(UINT64(arg0Val)));
-                            }
-                            else
-                            {
-                                return VNForDoubleCon(double(arg0Val));
-                            }
-                        default:
-                            unreached();
+                        return VNForFloatCon(FloatingPointUtils::convertUInt64ToFloat(UINT64(arg0Val)));
                     }
+                    else
+                    {
+                        return VNForFloatCon(float(arg0Val));
+                    }
+                case TYP_DOUBLE:
+                    assert(typ == TYP_DOUBLE);
+                    if (srcIsUnsigned)
+                    {
+                        return VNForDoubleCon(FloatingPointUtils::convertUInt64ToDouble(UINT64(arg0Val)));
+                    }
+                    else
+                    {
+                        return VNForDoubleCon(double(arg0Val));
+                    }
+                default:
+                    unreached();
             }
+        }
         case TYP_FLOAT:
         {
             float arg0Val = GetConstantSingle(arg0VN);
@@ -5229,14 +5222,7 @@ ValueNum ValueNumStore::VNForExpr(BasicBlock* block, var_types type)
     if (block != nullptr)
     {
         FlowGraphNaturalLoop* loop = m_pComp->m_blockToLoop->GetLoop(block);
-
-        // TODO-Quirk: Remove
-        while ((loop != nullptr) && (m_pComp->m_newToOldLoop[loop->GetIndex()] == nullptr))
-        {
-            loop = loop->GetParent();
-        }
-
-        loopIndex = loop == nullptr ? ValueNumStore::NoLoop : loop->GetIndex();
+        loopIndex                  = loop == nullptr ? ValueNumStore::NoLoop : loop->GetIndex();
     }
 
     // VNForFunc(typ, func, vn) but bypasses looking in the cache
@@ -6076,10 +6062,12 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)
 {
     assert(IsVNHandle(vn));
-    Chunk*    c      = m_chunks.GetNoExpand(GetChunkNum(vn));
-    unsigned  offset = ChunkOffset(vn);
-    VNHandle* handle = &reinterpret_cast<VNHandle*>(c->m_defs)[offset];
-    return handle->m_flags;
+    Chunk*             c           = m_chunks.GetNoExpand(GetChunkNum(vn));
+    unsigned           offset      = ChunkOffset(vn);
+    VNHandle*          handle      = &reinterpret_cast<VNHandle*>(c->m_defs)[offset];
+    const GenTreeFlags handleFlags = handle->m_flags;
+    assert((handleFlags & ~GTF_ICON_HDL_MASK) == 0);
+    return handleFlags;
 }
 
 GenTreeFlags ValueNumStore::GetFoldedArithOpResultHandleFlags(ValueNum vn)
@@ -6128,7 +6116,7 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 
 bool ValueNumStore::IsVNObjHandle(ValueNum vn)
 {
-    return IsVNHandle(vn) && GetHandleFlags(vn) == GTF_ICON_OBJ_HDL;
+    return IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_OBJ_HDL);
 }
 
 //------------------------------------------------------------------------
@@ -8942,8 +8930,9 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
     }
     else if (IsVNHandle(vn))
     {
-        ssize_t val = ConstantValue<ssize_t>(vn);
-        printf("Hnd const: 0x%p", dspPtr(val));
+        ssize_t            val         = ConstantValue<ssize_t>(vn);
+        const GenTreeFlags handleFlags = GetHandleFlags(vn);
+        printf("Hnd const: 0x%p %s", dspPtr(val), GenTree::gtGetHandleKindString(handleFlags));
     }
     else if (IsVNConstant(vn))
     {
@@ -8986,7 +8975,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 }
                 else
                 {
-                    printf("LngCns: ");
+                    printf("LngCns");
                     if ((val > -1000) && (val < 1000))
                     {
                         printf(" %ld", val);
@@ -9719,7 +9708,7 @@ public:
             return false;
         }
 
-        if (!predBlock->KindIs(BBJ_COND) || predBlock->JumpsToNext())
+        if (!predBlock->KindIs(BBJ_COND) || predBlock->TrueTargetIs(predBlock->GetFalseTarget()))
         {
             return true;
         }
@@ -9738,7 +9727,7 @@ public:
         }
 
         bool        isTaken         = normalVN != m_comp->vnStore->VNZeroForType(TYP_INT);
-        BasicBlock* unreachableSucc = isTaken ? predBlock->Next() : predBlock->GetJumpDest();
+        BasicBlock* unreachableSucc = isTaken ? predBlock->GetFalseTarget() : predBlock->GetTrueTarget();
         return block != unreachableSucc;
     }
 };
@@ -10038,7 +10027,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 
             ValueNum              newMemoryVN;
             FlowGraphNaturalLoop* loop = m_blockToLoop->GetLoop(blk);
-            if ((loop != nullptr) && (loop->GetHeader() == blk) && (m_newToOldLoop[loop->GetIndex()] != nullptr))
+            if ((loop != nullptr) && (loop->GetHeader() == blk))
             {
                 newMemoryVN = fgMemoryVNForLoopSideEffects(memoryKind, blk, loop);
             }
@@ -10591,8 +10580,8 @@ void Compiler::fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree)
 //------------------------------------------------------------------------
 // fgValueNumberStore: Does value numbering for a store.
 //
-// While this methods does indeed give a VN to the store tree itself, its
-// main objective is to update the various state that holds values, i. e.
+// While this method does indeed give a VN to the store tree itself, its
+// main objective is to update the various state that holds values, i.e.
 // the per-SSA VNs for tracked variables and the heap states for analyzable
 // (to fields and arrays) stores.
 //
@@ -12363,6 +12352,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_ReadyToRunStaticBaseGC:
         case VNF_ReadyToRunStaticBaseNonGC:
         case VNF_ReadyToRunStaticBaseThread:
+        case VNF_ReadyToRunStaticBaseThreadNoctor:
         case VNF_ReadyToRunStaticBaseThreadNonGC:
         case VNF_ReadyToRunGenericStaticBase:
         case VNF_ReadyToRunIsInstanceOf:
@@ -12749,6 +12739,9 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
         case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
             vnf = VNF_ReadyToRunStaticBaseThread;
+            break;
+        case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
+            vnf = VNF_ReadyToRunStaticBaseThreadNoctor;
             break;
         case CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
             vnf = VNF_ReadyToRunStaticBaseThreadNonGC;

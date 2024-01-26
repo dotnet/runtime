@@ -643,7 +643,7 @@ public class ComVisibleServer
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Requires COM support")]
-    private static void RunComVisibleTests()
+    public static void RunComVisibleTests()
     {
         int fooSuccessVal = 0;
         //
