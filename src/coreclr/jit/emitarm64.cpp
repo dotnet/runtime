@@ -1167,7 +1167,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                     unreached();
                     break;
             }
-
             break;
 
         case IF_SVE_CZ_4A_A: // ............MMMM ..gggg.NNNN.DDDD -- SVE predicate logical operations
@@ -6781,24 +6780,6 @@ void emitter::emitIns_Mov(
             break;
         }
 
-        case INS_sve_movs:
-        {
-            assert(opt == INS_OPTS_SCALABLE_B);
-            assert(isPredicateRegister(dstReg)); // dddd
-            assert(isPredicateRegister(srcReg)); // nnnn
-            fmt = IF_SVE_CZ_4A_A;
-            break;
-        }
-
-        case INS_sve_mov:
-        {
-            assert(opt == INS_OPTS_SCALABLE_B);
-            assert(isPredicateRegister(dstReg)); // dddd
-            assert(isPredicateRegister(srcReg)); // nnnn
-            fmt = IF_SVE_CZ_4A_L;
-            break;
-        }
-
         default:
         {
             unreached();
@@ -7474,6 +7455,24 @@ void emitter::emitIns_R_R(instruction     ins,
                 fmt = IF_DV_2L;
             }
             break;
+
+        case INS_sve_movs:
+        {
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isPredicateRegister(reg1)); // dddd
+            assert(isPredicateRegister(reg2)); // nnnn
+            fmt = IF_SVE_CZ_4A_A;
+            break;
+        }
+
+        case INS_sve_mov:
+        {
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isPredicateRegister(reg1)); // dddd
+            assert(isPredicateRegister(reg2)); // nnnn
+            fmt = IF_SVE_CZ_4A_L;
+            break;
+        }
 
         case INS_sve_pfirst:
             assert(opt == INS_OPTS_SCALABLE_B);
@@ -23725,8 +23724,6 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_sxtw:
         case INS_uxtb:
         case INS_uxth:
-        case INS_sve_mov:
-        case INS_sve_movs:
         {
             return true;
         }
