@@ -189,10 +189,10 @@ check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
 check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
 
-check_cxx_source_runs("
+check_c_source_compiles("
 //#if defined(__clang__) || defined(_MSC_VER)
 //int main(void) {
-//    exit(0);
+//    return 0;
 //}
 //#else
 #include <stdatomic.h>
@@ -201,7 +201,7 @@ int main(void) {
 #if ATOMIC_CHAR_LOCK_FREE == 2 && ATOMIC_SHORT_LOCK_FREE == 2 && ATOMIC_INT_LOCK_FREE == 2 && ATOMIC_LLONG_LOCK_FREE == 2
     return 0;
 #else
-    return 1;
+#error CoreCLR requires non-locking atomics
 #endif
 }
 //#endif" HAVE_LOCKFREE_ATOMICS)
