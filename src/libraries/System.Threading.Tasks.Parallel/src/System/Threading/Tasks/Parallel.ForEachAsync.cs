@@ -92,21 +92,12 @@ namespace System.Threading.Tasks
                 return Task.CompletedTask;
             }
 
+#pragma warning disable CS8500
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static bool Interlockable() =>
-                typeof(T) == typeof(sbyte) ||
-                typeof(T) == typeof(byte) ||
-                typeof(T) == typeof(short) ||
-                typeof(T) == typeof(ushort) ||
-                typeof(T) == typeof(char) ||
-                typeof(T) == typeof(int) ||
-                typeof(T) == typeof(uint) ||
-                typeof(T) == typeof(long) ||
-                typeof(T) == typeof(ulong) ||
-                typeof(T) == typeof(nint) ||
-                typeof(T) == typeof(nuint);
+                !RuntimeHelpers.IsReferenceOrContainsReferences<T>() && RuntimeHelpers.IsBitwiseEquatable<T>() &&
+                (sizeof(T) == sizeof(byte) || sizeof(T) == sizeof(ushort) || sizeof(T) == sizeof(uint) || sizeof(T) == sizeof(ulong));
 
-#pragma warning disable CS8500
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static unsafe bool CompareExchange(ref T location, T value, T comparand) =>
                 sizeof(T) == sizeof(byte) ? Interlocked.CompareExchange(ref Unsafe.As<T, byte>(ref location), Unsafe.As<T, byte>(ref value), Unsafe.As<T, byte>(ref comparand)) == Unsafe.As<T, byte>(ref comparand) :
