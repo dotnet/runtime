@@ -749,5 +749,28 @@ namespace DebuggerTests
                    ("f[f.numArray[f.numList[0]], f.numArray[f.numArray[i]]]", TNumber("4"))
                 ); 
            });
+
+        [Fact]
+        public async Task EvaluateValueTypeWithFixedArrayAndMoreFields() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateValueTypeWithFixedArray", "run", 3, "DebuggerTests.EvaluateValueTypeWithFixedArray.run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateValueTypeWithFixedArray:run'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               await RuntimeEvaluateAndCheck(
+                   ("myVar.MyMethod()", TNumber(13)),
+                   ("myVar.myIntArray[0]", TNumber(1)),
+                   ("myVar.myIntArray[1]", TNumber(2)),
+                   ("myVar.myCharArray[2]", TChar('a')));
+           });
+
+        [Fact]
+        public async Task EvaluateValueTypeWithObjectValueType() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateValueTypeWithObjectValueType", "run", 3, "DebuggerTests.EvaluateValueTypeWithObjectValueType.run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateValueTypeWithObjectValueType:run'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               await RuntimeEvaluateAndCheck(
+                   ("myVar.MyMethod()", TNumber(10)));
+           });
     }
 }
