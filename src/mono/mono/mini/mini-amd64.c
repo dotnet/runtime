@@ -1013,6 +1013,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 			if (klass == swift_self && sig->pinvoke) {
 				guint32 old_gr = gr;
@@ -1023,7 +1024,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				if (old_gr < PARAM_REGS)
 					gr--;
 				continue;
-			} else if (klass == swift_error) {
+			} else if (klass == swift_error || klass == swift_error_ptr) {
 				if (sig->pinvoke)
 					ainfo->reg = GINT32_TO_UINT8 (AMD64_R12);
 				else
@@ -1282,10 +1283,11 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 			if (klass == swift_self) {
 				storage = &ccontext->gregs [AMD64_R13];
-			} else if (klass == swift_error) {
+			} else if (klass == swift_error || klass == swift_error_ptr) {
 				*(gpointer*)storage = 0;
 				continue;
 			}
@@ -1413,9 +1415,10 @@ gpointer
 mono_arch_get_swift_error (CallContext *ccontext, MonoMethodSignature *sig, int *arg_index)
 {
 	MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+	MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 	for (guint i = 0; i < sig->param_count + sig->hasthis; i++) {
 		MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
-		if (klass && klass == swift_error) {
+		if (klass && (klass == swift_error || klass == swift_error_ptr)) {
 			*arg_index = i;
 			return &ccontext->gregs [AMD64_R12];
 		}

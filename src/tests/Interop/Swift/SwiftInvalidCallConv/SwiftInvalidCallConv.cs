@@ -34,10 +34,6 @@ public class InvalidCallingConvTests
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
-    public unsafe static extern void FuncWithSwiftErrorAsUnsafeArg(SwiftError* error1);
-
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s20SwiftInvalidCallConv10simpleFuncyyF")]
     public static extern void FuncWithNonPrimitiveArg(StringClass arg1);
 
     [Fact]
@@ -71,15 +67,6 @@ public class InvalidCallingConvTests
         // Invalid due to SwiftError not passed as a pointer.
         SwiftError error = new SwiftError();
         Assert.Throws<InvalidProgramException>(() => FuncWithSwiftErrorAsArg(error));
-    }
-
-    [Fact]
-    public unsafe static void TestFuncWithSwiftErrorAsUnsafeArg()
-    {
-        // Invalid due to SwiftError not passed as an unsafe pointer.
-        SwiftError error = new SwiftError();
-        SwiftError *errorPtr = &error;
-        Assert.Throws<InvalidProgramException>(() => FuncWithSwiftErrorAsUnsafeArg(errorPtr));
     }
 
     [Fact]

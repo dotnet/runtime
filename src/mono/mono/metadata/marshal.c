@@ -3623,8 +3623,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		}
 
 		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
-			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			int swift_error_args = 0, swift_self_args = 0;
 			for (int i = 0; i < method->signature->param_count; ++i) {
 				MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
@@ -3633,11 +3634,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						swift_error_args = swift_self_args = 0;
 						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftError argument must be passed by reference.");
 						break;
-					} else if (param_klass == swift_error) {
+					} else if (param_klass == swift_error || param_klass == swift_error_ptr) {
 						swift_error_args++;
 					} else if (param_klass == swift_self) {
 						swift_self_args++;
-					} else if (!m_class_is_enumtype (param_klass) && !m_class_is_primitive (param_klass)) {
+					} else if (!m_class_is_enumtype (param_klass) && !m_class_is_primitive (param_klass) && m_class_get_this_arg (param_klass)->type != MONO_TYPE_FNPTR) {
 						swift_error_args = swift_self_args = 0;
 						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-primitive value types to a P/Invoke with the Swift calling convention is unsupported.");
 						break;
