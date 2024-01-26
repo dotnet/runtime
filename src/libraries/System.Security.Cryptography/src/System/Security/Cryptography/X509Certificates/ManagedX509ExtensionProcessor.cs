@@ -210,37 +210,6 @@ namespace System.Security.Cryptography.X509Certificates
             return contents.ToArray();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required for Compat")]
-        public virtual byte[] ComputeCapiSha1OfPublicKey(PublicKey key)
-        {
-            // The CapiSha1 value is the SHA-1 of the SubjectPublicKeyInfo field, inclusive
-            // of the DER structural bytes.
-
-            SubjectPublicKeyInfoAsn spki = default;
-            spki.Algorithm = new AlgorithmIdentifierAsn { Algorithm = key.Oid!.Value!, Parameters = key.EncodedParameters.RawData };
-            spki.SubjectPublicKey = key.EncodedKeyValue.RawData;
-
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            spki.Encode(writer);
-
-            byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
-
-            try
-            {
-                if (!writer.TryEncode(rented, out int bytesWritten))
-                {
-                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
-                    throw new CryptographicException();
-                }
-
-                return SHA1.HashData(rented.AsSpan(0, bytesWritten));
-            }
-            finally
-            {
-                CryptoPool.Return(rented, clearSize: 0); // SubjectPublicKeyInfo is not sensitive.
-            }
-        }
-
         private static byte ReverseBitOrder(byte b)
         {
             return (byte)(unchecked(b * 0x0202020202ul & 0x010884422010ul) % 1023);

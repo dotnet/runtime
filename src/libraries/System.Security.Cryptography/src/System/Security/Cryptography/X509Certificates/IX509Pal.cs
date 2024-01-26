@@ -23,6 +23,5 @@ namespace System.Security.Cryptography.X509Certificates
         void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages);
         byte[] EncodeX509SubjectKeyIdentifierExtension(ReadOnlySpan<byte> subjectKeyIdentifier);
         void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier);
-        byte[] ComputeCapiSha1OfPublicKey(PublicKey key);
     }
 }

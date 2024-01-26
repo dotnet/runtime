@@ -487,7 +487,6 @@ crypt32!CryptGetOIDFunctionValue
 crypt32!CryptHashCertificate
 crypt32!CryptHashCertificate2
 crypt32!CryptHashMessage
-crypt32!CryptHashPublicKeyInfo
 crypt32!CryptHashToBeSigned
 crypt32!CryptImportPKCS8
 crypt32!CryptImportPublicKeyInfo
