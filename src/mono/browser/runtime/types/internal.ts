@@ -484,3 +484,19 @@ export type NativeModuleExportsInternal = {
 export type WeakRefInternal<T extends object> = WeakRef<T> & {
     dispose?: () => void
 }
+
+/// a symbol that we use as a key on messages on the global worker-to-main channel to identify our own messages
+/// we can't use an actual JS Symbol because those don't transfer between workers.
+export const monoMessageSymbol = "__mono_message__";
+
+export const enum WorkerToMainMessageType {
+    enabledInterop = "notify_enabled_interop",
+    monoAttached = "notify_mono_attached",
+    monoDetached = "notify_mono_detached",
+    pthreadCreated = "channel_created",
+    preload = "preload",
+}
+
+export const enum MainToWorkerMessageType {
+    applyConfig = "apply_mono_config",
+}

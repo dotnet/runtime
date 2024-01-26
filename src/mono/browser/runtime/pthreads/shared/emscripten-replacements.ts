@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { onWorkerLoadInitiated } from "../browser";
 import { afterThreadInitTLS } from "../worker";
-import { Internals, PThreadLibrary, PThreadWorker } from "./emscripten-internals";
+import { PThreadLibrary, PThreadWorker, getUnusedWorkerPool } from "./emscripten-internals";
 import { loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_warn } from "../../logging";
 
@@ -21,7 +21,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
     const originalThreadInitTLS = modulePThread.threadInitTLS;
     const originalReturnWorkerToPool = modulePThread.returnWorkerToPool;
 
-    modulePThread.loadWasmModuleToWorker = (worker: Worker): Promise<Worker> => {
+    modulePThread.loadWasmModuleToWorker = (worker: PThreadWorker): Promise<PThreadWorker> => {
         const afterLoaded = originalLoadWasmModuleToWorker(worker);
         afterLoaded.then(() => {
             availableThreadCount++;
@@ -38,7 +38,13 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
     modulePThread.returnWorkerToPool = (worker: PThreadWorker) => {
         // when JS interop is installed on JSWebWorker
         // we can't reuse the worker, because user code could leave the worker JS globals in a dirty state
-        if (worker.interopInstalled) {
+        worker.info.isRunning = false;
+        worker.info.pthreadId = 0;
+        if (worker.thread?.port) {
+            worker.thread.port.close();
+        }
+        worker.thread = undefined;
+        if (worker.info && worker.info.hasInterop) {
             // we are on UI thread, invoke the handler directly to destroy the dirty worker
             worker.onmessage!(new MessageEvent("message", {
                 data: {
@@ -96,11 +102,12 @@ function allocateUnusedWorker(): PThreadWorker {
     const uri = asset.resolvedUrl;
     mono_assert(uri !== undefined, "could not resolve the uri for the js-module-threads asset");
     const worker = new Worker(uri) as PThreadWorker;
-    Internals.getUnusedWorkerPool().push(worker);
+    getUnusedWorkerPool().push(worker);
     worker.loaded = false;
-    worker.interopInstalled = false;
-    worker.browserEventLoop = false;
-    worker.managedThreadPool = false;
-    worker.threadName = "Unnamed";
+    worker.info = {
+        pthreadId: 0,
+        reuseCount: 0,
+        updateCount: 0,
+    };
     return worker;
 }

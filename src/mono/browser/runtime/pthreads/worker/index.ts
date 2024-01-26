@@ -6,12 +6,11 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { ENVIRONMENT_IS_PTHREAD, mono_assert, loaderHelpers } from "../../globals";
-import { makeChannelCreatedMonoMessage, makeMonoAttachedMessage, makeMonoDetachedMessage, mono_wasm_pthread_ptr, set_thread_info } from "../shared";
-import type { pthreadPtr } from "../shared/types";
-import { is_nullish } from "../../types/internal";
-import type { MonoThreadMessage } from "../shared";
+import { mono_wasm_pthread_ptr, postMessageToMain, update_thread_info } from "../shared";
+import { PThreadInfo } from "../shared/types";
+import { WorkerToMainMessageType, is_nullish } from "../../types/internal";
+import { MonoThreadMessage } from "../shared";
 import {
-    PThreadSelf,
     makeWorkerThreadEvent,
     dotnetPthreadCreated,
     dotnetPthreadAttached,
@@ -32,9 +31,18 @@ export {
     WorkerThreadEventTarget,
 } from "./events";
 
+/// Identification of the current thread executing on a worker
+export interface PThreadSelf {
+    info: PThreadInfo;
+    portToBrowser: MessagePort;
+    postMessageToBrowser: <T extends MonoThreadMessage>(message: T, transfer?: Transferable[]) => void;
+    addEventListenerFromBrowser: (listener: <T extends MonoThreadMessage>(event: MessageEvent<T>) => void) => void;
+}
+
 class WorkerSelf implements PThreadSelf {
-    readonly isBrowserThread = false;
-    constructor(readonly pthreadId: pthreadPtr, readonly portToBrowser: MessagePort) { }
+    constructor(public info: PThreadInfo, public portToBrowser: MessagePort) {
+    }
+
     postMessageToBrowser(message: MonoThreadMessage, transfer?: Transferable[]) {
         if (transfer) {
             this.portToBrowser.postMessage(message, transfer);
@@ -50,6 +58,7 @@ class WorkerSelf implements PThreadSelf {
 // we are lying that this is never null, but afterThreadInit should be the first time we get to run any code
 // in the worker, so this becomes non-null very early.
 export let pthread_self: PThreadSelf = null as any as PThreadSelf;
+export let monoThreadInfo: PThreadInfo = null as any as PThreadInfo;
 
 /// This is the "public internal" API for runtime subsystems that wish to be notified about
 /// pthreads that are running on the current worker.
@@ -70,53 +79,55 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
     mono_log_debug("got message from main on the dedicated channel", event.data);
 }
 
-
-function setupChannelToMainThread(pthread_ptr: pthreadPtr): PThreadSelf {
-    if (!MonoWasmThreads) return null as any;
-    const channel = new MessageChannel();
-    const workerPort = channel.port1;
-    const mainPort = channel.port2;
-    workerPort.addEventListener("message", monoDedicatedChannelMessageFromMainToWorker);
-    workerPort.start();
-    pthread_self = new WorkerSelf(pthread_ptr, workerPort);
-    self.postMessage(makeChannelCreatedMonoMessage(pthread_ptr, mainPort), [mainPort]);
-    return pthread_self;
-}
-
-let threadName: string | undefined;
-
 /// This is an implementation detail function.
 /// Called in the worker thread (not main thread) from mono when a pthread becomes attached to the mono runtime.
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: number, thread_name: CharPtr, background_thread: number, threadpool_thread: number, external_eventloop: number, debugger_thread: number): void {
     if (!MonoWasmThreads) return;
-    mono_assert(pthread_self !== null && pthread_self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
-    const name = utf8ToString(thread_name);
+    mono_assert(pthread_self !== null && monoThreadInfo.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
+    const name = monoThreadInfo.name = utf8ToString(thread_name);
+    monoThreadInfo.isAttached = true;
+    monoThreadInfo.isThreadPool = threadpool_thread !== 0;
+    monoThreadInfo.isExternalEventLoop = external_eventloop !== 0;
+    monoThreadInfo.isBackground = background_thread !== 0;
+    monoThreadInfo.isDebugger = debugger_thread !== 0;
+
     // FIXME: this is a hack to get constant length thread names
-    const threadType = (name == ".NET Timer") ? "timr"
-        : (name == ".NET Long Running Task") ? "long"
-            : (name == ".NET TP Gate") ? "gate"
-                : debugger_thread ? "dbgr"
-                    : threadpool_thread ? "pool"
-                        : external_eventloop ? "jsww"
-                            : background_thread ? "back"
+    monoThreadInfo.isTimer = name == ".NET Timer";
+    monoThreadInfo.isLongRunning = name == ".NET Long Running Task";
+    monoThreadInfo.isThreadPoolGate = name == ".NET TP Gate";
+    const threadType = monoThreadInfo.isTimer ? "timr"
+        : monoThreadInfo.isLongRunning ? "long"
+            : monoThreadInfo.isThreadPoolGate ? "gate"
+                : monoThreadInfo.isDebugger ? "dbgr"
+                    : monoThreadInfo.isThreadPool ? "pool"
+                        : monoThreadInfo.isExternalEventLoop ? "jsww"
+                            : monoThreadInfo.isBackground ? "back"
                                 : "norm";
-    threadName = `0x${pthread_id.toString(16).padStart(8, "0")}-${threadType}`;
-    loaderHelpers.mono_set_thread_name(threadName);
+    monoThreadInfo.threadName = `0x${pthread_id.toString(16).padStart(8, "0")}-${threadType}`;
+    loaderHelpers.mono_set_thread_name(monoThreadInfo.threadName);
     preRunWorker();
-    set_thread_info(pthread_id, true, false, false);
+    update_thread_info();
     jiterpreter_allocate_tables();
-    self.postMessage(makeMonoAttachedMessage(pthread_id, name, external_eventloop !== 0, threadpool_thread !== 0));
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, pthread_self));
+    postMessageToMain({
+        monoCmd: WorkerToMainMessageType.monoAttached,
+        info: monoThreadInfo,
+    });
 }
 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
 export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void {
     if (!MonoWasmThreads) return;
+    mono_assert(pthread_id === monoThreadInfo.pthreadId, "expected pthread_id to match when detaching");
     postRunWorker();
-    set_thread_info(pthread_id, false, false, false);
-    threadName = threadName + "=>detached";
-    loaderHelpers.mono_set_thread_name(threadName);
-    self.postMessage(makeMonoDetachedMessage(pthread_id));
+    monoThreadInfo.isAttached = false;
+    monoThreadInfo.threadName = monoThreadInfo.threadName + "=>detached";
+    update_thread_info();
+    loaderHelpers.mono_set_thread_name(monoThreadInfo.threadName);
+    postMessageToMain({
+        monoCmd: WorkerToMainMessageType.monoDetached,
+        info: monoThreadInfo,
+    });
 }
 
 /// This is an implementation detail function.
@@ -124,11 +135,35 @@ export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void 
 /// for the same worker, since emscripten can reuse workers.  This is an implementation detail, that shouldn't be used directly.
 export function afterThreadInitTLS(): void {
     if (!MonoWasmThreads) return;
+
+    const pthread_ptr = mono_wasm_pthread_ptr();
+    mono_assert(!is_nullish(pthread_ptr), "pthread_self() returned null");
+    monoThreadInfo = {
+        pthreadId: pthread_ptr,
+        reuseCount: monoThreadInfo ? monoThreadInfo.reuseCount + 1 : 0,
+        updateCount: monoThreadInfo ? monoThreadInfo.updateCount + 1 : 0,
+    };
+    update_thread_info();
     // don't do this callback for the main thread
-    if (ENVIRONMENT_IS_PTHREAD) {
-        const pthread_ptr = mono_wasm_pthread_ptr();
-        mono_assert(!is_nullish(pthread_ptr), "pthread_self() returned null");
-        const pthread_self = setupChannelToMainThread(pthread_ptr);
-        currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, pthread_self));
+    if (!ENVIRONMENT_IS_PTHREAD) return;
+
+    currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, pthread_self));
+
+    const channel = new MessageChannel();
+    const workerPort = channel.port1;
+    const mainPort = channel.port2;
+    workerPort.addEventListener("message", monoDedicatedChannelMessageFromMainToWorker);
+    workerPort.start();
+
+    // this could be replacement
+    if (pthread_self && pthread_self.portToBrowser) {
+        pthread_self.portToBrowser.close();
     }
+
+    pthread_self = new WorkerSelf(monoThreadInfo, workerPort);
+    postMessageToMain({
+        monoCmd: WorkerToMainMessageType.pthreadCreated,
+        info: monoThreadInfo,
+        port: mainPort,
+    }, [mainPort]);
 }

@@ -5,33 +5,12 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { ENVIRONMENT_IS_PTHREAD, Module, mono_assert, runtimeHelpers } from "../../globals";
-import { MonoConfig } from "../../types";
-import { pthreadPtr } from "./types";
 import { mono_log_debug } from "../../logging";
 import { bindings_init } from "../../startup";
 import { forceDisposeProxies } from "../../gc-handles";
-import { pthread_self } from "../worker";
-import { GCHandle, GCHandleNull } from "../../types/internal";
-
-export interface PThreadInfo {
-    readonly pthreadId: pthreadPtr;
-    readonly isBrowserThread: boolean;
-}
-
-export const MainThread: PThreadInfo = {
-    get pthreadId(): pthreadPtr {
-        return mono_wasm_main_thread_ptr();
-    },
-    isBrowserThread: true
-};
-
-const enum WorkerMonoCommandType {
-    enabledInterop = "notify_enabled_interop",
-    monoAttached = "notify_mono_attached",
-    monoDetached = "notify_mono_detached",
-    channelCreated = "channel_created",
-    preload = "preload",
-}
+import { GCHandle, GCHandleNull, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
+import { MonoWorkerToMainMessage } from "./types";
+import { monoThreadInfo } from "../worker";
 
 /// Messages sent on the dedicated mono channel between a pthread and the browser thread
 
@@ -51,175 +30,6 @@ export function isMonoThreadMessage(x: unknown): x is MonoThreadMessage {
     return typeof (xmsg.type) === "string" && typeof (xmsg.cmd) === "string";
 }
 
-// message from the main thread to the pthread worker that passes the MonoConfig to the worker
-export interface MonoThreadMessageApplyMonoConfig extends MonoThreadMessage {
-    type: "pthread";
-    cmd: "apply_mono_config";
-    config: string;
-}
-
-export function makeMonoThreadMessageApplyMonoConfig(config: MonoConfig): MonoThreadMessageApplyMonoConfig {
-    return {
-        type: "pthread",
-        cmd: "apply_mono_config",
-        config: JSON.stringify(config)
-    };
-}
-
-/// Messages sent using the worker object's postMessage() method ///
-
-/// a symbol that we use as a key on messages on the global worker-to-main channel to identify our own messages
-/// we can't use an actual JS Symbol because those don't transfer between workers.
-export const monoSymbol = "__mono_message_please_dont_collide__"; //Symbol("mono");
-
-/// Messages sent from the main thread using Worker.postMessage or from the worker using DedicatedWorkerGlobalScope.postMessage
-/// should use this interface.  The message event is also used by emscripten internals (and possibly by 3rd party libraries targeting Emscripten).
-/// We should just use this to establish a dedicated MessagePort for Mono's uses.
-export interface MonoWorkerMessage {
-    [monoSymbol]: {
-        monoCmd: WorkerMonoCommandType;
-    };
-}
-export type MonoWorkerMessagePort = MonoWorkerMessage & {
-    [monoSymbol]: {
-        port: MessagePort;
-    };
-}
-
-/// The message sent early during pthread creation to set up a dedicated MessagePort for Mono between the main thread and the pthread.
-export interface MonoWorkerMessageChannelCreated extends MonoWorkerMessage {
-    [monoSymbol]: {
-        monoCmd: WorkerMonoCommandType.channelCreated;
-        threadId: pthreadPtr;
-        port: MessagePort;
-    };
-}
-
-export interface MonoWorkerMessageMonoAttached extends MonoWorkerMessage {
-    [monoSymbol]: {
-        monoCmd: WorkerMonoCommandType.monoAttached;
-        threadId: pthreadPtr;
-        threadName: string;
-        isExternalEventLoop: boolean;
-        isThreadPoolThread: boolean;
-    };
-}
-
-export interface MonoWorkerMessageMonoDetached extends MonoWorkerMessage {
-    [monoSymbol]: {
-        monoCmd: WorkerMonoCommandType.monoDetached;
-        threadId: pthreadPtr;
-    };
-}
-
-export interface MonoWorkerMessageEnabledInterop extends MonoWorkerMessage {
-    [monoSymbol]: {
-        monoCmd: WorkerMonoCommandType.enabledInterop;
-        threadId: pthreadPtr;
-    };
-}
-
-export interface MonoWorkerMessagePreload extends MonoWorkerMessagePort {
-    [monoSymbol]: {
-        monoCmd: WorkerMonoCommandType.preload;
-        port: MessagePort;
-    };
-}
-
-export function makeChannelCreatedMonoMessage(threadId: pthreadPtr, port: MessagePort): MonoWorkerMessageChannelCreated {
-    return {
-        [monoSymbol]: {
-            monoCmd: WorkerMonoCommandType.channelCreated,
-            threadId: threadId,
-            port
-        }
-    };
-}
-
-export function makeMonoAttachedMessage(threadId: pthreadPtr, threadName: string, isExternalEventLoop: boolean, isThreadPoolThread: boolean): MonoWorkerMessageMonoAttached {
-    return {
-        [monoSymbol]: {
-            monoCmd: WorkerMonoCommandType.monoAttached,
-            threadName,
-            isExternalEventLoop,
-            isThreadPoolThread,
-            threadId: threadId,
-        }
-    };
-}
-
-export function makeMonoDetachedMessage(threadId: pthreadPtr): MonoWorkerMessageMonoDetached {
-    return {
-        [monoSymbol]: {
-            monoCmd: WorkerMonoCommandType.monoDetached,
-            threadId: threadId,
-        }
-    };
-}
-
-export function makeEnabledInteropMonoMessage(threadId: pthreadPtr): MonoWorkerMessageEnabledInterop {
-    return {
-        [monoSymbol]: {
-            monoCmd: WorkerMonoCommandType.enabledInterop,
-            threadId: threadId,
-        }
-    };
-}
-
-export function isMonoWorkerMessage(message: unknown): message is MonoWorkerMessage {
-    return message !== undefined && typeof message === "object" && message !== null && monoSymbol in message;
-}
-
-export function isMonoWorkerMessageChannelCreated(message: MonoWorkerMessage): message is MonoWorkerMessageChannelCreated {
-    if (isMonoWorkerMessage(message)) {
-        const monoMessage = message[monoSymbol];
-        if (monoMessage.monoCmd === WorkerMonoCommandType.channelCreated) {
-            return true;
-        }
-    }
-    return false;
-}
-
-export function isMonoWorkerMessageEnabledInterop(message: MonoWorkerMessage): message is MonoWorkerMessageEnabledInterop {
-    if (isMonoWorkerMessage(message)) {
-        const monoMessage = message[monoSymbol];
-        if (monoMessage.monoCmd === WorkerMonoCommandType.enabledInterop) {
-            return true;
-        }
-    }
-    return false;
-}
-
-export function isMonoWorkerMessageMonoAttached(message: MonoWorkerMessage): message is MonoWorkerMessageMonoAttached {
-    if (isMonoWorkerMessage(message)) {
-        const monoMessage = message[monoSymbol];
-        if (monoMessage.monoCmd === WorkerMonoCommandType.monoAttached) {
-            return true;
-        }
-    }
-    return false;
-}
-
-export function isMonoWorkerMessageMonoDetached(message: MonoWorkerMessage): message is MonoWorkerMessageMonoDetached {
-    if (isMonoWorkerMessage(message)) {
-        const monoMessage = message[monoSymbol];
-        if (monoMessage.monoCmd === WorkerMonoCommandType.monoDetached) {
-            return true;
-        }
-    }
-    return false;
-}
-
-export function isMonoWorkerMessagePreload(message: MonoWorkerMessage): message is MonoWorkerMessagePreload {
-    if (isMonoWorkerMessage(message)) {
-        const monoMessage = message[monoSymbol];
-        if (monoMessage.monoCmd === WorkerMonoCommandType.preload) {
-            return true;
-        }
-    }
-    return false;
-}
-
 export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle): void {
     if (!MonoWasmThreads) return;
     bindings_init();
@@ -229,10 +39,14 @@ export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle)
     }
     Module.runtimeKeepalivePush();
     if (ENVIRONMENT_IS_PTHREAD) {
-        self.postMessage(makeEnabledInteropMonoMessage(pthread_self.pthreadId), []);
+        postMessageToMain({
+            monoCmd: WorkerToMainMessageType.enabledInterop,
+            info: monoThreadInfo,
+        });
     }
 
-    set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, true, true);
+    monoThreadInfo.hasInterop = true;
+    update_thread_info();
 }
 
 export function mono_wasm_uninstall_js_worker_interop(): void {
@@ -245,14 +59,17 @@ export function mono_wasm_uninstall_js_worker_interop(): void {
 
     runtimeHelpers.proxy_context_gc_handle = GCHandleNull;
     runtimeHelpers.mono_wasm_bindings_is_ready = false;
-    set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, false, false);
+    monoThreadInfo.hasInterop = false;
+    update_thread_info();
 }
 
 // this is just for Debug build of the runtime, making it easier to debug worker threads
-export function set_thread_info(pthread_ptr: number, isAttached: boolean, hasInterop: boolean, hasSynchronization: boolean): void {
+export function update_thread_info(): void {
+    (globalThis as any).monoThreadInfo = monoThreadInfo;
     if (MonoWasmThreads && BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
+        monoThreadInfo.updateCount++;
         try {
-            (globalThis as any).monoThreadInfo = new Function(`//# sourceURL=https://WorkerInfo/\r\nconsole.log("tid:0x${pthread_ptr.toString(16)} isAttached:${isAttached} hasInterop:${!!hasInterop} hasSynchronization:${hasSynchronization}" );`);
+            (globalThis as any).monoThreadInfoFn = new Function(`//# sourceURL=https://${monoThreadInfo.updateCount}WorkerInfo${monoThreadInfo.isAttached ? monoThreadInfo.threadName : ""}/\r\nconsole.log("${JSON.stringify(monoThreadInfo)}");`);
         }
         catch (ex) {
             runtimeHelpers.cspPolicy = true;
@@ -268,4 +85,10 @@ export function mono_wasm_pthread_ptr(): number {
 export function mono_wasm_main_thread_ptr(): number {
     if (!MonoWasmThreads) return 0;
     return (<any>Module)["_emscripten_main_runtime_thread_id"]();
+}
+
+export function postMessageToMain(message: MonoWorkerToMainMessage, transfer?: Transferable[]) {
+    self.postMessage({
+        [monoMessageSymbol]: message
+    }, transfer ? transfer : []);
 }

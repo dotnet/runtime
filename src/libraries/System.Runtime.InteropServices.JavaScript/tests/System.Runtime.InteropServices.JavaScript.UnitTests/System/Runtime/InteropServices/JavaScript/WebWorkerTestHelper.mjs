@@ -1,12 +1,19 @@
 let dllExports;
 
-let runtime = getDotnetRuntime(0);
-
 let jsState = {};
+
+let runtime;
 
 export async function setup() {
     try {
+        if (!getDotnetRuntime) {
+            throw new Error("getDotnetRuntime is null or undefined");
+        }
         if (!runtime) {
+            runtime = getDotnetRuntime(0);
+        }
+        if (!runtime) {
+            console.error(getDotnetRuntime);
             throw new Error("runtime is null or undefined");
         }
         dllExports = await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
@@ -17,6 +24,7 @@ export async function setup() {
         jsState.tid = getTid();
     }
     catch (e) {
+        console.error("MONO_WASM: WebWorkerTestHelper.setup failed: " + JSON.stringify(globalThis.monoThreadInfo, null, 2));
         console.error("MONO_WASM: WebWorkerTestHelper.setup failed: " + e.toString());
         throw e;
     }
