@@ -28,6 +28,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Utils.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.Http.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.WebSocket.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestBase.cs" />
     <None Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JSImportGenerator\JSImports.g.cs" />
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JsExportGenerator\JSExports.g.cs" />

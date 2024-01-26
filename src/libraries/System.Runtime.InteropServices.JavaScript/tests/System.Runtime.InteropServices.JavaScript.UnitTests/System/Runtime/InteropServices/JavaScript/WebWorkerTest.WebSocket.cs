@@ -9,7 +9,7 @@ using System.Text;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
-    public class WebWorkerWebSocketTest : WebWorkerTest
+    public class WebWorkerWebSocketTest : WebWorkerTestBase
     {
         #region WebSocket
 

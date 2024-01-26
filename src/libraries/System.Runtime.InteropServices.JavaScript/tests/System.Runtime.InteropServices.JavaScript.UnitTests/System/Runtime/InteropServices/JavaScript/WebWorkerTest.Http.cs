@@ -10,7 +10,7 @@ using System.Text;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
-    public class WebWorkerHttpTest : WebWorkerTest
+    public class WebWorkerHttpTest : WebWorkerTestBase
     {
         #region HTTP
 
