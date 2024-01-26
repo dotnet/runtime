@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
 
@@ -11,16 +12,18 @@ namespace Mono.Linker
 	{
 		public SubstitutionInfo PrimarySubstitutionInfo { get; }
 		private readonly Dictionary<AssemblyDefinition, SubstitutionInfo?> _embeddedXmlInfos;
+		private readonly Dictionary<PropertyDefinition, bool> _constantFeatureChecks;
 		readonly LinkContext _context;
 
 		public MemberActionStore (LinkContext context)
 		{
 			PrimarySubstitutionInfo = new SubstitutionInfo ();
 			_embeddedXmlInfos = new Dictionary<AssemblyDefinition, SubstitutionInfo?> ();
+			_constantFeatureChecks = new Dictionary<PropertyDefinition, bool> ();
 			_context = context;
 		}
 
-		public bool TryGetSubstitutionInfo (MemberReference member, [NotNullWhen (true)] out SubstitutionInfo? xmlInfo)
+		private bool TryGetSubstitutionInfo (MemberReference member, [NotNullWhen (true)] out SubstitutionInfo? xmlInfo)
 		{
 			var assembly = member.Module.Assembly;
 			if (!_embeddedXmlInfos.TryGetValue (assembly, out xmlInfo)) {
@@ -41,6 +44,10 @@ namespace Mono.Linker
 					return action;
 			}
 
+			if (_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method)
+				&& IsGuardForDisabledFeature (method))
+				return MethodAction.ConvertToStub;
+
 			return MethodAction.Nothing;
 		}
 
@@ -49,10 +56,41 @@ namespace Mono.Linker
 			if (PrimarySubstitutionInfo.MethodStubValues.TryGetValue (method, out value))
 				return true;
 
-			if (!TryGetSubstitutionInfo (method, out var embeddedXml))
+			if (TryGetSubstitutionInfo (method, out var embeddedXml)) {
+				return embeddedXml.MethodStubValues.TryGetValue (method, out value);
+			}
+
+			// If there are no substitutions for the method, look for FeatureGuardAttribute on the property,
+			// and substitute 'false' for guards for features that are known to be disabled.
+			if (_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method)
+				&& IsGuardForDisabledFeature (method)) {
+				value = false;
+				return true;
+			}
+
+			return false;
+		}
+
+		internal bool IsGuardForDisabledFeature (MethodDefinition method)
+		{
+			if (!method.IsGetter && !method.IsSetter)
 				return false;
 
-			return embeddedXml.MethodStubValues.TryGetValue (method, out value);
+			// Look for a property with a getter that matches the method.
+			foreach (var property in method.DeclaringType.Properties) {
+				if (property.GetMethod != method && property.SetMethod != method)
+					continue;
+
+				// Include non-static, non-bool properties with setters as those will get validated inside GetLinkerAttributes.
+				foreach (var featureGuardAttribute in _context.Annotations.GetLinkerAttributes<FeatureGuardAttribute> (property)) {
+					// When trimming, we assume that a feature check for RequiresUnreferencedCodeAttribute returns false.
+					var requiresAttributeType = featureGuardAttribute.RequiresAttributeType;
+					if (requiresAttributeType.Name == "RequiresUnreferencedCodeAttribute" && requiresAttributeType.Namespace == "System.Diagnostics.CodeAnalysis")
+						return true;
+				}
+			}
+
+			return false;
 		}
 
 		public bool TryGetFieldUserValue (FieldDefinition field, out object? value)

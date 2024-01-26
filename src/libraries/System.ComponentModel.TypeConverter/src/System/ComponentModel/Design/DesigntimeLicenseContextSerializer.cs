@@ -17,6 +17,8 @@ namespace System.ComponentModel.Design
     {
         internal const byte BinaryWriterMagic = 255;
 
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+        [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
         private static bool EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization { get; } = AppContext.TryGetSwitch("System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization", out bool isEnabled) ? isEnabled : false;
 
         // Not creatable.
@@ -32,7 +34,10 @@ namespace System.ComponentModel.Design
         {
             if (EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)
             {
-                SerializeWithBinaryFormatter(o, cryptoKey, context);
+#pragma warning disable SYSLIB0011
+            var formatter = new BinaryFormatter();
+            formatter.Serialize(o, new object[] { cryptoKey, context._savedLicenseKeys });
+#pragma warning restore SYSLIB0011
             }
             else
             {
@@ -48,16 +53,6 @@ namespace System.ComponentModel.Design
                     }
                 }
             }
-        }
-
-        private static void SerializeWithBinaryFormatter(Stream o, string cryptoKey, DesigntimeLicenseContext context)
-        {
-#pragma warning disable SYSLIB0011
-#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
-            var formatter = new BinaryFormatter();
-            formatter.Serialize(o, new object[] { cryptoKey, context._savedLicenseKeys });
-#pragma warning restore IL2026
-#pragma warning restore SYSLIB0011
         }
 
         private sealed class StreamWrapper : Stream

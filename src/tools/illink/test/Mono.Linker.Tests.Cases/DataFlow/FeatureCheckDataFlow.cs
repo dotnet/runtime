@@ -1221,3 +1221,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class RequiresAllGeneric<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] T> {}
 	}
 }
+
+namespace System.Runtime.CompilerServices
+{
+	class RuntimeFeature
+	{
+		[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+		public static bool IsDynamicCodeSupported => true;
+	}
+}

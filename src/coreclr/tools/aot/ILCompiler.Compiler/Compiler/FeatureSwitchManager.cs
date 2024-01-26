@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -17,6 +19,19 @@ using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 using MethodDebugInformation = Internal.IL.MethodDebugInformation;
+
+namespace System.Diagnostics.CodeAnalysis
+{
+    internal sealed class FeatureGuardAttribute : Attribute
+    {
+        public Type RequiresAttributeType { get; }
+        public FeatureGuardAttribute (Type requiresAttributeType)
+        {
+            RequiresAttributeType = requiresAttributeType;
+        }
+    }
+}
+
 
 namespace ILCompiler
 {
@@ -38,9 +53,72 @@ namespace ILCompiler
                 AssemblyFeatureInfo info = _hashtable.GetOrCreateValue(ecmaMethod.Module);
                 if (info.BodySubstitutions != null && info.BodySubstitutions.TryGetValue(ecmaMethod, out BodySubstitution result))
                     return result;
+
+                // If there are no substitutions for the method, look for FeatureGuardAttribute on the property,
+                // and substitute 'false' for guards for features that are known to be disabled.
+                if (IsGuardForDisabledFeature (ecmaMethod))
+                    return BodySubstitution.Create (0);
             }
 
             return null;
+        }
+
+        private bool IsGuardForDisabledFeature (EcmaMethod ecmaMethod)
+        {
+            if (!ecmaMethod.Signature.IsStatic)
+                return false;
+
+            if ((ecmaMethod.Attributes & MethodAttributes.SpecialName) == 0)
+                return false;
+
+            if (ecmaMethod.OwningType is not EcmaType declaringType)
+                return false;
+
+            MetadataReader reader = declaringType.MetadataReader;
+
+            // Look for a property with a getter that matches the method.
+            foreach (PropertyDefinitionHandle propertyHandle in reader.GetTypeDefinition(declaringType.Handle).GetProperties())
+            {
+                PropertyDefinition property = reader.GetPropertyDefinition(propertyHandle);
+                var accessors = property.GetAccessors();
+                var getter = accessors.Getter;
+                if (getter.IsNil)
+                    continue;
+
+                if (getter != ecmaMethod.Handle)
+                    continue;
+
+                // Found the matching property. Look for FeatureGuardAttribute on the property.
+                PropertyPseudoDesc propertyDesc = new PropertyPseudoDesc(declaringType, propertyHandle);
+                foreach (var attr in propertyDesc.GetDecodedCustomAttributes ("System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute")) {
+                    if (attr.FixedArguments.Length != 1)
+                        continue; 
+
+                    if (attr.FixedArguments[0].Value is not MetadataType featureType)
+                        continue;
+
+
+                    if (featureType.Namespace is not "System.Diagnostics.CodeAnalysis")
+                        continue;
+
+                    switch (featureType.Name) {
+                    case "RequiresUnreferencedCodeAttribute":
+                        return true;
+                    case "RequiresDynamicCodeAttribute":
+                        if (_hashtable._switchValues.TryGetValue(
+                                "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported",
+                                out bool isDynamicCodeSupported)
+                            && !isDynamicCodeSupported)
+                            return true;
+                        break;
+                    case "RequiresAssemblyFilesAttribute":
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            return false;
         }
 
         private object GetSubstitution(FieldDesc field)

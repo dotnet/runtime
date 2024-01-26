@@ -62,6 +62,10 @@ namespace Mono.Linker
 					attributeValue = new RemoveAttributeInstancesAttribute (customAttribute.ConstructorArguments);
 					allowMultiple = true;
 					break;
+				case "FeatureGuardAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
+					attributeValue = ProcessFeatureGuardAttribute (context, provider, customAttribute);
+					allowMultiple = true;
+					break;
 				default:
 					continue;
 				}
@@ -126,6 +130,35 @@ namespace Mono.Linker
 			}
 
 			context.LogWarning ((IMemberDefinition) provider, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, typeof (RequiresUnreferencedCodeAttribute).FullName ?? "");
+			return null;
+		}
+
+		static FeatureGuardAttribute? ProcessFeatureGuardAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
+		{
+			if (provider is not PropertyDefinition property)
+				return null;
+
+			// property must be a static bool get-only property
+			if (property.HasThis || property.PropertyType.MetadataType != MetadataType.Boolean || property.SetMethod != null) {
+				context.LogWarning ((IMemberDefinition) provider, DiagnosticId.InvalidFeatureGuard);
+				return null;
+			}
+
+			if (customAttribute.HasConstructorArguments && customAttribute.ConstructorArguments[0].Value is TypeReference featureType) {
+				if (featureType.Namespace is not "System.Diagnostics.CodeAnalysis")
+					return null;
+
+				switch (featureType.Name) {
+				case "RequiresUnreferencedCodeAttribute":
+					return new FeatureGuardAttribute (typeof (RequiresUnreferencedCodeAttribute));
+				case "RequiresAssemblyFilesAttribute":
+					return new FeatureGuardAttribute (typeof (RequiresAssemblyFilesAttribute));
+				case "RequiresDynamicCodeAttribute":
+					return new FeatureGuardAttribute (typeof (RequiresDynamicCodeAttribute));
+				}
+			}
+
+			context.LogWarning ((IMemberDefinition) provider, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, typeof (FeatureGuardAttribute).FullName ?? "");
 			return null;
 		}
 	}

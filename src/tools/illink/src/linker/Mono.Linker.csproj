@@ -20,6 +20,7 @@
     <RollForward>Major</RollForward>
     <UseAppHost>false</UseAppHost>
     <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <NoWarn>$(NoWarn);SA1027;IDE0060;IDE0059</NoWarn>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
     <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
   </PropertyGroup>

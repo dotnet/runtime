@@ -406,6 +406,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					RequiresUnreferencedCode ();
 			}
 
+			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool SetOnlyProperty { set => throw null; }
+
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
+			static void TestSetOnlyProperty ()
+			{
+				if (SetOnlyProperty = true)
+					RequiresUnreferencedCode ();
+			}
+
+			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
+			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			static bool GetAndSetProperty { get => true; set => throw null; }
+
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
+			static void TestGetAndSetProperty ()
+			{
+				if (GetAndSetProperty)
+					RequiresUnreferencedCode ();
+			}
+
 			// No warning for this case because we don't validate that the attribute usage matches
 			// the expected AttributeUsage.Property for assemblies that define their own version
 			// of FeatureGuardAttribute.
@@ -423,6 +445,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				TestNonBooleanProperty ();
 				TestNonStaticProperty ();
+				TestSetOnlyProperty ();
+				TestGetAndSetProperty ();
 				TestMethod ();
 			}
 		}

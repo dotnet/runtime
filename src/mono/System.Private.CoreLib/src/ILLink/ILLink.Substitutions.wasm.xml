@@ -3,8 +3,5 @@
     <type fullname="System.Environment">
       <method signature="System.Int32 get_ProcessorCount()" body="stub" value="1" />
     </type>
-    <type fullname="System.Runtime.CompilerServices.RuntimeFeature">
-      <method signature="System.Boolean get_IsDynamicCodeCompiled()" body="stub" value="false" />
-    </type>
   </assembly>
 </linker>
