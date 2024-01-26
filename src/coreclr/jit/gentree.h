@@ -4583,6 +4583,15 @@ public:
 #endif
     }
 
+    bool IsMismatchArgType() const
+    {
+#ifdef TARGET_RISCV64
+        return isValidIntArgReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
+#else
+        return false;
+#endif // TARGET_RISCV64
+    }
+
     void SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa);
 
     // Get the number of bytes that this argument is occupying on the stack,
