@@ -32,15 +32,17 @@ namespace System.Runtime.InteropServices
             return System.Text.Encoding.UTF8.GetChars(multiByteStr, multiByteLen, wideCharStr, wideCharLen);
         }
 
+#pragma warning disable IDE0060
         public static unsafe int ConvertWideCharToMultiByte(char* wideCharStr,
                                                             int wideCharLen,
                                                             byte* multiByteStr,
                                                             int multiByteLen,
-                                                            bool _,
-                                                            bool __)
+                                                            bool bestFit,
+                                                            bool throwOnUnmappableChar)
         {
             return System.Text.Encoding.UTF8.GetBytes(wideCharStr, wideCharLen, multiByteStr, multiByteLen);
         }
+#pragma warning restore IDE0060
 
         public static unsafe int ConvertWideCharToMultiByte(char* wideCharStr,
                                                             int wideCharLen,
