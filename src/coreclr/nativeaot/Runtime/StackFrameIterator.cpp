@@ -578,7 +578,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pX17 = (PTR_UIntNative)PTR_TO_REG(pCtx, X17);
     m_RegDisplay.pX18 = (PTR_UIntNative)PTR_TO_REG(pCtx, X18);
 
-#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64)
 
     //
     // preserved regs
@@ -587,25 +587,37 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pRsi = (PTR_UIntNative)PTR_TO_REG(pCtx, Rsi);
     m_RegDisplay.pRdi = (PTR_UIntNative)PTR_TO_REG(pCtx, Rdi);
     m_RegDisplay.pRbx = (PTR_UIntNative)PTR_TO_REG(pCtx, Rbx);
-#ifdef TARGET_AMD64     
     m_RegDisplay.pR12 = (PTR_UIntNative)PTR_TO_REG(pCtx, R12);
     m_RegDisplay.pR13 = (PTR_UIntNative)PTR_TO_REG(pCtx, R13);
     m_RegDisplay.pR14 = (PTR_UIntNative)PTR_TO_REG(pCtx, R14);
     m_RegDisplay.pR15 = (PTR_UIntNative)PTR_TO_REG(pCtx, R15);
-#endif // TARGET_AMD64  
-                        
-    //                  
-    // scratch regs     
-    //                  
+
+    //
+    // scratch regs
+    //
     m_RegDisplay.pRax = (PTR_UIntNative)PTR_TO_REG(pCtx, Rax);
     m_RegDisplay.pRcx = (PTR_UIntNative)PTR_TO_REG(pCtx, Rcx);
     m_RegDisplay.pRdx = (PTR_UIntNative)PTR_TO_REG(pCtx, Rdx);
-#ifdef TARGET_AMD64     
     m_RegDisplay.pR8  = (PTR_UIntNative)PTR_TO_REG(pCtx, R8);
     m_RegDisplay.pR9  = (PTR_UIntNative)PTR_TO_REG(pCtx, R9);
     m_RegDisplay.pR10 = (PTR_UIntNative)PTR_TO_REG(pCtx, R10);
     m_RegDisplay.pR11 = (PTR_UIntNative)PTR_TO_REG(pCtx, R11);
-#endif // TARGET_AMD64
+#elif defined(TARGET_X86)
+
+    //
+    // preserved regs
+    //
+    m_RegDisplay.pRbp = (PTR_UIntNative)PTR_TO_REG(pCtx, Ebp);
+    m_RegDisplay.pRsi = (PTR_UIntNative)PTR_TO_REG(pCtx, Esi);
+    m_RegDisplay.pRdi = (PTR_UIntNative)PTR_TO_REG(pCtx, Edi);
+    m_RegDisplay.pRbx = (PTR_UIntNative)PTR_TO_REG(pCtx, Ebx);
+
+    //
+    // scratch regs
+    //
+    m_RegDisplay.pRax = (PTR_UIntNative)PTR_TO_REG(pCtx, Eax);
+    m_RegDisplay.pRcx = (PTR_UIntNative)PTR_TO_REG(pCtx, Ecx);
+    m_RegDisplay.pRdx = (PTR_UIntNative)PTR_TO_REG(pCtx, Edx);
 #elif defined(TARGET_ARM)
 
     m_RegDisplay.pR0 = (PTR_UIntNative)PTR_TO_REG(pCtx, R0);
@@ -1821,6 +1833,8 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 #ifdef TARGET_X86
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFunclet2))
     {
+        PORTABILITY_ASSERT("CategorizeUnadjustedReturnAddress");
+#if 0
         // See if it is a filter funclet based on the caller of RhpCallFunclet
         PTR_UIntNative SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
         PTR_UIntNative ControlPC = *SP++;
@@ -1829,6 +1843,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
             return InFilterFuncletInvokeThunk;
         }
         else
+#endif
         {
             return InFuncletInvokeThunk;
         }
