@@ -16,6 +16,11 @@
     <WriteLinesToFile
       File="$(RuntimeBinDir)/aotsdk/debugucrt.txt"
       Condition="'$(TargetsWindows)'=='true' and '$(Configuration)' != 'Release'" />
+
+    <!-- Create breadcrumb to add additional libraries for non-portable builds -->
+    <WriteLinesToFile
+      File="$(RuntimeBinDir)/aotsdk/nonportable.txt"
+      Condition="'$(TargetsWindows)'!='true' and '$(PortableBuild)' != 'true'" />
   </Target>
 
   <Target Name="Restore" />

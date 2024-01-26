@@ -7,8 +7,6 @@
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
-    <!-- Can't use NativeAOT in non-portable build yet https://github.com/dotnet/runtime/issues/66859 -->
-    <NativeAotSupported Condition="'$(PortableBuild)' != 'true'">false</NativeAotSupported>
     <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
     <NativeAotSupported Condition="$(OutputRID.EndsWith('-arm')) == 'true'">false</NativeAotSupported>
     <!-- Publish crossgen2 as a single-file app on native-OS builds. Cross-OS NativeAOT compilation is not supported yet -->
