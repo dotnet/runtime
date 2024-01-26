@@ -5460,6 +5460,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         shouldExpandInline = isCastClass && isClassExact;
     }
 
+    // CI test
+    shouldExpandInline = false;
+
     // Pessimistically assume the jit cannot expand this as an inline test
     bool                  canExpandInline = false;
     bool                  reversedMTCheck = false;

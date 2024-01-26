@@ -2279,18 +2279,13 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
     else
     {
-        GenTreeCall* helperCall = call;
         if (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_Specialized)
         {
-            // Re-create the call with a specialized helper
-            // For JIT we probably can just change the gtCallMethHnd in the existing call, but let's unify with AOT
-            helperCall = gtNewHelperCallNode(CORINFO_HELP_CHKCASTCLASS_SPECIAL, call->TypeGet(),
-                                             helperCall->gtArgs.GetUserArgByIndex(0)->GetNode(),
-                                             helperCall->gtArgs.GetUserArgByIndex(1)->GetNode());
-            fgMorphCall(helperCall);
-            gtSetEvalOrder(helperCall);
+            // A slightly faster fallback which assumes that we've already checked
+            // for null and for castToCls itself.
+            call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL);
         }
-        GenTree* fallbackTree = gtNewTempStore(tmpNum, helperCall);
+        GenTree* fallbackTree = gtNewTempStore(tmpNum, call);
         fallbackBb            = fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, fallbackTree, debugInfo, lastBb, true);
     }
 
@@ -2337,10 +2332,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //
     nullcheckBb->inheritWeight(firstBb);
     typeCheckBb->inheritWeightPercentage(nullcheckBb, 50);
-    fallbackBb->inheritWeightPercentage(typeCheckBb,
-                                        (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_AlwaysThrows)
-                                            ? 0
-                                            : 100 - likelihood);
+    fallbackBb->inheritWeightPercentage(typeCheckBb, fallbackBb->KindIs(BBJ_THROW) ? 0 : 100 - likelihood);
     typeCheckSucceedBb->inheritWeightPercentage(typeCheckBb, likelihood);
     lastBb->inheritWeight(firstBb);
 
