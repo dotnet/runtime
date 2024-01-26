@@ -278,6 +278,10 @@ CrashInfo::EnumerateMemoryRegions()
                     m_moduleMappings.insert(moduleRegion);
                     m_cbModuleMappings += moduleRegion.Size();
                 }
+                else
+                {
+                    m_otherMappings.insert(moduleRegion);
+                }
             }
             else
             {
