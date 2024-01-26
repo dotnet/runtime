@@ -344,6 +344,7 @@ asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_descrip
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets DOTNET_JitGCDump; requires instructions to be prefixed by offsets).")
 asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets DOTNET_JitDebugDump).")
+asm_diff_parser.add_argument("--alignloops", action="store_true", help="Do diffs with loop alignment enabled (uses DOTNET_JitAlignLoops default; otherwise DOTNET_JitAlignLoops is set to zero (loop alignment disabled)).")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, one for each metric.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
@@ -1971,17 +1972,19 @@ class SuperPMIReplayAsmDiffs:
 
         # These vars are force overridden in the SPMI runs for both the base and diff, always.
         replay_vars = {
-            "DOTNET_JitAlignLoops": "0", # disable loop alignment to filter noise
             "DOTNET_JitEnableNoWayAssert": "1",
             "DOTNET_JitNoForceFallback": "1",
         }
+
+        if not self.coreclr_args.alignloops:
+            replay_vars.update({
+                "DOTNET_JitAlignLoops": "0" })
 
         # These vars are used in addition to the replay vars when creating disassembly for the interesting contexts
         asm_dotnet_vars = {
             "DOTNET_JitDisasm": "*",
             "DOTNET_JitUnwindDump": "*",
             "DOTNET_JitEHDump": "*",
-            "DOTNET_JitDiffableDasm": "1", # to be removed
             "DOTNET_JitDisasmDiffable": "1",
             "DOTNET_JitDisasmWithGC": "1"
         }
@@ -4751,6 +4754,11 @@ def setup_args(args):
                             "debuginfo",
                             lambda unused: True,
                             "Unable to set debuginfo.")
+
+        coreclr_args.verify(args,
+                            "alignloops",
+                            lambda unused: True,
+                            "Unable to set alignloops.")
 
         coreclr_args.verify(args,
                             "diff_jit_dump",

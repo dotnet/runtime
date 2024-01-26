@@ -70,8 +70,6 @@
 typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
 
 MethodDataCache *MethodTable::s_pMethodDataCache = NULL;
-BOOL MethodTable::s_fUseMethodDataCache = FALSE;
-BOOL MethodTable::s_fUseParentMethodData = FALSE;
 
 #ifdef _DEBUG
 extern unsigned g_dupMethods;
@@ -7159,22 +7157,6 @@ WORD MethodTable::GetNumHandleRegularStatics()
     return GetClass()->GetNumHandleRegularStatics();
 }
 
-//==========================================================================================
-WORD MethodTable::GetNumBoxedRegularStatics()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return GetClass()->GetNumBoxedRegularStatics();
-}
-
-//==========================================================================================
-WORD MethodTable::GetNumBoxedThreadStatics ()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return GetClass()->GetNumBoxedThreadStatics();
-}
-
 #ifdef _DEBUG
 //==========================================================================================
 // Returns true if pointer to the parent method table has been initialized/restored already.
@@ -7421,11 +7403,13 @@ MethodTable::MethodData::ProcessMap(
 } // MethodTable::MethodData::ProcessMap
 
 //==========================================================================================
-UINT32 MethodTable::MethodDataObject::GetObjectSize(MethodTable *pMT)
+UINT32 MethodTable::MethodDataObject::GetObjectSize(MethodTable *pMT, MethodDataComputeOptions computeOptions)
 {
     WRAPPER_NO_CONTRACT;
+    _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly);
+
     UINT32 cb = sizeof(MethodTable::MethodDataObject);
-    cb += pMT->GetCanonicalMethodTable()->GetNumMethods() * sizeof(MethodDataObjectEntry);
+    cb += ComputeNumMethods(pMT, computeOptions) * sizeof(MethodDataObjectEntry);
     return cb;
 }
 
@@ -7510,6 +7494,7 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
         return;
 
     unsigned nVirtuals = pMT->GetNumVirtuals();
+    unsigned nVTableLikeSlots = pMT->GetCanonicalMethodTable()->GetNumVtableSlots();
 
     MethodTable::IntroducedMethodIterator it(pMT, FALSE);
     for (; it.IsValid(); it.Next())
@@ -7526,6 +7511,12 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
         {
             if (m_containsMethodImpl && slot < nVirtuals)
                 continue;
+
+            if (m_virtualsOnly && slot >= nVTableLikeSlots)
+            {
+                _ASSERTE(!pMD->IsVirtual() || (pMT->IsValueType() && !pMD->IsUnboxingStub()));
+                continue;
+            }
         }
         else
         {
@@ -7678,7 +7669,7 @@ UINT32 MethodTable::MethodDataInterfaceImpl::GetObjectSize(MethodTable *pMTDecl)
 {
     WRAPPER_NO_CONTRACT;
     UINT32 cb = sizeof(MethodDataInterfaceImpl);
-    cb += pMTDecl->GetNumMethods() * sizeof(MethodDataEntry);
+    cb += pMTDecl->GetNumVirtuals() * sizeof(MethodDataEntry);
     return cb;
 }
 
@@ -7861,28 +7852,18 @@ void MethodTable::MethodDataInterfaceImpl::InvalidateCachedVirtualSlot(UINT32 sl
 }
 
 //==========================================================================================
-void MethodTable::CheckInitMethodDataCache()
+void MethodTable::InitMethodDataCache()
 {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    if (s_pMethodDataCache == NULL)
-    {
-        UINT32 cb = MethodDataCache::GetObjectSize(8);
-        NewArrayHolder<BYTE> hb(new BYTE[cb]);
-        MethodDataCache *pCache = new (hb.GetValue()) MethodDataCache(8);
-        if (InterlockedCompareExchangeT(
-                &s_pMethodDataCache, pCache, NULL) == NULL)
-        {
-            hb.SuppressRelease();
-        }
-        // If somebody beat us, return and allow the holders to take care of cleanup.
-        else
-        {
-            return;
-        }
-    }
+    _ASSERTE(s_pMethodDataCache == NULL);
+
+    UINT32 cb = MethodDataCache::GetObjectSize(8);
+    NewArrayHolder<BYTE> hb(new BYTE[cb]);
+    s_pMethodDataCache = new (hb.GetValue()) MethodDataCache(8);
+    hb.SuppressRelease();
 }
 
 //==========================================================================================
@@ -7900,7 +7881,6 @@ MethodTable::MethodData *MethodTable::FindMethodDataHelper(MethodTable *pMTDecl,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        CONSISTENCY_CHECK(s_fUseMethodDataCache);
     } CONTRACTL_END;
 
     return s_pMethodDataCache->Find(pMTDecl, pMTImpl);
@@ -7917,13 +7897,11 @@ MethodTable::MethodData *MethodTable::FindParentMethodDataHelper(MethodTable *pM
     }
     CONTRACTL_END;
     MethodData *pData = NULL;
-    if (s_fUseMethodDataCache && s_fUseParentMethodData) {
-        if (!pMT->IsInterface()) {
-            //@todo : this won't be correct for non-shared code
-            MethodTable *pMTParent = pMT->GetParentMethodTable();
-            if (pMTParent != NULL) {
-                pData = FindMethodDataHelper(pMTParent, pMTParent);
-            }
+    if (!pMT->IsInterface()) {
+        //@todo : this won't be correct for non-shared code
+        MethodTable *pMTParent = pMT->GetParentMethodTable();
+        if (pMTParent != NULL) {
+            pData = FindMethodDataHelper(pMTParent, pMTParent);
         }
     }
     return pData;
@@ -7937,7 +7915,8 @@ MethodTable::GetMethodDataHelper(
     const DispatchMapTypeID * rgDeclTypeIDs,
     UINT32                    cDeclTypeIDs,
     MethodTable *             pMTDecl,
-    MethodTable *             pMTImpl)
+    MethodTable *             pMTImpl,
+    MethodDataComputeOptions  computeOptions)
 {
     CONTRACTL {
         THROWS;
@@ -7975,21 +7954,21 @@ MethodTable::GetMethodDataHelper(
 #endif //_DEBUG
 
     // Can't cache, since this is a custom method used in BuildMethodTable
-    MethodDataWrapper hDecl(GetMethodData(pMTDecl, FALSE));
-    MethodDataWrapper hImpl(GetMethodData(pMTImpl, FALSE));
+    MethodDataWrapper hDecl(GetMethodData(pMTDecl, computeOptions));
+    MethodDataWrapper hImpl(GetMethodData(pMTImpl, computeOptions));
 
-    MethodDataInterfaceImpl * pData = new ({ pMTDecl }) MethodDataInterfaceImpl(rgDeclTypeIDs, cDeclTypeIDs, hDecl, hImpl);
+    MethodDataInterfaceImpl * pData = new ({ pMTDecl}) MethodDataInterfaceImpl(rgDeclTypeIDs, cDeclTypeIDs, hDecl, hImpl);
 
     return pData;
 } // MethodTable::GetMethodDataHelper
 
 //==========================================================================================
-// The fCanCache argument determines if the resulting MethodData object can
+// The computeOptions argument determines if the resulting MethodData object can
 // be added to the global MethodDataCache. This is used when requesting a
 // MethodData object for a type currently being built.
 MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
                                                           MethodTable *pMTImpl,
-                                                          BOOL fCanCache)
+                                                          MethodDataComputeOptions computeOptions)
 {
     CONTRACTL {
         THROWS;
@@ -8004,23 +7983,23 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
     //@TODO: potentially cause deadlocks on the debug thread.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
 
-    if (s_fUseMethodDataCache) {
-        MethodData *pData = FindMethodDataHelper(pMTDecl, pMTImpl);
-        if (pData != NULL) {
-            return pData;
-        }
+    MethodData *pData = FindMethodDataHelper(pMTDecl, pMTImpl);
+    if (pData != NULL) {
+        return pData;
+    }
+
+    if (computeOptions == MethodDataComputeOptions::CacheOnly) {
+        return NULL;
     }
 
     // If we get here, there are no entries in the cache.
-    MethodData *pData = NULL;
     if (pMTDecl == pMTImpl) {
         if (pMTDecl->IsInterface()) {
             pData = new MethodDataInterface(pMTDecl);
         }
         else {
-            UINT32 cb = MethodDataObject::GetObjectSize(pMTDecl);
             MethodDataHolder h(FindParentMethodDataHelper(pMTDecl));
-            pData = new ({ pMTDecl }) MethodDataObject(pMTDecl, h.GetValue());
+            pData = new ({pMTDecl}, computeOptions) MethodDataObject(pMTDecl, h.GetValue(), computeOptions);
         }
     }
     else {
@@ -8028,11 +8007,12 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
             NULL,
             0,
             pMTDecl,
-            pMTImpl);
+            pMTImpl,
+            computeOptions);
     }
 
     // Insert in the cache if it is active.
-    if (fCanCache && s_fUseMethodDataCache) {
+    if (computeOptions == MethodDataComputeOptions::Cache) {
         s_pMethodDataCache->Insert(pData);
     }
 
@@ -8041,21 +8021,15 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
 }
 
 //==========================================================================================
-// The fCanCache argument determines if the resulting MethodData object can
+// The computeOptions argument determines if the resulting MethodData object can
 // be added to the global MethodDataCache. This is used when requesting a
 // MethodData object for a type currently being built.
 MethodTable::MethodData *MethodTable::GetMethodData(MethodTable *pMTDecl,
                                                     MethodTable *pMTImpl,
-                                                    BOOL fCanCache)
+                                                    MethodDataComputeOptions computeOptions)
 {
-    CONTRACTL {
-        THROWS;
-        WRAPPER(GC_TRIGGERS);
-    } CONTRACTL_END;
-
-    MethodDataWrapper hData(GetMethodDataHelper(pMTDecl, pMTImpl, fCanCache));
-    hData.SuppressRelease();
-    return hData;
+    WRAPPER_NO_CONTRACT;
+    return GetMethodDataHelper(pMTDecl, pMTImpl, computeOptions);
 }
 
 //==========================================================================================
@@ -8065,7 +8039,8 @@ MethodTable::GetMethodData(
     const DispatchMapTypeID * rgDeclTypeIDs,
     UINT32                    cDeclTypeIDs,
     MethodTable *             pMTDecl,
-    MethodTable *             pMTImpl)
+    MethodTable *             pMTImpl,
+    MethodDataComputeOptions  computeOptions)
 {
     CONTRACTL {
         THROWS;
@@ -8075,20 +8050,18 @@ MethodTable::GetMethodData(
         PRECONDITION(!pMTImpl->IsInterface());
     } CONTRACTL_END;
 
-    MethodDataWrapper hData(GetMethodDataHelper(rgDeclTypeIDs, cDeclTypeIDs, pMTDecl, pMTImpl));
-    hData.SuppressRelease();
-    return hData;
+    return GetMethodDataHelper(rgDeclTypeIDs, cDeclTypeIDs, pMTDecl, pMTImpl, computeOptions);
 }
 
 //==========================================================================================
-// The fCanCache argument determines if the resulting MethodData object can
+// The computeOptions argument determines if the resulting MethodData object can
 // be added to the global MethodDataCache. This is used when requesting a
 // MethodData object for a type currently being built.
 MethodTable::MethodData *MethodTable::GetMethodData(MethodTable *pMT,
-                                                    BOOL fCanCache)
+                                                    MethodDataComputeOptions computeOptions)
 {
     WRAPPER_NO_CONTRACT;
-    return GetMethodData(pMT, pMT, fCanCache);
+    return GetMethodData(pMT, pMT, computeOptions);
 }
 
 //==========================================================================================
@@ -8143,7 +8116,7 @@ void MethodTable::MethodIterator::Init(MethodTable *pMTDecl, MethodTable *pMTImp
 
     LOG((LF_LOADER, LL_INFO10000, "MT::MethodIterator created for %s.\n", pMTDecl->GetDebugClassName()));
 
-    m_pMethodData = MethodTable::GetMethodData(pMTDecl, pMTImpl);
+    m_pMethodData = MethodTable::GetMethodData(pMTDecl, pMTImpl, MethodDataComputeOptions::Cache);
     CONSISTENCY_CHECK(CheckPointer(m_pMethodData));
     m_iCur = 0;
     m_iMethods = (INT32)m_pMethodData->GetNumMethods();
