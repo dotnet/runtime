@@ -1071,59 +1071,23 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         size_t numArgs        = node->GetOperandCount();
         size_t expectedArgNum = HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId);
+
         if (numArgs == expectedArgNum)
         {
-            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            uint32_t    simdSize        = node->GetSimdSize();
-            var_types   simdType        = node->TypeGet();
-            GenTree*    lastOp          = node->Op(numArgs);
+            GenTree* lastOp = node->Op(numArgs);
+            uint8_t  mode   = 0x00;
 
             if (lastOp->IsCnsIntOrI())
             {
-                uint8_t mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
+                // Mark the constant as contained since it's specially encoded
+                MakeSrcContained(node, lastOp);
 
-                GenTreeHWIntrinsic* embRoundingNode;
-                switch (numArgs)
-                {
-                    case 3:
-                        embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), node->Op(2),
-                                                                         intrinsicId, simdBaseJitType, simdSize);
-                        break;
-                    case 2:
-                        embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), intrinsicId,
-                                                                         simdBaseJitType, simdSize);
-                        break;
-
-                    default:
-                        unreached();
-                }
-
-                embRoundingNode->SetEmbRoundingMode(mode);
-                BlockRange().InsertAfter(lastOp, embRoundingNode);
-                LIR::Use use;
-                if (BlockRange().TryGetUse(node, &use))
-                {
-                    use.ReplaceWith(embRoundingNode);
-                }
-                else
-                {
-                    embRoundingNode->SetUnusedValue();
-                }
-                BlockRange().Remove(node);
-                BlockRange().Remove(lastOp);
-                node = embRoundingNode;
-                if (mode != 0x08)
-                {
-                    // As embedded rounding can only work under register-to-register form, we can skip contain check at
-                    // this point.
-                    return node->gtNext;
-                }
+                mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
             }
-            else
+
+            if (mode != 0x08)
             {
-                // If the control byte is not constant, generate a jump table fallback when emitting the code.
-                assert(!lastOp->IsCnsIntOrI());
-                node->SetEmbRoundingMode(0x08);
+                // Embedded rounding only works for register-to-register operations, so skip containment
                 return node->gtNext;
             }
         }
