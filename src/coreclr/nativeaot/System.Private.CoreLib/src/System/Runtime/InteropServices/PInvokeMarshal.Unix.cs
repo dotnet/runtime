@@ -36,8 +36,8 @@ namespace System.Runtime.InteropServices
                                                             int wideCharLen,
                                                             byte* multiByteStr,
                                                             int multiByteLen,
-                                                            bool bestFit,
-                                                            bool throwOnUnmappableChar)
+                                                            bool _,
+                                                            bool __)
         {
             return System.Text.Encoding.UTF8.GetBytes(wideCharStr, wideCharLen, multiByteStr, multiByteLen);
         }
