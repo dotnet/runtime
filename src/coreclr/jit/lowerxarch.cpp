@@ -1075,7 +1075,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         if (numArgs == expectedArgNum)
         {
             GenTree* lastOp = node->Op(numArgs);
-            uint8_t  mode   = 0x00;
+            uint8_t  mode   = 0xFF;
 
             if (lastOp->IsCnsIntOrI())
             {
@@ -1085,7 +1085,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
             }
 
-            if (mode != 0x08)
+            if ((mode & 0x03) != 0x00)
             {
                 // Embedded rounding only works for register-to-register operations, so skip containment
                 return node->gtNext;

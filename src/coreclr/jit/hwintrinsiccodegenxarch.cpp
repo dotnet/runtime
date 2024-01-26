@@ -145,9 +145,8 @@ static insOpts AddEmbRoundingMode(insOpts instOptions, int8_t mode)
 //
 // Arguments:
 //    node        - The hardware intrinsic node
-//    instOptions - The options used to when generating the instruction.
 //
-void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
+void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic         intrinsicId = node->GetHWIntrinsicId();
     CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
@@ -158,7 +157,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
     assert(compiler->compIsaSupportedDebugOnly(isa));
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
 
-    bool isTableDriven = genIsTableDrivenHWIntrinsic(intrinsicId, category);
+    bool    isTableDriven = genIsTableDrivenHWIntrinsic(intrinsicId, category);
+    insOpts instOptions   = INS_OPTS_NONE;
 
     if (GetEmitter()->UseEvexEncoding())
     {

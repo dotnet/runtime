@@ -970,7 +970,7 @@ protected:
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-    void genHWIntrinsic(GenTreeHWIntrinsic* node XARCH_ARG(insOpts instOptions));
+    void genHWIntrinsic(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp);
     void genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);

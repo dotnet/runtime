@@ -1972,7 +1972,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            genHWIntrinsic(treeNode->AsHWIntrinsic(), INS_OPTS_NONE);
+            genHWIntrinsic(treeNode->AsHWIntrinsic());
             break;
 #endif // FEATURE_HW_INTRINSICS
 

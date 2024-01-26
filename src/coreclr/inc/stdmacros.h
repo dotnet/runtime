@@ -43,20 +43,6 @@
 /*         Portability macros               */
 /********************************************/
 
-#ifdef TARGET_XARCH
-#define XARCH_FIRST_ARG(x)  x ,
-#define XARCH_ARG(x)        , x
-#define XARCH_ONLY(x)       x
-#define NOT_XARCH(x)
-#define NOT_XARCH_ARG(x)
-#else
-#define XARCH_FIRST_ARG(x)
-#define XARCH_ARG(x)
-#define XARCH_ONLY(x)
-#define NOT_XARCH(x)        x
-#define NOT_XARCH_ARG(x)    , x
-#endif
-
 #ifdef TARGET_AMD64
 #define AMD64_FIRST_ARG(x)  x ,
 #define AMD64_ARG(x)        , x
