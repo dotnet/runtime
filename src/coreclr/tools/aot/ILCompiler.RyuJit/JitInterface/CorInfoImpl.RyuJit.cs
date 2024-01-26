@@ -504,14 +504,32 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.WriteBarrier_EAX;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EBX:
+                    id = ReadyToRunHelper.WriteBarrier_EBX;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_ECX:
                     id = ReadyToRunHelper.WriteBarrier_ECX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EDI:
+                    id = ReadyToRunHelper.WriteBarrier_EDI;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_ESI:
+                    id = ReadyToRunHelper.WriteBarrier_ESI;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.CheckedWriteBarrier_EAX;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_EBX;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
                     id = ReadyToRunHelper.CheckedWriteBarrier_ECX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_EDI;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_ESI;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST:
