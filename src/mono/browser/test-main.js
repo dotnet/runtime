@@ -17,7 +17,7 @@ import { dotnet, exit } from './_framework/dotnet.js';
 
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 
-// keep in sync with src\mono\wasm\runtime\loader\globals.ts and src\mono\wasm\runtime\globals.ts
+// keep in sync with src\mono\browser\runtime\loader\globals.ts and src\mono\browser\runtime\globals.ts
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
 export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker

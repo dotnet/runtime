@@ -190,7 +190,10 @@ CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees f
 CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 jit compilations
 CONFIG_INTEGER(JitDumpOSR, W("JitDumpOSR"), 1)                  // Dump OSR jit compilations
 CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Dump only OSR jit compilations with this offset
-CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
+CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1)     // Dump inline compiler phases
+CONFIG_INTEGER(JitDumpTerseNextBlock, W("JitDumpTerseNextBlock"), 0) // When dumping blocks, display "*" instead of
+                                                                     // block number for lexical "next" blocks, to
+                                                                     // reduce clutter.
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_INTEGER(JitFakeProcedureSplitting, W("JitFakeProcedureSplitting"), 0) // Do code splitting independent of VM.
@@ -260,12 +263,6 @@ CONFIG_INTEGER(JitDisasmWithAlignmentBoundaries, W("JitDisasmWithAlignmentBounda
                                                                                            // boundaries.
 CONFIG_INTEGER(JitDisasmWithCodeBytes, W("JitDisasmWithCodeBytes"), 0) // Print the instruction code bytes
 CONFIG_STRING(JitStdOutFile, W("JitStdOutFile")) // If set, sends JIT's stdout output to this file.
-
-// These are supported for backward compatibility, to be removed:
-#ifdef DEBUG
-CONFIG_INTEGER(JitDiffableDasm, W("JitDiffableDasm"), 0)
-CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
-#endif
 
 CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug info and report it back to the EE
 

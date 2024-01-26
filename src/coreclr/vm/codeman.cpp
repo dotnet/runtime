@@ -1291,6 +1291,12 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_VectorT256);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_VectorT512) != 0) && (maxVectorTBitWidth >= 512))
+    {
+        // We require 512-bit Vector<T> to be opt-in
+        CPUCompileFlags.Set(InstructionSet_VectorT512);
+    }
+
     // TODO-XArch: Add support for 512-bit Vector<T>
     _ASSERTE(!CPUCompileFlags.IsSet(InstructionSet_VectorT512));
 
@@ -1543,8 +1549,6 @@ void EEJitManager::SetCpuInfo()
     // Clean up mutually exclusive ISAs
     if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
     {
-        // We don't currently support InstructionSet_VectorT512, but just to
-        // make it future proof.
         CPUCompileFlags.Clear(InstructionSet_VectorT256);
         CPUCompileFlags.Clear(InstructionSet_VectorT128);
     }

@@ -117,6 +117,12 @@ namespace System.Formats.Asn1
                 ReadOnlySpan<char> remaining = oidValue.Slice(2);
 
                 BigInteger subIdentifier = ParseSubIdentifier(ref remaining);
+
+                if (firstComponent <= 1 && subIdentifier >= 40)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(oidValue));
+                }
+
                 subIdentifier += 40 * firstComponent;
 
                 int localLen = EncodeSubIdentifier(tmp.AsSpan(tmpOffset), ref subIdentifier);

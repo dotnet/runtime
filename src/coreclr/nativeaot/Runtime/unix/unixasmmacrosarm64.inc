@@ -372,9 +372,6 @@ PTFF_THREAD_ABORT_BIT = 36
 TrapThreadsFlags_AbortInProgress_Bit = 0
 TrapThreadsFlags_TrapThreads_Bit     = 1
 
-// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-#define STATUS_REDHAWK_THREAD_ABORT     0x43
-
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
 #define TrapThreadsFlags_AbortInProgress 1
