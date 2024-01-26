@@ -912,20 +912,15 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
 #endif // FEATURE_ARG_SPLIT
 
-        /* If the argument tree contains an assignment (GTF_ASG) then the argument and
-           and every earlier argument (except constants) must be evaluated into temps
-           since there may be other arguments that follow and they may use the value being assigned.
-
-           EXAMPLE: ArgTab is "a, a=5, a"
-                    -> when we see the second arg "a=5"
-                       we know the first two arguments "a, a=5" have to be evaluated into temps
-
-           For the case of an assignment, we only know that there exist some assignment someplace
-           in the tree.  We don't know what is being assigned so we are very conservative here
-           and assume that any local variable could have been assigned.
-         */
-
-        if (argx->gtFlags & GTF_ASG)
+        // If the argument tree contains an assignment (GTF_ASG) then the argument and
+        // and every earlier argument (except constants) must be evaluated into temps
+        // since there may be other arguments that follow and they may use the value being assigned.
+        //
+        // EXAMPLE: ArgTab is "a, a=5, a"
+        //          -> when we see the second arg "a=5"
+        //             we know the first two arguments "a, a=5" have to be evaluated into temps
+        //
+        if ((argx->gtFlags & GTF_ASG) != 0)
         {
             // If this is not the only argument, or it's a copyblk, or it
             // already evaluates the expression to a tmp then we need a temp in
@@ -942,8 +937,8 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 assert(argx->IsValue());
             }
 
-            // For all previous arguments, unless they are a simple constant
-            //  we require that they be evaluated into temps
+            // For all previous arguments that may interfere with the store we
+            // require that they be evaluated into temps.
             for (CallArg& prevArg : Args())
             {
                 if (&prevArg == &arg)
@@ -960,7 +955,13 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
 #endif
 
-                if ((prevArg.GetEarlyNode() != nullptr) && !prevArg.GetEarlyNode()->IsInvariant())
+                if ((prevArg.GetEarlyNode() == nullptr) || prevArg.m_needTmp)
+                {
+                    continue;
+                }
+
+                if (((prevArg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0) ||
+                    comp->gtMayHaveStoreInterference(argx, prevArg.GetEarlyNode()))
                 {
                     SetNeedsTemp(&prevArg);
                 }
@@ -1827,6 +1828,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
         if (setupArg != nullptr)
         {
             arg.SetEarlyNode(setupArg);
+            call->gtFlags |= setupArg->gtFlags & GTF_SIDE_EFFECT;
 
             // Make sure we do not break recognition of retbuf-as-local
             // optimization here. If this is hit it indicates that we are
@@ -3382,6 +3384,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         if (makeOutArgCopy)
         {
             fgMakeOutgoingStructArgCopy(call, &arg);
+
+            if (arg.GetEarlyNode() != nullptr)
+            {
+                flagsSummary |= arg.GetEarlyNode()->gtFlags;
+            }
         }
 
         if (argx->gtOper == GT_MKREFANY)
@@ -3413,6 +3420,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // Change the expression to "(tmp=val)"
             arg.SetEarlyNode(store);
             call->gtArgs.SetTemp(&arg, tmp);
+            flagsSummary |= GTF_ASG;
             hasMultiregStructArgs |= ((arg.AbiInfo.ArgType == TYP_STRUCT) && !arg.AbiInfo.PassedByRef);
 #endif // !TARGET_X86
         }
@@ -7697,10 +7705,18 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         optMethodFlags |= OMF_NEEDS_GCPOLLS;
     }
 
-    if (fgGlobalMorph && IsStaticHelperEligibleForExpansion(call))
+    if (fgGlobalMorph)
     {
-        // Current method has potential candidates for fgExpandStaticInit phase
-        setMethodHasStaticInit();
+        if (IsStaticHelperEligibleForExpansion(call))
+        {
+            // Current method has potential candidates for fgExpandStaticInit phase
+            setMethodHasStaticInit();
+        }
+        else if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) != 0)
+        {
+            // Current method has potential candidates for fgLateCastExpansion phase
+            setMethodHasExpandableCasts();
+        }
     }
 
     // Morph Type.op_Equality, Type.op_Inequality, and Enum.HasFlag
@@ -10605,6 +10621,16 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+#if defined(TARGET_XARCH)
+            if ((node->GetSimdSize() == 8) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                // When SSE4.1 isn't supported then Vector2 only needs a single horizontal add
+                // which means the result isn't broadcast across the entire vector and we can't
+                // optimize
+                break;
+            }
+#endif // TARGET_XARCH
+
             GenTree* op1      = node->Op(1);
             GenTree* sqrt     = nullptr;
             GenTree* toScalar = nullptr;
@@ -13202,24 +13228,14 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
             if (cond->AsIntCon()->gtIconVal != 0)
             {
-                /* JTRUE 1 - transform the basic block into a BBJ_ALWAYS */
+                // JTRUE 1 - transform the basic block into a BBJ_ALWAYS
                 bTaken    = block->GetTrueTarget();
                 bNotTaken = block->GetFalseTarget();
                 block->SetKind(BBJ_ALWAYS);
             }
             else
             {
-                /* Unmark the loop if we are removing a backwards branch */
-                /* dest block must also be marked as a loop head and     */
-                /* We must be able to reach the backedge block           */
-                if (optLoopTableValid && block->GetTrueTarget()->isLoopHead() &&
-                    (block->GetTrueTarget()->bbNum <= block->bbNum) &&
-                    m_reachabilitySets->CanReach(block->GetTrueTarget(), block))
-                {
-                    optUnmarkLoopBlocks(block->GetTrueTarget(), block);
-                }
-
-                /* JTRUE 0 - transform the basic block into a BBJ_ALWAYS   */
+                // JTRUE 0 - transform the basic block into a BBJ_ALWAYS
                 bTaken    = block->GetFalseTarget();
                 bNotTaken = block->GetTrueTarget();
                 block->SetKindAndTarget(BBJ_ALWAYS, bTaken);
@@ -13318,56 +13334,6 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 printf("\n");
             }
 #endif
-
-            // Handle updates to the loop table.
-            // Note this is distinct from the check for BBF_LOOP_HEAD above.
-            //
-            if (optLoopTableValid)
-            {
-                for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
-                {
-                    LoopDsc& loop = optLoopTable[loopNum];
-
-                    // Some loops may have been already removed by
-                    // loop unrolling or conditional folding
-                    //
-                    if (loop.lpIsRemoved())
-                    {
-                        continue;
-                    }
-
-                    // Removed edge from bottom -> entry?
-                    //
-                    if ((loop.lpBottom == block) && (loop.lpEntry == bNotTaken))
-                    {
-                        // This either destroyed the loop or lessened its extent.
-                        // We currently ignore the latter.
-                        //
-                        if (loop.lpEntry->countOfInEdges() == 1)
-                        {
-                            // We removed the only backedge.
-                            //
-                            JITDUMP("Removing loop " FMT_LP " (from " FMT_BB " to " FMT_BB
-                                    ") -- no longer has a backedge\n\n",
-                                    loopNum, loop.lpTop->bbNum, loop.lpBottom->bbNum);
-
-                            optMarkLoopRemoved(loopNum);
-                        }
-                    }
-
-                    // Removed edge from head -> entry?
-                    //
-                    if ((loop.lpHead == block) && (loop.lpEntry == bNotTaken))
-                    {
-                        // Loop is no longer reachable from outside
-                        //
-                        JITDUMP("Removing loop " FMT_LP " (from " FMT_BB " to " FMT_BB ") -- no longer reachable\n\n",
-                                loopNum, loop.lpTop->bbNum, loop.lpBottom->bbNum);
-
-                        optMarkLoopRemoved(loopNum);
-                    }
-                }
-            }
         }
     }
     else if (block->KindIs(BBJ_SWITCH))
@@ -13892,7 +13858,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     // An equal number means pred == block (block is a self-loop).
                     // Either way the assertion info is not available, and we must assume the worst.
                     //
-                    if (pred->bbNewPostorderNum <= block->bbNewPostorderNum)
+                    if (pred->bbPostorderNum <= block->bbPostorderNum)
                     {
                         JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
                                 pred->bbNum);
@@ -14120,6 +14086,14 @@ PhaseStatus Compiler::fgMorphBlocks()
 
         // We don't need to remember this block anymore.
         fgEntryBB = nullptr;
+    }
+
+    // We don't maintain `genReturnBB` after this point.
+    if (genReturnBB != nullptr)
+    {
+        // It no longer needs special "keep" treatment.
+        genReturnBB->RemoveFlags(BBF_DONT_REMOVE);
+        genReturnBB = nullptr;
     }
 
     // We are done with the global morphing phase

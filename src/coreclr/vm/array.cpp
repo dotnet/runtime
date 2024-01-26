@@ -307,9 +307,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     if (pCanonMT == NULL)
     {
-        // Allocate ArrayClass (including space for packed fields), MethodTable, and class name in one alloc.
+        // Allocate ArrayClass, MethodTable, and class name in one alloc.
         // Remember to pad allocation size for ArrayClass portion to ensure MethodTable is pointer aligned.
-        cbArrayClass = ALIGN_UP(sizeof(ArrayClass) + sizeof(EEClassPackedFields), sizeof(void*));
+        cbArrayClass = ALIGN_UP(sizeof(ArrayClass), sizeof(void*));
     }
 
     // ArrayClass already includes one void*

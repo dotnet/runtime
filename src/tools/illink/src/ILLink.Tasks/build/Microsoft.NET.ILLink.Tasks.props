@@ -15,10 +15,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- N.B. The ILLinkTargetsPath is used as a sentinel to indicate a version of this file has already been imported. It will also be the path
          used to import the targets later in the SDK. -->
     <ILLinkTargetsPath Condition="'$(ILLinkTargetsPath)' == ''">$(MSBuildThisFileDirectory)Microsoft.NET.ILLink.targets</ILLinkTargetsPath>
-    <!-- Older SDKs used this property as a sentinel instead, to control the import of this file 
+    <!-- Older SDKs used this property as a sentinel instead, to control the import of this file
          (but not the targets, which were included with the SDK). -->
     <UsingILLinkTasksSdk>true</UsingILLinkTasksSdk>
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tools\net8.0\ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tools\net9.0\ILLink.Tasks.dll</ILLinkTasksAssembly>
     <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tools\net472\ILLink.Tasks.dll</ILLinkTasksAssembly>
 
     <ILLinkAnalyzersPropsPath Condition="'$(ILLinkAnalyzersPropsPath)' == ''">$(MSBuildThisFileDirectory)Microsoft.NET.ILLink.Analyzers.props</ILLinkAnalyzersPropsPath>

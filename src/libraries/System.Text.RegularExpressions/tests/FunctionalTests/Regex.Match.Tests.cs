@@ -88,6 +88,10 @@ namespace System.Text.RegularExpressions.Tests
             {
                 // Zero-width negative lookahead assertion
                 yield return (@"abc(?!XXX)\w+", "abcXXXdef", RegexOptions.None, 0, 9, false, string.Empty);
+                yield return (@"(?!(b)b)\1", "ba", RegexOptions.None, 0, 2, false, string.Empty);
+                yield return (@"(?:(?!(b)b)\1a)+", "babababa", RegexOptions.None, 0, 8, false, string.Empty);
+                yield return (@"(?:(?!(b)b)\1a)*", "babababa", RegexOptions.None, 0, 8, true, string.Empty);
+                yield return (@"(.*?)a(?!(a+)b\2c)\2(.*)", "baaabaac", RegexOptions.None, 0, 8, false, string.Empty);
 
                 // Zero-width positive lookbehind assertion
                 yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
@@ -114,6 +118,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?<=\d?)a{4}", "123aaaaaaaaa", RegexOptions.None, 0, 12, true, "aaaa");
                 yield return (@"(?<=a{3,5}[ab]*)1234", "aaaaaaa1234", RegexOptions.None, 0, 11, true, "1234");
                 yield return (@"(\w)*?3(?<=33)$", "1233", RegexOptions.None, 0, 4, true, "1233");
+                yield return (@"(?=(\d))4\1", "44", RegexOptions.None, 0, 2, true, "44");
+                yield return (@"(?=(\d))4\1", "43", RegexOptions.None, 0, 2, false, "");
 
                 // Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
                 yield return (@"(\w){6}(?<!XXX)def", "XXXabcdef", RegexOptions.None, 0, 9, true, "XXXabcdef");
