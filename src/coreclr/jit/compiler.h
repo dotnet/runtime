@@ -3341,6 +3341,9 @@ public:
     GenTreeBlk* gtNewStoreBlkNode(
         ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
 
+    GenTreeStoreDynBlk* gtNewStoreDynBlkNode(
+        GenTree* addr, GenTree* data, GenTree* dynamicSize, GenTreeFlags indirFlags = GTF_EMPTY);
+
     GenTreeStoreInd* gtNewStoreIndNode(
         var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
 

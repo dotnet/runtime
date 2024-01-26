@@ -7481,10 +7481,7 @@ public:
     GenTreeStoreDynBlk(GenTree* dstAddr, GenTree* data, GenTree* dynamicSize)
         : GenTreeBlk(GT_STORE_DYN_BLK, TYP_VOID, dstAddr, data, nullptr), gtDynamicSize(dynamicSize)
     {
-        // Conservatively the 'dstAddr' could be null or point into the global heap.
-        // Likewise, this is a store and so must be marked with the GTF_ASG flag.
-        gtFlags |= (GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
-        gtFlags |= (dynamicSize->gtFlags & GTF_ALL_EFFECT);
+        gtFlags |= dynamicSize->gtFlags & GTF_ALL_EFFECT;
     }
 
 #if DEBUGGABLE_GENTREE
