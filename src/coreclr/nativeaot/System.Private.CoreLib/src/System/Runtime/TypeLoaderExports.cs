@@ -15,7 +15,7 @@ namespace System.Runtime
 {
     // Initialize the cache eagerly to avoid null checks.
     [EagerStaticClassConstruction]
-    public static class TypeLoaderExports
+    internal static class TypeLoaderExports
     {
         //
         // Generic lookup cache
