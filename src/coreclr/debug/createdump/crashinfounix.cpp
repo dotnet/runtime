@@ -267,13 +267,12 @@ CrashInfo::EnumerateMemoryRegions()
             if (strchr(permissions, 'p')) {
                 regionFlags |= MEMORY_REGION_FLAG_PRIVATE;
             }
-            ModuleRegion moduleRegion(regionFlags, start, end, offset, std::string(moduleName != nullptr ? moduleName : ""));
+            ModuleRegion moduleRegion(regionFlags, start, end, offset, moduleName);
 
             if (moduleName != nullptr && *moduleName == '/')
             {
                 // Don't add files that don't exists anymore especially /memfd:doublemapper.
-                std::string name(moduleName);
-                size_t last = name.rfind(" (deleted)");
+                size_t last = moduleRegion.FileName().rfind(" (deleted)");
                 if (last == std::string::npos)
                 {
                     m_moduleMappings.insert(moduleRegion);

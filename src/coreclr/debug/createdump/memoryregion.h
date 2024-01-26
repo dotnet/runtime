@@ -113,6 +113,11 @@ private:
     std::string m_fileName;
 
 public:
+    ModuleRegion(uint32_t flags, uint64_t start, uint64_t end, uint64_t offset, char* filename) : MemoryRegion(flags, start, end, offset),
+        m_fileName(filename != nullptr ? filename : "")
+    {
+    }
+
     ModuleRegion(uint32_t flags, uint64_t start, uint64_t end, uint64_t offset, const std::string& filename) : MemoryRegion(flags, start, end, offset),
         m_fileName(filename)
     {
