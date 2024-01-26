@@ -536,10 +536,10 @@ void Compiler::fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock)
 //
 // Arguments:
 //   block   - BBJ_EHFINALLYRET block
-//   oldSucc - old successor
 //   newSucc - new successor
+//   oldSucc - old successor
 //
-void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc)
+void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* newSucc, BasicBlock* oldSucc)
 {
     assert(block != nullptr);
     assert(oldSucc != nullptr);
@@ -693,39 +693,41 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             break;
 
         case BBJ_COND:
-        {
-            FlowEdge* oldEdge = fgRemoveRefPred(oldTarget, block);
+
             if (block->TrueTargetIs(oldTarget))
             {
                 if (block->FalseTargetIs(oldTarget))
                 {
                     // fgRemoveRefPred returns nullptr for BBJ_COND blocks with two flow edges to target
-                    assert(oldEdge == nullptr);
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
+                    assert(block->TargetIs(oldTarget));
                     block->SetTarget(newTarget);
                 }
                 else
                 {
-                    // fgRemoveRefPred should have removed the flow edge
-                    assert(oldEdge != nullptr);
                     block->SetTrueTarget(newTarget);
                 }
 
+                // fgRemoveRefPred should have removed the flow edge
+                FlowEdge* oldEdge = fgRemoveRefPred(oldTarget, block);
+                assert(oldEdge != nullptr);
+
                 // TODO-NoFallThrough: Proliferate weight from oldEdge
-                // (we avoid doing so when updating the true target to reduce diffs for now, as a quirk)
+                // (as a quirk, we avoid doing so for the true target to reduce diffs for now)
                 fgAddRefPred(newTarget, block);
             }
             else
             {
-                // fgRemoveRefPred should have removed the flow edge
-                assert(oldEdge != nullptr);
                 assert(block->FalseTargetIs(oldTarget));
+                
+                // fgRemoveRefPred should have removed the flow edge
+                FlowEdge* oldEdge = fgRemoveRefPred(oldTarget, block);
+                assert(oldEdge != nullptr);
                 block->SetFalseTarget(newTarget);
                 fgAddRefPred(newTarget, block, oldEdge);
             }
             break;
-        }
 
         case BBJ_SWITCH:
         {
@@ -5219,12 +5221,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     BasicBlock* bPrev = block->Prev();
     BasicBlock* bNext = block->Next();
-
-    // If we've cached any mappings from switch blocks to SwitchDesc's (which contain only the
-    // *unique* successors of the switch block), invalidate that cache, since an entry in one of
-    // the SwitchDescs might be removed.
-    InvalidateUniqueSwitchSuccMap();
-
+    
     noway_assert((block == fgFirstBB) || (bPrev && bPrev->NextIs(block)));
     noway_assert(!block->HasFlag(BBF_DONT_REMOVE));
 
@@ -5343,29 +5340,15 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         }
 
         /* Update bbRefs and bbPreds.
-         * All blocks jumping to 'block' now jump to 'succBlock'.
+         * All blocks jumping to 'block' will jump to 'succBlock'.
          * First, remove 'block' from the predecessor list of succBlock.
          */
 
         fgRemoveRefPred(succBlock, block);
 
-        for (FlowEdge* const pred : block->PredEdges())
+        for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            BasicBlock* predBlock = pred->getSourceBlock();
-
-            /* If predBlock is a new predecessor, then add it to succBlock's
-               predecessor's list. */
-            if (!predBlock->KindIs(BBJ_SWITCH))
-            {
-                // Even if the pred is not a switch, we could have a conditional branch
-                // to the fallthrough, so duplicate there could be preds
-                for (unsigned i = 0; i < pred->getDupCount(); i++)
-                {
-                    fgAddRefPred(succBlock, predBlock);
-                }
-            }
-
-            /* change all jumps to the removed block */
+            /* change all jumps/refs to the removed block */
             switch (predBlock->GetKind())
             {
                 default:
@@ -5373,31 +5356,16 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     break;
 
                 case BBJ_COND:
-                    if (predBlock->TrueTargetIs(block))
-                    {
-                        predBlock->SetTrueTarget(succBlock);
-                    }
-
-                    if (predBlock->FalseTargetIs(block))
-                    {
-                        predBlock->SetFalseTarget(succBlock);
-                    }
-                    break;
-
                 case BBJ_CALLFINALLY:
                 case BBJ_CALLFINALLYRET:
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
-                    noway_assert(predBlock->TargetIs(block));
-                    predBlock->SetTarget(succBlock);
+                case BBJ_SWITCH:
+                    fgReplaceJumpTarget(predBlock, succBlock, block);
                     break;
 
                 case BBJ_EHFINALLYRET:
-                    fgReplaceEhfSuccessor(predBlock, block, succBlock);
-                    break;
-
-                case BBJ_SWITCH:
-                    fgReplaceSwitchJumpTarget(predBlock, succBlock, block);
+                    fgReplaceEhfSuccessor(predBlock, succBlock, block);
                     break;
             }
         }

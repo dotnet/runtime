@@ -5865,7 +5865,7 @@ public:
 
     void fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock);
 
-    void fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc);
+    void fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* newSucc, BasicBlock* oldSucc);
 
     void fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ);
 
