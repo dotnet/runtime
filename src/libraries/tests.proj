@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
-  <!-- Samples which are too complex for CI -->
+    <!-- Samples which are too complex for CI -->
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-ts\Wasm.Console.Node.TS.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-webpack\Wasm.Browser.WebPack.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\node-webpack\Wasm.Node.WebPack.Sample.csproj" />

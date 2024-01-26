@@ -28,7 +28,7 @@ export interface PThreadInfo {
     isLongRunning?: boolean,
     isThreadPoolGate?: boolean,
     isFinalizer?: boolean,
-    hasInterop?: boolean,
+    isDirtyBecauseOfInterop?: boolean,
 }
 
 /// Messages sent from the main thread using Worker.postMessage or from the worker using DedicatedWorkerGlobalScope.postMessage

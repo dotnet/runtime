@@ -60,6 +60,6 @@ export function loadWasmModuleToWorker(worker: PThreadWorker): Promise<PThreadWo
     return getModulePThread().loadWasmModuleToWorker(worker);
 }
 
-function getModulePThread(): PThreadLibrary {
+export function getModulePThread(): PThreadLibrary {
     return (<any>Module).PThread as PThreadLibrary;
 }

@@ -6,7 +6,7 @@ import BuildConfiguration from "consts:configuration";
 
 import { onWorkerLoadInitiated } from "../browser";
 import { afterThreadInitTLS } from "../worker";
-import { PThreadLibrary, PThreadWorker, getRunningWorkers, getUnusedWorkerPool } from "./emscripten-internals";
+import { PThreadLibrary, PThreadWorker, getModulePThread, getRunningWorkers, getUnusedWorkerPool } from "./emscripten-internals";
 import { loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_warn } from "../../logging";
 
@@ -45,7 +45,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
             worker.thread.port.close();
         }
         worker.thread = undefined;
-        if (worker.info && worker.info.hasInterop) {
+        if (worker.info && worker.info.isDirtyBecauseOfInterop) {
             // we are on UI thread, invoke the handler directly to destroy the dirty worker
             worker.onmessage!(new MessageEvent("message", {
                 data: {
@@ -60,6 +60,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
     };
     if (BuildConfiguration === "Debug") {
         (globalThis as any).dumpThreads = dumpThreads;
+        (globalThis as any).getModulePThread = getModulePThread;
     }
 }
 

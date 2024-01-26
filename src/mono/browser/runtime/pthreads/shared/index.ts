@@ -38,15 +38,14 @@ export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle)
         mono_log_debug("Installed JSSynchronizationContext");
     }
     Module.runtimeKeepalivePush();
+    monoThreadInfo.isDirtyBecauseOfInterop = true;
+    update_thread_info();
     if (ENVIRONMENT_IS_PTHREAD) {
         postMessageToMain({
             monoCmd: WorkerToMainMessageType.enabledInterop,
             info: monoThreadInfo,
         });
     }
-
-    monoThreadInfo.hasInterop = true;
-    update_thread_info();
 }
 
 export function mono_wasm_uninstall_js_worker_interop(): void {
@@ -59,7 +58,6 @@ export function mono_wasm_uninstall_js_worker_interop(): void {
 
     runtimeHelpers.proxy_context_gc_handle = GCHandleNull;
     runtimeHelpers.mono_wasm_bindings_is_ready = false;
-    monoThreadInfo.hasInterop = false;
     update_thread_info();
 }
 
