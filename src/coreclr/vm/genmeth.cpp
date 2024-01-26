@@ -1414,22 +1414,7 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport* pIM
         // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
         // instances so that we do not leak by allocating them all over again, if the declaring
         // type repeatedly fails to load.
-        TypeVarTypeDesc* pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
-        if (pTypeVarTypeDesc == NULL)
-        {
-            // Do NOT use pamTracker for this memory as we need it stay allocated even if the load fails.
-            // Instead use a temporary tracker object which will only clean up if the particular store fails.
-            AllocMemTracker tracker;
-            void* mem = (void*)tracker.Track(pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc))));
-            TypeVarTypeDesc* pAllocatedTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, tok, i, tkTyPar);
-
-            pTypeVarTypeDesc = pModule->StoreGenericParamThrowing(tkTyPar, pAllocatedTypeVarTypeDesc);
-
-            if (pTypeVarTypeDesc == pAllocatedTypeVarTypeDesc)
-            {
-                tracker.SuppressRelease();
-            }
-        }
+        TypeVarTypeDesc* pTypeVarTypeDesc = pModule->LookupGenericParam(pModule, tok, i, tkTyPar);
         pInstDest[i] = TypeHandle(pTypeVarTypeDesc);
     }
     LOG((LF_JIT, LL_INFO10000, "IMD::SGMD: Initialized typical MethodDesc. type handles: %u\n",

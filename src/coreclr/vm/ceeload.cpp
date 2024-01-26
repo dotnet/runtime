@@ -1817,6 +1817,7 @@ void Module::AllocateMaps()
     };
 
     PTR_TADDR pTable = NULL;
+    uint32_t genericParamDescMapCount;
 
     if (IsReflection())
     {
@@ -1831,7 +1832,7 @@ void Module::AllocateMaps()
         m_MemberRefMap.dwCount = MEMBERREF_MAP_INITIAL_SIZE;
         m_MethodDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_FieldDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
-        m_GenericParamToDescMap.dwCount = GENERICPARAM_MAP_INITIAL_SIZE;
+        genericParamDescMapCount = GENERICPARAM_MAP_INITIAL_SIZE;
         m_ManifestModuleReferencesMap.dwCount = ASSEMBLYREFERENCES_MAP_INITIAL_SIZE;
     }
     else
@@ -1854,7 +1855,7 @@ void Module::AllocateMaps()
         m_FieldDefToDescMap.dwCount = pImport->GetCountWithTokenKind(mdtFieldDef)+1;
 
         // Get # GenericParams
-        m_GenericParamToDescMap.dwCount = pImport->GetCountWithTokenKind(mdtGenericParam)+1;
+        genericParamDescMapCount = pImport->GetCountWithTokenKind(mdtGenericParam);
 
         // Get the number of AssemblyReferences in the map
         m_ManifestModuleReferencesMap.dwCount = pImport->GetCountWithTokenKind(mdtAssemblyRef)+1;
@@ -1867,11 +1868,10 @@ void Module::AllocateMaps()
     nTotal += m_MemberRefMap.dwCount;
     nTotal += m_MethodDefToDescMap.dwCount;
     nTotal += m_FieldDefToDescMap.dwCount;
-    nTotal += m_GenericParamToDescMap.dwCount;
     nTotal += m_ManifestModuleReferencesMap.dwCount;
 
     _ASSERTE (m_pAssembly && m_pAssembly->GetLowFrequencyHeap());
-    pTable = (PTR_TADDR)(void*)m_pAssembly->GetLowFrequencyHeap()->AllocMem(nTotal * S_SIZE_T(sizeof(TADDR)));
+    pTable = (PTR_TADDR)(void*)m_pAssembly->GetLowFrequencyHeap()->AllocMem(nTotal * S_SIZE_T(sizeof(TADDR)) + S_SIZE_T(TypeVarTypeDescMap::ComputeNeededTableSize(genericParamDescMapCount)));
 
     // Note: Memory allocated on loader heap is zero filled
     // memset(pTable, 0, nTotal * sizeof(void*));
@@ -1896,13 +1896,11 @@ void Module::AllocateMaps()
     m_FieldDefToDescMap.supportedFlags = FIELD_DEF_MAP_ALL_FLAGS;
     m_FieldDefToDescMap.pTable = &m_MethodDefToDescMap.pTable[m_MethodDefToDescMap.dwCount];
 
-    m_GenericParamToDescMap.pNext  = NULL;
-    m_GenericParamToDescMap.supportedFlags = GENERIC_PARAM_MAP_ALL_FLAGS;
-    m_GenericParamToDescMap.pTable = &m_FieldDefToDescMap.pTable[m_FieldDefToDescMap.dwCount];
-
     m_ManifestModuleReferencesMap.pNext  = NULL;
     m_ManifestModuleReferencesMap.supportedFlags = MANIFEST_MODULE_MAP_ALL_FLAGS;
-    m_ManifestModuleReferencesMap.pTable = &m_GenericParamToDescMap.pTable[m_GenericParamToDescMap.dwCount];
+    m_ManifestModuleReferencesMap.pTable = &m_FieldDefToDescMap.pTable[m_FieldDefToDescMap.dwCount];
+
+    m_GenericParamToDescMap.Init((uint8_t*)&m_ManifestModuleReferencesMap.pTable[m_ManifestModuleReferencesMap.dwCount], genericParamDescMapCount);
 }
 
 
@@ -3332,8 +3330,7 @@ void Module::DebugLogRidMapOccupancy()
     COMPUTE_RID_MAP_OCCUPANCY(2, m_TypeRefToMethodTableMap);
     COMPUTE_RID_MAP_OCCUPANCY(3, m_MethodDefToDescMap);
     COMPUTE_RID_MAP_OCCUPANCY(4, m_FieldDefToDescMap);
-    COMPUTE_RID_MAP_OCCUPANCY(5, m_GenericParamToDescMap);
-    COMPUTE_RID_MAP_OCCUPANCY(6, m_ManifestModuleReferencesMap);
+    COMPUTE_RID_MAP_OCCUPANCY(5, m_ManifestModuleReferencesMap);
 
     LOG((
         LF_EEMEM,
@@ -3343,15 +3340,13 @@ void Module::DebugLogRidMapOccupancy()
         "      TypeRefToMethodTable map: %4d/%4d (%2d %%)\n"
         "      MethodDefToDesc map:  %4d/%4d (%2d %%)\n"
         "      FieldDefToDesc map:  %4d/%4d (%2d %%)\n"
-        "      GenericParamToDesc map:  %4d/%4d (%2d %%)\n"
         "      AssemblyReferences map:  %4d/%4d (%2d %%)\n"
         ,
         dwOccupied1, dwSize1, dwPercent1,
         dwOccupied2, dwSize2, dwPercent2,
         dwOccupied3, dwSize3, dwPercent3,
         dwOccupied4, dwSize4, dwPercent4,
-        dwOccupied5, dwSize5, dwPercent5,
-        dwOccupied6, dwSize6, dwPercent6
+        dwOccupied5, dwSize5, dwPercent5
     ));
 
 #undef COMPUTE_RID_MAP_OCCUPANCY
@@ -4983,7 +4978,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         m_MethodDefToDescMap.ListEnumMemoryRegions(flags);
         m_FieldDefToDescMap.ListEnumMemoryRegions(flags);
         m_MemberRefMap.ListEnumMemoryRegions(flags);
-        m_GenericParamToDescMap.ListEnumMemoryRegions(flags);
         m_ManifestModuleReferencesMap.ListEnumMemoryRegions(flags);
 
         LookupMap<PTR_MethodTable>::Iterator typeDefIter(&m_TypeDefToMethodTableMap);
@@ -5023,15 +5017,7 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
             }
         }
 
-        LookupMap<PTR_TypeVarTypeDesc>::Iterator genericParamIter(&m_GenericParamToDescMap);
-        while (genericParamIter.Next())
-        {
-            if (genericParamIter.GetElement())
-            {
-                genericParamIter.GetElement()->EnumMemoryRegions(flags);
-            }
-        }
-
+        m_GenericParamToDescMap.EnumMemoryRegions(flags);
     }   // !CLRDATA_ENUM_MEM_MINI && !CLRDATA_ENUM_MEM_TRIAGE && !CLRDATA_ENUM_MEM_HEAP2
 
     LookupMap<PTR_Module>::Iterator asmRefIter(&m_ManifestModuleReferencesMap);
@@ -5351,3 +5337,130 @@ void DECLSPEC_NORETURN Module::ThrowTypeLoadExceptionImpl(IMDInternalImport *pIn
     GetAssembly()->ThrowTypeLoadException(pInternalImport, token, NULL, resIDWhy);
 }
 #endif
+
+TypeVarTypeDescMap::TypeVarTypeDescMap() : first(true) {}
+
+/*static*/ size_t TypeVarTypeDescMap::SizeOfBitTableInUintPtr(uint32_t count)
+{
+    LIMITED_METHOD_CONTRACT;
+    return (count + (sizeof(uintptr_t) * 8 - 1)) / (sizeof(uintptr_t) * 8);
+}
+
+/*static*/ size_t TypeVarTypeDescMap::SizeOfBitTable(uint32_t count)
+{
+    LIMITED_METHOD_CONTRACT;
+    return SizeOfBitTableInUintPtr(count) * sizeof(uintptr_t);
+}
+
+/*static*/ S_SIZE_T TypeVarTypeDescMap::ComputeNeededTableSize(uint32_t count)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return S_SIZE_T(count) * S_SIZE_T(sizeof(TypeVarTypeDesc)) + S_SIZE_T(SizeOfBitTable(count)) * S_SIZE_T(2);
+}
+
+#ifndef DACCESS_COMPILE
+TypeVarTypeDescMap::TypeVarTypeDescMap(uint8_t* pTable, uint32_t count) : dwCount(count), first(false)
+{
+    WRAPPER_NO_CONTRACT;
+    Init(pTable, count);
+}
+
+/*static*/ uintptr_t TypeVarTypeDescMap::BitMaskForIndex(uint32_t index)
+{
+    LIMITED_METHOD_CONTRACT;
+    uint32_t whichBitToCheck = index & (sizeof(uintptr_t) * 8 - 1);
+    return (((uintptr_t)1) << (uintptr_t)whichBitToCheck);
+}
+
+/*static*/ uint32_t TypeVarTypeDescMap::IndexForBitMask(uint32_t index)
+{
+    LIMITED_METHOD_CONTRACT;
+    return index / (sizeof(uintptr_t) * 8);
+}
+
+/*static*/ TypeVarTypeDesc *TypeVarTypeDescMap::GetTypeVarTypeDescWorker(TypeVarTypeDescMap *pNodeCurrent, PTR_Module pModule, mdToken typeOrMethodDef, unsigned int index, mdGenericParam token)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    uint32_t indexInTable = RidFromToken(token) - 1;
+    while (indexInTable >= pNodeCurrent->dwCount)
+    {
+        if (pNodeCurrent->pNext == NULL)
+        {
+            CrstHolder ch(pModule->GetLookupTableCrst());
+            if (pNodeCurrent->pNext == NULL)
+            {
+                uint32_t newRidCount = pNodeCurrent->first ? 16 : pNodeCurrent->dwCount * 2;
+
+                uint8_t* pMemory = (uint8_t*)(void*)pModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(ComputeNeededTableSize(newRidCount)+S_SIZE_T(sizeof(TypeVarTypeDescMap)));
+                VolatileStore(&pNodeCurrent->pNext, new(pMemory) TypeVarTypeDescMap(pMemory + sizeof(TypeVarTypeDescMap), newRidCount));
+            }
+        }
+        indexInTable -= pNodeCurrent->dwCount;
+        pNodeCurrent = pNodeCurrent->pNext;
+    }
+
+    uint32_t indexInBitTable = IndexForBitMask(indexInTable);
+    uintptr_t mask = BitMaskForIndex(indexInTable);
+    uintptr_t *pIsConstructedBitmaskLocation = &pNodeCurrent->pTable[indexInBitTable];
+    if (!(VolatileLoad(pIsConstructedBitmaskLocation) & mask))
+    {
+        // Not yet constructed
+        uintptr_t constructingMask = InterlockedOr(&pNodeCurrent->pTable[SizeOfBitTableInUintPtr(pNodeCurrent->dwCount) + indexInBitTable], mask);
+        if (constructingMask & mask)
+        {
+            // If the constructingMask was already set, then we were racing to construct. Spin untile the VolatileLoad succeeds
+            YieldProcessorNormalizationInfo normalizationInfo;
+            while (!(VolatileLoad(pIsConstructedBitmaskLocation) & mask))
+            {
+                YieldProcessorNormalized(normalizationInfo);
+            }
+        }
+        else
+        {
+            // This is the thread nominated to construct
+            // Since the constructor cannot fail, we don't need to release the constructing lock, ever
+            TypeVarTypeDesc* result = new(&pNodeCurrent->pTypeVarTypeDescTable[indexInTable])TypeVarTypeDesc(pModule, typeOrMethodDef, index, token);
+            InterlockedOr(pIsConstructedBitmaskLocation, mask);
+            return result;
+        }
+    }
+
+    return &pNodeCurrent->pTypeVarTypeDescTable[indexInTable];
+}
+
+uint8_t* TypeVarTypeDescMap::Init(uint8_t* table, uint32_t rows)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pTable == NULL);
+    pTable = (uintptr_t*)table;
+    dwCount = rows;
+    pTypeVarTypeDescTable = (TypeVarTypeDesc*)(table + SizeOfBitTable(rows) * 2);
+    S_SIZE_T neededTableSize = ComputeNeededTableSize(rows);
+    if (neededTableSize.IsOverflow())
+        ThrowHR(COR_E_OVERFLOW);
+
+    return table + neededTableSize.Value();
+}
+
+TypeVarTypeDesc *TypeVarTypeDescMap::GetTypeVarTypeDesc(PTR_Module pModule, mdToken typeOrMethodDef, unsigned int index, mdGenericParam token)
+{
+    WRAPPER_NO_CONTRACT;
+    return GetTypeVarTypeDescWorker(this, pModule, typeOrMethodDef, index, token);
+}
+#endif // DACCESS_COMPILE

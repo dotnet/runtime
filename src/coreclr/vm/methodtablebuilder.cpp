@@ -12105,9 +12105,10 @@ MethodTableBuilder::GatherGenericsInfo(
 
                 if (bmtGenericsInfo->fTypicalInstantiation)
                 {
-                    // Unlike Generic Method Definition handling of typical instantiations, there is only ever one typical instantiation of a type
-                    // so we can just allocate the args here
-                    TypeVarTypeDesc* pTypeVarTypeDesc = new (pTypeVarTypeDescMemory + (sizeof(TypeVarTypeDesc) * i)) TypeVarTypeDesc(pModule, cl, i, tkTyPar);
+                    // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
+                    // instances so that we do not leak by allocating them all over again, if the declaring
+                    // type repeatedly fails to load.
+                    TypeVarTypeDesc* pTypeVarTypeDesc = pModule->LookupGenericParam(pModule, cl, i, tkTyPar);
                     pDestInst[i] = TypeHandle(pTypeVarTypeDesc);
                 }
 

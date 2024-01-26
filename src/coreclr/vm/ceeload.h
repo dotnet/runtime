@@ -81,6 +81,49 @@ class EnCEEClassData;
 
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
+
+// Allocation of TypeVarTypeDescs was identified as causing some small amount of thread contention on startup
+// This table allows us to allocate all of the data for a static module at module load time, and provides a spinlock
+// to protect construction of the individual TypeVarTypeDescs
+class TypeVarTypeDescMap
+{
+    TypeVarTypeDescMap *pNext = NULL;
+    uintptr_t *pTable = NULL;
+    TypeVarTypeDesc* pTypeVarTypeDescTable;
+    // Number of elements in this node (only RIDs less than this value can be present in this node)
+    uint32_t dwCount = 0;
+    bool     first;
+
+public:
+    TypeVarTypeDescMap();
+
+private:
+    TypeVarTypeDescMap(uint8_t* pTable, uint32_t count);
+    static size_t SizeOfBitTableInUintPtr(uint32_t count);
+    static size_t SizeOfBitTable(uint32_t count);
+    static uintptr_t BitMaskForIndex(uint32_t index);
+    static uint32_t IndexForBitMask(uint32_t index);
+    static TypeVarTypeDesc *GetTypeVarTypeDescWorker(TypeVarTypeDescMap *pNodeCurrent, PTR_Module pModule, mdToken typeOrMethodDef, unsigned int index, mdGenericParam token);
+public:
+    uint8_t* Init(uint8_t* table, uint32_t rows);
+    static S_SIZE_T ComputeNeededTableSize(uint32_t count);
+    TypeVarTypeDesc *GetTypeVarTypeDesc(PTR_Module pModule, mdToken typeOrMethodDef, unsigned int index, mdGenericParam token);
+
+#ifdef DACCESS_COMPILE
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+    {
+        DAC_ENUM_DTHIS();
+        S_SIZE_T tableSize = ComputeNeededTableSize(dwCount);
+        tableSize.IsOverflow();
+        DacEnumMemoryRegion(dac_cast<TADDR>(pTable),
+                    tableSize.Value());
+
+        if (pNext != NULL)
+            pNext->EnumMemoryRegions(flags);
+    }
+#endif // DACCESS_COMPILE
+};
+
 //
 // LookupMaps are used to implement RID maps
 // It is a linked list of nodes, each handling a successive (and consecutive)
@@ -245,11 +288,6 @@ public:
 
         AddElement(pModule, rid, value, 0);
     }
-
-    // Stores an association in a map. Grows the map as necessary. Does not support flags
-    // Add is done via Interlocked operation, so generally a lock isn't needed around use of this api
-    // Returns the value that is actually stored in the LookupMap (either the old value or the new one)
-    TYPE AddElementInterlocked(ModuleBase *pModule, DWORD rid, TYPE value);
 
     void AddElementWithFlags(ModuleBase * pModule, DWORD rid, TYPE value, TADDR flags)
     {
@@ -735,7 +773,7 @@ private:
     // Linear mapping from GenericParam token to TypeVarTypeDesc*
     // Only used for Generic Method TypeVarTypeDesc structures (There are potentially many
     // methods with the typical instantiation, but for types there can only be one)
-    LookupMap<PTR_TypeVarTypeDesc>  m_GenericParamToDescMap;
+    TypeVarTypeDescMap              m_GenericParamToDescMap;
 
     // IL stub cache with fabricated MethodTable parented by this module.
     ILStubCache                *m_pILStubCache;
@@ -1269,22 +1307,14 @@ public:
 
     MethodDesc *LookupMemberRefAsMethod(mdMemberRef token);
 
-    // Lookup a pre-existing GenericParam TypeVarTypeDesc. Only used for Generic Method TypeVarTypeDescs
-    PTR_TypeVarTypeDesc LookupGenericParam(mdGenericParam token)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(TypeFromToken(token) == mdtGenericParam);
-        return m_GenericParamToDescMap.GetElement(RidFromToken(token));
-    }
 #ifndef DACCESS_COMPILE
     // Store a GenericParam TypeVarTypeDesc. Only used for Generic Method TypeVarTypeDescs
-    TypeVarTypeDesc *StoreGenericParamThrowing(mdGenericParam token, TypeVarTypeDesc *value)
+    TypeVarTypeDesc *LookupGenericParam(PTR_Module pModule, mdToken typeOrMethodDef, unsigned int index, mdGenericParam token)
     {
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE(TypeFromToken(token) == mdtGenericParam);
-        return m_GenericParamToDescMap.AddElementInterlocked(this, RidFromToken(token), value);
+        return m_GenericParamToDescMap.GetTypeVarTypeDesc(pModule, typeOrMethodDef, index, token);
     }
 #endif // !DACCESS_COMPILE
 
