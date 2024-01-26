@@ -757,11 +757,6 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 	klass = mono_class_from_mono_type_internal (type);
 	mono_class_init_internal (klass);
 
-	// A careful reading of the ABI spec suggests that an inlinearray does not count
-	//  as having one scalar member (it either has N scalar members or one array member)
-	if (m_class_is_inlinearray (klass))
-		return FALSE;
-
 	int size = mono_class_value_size (klass, NULL);
 	if (size == 0 || size > 8)
 		return FALSE;
@@ -776,7 +771,20 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 		if (nfields > 1)
 			return FALSE;
 		MonoType *t = mini_get_underlying_type (field->type);
-		if (MONO_TYPE_ISSTRUCT (t)) {
+		int field_size = mono_class_value_size (mono_class_from_mono_type_internal (t), NULL);
+		// inlinearray and fixed both work by having a single field that is bigger than its element type.
+		// we also don't want to scalarize a struct that has padding in its metadata, even if it would fit.
+		if (field_size != size) {
+			g_printf (
+				"%s (size == %d): %s %s field_size == %d\n",
+				m_class_get_name (klass),
+				size,
+				m_class_get_name (mono_class_from_mono_type_internal (t)),
+				field->name,
+				field_size
+			);
+			return FALSE;
+		} else if (MONO_TYPE_ISSTRUCT (t)) {
 			if (!mini_wasm_is_scalar_vtype (t, etype))
 				return FALSE;
 		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {

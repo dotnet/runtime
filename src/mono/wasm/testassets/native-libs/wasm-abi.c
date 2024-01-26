@@ -33,6 +33,10 @@ typedef struct {
 } PairStruct;
 
 PairStruct accept_and_return_pair (PairStruct arg) {
+    printf (
+        "&arg=%d arg.A=%d arg.B=%d\n",
+        (unsigned int)&arg, arg.A, arg.B
+    );
     arg.A *= 2;
     arg.B *= 2;
     return arg;
@@ -43,7 +47,15 @@ typedef struct {
 } MyInlineArray;
 
 MyInlineArray accept_and_return_inlinearray (MyInlineArray arg) {
+    printf (
+        "&arg=%d arg.elements[0]=%d arg.elements[1]=%d\n",
+        (unsigned int)&arg, arg.elements[0], arg.elements[1]
+    );
     for (int i = 0; i < 2; i++)
         arg.elements[i] *= 2;
     return arg;
+}
+
+MyInlineArray accept_and_return_fixedarray (MyInlineArray arg) {
+    return accept_and_return_inlinearray (arg);
 }

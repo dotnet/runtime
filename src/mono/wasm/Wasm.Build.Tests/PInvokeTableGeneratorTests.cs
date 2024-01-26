@@ -742,6 +742,9 @@ namespace Wasm.Build.Tests
                 public struct PairStruct {
                     public int A, B;
                 }
+                public unsafe struct MyFixedArray {
+                    public fixed int elements[2];
+                }
                 [System.Runtime.CompilerServices.InlineArray(2)]
                 public struct MyInlineArray {
                     public int element0;
@@ -774,13 +777,19 @@ namespace Wasm.Build.Tests
 
                         var pair = new PairStruct { A = 1, B = 2 };
                         var paires = accept_and_return_pair(pair);
-                        Console.WriteLine(""B="" + paires.B);
+                        Console.WriteLine(""paires.B="" + paires.B);
 
                         MyInlineArray ia = new ();
                         for (int i = 0; i < 2; i++)
                             ia[i] = i;
                         var iares = accept_and_return_inlinearray(ia);
-                        Console.WriteLine(""[1]="" + iares[1]);
+                        Console.WriteLine(""iares[1]="" + iares[1]);
+
+                        MyFixedArray fa = new ();
+                        for (int i = 0; i < 2; i++)
+                            fa.elements[i] = i;
+                        var fares = accept_and_return_fixedarray(fa);
+                        Console.WriteLine(""fares.elements[1]="" + fares.elements[1]);
 
                         return (int)res.Value;
                     }
@@ -802,6 +811,9 @@ namespace Wasm.Build.Tests
 
                     [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_pair"")]
                     public static extern PairStruct accept_and_return_pair(PairStruct arg);
+
+                    [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_fixedarray"")]
+                    public static extern MyFixedArray accept_and_return_fixedarray(MyFixedArray arg);
 
                     [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_inlinearray"")]
                     public static extern MyInlineArray accept_and_return_inlinearray(MyInlineArray arg);
