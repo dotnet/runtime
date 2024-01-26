@@ -80,8 +80,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Multi-level lookup is disabled for 7.0+, so the resolved SDK should never be from the registered directory.
 
             // Set specified SDK version = 9999.3.4-global-dummy
-            string globalJsonPath = SetGlobalJsonVersion("SingleDigit-global.json");
             string requestedVersion = "9999.3.4-global-dummy";
+            string globalJsonPath = SetGlobalJsonVersion(requestedVersion);
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Cwd: empty
@@ -181,8 +181,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Multi-level lookup is disabled for 7.0+, so the resolved SDK should never be from the registered directory.
 
             // Set specified SDK version = 9999.3.304-global-dummy
-            string globalJsonPath = SetGlobalJsonVersion("TwoPart-global.json");
             string requestedVersion = "9999.3.304-global-dummy";
+            string globalJsonPath = SetGlobalJsonVersion(requestedVersion);
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Cwd: empty
@@ -494,8 +494,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 return;
 
             // Set specified SDK version = 9999.3.4-global-dummy - such SDK doesn't exist
-            string globalJsonPath = SetGlobalJsonVersion("SingleDigit-global.json");
             string requestedVersion = "9999.3.4-global-dummy";
+            string globalJsonPath = SetGlobalJsonVersion(requestedVersion);
 
             // When we fail to resolve SDK version, we print out all available SDKs
             var expectedList = AddSdkVersionsAndGetExpectedList();
@@ -547,9 +547,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         // The dotnet.runtimeconfig.json created uses a dummy framework version (9999.0.0)
         private void AddAvailableSdkVersions(string sdkBaseDir, params string[] availableVersions)
         {
-            string dummyRuntimeConfig = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils",
-                "SDKLookup", "dotnet.runtimeconfig.json");
-
             foreach (string version in availableVersions)
             {
                 string newSdkDir = Path.Combine(sdkBaseDir, version);
@@ -559,19 +556,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 File.WriteAllText(Path.Combine(newSdkDir, "dotnet.dll"), string.Empty);
 
                 // ./dotnet.runtimeconfig.json
-                string runtimeConfig = Path.Combine(newSdkDir, "dotnet.runtimeconfig.json");
-                File.Copy(dummyRuntimeConfig, runtimeConfig, true);
+                RuntimeConfig.FromFile(Path.Combine(newSdkDir, "dotnet.runtimeconfig.json"))
+                    .WithFramework(Constants.MicrosoftNETCoreApp, "9999.0.0")
+                    .Save();
             }
         }
 
         // Put a global.json file in the cwd in order to specify a CLI
-        private string SetGlobalJsonVersion(string globalJsonFileName)
+        private string SetGlobalJsonVersion(string version)
         {
             string destFile = Path.Combine(_currentWorkingDir, "global.json");
-            string srcFile = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils",
-                "SDKLookup", globalJsonFileName);
-
-            File.Copy(srcFile, destFile, true);
+            File.WriteAllText(destFile, @$"{{ ""sdk"": {{ ""version"": ""{version}"" }} }}");
             return destFile;
         }
 

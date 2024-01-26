@@ -39,8 +39,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void SdkLookup_Global_Json_Single_Digit_Patch_Rollup()
         {
             // Set specified SDK version = 9999.3.4-global-dummy
-            string globalJsonPath = CopyGlobalJson("SingleDigit-global.json");
             string requestedVersion = "9999.3.4-global-dummy";
+            string globalJsonPath = SetGlobalJsonVersion(requestedVersion);
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: empty
@@ -134,8 +134,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void SdkLookup_Global_Json_Two_Part_Patch_Rollup()
         {
             // Set specified SDK version = 9999.3.304-global-dummy
-            string globalJsonPath = CopyGlobalJson("TwoPart-global.json");
             string requestedVersion = "9999.3.304-global-dummy";
+            string globalJsonPath = SetGlobalJsonVersion(requestedVersion);
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: empty
@@ -1008,12 +1008,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         // Put a global.json file in the cwd in order to specify a CLI
-        private string CopyGlobalJson(string globalJsonFileName)
+        private string SetGlobalJsonVersion(string version)
         {
             string destFile = Path.Combine(SharedState.CurrentWorkingDir, "global.json");
-            string srcFile = Path.Combine(SharedState.TestAssetsPath, globalJsonFileName);
-
-            File.Copy(srcFile, destFile, true);
+            File.WriteAllText(destFile, @$"{{ ""sdk"": {{ ""version"": ""{version}"" }} }}");
             return destFile;
         }
 
