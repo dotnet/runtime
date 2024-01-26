@@ -176,6 +176,8 @@ async function preInitWorkerAsync() {
         await ensureUsedWasmFeatures();
         await init_polyfills_async();
         runtimeHelpers.afterPreInit.promise_control.resolve();
+        exportedRuntimeAPI.runtimeId = loaderHelpers.config.runtimeId!;
+        runtimeList.registerRuntime(exportedRuntimeAPI);
         endMeasure(mark, MeasuredBlock.preInitWorker);
     } catch (err) {
         mono_log_error("user preInitWorker() failed", err);
@@ -184,12 +186,12 @@ async function preInitWorkerAsync() {
     }
 }
 
+// runs for each re-attached worker
 export function preRunWorker() {
-    // signal next stage
+    jiterpreter_allocate_tables(); // this will return quickly if already allocated
     runtimeHelpers.runtimeReady = true;
+    // signal next stage
     runtimeHelpers.afterPreRun.promise_control.resolve();
-    exportedRuntimeAPI.runtimeId = loaderHelpers.config.runtimeId!;
-    runtimeList.registerRuntime(exportedRuntimeAPI);
 }
 
 async function preRunAsync(userPreRun: (() => void)[]) {
@@ -350,6 +352,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
     runtimeHelpers.afterPostRun.promise_control.resolve();
 }
 
+// runs for each re-detached worker
 export function postRunWorker() {
     if (runtimeHelpers.proxy_context_gc_handle) {
         const pthread_ptr = mono_wasm_pthread_ptr();

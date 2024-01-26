@@ -563,6 +563,10 @@ register_thread (MonoThreadInfo *info)
 	g_assert (result);
 	mono_thread_info_suspend_unlock ();
 
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_registered ();
+#endif
+
 	return TRUE;
 }
 
@@ -643,6 +647,10 @@ unregister_thread (void *arg)
 	mono_threads_transition_detach (info);
 
 	mono_thread_info_suspend_unlock ();
+
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_unregistered ();
+#endif
 
 	g_byte_array_free (info->stackdata, /*free_segment=*/TRUE);
 

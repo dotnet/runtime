@@ -962,10 +962,6 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	*/
 	threads_add_pending_joinable_runtime_thread (info);
 
-#ifdef HOST_BROWSER
-	mono_threads_wasm_on_thread_detached ();
-#endif
-
 #ifndef HOST_WIN32
 	add_exiting_thread (thread);
 	mono_gc_finalize_notify ();

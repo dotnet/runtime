@@ -5,7 +5,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 
-import { ENVIRONMENT_IS_PTHREAD, mono_assert, loaderHelpers } from "../../globals";
+import { ENVIRONMENT_IS_PTHREAD, mono_assert } from "../../globals";
 import { mono_wasm_pthread_ptr, postMessageToMain, update_thread_info } from "../shared";
 import { PThreadInfo } from "../shared/types";
 import { WorkerToMainMessageType, is_nullish } from "../../types/internal";
@@ -18,7 +18,6 @@ import {
 } from "./events";
 import { postRunWorker, preRunWorker } from "../../startup";
 import { mono_log_debug } from "../../logging";
-import { jiterpreter_allocate_tables } from "../../jiterpreter-support";
 import { CharPtr } from "../../types/emscripten";
 import { utf8ToString } from "../../strings";
 
@@ -58,7 +57,12 @@ class WorkerSelf implements PThreadSelf {
 // we are lying that this is never null, but afterThreadInit should be the first time we get to run any code
 // in the worker, so this becomes non-null very early.
 export let pthread_self: PThreadSelf = null as any as PThreadSelf;
-export let monoThreadInfo: PThreadInfo = null as any as PThreadInfo;
+export const monoThreadInfo: PThreadInfo = {
+    pthreadId: 0,
+    reuseCount: 0,
+    updateCount: 0,
+    threadName: "",
+};
 
 /// This is the "public internal" API for runtime subsystems that wish to be notified about
 /// pthreads that are running on the current worker.
@@ -79,11 +83,18 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
     mono_log_debug("got message from main on the dedicated channel", event.data);
 }
 
-/// This is an implementation detail function.
+/// Called in the worker thread (not main thread) from mono when a pthread becomes registered to the mono runtime.
+export function mono_wasm_pthread_on_pthread_registered(pthread_id: number): void {
+    if (!MonoWasmThreads) return;
+    mono_assert(monoThreadInfo !== null && monoThreadInfo.pthreadId == pthread_id, "expected monoThreadInfo to be set already when registering");
+    preRunWorker();
+}
+
 /// Called in the worker thread (not main thread) from mono when a pthread becomes attached to the mono runtime.
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: number, thread_name: CharPtr, background_thread: number, threadpool_thread: number, external_eventloop: number, debugger_thread: number): void {
     if (!MonoWasmThreads) return;
-    mono_assert(pthread_self !== null && monoThreadInfo.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
+    mono_assert(monoThreadInfo !== null && monoThreadInfo.pthreadId == pthread_id, "expected monoThreadInfo to be set already when attaching");
+
     const name = monoThreadInfo.name = utf8ToString(thread_name);
     monoThreadInfo.isAttached = true;
     monoThreadInfo.isThreadPool = threadpool_thread !== 0;
@@ -104,10 +115,7 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number, thread
                             : monoThreadInfo.isBackground ? "back"
                                 : "norm";
     monoThreadInfo.threadName = `0x${pthread_id.toString(16).padStart(8, "0")}-${threadType}`;
-    loaderHelpers.mono_set_thread_name(monoThreadInfo.threadName);
-    preRunWorker();
     update_thread_info();
-    jiterpreter_allocate_tables();
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, pthread_self));
     postMessageToMain({
         monoCmd: WorkerToMainMessageType.monoAttached,
@@ -116,14 +124,13 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number, thread
 }
 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
-export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void {
+export function mono_wasm_pthread_on_pthread_unregistered(pthread_id: number): void {
     if (!MonoWasmThreads) return;
-    mono_assert(pthread_id === monoThreadInfo.pthreadId, "expected pthread_id to match when detaching");
+    mono_assert(pthread_id === monoThreadInfo.pthreadId, "expected pthread_id to match when un-registering");
     postRunWorker();
     monoThreadInfo.isAttached = false;
     monoThreadInfo.threadName = monoThreadInfo.threadName + "=>detached";
     update_thread_info();
-    loaderHelpers.mono_set_thread_name(monoThreadInfo.threadName);
     postMessageToMain({
         monoCmd: WorkerToMainMessageType.monoDetached,
         info: monoThreadInfo,
@@ -136,14 +143,14 @@ export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void 
 export function afterThreadInitTLS(): void {
     if (!MonoWasmThreads) return;
 
-    const pthread_ptr = mono_wasm_pthread_ptr();
-    mono_assert(!is_nullish(pthread_ptr), "pthread_self() returned null");
-    monoThreadInfo = {
-        pthreadId: pthread_ptr,
-        reuseCount: monoThreadInfo ? monoThreadInfo.reuseCount + 1 : 0,
-        updateCount: monoThreadInfo ? monoThreadInfo.updateCount + 1 : 0,
-    };
+    const pthread_id = mono_wasm_pthread_ptr();
+    mono_assert(!is_nullish(pthread_id), "pthread_self() returned null");
+    monoThreadInfo.pthreadId = pthread_id;
+    monoThreadInfo.reuseCount++;
+    monoThreadInfo.updateCount++;
+    monoThreadInfo.threadName = `0x${pthread_id.toString(16).padStart(8, "0")}`;
     update_thread_info();
+
     // don't do this callback for the main thread
     if (!ENVIRONMENT_IS_PTHREAD) return;
 

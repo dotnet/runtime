@@ -13,9 +13,10 @@ export interface PThreadInfo {
     updateCount: number,
 
     name?: string,
-    threadName?: string,
+    threadName: string,
 
     isLoaded?: boolean,
+    isRegistered?: boolean,
     isRunning?: boolean,
     isAttached?: boolean,
     isExternalEventLoop?: boolean,

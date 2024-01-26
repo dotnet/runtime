@@ -108,6 +108,7 @@ function allocateUnusedWorker(): PThreadWorker {
         pthreadId: 0,
         reuseCount: 0,
         updateCount: 0,
+        threadName: "",
     };
     return worker;
 }

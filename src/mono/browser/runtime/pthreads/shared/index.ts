@@ -4,7 +4,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { ENVIRONMENT_IS_PTHREAD, Module, mono_assert, runtimeHelpers } from "../../globals";
+import { ENVIRONMENT_IS_PTHREAD, Module, loaderHelpers, mono_assert, runtimeHelpers } from "../../globals";
 import { mono_log_debug } from "../../logging";
 import { bindings_init } from "../../startup";
 import { forceDisposeProxies } from "../../gc-handles";
@@ -65,6 +65,7 @@ export function mono_wasm_uninstall_js_worker_interop(): void {
 
 // this is just for Debug build of the runtime, making it easier to debug worker threads
 export function update_thread_info(): void {
+    loaderHelpers.mono_set_thread_name(monoThreadInfo.threadName!);
     (globalThis as any).monoThreadInfo = monoThreadInfo;
     if (MonoWasmThreads && BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
         monoThreadInfo.updateCount++;
