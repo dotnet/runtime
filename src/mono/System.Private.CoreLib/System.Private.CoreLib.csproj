@@ -13,7 +13,7 @@
     <Platforms>x64;x86;arm;armv6;arm64;riscv64;s390x;wasm;ppc64le</Platforms>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <FeatureWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <FeatureWasmThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
   </PropertyGroup>
 
@@ -122,8 +122,8 @@
     <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
     <FeatureMono>true</FeatureMono>
-    <FeatureWasmThreads Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
-    <FeatureWasmPerfTracing Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and ('$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmPerfTracing>
+    <FeatureWasmThreads Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
+    <FeatureWasmPerfTracing Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and ('$(WasmEnableThreads)' == 'true')">true</FeatureWasmPerfTracing>
     <FeaturePortableTimer Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmThreads)' == 'true'">true</FeaturePortableTimer>
     <FeaturePortableThreadPool Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmThreads)' == 'true'">true</FeaturePortableThreadPool>
     <FeaturePerfTracing Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmPerftracing)' == 'true'">true</FeaturePerfTracing>

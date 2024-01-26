@@ -11,7 +11,7 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'browser'">SR.SystemRuntimeInteropServicesJavaScript_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == '' and '$(FeatureWasmThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
@@ -69,7 +69,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSWebWorker.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(MonoWasmBuildVariant)' == 'multithread'">
+  <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
     <ApiCompatSuppressionFile Include="CompatibilitySuppressions.xml;CompatibilitySuppressions.WasmThreads.xml" />
   </ItemGroup>
 

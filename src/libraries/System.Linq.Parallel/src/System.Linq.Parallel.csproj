@@ -7,7 +7,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <FeatureWasmThreads Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <FeatureWasmThreads Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
   </PropertyGroup>
   <!-- Compiled Source Files -->
@@ -157,8 +157,8 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" Condition="'$(MonoWasmBuildVariant)' != 'multithread'" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.WebAssembly.Threading\ref\System.Threading.WebAssembly.Threading.csproj" Condition="'$(MonoWasmBuildVariant)' == 'multithread'" />
+    <Reference Include="System.Threading" Condition="'$(WasmEnableThreads)' != 'true'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.WebAssembly.Threading\ref\System.Threading.WebAssembly.Threading.csproj" Condition="'$(WasmEnableThreads)' == 'true'" />
   </ItemGroup>
 
 </Project>

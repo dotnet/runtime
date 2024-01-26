@@ -124,7 +124,7 @@ jobs:
         - browser_wasm
         #- browser_wasm_win
       nameSuffix: _Threading
-      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       # Always run for runtime-wasm because tests are not run in runtime
@@ -255,7 +255,7 @@ jobs:
         - browser_wasm
         - browser_wasm_win
       nameSuffix: MultiThreaded
-      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       condition: ne(variables['wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline'], true)
       publishArtifactsForWorkload: true
       publishWBT: false
@@ -313,7 +313,7 @@ jobs:
       platforms:
         - Browser_wasm
         - Browser_wasm_win
-      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       nameSuffix: DebuggerTests_MultiThreaded
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}

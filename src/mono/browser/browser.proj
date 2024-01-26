@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</MonoWasmThreads>
+    <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true'">true</MonoWasmThreads>
     <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Release'">false</MonoDiagnosticsMock>
     <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Debug'">true</MonoDiagnosticsMock>
   </PropertyGroup>

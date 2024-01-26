@@ -51,8 +51,8 @@
     <_CompilerTargetArch Condition="'$(AotHostArchitecture)' != ''">$(AotHostArchitecture)</_CompilerTargetArch>
     <RepositoryEngineeringCommonDir>$([MSBuild]::NormalizeDirectory('$(RepositoryEngineeringDir)', 'common'))</RepositoryEngineeringCommonDir>
     <CrossToolchainFile>$([MSBuild]::NormalizePath('$(RepositoryEngineeringCommonDir)', 'cross', 'toolchain.cmake'))</CrossToolchainFile>
-    <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'singlethread'">false</MonoWasmThreads>
-    <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</MonoWasmThreads>
+    <MonoWasmThreads Condition="'$(WasmEnableThreads)' != 'true'">false</MonoWasmThreads>
+    <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true'">true</MonoWasmThreads>
     <MonoLLVMMajorVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.Substring(0, $(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.IndexOf('.'))))</MonoLLVMMajorVersion>
     <MonoUseLibCxx Condition="'$(MonoLLVMMajorVersion)' >= '16.0'">true</MonoUseLibCxx>
   </PropertyGroup>
@@ -60,7 +60,7 @@
   <!-- default thread suspend for specific platforms -->
   <PropertyGroup>
     <MonoThreadSuspend Condition="'$(TargetswatchOS)' == 'true' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
-    <MonoThreadSuspend Condition="'$(TargetsBrowser)' == 'true' and '$(MonoWasmBuildVariant)' == 'multithread' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
+    <MonoThreadSuspend Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableThreads)' == 'true' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
     <!-- wasm isn't really preemptive, but we don't want safepoints -->
     <MonoThreadSuspend Condition="( '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' ) and '$(MonoThreadSuspend)' == ''">preemptive</MonoThreadSuspend>
     <!-- all other platforms -->

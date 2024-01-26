@@ -6,7 +6,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
-    <FeatureWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <FeatureWasmThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
   </PropertyGroup>
 
@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ApiCompatSuppressionFile Include="$(MSBuildThisFileDirectory)CompatibilitySuppressions.Threading.xml" Condition="'$(MonoWasmBuildVariant)' == 'multithread'" />
+    <ApiCompatSuppressionFile Include="$(MSBuildThisFileDirectory)CompatibilitySuppressions.Threading.xml" Condition="'$(WasmEnableThreads)' == 'true'" />
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 

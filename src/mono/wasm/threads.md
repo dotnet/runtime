@@ -2,7 +2,7 @@
 
 ## Building the runtime ##
 
-Build the runtime with `/p:MonoWasmBuildVariant=multithread` to enable support for multi-threading.
+Build the runtime with `/p:WasmEnableThreads=true` to enable support for multi-threading.
 
 ## Building sample apps ##
 
