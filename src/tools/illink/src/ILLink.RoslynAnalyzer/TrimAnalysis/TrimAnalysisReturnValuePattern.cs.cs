@@ -45,7 +45,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				// For any feature that this property is declared to guard,
 				// the abstract return value must include that feature
 				// (indicating it is known to be enabled when the return value is true).
-				foreach (string featureGuard in FeatureGuardAnnotations) {
+				foreach (string featureGuard in FeatureGuardAnnotations.GetKnownValues ()) {
 					if (!returnValueFeatures.Contains (featureGuard)) {
 						diagnosticContext.AddDiagnostic (
 							DiagnosticId.ReturnValueDoesNotMatchFeatureGuards,
