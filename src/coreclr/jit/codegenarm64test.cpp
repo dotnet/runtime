@@ -4817,6 +4817,57 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                                 INS_OPTS_SCALABLE_S); /* CMPLO   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm> */
     theEmitter->emitIns_R_R_R_I(INS_sve_cmpls, EA_SCALABLE, REG_P0, REG_P3, REG_V9, 127,
                                 INS_OPTS_SCALABLE_D); /* CMPLS   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #<imm> */
+    // IF_SVE_CZ_4A
+    theEmitter->emitIns_R_R_R_R(INS_sve_and, EA_SCALABLE, REG_P0, REG_P3, REG_P14, REG_P15,
+                                INS_OPTS_SCALABLE_B); /* AND     <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_ands, EA_SCALABLE, REG_P2, REG_P6, REG_P8, REG_P13,
+                                INS_OPTS_SCALABLE_B); /* ANDS    <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_bic, EA_SCALABLE, REG_P4, REG_P9, REG_P12, REG_P11,
+                                INS_OPTS_SCALABLE_B); /* BIC     <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_bics, EA_SCALABLE, REG_P6, REG_P12, REG_P0, REG_P9,
+                                INS_OPTS_SCALABLE_B); /* BICS    <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_eor, EA_SCALABLE, REG_P8, REG_P15, REG_P11, REG_P7,
+                                INS_OPTS_SCALABLE_B); /* EOR     <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_eors, EA_SCALABLE, REG_P10, REG_P0, REG_P5, REG_P3,
+                                INS_OPTS_SCALABLE_B); /* EORS    <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R(INS_sve_mov, EA_SCALABLE, REG_P12, REG_P1, REG_P10,
+                              INS_OPTS_SCALABLE_B); /* MOV     <Pd>.B, <Pg>/Z, <Pn>.B */
+    theEmitter->emitIns_R_R_R(INS_sve_movs, EA_SCALABLE, REG_P14, REG_P4, REG_P0,
+                              INS_OPTS_SCALABLE_B); /* MOVS    <Pd>.B, <Pg>/Z, <Pn>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_nand, EA_SCALABLE, REG_P1, REG_P7, REG_P2, REG_P15,
+                                INS_OPTS_SCALABLE_B); /* NAND    <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_nands, EA_SCALABLE, REG_P3, REG_P0, REG_P6, REG_P9,
+                                INS_OPTS_SCALABLE_B); /* NANDS   <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_nor, EA_SCALABLE, REG_P5, REG_P13, REG_P10, REG_P7,
+                                INS_OPTS_SCALABLE_B); /* NOR     <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_nors, EA_SCALABLE, REG_P7, REG_P2, REG_P14, REG_P5,
+                                INS_OPTS_SCALABLE_B); /* NORS    <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R(INS_sve_not, EA_SCALABLE, REG_P9, REG_P5, REG_P15,
+                              INS_OPTS_SCALABLE_B); /* NOT     <Pd>.B, <Pg>/Z, <Pn>.B */
+    theEmitter->emitIns_R_R_R(INS_sve_nots, EA_SCALABLE, REG_P11, REG_P8, REG_P0,
+                              INS_OPTS_SCALABLE_B); /* NOTS    <Pd>.B, <Pg>/Z, <Pn>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_orn, EA_SCALABLE, REG_P13, REG_P3, REG_P1, REG_P11,
+                                INS_OPTS_SCALABLE_B); /* ORN     <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_orns, EA_SCALABLE, REG_P15, REG_P4, REG_P1, REG_P8,
+                                INS_OPTS_SCALABLE_B); /* ORNS    <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_orr, EA_SCALABLE, REG_P0, REG_P0, REG_P15, REG_P12,
+                                INS_OPTS_SCALABLE_B); /* ORR     <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_orrs, EA_SCALABLE, REG_P2, REG_P3, REG_P9, REG_P14,
+                                INS_OPTS_SCALABLE_B); /* ORRS    <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B */
+    theEmitter->emitIns_R_R_R_R(INS_sve_sel, EA_SCALABLE, REG_P4, REG_P6, REG_P13, REG_P10,
+                                INS_OPTS_SCALABLE_B); /* SEL     <Pd>.B, <Pg>, <Pn>.B, <Pm>.B */
+
+    // IF_SVE_CZ_4A_A
+    theEmitter->emitIns_R_R(INS_sve_movs, EA_SCALABLE, REG_P0, REG_P15,
+                            INS_OPTS_SCALABLE_B); /* MOVS    <Pd>.B, <Pn>.B */
+
+    // IF_SVE_CZ_4A_K
+    theEmitter->emitIns_R_R_R(INS_sve_mov, EA_SCALABLE, REG_P0, REG_P8, REG_P15, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_PREDICATE_MERGE); /* MOV     <Pd>.B, <Pg>/M, <Pn>.B */
+
+    // IF_SVE_CZ_4A_L
+    theEmitter->emitIns_R_R(INS_sve_mov, EA_SCALABLE, REG_P0, REG_P15,
+                            INS_OPTS_SCALABLE_B); /* MOV     <Pd>.B, <Pn>.B */
 
     // IF_SVE_DD_2A
     theEmitter->emitIns_R_R(INS_sve_pfirst, EA_SCALABLE, REG_P0, REG_P15,
