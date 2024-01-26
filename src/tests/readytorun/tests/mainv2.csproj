@@ -160,7 +160,7 @@ export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 ]]></CLRTestBashPreCommands>
   </PropertyGroup>
 
-  <Target Name="CopyTestAssemblyToOutputs" AfterTargets="Build">
+  <Target Name="CopyTestAssemblyToOutputs" AfterTargets="Build" Condition="'$(CLRTestTargetUnsupported)' != 'true'">
     <PropertyGroup>
       <TestAssemblyName>test.dll</TestAssemblyName>
       <TestV1AssemblySourcePath>$(OutputPath)/../testv1/test/</TestV1AssemblySourcePath>
