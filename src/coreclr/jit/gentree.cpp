@@ -8583,7 +8583,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
 //
 // Arguments:
 //    layout     - The struct layout
-//    addr       - Destionation address
+//    addr       - Destination address
 //    data       - Value to store
 //    indirFlags - Indirection flags
 //
@@ -8607,13 +8607,13 @@ GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenT
 // gtNewStoreDynBlkNode : Create a dynamic block store node.
 //
 // Arguments:
-//    addr       - Destionation address
-//    data       - Value to store (init val or indirection representing a location)
-//
-//    indirFlags - Indirection flags
+//    addr        - Destination address
+//    data        - Value to store (init val or indirection representing a location)
+//    dynamicSize - Node that computes number of bytes to store
+//    indirFlags  - Indirection flags
 //
 // Return Value:
-//    The created GT_STORE_BLK node.
+//    The created GT_STORE_DYN_BLK node.
 //
 GenTreeStoreDynBlk* Compiler::gtNewStoreDynBlkNode(GenTree*     addr,
                                                    GenTree*     data,
