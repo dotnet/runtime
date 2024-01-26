@@ -106,13 +106,15 @@ namespace System.Threading.Tasks
                 typeof(T) == typeof(nint) ||
                 typeof(T) == typeof(nuint);
 
+#pragma warning disable CS8500
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool CompareExchange(ref T location, T value, T comparand) =>
+            static unsafe bool CompareExchange(ref T location, T value, T comparand) =>
                 sizeof(T) == sizeof(byte) ? Interlocked.CompareExchange(ref Unsafe.As<T, byte>(ref location), Unsafe.As<T, byte>(ref value), Unsafe.As<T, byte>(ref comparand)) == Unsafe.As<T, byte>(ref comparand) :
                 sizeof(T) == sizeof(ushort) ? Interlocked.CompareExchange(ref Unsafe.As<T, ushort>(ref location), Unsafe.As<T, ushort>(ref value), Unsafe.As<T, ushort>(ref comparand)) == Unsafe.As<T, ushort>(ref comparand) :
                 sizeof(T) == sizeof(uint) ? Interlocked.CompareExchange(ref Unsafe.As<T, uint>(ref location), Unsafe.As<T, uint>(ref value), Unsafe.As<T, uint>(ref comparand)) == Unsafe.As<T, uint>(ref comparand) :
                 sizeof(T) == sizeof(ulong) ? Interlocked.CompareExchange(ref Unsafe.As<T, ulong>(ref location), Unsafe.As<T, ulong>(ref value), Unsafe.As<T, ulong>(ref comparand)) == Unsafe.As<T, ulong>(ref comparand) :
                 throw new UnreachableException();
+#pragma warning restore CS8500
 
             // The worker body. Each worker will execute this same body.
             Func<object, Task> taskBody = static async o =>
