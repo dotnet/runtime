@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);SYSLIB0038</NoWarn>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <ApiCompatValidateAssemblies>false</ApiCompatValidateAssemblies>
   </PropertyGroup>
 
   <ItemGroup>

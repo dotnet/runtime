@@ -29,25 +29,25 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type converter for this object.
         /// </summary>
-        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
+        // [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         TypeConverter? GetConverter();
 
         /// <summary>
         /// Gets the default event for this object.
         /// </summary>
-        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
+        // [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         EventDescriptor? GetDefaultEvent();
 
         /// <summary>
         /// Gets the default property for this object.
         /// </summary>
-        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
+        // [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         PropertyDescriptor? GetDefaultProperty();
 
         /// <summary>
         /// Gets an editor of the specified type for this object.
         /// </summary>
-        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode)]
+        // [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode)]
         object? GetEditor(Type editorBaseType);
 
         /// <summary>
@@ -59,19 +59,19 @@ namespace System.ComponentModel
         /// Gets the events for this instance of a component using the attribute array as a
         /// filter.
         /// </summary>
-        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        // [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         EventDescriptorCollection GetEvents(Attribute[]? attributes);
 
         /// <summary>
         /// Gets the properties for this instance of a component.
         /// </summary>
-        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
+        // [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         PropertyDescriptorCollection GetProperties();
 
         /// <summary>
         /// Gets the properties for this instance of a component using the attribute array as a filter.
         /// </summary>
-        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        // [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         PropertyDescriptorCollection GetProperties(Attribute[]? attributes);
 
         /// <summary>

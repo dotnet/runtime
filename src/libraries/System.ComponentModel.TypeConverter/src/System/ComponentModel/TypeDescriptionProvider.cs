@@ -93,7 +93,6 @@ namespace System.ComponentModel
         /// model only supports extended properties this API can be used for extended
         /// attributes and events as well, if the type description provider supports it.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
         public virtual ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
         {
             if (_parent != null)
@@ -216,7 +215,8 @@ namespace System.ComponentModel
         /// </summary>
         public ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType)
         {
-            return GetTypeDescriptor(objectType, null);
+            return GetTypeDescriptor(objectType, null); // DbConnectionStringBuilder line 619 comes down to this. The caller of the method this comment
+            // is in passes in object.GetType(); but we have no way to validate
         }
 
         /// <summary>

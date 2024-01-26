@@ -24,6 +24,8 @@ namespace Mono.Linker
 				sb.Append (name);
 				// Insert declaring type name and namespace
 				sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
+				// Insert module name
+				sb.Insert (0, '!').Insert (0, method.DeclaringType.Module.Name);
 				return sb.ToString ();
 			}
 
@@ -38,6 +40,8 @@ namespace Mono.Linker
 				sb.Append (name);
 				// Insert declaring type name and namespace
 				sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
+				// Insert module name
+				sb.Insert (0, '!').Insert (0, method.DeclaringType.Module.Name);
 				return sb.ToString ();
 			}
 
@@ -67,6 +71,10 @@ namespace Mono.Linker
 			// Insert declaring type name and namespace
 			if (method.DeclaringType != null)
 				sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
+
+			// Insert module name
+			if (method.DeclaringType != null && method.DeclaringType.Module != null)
+				sb.Insert (0, '!').Insert (0, method.DeclaringType.Module.Name);
 
 			return sb.ToString ();
 		}

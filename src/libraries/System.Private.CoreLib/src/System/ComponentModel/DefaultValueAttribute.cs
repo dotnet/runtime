@@ -27,7 +27,7 @@ namespace System.ComponentModel
         /// class, converting the specified value to the specified type, and using the U.S. English
         /// culture as the translation context.
         /// </summary>
-        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+        // [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public DefaultValueAttribute(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             string? value)
@@ -59,8 +59,9 @@ namespace System.ComponentModel
                     _value = Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
                 }
 
-                [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+                // [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
                 // Looking for ad hoc created TypeDescriptor.ConvertFromInvariantString(Type, string)
+                [UnconditionalSuppressMessage("Reflection", "IL2111:Reflecting over ConvertFromInvariantString with DynamicallyAccessedMemberTypes.All is ok because the caller has the same annotation.")]
                 static bool TryConvertFromInvariantString(
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type typeToConvert,
                     string? stringValue,

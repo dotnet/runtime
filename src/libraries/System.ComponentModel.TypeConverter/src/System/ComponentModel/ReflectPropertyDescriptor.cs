@@ -77,7 +77,7 @@ namespace System.ComponentModel
         /// <summary>
         /// The main constructor for ReflectPropertyDescriptors.
         /// </summary>
-        [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage)]
+        // [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage)]
         public ReflectPropertyDescriptor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
             string name,
@@ -113,7 +113,7 @@ namespace System.ComponentModel
         /// <summary>
         /// A constructor for ReflectPropertyDescriptors that have no attributes.
         /// </summary>
-        [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage)]
+        // [RequiresUnreferencedCode(PropertyDescriptorPropertyTypeMessage)]
         public ReflectPropertyDescriptor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
             string name,

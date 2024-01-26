@@ -172,29 +172,32 @@ namespace System.ComponentModel
             /// it will be used to retrieve attributes. Otherwise, _type
             /// will be used.
             /// </summary>
-            [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
+            // [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
             internal TypeConverter GetConverter(object? instance)
             {
                 TypeConverterAttribute? typeAttr = null;
 
-                // For instances, the design time object for them may want to redefine the
-                // attributes. So, we search the attribute here based on the instance. If found,
-                // we then search on the same attribute based on type. If the two don't match, then
-                // we cannot cache the value and must re-create every time. It is rare for a designer
-                // to override these attributes, so we want to be smart here.
-                if (instance != null)
-                {
-                    typeAttr = (TypeConverterAttribute?)TypeDescriptor.GetAttributes(_type)[typeof(TypeConverterAttribute)];
-                    TypeConverterAttribute instanceAttr = (TypeConverterAttribute)TypeDescriptor.GetAttributes(instance)[typeof(TypeConverterAttribute)]!;
-                    if (typeAttr != instanceAttr)
+                // TODO: use a different feature switch here.
+                if (TypeDescriptor.SupportsInstanceTypeDescriptor) {
+                    // For instances, the design time object for them may want to redefine the
+                    // attributes. So, we search the attribute here based on the instance. If found,
+                    // we then search on the same attribute based on type. If the two don't match, then
+                    // we cannot cache the value and must re-create every time. It is rare for a designer
+                    // to override these attributes, so we want to be smart here.
+                    if (instance != null)
                     {
-                        Type? converterType = GetTypeFromName(instanceAttr.ConverterTypeName);
-                        if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
+                        typeAttr = (TypeConverterAttribute?)TypeDescriptor.GetAttributes(_type)[typeof(TypeConverterAttribute)];
+                        TypeConverterAttribute instanceAttr = (TypeConverterAttribute)TypeDescriptor.GetAttributes(instance)[typeof(TypeConverterAttribute)]!;
+                        if (typeAttr != instanceAttr)
                         {
-                            return (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, _type)!;
+                            Type? converterType = GetTypeFromName(instanceAttr.ConverterTypeName);
+                            if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
+                            {
+                                return (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, _type)!;
+                            }
                         }
                     }
-                }
+                } // todo: throw if not null?
 
                 // If we got here, we return our type-based converter.
                 if (_converter == null)
@@ -259,14 +262,18 @@ namespace System.ComponentModel
             /// <summary>
             /// Return the default property.
             /// </summary>
-            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
+            // [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
             internal PropertyDescriptor? GetDefaultProperty(object? instance)
             {
                 AttributeCollection attributes;
 
                 if (instance != null)
                 {
-                    attributes = TypeDescriptor.GetAttributes(instance);
+                    if (TypeDescriptor.SupportsInstanceTypeDescriptor) {
+                        attributes = TypeDescriptor.GetAttributes(instance);
+                    } else {
+                        throw new NotSupportedException("Instance type descriptor");
+                    }
                 }
                 else
                 {
@@ -278,7 +285,11 @@ namespace System.ComponentModel
                 {
                     if (instance != null)
                     {
-                        return TypeDescriptor.GetProperties(instance)[attr.Name];
+                        if (TypeDescriptor.SupportsInstanceTypeDescriptor) {
+                            return TypeDescriptor.GetProperties(instance)[attr.Name];
+                        } else {
+                            throw new NotSupportedException("Instance type descriptor");
+                        }
                     }
                     else
                     {
@@ -447,7 +458,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the properties for this type.
             /// </summary>
-            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
+            // [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
             internal PropertyDescriptorCollection GetProperties()
             {
                 // Worst case collision scenario:  we don't want the perf hit
@@ -479,15 +490,21 @@ namespace System.ComponentModel
                 return _properties;
             }
 
+            [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+#pragma warning disable IL4000
+            private static bool NonQualifiedTyeNamesSupported => false;
+#pragma warning restore IL4000
+
             /// <summary>
             /// Retrieves a type from a name. The Assembly of the type
             /// that this PropertyDescriptor came from is first checked,
             /// then a global Type.GetType is performed.
             /// </summary>
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Calling _type.Assembly.GetType on a non-assembly qualified type will still work. See https://github.com/mono/linker/issues/1895")]
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
-                Justification = "Using the non-assembly qualified type name will still work.")]
+            // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            //     Justification = "Calling _type.Assembly.GetType on a non-assembly qualified type will still work. See https://github.com/mono/linker/issues/1895")]
+            // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
+            //     Justification = "Using the non-assembly qualified type name will still work.")]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             private Type? GetTypeFromName(
                 // this method doesn't create the type, but all callers are annotated with PublicConstructors,
                 // so use that value to ensure the Type will be preserved
@@ -503,25 +520,35 @@ namespace System.ComponentModel
 
                 if (commaIndex == -1)
                 {
-                    t = _type.Assembly.GetType(typeName);
+                    if (NonQualifiedTyeNamesSupported) {
+                        t = _type.Assembly.GetType(typeName);
+                    } else {
+                        throw new Exception("Non-qualified type names are not supported.");
+                    }
                 }
 
                 t ??= Type.GetType(typeName);
 
                 if (t == null && commaIndex != -1)
                 {
-                    // At design time, it's possible for us to reuse
-                    // an assembly but add new types. The app domain
-                    // will cache the assembly based on identity, however,
-                    // so it could be looking in the previous version
-                    // of the assembly and not finding the type. We work
-                    // around this by looking for the non-assembly qualified
-                    // name, which causes the domain to raise a type
-                    // resolve event.
-                    t = Type.GetType(typeName.Substring(0, commaIndex));
+                    if (NonQualifiedTyeNamesSupported) {
+                        // At design time, it's possible for us to reuse
+                        // an assembly but add new types. The app domain
+                        // will cache the assembly based on identity, however,
+                        // so it could be looking in the previous version
+                        // of the assembly and not finding the type. We work
+                        // around this by looking for the non-assembly qualified
+                        // name, which causes the domain to raise a type
+                        // resolve event.
+                        t = Type.GetType(typeName.Substring(0, commaIndex));
+                    } else {
+                        throw new Exception("Could not find fully-qualified type name.");
+                    }
                 }
 
+#pragma warning disable IL2073 // BUG: Unknown return value from the disabled branch above still causesr a warning.
                 return t;
+#pragma warning restore IL2073
             }
 
             /// <summary>
@@ -542,3 +569,19 @@ namespace System.ComponentModel
         }
     }
 }
+
+
+// namespace System.Diagnostics.CodeAnalysis
+// {
+//     // Allow AttributeTargets.Method for testing invalid usages of a custom FeatureGuardAttribute
+//     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method, Inherited=false, AllowMultiple=true)]
+//     internal sealed class FeatureGuardAttribute : Attribute
+//     {
+//         public Type RequiresAttributeType { get; }
+
+//         public FeatureGuardAttribute(Type requiresAttributeType)
+//         {
+//             RequiresAttributeType = requiresAttributeType;
+//         }
+//     }
+// }
