@@ -94,7 +94,6 @@ namespace System.Threading.Tasks
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static bool Interlockable() =>
-                typeof(T).IsEnum ||
                 typeof(T) == typeof(sbyte) ||
                 typeof(T) == typeof(byte) ||
                 typeof(T) == typeof(short) ||
