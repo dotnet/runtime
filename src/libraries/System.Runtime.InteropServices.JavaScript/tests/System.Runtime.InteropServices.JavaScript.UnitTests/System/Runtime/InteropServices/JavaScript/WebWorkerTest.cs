@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #region Executors
 
-        private CancellationTokenSource CreateTestCaseTimeoutSource([CallerMemberName] string memberName = "")
+        protected CancellationTokenSource CreateTestCaseTimeoutSource([CallerMemberName] string memberName = "")
         {
             var start = DateTime.Now;
             var cts = new CancellationTokenSource(TimeoutMilliseconds);
@@ -461,7 +461,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #region Thread Affinity
 
-        private async Task ActionsInDifferentThreads<T>(Executor executor1, Executor executor2, Func<Task, TaskCompletionSource<T>, Task> e1Job, Func<T, Task> e2Job, CancellationTokenSource cts)
+        protected async Task ActionsInDifferentThreads<T>(Executor executor1, Executor executor2, Func<Task, TaskCompletionSource<T>, Task> e1Job, Func<T, Task> e2Job, CancellationTokenSource cts)
         {
             TaskCompletionSource<T> job1ReadyTCS = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource job2DoneTCS = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -573,178 +573,5 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #endregion
 
-        #region WebSocket
-
-        [Theory, MemberData(nameof(GetTargetThreads))]
-        public async Task WebSocketClient_ContentInSameThread(Executor executor)
-        {
-            using var cts = CreateTestCaseTimeoutSource();
-
-            var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
-            var message = "hello";
-            var send = Encoding.UTF8.GetBytes(message);
-            var receive = new byte[100];
-
-            await executor.Execute(async () =>
-            {
-                using var client = new ClientWebSocket();
-                await client.ConnectAsync(uri, CancellationToken.None);
-                await client.SendAsync(send, WebSocketMessageType.Text, true, CancellationToken.None);
-
-                var res = await client.ReceiveAsync(receive, CancellationToken.None);
-                Assert.Equal(WebSocketMessageType.Text, res.MessageType);
-                Assert.True(res.EndOfMessage);
-                Assert.Equal(send.Length, res.Count);
-                Assert.Equal(message, Encoding.UTF8.GetString(receive, 0, res.Count));
-            }, cts.Token);
-        }
-
-
-        [Theory, MemberData(nameof(GetTargetThreads2x))]
-        public async Task WebSocketClient_ResponseCloseInDifferentThread(Executor executor1, Executor executor2)
-        {
-            using var cts = CreateTestCaseTimeoutSource();
-
-            var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
-            var message = "hello";
-            var send = Encoding.UTF8.GetBytes(message);
-            var receive = new byte[100];
-
-            var e1Job = async (Task e2done, TaskCompletionSource<ClientWebSocket> e1State) =>
-            {
-                using var client = new ClientWebSocket();
-                await client.ConnectAsync(uri, CancellationToken.None);
-                await client.SendAsync(send, WebSocketMessageType.Text, true, CancellationToken.None);
-
-                // share the state with the E2 continuation
-                e1State.SetResult(client);
-                await e2done;
-            };
-
-            var e2Job = async (ClientWebSocket client) =>
-            {
-                var res = await client.ReceiveAsync(receive, CancellationToken.None);
-                Assert.Equal(WebSocketMessageType.Text, res.MessageType);
-                Assert.True(res.EndOfMessage);
-                Assert.Equal(send.Length, res.Count);
-                Assert.Equal(message, Encoding.UTF8.GetString(receive, 0, res.Count));
-
-                await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
-            };
-
-            await ActionsInDifferentThreads<ClientWebSocket>(executor1, executor2, e1Job, e2Job, cts);
-        }
-
-        [Theory, MemberData(nameof(GetTargetThreads2x))]
-        public async Task WebSocketClient_CancelInDifferentThread(Executor executor1, Executor executor2)
-        {
-            using var cts = CreateTestCaseTimeoutSource();
-
-            var uri = new Uri(WebWorkerTestHelper.LocalWsEcho + "?guid=" + Guid.NewGuid());
-            var message = ".delay5sec"; // this will make the loopback server slower
-            var send = Encoding.UTF8.GetBytes(message);
-            var receive = new byte[100];
-
-            var e1Job = async (Task e2done, TaskCompletionSource<ClientWebSocket> e1State) =>
-            {
-                using var client = new ClientWebSocket();
-                await client.ConnectAsync(uri, CancellationToken.None);
-                await client.SendAsync(send, WebSocketMessageType.Text, true, CancellationToken.None);
-
-                // share the state with the E2 continuation
-                e1State.SetResult(client);
-                await e2done;
-            };
-
-            var e2Job = async (ClientWebSocket client) =>
-            {
-                CancellationTokenSource cts2 = new CancellationTokenSource();
-                var resTask = client.ReceiveAsync(receive, cts2.Token);
-                cts2.Cancel();
-                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => resTask);
-                Assert.Equal(cts2.Token, ex.CancellationToken);
-            };
-
-            await ActionsInDifferentThreads<ClientWebSocket>(executor1, executor2, e1Job, e2Job, cts);
-        }
-
-        #endregion
-
-        #region HTTP
-
-        [Theory, MemberData(nameof(GetTargetThreads))]
-        public async Task HttpClient_ContentInSameThread(Executor executor)
-        {
-            using var cts = CreateTestCaseTimeoutSource();
-            var uri = WebWorkerTestHelper.GetOriginUrl() + "/_framework/blazor.boot.json";
-
-            await executor.Execute(async () =>
-            {
-                using var client = new HttpClient();
-                using var response = await client.GetAsync(uri);
-                response.EnsureSuccessStatusCode();
-                var body = await response.Content.ReadAsStringAsync();
-                Assert.StartsWith("{", body);
-            }, cts.Token);
-        }
-
-        private static HttpRequestOptionsKey<bool> WebAssemblyEnableStreamingRequestKey = new("WebAssemblyEnableStreamingRequest");
-        private static HttpRequestOptionsKey<bool> WebAssemblyEnableStreamingResponseKey = new("WebAssemblyEnableStreamingResponse");
-        private static string HelloJson = "{'hello':'world'}".Replace('\'', '"');
-        private static string EchoStart = "{\"Method\":\"POST\",\"Url\":\"/Echo.ashx";
-
-        private async Task HttpClient_ActionInDifferentThread(string url, Executor executor1, Executor executor2, Func<HttpResponseMessage, Task> e2Job)
-        {
-            using var cts = CreateTestCaseTimeoutSource();
-
-            var e1Job = async (Task e2done, TaskCompletionSource<HttpResponseMessage> e1State) =>
-            {
-                using var ms = new MemoryStream();
-                await ms.WriteAsync(Encoding.UTF8.GetBytes(HelloJson));
-
-                using var req = new HttpRequestMessage(HttpMethod.Post, url);
-                req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
-                req.Content = new StreamContent(ms);
-                using var client = new HttpClient();
-                var pr = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
-                using var response = await pr;
-
-                // share the state with the E2 continuation
-                e1State.SetResult(response);
-
-                await e2done;
-            };
-            await ActionsInDifferentThreads<HttpResponseMessage>(executor1, executor2, e1Job, e2Job, cts);
-        }
-
-        [Theory, MemberData(nameof(GetTargetThreads2x))]
-        public async Task HttpClient_ContentInDifferentThread(Executor executor1, Executor executor2)
-        {
-            var url = WebWorkerTestHelper.LocalHttpEcho + "?guid=" + Guid.NewGuid();
-            await HttpClient_ActionInDifferentThread(url, executor1, executor2, async (HttpResponseMessage response) =>
-            {
-                response.EnsureSuccessStatusCode();
-                var body = await response.Content.ReadAsStringAsync();
-                Assert.StartsWith(EchoStart, body);
-            });
-        }
-
-        [Theory, MemberData(nameof(GetTargetThreads2x))]
-        public async Task HttpClient_CancelInDifferentThread(Executor executor1, Executor executor2)
-        {
-            var url = WebWorkerTestHelper.LocalHttpEcho + "?delay10sec=true&guid=" + Guid.NewGuid();
-            await HttpClient_ActionInDifferentThread(url, executor1, executor2, async (HttpResponseMessage response) =>
-            {
-                await Assert.ThrowsAsync<TaskCanceledException>(async () =>
-                {
-                    CancellationTokenSource cts = new CancellationTokenSource();
-                    var promise = response.Content.ReadAsStringAsync(cts.Token);
-                    cts.Cancel();
-                    await promise;
-                });
-            });
-        }
-
-        #endregion
     }
 }
