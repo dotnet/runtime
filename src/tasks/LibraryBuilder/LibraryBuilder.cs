@@ -204,9 +204,9 @@ public class LibraryBuilderTask : AppBuilderTask
 
             if (ext == ".so" || ext == ".dylib")
             {
-                // temporary solution, exclude HybridGlobalization from static linking ,
+                // temporary solution, include only HybridGlobalization from static linking ,
                 // until we figure out how to link it properly depending on the hybrid globalization mode
-                if(libName.Contains("HybridGlobalization"))
+                if (libName.Contains("libSystem.Globalization.Native"))
                 {
                     continue;
                 }
@@ -214,9 +214,9 @@ public class LibraryBuilderTask : AppBuilderTask
             }
             else
             {
-                // temporary solution, exclude HybridGlobalization from static linking ,
+                // temporary solution, include only HybridGlobalization from static linking ,
                 // until we figure out how to link it properly depending on the hybrid globalization mode
-                if(libName.Contains("HybridGlobalization"))
+                if (libName.Contains("libSystem.Globalization.Native"))
                 {
                     continue;
                 }

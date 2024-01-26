@@ -14,6 +14,7 @@
     <NativeLib Condition="'$(NativeLib)' == ''">shared</NativeLib>
     <BundlesResources Condition="'$(BundlesResources)' == ''">false</BundlesResources>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+    <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">

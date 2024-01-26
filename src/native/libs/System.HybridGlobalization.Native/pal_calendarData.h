@@ -117,3 +117,4 @@ PALEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era,
                                                                     int32_t* startMonth,
                                                                     int32_t* startDay);
 #endif
+
