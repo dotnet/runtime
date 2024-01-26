@@ -823,7 +823,7 @@ namespace Internal.JitInterface
         {
             MethodIL methodIL = (MethodIL)HandleToObject((void*)module);
 
-            ISymbolNode stringObject;
+            FrozenStringNode stringObject;
             if (metaTok == (mdToken)CorConstants.CorTokenType.mdtString)
             {
                 stringObject = _compilation.NodeFactory.SerializedStringObject("");
@@ -1776,7 +1776,7 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
         {
             MethodDesc method = HandleToObject(handle);
-            ISymbolNode methodHandleSymbol = _compilation.NodeFactory.RuntimeMethodHandle(method);
+            RuntimeMethodHandleNode methodHandleSymbol = _compilation.NodeFactory.RuntimeMethodHandle(method);
             CORINFO_METHOD_STRUCT_* result = (CORINFO_METHOD_STRUCT_*)ObjectToHandle(methodHandleSymbol);
 
             if (methodHandleSymbol.RepresentsIndirectionCell)
@@ -1824,7 +1824,6 @@ namespace Internal.JitInterface
 
             switch (method.Name)
             {
-                case "EETypePtrOf":
                 case "Of":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
                     pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
@@ -2140,6 +2139,22 @@ namespace Internal.JitInterface
                     }
                     else if (field.IsThreadStatic)
                     {
+                        if (MethodBeingCompiled.Context.Target.IsWindows && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
+                        {
+                            ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex((MetadataType)field.OwningType);
+                            if (index is TypeThreadStaticIndexNode ti)
+                            {
+                                if (ti.IsInlined)
+                                {
+                                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
+                                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                                    {
+                                        fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
+                                    }
+                                }
+                            }
+                        }
+
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
@@ -2337,9 +2352,6 @@ namespace Internal.JitInterface
 
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
-            if (!EETypeNode.SupportsFrozenRuntimeTypeInstances(_compilation.NodeFactory.Target))
-                return null;
-
             TypeDesc type = HandleToObject(cls);
             return ObjectToHandle(_compilation.NecessaryRuntimeTypeIfPossible(type));
         }
@@ -2386,6 +2398,21 @@ namespace Internal.JitInterface
                 addr.accessType = InfoAccessType.IAT_VALUE;
                 addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeNonGCStaticsSymbol(type));
             }
+            return true;
+        }
+
+        private void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+        {
+            pInfo->offsetOfThreadLocalStoragePointer = (uint)(11 * PointerSize); // Offset of ThreadLocalStoragePointer in the TEB
+            pInfo->tlsIndexObject = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
+            pInfo->tlsRootObject = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
+            pInfo->threadStaticBaseSlow = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private bool notifyMethodInfoUsage(CORINFO_METHOD_STRUCT_* ftn)
+#pragma warning restore CA1822 // Mark members as static
+        {
             return true;
         }
     }

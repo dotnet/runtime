@@ -10,6 +10,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-threads-api.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/checked-build.h>
 
 #include <glib.h>
@@ -95,6 +96,10 @@ mono_threads_suspend_init_signals (void)
 void
 mono_threads_suspend_init (void)
 {
+#ifndef DISABLE_THREADS
+	// wasm threading require full cooperative suspend
+	g_assert (mono_threads_is_cooperative_suspension_enabled ());
+#endif
 }
 
 void

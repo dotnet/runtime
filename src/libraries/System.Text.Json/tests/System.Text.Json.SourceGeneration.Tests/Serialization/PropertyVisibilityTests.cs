@@ -334,6 +334,14 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))][JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
         [JsonSerializable(typeof(ClassWithInternalJsonIncludeProperties))]
         [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(ClassUsingIgnoreWhenWritingDefaultAttribute))]
+        [JsonSerializable(typeof(ClassUsingIgnoreNeverAttribute))]
+        [JsonSerializable(typeof(ClassWithIgnoredUnsupportedDictionary))]
+        [JsonSerializable(typeof(ClassWithProperty_IgnoreConditionAlways_Ctor))]
+        [JsonSerializable(typeof(ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor))]
+        [JsonSerializable(typeof(StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor))]
+        [JsonSerializable(typeof(SmallStructWithValueAndReferenceTypes))]
+        [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedDictionary))]
         [JsonSerializable(typeof(Class1))]
         [JsonSerializable(typeof(Class2))]
         [JsonSerializable(typeof(NamespaceBase.Class1), TypeInfoPropertyName = "Class1FromNamespaceBase")]
@@ -426,6 +434,27 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(obj.IgnoreReadOnlyFields, deserialized.IgnoreReadOnlyFields);
             Assert.Equal(obj.MaxDepth, deserialized.MaxDepth);
         }
+
+        [Fact]
+        public void PocoWithNullableProperties_IgnoresNullValuesWithGlobalSetting()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/96404
+            var value = new PocoWithNullableProperties();
+            string json = JsonSerializer.Serialize(value, DefaultContextWithGlobalIgnoreSetting.Default.PocoWithNullableProperties);
+            Assert.Equal("{}", json);
+        }
+
+        class PocoWithNullableProperties
+        {
+            public string? NullableRefType { get; set; }
+            public int? NullableValueType { get; set; }
+        }
+
+        [JsonSourceGenerationOptions(
+            GenerationMode = JsonSourceGenerationMode.Default,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonSerializable(typeof(PocoWithNullableProperties))]
+        partial class DefaultContextWithGlobalIgnoreSetting : JsonSerializerContext;
 
         [JsonSerializable(typeof(ClassWithNewSlotField))]
         [JsonSerializable(typeof(int))]
@@ -578,6 +607,14 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))]
         [JsonSerializable(typeof(ClassWithInternalJsonIncludeProperties))]
         [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(ClassUsingIgnoreWhenWritingDefaultAttribute))]
+        [JsonSerializable(typeof(ClassUsingIgnoreNeverAttribute))]
+        [JsonSerializable(typeof(ClassWithIgnoredUnsupportedDictionary))]
+        [JsonSerializable(typeof(ClassWithProperty_IgnoreConditionAlways_Ctor))]
+        [JsonSerializable(typeof(ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor))]
+        [JsonSerializable(typeof(StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor))]
+        [JsonSerializable(typeof(SmallStructWithValueAndReferenceTypes))]
+        [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedDictionary))]
         [JsonSerializable(typeof(Class1))]
         [JsonSerializable(typeof(Class2))]
         [JsonSerializable(typeof(NamespaceBase.Class1), TypeInfoPropertyName = "Class1FromNamespaceBase")]

@@ -168,5 +168,11 @@ namespace System.IO.Enumeration
         /// </summary>
         public string ToFullPath() =>
             new string(FullPath);
+
+        private static string Join(
+            ReadOnlySpan<char> originalRootDirectory,
+            ReadOnlySpan<char> relativePath,
+            ReadOnlySpan<char> fileName) =>
+            Path.Join(originalRootDirectory, relativePath, fileName);
     }
 }

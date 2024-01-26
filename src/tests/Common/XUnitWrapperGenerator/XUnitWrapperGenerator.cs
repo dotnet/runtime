@@ -683,7 +683,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 case "Xunit.ConditionalClassAttribute":
                 case "Xunit.SkipOnPlatformAttribute":
                 case "Xunit.ActiveIssueAttribute":
-                case "Xunit.OuterloopAttribute":
+                case "Xunit.OuterLoopAttribute":
                 case "Xunit.PlatformSpecificAttribute":
                 case "Xunit.SkipOnMonoAttribute":
                 case "Xunit.SkipOnTargetFrameworkAttribute":
@@ -749,10 +749,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             false /* do not negate the condition, as this attribute indicates that a test will be run */);
                         break;
                     }
-                case "Xunit.OuterloopAttribute":
+                case "Xunit.OuterLoopAttribute":
                     if (options.GlobalOptions.Priority() == 0)
                     {
-                        // If we aren't building the outerloop/Pri 1 test suite, then this attribute acts like an
+                        if (filterAttribute.AttributeConstructor!.Parameters.Length < 2)
+                        {
+                            // If this test is always outerloop, then we can just skip it.
+                            return ImmutableArray<ITestInfo>.Empty;
+                        }
+                        // The remaining constructors for the attribute can share handling with the
                         // [ActiveIssue] attribute (it has the same shape).
                         goto case "Xunit.ActiveIssueAttribute";
                     }

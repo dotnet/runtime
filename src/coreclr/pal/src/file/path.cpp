@@ -399,8 +399,8 @@ GetTempPathW(
         return 0;
     }
 
-    char TempBuffer[nBufferLength > 0 ? nBufferLength : 1];
-    DWORD dwRetVal = GetTempPathA( nBufferLength, TempBuffer );
+    char* tempBuffer = (char*)alloca(nBufferLength > 0 ? nBufferLength : 1);
+    DWORD dwRetVal = GetTempPathA( nBufferLength, tempBuffer );
 
     if ( dwRetVal >= nBufferLength )
     {
@@ -411,7 +411,7 @@ GetTempPathW(
     else if ( dwRetVal != 0 )
     {
         /* Convert to wide. */
-        if ( 0 == MultiByteToWideChar( CP_ACP, 0, TempBuffer, -1,
+        if ( 0 == MultiByteToWideChar( CP_ACP, 0, tempBuffer, -1,
                                        lpBuffer, dwRetVal + 1 ) )
         {
             ASSERT( "An error occurred while converting the string to wide.\n" );

@@ -1,17 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
+using System.Runtime.CompilerServices;
 
-using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Core.NonPortable;
 using Internal.Reflection.Augments;
+using Internal.Reflection.Core.Execution;
 using Internal.Runtime.Augments;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
@@ -56,6 +55,8 @@ namespace System.Reflection.Runtime.TypeInfos
         public virtual bool IsByRefLike => false;
 
         public bool IsGenericType => IsGenericTypeDefinition || IsConstructedGenericType;
+
+        public bool IsVoid => InternalTypeHandleIfAvailable.Equals(typeof(void).TypeHandle);
 
         public abstract string Name { get; }
 

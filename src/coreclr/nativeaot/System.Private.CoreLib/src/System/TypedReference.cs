@@ -3,11 +3,12 @@
 
 using System.Reflection;
 using System.Runtime;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
-using Internal.Runtime.CompilerServices;
 using Internal.Reflection.Augments;
+using Internal.Runtime;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -47,20 +48,20 @@ namespace System
             return value._typeHandle;
         }
 
-        public static object ToObject(TypedReference value)
+        public static unsafe object ToObject(TypedReference value)
         {
             RuntimeTypeHandle typeHandle = value._typeHandle;
             if (typeHandle.IsNull)
-                throw new ArgumentNullException(); // For compatibility.
+                ThrowHelper.ThrowArgumentException_ArgumentNull_TypedRefType();
 
-            EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (eeType.IsValueType)
+            MethodTable* eeType = typeHandle.ToMethodTable();
+            if (eeType->IsValueType)
             {
                 return RuntimeImports.RhBox(eeType, ref value.Value);
             }
-            else if (eeType.IsPointer || eeType.IsFunctionPointer)
+            else if (eeType->IsPointer || eeType->IsFunctionPointer)
             {
-                return RuntimeImports.RhBox(EETypePtr.EETypePtrOf<UIntPtr>(), ref value.Value);
+                return RuntimeImports.RhBox(MethodTable.Of<UIntPtr>(), ref value.Value);
             }
             else
             {
@@ -73,8 +74,7 @@ namespace System
         public override bool Equals(object? o) { throw new NotSupportedException(SR.NotSupported_NYI); }
         public override int GetHashCode() => _typeHandle.IsNull ? 0 : _typeHandle.GetHashCode();
 
-        // Not an api - declared public because of CoreLib/Reflection.Core divide.
-        public bool IsNull => _typeHandle.IsNull;
+        internal bool IsNull => _typeHandle.IsNull;
 
         internal ref byte Value
         {

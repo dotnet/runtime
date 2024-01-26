@@ -49,7 +49,7 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 
 constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
-    (CorDebugRegister)(-1), // X0 is zero register that is not a real register. We need padding here for proper mapping with ICorDebugInfo::RegNum.
+    (CorDebugRegister)(255), // X0 is zero register that is not a real register. We need padding here for proper mapping with ICorDebugInfo::RegNum.
     REGISTER_RISCV64_RA,
     REGISTER_RISCV64_SP,
     REGISTER_RISCV64_GP,
@@ -221,24 +221,15 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
     return CORDbgGetInstruction(address) == CORDbg_BREAK_INSTRUCTION;
 }
 
-inline void SetSSFlag(DT_CONTEXT *pContext)
-{
-    // TODO-RISCV64: RISCV64 doesn't support cpsr.
-    _ASSERTE(!"unimplemented on RISCV64 yet");
-}
+class Thread;
+// Enable single stepping.
+void SetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
 
-inline void UnsetSSFlag(DT_CONTEXT *pContext)
-{
-    // TODO-RISCV64: RISCV64 doesn't support cpsr.
-    _ASSERTE(!"unimplemented on RISCV64 yet");
-}
+// Disable single stepping
+void UnsetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
 
-inline bool IsSSFlagEnabled(DT_CONTEXT * pContext)
-{
-    // TODO-RISCV64: RISCV64 doesn't support cpsr.
-    _ASSERTE(!"unimplemented on RISCV64 yet");
-    return false;
-}
+// Check if single stepping is enabled.
+bool IsSSFlagEnabled(DT_CONTEXT *pCtx, Thread *pThread);
 
 
 inline bool PRDIsEqual(PRD_TYPE p1, PRD_TYPE p2)

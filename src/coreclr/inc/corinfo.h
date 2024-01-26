@@ -596,6 +596,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_READYTORUN_GCSTATIC_BASE,           // static gc field access
     CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE,        // static non gc field access
     CORINFO_HELP_READYTORUN_THREADSTATIC_BASE,
+    CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE,
     CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
     CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
@@ -658,6 +659,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
     CORINFO_HELP_COUNTPROFILE32,            // Update 32-bit block or edge count profile
     CORINFO_HELP_COUNTPROFILE64,            // Update 64-bit block or edge count profile
+    CORINFO_HELP_VALUEPROFILE32,            // Update 32-bit value profile
+    CORINFO_HELP_VALUEPROFILE64,            // Update 64-bit value profile
 
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
@@ -1699,7 +1702,6 @@ enum CORINFO_FIELD_FLAGS
     CORINFO_FLG_FIELD_FINAL                     = 0x00000004,
     CORINFO_FLG_FIELD_STATIC_IN_HEAP            = 0x00000008, // See code:#StaticFields. This static field is in the GC heap as a boxed object
     CORINFO_FLG_FIELD_INITCLASS                 = 0x00000020, // initClass has to be called before accessing the field
-    CORINFO_FLG_FIELD_PROTECTED                 = 0x00000040,
 };
 
 struct CORINFO_FIELD_INFO
@@ -1739,6 +1741,17 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 };
 
 //----------------------------------------------------------------------------
+// getThreadLocalStaticInfo_NativeAOT and CORINFO_THREAD_STATIC_INFO_NATIVEAOT: The EE instructs the JIT about how to access a thread local field
+
+struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
+{
+    uint32_t offsetOfThreadLocalStoragePointer;
+    CORINFO_CONST_LOOKUP tlsRootObject;
+    CORINFO_CONST_LOOKUP tlsIndexObject;
+    CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+};
+
+//----------------------------------------------------------------------------
 // Exception handling
 
 struct CORINFO_EH_CLAUSE
@@ -1759,7 +1772,7 @@ enum CORINFO_OS
 {
     CORINFO_WINNT,
     CORINFO_UNIX,
-    CORINFO_MACOS,
+    CORINFO_APPLE,
 };
 
 enum CORINFO_RUNTIME_ABI
@@ -2050,6 +2063,19 @@ public:
 
     // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) & CORINFO_FLG_INTRINSIC, except faster.
     virtual bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) = 0;
+
+    // Notify EE about intent to rely on given MethodInfo in the current method
+    // EE returns false if we're not allowed to do so and the methodinfo may change.
+    // Example of a scenario addressed by notifyMethodInfoUsage:
+    //  1) Crossgen (with --opt-cross-module=MyLib) attempts to inline a call from MyLib.dll into MyApp.dll
+    //     and realizes that the call always throws.
+    //  2) JIT aborts the inlining attempt and marks the call as no-return instead. The code that follows the call is 
+    //     replaced with a breakpoint instruction that is expected to be unreachable.
+    //  3) MyLib is updated to a new version so it's no longer within the same version bubble with MyApp.dll
+    //     and the new version of the call no longer throws and does some work.
+    //  4) The breakpoint instruction is now reachable in the MyApp.dll.
+    //
+    virtual bool notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn) = 0;
 
     // return flags (a bitfield of CorInfoFlags values)
     virtual uint32_t getMethodAttribs (
@@ -2818,6 +2844,10 @@ public:
             bool                                isGCType
             ) = 0;
 
+    virtual void getThreadLocalStaticInfo_NativeAOT(
+            CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo
+            ) = 0;
+
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
 
@@ -3352,6 +3382,7 @@ public:
 // It would be nicer to use existing IMAGE_REL_XXX constants instead of defining our own here...
 #define IMAGE_REL_BASED_REL32           0x10
 #define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
+#define IMAGE_REL_SECREL                0x104
 
 // The identifier for ARM32-specific PC-relative address
 // computation corresponds to the following instruction

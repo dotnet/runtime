@@ -67,7 +67,7 @@ namespace System.Globalization.Tests
             {
                 dtfi.Calendar = calendar;
 
-                if (PlatformDetection.IsNotUsingLimitedCultures)
+                if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
                 {
                     // Mobile / Browser ICU doesn't contain NativeCalendarName,
                     Assert.Equal(nativeCalendarName, dtfi.NativeCalendarName);

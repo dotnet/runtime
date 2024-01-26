@@ -489,15 +489,14 @@ public class XUnitLogChecker
             );
 
             dumpsFound = Directory
-                         .GetFiles(s_configuration.DumpsPath, "*coredump*.dmp")
+                         .GetFiles(s_configuration.DumpsPath, "*.dmp")
                          .Where(dmp =>
                                     DateTime.Compare(File.GetCreationTime(dmp),
                                                      testRunDateTime) >= 0);
         }
         else
         {
-            dumpsFound = Directory.GetFiles(s_configuration.DumpsPath,
-                                            "*coredump*.dmp");
+            dumpsFound = Directory.GetFiles(s_configuration.DumpsPath, "*.dmp");
         }
 
         if (dumpsFound.Count() == 0)
@@ -510,7 +509,7 @@ public class XUnitLogChecker
         {
             if (OperatingSystem.IsWindows())
             {
-                WriteLineTimestamp("Reading crash dump '{dumpPath}'...");
+                WriteLineTimestamp($"Reading crash dump '{dumpPath}'...");
                 WriteLineTimestamp("Stack Trace Found:\n");
 
                 CoreclrTestWrapperLib.TryPrintStackTraceFromDmp(dumpPath,
@@ -527,7 +526,7 @@ public class XUnitLogChecker
                     continue;
                 }
 
-                WriteLineTimestamp("Reading crash report '{crashReportPath}'...");
+                WriteLineTimestamp($"Reading crash report '{crashReportPath}'...");
                 WriteLineTimestamp("Stack Trace Found:\n");
 
                 CoreclrTestWrapperLib.TryPrintStackTraceFromCrashReport(crashReportPath,

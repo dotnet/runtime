@@ -1,33 +1,25 @@
-# disabled until https://dev.azure.com/devdiv/DevDiv/_workitems/edit/1746670 is fixed
-trigger: none
-
-# trigger:
-#   batch: true
-#   branches:
-#     include:
-#       - main
-#       - release/*.*
-#   paths:
-#     include:
-#     - '*'
-#     exclude:
-#     - '**.md'
-#     - eng/Version.Details.xml
-#     - .devcontainer/*
-#     - .github/*
-#     - docs/*
-#     - LICENSE.TXT
-#     - PATENTS.TXT
-#     - THIRD-PARTY-NOTICES.TXT
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+  paths:
+    include:
+    - '*'
+    exclude:
+    - '**.md'
+    - eng/Version.Details.xml
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
 
 pr: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
-  - name: CodeIndex.Enabled
-    value: true
-  - name: CodeIndex.Languages
-    value: csharp,cpp
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -43,8 +35,14 @@ extends:
           platforms:
             - windows_x64
           jobParameters:
+            enableRichCodeNavigation: true
+            richCodeNavigationLanguage: "csharp"
+            nameSuffix: Libs
             timeoutInMinutes: 240
             buildArgs: -s libs.sfx+libs.oob -allConfigurations
+            preBuildSteps:
+              - script: dotnet.cmd nuget add source -n richnav "https://pkgs.dev.azure.com/azure-public/vside/_packaging/vs-buildservices/nuget/v3/index.json"
+                displayName: Add richnav NuGet feed
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -53,5 +51,11 @@ extends:
           platforms:
             - windows_x64
           jobParameters:
-            nameSuffix: Mono
-            buildArgs: -s mono -c debug
+            enableRichCodeNavigation: true
+            richCodeNavigationLanguage: "csharp,cpp"
+            nameSuffix: Runtimes
+            timeoutInMinutes: 240
+            buildArgs: -s clr+mono
+            preBuildSteps:
+              - script: dotnet.cmd nuget add source -n richnav "https://pkgs.dev.azure.com/azure-public/vside/_packaging/vs-buildservices/nuget/v3/index.json"
+                displayName: Add richnav NuGet feed

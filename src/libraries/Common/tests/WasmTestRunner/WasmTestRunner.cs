@@ -27,6 +27,7 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
         var includedNamespaces = new List<string>();
         var includedClasses = new List<string>();
         var includedMethods = new List<string>();
+        var backgroundExec = false;
 
         for (int i = 1; i < args.Length; i++)
         {
@@ -52,6 +53,9 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
                 case "-method":
                     includedMethods.Add(args[i + 1]);
                     i++;
+                    break;
+                case "-backgroundExec":
+                    backgroundExec = true;
                     break;
                 case "-threads":
                     break;
@@ -92,7 +96,12 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
         {
             await Task.Yield();
         }
-
+        if (backgroundExec)
+        {
+            await Task.Run(async () => await runner.RunAsync());
+            return runner.LastRunHadFailedTests ? 1 : 0;
+        }
+        
         await runner.RunAsync();
         return runner.LastRunHadFailedTests ? 1 : 0;
     }

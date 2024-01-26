@@ -3,12 +3,11 @@
 
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Internal.Runtime.Augments;
-using System.Collections.Generic;
-
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
@@ -320,12 +319,9 @@ namespace Internal.Runtime.TypeLoader
                     *((void**)((byte*)pEEType + cbSealedVirtualSlotsTypeOffset)) = pTemplateEEType->GetSealedVirtualTable();
                 }
 
-                if (MethodTable.SupportsWritableData)
-                {
-                    writableDataPtr = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
-                    MemoryHelpers.Memset(writableDataPtr, WritableData.GetSize(IntPtr.Size), 0);
-                    pEEType->WritableData = (void*)writableDataPtr;
-                }
+                writableDataPtr = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
+                MemoryHelpers.Memset(writableDataPtr, WritableData.GetSize(IntPtr.Size), 0);
+                pEEType->WritableData = (void*)writableDataPtr;
 
                 pEEType->DynamicTemplateType = pTemplateEEType;
 

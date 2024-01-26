@@ -809,8 +809,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int NonGenericField;
 			}
 
-			// https://github.com/dotnet/runtime/issues/86633 - analyzer doesn't report this warning
-			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--")]
 			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.NativeAot)]
 			static void TestDAMAccessOnOpenGeneric ()
 			{
@@ -1175,7 +1174,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				[ExpectedWarning ("IL2091")]
 				public class ClassWithWarning : RequiresAll<T>
 				{
-					[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+					[ExpectedWarning ("IL2091")]
 					public ClassWithWarning ()
 					{
 					}

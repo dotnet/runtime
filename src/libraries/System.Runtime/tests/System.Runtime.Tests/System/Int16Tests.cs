@@ -430,11 +430,24 @@ namespace System.Tests
                     Assert.Equal(0, result);
                 }
 
-                Assert.Throws(exceptionType, () => short.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+                Exception e = Assert.Throws(exceptionType, () => short.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+                if (e is FormatException fe)
+                {
+                    Assert.Contains(value, fe.Message);
+                }
 
                 Assert.False(short.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(0, result);
             }
+        }
+
+        [Fact]
+        public static void Parse_Utf8Span_InvalidUtf8()
+        {
+            FormatException fe = Assert.Throws<FormatException>(() => short.Parse([0xA0]));
+            Assert.DoesNotContain("A0", fe.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("ReadOnlySpan", fe.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uFFFD", fe.Message, StringComparison.Ordinal);
         }
 
         [Theory]

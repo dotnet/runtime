@@ -253,9 +253,9 @@ namespace System
 
         /// <summary>Indicates whether a character is categorized as an uppercase ASCII letter.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a uppercase ASCII letter; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is an uppercase ASCII letter; otherwise, false.</returns>
         /// <remarks>
-        /// This determines whether the character is in the range 'a' through 'z', inclusive.
+        /// This determines whether the character is in the range 'A' through 'Z', inclusive.
         /// </remarks>
         public static bool IsAsciiLetterUpper(char c) => IsBetween(c, 'A', 'Z');
 

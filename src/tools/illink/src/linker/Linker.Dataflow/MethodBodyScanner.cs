@@ -116,8 +116,8 @@ namespace Mono.Linker.Dataflow
 			}
 
 			Stack<StackSlot> newStack = new Stack<StackSlot> (a.Count);
-			IEnumerator<StackSlot> aEnum = a.GetEnumerator ();
-			IEnumerator<StackSlot> bEnum = b.GetEnumerator ();
+			Stack<StackSlot>.Enumerator aEnum = a.GetEnumerator ();
+			Stack<StackSlot>.Enumerator bEnum = b.GetEnumerator ();
 			while (aEnum.MoveNext () && bEnum.MoveNext ()) {
 				newStack.Push (MergeStackElement (aEnum.Current, bEnum.Current));
 			}
@@ -185,7 +185,7 @@ namespace Mono.Linker.Dataflow
 			foreach (var keyValuePair in locals) {
 				MultiValue localValue = keyValuePair.Value.Value;
 				VariableDefinition localVariable = keyValuePair.Key;
-				foreach (var val in localValue) {
+				foreach (var val in localValue.AsEnumerable ()) {
 					if (val is LocalVariableReferenceValue localReference && localReference.ReferencedType.IsByReference) {
 						string displayName = $"local variable V_{localReference.LocalDefinition.Index}";
 						throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (
@@ -243,7 +243,8 @@ namespace Mono.Linker.Dataflow
 
 				// Flow state through all methods encountered so far, as long as there
 				// are changes discovered in the hoisted local state on entry to any method.
-				foreach (var methodIL in oldInterproceduralState.MethodBodies)
+				Debug.Assert (!oldInterproceduralState.MethodBodies.IsUnknown ());
+				foreach (var methodIL in oldInterproceduralState.MethodBodies.GetKnownValues ())
 					Scan (methodIL, ref interproceduralState);
 			}
 
@@ -258,7 +259,7 @@ namespace Mono.Linker.Dataflow
 				// foreach (var method in calleeMethods)
 				//  Debug.Assert (interproceduralState.Any (kvp => kvp.Key.Method == method));
 			} else {
-				Debug.Assert (interproceduralState.MethodBodies.Count () == 1);
+				Debug.Assert (interproceduralState.MethodBodies.GetKnownValues().Count () == 1);
 			}
 #endif
 		}
@@ -857,7 +858,7 @@ namespace Mono.Linker.Dataflow
 		/// <exception cref="LinkerFatalErrorException">Throws if <paramref name="target"/> is not a valid target for an indirect store.</exception>
 		protected void StoreInReference (MultiValue target, MultiValue source, MethodDefinition method, Instruction operation, LocalVariableStore locals, int curBasicBlock, ref InterproceduralState ipState)
 		{
-			foreach (var value in target) {
+			foreach (var value in target.AsEnumerable ()) {
 				switch (value) {
 				case LocalVariableReferenceValue localReference:
 					StoreMethodLocalValue (locals, source, localReference.LocalDefinition, curBasicBlock);
@@ -956,7 +957,7 @@ namespace Mono.Linker.Dataflow
 					return;
 				}
 
-				foreach (var value in GetFieldValue (field)) {
+				foreach (var value in GetFieldValue (field).AsEnumerable ()) {
 					// GetFieldValue may return different node types, in which case they can't be stored to.
 					// At least not yet.
 					if (value is not FieldValue fieldValue)
@@ -1012,7 +1013,7 @@ namespace Mono.Linker.Dataflow
 		internal MultiValue DereferenceValue (MultiValue maybeReferenceValue, LocalVariableStore locals, ref InterproceduralState interproceduralState)
 		{
 			MultiValue dereferencedValue = MultiValueLattice.Top;
-			foreach (var value in maybeReferenceValue) {
+			foreach (var value in maybeReferenceValue.AsEnumerable ()) {
 				switch (value) {
 				case FieldReferenceValue fieldReferenceValue:
 					dereferencedValue = MultiValue.Union (
@@ -1123,7 +1124,7 @@ namespace Mono.Linker.Dataflow
 			AssignRefAndOutParameters (callingMethodBody, calledMethod, methodArguments, operation, locals, curBasicBlock, ref interproceduralState);
 
 			foreach (var param in methodArguments) {
-				foreach (var v in param) {
+				foreach (var v in param.AsEnumerable ()) {
 					if (v is ArrayValue arr) {
 						MarkArrayValuesAsUnknown (arr, curBasicBlock);
 					}
@@ -1163,7 +1164,7 @@ namespace Mono.Linker.Dataflow
 			StackSlot indexToStoreAt = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 			StackSlot arrayToStoreIn = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 			int? indexToStoreAtInt = indexToStoreAt.Value.AsConstInt ();
-			foreach (var array in arrayToStoreIn.Value) {
+			foreach (var array in arrayToStoreIn.Value.AsEnumerable ()) {
 				if (array is ArrayValue arrValue) {
 					if (indexToStoreAtInt == null) {
 						MarkArrayValuesAsUnknown (arrValue, curBasicBlock);

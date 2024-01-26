@@ -6,14 +6,14 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Http.QPack;
 using System.Net.Quic;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
-using System.Net.Http.QPack;
-using System.Runtime.ExceptionServices;
 
 namespace System.Net.Http
 {

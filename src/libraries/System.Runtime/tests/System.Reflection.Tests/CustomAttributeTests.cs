@@ -129,5 +129,113 @@ namespace System.Reflection.Tests
             
             Assert.Same(string.Empty, attr.NamedField);
         }
+
+        [AttributeUsage(AttributeTargets.Parameter)]
+        internal class MyParameterAttribute : Attribute {}
+
+        [AttributeUsage(AttributeTargets.Property)]
+        internal class MyPropertyAttribute : Attribute {}
+
+        internal sealed class PropertyAsParameterInfo : ParameterInfo
+        {
+            private readonly PropertyInfo _underlyingProperty;
+            private readonly ParameterInfo? _constructionParameterInfo;
+
+            public PropertyAsParameterInfo(PropertyInfo property, ParameterInfo parameterInfo)
+            {
+                _underlyingProperty = property;
+                _constructionParameterInfo = parameterInfo;
+                MemberImpl = _underlyingProperty;
+            }
+
+            public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+            {
+                var constructorAttributes = _constructionParameterInfo?.GetCustomAttributes(attributeType, inherit);
+
+                if (constructorAttributes == null || constructorAttributes is { Length: 0 })
+                {
+                    return _underlyingProperty.GetCustomAttributes(attributeType, inherit);
+                }
+
+                var propertyAttributes = _underlyingProperty.GetCustomAttributes(attributeType, inherit);
+
+                var mergedAttributes = new Attribute[constructorAttributes.Length + propertyAttributes.Length];
+                Array.Copy(constructorAttributes, mergedAttributes, constructorAttributes.Length);
+                Array.Copy(propertyAttributes, 0, mergedAttributes, constructorAttributes.Length, propertyAttributes.Length);
+
+                return mergedAttributes;
+            }
+
+            public override object[] GetCustomAttributes(bool inherit)
+            {
+                var constructorAttributes = _constructionParameterInfo?.GetCustomAttributes(inherit);
+
+                if (constructorAttributes == null || constructorAttributes is { Length: 0 })
+                {
+                    return _underlyingProperty.GetCustomAttributes(inherit);
+                }
+
+                var propertyAttributes = _underlyingProperty.GetCustomAttributes(inherit);
+
+                var mergedAttributes = new object[constructorAttributes.Length + propertyAttributes.Length];
+                Array.Copy(constructorAttributes, mergedAttributes, constructorAttributes.Length);
+                Array.Copy(propertyAttributes, 0, mergedAttributes, constructorAttributes.Length, propertyAttributes.Length);
+
+                return mergedAttributes;
+            }
+
+            public override IList<CustomAttributeData> GetCustomAttributesData()
+            {
+                var attributes = new List<CustomAttributeData>(
+                    _constructionParameterInfo?.GetCustomAttributesData() ?? Array.Empty<CustomAttributeData>());
+                attributes.AddRange(_underlyingProperty.GetCustomAttributesData());
+
+                return attributes.AsReadOnly();
+            }
+        }
+
+        internal class CustomAttributeProviderTestClass
+        {
+            public CustomAttributeProviderTestClass([MyParameter] int integerProperty)
+            {
+                IntegerProperty = integerProperty;
+            }
+
+            [MyProperty]
+            public int IntegerProperty { get; set; }
+        }
+
+        [Fact]
+        public void CustomAttributeProvider ()
+        {
+            var type = typeof(CustomAttributeProviderTestClass);
+            var propertyInfo = type.GetProperty(nameof(CustomAttributeProviderTestClass.IntegerProperty));
+            var ctorInfo = type.GetConstructor(new Type[] { typeof(int) });
+            var ctorParamInfo = ctorInfo.GetParameters()[0];
+            var propertyAndParamInfo = new PropertyAsParameterInfo(propertyInfo, ctorParamInfo);
+
+            // check GetCustomAttribute API
+            var cattrObjects = propertyAndParamInfo.GetCustomAttributes(true);
+            Assert.Equal(2, cattrObjects.Length);
+            Assert.Equal(typeof(MyParameterAttribute), cattrObjects[0].GetType());
+            Assert.Equal(typeof(MyPropertyAttribute), cattrObjects[1].GetType());
+
+            cattrObjects = propertyAndParamInfo.GetCustomAttributes(typeof(Attribute), true);
+            Assert.Equal(2, cattrObjects.Length);
+            Assert.Equal(typeof(MyParameterAttribute), cattrObjects[0].GetType());
+            Assert.Equal(typeof(MyPropertyAttribute), cattrObjects[1].GetType());
+
+            var cattrsEnumerable = propertyAndParamInfo.GetCustomAttributes();
+            Attribute[] cattrs = cattrsEnumerable.Cast<Attribute>().ToArray();
+            Assert.Equal(2, cattrs.Length);
+            Assert.Equal(typeof(MyParameterAttribute), cattrs[0].GetType());
+            Assert.Equal(typeof(MyPropertyAttribute), cattrs[1].GetType());
+
+            // check GetCustomAttributeData API
+            var customAttributesData = propertyAndParamInfo.GetCustomAttributesData();
+            Assert.Equal(2, customAttributesData.Count);
+            Assert.Equal(typeof(MyParameterAttribute), customAttributesData[0].AttributeType);
+            Assert.Equal(typeof(MyPropertyAttribute), customAttributesData[1].AttributeType);
+        }
     }
 }

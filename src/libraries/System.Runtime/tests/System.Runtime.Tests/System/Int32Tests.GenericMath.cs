@@ -1031,7 +1031,9 @@ namespace System.Tests
             Assert.Equal(unchecked((int)0xC0000000), DivisionOperatorsHelper<int, int, int>.op_Division(unchecked((int)0x80000000), 2));
             Assert.Equal((int)0x00000000, DivisionOperatorsHelper<int, int, int>.op_Division(unchecked((int)0xFFFFFFFF), 2));
 
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<int, int, int>.op_Division((int)0x00000000, 0));
             Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<int, int, int>.op_Division((int)0x00000001, 0));
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<int, int, int>.op_Division(unchecked((int)0xFFFFFFFF), 0));
         }
 
         [Fact]
@@ -1043,7 +1045,9 @@ namespace System.Tests
             Assert.Equal(unchecked((int)0xC0000000), DivisionOperatorsHelper<int, int, int>.op_CheckedDivision(unchecked((int)0x80000000), 2));
             Assert.Equal((int)0x00000000, DivisionOperatorsHelper<int, int, int>.op_CheckedDivision(unchecked((int)0xFFFFFFFF), 2));
 
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<int, int, int>.op_CheckedDivision((int)0x00000000, 0));
             Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<int, int, int>.op_CheckedDivision((int)0x00000001, 0));
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<int, int, int>.op_CheckedDivision(unchecked((int)0xFFFFFFFF), 0));
         }
 
         //

@@ -79,7 +79,7 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrsarm64sve.h"
 
 #elif defined(TARGET_LOONGARCH64)
-        #define INST(id, nm, ldst, e1) nm,
+        #define INST(id, nm, ldst, e1, msk, fmt) nm,
         #include "instrs.h"
 
 #elif defined(TARGET_RISCV64)
@@ -840,7 +840,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     assert(varTypeIsFloating(simdBaseType));
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
-                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CLS_VAR_ADDR, GT_CNS_INT, GT_LEA))
+                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CNS_INT, GT_LEA))
                     {
                         addr = hwintrinsic->Op(1);
                         break;
@@ -925,9 +925,6 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 offset = addr->AsLclFld()->GetLclOffs();
                 break;
             }
-
-            case GT_CLS_VAR_ADDR:
-                return OperandDesc(addr->AsClsVar()->gtClsVarHnd);
 
             default:
                 return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
@@ -1242,7 +1239,7 @@ void CodeGen::inst_RV_RV_TT(
     bool IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
     if (IsEmbBroadcast)
     {
-        instOptions = INS_OPTS_EVEX_b;
+        instOptions = INS_OPTS_EVEX_eb_er_rd;
         if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
         {
             switch (ins)
@@ -1309,7 +1306,7 @@ void CodeGen::inst_RV_RV_TT(
                 op1Reg = targetReg;
             }
 
-            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
+            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg, instOptions);
         }
         break;
 

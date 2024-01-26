@@ -47,6 +47,17 @@ namespace System.Collections.Tests
                     new ("[\"Two\"]", "2"),
                 }
             };
+            CustomKeyedCollection<string, int> collection = new ();
+            collection.GetKeyForItemHandler = value =>  (2 * value).ToString();
+            collection.InsertItem(0, 1);
+            collection.InsertItem(1, 3);
+            yield return new object[] { collection,
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[\"2\"]", "1"),
+                    new ("[\"6\"]", "3"),
+                }
+            };
         }
 
         private static IEnumerable<object[]> TestDebuggerAttributes_NonGenericDictionaries()
@@ -173,7 +184,7 @@ namespace System.Collections.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         [MemberData(nameof(TestDebuggerAttributes_InputsPresentedAsDictionary))]
-        public static void TestDebuggerAttributes_Dictionary(IDictionary obj, KeyValuePair<string, string>[] expected)
+        public static void TestDebuggerAttributes_Dictionary(object obj, KeyValuePair<string, string>[] expected)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(obj);
             DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(obj);
@@ -205,6 +216,33 @@ namespace System.Collections.Tests
             Type proxyType = DebuggerAttributes.GetProxyType(obj);
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
             Assert.IsType<ArgumentNullException>(tie.InnerException);
+        }
+
+        private class CustomKeyedCollection<TKey, TValue> : KeyedCollection<TKey, TValue> where TKey : notnull
+        {
+            public CustomKeyedCollection() : base()
+            {
+            }
+
+            public CustomKeyedCollection(IEqualityComparer<TKey> comparer) : base(comparer)
+            {
+            }
+
+            public CustomKeyedCollection(IEqualityComparer<TKey> comparer, int dictionaryCreationThreshold) : base(comparer, dictionaryCreationThreshold)
+            {
+            }
+
+            public Func<TValue, TKey> GetKeyForItemHandler { get; set; }
+
+            protected override TKey GetKeyForItem(TValue item)
+            {
+                return GetKeyForItemHandler(item);
+            }
+
+            public new void InsertItem(int index, TValue item)
+            {
+                base.InsertItem(index, item);
+            }
         }
     }
 }

@@ -79,8 +79,8 @@
       DOTNET_JitCFGUseDispatcher;
       RunningIlasmRoundTrip;
       DOTNET_JitSynthesizeCounts;
-      DOTNET_JitCheckSynthesizedCounts
-      DOTNET_JitDoCrossBlockLocalAssertionProp
+      DOTNET_JitCheckSynthesizedCounts;
+      DOTNET_JitEnableCrossBlockLocalAssertionProp
     </DOTNETVariables>
   </PropertyGroup>
   <ItemGroup>

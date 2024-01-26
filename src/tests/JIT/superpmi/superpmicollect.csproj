@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive, IlasmRoundTripIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- This test uses very custom execution logic including explicit Main -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <!-- ilasm round-trip testing works, but is not interesting for this test:
          we already get round-trip testing for the referenced projects, so doing
          it here only adds round-trip testing of the harness, as well as doing

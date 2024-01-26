@@ -92,13 +92,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 buildInternalIntRegisterDefForNode(indirTree);
             }
         }
-#ifdef TARGET_ARM64
-        else if (addr->OperGet() == GT_CLS_VAR_ADDR)
-        {
-            // Reserve int to load constant from memory (IF_LARGELDC)
-            buildInternalIntRegisterDefForNode(indirTree);
-        }
-#endif // TARGET_ARM64
     }
 
 #ifdef FEATURE_SIMD
@@ -462,7 +455,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
         assert(!src->isContained());
         srcCount = BuildOperandUses(src);
 #if defined(FEATURE_SIMD)
-        if (compMacOsArm64Abi() && argNode->GetStackByteSize() == 12)
+        if (compAppleArm64Abi() && argNode->GetStackByteSize() == 12)
         {
             // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
             // To assemble the vector properly we would need an additional int register.
@@ -630,6 +623,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             }
 #endif // TARGET_ARM64
             break;
+
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for offsetReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                break;
 
             case GenTreeBlk::BlkOpKindHelper:
                 assert(!src->isContained());

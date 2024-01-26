@@ -23,15 +23,20 @@ namespace System.Diagnostics.Tracing
         private Action<EventWrittenEventArgs> _eventWritten;
         private readonly List<EventSource> _eventSourceList = new List<EventSource>();
 
-        public TestEventListener(string targetSourceName, EventLevel level, double? eventCounterInterval = null)
+        public TestEventListener(double? eventCounterInterval = null)
         {
             _eventCounterInterval = eventCounterInterval;
+        }
+
+        public TestEventListener(string targetSourceName, EventLevel level, double? eventCounterInterval = null)
+            : this(eventCounterInterval)
+        {
             AddSource(targetSourceName, level);
         }
 
         public TestEventListener(Guid targetSourceGuid, EventLevel level, double? eventCounterInterval = null)
+            : this(eventCounterInterval)
         {
-            _eventCounterInterval = eventCounterInterval;
             AddSource(targetSourceGuid, level);
         }
 

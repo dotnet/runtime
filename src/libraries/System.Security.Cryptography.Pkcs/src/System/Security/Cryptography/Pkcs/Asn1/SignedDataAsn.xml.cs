@@ -19,12 +19,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal ReadOnlyMemory<byte>[]? Crls;
         internal System.Security.Cryptography.Pkcs.Asn1.SignerInfoAsn[] SignerInfos;
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 

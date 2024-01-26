@@ -3,11 +3,11 @@
 
 using System;
 using System.Collections;
-using System.Xml.Schema;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {

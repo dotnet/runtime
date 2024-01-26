@@ -1,0 +1,15 @@
+<Project>
+  <ItemGroup>
+    <MergedWrapperProjectReference Remove="CodeGenBringUpTests/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="Directed/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="Generics/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="HardwareIntrinsics/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="IL_Conformance/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="jit64/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="Methodical/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="opt/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="Performance/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="Regression/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="SIMD/**/*.??proj" />
+  </ItemGroup>
+</Project>

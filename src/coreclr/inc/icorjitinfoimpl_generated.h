@@ -24,6 +24,9 @@ public:
 bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
+bool notifyMethodInfoUsage(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 uint32_t getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn) override;
 
@@ -398,6 +401,9 @@ uint32_t getThreadLocalFieldInfo(
 void getThreadLocalStaticBlocksInfo(
           CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
           bool isGCType) override;
+
+void getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) override;
 
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;

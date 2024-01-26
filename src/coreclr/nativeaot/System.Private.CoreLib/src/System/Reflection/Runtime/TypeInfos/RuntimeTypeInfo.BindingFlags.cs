@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.BindingFlagSupport;
+using System.Reflection.Runtime.General;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -16,7 +16,7 @@ namespace System.Reflection.Runtime.TypeInfos
             Debug.Assert(types != null);
 
             QueryResult<ConstructorInfo> queryResult = Query<ConstructorInfo>(ConstructorPolicies.Instance, bindingAttr);
-            ListBuilder<ConstructorInfo> candidates = new ListBuilder<ConstructorInfo>();
+            ListBuilder<ConstructorInfo> candidates = default;
             foreach (ConstructorInfo candidate in queryResult)
             {
                 if (candidate.QualifiesBasedOnParameterCount(bindingAttr, callConvention, types))
@@ -35,7 +35,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return DefaultBinder.ExactBinding(candidates.AsSpan(), types);
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             binder ??= Type.DefaultBinder;
 
@@ -70,7 +70,7 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 // Group #2: This group of api takes a set of parameter types and an optional binder.
                 QueryResult<MethodInfo> queryResult = Query<MethodInfo>(MethodPolicies.Instance, name, bindingAttr);
-                ListBuilder<MethodInfo> candidates = new ListBuilder<MethodInfo>();
+                ListBuilder<MethodInfo> candidates = default;
                 foreach (MethodInfo candidate in queryResult)
                 {
                     if (genericParameterCount != GenericParameterCountAny && genericParameterCount != candidate.GenericParameterCount)
@@ -114,7 +114,7 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 // Group #2: This group of api takes a set of parameter types, a return type (both cannot be null) and an optional binder.
                 QueryResult<PropertyInfo> queryResult = Query<PropertyInfo>(PropertyPolicies.Instance, name, bindingAttr);
-                ListBuilder<PropertyInfo> candidates = new ListBuilder<PropertyInfo>();
+                ListBuilder<PropertyInfo> candidates = default;
                 foreach (PropertyInfo candidate in queryResult)
                 {
                     if (types == null || (candidate.GetIndexParameters().Length == types.Length))
