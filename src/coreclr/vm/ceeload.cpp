@@ -4722,28 +4722,14 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
         {
             if (pBlock->m_cookies[i].signature.GetRawSig() == vaSignature.GetRawSig())
             {
-                if (pBlock->m_cookies[i].IsUnloaded())
-                {
-                    continue;
-                }
-
-                const SigTypeContext& leftTypeContext = pBlock->m_cookies[i].typeContext;
-                _ASSERTE(leftTypeContext.m_classInst.GetNumArgs() == typeContext->m_classInst.GetNumArgs());
-                _ASSERTE(leftTypeContext.m_methodInst.GetNumArgs() == typeContext->m_methodInst.GetNumArgs());
+                _ASSERTE(pBlock->m_cookies[i].classInstCount == typeContext->m_classInst.GetNumArgs());
+                _ASSERTE(pBlock->m_cookies[i].methodInstCount == typeContext->m_methodInst.GetNumArgs());
 
                 bool instMatch = true;
 
-                for (UINT j = 0; j < leftTypeContext.m_classInst.GetNumArgs(); j++)
+                for (DWORD j = 0; j < pBlock->m_cookies[i].classInstCount; j++)
                 {
-                    if (leftTypeContext.m_classInst[j].GetAssembly()->IsCollectible()
-                        && leftTypeContext.m_classInst[j].GetLoaderAllocator()->IsUnloaded())
-                    {
-                        pBlock->m_cookies[i].SetUnloaded();
-                        instMatch = false;
-                        break;
-                    }
-
-                    if (leftTypeContext.m_classInst[j] != typeContext->m_classInst[j])
+                    if (pBlock->m_cookies[i].classInst[j] != typeContext->m_classInst[j])
                     {
                         instMatch = false;
                         break;
@@ -4752,17 +4738,9 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
 
                 if (instMatch)
                 {
-                    for (UINT j = 0; j < leftTypeContext.m_methodInst.GetNumArgs(); j++)
+                    for (DWORD j = 0; j < pBlock->m_cookies[i].methodInstCount; j++)
                     {
-                        if (leftTypeContext.m_methodInst[j].GetAssembly()->IsCollectible()
-                            && leftTypeContext.m_methodInst[j].GetLoaderAllocator()->IsUnloaded())
-                        {
-                            pBlock->m_cookies[i].SetUnloaded();
-                            instMatch = false;
-                            break;
-                        }
-
-                        if (leftTypeContext.m_methodInst[j] != typeContext->m_methodInst[j])
+                        if (pBlock->m_cookies[i].methodInst[j] != typeContext->m_methodInst[j])
                         {
                             instMatch = false;
                             break;
@@ -4790,6 +4768,15 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
 
         // Upper estimate of the vararg size
         DWORD sizeOfArgs = argit.SizeOfArgStack();
+
+        // Prepare instantiation
+        Module * pLoaderModule = ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst);
+        LoaderAllocator * pAllocator = pLoaderModule->GetLoaderAllocator();
+
+        DWORD classInstCount = typeContext->m_classInst.GetNumArgs();
+        DWORD methodInstCount = typeContext->m_methodInst.GetNumArgs();
+        pAllocator->EnsureInstantiation(this, typeContext->m_classInst);
+        pAllocator->EnsureInstantiation(this, typeContext->m_methodInst);
 
         // enable gc before taking lock
         {
@@ -4823,7 +4810,30 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
             pCookie->pNDirectILStub = NULL;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
-            pCookie->typeContext = *typeContext;
+            pCookie->classInstCount = classInstCount;
+            pCookie->methodInstCount = methodInstCount;
+            
+            if (classInstCount != 0)
+            {
+                DWORD infoSize;
+                DWORD allocSize = DictionaryLayout::GetDictionarySizeFromLayout(classInstCount, NULL, &infoSize);
+                pCookie->classInst = (TypeHandle*)(void*)pCookie->amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(allocSize)));
+                for (DWORD i = 0; i < classInstCount; i++)
+                {
+                    pCookie->classInst[i] = typeContext->m_classInst[i];
+                }
+            }
+
+            if (methodInstCount != 0)
+            {
+                DWORD infoSize;
+                DWORD allocSize = DictionaryLayout::GetDictionarySizeFromLayout(methodInstCount, NULL, &infoSize);
+                pCookie->methodInst = (TypeHandle*)(void*)pCookie->amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(allocSize)));
+                for (DWORD i = 0; i < methodInstCount; i++)
+                {
+                    pCookie->methodInst[i] = typeContext->m_methodInst[i];
+                }
+            }
 
             // Finally, now that it's safe for asynchronous readers to see it,
             // update the count.

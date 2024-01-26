@@ -339,18 +339,11 @@ struct VASigCookie
     Volatile<PCODE> pNDirectILStub;         // will be use if target is NDirect (tag == 0)
     PTR_Module      pModule;
     Signature       signature;
-    SigTypeContext  typeContext;
-    bool            isUnloaded;
-
-    inline void SetUnloaded()
-    {
-        isUnloaded = true;
-    }
-
-    inline bool IsUnloaded() const
-    {
-        return isUnloaded;
-    }
+    AllocMemTracker amt;
+    DWORD           classInstCount;
+    TypeHandle*     classInst;
+    DWORD           methodInstCount;
+    TypeHandle*     methodInst;
 };
 
 //
