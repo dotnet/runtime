@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
+using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -863,6 +864,55 @@ namespace System
                 // be ok because we expect this to be very rare in practice.
                 const uint NormalizeToLowercase = 0x0020_0020u; // valid both for big-endian and for little-endian
 
+                if(Vector128.IsHardwareAccelerated && length >= 2 * Vector128<ushort>.Count)
+                {
+                    Vector128<uint> hashVector = Vector128.Create(hash1);
+                    Vector128<uint> NormalizeToLowercaseVec = Vector128.Create(NormalizeToLowercase);
+                    while(length > 4)
+                    {
+                        Vector128<uint> srcVec = Vector128.Load(ptr);
+                        if (VectorContainsNonAsciiChar(srcVec.AsUInt16()))
+                        {
+                            goto NotAscii;
+                        }
+                        length -= 8;
+                        hashVector = Vector128.Xor(Vector128.Add(hashVector, RotateLeft(hashVector, 5)), Vector128.BitwiseOr(srcVec, NormalizeToLowercaseVec));
+                        ptr += 4;
+                    }
+
+                    uint hashed1 = hashVector.GetElement(0);
+                    uint hashed2 = hashVector.GetElement(1);
+                    uint hashed3 = hashVector.GetElement(2);
+                    uint hashed4 = hashVector.GetElement(3);
+
+                    if (length > 2)
+                    {
+                        uint p0 = ptr[0];
+                        uint p1 = ptr[1];
+                        if (!Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
+                        {
+                            goto NotAscii;
+                        }
+
+                        length -= 4;
+                        hashed3 = (BitOperations.RotateLeft(hashed3, 5) + hashed3) ^ (p0 | NormalizeToLowercase);
+                        hashed4 = (BitOperations.RotateLeft(hashed4, 5) + hashed4) ^ (p1 | NormalizeToLowercase);
+                        ptr += 2;
+                    }
+                    if (length > 0)
+                    {
+                        uint p0 = ptr[0];
+                        if (!Utf16Utility.AllCharsInUInt32AreAscii(p0))
+                        {
+                            goto NotAscii;
+                        }
+                        hashed4 = (BitOperations.RotateLeft(hashed4, 5) + hashed4) ^ (p0 | NormalizeToLowercase);
+                    }
+
+                    uint res = (((BitOperations.RotateLeft(hashed1, 5) + hashed1)) ^ hashed3) + 1566083941 * (((BitOperations.RotateLeft(hashed2, 5) + hashed2)) ^ hashed4);
+                    return (int)res;
+                }
+
                 while (length > 2)
                 {
                     uint p0 = ptr[0];
@@ -1065,6 +1115,21 @@ namespace System
 
             int ct = (int)comparisonType;
             return (CompareOptions)((ct & -ct) << 28); // neg and shl
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
+        {
+            const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
+            Vector128<ushort> zeroIsAscii = utf16Vector & Vector128.Create(asciiMask);
+            // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+            return zeroIsAscii != Vector128<ushort>.Zero;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<uint> RotateLeft(Vector128<uint> src, int control)
+        {
+            return Vector128.BitwiseOr(Vector128.ShiftLeft(src, control), Vector128.ShiftRightLogical(src, 32 - control));
         }
     }
 }
