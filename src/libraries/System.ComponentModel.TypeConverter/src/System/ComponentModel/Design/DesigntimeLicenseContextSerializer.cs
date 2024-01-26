@@ -34,10 +34,7 @@ namespace System.ComponentModel.Design
         {
             if (EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)
             {
-#pragma warning disable SYSLIB0011
-            var formatter = new BinaryFormatter();
-            formatter.Serialize(o, new object[] { cryptoKey, context._savedLicenseKeys });
-#pragma warning restore SYSLIB0011
+                SerializeWithBinaryFormatter(o, cryptoKey, context);
             }
             else
             {
@@ -52,6 +49,17 @@ namespace System.ComponentModel.Design
                         writer.Write(keyAndValue.Value!.ToString()!);
                     }
                 }
+            }
+        }
+
+        private static void SerializeWithBinaryFormatter(Stream o, string cryptoKey, DesigntimeLicenseContext context)
+        {
+            if (EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)
+            {
+#pragma warning disable SYSLIB0011
+                var formatter = new BinaryFormatter();
+                formatter.Serialize(o, new object[] { cryptoKey, context._savedLicenseKeys });
+#pragma warning restore SYSLIB0011
             }
         }
 
