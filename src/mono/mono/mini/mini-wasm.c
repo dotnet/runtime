@@ -757,6 +757,11 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 	klass = mono_class_from_mono_type_internal (type);
 	mono_class_init_internal (klass);
 
+	// A careful reading of the ABI spec suggests that an inlinearray does not count
+	//  as having one scalar member (it either has N scalar members or one array member)
+	if (m_class_is_inlinearray (klass))
+		return FALSE;
+
 	int size = mono_class_value_size (klass, NULL);
 	if (size == 0 || size > 8)
 		return FALSE;

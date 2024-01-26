@@ -17,6 +17,10 @@
 static char
 type_to_c (MonoType *t, gboolean *is_byref_return)
 {
+	g_assert (t);
+
+	if (is_byref_return)
+		*is_byref_return = 0;
 	if (m_type_is_byref (t))
 		return 'I';
 
@@ -60,15 +64,20 @@ handle_enum:
 		// FIXME: Handle the scenario where there are fields of struct types that contain no members
 		MonoType *scalar_vtype;
 		if (mini_wasm_is_scalar_vtype (t, &scalar_vtype))
-			return type_to_c (scalar_vtype, is_byref_return);
+			return type_to_c (scalar_vtype, NULL);
 
 		if (is_byref_return)
 			*is_byref_return = 1;
 
 		return 'I';
 	case MONO_TYPE_GENERICINST:
-		if (m_class_is_valuetype (t->data.klass))
+		if (m_class_is_valuetype (t->data.klass)) {
+			if (is_byref_return)
+				*is_byref_return = 1;
+
 			return 'S';
+		}
+
 		return 'I';
 	default:
 		g_warning ("CANT TRANSLATE %s", mono_type_full_name (t));
