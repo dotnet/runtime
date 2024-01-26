@@ -3174,6 +3174,7 @@ BOOL NDirect::MarshalingRequired(
     _In_opt_ MethodDesc* pMD,
     _In_opt_ PCCOR_SIGNATURE pSig,
     _In_opt_ Module* pModule,
+    _In_opt_ SigTypeContext* pTypeContext,
     _In_ bool unmanagedCallersOnlyRequiresMarshalling)
 {
     CONTRACTL
@@ -3254,8 +3255,6 @@ BOOL NDirect::MarshalingRequired(
     mdParamDef *pParamTokenArray = (mdParamDef *)_alloca(numArgs * sizeof(mdParamDef));
     IMDInternalImport *pMDImport = pModule->GetMDImport();
 
-    SigTypeContext emptyTypeContext;
-
     mdMethodDef methodToken = mdMethodDefNil;
     if (pMD != NULL)
     {
@@ -3315,7 +3314,7 @@ BOOL NDirect::MarshalingRequired(
             case ELEMENT_TYPE_VALUETYPE:
             case ELEMENT_TYPE_GENERICINST:
             {
-                TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
+                TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, pTypeContext);
                 bool isValidGeneric = IsValidForGenericMarshalling(hndArgType.GetMethodTable(), false, runtimeMarshallingEnabled);
                 if(!hndArgType.IsValueType() ||  !isValidGeneric)
                     return true;

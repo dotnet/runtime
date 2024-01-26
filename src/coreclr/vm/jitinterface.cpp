@@ -9788,10 +9788,13 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
     if (method == NULL)
     {
         // check the call site signature
+        SigTypeContext typeContext;
+        GetTypeContext(&callSiteSig->sigInst, &typeContext);
         result = NDirect::MarshalingRequired(
                     NULL,
                     callSiteSig->pSig,
-                    GetModule(callSiteSig->scope));
+                    GetModule(callSiteSig->scope),
+                    &typeContext);
     }
     else
     {

@@ -101,6 +101,7 @@ public:
         _In_opt_ MethodDesc* pMD,
         _In_opt_ PCCOR_SIGNATURE pSig = NULL,
         _In_opt_ Module* pModule = NULL,
+        _In_opt_ SigTypeContext* pTypeContext = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
 
     static void PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD);
