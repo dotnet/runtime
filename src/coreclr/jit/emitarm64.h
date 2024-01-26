@@ -508,11 +508,15 @@ static int insGetSveReg1ListSize(instruction ins);
 static PredicateType insGetPredicateType(insFormat fmt, int regpos = 0);
 
 // Returns true if the SVE instruction has a LSL addr.
-// This is for formats that have [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
-static bool insSveIsLsl(instruction ins, insFormat fmt);
+// This is for formats that have [<Xn|SP>, <Xm>, LSL #N]
+static bool insSveIsLslN(instruction ins, insFormat fmt);
+
+// Returns true if the SVE instruction has a <mod> addr.
+// This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N]
+static bool insSveIsModN(instruction ins, insFormat fmt);
 
 // Returns 0, 1, 2 or 3 depending on the instruction and format.
-// This is for formats that have [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
+// This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
 static int insSveGetLslOrModN(instruction ins, insFormat fmt);
 
 // Returns true if the specified instruction can encode the 'dtype' field.
@@ -1077,8 +1081,7 @@ inline static bool insOptsScalableWide(insOpts opt)
 
 inline static bool insOptsScalable32bitExtends(insOpts opt)
 {
-    return ((opt == INS_OPTS_SCALABLE_S_UXTW) || (opt == INS_OPTS_SCALABLE_S_SXTW) ||
-            (opt == INS_OPTS_SCALABLE_D_UXTW) || (opt == INS_OPTS_SCALABLE_D_SXTW));
+    return insOptsScalableSingleWord32bitExtends(opt) || insOptsScalableDoubleWord32bitExtends(opt);
 }
 
 inline static bool insOptsScalableSingleWord32bitExtends(insOpts opt)

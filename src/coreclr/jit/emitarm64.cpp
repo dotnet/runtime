@@ -14807,9 +14807,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*****************************************************************************
  *
  *  Returns true if the SVE instruction has a LSL addr.
- *  This is for formats that have [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
+ *  This is for formats that have [<Xn|SP>, <Xm>, LSL #N]
  */
-/*static*/ bool emitter::insSveIsLsl(instruction ins, insFormat fmt)
+/*static*/ bool emitter::insSveIsLslN(instruction ins, insFormat fmt)
 {
     switch (fmt)
     {
@@ -14822,7 +14822,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 default:
                     break;
             }
-            return false;
+            break;
 
         case IF_SVE_JD_4B:
             switch (ins)
@@ -14833,8 +14833,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 default:
                     break;
             }
-            assert(!"Invalid instruction");
-            return false;
+            break;
 
         case IF_SVE_HW_4B:
             switch (ins)
@@ -14850,7 +14849,138 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 default:
                     break;
             }
-            return false;
+            break;
+
+        default:
+            break;
+    }
+
+    return false;
+}
+
+/*****************************************************************************
+ *
+ *  Returns true if the SVE instruction has a <mod> addr.
+ *  This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N]
+ */
+/*static*/ bool emitter::insSveIsModN(instruction ins, insFormat fmt)
+{
+    switch (fmt)
+    {
+        case IF_SVE_JJ_4A:
+        case IF_SVE_JJ_4A_B:
+            switch (ins)
+            {
+                case INS_sve_st1d:
+                case INS_sve_st1h:
+                case INS_sve_st1w:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JJ_4A_C:
+        case IF_SVE_JJ_4A_D:
+            switch (ins)
+            {
+                case INS_sve_st1h:
+                case INS_sve_st1w:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JK_4A:
+        case IF_SVE_JK_4A_B:
+            switch (ins)
+            {
+                case INS_sve_st1b:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_HW_4A:
+        case IF_SVE_HW_4A_A:
+            switch (ins)
+            {
+                case INS_sve_ld1b:
+                case INS_sve_ld1h:
+                case INS_sve_ld1sb:
+                case INS_sve_ld1sh:
+                case INS_sve_ld1w:
+                case INS_sve_ldff1b:
+                case INS_sve_ldff1h:
+                case INS_sve_ldff1sb:
+                case INS_sve_ldff1sh:
+                case INS_sve_ldff1w:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_HW_4A_B:
+        case IF_SVE_HW_4A_C:
+            switch (ins)
+            {
+                case INS_sve_ld1h:
+                case INS_sve_ld1sh:
+                case INS_sve_ld1w:
+                case INS_sve_ldff1h:
+                case INS_sve_ldff1sh:
+                case INS_sve_ldff1w:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IU_4A:
+            switch (ins)
+            {
+                case INS_sve_ld1d:
+                case INS_sve_ld1sw:
+                case INS_sve_ldff1d:
+                case INS_sve_ldff1sw:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IU_4A_A:
+            switch (ins)
+            {
+                case INS_sve_ld1sw:
+                case INS_sve_ldff1d:
+                case INS_sve_ldff1sw:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IU_4A_C:
+            switch (ins)
+            {
+                case INS_sve_ld1d:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
 
         default:
             break;
@@ -14862,7 +14992,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*****************************************************************************
  *
  *  Returns 0, 1, 2 or 3 depending on the instruction and format.
- *  This is for formats that have [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
+ *  This is for formats that have [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
  */
 
 /*static*/ int emitter::insSveGetLslOrModN(instruction ins, insFormat fmt)
@@ -14870,7 +15000,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     switch (fmt)
     {
         case IF_SVE_JD_4A:
-            assert(insSveIsLsl(ins, fmt));
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
             switch (ins)
             {
                 case INS_sve_st1h:
@@ -14879,11 +15010,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 default:
                     break;
             }
-            assert(!"Invalid instruction");
-            return 0;
+            break;
 
         case IF_SVE_JD_4B:
-            assert(insSveIsLsl(ins, fmt));
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
             switch (ins)
             {
                 case INS_sve_st1w:
@@ -14892,11 +15023,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 default:
                     break;
             }
-            assert(!"Invalid instruction");
-            return 0;
+            break;
 
         case IF_SVE_HW_4B:
-            assert(insSveIsLsl(ins, fmt));
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
             switch (ins)
             {
                 case INS_sve_ld1h:
@@ -14912,8 +15043,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 default:
                     break;
             }
-            assert(!"Invalid instruction");
-            return 0;
+            break;
 
         case IF_SVE_JJ_4A:
         case IF_SVE_JJ_4A_B:
@@ -14928,6 +15058,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case IF_SVE_IU_4A:
         case IF_SVE_IU_4A_A:
         case IF_SVE_IU_4A_C:
+            assert(!insSveIsLslN(ins, fmt));
+            assert(insSveIsModN(ins, fmt));
             switch (ins)
             {
                 case INS_sve_ld1h:
@@ -18272,7 +18404,7 @@ void emitter::emitDispSveExtendOptsModN(insOpts opt, int n)
 /*****************************************************************************
  *
  *  Prints the encoding for the <mod> or LSL encoding along with the N value
- *  This is for formats that have [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
+ *  This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
  */
 void emitter::emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts opt, insFormat fmt)
 {
@@ -18292,7 +18424,7 @@ void emitter::emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2
         emitDispComma();
         emitDispSveExtendOptsModN(opt, insSveGetLslOrModN(ins, fmt));
     }
-    else if (insSveIsLsl(ins, fmt))
+    else if (insSveIsLslN(ins, fmt))
     {
         emitDispComma();
         switch (insSveGetLslOrModN(ins, fmt))
