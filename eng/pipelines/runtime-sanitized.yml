@@ -73,7 +73,7 @@ extends:
             testGroup: innerloop
             nameSuffix: CoreCLR_LibrariesTests
             buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked $(_nativeSanitizersArg) /p:ArchiveTests=true
-            timeoutInMinutes: 180
+            timeoutInMinutes: 360
             # extra steps, run tests
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
