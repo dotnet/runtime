@@ -191,14 +191,20 @@ namespace System.Reflection.Emit
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder. The interface methods should be available at this point")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:DynamicallyAccessedMembers", Justification =
+            "Somehow #pragma warning disable IL2075 doesn't suppress anymore, related to https://github.com/dotnet/runtime/issues/96646")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder")]
         private void CheckInterfaces(Type[] _interfaces)
         {
             foreach (Type interfaceType in _interfaces)
             {
-#pragma warning disable IL2075 // Analyzer produces a different warning code than illink. The IL2065 suppression takes care of illink: https://github.com/dotnet/runtime/issues/96646
-                MethodInfo[] interfaceMethods = interfaceType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-#pragma warning restore IL2075
+                Type ifaceType = interfaceType;
+                if (interfaceType.IsConstructedGenericType &&
+                    IsConstructedFromTypeBuilder(interfaceType.GetGenericTypeDefinition(), interfaceType.GetGenericArguments()))
+                {
+                    ifaceType = interfaceType.GetGenericTypeDefinition();
+                }
+                MethodInfo[] interfaceMethods = ifaceType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
                 for (int i = 0; i < interfaceMethods.Length; i++)
                 {
                     MethodInfo interfaceMethod = interfaceMethods[i];
@@ -207,7 +213,9 @@ namespace System.Reflection.Emit
                         continue;
                     }
 
-                    MethodInfo? implementedMethod = GetMethodImpl(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, GetParameterTypes(interfaceMethod.GetParameters()), null);
+                    Type[] parameterTypes = interfaceMethod.ContainsGenericParameters ?
+                        GetParameterTypesMatchGeneric(interfaceMethod.GetParameters(), interfaceType.GetGenericArguments()) : GetParameterTypes(interfaceMethod.GetParameters());
+                    MethodInfo? implementedMethod = GetMethodImpl(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, parameterTypes, null);
 
                     if ((implementedMethod == null || implementedMethod.IsAbstract) && !FoundInInterfaceMapping(interfaceMethod))
                     {
@@ -216,10 +224,26 @@ namespace System.Reflection.Emit
                 }
 
                 // Check parent interfaces too
-#pragma warning disable IL2075 // Analyzer produces a different warning code than illink. The IL2065 suppression takes care of illink: https://github.com/dotnet/runtime/issues/96646
-                CheckInterfaces(interfaceType.GetInterfaces());
-#pragma warning restore IL2075
+                CheckInterfaces(ifaceType.GetInterfaces());
             }
+        }
+
+        private static bool IsConstructedFromTypeBuilder(Type constructedType, Type[] genericArgs)
+        {
+            if (constructedType is TypeBuilderImpl)
+            {
+                return true;
+            }
+
+            foreach (Type arg in genericArgs)
+            {
+                if (arg is TypeBuilderImpl or GenericTypeParameterBuilderImpl)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private bool FoundInInterfaceMapping(MethodInfo abstractMethod)
@@ -836,8 +860,6 @@ namespace System.Reflection.Emit
 
         private static bool MatchesTheFilter(MethodBuilderImpl method, BindingFlags methodFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
-            bindingFlags ^= BindingFlags.DeclaredOnly;
-
             if ((bindingFlags & methodFlags) != methodFlags)
             {
                 return false;
@@ -977,19 +999,17 @@ namespace System.Reflection.Emit
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
+        public override FieldInfo? GetField(string name, BindingFlags bindingFlags)
         {
             ArgumentNullException.ThrowIfNull(name);
+            ThrowIfNotCreated();
 
             FieldInfo? match = null;
-
-            BindingFlags fieldFlags = bindingAttr ^ BindingFlags.DeclaredOnly;
-            fieldFlags ^= BindingFlags.IgnoreCase;
-            StringComparison compare = (bindingAttr & BindingFlags.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            StringComparison compare = (bindingFlags & BindingFlags.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             foreach (FieldBuilderImpl fieldInfo in _fieldDefinitions)
             {
-                BindingFlags currentFieldFlags = GetBindingFlags(fieldInfo);
-                if (name.Equals(fieldInfo.Name, compare) && (fieldFlags & currentFieldFlags) == currentFieldFlags)
+                BindingFlags fieldFlags = GetBindingFlags(fieldInfo);
+                if (name.Equals(fieldInfo.Name, compare) && (bindingFlags & fieldFlags) == fieldFlags)
                 {
                     if (match != null)
                     {
@@ -1003,9 +1023,9 @@ namespace System.Reflection.Emit
                 }
             }
 
-            if (match == null && !bindingAttr.HasFlag(BindingFlags.DeclaredOnly) && _typeParent != null)
+            if (match == null && !bindingFlags.HasFlag(BindingFlags.DeclaredOnly) && _typeParent != null)
             {
-                match = _typeParent.GetField(name, bindingAttr);
+                match = _typeParent.GetField(name, bindingFlags);
             }
 
             return match;
@@ -1022,7 +1042,23 @@ namespace System.Reflection.Emit
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo[] GetFields(BindingFlags bindingAttr) => throw new NotSupportedException();
+        public override FieldInfo[] GetFields(BindingFlags bindingAttr)
+        {
+            ThrowIfNotCreated();
+
+            List<FieldBuilderImpl> candidates = new List<FieldBuilderImpl>(_fieldDefinitions.Count);
+            for (int i = 0; i < _fieldDefinitions.Count; i++)
+            {
+                FieldBuilderImpl fieldInfo = _fieldDefinitions[i];
+                BindingFlags fieldFlags = GetBindingFlags(fieldInfo);
+                if ((bindingAttr & fieldFlags) == fieldFlags)
+                {
+                    candidates.Add(fieldInfo);
+                }
+            }
+
+            return candidates.ToArray();
+        }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
@@ -1102,6 +1138,21 @@ namespace System.Reflection.Emit
             {
                 parameterTypes[i] = parameterInfos[i].ParameterType;
             }
+            return parameterTypes;
+        }
+
+        private static Type[] GetParameterTypesMatchGeneric(ParameterInfo[] parameters, Type[] genericArguments)
+        {
+            Type[] parameterTypes = new Type[parameters.Length];
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                parameterTypes[i] = parameters[i].ParameterType;
+                if (parameterTypes[i].IsGenericParameter)
+                {
+                    parameterTypes[i] = genericArguments[parameterTypes[i].GenericParameterPosition];
+                }
+            }
+
             return parameterTypes;
         }
 

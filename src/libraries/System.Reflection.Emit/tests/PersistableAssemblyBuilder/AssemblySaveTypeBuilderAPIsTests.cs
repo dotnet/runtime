@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.VisualBasic.FileIO;
+using System.Xml.Linq;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -252,7 +254,7 @@ namespace System.Reflection.Emit.Tests
             AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
 
-            TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
+            TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
             Type ptrType = type.MakePointerType();
             Type byrefType = type.MakeByRefType();
             Type arrayType = type.MakeArrayType(2);
@@ -273,6 +275,85 @@ namespace System.Reflection.Emit.Tests
             implType.DefineMethodOverride(byrefArgImpl, methByRefArg);
             implType.DefineMethodOverride(arrayArgImpl, interfaceType.GetMethod("M1", [arrayType]));
 
+            implType.CreateType(); // succeeds
+        }
+
+        [Fact]
+        public void TypeBuilderImplementsGenericInterfaceWithTypeBuilderGenericConstraint()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+            TypeBuilder ifaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
+            TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public);
+
+            GenericTypeParameterBuilder[] gParams =  implType.DefineGenericParameters("T");
+            gParams[0].SetInterfaceConstraints(ifaceType);
+            Type constructedGenericInterface = typeof(IComparable<>).MakeGenericType(gParams);
+            implType.AddInterfaceImplementation(constructedGenericInterface);
+
+            MethodBuilder compareToImpl = implType.DefineMethod("CompareTo", MethodAttributes.Public, typeof(int), [gParams[0]]);
+
+            ILGenerator ilGenerator = compareToImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4_1);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            type.CreateType();
+            implType.CreateType(); // succeeds
+        }
+
+        [Fact]
+        public void TypeBuilderImplementsGenericInterfaceWithTypeBuilderArgument()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+            Type constructedGenericInterface = typeof(IComparable<>).MakeGenericType(type);
+
+            TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public, parent: typeof(object), [constructedGenericInterface]);
+            MethodBuilder compareToImpl = implType.DefineMethod("CompareTo", MethodAttributes.Public, typeof(int), [type]);
+
+            ILGenerator ilGenerator = compareToImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4_1);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            type.CreateType();
+            implType.CreateType(); // succeeds
+        }
+
+        [Fact]
+        public void TypeBuilderImplementsGenericInterface()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+            TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public);
+
+            GenericTypeParameterBuilder[] gParams = implType.DefineGenericParameters("T");
+            Type constructedGenericInterface = typeof(IComparable<>).MakeGenericType(gParams);
+            implType.AddInterfaceImplementation(constructedGenericInterface);
+
+            MethodBuilder compareToImpl = implType.DefineMethod("CompareTo", MethodAttributes.Public, typeof(int), [gParams[0]]);
+
+            ILGenerator ilGenerator = compareToImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4_1);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            type.CreateType();
+            implType.CreateType(); // succeeds
+        }
+
+        [Fact]
+        public void TypeBuilderImplementsConstructedGenericInterface()
+        {
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+
+            TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public, parent: typeof(object), [typeof(IComparable<string>)]);
+            MethodBuilder compareToImpl = implType.DefineMethod("CompareTo", MethodAttributes.Public, typeof(int), [typeof(string)]);
+
+            ILGenerator ilGenerator = compareToImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4_1);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            type.CreateType();
             implType.CreateType(); // succeeds
         }
 
@@ -760,6 +841,59 @@ namespace System.Reflection.Emit.Tests
                 Marshal.FreeHGlobal(intptrTemp);
                 tlc.Unload();
             }
+        }
+
+        public static List<object[]> FieldTestData = new List<object[]>()
+        {
+            new object[] { "TestName1", typeof(object), FieldAttributes.Public, FieldAttributes.Public },
+            new object[] { "A!?123C", typeof(int), FieldAttributes.Assembly, FieldAttributes.Assembly },
+            new object[] { "a\0b\0c", typeof(string), FieldAttributes.FamANDAssem | FieldAttributes.Static, FieldAttributes.FamANDAssem | FieldAttributes.Static },
+            new object[] { "\uD800\uDC00", Helpers.DynamicType(TypeAttributes.Public).AsType(), FieldAttributes.Family, FieldAttributes.Family },
+            new object[] { "\u043F\u0440\u0438\u0432\u0435\u0442", typeof(EmptyNonGenericInterface1), FieldAttributes.FamORAssem, FieldAttributes.FamORAssem },
+            new object[] { "Test Name With Spaces", typeof(EmptyEnum), FieldAttributes.Public, FieldAttributes.Public },
+            new object[] { "TestName2", typeof(EmptyNonGenericClass), FieldAttributes.HasDefault, FieldAttributes.PrivateScope },
+            new object[] { "TestName3", typeof(EmptyNonGenericStruct), FieldAttributes.HasFieldMarshal, FieldAttributes.PrivateScope },
+            new object[] { "TestName4", typeof(EmptyGenericClass<int>), FieldAttributes.HasFieldRVA, FieldAttributes.PrivateScope },
+            new object[] { "TestName5", typeof(EmptyGenericStruct<int>), FieldAttributes.Literal | FieldAttributes.Static, FieldAttributes.Literal | FieldAttributes.Static },
+            new object[] { "testname5", typeof(int), FieldAttributes.NotSerialized, FieldAttributes.NotSerialized },
+            new object[] { "TestName7", typeof(int[]), FieldAttributes.PinvokeImpl, FieldAttributes.PinvokeImpl },
+            new object[] { "TestName8", typeof(int).MakePointerType(), FieldAttributes.Private, FieldAttributes.Private },
+            new object[] { "TestName9", typeof(EmptyGenericClass<>), FieldAttributes.PrivateScope, FieldAttributes.PrivateScope },
+            new object[] { "TestName10", typeof(int), FieldAttributes.Public, FieldAttributes.Public },
+            new object[] { "TestName11", typeof(int), FieldAttributes.RTSpecialName, FieldAttributes.PrivateScope },
+            new object[] { "TestName1", typeof(int), FieldAttributes.SpecialName, FieldAttributes.SpecialName },
+            new object[] { "TestName1", typeof(int), FieldAttributes.Public | FieldAttributes.Static, FieldAttributes.Public | FieldAttributes.Static }
+        };
+
+        [Fact]
+        public void GetFieldGetFieldsTest()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            foreach(object[] fd in FieldTestData)
+            {
+                FieldBuilder field = type.DefineField((string)fd[0], (Type)fd[1], (FieldAttributes)fd[2]);
+                Assert.Equal(fd[0], field.Name);
+                Assert.Equal(fd[1], field.FieldType);
+                Assert.Equal(fd[3], field.Attributes);
+                Assert.Equal(type.AsType(), field.DeclaringType);
+                Assert.Equal(field.Module, field.Module);
+            }
+
+            type.CreateType();
+            FieldInfo[] allFields = type.GetFields(Helpers.AllFlags);
+            Assert.Equal(FieldTestData.Count, allFields.Length);
+            Assert.Equal(4, type.GetFields().Length);
+            Assert.Equal(3, type.GetFields(BindingFlags.Public | BindingFlags.Instance).Length);
+            Assert.Equal(1, type.GetFields(BindingFlags.Public | BindingFlags.Static).Length);
+            Assert.Equal(12, type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance).Length);
+            Assert.Equal(2, type.GetFields(BindingFlags.NonPublic | BindingFlags.Static).Length);
+
+            Assert.Throws<AmbiguousMatchException>(() => type.GetField("TestName1", Helpers.AllFlags));
+            Assert.Equal(allFields[0], type.GetField("TestName1", BindingFlags.Public | BindingFlags.Instance));
+            Assert.Equal(allFields[allFields.Length-1], type.GetField("TestName1", BindingFlags.Public | BindingFlags.Static));
+            Assert.Equal(allFields[10], type.GetField("testname5", Helpers.AllFlags));
+            Assert.Equal(allFields[10], type.GetField("testname5", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.IgnoreCase));
+            Assert.Equal(allFields[9], type.GetField("testname5", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.IgnoreCase));
         }
     }
 }

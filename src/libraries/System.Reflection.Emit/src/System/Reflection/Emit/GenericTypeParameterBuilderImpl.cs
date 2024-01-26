@@ -75,7 +75,7 @@ namespace System.Reflection.Emit
         public override string Name => _name;
         public override Module Module => _type.Module;
         public override Assembly Assembly => _type.Assembly;
-        public override string? FullName => _name;
+        public override string? FullName => null;
         public override string? Namespace => null;
         public override string? AssemblyQualifiedName => null;
         public override Type UnderlyingSystemType => this;
@@ -83,7 +83,7 @@ namespace System.Reflection.Emit
         public override bool IsGenericType => false;
         public override bool IsGenericParameter => true;
         public override bool IsConstructedGenericType => false;
-        public override bool ContainsGenericParameters => _type.ContainsGenericParameters;
+        public override bool ContainsGenericParameters => false;
         public override MethodBase? DeclaringMethod => _type.DeclaringMethod;
         public override Type? BaseType => _parent;
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
