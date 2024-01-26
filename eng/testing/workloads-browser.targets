@@ -47,7 +47,7 @@
   <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
     <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
     <PropertyGroup>
-      <_BuildVariant Condition="'$(WasmEnableThreads)' == 'true'">multithread"</_BuildVariant>
+      <_BuildVariant Condition="'$(WasmEnableThreads)' == 'true'">multithread</_BuildVariant>
       <_DefaultBuildVariant Condition="'$(WasmEnableThreads)' == 'true'">.multithread.</_DefaultBuildVariant>
       <_DefaultBuildVariant Condition="'$(_DefaultBuildVariant)' == ''">.</_DefaultBuildVariant>
 
