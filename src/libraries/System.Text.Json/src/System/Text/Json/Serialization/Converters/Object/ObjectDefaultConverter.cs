@@ -266,9 +266,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         // This method is using aggressive inlining to avoid extra stack frame for deep object graphs.
-#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal static void PopulatePropertiesFastPath(object obj, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             jsonTypeInfo.OnDeserializing?.Invoke(obj);

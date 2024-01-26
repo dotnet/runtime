@@ -77,9 +77,7 @@ namespace System.Text.Json
             return jsonPropertyInfo;
         }
 
-#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal static ReadOnlySpan<byte> GetPropertyName(
             scoped ref ReadStack state,
             ref Utf8JsonReader reader,

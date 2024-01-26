@@ -88,9 +88,7 @@ namespace System.Text.Json.Serialization.Metadata
         private protected abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, Type? declaringType, JsonSerializerOptions options);
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
-#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal JsonPropertyInfo GetProperty(
             ReadOnlySpan<byte> propertyName,
             ref ReadStackFrame frame,
@@ -246,9 +244,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
-#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal JsonParameterInfo? GetParameter(
             ReadOnlySpan<byte> propertyName,
             ref ReadStackFrame frame,

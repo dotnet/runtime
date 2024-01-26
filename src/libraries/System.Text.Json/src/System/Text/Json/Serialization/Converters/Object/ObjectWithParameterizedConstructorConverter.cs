@@ -279,9 +279,7 @@ namespace System.Text.Json.Serialization.Converters
         /// <summary>
         /// Performs a full first pass of the JSON input and deserializes the ctor args.
         /// </summary>
-#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         private void ReadConstructorArguments(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             BeginRead(ref state, options);
