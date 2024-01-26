@@ -1088,7 +1088,9 @@ internal class MyXUnitTestRunner : MyXunitTestRunnerBase
 
                 var summaryTaskSource = new TaskCompletionSource<ExecutionSummary>();
                 var resultsXmlAssembly = new XElement("assembly");
+#pragma warning disable CS0618 // Delegating*Sink types are marked obsolete, but we can't move to ExecutionSink yet: https://github.com/dotnet/arcade/issues/14375
                 var resultsSink = new DelegatingXmlCreationSink(new DelegatingExecutionSummarySink(_messageSink), resultsXmlAssembly);
+#pragma warning restore
                 var completionSink = new CompletionCallbackExecutionSink(resultsSink, summary => summaryTaskSource.SetResult(summary));
 
                 ITestFrameworkExecutionOptions executionOptions = GetFrameworkOptionsForExecution(configuration);
