@@ -1,19 +1,24 @@
-#include "regnative.hpp"
+#include "asserts.h"
+#include "fixtures.h"
+#include "baseline.h"
+
+#include <dnmd_interfaces.hpp>
+
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include <array>
-#include <vector>
-#include <algorithm>
-#include <functional>
-#include <string>
-#include <sstream>
-#include <limits>
+#include <utility>
+
+#ifndef BUILD_WINDOWS
+#define EXPECT_HRESULT_SUCCEEDED(hr) EXPECT_THAT((hr), testing::Ge(S_OK))
+#define EXPECT_HRESULT_FAILED(hr) EXPECT_THAT((hr), testing::Lt(0))
+#define ASSERT_HRESULT_SUCCEEDED(hr) ASSERT_THAT((hr), testing::Ge(S_OK))
+#define ASSERT_HRESULT_FAILED(hr) ASSERT_THAT((hr), testing::Lt(0))
+#endif
 
 namespace
 {
-    IMetaDataDispenser* g_baselineDisp;
-    IMetaDataDispenser* g_deltaImageBuilder;
-    IMetaDataDispenser* g_currentDisp;
-
     HRESULT CreateImport(IMetaDataDispenser* disp, void const* data, uint32_t dataLen, IMetaDataImport2** import)
     {
         assert(disp != nullptr && data != nullptr && dataLen > 0 && import != nullptr);
@@ -25,51 +30,6 @@ namespace
             reinterpret_cast<IUnknown**>(import));
     }
 
-    HRESULT CreateEmit(IMetaDataDispenser* disp, void const* data, uint32_t dataLen, IMetaDataEmit2** emit)
-    {
-        assert(disp != nullptr && data != nullptr && dataLen > 0 && emit != nullptr);
-        return disp->OpenScopeOnMemory(
-            data,
-            dataLen,
-            CorOpenFlags::ofWrite,
-            IID_IMetaDataEmit2,
-            reinterpret_cast<IUnknown**>(emit));
-    }
-}
-
-EXPORT
-HRESULT UnitInitialize(IMetaDataDispenser* baseline, IMetaDataDispenserEx* deltaBuilder)
-{
-    HRESULT hr;
-    if (baseline == nullptr)
-        return E_INVALIDARG;
-    
-    if (deltaBuilder == nullptr)
-        return E_INVALIDARG;
-
-    (void)baseline->AddRef();
-    g_baselineDisp = baseline;
-
-    (void)deltaBuilder->AddRef();
-    
-    // We need to set the ENC mode on the delta builder to get it to apply EnC deltas
-    // and produce images with the indirection tables.
-    VARIANT vt;
-    V_VT(&vt) = VT_UI4;
-    V_UI4(&vt) = MDUpdateExtension;
-    if (FAILED(hr = deltaBuilder->SetOption(MetaDataSetENC, &vt)))
-        return hr;
-
-    g_deltaImageBuilder = deltaBuilder;
-
-    if (FAILED(hr = GetDispenser(IID_IMetaDataDispenser, reinterpret_cast<void**>(&g_currentDisp))))
-        return hr;
-
-    return S_OK;
-}
-
-namespace
-{
     template<typename T>
     using static_enum_buffer = std::array<T, 32>;
 
@@ -150,8 +110,8 @@ namespace
     void ValidateAndCloseEnum(IMetaDataImport2* import, HCORENUM hcorenum, ULONG expectedCount)
     {
         ULONG count;
-        ASSERT_EQUAL(S_OK, import->CountEnum(hcorenum, &count));
-        ASSERT_EQUAL(count, expectedCount);
+        ASSERT_HRESULT_SUCCEEDED(import->CountEnum(hcorenum, &count));
+        ASSERT_EQ(count, expectedCount);
         import->CloseEnum(hcorenum);
     }
 
@@ -584,7 +544,7 @@ namespace
         }
         dncp::com_ptr<IMetaDataImport2> mdImport;
         HRESULT hr = import->QueryInterface(IID_IMetaDataImport2, (void**)&mdImport);
-        ASSERT_EQUAL(S_OK, hr);
+        EXPECT_HRESULT_SUCCEEDED(hr);
         ValidateAndCloseEnum(mdImport, hcorenum, (ULONG)tokens.size());
         return tokens;
     }
@@ -603,7 +563,7 @@ namespace
         }
         dncp::com_ptr<IMetaDataImport2>  mdImport;
         HRESULT hr = import->QueryInterface(IID_IMetaDataImport2, (void**)&mdImport);
-        ASSERT_EQUAL(S_OK, hr);
+        EXPECT_HRESULT_SUCCEEDED(hr);
         ValidateAndCloseEnum(mdImport, hcorenum, (ULONG)tokens.size());
         return tokens;
     }
@@ -622,7 +582,7 @@ namespace
         }
         dncp::com_ptr<IMetaDataImport2>  mdImport;
         HRESULT hr = import->QueryInterface(IID_IMetaDataImport2, (void**)&mdImport);
-        ASSERT_EQUAL(S_OK, hr);
+        EXPECT_HRESULT_SUCCEEDED(hr);
         ValidateAndCloseEnum(mdImport, hcorenum, (ULONG)tokens.size());
         return tokens;
     }
@@ -641,7 +601,7 @@ namespace
         }
         dncp::com_ptr<IMetaDataImport2>  mdImport;
         HRESULT hr = import->QueryInterface(IID_IMetaDataImport2, (void**)&mdImport);
-        ASSERT_EQUAL(S_OK, hr);
+        EXPECT_HRESULT_SUCCEEDED(hr);
         ValidateAndCloseEnum(mdImport, hcorenum, (ULONG)tokens.size());
         return tokens;
     }
@@ -1164,7 +1124,8 @@ namespace
             values.push_back(pulParamSeq);
             values.push_back(pdwParamFlags);
             values.push_back(ptOwner);
-            values.push_back(reserved);
+            // We don't care about reserved
+            // as its value is unspecified
             uint32_t hash = HashCharArray(name, pchName);
             values.push_back(hash);
             values.push_back(pchName);
@@ -1549,7 +1510,7 @@ namespace
         {
             values.push_back(HashCharArray(name, nameLength));
             values.push_back((size_t)nameLength);
-            values.push_back(hashLength != 0 ? (size_t)hash : 0);
+            values.push_back(HashByteArray(hash, hashLength));
             values.push_back(hashLength);
             values.push_back(flags);
         }
@@ -1638,14 +1599,14 @@ namespace
 
             // Determine how many we have and move to right before end
             ULONG count;
-            ASSERT_EQUAL(S_OK, import->CountEnum(hcorenum, &count));
+            EXPECT_HRESULT_SUCCEEDED(import->CountEnum(hcorenum, &count));
             if (count != 0)
             {
-                ASSERT_EQUAL(S_OK, import->ResetEnum(hcorenum, count - 1));
+                EXPECT_HRESULT_SUCCEEDED(import->ResetEnum(hcorenum, count - 1));
                 ReadInMembers(import, hcorenum, tk, tokens);
 
                 // Fully reset the enum
-                ASSERT_EQUAL(S_OK, import->ResetEnum(hcorenum, 0));
+                EXPECT_HRESULT_SUCCEEDED(import->ResetEnum(hcorenum, 0));
                 ReadInMembers(import, hcorenum, tk, tokens);
             }
         }
@@ -1658,312 +1619,24 @@ namespace
     }
 }
 
-EXPORT
-TestResult UnitImportAPIs(void const* data, uint32_t dataLen)
+TEST(FindTest, FindAPIs)
 {
-    BEGIN_TEST();
+    malloc_span<uint8_t> metadata = GetRegressionAssemblyMetadata();
 
-    // Load metadata
     dncp::com_ptr<IMetaDataImport2> baselineImport;
-    ASSERT_EQUAL(S_OK, CreateImport(g_baselineDisp, data, dataLen, &baselineImport));
-    dncp::com_ptr<IMetaDataImport2> currentImport;
-    ASSERT_EQUAL(S_OK, CreateImport(g_currentDisp, data, dataLen, &currentImport));
-
-    // Verify APIs
-    ASSERT_EQUAL(ResetEnum(baselineImport), ResetEnum(currentImport));
-    ASSERT_EQUAL(GetScopeProps(baselineImport), GetScopeProps(currentImport));
-    ASSERT_EQUAL(GetVersionString(baselineImport), GetVersionString(currentImport));
-
-    auto sigs = ASSERT_AND_RETURN(EnumSignatures(baselineImport), EnumSignatures(currentImport));
-    for (auto sig : sigs)
-    {
-        ASSERT_EQUAL(GetSigFromToken(baselineImport, sig), GetSigFromToken(currentImport, sig));
-    }
-
-    auto userStrings = ASSERT_AND_RETURN(EnumUserStrings(baselineImport), EnumUserStrings(currentImport));
-    for (auto us : userStrings)
-    {
-        ASSERT_EQUAL(GetUserString(baselineImport, us), GetUserString(currentImport, us));
-    }
-
-    auto custAttrs = ASSERT_AND_RETURN(EnumCustomAttributes(baselineImport), EnumCustomAttributes(currentImport));
-    for (auto ca : custAttrs)
-    {
-        ASSERT_EQUAL(GetCustomAttributeProps(baselineImport, ca), GetCustomAttributeProps(currentImport, ca));
-    }
-
-    auto modulerefs = ASSERT_AND_RETURN(EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
-    for (auto moduleref : modulerefs)
-    {
-        ASSERT_EQUAL(GetModuleRefProps(baselineImport, moduleref), GetModuleRefProps(currentImport, moduleref));
-        ASSERT_EQUAL(GetNameFromToken(baselineImport, moduleref), GetNameFromToken(currentImport, moduleref));
-    }
-
-    ASSERT_EQUAL(FindTypeRef(baselineImport), FindTypeRef(currentImport));
-    auto typerefs = ASSERT_AND_RETURN(EnumTypeRefs(baselineImport), EnumTypeRefs(currentImport));
-    for (auto typeref : typerefs)
-    {
-        ASSERT_EQUAL(GetTypeRefProps(baselineImport, typeref), GetTypeRefProps(currentImport, typeref));
-        ASSERT_EQUAL(GetCustomAttribute_CompilerGenerated(baselineImport, typeref), GetCustomAttribute_CompilerGenerated(currentImport, typeref));
-        ASSERT_EQUAL(GetNameFromToken(baselineImport, typeref), GetNameFromToken(currentImport, typeref));
-    }
-
-    auto typespecs = ASSERT_AND_RETURN(EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
-    for (auto typespec : typespecs)
-    {
-        ASSERT_EQUAL(GetTypeSpecFromToken(baselineImport, typespec), GetTypeSpecFromToken(currentImport, typespec));
-        ASSERT_EQUAL(GetCustomAttribute_CompilerGenerated(baselineImport, typespec), GetCustomAttribute_CompilerGenerated(currentImport, typespec));
-    }
-
-    auto typedefs = ASSERT_AND_RETURN(EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
-    for (auto typdef : typedefs)
-    {
-        ASSERT_EQUAL(GetTypeDefProps(baselineImport, typdef), GetTypeDefProps(currentImport, typdef));
-        ASSERT_EQUAL(GetNameFromToken(baselineImport, typdef), GetNameFromToken(currentImport, typdef));
-        ASSERT_EQUAL(IsGlobal(baselineImport, typdef), IsGlobal(currentImport, typdef));
-        ASSERT_EQUAL(EnumInterfaceImpls(baselineImport, typdef), EnumInterfaceImpls(currentImport, typdef));
-        ASSERT_EQUAL(EnumPermissionSetsAndGetProps(baselineImport, typdef), EnumPermissionSetsAndGetProps(currentImport, typdef));
-        ASSERT_EQUAL(EnumMembers(baselineImport, typdef), EnumMembers(currentImport, typdef));
-        ASSERT_EQUAL(EnumMembersWithName(baselineImport, typdef), EnumMembersWithName(currentImport, typdef));
-        ASSERT_EQUAL(EnumMethodsWithName(baselineImport, typdef), EnumMethodsWithName(currentImport, typdef));
-        ASSERT_EQUAL(EnumMethodImpls(baselineImport, typdef), EnumMethodImpls(currentImport, typdef));
-        ASSERT_EQUAL(GetNestedClassProps(baselineImport, typdef), GetNestedClassProps(currentImport, typdef));
-        ASSERT_EQUAL(GetClassLayout(baselineImport, typdef), GetClassLayout(currentImport, typdef));
-        ASSERT_EQUAL(GetCustomAttribute_CompilerGenerated(baselineImport, typdef), GetCustomAttribute_CompilerGenerated(currentImport, typdef));
-
-        auto methoddefs = ASSERT_AND_RETURN(EnumMethods(baselineImport, typdef), EnumMethods(currentImport, typdef));
-        for (auto methoddef : methoddefs)
-        {
-            void const* sig = nullptr;
-            ULONG sigLen = 0;
-            ASSERT_EQUAL(GetMethodProps(baselineImport, methoddef), GetMethodProps(currentImport, methoddef, &sig, &sigLen));
-            ASSERT_EQUAL(GetNativeCallConvFromSig(baselineImport, sig, sigLen), GetNativeCallConvFromSig(currentImport, sig, sigLen));
-            ASSERT_EQUAL(GetNameFromToken(baselineImport, methoddef), GetNameFromToken(currentImport, methoddef));
-            ASSERT_EQUAL(IsGlobal(baselineImport, methoddef), IsGlobal(currentImport, methoddef));
-            ASSERT_EQUAL(GetCustomAttribute_CompilerGenerated(baselineImport, methoddef), GetCustomAttribute_CompilerGenerated(currentImport, methoddef));
-
-            auto paramdefs = ASSERT_AND_RETURN(EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
-            for (auto paramdef : paramdefs)
-            {
-                ASSERT_EQUAL(GetParamProps(baselineImport, paramdef), GetParamProps(currentImport, paramdef));
-                ASSERT_EQUAL(GetFieldMarshal(baselineImport, paramdef), GetFieldMarshal(currentImport, paramdef));
-                ASSERT_EQUAL(GetCustomAttribute_Nullable(baselineImport, paramdef), GetCustomAttribute_Nullable(currentImport, paramdef));
-                ASSERT_EQUAL(GetNameFromToken(baselineImport, paramdef), GetNameFromToken(currentImport, paramdef));
-            }
-
-            ASSERT_EQUAL(GetParamForMethodIndex(baselineImport, methoddef), GetParamForMethodIndex(currentImport, methoddef));
-            ASSERT_EQUAL(EnumPermissionSetsAndGetProps(baselineImport, methoddef), EnumPermissionSetsAndGetProps(currentImport, methoddef));
-            ASSERT_EQUAL(GetPinvokeMap(baselineImport, methoddef), GetPinvokeMap(currentImport, methoddef));
-            ASSERT_EQUAL(GetRVA(baselineImport, methoddef), GetRVA(currentImport, methoddef));
-
-            auto methodspecs = ASSERT_AND_RETURN(EnumMethodSpecs(baselineImport, methoddef), EnumMethodSpecs(currentImport, methoddef));
-            for (auto methodspec : methodspecs)
-            {
-                ASSERT_EQUAL(GetMethodSpecProps(baselineImport, methodspec), GetMethodSpecProps(currentImport, methodspec));
-            }
-        }
-
-        auto eventdefs = ASSERT_AND_RETURN(EnumEvents(baselineImport, typdef), EnumEvents(currentImport, typdef));
-        for (auto eventdef : eventdefs)
-        {
-            std::vector<mdMethodDef> mds;
-            ASSERT_EQUAL(GetEventProps(baselineImport, eventdef), GetEventProps(currentImport, eventdef, &mds));
-            for (auto md : mds)
-            {
-                ASSERT_EQUAL(GetMethodSemantics(baselineImport, eventdef, md), GetMethodSemantics(currentImport, eventdef, md));
-            }
-
-            ASSERT_EQUAL(GetNameFromToken(baselineImport, eventdef), GetNameFromToken(currentImport, eventdef));
-            ASSERT_EQUAL(IsGlobal(baselineImport, eventdef), IsGlobal(currentImport, eventdef));
-        }
-
-        auto properties = ASSERT_AND_RETURN(EnumProperties(baselineImport, typdef), EnumProperties(currentImport, typdef));
-        for (auto props : properties)
-        {
-            std::vector<mdMethodDef> mds;
-            ASSERT_EQUAL(GetPropertyProps(baselineImport, props), GetPropertyProps(currentImport, props, &mds));
-            for (auto md : mds)
-            {
-                ASSERT_EQUAL(GetMethodSemantics(baselineImport, props, md), GetMethodSemantics(currentImport, props, md));
-            }
-
-            ASSERT_EQUAL(GetNameFromToken(baselineImport, props), GetNameFromToken(currentImport, props));
-            ASSERT_EQUAL(IsGlobal(baselineImport, props), IsGlobal(currentImport, props));
-        }
-
-        ASSERT_EQUAL(EnumFieldsWithName(baselineImport, typdef), EnumFieldsWithName(currentImport, typdef));
-        auto fielddefs = ASSERT_AND_RETURN(EnumFields(baselineImport, typdef), EnumFields(currentImport, typdef));
-        for (auto fielddef : fielddefs)
-        {
-            ASSERT_EQUAL(GetFieldProps(baselineImport, fielddef), GetFieldProps(currentImport, fielddef));
-            ASSERT_EQUAL(GetNameFromToken(baselineImport, fielddef), GetNameFromToken(currentImport, fielddef));
-            ASSERT_EQUAL(IsGlobal(baselineImport, fielddef), IsGlobal(currentImport, fielddef));
-            ASSERT_EQUAL(GetPinvokeMap(baselineImport, fielddef), GetPinvokeMap(currentImport, fielddef));
-            ASSERT_EQUAL(GetRVA(baselineImport, fielddef), GetRVA(currentImport, fielddef));
-            ASSERT_EQUAL(GetFieldMarshal(baselineImport, fielddef), GetFieldMarshal(currentImport, fielddef));
-            ASSERT_EQUAL(GetCustomAttribute_Nullable(baselineImport, fielddef), GetCustomAttribute_Nullable(currentImport, fielddef));
-        }
-
-        auto genparams = ASSERT_AND_RETURN(EnumGenericParams(baselineImport, typdef), EnumGenericParams(currentImport, typdef));
-        for (auto genparam : genparams)
-        {
-            ASSERT_EQUAL(GetGenericParamProps(baselineImport, genparam), GetGenericParamProps(currentImport, genparam));
-            auto genparamconsts = ASSERT_AND_RETURN(EnumGenericParamConstraints(baselineImport, genparam), EnumGenericParamConstraints(currentImport, genparam));
-            for (auto genparamconst : genparamconsts)
-            {
-                ASSERT_EQUAL(GetGenericParamConstraintProps(baselineImport, genparamconst), GetGenericParamConstraintProps(currentImport, genparamconst));
-            }
-        }
-    }
-
-    dncp::com_ptr<IMetaDataAssemblyImport> baselineAssembly;
-    ASSERT_EQUAL(S_OK, baselineImport->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&baselineAssembly));
-    dncp::com_ptr<IMetaDataAssemblyImport> currentAssembly;
-    ASSERT_EQUAL(S_OK, currentImport->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&currentAssembly));
-
-    auto assemblyTokens = ASSERT_AND_RETURN(GetAssemblyFromScope(baselineAssembly), GetAssemblyFromScope(currentAssembly));
-    for (auto assembly : assemblyTokens)
-    {
-        ASSERT_EQUAL(GetAssemblyProps(baselineAssembly, assembly), GetAssemblyProps(currentAssembly, assembly));
-    }
-
-    auto assemblyRefs = ASSERT_AND_RETURN(EnumAssemblyRefs(baselineAssembly), EnumAssemblyRefs(currentAssembly));
-    for (auto assemblyRef : assemblyRefs)
-    {
-        ASSERT_EQUAL(GetAssemblyRefProps(baselineAssembly, assemblyRef), GetAssemblyRefProps(currentAssembly, assemblyRef));
-    }
-
-    auto files = ASSERT_AND_RETURN(EnumFiles(baselineAssembly), EnumFiles(currentAssembly));
-    for (auto file : files)
-    {
-        ASSERT_EQUAL(GetFileProps(baselineAssembly, file), GetFileProps(currentAssembly, file));
-    }
-
-    auto exports = ASSERT_AND_RETURN(EnumExportedTypes(baselineAssembly), EnumExportedTypes(currentAssembly));
-    for (auto exportedType : exports)
-    {
-        std::vector<WCHAR> name;
-        uint32_t implementation = mdTokenNil;
-        ASSERT_EQUAL(GetExportedTypeProps(baselineAssembly, exportedType), GetExportedTypeProps(currentAssembly, exportedType, &name, &implementation));
-        ASSERT_EQUAL(
-            FindExportedTypeByName(baselineAssembly, name.data(), implementation),
-            FindExportedTypeByName(currentAssembly, name.data(), implementation));
-    }
-
-    auto resources = ASSERT_AND_RETURN(EnumManifestResources(baselineAssembly), EnumManifestResources(currentAssembly));
-    for (auto resource : resources)
-    {
-        std::vector<WCHAR> name;
-        ASSERT_EQUAL(GetManifestResourceProps(baselineAssembly, resource), GetManifestResourceProps(currentAssembly, resource, &name));
-        ASSERT_EQUAL(FindManifestResourceByName(baselineAssembly, name.data()), FindManifestResourceByName(currentAssembly, name.data()));
-    }
-
-    END_TEST();
-}
-
-EXPORT
-TestResult UnitLongRunningAPIs(void const* data, uint32_t dataLen)
-{
-    BEGIN_TEST();
-
+    ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, metadata, (uint32_t)metadata.size(), &baselineImport));
     // Load metadata
-    dncp::com_ptr<IMetaDataImport2> baselineImport;
-    ASSERT_EQUAL(S_OK, CreateImport(g_baselineDisp, data, dataLen, &baselineImport));
     dncp::com_ptr<IMetaDataImport2> currentImport;
-    ASSERT_EQUAL(S_OK, CreateImport(g_currentDisp, data, dataLen, &currentImport));
 
-    static auto VerifyFindMemberRef = [](IMetaDataImport2* import, mdToken memberRef) -> std::vector<uint32_t>
-    {
-        std::vector<uint32_t> values;
+    dncp::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_HRESULT_SUCCEEDED(GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
 
-        mdToken ptk;
-        static_char_buffer<WCHAR> name{};
-        ULONG pchMember;
-        PCCOR_SIGNATURE ppvSigBlob;
-        ULONG pcbSigBlob;
-        HRESULT hr = import->GetMemberRefProps(memberRef,
-            &ptk,
-            name.data(),
-            (ULONG)name.size(),
-            &pchMember,
-            &ppvSigBlob,
-            &pcbSigBlob);
-        values.push_back(hr);
-        if (hr == S_OK)
-        {
-            // We were able to get the name, now try looking up a memberRef by name and by sig
-            mdMemberRef lookup = mdTokenNil;
-            hr = import->FindMemberRef(ptk, name.data(), ppvSigBlob, pcbSigBlob, &lookup);
-            values.push_back(hr);
-            values.push_back(lookup);
-            lookup = mdTokenNil;
-            hr = import->FindMemberRef(ptk, name.data(), nullptr, 0, &lookup);
-            values.push_back(hr);
-            values.push_back(lookup);
-            lookup = mdTokenNil;
-            hr = import->FindMemberRef(ptk, nullptr, ppvSigBlob, pcbSigBlob, &lookup);
-            values.push_back(hr);
-            values.push_back(lookup);
-        }
-        return values;
-    };
-
-    size_t stride;
-    size_t count;
-
-    auto typedefs = ASSERT_AND_RETURN(EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
-    count = 0;
-    stride = std::max(typedefs.size() / 128, (size_t)16);
-    for (auto typdef : typedefs)
-    {
-        if (count++ % stride != 0)
-            continue;
-
-        ASSERT_EQUAL(EnumMemberRefs(baselineImport, typdef), EnumMemberRefs(currentImport, typdef));
-
-        auto methoddefs = ASSERT_AND_RETURN(EnumMethods(baselineImport, typdef), EnumMethods(currentImport, typdef));
-        for (auto methoddef : methoddefs)
-        {
-            ASSERT_EQUAL(EnumMethodSemantics(baselineImport, methoddef), EnumMethodSemantics(currentImport, methoddef));
-        }
-
-        ASSERT_EQUAL(EnumCustomAttributes(baselineImport, typdef), EnumCustomAttributes(currentImport, typdef));
-    }
-
-    auto typespecs = ASSERT_AND_RETURN(EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
-    count = 0;
-    stride = std::max(typespecs.size() / 128, (size_t)16);
-    for (auto typespec : typespecs)
-    {
-        if (count++ % stride != 0)
-            continue;
-
-        auto memberrefs = ASSERT_AND_RETURN(EnumMemberRefs(baselineImport, typespec), EnumMemberRefs(currentImport, typespec));
-        for (auto memberref : memberrefs)
-        {
-            ASSERT_EQUAL(GetMemberRefProps(baselineImport, memberref), GetMemberRefProps(currentImport, memberref));
-            ASSERT_EQUAL(VerifyFindMemberRef(baselineImport, memberref), VerifyFindMemberRef(currentImport, memberref));
-        }
-    }
-
-    END_TEST();
-}
-
-EXPORT
-TestResult UnitFindAPIs(void const* data, uint32_t dataLen)
-{
-    BEGIN_TEST();
-
-    // Load metadata
-    dncp::com_ptr<IMetaDataImport2> baselineImport;
-    ASSERT_EQUAL(S_OK, CreateImport(g_baselineDisp, data, dataLen, &baselineImport));
-    dncp::com_ptr<IMetaDataImport2> currentImport;
-    ASSERT_EQUAL(S_OK, CreateImport(g_currentDisp, data, dataLen, &currentImport));
+    ASSERT_HRESULT_SUCCEEDED(CreateImport(dispenser, metadata, (uint32_t)metadata.size(), &currentImport));
 
     static auto FindTokenByName = [](IMetaDataImport2* import, LPCWSTR name, mdToken enclosing = mdTokenNil) -> mdToken
     {
         mdTypeDef ptd;
-        ASSERT_EQUAL(S_OK, import->FindTypeDefByName(name, enclosing, &ptd));
+        EXPECT_HRESULT_SUCCEEDED(import->FindTypeDefByName(name, enclosing, &ptd));
         return ptd;
     };
 
@@ -1973,7 +1646,7 @@ TestResult UnitFindAPIs(void const* data, uint32_t dataLen)
         ULONG pchTypeDef;
         DWORD pdwTypeDefFlags;
         mdToken ptkExtends;
-        ASSERT_EQUAL(S_OK, import->GetTypeDefProps(tk,
+        EXPECT_HRESULT_SUCCEEDED(import->GetTypeDefProps(tk,
             name.data(),
             (ULONG)name.size(),
             &pchTypeDef,
@@ -1985,7 +1658,7 @@ TestResult UnitFindAPIs(void const* data, uint32_t dataLen)
     static auto FindMethodDef = [](IMetaDataImport2* import, mdTypeDef type, LPCWSTR methodName) -> mdToken
     {
         std::vector<uint32_t> methoddefs = EnumMembersWithName(import, type, methodName);
-        ASSERT_TRUE(!methoddefs.empty());
+        EXPECT_TRUE(!methoddefs.empty());
         return methoddefs[0];
     };
 
@@ -1993,7 +1666,7 @@ TestResult UnitFindAPIs(void const* data, uint32_t dataLen)
     {
         auto methodDef = FindMethodDef(import, type, methodName);
         mdMemberRef pmr;
-        ASSERT_EQUAL(S_OK, import->FindMemberRef(methodDef, methodName, nullptr, 0, &pmr));
+        EXPECT_HRESULT_SUCCEEDED(import->FindMemberRef(methodDef, methodName, nullptr, 0, &pmr));
         return pmr;
     };
 
@@ -2001,9 +1674,9 @@ TestResult UnitFindAPIs(void const* data, uint32_t dataLen)
     {
         mdMethodDef tkMethod;
         mdToken tkMember;
-        ASSERT_EQUAL(S_OK, import->FindMethod(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkMethod));
-        ASSERT_EQUAL(S_OK, import->FindMember(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkMember));
-        ASSERT_EQUAL(tkMethod, tkMember);
+        EXPECT_HRESULT_SUCCEEDED(import->FindMethod(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkMethod));
+        EXPECT_HRESULT_SUCCEEDED(import->FindMember(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkMember));
+        EXPECT_EQ(tkMethod, tkMember);
         return tkMethod;
     };
 
@@ -2011,105 +1684,415 @@ TestResult UnitFindAPIs(void const* data, uint32_t dataLen)
     {
         mdFieldDef tkField;
         mdToken tkMember;
-        ASSERT_EQUAL(S_OK, import->FindField(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkField));
-        ASSERT_EQUAL(S_OK, import->FindMember(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkMember));
-        ASSERT_EQUAL(tkField, tkMember);
+        EXPECT_HRESULT_SUCCEEDED(import->FindField(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkField));
+        EXPECT_HRESULT_SUCCEEDED(import->FindMember(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkMember));
+        EXPECT_EQ(tkField, tkMember);
         return tkField;
     };
 
     auto tgt = W("C");
 
     auto baseTypeDef = W("B1");
-    auto tkB1 = ASSERT_AND_RETURN(FindTokenByName(baselineImport, baseTypeDef), FindTokenByName(currentImport, baseTypeDef));
-    auto tkB1Base = ASSERT_AND_RETURN(GetTypeDefBaseToken(baselineImport, tkB1), GetTypeDefBaseToken(currentImport, tkB1));
-    ASSERT_EQUAL(FindTypeDefByName(baselineImport, tgt, tkB1Base), FindTypeDefByName(currentImport, tgt, tkB1Base));
+    auto tkB1 = EXPECT_THAT_AND_RETURN(FindTokenByName(baselineImport, baseTypeDef), testing::Eq(FindTokenByName(currentImport, baseTypeDef)));
+    auto tkB1Base = EXPECT_THAT_AND_RETURN(GetTypeDefBaseToken(baselineImport, tkB1), testing::Eq(GetTypeDefBaseToken(currentImport, tkB1)));
+    ASSERT_EQ(FindTypeDefByName(baselineImport, tgt, tkB1Base), FindTypeDefByName(currentImport, tgt, tkB1Base));
 
     auto baseTypeRef = W("B2");
-    auto tkB2 = ASSERT_AND_RETURN(FindTokenByName(baselineImport, baseTypeRef), FindTokenByName(currentImport, baseTypeRef));
-    auto tkB2Base = ASSERT_AND_RETURN(GetTypeDefBaseToken(baselineImport, tkB2), GetTypeDefBaseToken(currentImport, tkB2));
-    ASSERT_EQUAL(FindTypeDefByName(baselineImport, tgt, tkB2Base), FindTypeDefByName(currentImport, tgt, tkB2Base));
+    auto tkB2 = EXPECT_THAT_AND_RETURN(FindTokenByName(baselineImport, baseTypeRef), testing::Eq(FindTokenByName(currentImport, baseTypeRef)));
+    auto tkB2Base = EXPECT_THAT_AND_RETURN(GetTypeDefBaseToken(baselineImport, tkB2), testing::Eq(GetTypeDefBaseToken(currentImport, tkB2)));
+    ASSERT_THAT(FindTypeDefByName(baselineImport, tgt, tkB2Base), testing::Eq(FindTypeDefByName(currentImport, tgt, tkB2Base)));
 
     auto methodDefName = W("MethodDef");
-    auto tkMethodDef = ASSERT_AND_RETURN(FindMethodDef(baselineImport, tkB1Base, methodDefName), FindMethodDef(currentImport, tkB1Base, methodDefName));
+    auto tkMethodDef = EXPECT_THAT_AND_RETURN(FindMethodDef(baselineImport, tkB1Base, methodDefName), testing::Eq(FindMethodDef(currentImport, tkB1Base, methodDefName)));
 
     void const* defSigBlob;
     ULONG defSigBlobLength;
-    ASSERT_EQUAL(
+    ASSERT_EQ(
         GetMethodProps(baselineImport, tkMethodDef),
         GetMethodProps(currentImport, tkMethodDef, &defSigBlob, &defSigBlobLength));
-    ASSERT_EQUAL(
+    ASSERT_EQ(
         FindMethod(baselineImport, tkB1Base, methodDefName, defSigBlob, defSigBlobLength),
         FindMethod(currentImport, tkB1Base, methodDefName, defSigBlob, defSigBlobLength));
 
     auto methodRef1Name = W("MethodRef1");
-    auto tkMemberRefNoVarArgsBase = ASSERT_AND_RETURN(
+    auto tkMemberRefNoVarArgsBase = EXPECT_THAT_AND_RETURN(
         FindMemberRef(baselineImport, tkB1Base, methodRef1Name),
-        FindMemberRef(currentImport, tkB1Base, methodRef1Name));
+        testing::Eq(FindMemberRef(currentImport, tkB1Base, methodRef1Name)));
 
     PCCOR_SIGNATURE ref1Blob;
     ULONG ref1BlobLength;
-    ASSERT_EQUAL(
+    ASSERT_EQ(
         GetMemberRefProps(baselineImport, tkMemberRefNoVarArgsBase),
         GetMemberRefProps(currentImport, tkMemberRefNoVarArgsBase, &ref1Blob, &ref1BlobLength));
-    ASSERT_EQUAL(
+    ASSERT_EQ(
         FindMethod(baselineImport, tkB1Base, methodRef1Name, ref1Blob, ref1BlobLength),
         FindMethod(currentImport, tkB1Base, methodRef1Name, ref1Blob, ref1BlobLength));
 
     auto methodRef2Name = W("MethodRef2");
-    auto tkMemberRefVarArgsBase = ASSERT_AND_RETURN(
+    auto tkMemberRefVarArgsBase = EXPECT_THAT_AND_RETURN(
         FindMemberRef(baselineImport, tkB1Base, methodRef2Name),
-        FindMemberRef(currentImport, tkB1Base, methodRef2Name));
+        testing::Eq(FindMemberRef(currentImport, tkB1Base, methodRef2Name)));
 
     PCCOR_SIGNATURE ref2Blob;
     ULONG ref2BlobLength;
-    ASSERT_EQUAL(
+    ASSERT_EQ(
         GetMemberRefProps(baselineImport, tkMemberRefVarArgsBase),
         GetMemberRefProps(currentImport, tkMemberRefVarArgsBase, &ref2Blob, &ref2BlobLength));
-    ASSERT_EQUAL(
+    EXPECT_EQ(
         FindMethod(baselineImport, tkB1Base, methodRef2Name, ref2Blob, ref2BlobLength),
         FindMethod(currentImport, tkB1Base, methodRef2Name, ref2Blob, ref2BlobLength));
 
     auto fieldName = W("Field1");
-    auto tkFields = ASSERT_AND_RETURN(
+    auto tkFields = EXPECT_THAT_AND_RETURN(
         EnumFieldsWithName(baselineImport, tkB2, fieldName),
-        EnumFieldsWithName(currentImport, tkB2, fieldName));
-    ASSERT_TRUE(!tkFields.empty());
+        testing::ElementsAreArray(EnumFieldsWithName(currentImport, tkB2, fieldName)));
+    ASSERT_FALSE(tkFields.empty());
     mdToken tkField = tkFields[0];
 
     void const* sigBlob;
     ULONG sigBlobLength;
-    ASSERT_EQUAL(
+    ASSERT_EQ(
         GetFieldProps(baselineImport, tkField),
         GetFieldProps(currentImport, tkField, &sigBlob, &sigBlobLength));
-    ASSERT_EQUAL(
+    EXPECT_EQ(
         FindField(baselineImport, tkB2, fieldName, sigBlob, sigBlobLength),
         FindField(currentImport, tkB2, fieldName, sigBlob, sigBlobLength));
-
-    END_TEST();
 }
 
-EXPORT
-TestResult UnitImportAPIsIndirectionTables(void const* data, uint32_t dataLen, void const** deltaImages, uint32_t* deltaImageLengths, uint32_t numDeltaImages)
+class MetadataImportTest : public RegressionTest
 {
-    BEGIN_TEST();
+};
 
-    dncp::com_ptr<IMetaDataEmit2> baseImageEmit;
-    ASSERT_EQUAL(S_OK, CreateEmit(g_deltaImageBuilder, data, dataLen, &baseImageEmit));
+TEST_P(MetadataImportTest, ImportAPIs)
+{
+    auto param = GetParam();
+    span<uint8_t> blob = GetMetadataForFile(param);
+    void const* data = blob;
+    uint32_t dataLen = (uint32_t)blob.size();
 
-    for (uint32_t i = 0; i < numDeltaImages; ++i)
+    // Load metadata
+    dncp::com_ptr<IMetaDataImport2> baselineImport;
+    ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, data, dataLen, &baselineImport));
+    
+    dncp::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_HRESULT_SUCCEEDED(GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+    dncp::com_ptr<IMetaDataImport2> currentImport;
+    ASSERT_HRESULT_SUCCEEDED(CreateImport(dispenser, data, dataLen, &currentImport));
+
+    // Verify APIs
+    ASSERT_THAT(ResetEnum(currentImport), testing::ElementsAreArray(ResetEnum(baselineImport)));
+    ASSERT_THAT(GetScopeProps(currentImport), testing::ElementsAreArray(GetScopeProps(baselineImport)));
+    ASSERT_THAT(GetVersionString(currentImport), testing::ElementsAreArray(GetVersionString(baselineImport)));
+
+    TokenList sigs;
+    ASSERT_EQUAL_AND_SET(sigs, EnumSignatures(baselineImport), EnumSignatures(currentImport));
+    for (auto sig : sigs)
     {
-        dncp::com_ptr<IMetaDataImport2> deltaImport;
-        ASSERT_EQUAL(S_OK, CreateImport(g_deltaImageBuilder, deltaImages[i], deltaImageLengths[i], &deltaImport));
-        ASSERT_EQUAL(S_OK, baseImageEmit->ApplyEditAndContinue(deltaImport));
+        ASSERT_THAT(GetSigFromToken(currentImport, sig), testing::ElementsAreArray(GetSigFromToken(baselineImport, sig)));
     }
 
-    DWORD compositeImageSize;
-    ASSERT_EQUAL(S_OK, baseImageEmit->GetSaveSize(CorSaveSize::cssAccurate, &compositeImageSize));
+    TokenList userStrings;
+    ASSERT_EQUAL_AND_SET(userStrings, EnumUserStrings(baselineImport), EnumUserStrings(currentImport));
+    for (auto us : userStrings)
+    {
+        ASSERT_THAT(GetUserString(currentImport, us), testing::ElementsAreArray(GetUserString(baselineImport, us)));
+    }
 
-    std::unique_ptr<uint8_t[]> compositeImage = std::make_unique<uint8_t[]>(compositeImageSize);
-    ASSERT_EQUAL(S_OK, baseImageEmit->SaveToMemory(compositeImage.get(), compositeImageSize));
+    TokenList custAttrs;
+    ASSERT_EQUAL_AND_SET(custAttrs, EnumCustomAttributes(baselineImport), EnumCustomAttributes(currentImport));
+    for (auto ca : custAttrs)
+    {
+        ASSERT_THAT(GetCustomAttributeProps(currentImport, ca), testing::ElementsAreArray(GetCustomAttributeProps(baselineImport, ca)));
+    }
 
-    return UnitImportAPIs(compositeImage.get(), compositeImageSize);
+    TokenList modulerefs;
+    ASSERT_EQUAL_AND_SET(modulerefs, EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
+    for (auto moduleref : modulerefs)
+    {
+        ASSERT_THAT(GetModuleRefProps(currentImport, moduleref), testing::ElementsAreArray(GetModuleRefProps(baselineImport, moduleref)));
+        ASSERT_THAT(GetNameFromToken(currentImport, moduleref), testing::ElementsAreArray(GetNameFromToken(baselineImport, moduleref)));
+    }
 
-    END_DELEGATING_TEST();
+    ASSERT_THAT(FindTypeRef(currentImport), testing::ElementsAreArray(FindTypeRef(baselineImport)));
+    TokenList typerefs;
+    ASSERT_EQUAL_AND_SET(typerefs, EnumTypeRefs(baselineImport), EnumTypeRefs(currentImport));
+    for (auto typeref : typerefs)
+    {
+        ASSERT_THAT(GetTypeRefProps(currentImport, typeref), testing::ElementsAreArray(GetTypeRefProps(baselineImport, typeref)));
+        ASSERT_THAT(GetCustomAttribute_CompilerGenerated(currentImport, typeref), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(baselineImport, typeref)));
+        ASSERT_THAT(GetNameFromToken(currentImport, typeref), testing::ElementsAreArray(GetNameFromToken(baselineImport, typeref)));
+    }
+
+    TokenList typespecs;
+    ASSERT_EQUAL_AND_SET(typespecs, EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
+    for (auto typespec : typespecs)
+    {
+        ASSERT_THAT(GetTypeSpecFromToken(currentImport, typespec), testing::ElementsAreArray(GetTypeSpecFromToken(baselineImport, typespec)));
+        ASSERT_THAT(GetCustomAttribute_CompilerGenerated(currentImport, typespec), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(baselineImport, typespec)));
+    }
+
+    TokenList typedefs;
+    ASSERT_EQUAL_AND_SET(typedefs, EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
+    for (auto typdef : typedefs)
+    {
+        ASSERT_THAT(GetTypeDefProps(currentImport, typdef), testing::ElementsAreArray(GetTypeDefProps(baselineImport, typdef)));
+        ASSERT_THAT(GetNameFromToken(currentImport, typdef), testing::ElementsAreArray(GetNameFromToken(baselineImport, typdef)));
+        ASSERT_THAT(IsGlobal(currentImport, typdef), testing::Eq(IsGlobal(baselineImport, typdef)));
+        ASSERT_THAT(EnumInterfaceImpls(currentImport, typdef), testing::ElementsAreArray(EnumInterfaceImpls(baselineImport, typdef)));
+        ASSERT_THAT(EnumPermissionSetsAndGetProps(currentImport, typdef), testing::ElementsAreArray(EnumPermissionSetsAndGetProps(baselineImport, typdef)));
+        ASSERT_THAT(EnumMembers(currentImport, typdef), testing::ElementsAreArray(EnumMembers(baselineImport, typdef)));
+        ASSERT_THAT(EnumMembersWithName(currentImport, typdef), testing::ElementsAreArray(EnumMembersWithName(baselineImport, typdef)));
+        ASSERT_THAT(EnumMethodsWithName(currentImport, typdef), testing::ElementsAreArray(EnumMethodsWithName(baselineImport, typdef)));
+        ASSERT_THAT(EnumMethodImpls(currentImport, typdef), testing::ElementsAreArray(EnumMethodImpls(baselineImport, typdef)));
+        ASSERT_THAT(GetNestedClassProps(currentImport, typdef), testing::ElementsAreArray(GetNestedClassProps(baselineImport, typdef)));
+        ASSERT_THAT(GetClassLayout(currentImport, typdef), testing::ElementsAreArray(GetClassLayout(baselineImport, typdef)));
+        ASSERT_THAT(GetCustomAttribute_CompilerGenerated(currentImport, typdef), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(baselineImport, typdef)));
+
+        TokenList methoddefs;
+        ASSERT_EQUAL_AND_SET(methoddefs, EnumMethods(baselineImport, typdef), EnumMethods(currentImport, typdef));
+        for (auto methoddef : methoddefs)
+        {
+            void const* sig = nullptr;
+            ULONG sigLen = 0;
+            ASSERT_THAT(GetMethodProps(currentImport, methoddef, &sig, &sigLen), testing::ElementsAreArray(GetMethodProps(baselineImport, methoddef)));
+            ASSERT_THAT(GetNativeCallConvFromSig(currentImport, sig, sigLen), testing::ElementsAreArray(GetNativeCallConvFromSig(baselineImport, sig, sigLen)));
+            ASSERT_THAT(GetNameFromToken(currentImport, methoddef), testing::ElementsAreArray(GetNameFromToken(baselineImport, methoddef)));
+            ASSERT_THAT(IsGlobal(currentImport, methoddef), testing::Eq(IsGlobal(baselineImport, methoddef)));
+            ASSERT_THAT(GetCustomAttribute_CompilerGenerated(currentImport, methoddef), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(baselineImport, methoddef)));
+
+            TokenList paramdefs;
+            ASSERT_EQUAL_AND_SET(paramdefs, EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
+            for (auto paramdef : paramdefs)
+            {
+                ASSERT_THAT(GetParamProps(currentImport, paramdef), testing::ElementsAreArray(GetParamProps(baselineImport, paramdef)));
+                ASSERT_THAT(GetFieldMarshal(currentImport, paramdef), testing::ElementsAreArray(GetFieldMarshal(baselineImport, paramdef)));
+                ASSERT_THAT(GetCustomAttribute_Nullable(currentImport, paramdef), testing::ElementsAreArray(GetCustomAttribute_Nullable(baselineImport, paramdef)));
+                ASSERT_THAT(GetNameFromToken(currentImport, paramdef), testing::ElementsAreArray(GetNameFromToken(baselineImport, paramdef)));
+            }
+
+            ASSERT_THAT(GetParamForMethodIndex(currentImport, methoddef), testing::ElementsAreArray(GetParamForMethodIndex(baselineImport, methoddef)));
+            ASSERT_THAT(EnumPermissionSetsAndGetProps(currentImport, methoddef), testing::ElementsAreArray(EnumPermissionSetsAndGetProps(baselineImport, methoddef)));
+            ASSERT_THAT(GetPinvokeMap(currentImport, methoddef), testing::ElementsAreArray(GetPinvokeMap(baselineImport, methoddef)));
+            ASSERT_THAT(GetRVA(currentImport, methoddef), testing::ElementsAreArray(GetRVA(baselineImport, methoddef)));
+
+            TokenList methodspecs;
+            ASSERT_EQUAL_AND_SET(methodspecs, EnumMethodSpecs(baselineImport, methoddef), EnumMethodSpecs(currentImport, methoddef));
+            for (auto methodspec : methodspecs)
+            {
+                ASSERT_THAT(GetMethodSpecProps(currentImport, methodspec), testing::ElementsAreArray(GetMethodSpecProps(baselineImport, methodspec)));
+            }
+        }
+
+        TokenList eventdefs;
+        ASSERT_EQUAL_AND_SET(eventdefs, EnumEvents(baselineImport, typdef), EnumEvents(currentImport, typdef));
+        for (auto eventdef : eventdefs)
+        {
+            std::vector<mdMethodDef> mds;
+            ASSERT_THAT(GetEventProps(currentImport, eventdef, &mds), testing::ElementsAreArray(GetEventProps(baselineImport, eventdef)));
+            for (auto md : mds)
+            {
+                ASSERT_THAT(GetMethodSemantics(currentImport, eventdef, md), testing::ElementsAreArray(GetMethodSemantics(baselineImport, eventdef, md)));
+            }
+
+            ASSERT_THAT(GetNameFromToken(currentImport, eventdef), testing::ElementsAreArray(GetNameFromToken(baselineImport, eventdef)));
+            ASSERT_THAT(IsGlobal(currentImport, eventdef), testing::Eq(IsGlobal(baselineImport, eventdef)));
+        }
+
+        TokenList properties;
+        ASSERT_EQUAL_AND_SET(properties, EnumProperties(baselineImport, typdef), EnumProperties(currentImport, typdef));
+        for (auto props : properties)
+        {
+            std::vector<mdMethodDef> mds;
+            ASSERT_THAT(GetPropertyProps(currentImport, props, &mds), testing::ElementsAreArray(GetPropertyProps(baselineImport, props)));
+            for (auto md : mds)
+            {
+                ASSERT_THAT(GetMethodSemantics(currentImport, props, md), testing::ElementsAreArray(GetMethodSemantics(baselineImport, props, md)));
+            }
+
+            ASSERT_THAT(GetNameFromToken(currentImport, props), testing::ElementsAreArray(GetNameFromToken(baselineImport, props)));
+            ASSERT_THAT(IsGlobal(currentImport, props), testing::Eq(IsGlobal(baselineImport, props)));
+        }
+
+        ASSERT_THAT(EnumFieldsWithName(baselineImport, typdef), EnumFieldsWithName(currentImport, typdef));
+        TokenList fielddefs;
+        ASSERT_EQUAL_AND_SET(fielddefs, EnumFields(baselineImport, typdef), EnumFields(currentImport, typdef));
+        for (auto fielddef : fielddefs)
+        {
+            ASSERT_THAT(GetFieldProps(currentImport, fielddef), testing::ElementsAreArray(GetFieldProps(baselineImport, fielddef)));
+            ASSERT_THAT(GetNameFromToken(currentImport, fielddef), testing::ElementsAreArray(GetNameFromToken(baselineImport, fielddef)));
+            ASSERT_THAT(IsGlobal(currentImport, fielddef), testing::Eq(IsGlobal(baselineImport, fielddef)));
+            ASSERT_THAT(GetPinvokeMap(currentImport, fielddef), testing::ElementsAreArray(GetPinvokeMap(baselineImport, fielddef)));
+            ASSERT_THAT(GetRVA(currentImport, fielddef), testing::ElementsAreArray(GetRVA(baselineImport, fielddef)));
+            ASSERT_THAT(GetFieldMarshal(currentImport, fielddef), testing::ElementsAreArray(GetFieldMarshal(baselineImport, fielddef)));
+            ASSERT_THAT(GetCustomAttribute_Nullable(currentImport, fielddef), testing::ElementsAreArray(GetCustomAttribute_Nullable(baselineImport, fielddef)));
+        }
+
+        TokenList genparams;
+        ASSERT_EQUAL_AND_SET(genparams, EnumGenericParams(baselineImport, typdef), EnumGenericParams(currentImport, typdef));
+        for (auto genparam : genparams)
+        {
+            ASSERT_THAT(GetGenericParamProps(currentImport, genparam), testing::ElementsAreArray(GetGenericParamProps(baselineImport, genparam)));
+            TokenList genparamconsts;
+            ASSERT_EQUAL_AND_SET(genparamconsts, EnumGenericParamConstraints(baselineImport, genparam), EnumGenericParamConstraints(currentImport, genparam));
+            for (auto genparamconst : genparamconsts)
+            {
+                ASSERT_THAT(GetGenericParamConstraintProps(currentImport, genparamconst), testing::ElementsAreArray(GetGenericParamConstraintProps(baselineImport, genparamconst)));
+            }
+        }
+    }
+
+    dncp::com_ptr<IMetaDataAssemblyImport> baselineAssembly;
+    ASSERT_THAT(S_OK, baselineImport->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&baselineAssembly));
+    dncp::com_ptr<IMetaDataAssemblyImport> currentAssembly;
+    ASSERT_THAT(S_OK, currentImport->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&currentAssembly));
+
+    TokenList assemblyTokens;
+    ASSERT_EQUAL_AND_SET(assemblyTokens, GetAssemblyFromScope(baselineAssembly), GetAssemblyFromScope(currentAssembly));
+    for (auto assembly : assemblyTokens)
+    {
+        ASSERT_THAT(GetAssemblyProps(currentAssembly, assembly), testing::ElementsAreArray(GetAssemblyProps(baselineAssembly, assembly)));
+    }
+
+    TokenList assemblyRefs;
+    ASSERT_EQUAL_AND_SET(assemblyRefs, EnumAssemblyRefs(baselineAssembly), EnumAssemblyRefs(currentAssembly));
+    for (auto assemblyRef : assemblyRefs)
+    {
+        ASSERT_THAT(GetAssemblyRefProps(currentAssembly, assemblyRef), testing::ElementsAreArray(GetAssemblyRefProps(baselineAssembly, assemblyRef)));
+    }
+
+    TokenList files;
+    ASSERT_EQUAL_AND_SET(files, EnumFiles(baselineAssembly), EnumFiles(currentAssembly));
+    for (auto file : files)
+    {
+        ASSERT_THAT(GetFileProps(currentAssembly, file), testing::ElementsAreArray(GetFileProps(baselineAssembly, file)));
+    }
+
+    TokenList exports;
+    ASSERT_EQUAL_AND_SET(exports, EnumExportedTypes(baselineAssembly), EnumExportedTypes(currentAssembly));
+    for (auto exportedType : exports)
+    {
+        std::vector<WCHAR> name;
+        uint32_t implementation = mdTokenNil;
+        ASSERT_THAT(GetExportedTypeProps(currentAssembly, exportedType, &name, &implementation), testing::ElementsAreArray(GetExportedTypeProps(baselineAssembly, exportedType)));
+        ASSERT_THAT(
+            FindExportedTypeByName(currentAssembly, name.data(), implementation),
+            testing::ElementsAreArray(FindExportedTypeByName(baselineAssembly, name.data(), implementation)));
+    }
+
+    TokenList resources;
+    ASSERT_EQUAL_AND_SET(resources, EnumManifestResources(baselineAssembly), EnumManifestResources(currentAssembly));
+    for (auto resource : resources)
+    {
+        std::vector<WCHAR> name;
+        ASSERT_THAT(GetManifestResourceProps(currentAssembly, resource, &name), testing::ElementsAreArray(GetManifestResourceProps(baselineAssembly, resource)));
+        ASSERT_THAT(FindManifestResourceByName(currentAssembly, name.data()), testing::ElementsAreArray(FindManifestResourceByName(baselineAssembly, name.data())));
+    }
 }
+
+INSTANTIATE_TEST_SUITE_P(MetaDataImportTestCore, MetadataImportTest, testing::ValuesIn(MetadataFilesInDirectory(GetBaselineDirectory())), PrintName);
+
+INSTANTIATE_TEST_SUITE_P(MetaDataImportTestFx4_0, MetadataImportTest, testing::ValuesIn(MetadataFilesInDirectory(FindFrameworkInstall("v4.0.30319"))), PrintName);
+INSTANTIATE_TEST_SUITE_P(MetaDataImportTestFx2_0, MetadataImportTest, testing::ValuesIn(MetadataFilesInDirectory(FindFrameworkInstall("v2.0.50727"))), PrintName);
+
+INSTANTIATE_TEST_SUITE_P(MetaDataImportTest_IndirectionTables, MetadataImportTest, testing::Values(MetadataFile{ MetadataFile::Kind::Generated, IndirectionTablesKey }), PrintName);
+
+class MetaDataLongRunningTest : public RegressionTest
+{
+};
+
+TEST_P(MetaDataLongRunningTest, ImportAPIs)
+{
+    auto param = GetParam();
+    span<uint8_t> blob = GetMetadataForFile(param);
+    void const* data = blob;
+    uint32_t dataLen = (uint32_t)blob.size();
+
+    // Load metadata
+    dncp::com_ptr<IMetaDataImport2> baselineImport;
+    ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, data, dataLen, &baselineImport));
+
+    dncp::com_ptr<IMetaDataDispenser> dispenser;
+    ASSERT_HRESULT_SUCCEEDED(GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
+    dncp::com_ptr<IMetaDataImport2> currentImport;
+    ASSERT_HRESULT_SUCCEEDED(CreateImport(dispenser, data, dataLen, &currentImport));
+
+    static auto VerifyFindMemberRef = [](IMetaDataImport2 * import, mdToken memberRef) -> std::vector<uint32_t>
+        {
+            std::vector<uint32_t> values;
+
+            mdToken ptk;
+            static_char_buffer<WCHAR> name{};
+            ULONG pchMember;
+            PCCOR_SIGNATURE ppvSigBlob;
+            ULONG pcbSigBlob;
+            HRESULT hr = import->GetMemberRefProps(memberRef,
+                & ptk,
+                name.data(),
+                (ULONG)name.size(),
+                & pchMember,
+                & ppvSigBlob,
+                & pcbSigBlob);
+            values.push_back(hr);
+            if (hr == S_OK)
+            {
+                // We were able to get the name, now try looking up a memberRef by name and by sig
+                mdMemberRef lookup = mdTokenNil;
+                hr = import->FindMemberRef(ptk, name.data(), ppvSigBlob, pcbSigBlob, & lookup);
+                values.push_back(hr);
+                values.push_back(lookup);
+                lookup = mdTokenNil;
+                hr = import->FindMemberRef(ptk, name.data(), nullptr, 0, & lookup);
+                values.push_back(hr);
+                values.push_back(lookup);
+                lookup = mdTokenNil;
+                hr = import->FindMemberRef(ptk, nullptr, ppvSigBlob, pcbSigBlob, & lookup);
+                values.push_back(hr);
+                values.push_back(lookup);
+            }
+            return values;
+        };
+
+    size_t stride;
+    size_t count;
+
+    TokenList typedefs;
+    ASSERT_EQUAL_AND_SET(typedefs, EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
+    count = 0;
+    stride = std::max(typedefs.size() / 128, (size_t)16);
+    for (auto typdef : typedefs)
+    {
+        if (count++ % stride != 0)
+            continue;
+
+        EXPECT_THAT(EnumMemberRefs(currentImport, typdef), testing::ElementsAreArray(EnumMemberRefs(baselineImport, typdef)));
+
+        TokenList methoddefs;
+        ASSERT_EQUAL_AND_SET(methoddefs, EnumMethods(baselineImport, typdef), EnumMethods(currentImport, typdef));
+        for (auto methoddef : methoddefs)
+        {
+            EXPECT_THAT(EnumMethodSemantics(currentImport, methoddef), testing::ElementsAreArray(EnumMethodSemantics(baselineImport, methoddef)));
+        }
+
+        EXPECT_THAT(EnumCustomAttributes(currentImport, typdef), testing::ElementsAreArray(EnumCustomAttributes(baselineImport, typdef)));
+    }
+
+    TokenList typespecs;
+    ASSERT_EQUAL_AND_SET(typespecs, EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
+    count = 0;
+    stride = std::max(typespecs.size() / 128, (size_t)16);
+    for (auto typespec : typespecs)
+    {
+        if (count++ % stride != 0)
+            continue;
+
+        TokenList memberrefs;
+        ASSERT_EQUAL_AND_SET(memberrefs, EnumMemberRefs(baselineImport, typespec), EnumMemberRefs(currentImport, typespec));
+        for (auto memberref : memberrefs)
+        {
+            EXPECT_THAT(GetMemberRefProps(currentImport, memberref), testing::ElementsAreArray(GetMemberRefProps(baselineImport, memberref)));
+            EXPECT_THAT(VerifyFindMemberRef(currentImport, memberref), testing::ElementsAreArray(VerifyFindMemberRef(baselineImport, memberref)));
+        }
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(MetaDataLongRunningTest_CoreLibs, MetaDataLongRunningTest, testing::ValuesIn(CoreLibFiles()), PrintName);

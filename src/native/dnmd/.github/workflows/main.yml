@@ -29,6 +29,9 @@ jobs:
       with:
         dotnet-version: '8.0.x'
         dotnet-quality: 'preview'
+    
+    - name: List dotnet information
+      run: dotnet --info
 
     - name: Build Vendored Dependencies
       if: ${{ !matrix.use-vendored-libs }}
@@ -46,13 +49,8 @@ jobs:
         cmake -S . -B artifacts -DCMAKE_BUILD_TYPE=${{ matrix.flavor }} -DINCLUDE_VENDORED_LIBS=${{ matrix.use-vendored-libs }}
         cmake --build artifacts --config ${{ matrix.flavor }} --target install
 
-    - name: Build Managed Test Components
-      run: dotnet build --configuration ${{ matrix.flavor }}
-      working-directory: ./test
-
-    - name: Run Unit Tests
-      run: dotnet test --configuration ${{ matrix.flavor }} --logger trx --results-directory "TestResults-${{ matrix.os }}-${{ matrix.flavor }}"
-      working-directory: ./test/Regression.UnitTests
+    - name: Run Tests
+      run: ctest --test-dir artifacts --output-on-failure -C ${{ matrix.flavor }}
 
     # - name: Upload Test Results
     #   if: always()

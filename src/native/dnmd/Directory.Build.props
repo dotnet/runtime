@@ -1,22 +1,12 @@
 <Project>
     <PropertyGroup>
-        <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <RepoDir>$(MSBuildThisFileDirectory)</RepoDir>
-        <BaseArtifactsPath>$(RepoDir)artifacts</BaseArtifactsPath>
-        <ArtifactsDir>$(BaseArtifactsPath)/$(Configuration)/</ArtifactsDir>
-
-        <BaseIntermediateOutputPath>$(ArtifactsDir)obj/$(MSBuildProjectName)</BaseIntermediateOutputPath>
-        <BaseOutputPath>$(ArtifactsDir)bin/$(MSBuildProjectName)</BaseOutputPath>
+        <UseArtifactsOutput>true</UseArtifactsOutput>
+        <ArtifactsPath>$(MSBuildThisFileDirectory)/artifacts/managed</ArtifactsPath>
 
         <!-- Define the intermediate and output paths so the configuration isn't appended -->
-        <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
-        <OutputPath>$(BaseOutputPath)</OutputPath>
         <NativeOutputPath Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(BaseArtifactsPath)/bin</NativeOutputPath>
         <NativeOutputPath Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(BaseArtifactsPath)/lib</NativeOutputPath>
 
-        <TargetFrameworkLatest>net8.0</TargetFrameworkLatest>
+        <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
 </Project>

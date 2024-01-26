@@ -3,10 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33026.144
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Regression.UnitTests", "Regression.UnitTests\Regression.UnitTests.csproj", "{D5105B2A-6016-4B1C-A46B-5A841AE5AD26}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Regression.Performance", "Regression.Performance\Regression.Performance.csproj", "{3ED137D0-B5A2-4309-BDA5-BD9DE3FFC752}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Regression.TargetAssembly", "Regression.TargetAssembly\Regression.TargetAssembly.ilproj", "{D3BEEF3D-C137-49AC-96DD-E5B93E2F4C21}"
 EndProject
 Global
@@ -15,14 +11,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D5105B2A-6016-4B1C-A46B-5A841AE5AD26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D5105B2A-6016-4B1C-A46B-5A841AE5AD26}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D5105B2A-6016-4B1C-A46B-5A841AE5AD26}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D5105B2A-6016-4B1C-A46B-5A841AE5AD26}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3ED137D0-B5A2-4309-BDA5-BD9DE3FFC752}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3ED137D0-B5A2-4309-BDA5-BD9DE3FFC752}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3ED137D0-B5A2-4309-BDA5-BD9DE3FFC752}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3ED137D0-B5A2-4309-BDA5-BD9DE3FFC752}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D3BEEF3D-C137-49AC-96DD-E5B93E2F4C21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D3BEEF3D-C137-49AC-96DD-E5B93E2F4C21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3BEEF3D-C137-49AC-96DD-E5B93E2F4C21}.Release|Any CPU.ActiveCfg = Release|Any CPU

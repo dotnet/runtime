@@ -2727,7 +2727,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetCustomAttributeByName(
     mdcursor_t cursor;
     uint32_t count;
     if (!md_create_cursor(_md_ptr.get(), mdtid_CustomAttribute, &cursor, &count))
-        return CLDB_E_RECORD_NOTFOUND;
+        return S_FALSE; // If no custom attributes are defined, treat it the same as if the attribute is not found.
 
     char buffer[1024];
     pal::StringConvert<WCHAR, char> cvt{ szName, buffer };

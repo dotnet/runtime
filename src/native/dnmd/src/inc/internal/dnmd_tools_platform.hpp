@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <array>
+#include <cstring>
 
 #include "dnmd_platform.hpp"
 #include "span.hpp"
@@ -85,6 +86,33 @@ inline bool write_out_file(char const* file, malloc_span<uint8_t> b)
     return true;
 }
 
+inline bool find_pe_image_bitness(uint16_t machine, uint8_t& bitness)
+{
+#define MAKE_MACHINE_CASE(x) \
+    case ((x) ^ IMAGE_FILE_MACHINE_OS_MASK_APPLE): \
+    case ((x) ^ IMAGE_FILE_MACHINE_OS_MASK_FREEBSD): \
+    case ((x) ^ IMAGE_FILE_MACHINE_OS_MASK_LINUX): \
+    case ((x) ^ IMAGE_FILE_MACHINE_OS_MASK_NETBSD): \
+    case ((x) ^ IMAGE_FILE_MACHINE_OS_MASK_SUN): \
+    case (x)
+    
+    switch (machine)
+    {
+    MAKE_MACHINE_CASE(IMAGE_FILE_MACHINE_I386):
+    MAKE_MACHINE_CASE(IMAGE_FILE_MACHINE_ARM):
+        bitness = 32;
+        return true;
+    MAKE_MACHINE_CASE(IMAGE_FILE_MACHINE_AMD64):
+    MAKE_MACHINE_CASE(IMAGE_FILE_MACHINE_ARM64):
+        bitness = 64;
+        return true;
+    default:
+        return false;
+    }
+
+#undef MAKE_MACHINE_CASE
+}
+
 inline bool get_metadata_from_pe(malloc_span<uint8_t>& b)
 {
     if (b.size() < sizeof(IMAGE_DOS_HEADER))
@@ -111,8 +139,13 @@ inline bool get_metadata_from_pe(malloc_span<uint8_t>& b)
     uint16_t section_header_count;
     uint8_t* section_header_begin;
     auto nt_header_any = (PIMAGE_NT_HEADERS)(b + dos_header->e_lfanew);
-    if (nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64
-        || nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_ARM64)
+    uint16_t machine = nt_header_any->FileHeader.Machine;
+
+    uint8_t bitness;
+    if (!find_pe_image_bitness(machine, bitness))
+        return false;
+
+    if (bitness == 64)
     {
         auto nt_header64 = (PIMAGE_NT_HEADERS64)nt_header_any;
         if (remaining_pe_size < sizeof(*nt_header64))
@@ -122,8 +155,7 @@ inline bool get_metadata_from_pe(malloc_span<uint8_t>& b)
         section_header_begin = (uint8_t*)&nt_header64[1];
         dotnet_dir = &nt_header64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
     }
-    else if (nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_I386
-             || nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_ARM)
+    else if (bitness == 32)
     {
         auto nt_header32 = (PIMAGE_NT_HEADERS32)nt_header_any;
         if (remaining_pe_size < sizeof(*nt_header32))
