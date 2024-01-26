@@ -5473,9 +5473,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         reportFastTailCallDecision("Profiler is not supported on ARM32");
         return false;
     }
-#endif
 
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     // On ARM32 we have only one non-parameter volatile register and we need it
     // for the GS security cookie check. We could technically still tailcall
     // when the callee does not use all argument registers, but we keep the
