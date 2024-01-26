@@ -199,9 +199,9 @@ check_cxx_source_runs("
 
 int main(void) {
 #if ATOMIC_CHAR_LOCK_FREE == 2 && ATOMIC_SHORT_LOCK_FREE == 2 && ATOMIC_INT_LOCK_FREE == 2 && ATOMIC_LLONG_LOCK_FREE == 2
-    exit(0);
+    return 0;
 #else
-    exit(1);
+    return 1;
 #endif
 }
 //#endif" HAVE_LOCKFREE_ATOMICS)
