@@ -70,8 +70,6 @@
 typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
 
 MethodDataCache *MethodTable::s_pMethodDataCache = NULL;
-BOOL MethodTable::s_fUseMethodDataCache = FALSE;
-BOOL MethodTable::s_fUseParentMethodData = FALSE;
 
 #ifdef _DEBUG
 extern unsigned g_dupMethods;
@@ -295,92 +293,9 @@ void MethodDataCache::Clear()
 
 
 //==========================================================================================
-//
-// Initialize the offsets of multipurpose slots at compile time using template metaprogramming
-//
-
-template<int N>
-struct CountBitsAtCompileTime
-{
-    enum { value = (N & 1) + CountBitsAtCompileTime<(N >> 1)>::value };
-};
-
-template<>
-struct CountBitsAtCompileTime<0>
-{
-    enum { value = 0 };
-};
-
-// "mask" is mask of used slots.
-template<int mask>
-struct MethodTable::MultipurposeSlotOffset
-{
-    // This is raw index of the slot assigned on first come first served basis
-    enum { raw = CountBitsAtCompileTime<mask>::value };
-
-    // This is actual index of the slot. It is equal to raw index except for the case
-    // where the first fixed slot is not used, but the second one is. The first fixed
-    // slot has to be assigned instead of the second one in this case. This assumes that
-    // there are exactly two fixed slots.
-    enum { index = (((mask & 3) == 2) && (raw == 1)) ? 0 : raw };
-
-    // Offset of slot
-    enum { slotOffset = (index == 0) ? offsetof(MethodTable, m_pMultipurposeSlot1) :
-                        (index == 1) ? offsetof(MethodTable, m_pMultipurposeSlot2) :
-                        (sizeof(MethodTable) + index * sizeof(TADDR) - 2 * sizeof(TADDR)) };
-
-    // Size of methodtable with overflow slots. It is used to compute start offset of optional members.
-    enum { totalSize = (slotOffset >= sizeof(MethodTable)) ? slotOffset : sizeof(MethodTable) };
-};
-
-//
-// These macros recursively expand to create 2^N values for the offset arrays
-//
-#define MULTIPURPOSE_SLOT_OFFSET_1(mask) MULTIPURPOSE_SLOT_OFFSET  (mask) MULTIPURPOSE_SLOT_OFFSET  (mask | 0x01)
-#define MULTIPURPOSE_SLOT_OFFSET_2(mask) MULTIPURPOSE_SLOT_OFFSET_1(mask) MULTIPURPOSE_SLOT_OFFSET_1(mask | 0x02)
-#define MULTIPURPOSE_SLOT_OFFSET_3(mask) MULTIPURPOSE_SLOT_OFFSET_2(mask) MULTIPURPOSE_SLOT_OFFSET_2(mask | 0x04)
-#define MULTIPURPOSE_SLOT_OFFSET_4(mask) MULTIPURPOSE_SLOT_OFFSET_3(mask) MULTIPURPOSE_SLOT_OFFSET_3(mask | 0x08)
-#define MULTIPURPOSE_SLOT_OFFSET_5(mask) MULTIPURPOSE_SLOT_OFFSET_4(mask) MULTIPURPOSE_SLOT_OFFSET_4(mask | 0x10)
-
-#define MULTIPURPOSE_SLOT_OFFSET(mask) MultipurposeSlotOffset<mask>::slotOffset,
-const BYTE MethodTable::c_DispatchMapSlotOffsets[] = {
-    MULTIPURPOSE_SLOT_OFFSET_2(0)
-};
-const BYTE MethodTable::c_NonVirtualSlotsOffsets[] = {
-    MULTIPURPOSE_SLOT_OFFSET_3(0)
-};
-const BYTE MethodTable::c_ModuleOverrideOffsets[] = {
-    MULTIPURPOSE_SLOT_OFFSET_4(0)
-};
-#undef MULTIPURPOSE_SLOT_OFFSET
-
-#define MULTIPURPOSE_SLOT_OFFSET(mask) MultipurposeSlotOffset<mask>::totalSize,
-const BYTE MethodTable::c_OptionalMembersStartOffsets[] = {
-    MULTIPURPOSE_SLOT_OFFSET_5(0)
-};
-#undef MULTIPURPOSE_SLOT_OFFSET
-
-
-//==========================================================================================
-// Optimization intended for MethodTable::GetModule, MethodTable::GetDispatchMap and MethodTable::GetNonVirtualSlotsPtr
+// Optimization intended for MethodTable::GetDispatchMap
 
 #include <optsmallperfcritical.h>
-
-PTR_Module MethodTable::GetModule()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // Fast path for non-generic non-array case
-    if ((m_dwFlags & (enum_flag_HasComponentSize | enum_flag_GenericsMask)) == 0)
-        return GetLoaderModule();
-
-    MethodTable * pMTForModule = IsArray() ? this : GetCanonicalMethodTable();
-    if (!pMTForModule->HasModuleOverride())
-        return pMTForModule->GetLoaderModule();
-
-    TADDR pSlot = pMTForModule->GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets);
-    return *dac_cast<DPTR(PTR_Module)>(pSlot);
-}
 
 //==========================================================================================
 PTR_DispatchMap MethodTable::GetDispatchMap()
@@ -396,17 +311,7 @@ PTR_DispatchMap MethodTable::GetDispatchMap()
             return NULL;
     }
 
-    TADDR pSlot = pMT->GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
-    return *dac_cast<DPTR(PTR_DispatchMap)>(pSlot);
-}
-
-//==========================================================================================
-TADDR MethodTable::GetNonVirtualSlotsPtr()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE(GetFlag(enum_flag_HasNonVirtualSlots));
-    return GetMultipurposeSlotPtr(enum_flag_HasNonVirtualSlots, c_NonVirtualSlotsOffsets);
+    return dac_cast<PTR_DispatchMap>((pMT->GetAuxiliaryData() + 1));
 }
 
 #include <optdefault.h>
@@ -427,21 +332,6 @@ PTR_Module MethodTable::GetModuleIfLoaded()
 
     return GetModule();
 }
-
-#ifndef DACCESS_COMPILE
-//==========================================================================================
-void MethodTable::SetModule(Module * pModule)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (HasModuleOverride())
-    {
-        *GetModuleOverridePtr() = pModule;
-    }
-
-    _ASSERTE(GetModule() == pModule);
-}
-#endif // DACCESS_COMPILE
 
 //==========================================================================================
 BOOL MethodTable::ValidateWithPossibleAV()
@@ -536,7 +426,7 @@ void MethodTable::SetIsRestored()
 
     PRECONDITION(!IsFullyLoaded());
 
-    InterlockedAnd((LONG*)&GetWriteableDataForWrite()->m_dwFlags, ~MethodTableWriteableData::enum_flag_Unrestored);
+    InterlockedAnd((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, ~MethodTableAuxiliaryData::enum_flag_Unrestored);
 
 #ifndef DACCESS_COMPILE
     if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
@@ -621,11 +511,13 @@ BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
         return TRUE;
 
     // optimize for the negative case where we expect RID mismatch
-    if (GetTypeDefRid() != pMT->GetTypeDefRid())
+    DWORD rid = GetTypeDefRid();
+    if (rid != pMT->GetTypeDefRid())
         return FALSE;
 
-    if (GetCanonicalMethodTable() == pMT->GetCanonicalMethodTable())
-        return TRUE;
+    // Types without RIDs are unrelated to each other. This case is taken for arrays. 
+    if (rid == 0)
+        return FALSE;
 
     return (GetModule() == pMT->GetModule());
 }
@@ -809,11 +701,38 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 }
 #endif // FEATURE_COMINTEROP
 
+void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLoaderModule, AllocMemTracker *pamTracker, bool hasGenericStatics, WORD nonVirtualSlots, S_SIZE_T extraAllocation)
+{
+    S_SIZE_T cbAuxiliaryData = S_SIZE_T(sizeof(MethodTableAuxiliaryData));
+
+    size_t prependedAllocationSpace = 0;
+
+    prependedAllocationSpace = nonVirtualSlots * sizeof(TADDR);
+
+    if (hasGenericStatics)
+        prependedAllocationSpace = prependedAllocationSpace + sizeof(GenericsStaticsInfo);
+    
+    cbAuxiliaryData = cbAuxiliaryData + S_SIZE_T(prependedAllocationSpace) + extraAllocation;
+    if (cbAuxiliaryData.IsOverflow())
+        ThrowHR(COR_E_OVERFLOW);
+
+    BYTE* pAuxiliaryDataRegion = (BYTE *)
+        pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(cbAuxiliaryData));
+    
+    MethodTableAuxiliaryData * pMTAuxiliaryData;
+    pMTAuxiliaryData = (MethodTableAuxiliaryData *)(pAuxiliaryDataRegion + prependedAllocationSpace);
+
+    pMTAuxiliaryData->SetLoaderModule(pLoaderModule);
+    pMTAuxiliaryData->SetOffsetToNonVirtualSlots(hasGenericStatics ? -(int16_t)sizeof(GenericsStaticsInfo) : 0);
+    m_pAuxiliaryData = pMTAuxiliaryData;
+}
+
+
 
 //---------------------------------------------------------------------------------------
 //
 MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
-                                      LoaderHeap* pCreationHeap,
+                                      LoaderAllocator* pLoaderAllocator,
                                       AllocMemTracker* pamTracker)
 {
     CONTRACTL
@@ -825,19 +744,19 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
     }
     CONTRACTL_END;
 
-    EEClass* pClass = EEClass::CreateMinimalClass(pCreationHeap, pamTracker);
+    EEClass* pClass = EEClass::CreateMinimalClass(pLoaderAllocator->GetHighFrequencyHeap(), pamTracker);
 
     LOG((LF_BCL, LL_INFO100, "Level2 - Creating MethodTable {0x%p}...\n", pClass));
 
-    MethodTable* pMT = (MethodTable *)(void *)pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(sizeof(MethodTable))));
+    MethodTable* pMT = (MethodTable *)(void *)pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(MethodTable))));
 
     // Note: Memory allocated on loader heap is zero filled
     // memset(pMT, 0, sizeof(MethodTable));
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    BYTE* pMTWriteableData = (BYTE *)
-        pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(sizeof(MethodTableWriteableData))));
-    pMT->SetWriteableData((PTR_MethodTableWriteableData)pMTWriteableData);
+    pMT->AllocateAuxiliaryData(pLoaderAllocator, pContainingModule, pamTracker);
+    pMT->SetModule(pContainingModule);
+    pMT->SetLoaderAllocator(pLoaderAllocator);
 
     //
     // Set up the EEClass
@@ -852,8 +771,6 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
     // so the system has to be wired for dealing with no parent anyway.
     pMT->SetParentMethodTable(NULL);
     pMT->SetClass(pClass);
-    pMT->SetLoaderModule(pContainingModule);
-    pMT->SetLoaderAllocator(pContainingModule->GetLoaderAllocator());
     pMT->SetInternalCorElementType(ELEMENT_TYPE_CLASS);
     pMT->SetBaseSize(OBJECT_BASESIZE);
 
@@ -4912,7 +4829,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(GetWriteableData()->m_hExposedClassObject != 0);
+        POSTCONDITION(GetAuxiliaryData()->m_hExposedClassObject != 0);
         //REENTRANT
     }
     CONTRACT_END;
@@ -4922,11 +4839,11 @@ OBJECTREF MethodTable::GetManagedClassObject()
     GCStress<cfg_any, PulseGcTriggerPolicy>::MaybeTrigger();
 #endif // _DEBUG
 
-    if (GetWriteableData()->m_hExposedClassObject == NULL)
+    if (GetAuxiliaryData()->m_hExposedClassObject == NULL)
     {
         // Make sure that we have been restored
         CheckRestore();
-        TypeHandle(this).AllocateManagedClassObject(&GetWriteableDataForWrite()->m_hExposedClassObject);
+        TypeHandle(this).AllocateManagedClassObject(&GetAuxiliaryDataForWrite()->m_hExposedClassObject);
     }
     RETURN(GetManagedClassObjectIfExists());
 }
@@ -6754,70 +6671,6 @@ BOOL MethodTable::ImplementsInterfaceWithSameSlotsAsParent(MethodTable *pItfMT, 
     return TRUE;
 }
 
-//==========================================================================================
-BOOL MethodTable::HasSameInterfaceImplementationAsParent(MethodTable *pItfMT, MethodTable *pParentMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(!IsInterface() && !pParentMT->IsInterface());
-        PRECONDITION(pItfMT->IsInterface());
-    } CONTRACTL_END;
-
-    if (!ImplementsInterfaceWithSameSlotsAsParent(pItfMT, pParentMT))
-    {
-        // if the slots are not same, this class reimplements the interface
-        return FALSE;
-    }
-
-    // The target slots are the same, but they can still be overridden. We'll iterate
-    // the dispatch map beginning with pParentMT up the hierarchy and for each pItfMT
-    // entry check the target slot contents (pParentMT vs. this class). A mismatch
-    // means that there is an override. We'll keep track of source (interface) slots
-    // we have seen so that we can ignore entries higher in the hierarchy that are no
-    // longer in effect at pParentMT level.
-    BitMask bitMask;
-
-    WORD wSeenSlots = 0;
-    WORD wTotalSlots = pItfMT->GetNumVtableSlots();
-
-    MethodTable *pMT = pParentMT;
-    do
-    {
-        DispatchMap::EncodedMapIterator it(pMT);
-        for (; it.IsValid(); it.Next())
-        {
-            DispatchMapEntry *pCurEntry = it.Entry();
-            if (DispatchMapTypeMatchesMethodTable(pCurEntry->GetTypeID(), pItfMT))
-            {
-                UINT32 ifaceSlot = pCurEntry->GetSlotNumber();
-                if (!bitMask.TestBit(ifaceSlot))
-                {
-                    bitMask.SetBit(ifaceSlot);
-
-                    UINT32 targetSlot = pCurEntry->GetTargetSlotNumber();
-                    if (GetRestoredSlot(targetSlot) != pParentMT->GetRestoredSlot(targetSlot))
-                    {
-                        // the target slot is overridden
-                        return FALSE;
-                    }
-
-                    if (++wSeenSlots == wTotalSlots)
-                    {
-                        // we've resolved all slots, no reason to continue
-                        break;
-                    }
-                }
-            }
-        }
-        pMT = pMT->GetParentMethodTable();
-    }
-    while (pMT != NULL);
-
-    return TRUE;
-}
-
 #endif // !DACCESS_COMPILE
 
 //==========================================================================================
@@ -7256,18 +7109,6 @@ BOOL MethodTable::SanityCheck()
         return (pCanonMT == this) || IsArray();
 }
 
-//==========================================================================================
-unsigned MethodTable::GetTypeDefRid()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    WORD token = m_wToken;
-
-    if (token == METHODTABLE_TOKEN_OVERFLOW)
-        return (unsigned)*GetTokenOverflowPtr();
-
-    return token;
-}
 
 //==========================================================================================
 void MethodTable::SetCl(mdTypeDef token)
@@ -7275,17 +7116,7 @@ void MethodTable::SetCl(mdTypeDef token)
     LIMITED_METHOD_CONTRACT;
 
     unsigned rid = RidFromToken(token);
-    if (rid >= METHODTABLE_TOKEN_OVERFLOW)
-    {
-        m_wToken = METHODTABLE_TOKEN_OVERFLOW;
-        *GetTokenOverflowPtr() = rid;
-    }
-    else
-    {
-        _ASSERTE(FitsIn<WORD>(rid));
-        m_wToken = (WORD)rid;
-    }
-
+    m_dwFlags2 = (rid << 8) | (m_dwFlags2 & 0xFF);
     _ASSERTE(GetCl() == token);
 }
 
@@ -7326,22 +7157,6 @@ WORD MethodTable::GetNumHandleRegularStatics()
     return GetClass()->GetNumHandleRegularStatics();
 }
 
-//==========================================================================================
-WORD MethodTable::GetNumBoxedRegularStatics()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return GetClass()->GetNumBoxedRegularStatics();
-}
-
-//==========================================================================================
-WORD MethodTable::GetNumBoxedThreadStatics ()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return GetClass()->GetNumBoxedThreadStatics();
-}
-
 #ifdef _DEBUG
 //==========================================================================================
 // Returns true if pointer to the parent method table has been initialized/restored already.
@@ -7350,9 +7165,8 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    // workaround: Type loader accesses partially initialized datastructures that interferes with IBC logging.
-    // Once type loader is fixed to do not access partially  initialized datastructures, this can go away.
-    if (!GetWriteableData()->IsParentMethodTablePointerValid())
+    // workaround: Type loader accesses partially initialized datastructures
+    if (!GetAuxiliaryData()->IsParentMethodTablePointerValid())
         return FALSE;
 
     return TRUE;
@@ -7589,11 +7403,13 @@ MethodTable::MethodData::ProcessMap(
 } // MethodTable::MethodData::ProcessMap
 
 //==========================================================================================
-UINT32 MethodTable::MethodDataObject::GetObjectSize(MethodTable *pMT)
+UINT32 MethodTable::MethodDataObject::GetObjectSize(MethodTable *pMT, MethodDataComputeOptions computeOptions)
 {
     WRAPPER_NO_CONTRACT;
+    _ASSERTE(computeOptions != MethodDataComputeOptions::CacheOnly);
+
     UINT32 cb = sizeof(MethodTable::MethodDataObject);
-    cb += pMT->GetCanonicalMethodTable()->GetNumMethods() * sizeof(MethodDataObjectEntry);
+    cb += ComputeNumMethods(pMT, computeOptions) * sizeof(MethodDataObjectEntry);
     return cb;
 }
 
@@ -7678,6 +7494,7 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
         return;
 
     unsigned nVirtuals = pMT->GetNumVirtuals();
+    unsigned nVTableLikeSlots = pMT->GetCanonicalMethodTable()->GetNumVtableSlots();
 
     MethodTable::IntroducedMethodIterator it(pMT, FALSE);
     for (; it.IsValid(); it.Next())
@@ -7694,6 +7511,12 @@ void MethodTable::MethodDataObject::FillEntryDataForAncestor(MethodTable * pMT)
         {
             if (m_containsMethodImpl && slot < nVirtuals)
                 continue;
+
+            if (m_virtualsOnly && slot >= nVTableLikeSlots)
+            {
+                _ASSERTE(!pMD->IsVirtual() || (pMT->IsValueType() && !pMD->IsUnboxingStub()));
+                continue;
+            }
         }
         else
         {
@@ -7846,7 +7669,7 @@ UINT32 MethodTable::MethodDataInterfaceImpl::GetObjectSize(MethodTable *pMTDecl)
 {
     WRAPPER_NO_CONTRACT;
     UINT32 cb = sizeof(MethodDataInterfaceImpl);
-    cb += pMTDecl->GetNumMethods() * sizeof(MethodDataEntry);
+    cb += pMTDecl->GetNumVirtuals() * sizeof(MethodDataEntry);
     return cb;
 }
 
@@ -8029,28 +7852,18 @@ void MethodTable::MethodDataInterfaceImpl::InvalidateCachedVirtualSlot(UINT32 sl
 }
 
 //==========================================================================================
-void MethodTable::CheckInitMethodDataCache()
+void MethodTable::InitMethodDataCache()
 {
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    if (s_pMethodDataCache == NULL)
-    {
-        UINT32 cb = MethodDataCache::GetObjectSize(8);
-        NewArrayHolder<BYTE> hb(new BYTE[cb]);
-        MethodDataCache *pCache = new (hb.GetValue()) MethodDataCache(8);
-        if (InterlockedCompareExchangeT(
-                &s_pMethodDataCache, pCache, NULL) == NULL)
-        {
-            hb.SuppressRelease();
-        }
-        // If somebody beat us, return and allow the holders to take care of cleanup.
-        else
-        {
-            return;
-        }
-    }
+    _ASSERTE(s_pMethodDataCache == NULL);
+
+    UINT32 cb = MethodDataCache::GetObjectSize(8);
+    NewArrayHolder<BYTE> hb(new BYTE[cb]);
+    s_pMethodDataCache = new (hb.GetValue()) MethodDataCache(8);
+    hb.SuppressRelease();
 }
 
 //==========================================================================================
@@ -8068,7 +7881,6 @@ MethodTable::MethodData *MethodTable::FindMethodDataHelper(MethodTable *pMTDecl,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        CONSISTENCY_CHECK(s_fUseMethodDataCache);
     } CONTRACTL_END;
 
     return s_pMethodDataCache->Find(pMTDecl, pMTImpl);
@@ -8085,13 +7897,11 @@ MethodTable::MethodData *MethodTable::FindParentMethodDataHelper(MethodTable *pM
     }
     CONTRACTL_END;
     MethodData *pData = NULL;
-    if (s_fUseMethodDataCache && s_fUseParentMethodData) {
-        if (!pMT->IsInterface()) {
-            //@todo : this won't be correct for non-shared code
-            MethodTable *pMTParent = pMT->GetParentMethodTable();
-            if (pMTParent != NULL) {
-                pData = FindMethodDataHelper(pMTParent, pMTParent);
-            }
+    if (!pMT->IsInterface()) {
+        //@todo : this won't be correct for non-shared code
+        MethodTable *pMTParent = pMT->GetParentMethodTable();
+        if (pMTParent != NULL) {
+            pData = FindMethodDataHelper(pMTParent, pMTParent);
         }
     }
     return pData;
@@ -8105,7 +7915,8 @@ MethodTable::GetMethodDataHelper(
     const DispatchMapTypeID * rgDeclTypeIDs,
     UINT32                    cDeclTypeIDs,
     MethodTable *             pMTDecl,
-    MethodTable *             pMTImpl)
+    MethodTable *             pMTImpl,
+    MethodDataComputeOptions  computeOptions)
 {
     CONTRACTL {
         THROWS;
@@ -8143,21 +7954,21 @@ MethodTable::GetMethodDataHelper(
 #endif //_DEBUG
 
     // Can't cache, since this is a custom method used in BuildMethodTable
-    MethodDataWrapper hDecl(GetMethodData(pMTDecl, FALSE));
-    MethodDataWrapper hImpl(GetMethodData(pMTImpl, FALSE));
+    MethodDataWrapper hDecl(GetMethodData(pMTDecl, computeOptions));
+    MethodDataWrapper hImpl(GetMethodData(pMTImpl, computeOptions));
 
-    MethodDataInterfaceImpl * pData = new ({ pMTDecl }) MethodDataInterfaceImpl(rgDeclTypeIDs, cDeclTypeIDs, hDecl, hImpl);
+    MethodDataInterfaceImpl * pData = new ({ pMTDecl}) MethodDataInterfaceImpl(rgDeclTypeIDs, cDeclTypeIDs, hDecl, hImpl);
 
     return pData;
 } // MethodTable::GetMethodDataHelper
 
 //==========================================================================================
-// The fCanCache argument determines if the resulting MethodData object can
+// The computeOptions argument determines if the resulting MethodData object can
 // be added to the global MethodDataCache. This is used when requesting a
 // MethodData object for a type currently being built.
 MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
                                                           MethodTable *pMTImpl,
-                                                          BOOL fCanCache)
+                                                          MethodDataComputeOptions computeOptions)
 {
     CONTRACTL {
         THROWS;
@@ -8172,23 +7983,23 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
     //@TODO: potentially cause deadlocks on the debug thread.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
 
-    if (s_fUseMethodDataCache) {
-        MethodData *pData = FindMethodDataHelper(pMTDecl, pMTImpl);
-        if (pData != NULL) {
-            return pData;
-        }
+    MethodData *pData = FindMethodDataHelper(pMTDecl, pMTImpl);
+    if (pData != NULL) {
+        return pData;
+    }
+
+    if (computeOptions == MethodDataComputeOptions::CacheOnly) {
+        return NULL;
     }
 
     // If we get here, there are no entries in the cache.
-    MethodData *pData = NULL;
     if (pMTDecl == pMTImpl) {
         if (pMTDecl->IsInterface()) {
             pData = new MethodDataInterface(pMTDecl);
         }
         else {
-            UINT32 cb = MethodDataObject::GetObjectSize(pMTDecl);
             MethodDataHolder h(FindParentMethodDataHelper(pMTDecl));
-            pData = new ({ pMTDecl }) MethodDataObject(pMTDecl, h.GetValue());
+            pData = new ({pMTDecl}, computeOptions) MethodDataObject(pMTDecl, h.GetValue(), computeOptions);
         }
     }
     else {
@@ -8196,11 +8007,12 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
             NULL,
             0,
             pMTDecl,
-            pMTImpl);
+            pMTImpl,
+            computeOptions);
     }
 
     // Insert in the cache if it is active.
-    if (fCanCache && s_fUseMethodDataCache) {
+    if (computeOptions == MethodDataComputeOptions::Cache) {
         s_pMethodDataCache->Insert(pData);
     }
 
@@ -8209,21 +8021,15 @@ MethodTable::MethodData *MethodTable::GetMethodDataHelper(MethodTable *pMTDecl,
 }
 
 //==========================================================================================
-// The fCanCache argument determines if the resulting MethodData object can
+// The computeOptions argument determines if the resulting MethodData object can
 // be added to the global MethodDataCache. This is used when requesting a
 // MethodData object for a type currently being built.
 MethodTable::MethodData *MethodTable::GetMethodData(MethodTable *pMTDecl,
                                                     MethodTable *pMTImpl,
-                                                    BOOL fCanCache)
+                                                    MethodDataComputeOptions computeOptions)
 {
-    CONTRACTL {
-        THROWS;
-        WRAPPER(GC_TRIGGERS);
-    } CONTRACTL_END;
-
-    MethodDataWrapper hData(GetMethodDataHelper(pMTDecl, pMTImpl, fCanCache));
-    hData.SuppressRelease();
-    return hData;
+    WRAPPER_NO_CONTRACT;
+    return GetMethodDataHelper(pMTDecl, pMTImpl, computeOptions);
 }
 
 //==========================================================================================
@@ -8233,7 +8039,8 @@ MethodTable::GetMethodData(
     const DispatchMapTypeID * rgDeclTypeIDs,
     UINT32                    cDeclTypeIDs,
     MethodTable *             pMTDecl,
-    MethodTable *             pMTImpl)
+    MethodTable *             pMTImpl,
+    MethodDataComputeOptions  computeOptions)
 {
     CONTRACTL {
         THROWS;
@@ -8243,20 +8050,18 @@ MethodTable::GetMethodData(
         PRECONDITION(!pMTImpl->IsInterface());
     } CONTRACTL_END;
 
-    MethodDataWrapper hData(GetMethodDataHelper(rgDeclTypeIDs, cDeclTypeIDs, pMTDecl, pMTImpl));
-    hData.SuppressRelease();
-    return hData;
+    return GetMethodDataHelper(rgDeclTypeIDs, cDeclTypeIDs, pMTDecl, pMTImpl, computeOptions);
 }
 
 //==========================================================================================
-// The fCanCache argument determines if the resulting MethodData object can
+// The computeOptions argument determines if the resulting MethodData object can
 // be added to the global MethodDataCache. This is used when requesting a
 // MethodData object for a type currently being built.
 MethodTable::MethodData *MethodTable::GetMethodData(MethodTable *pMT,
-                                                    BOOL fCanCache)
+                                                    MethodDataComputeOptions computeOptions)
 {
     WRAPPER_NO_CONTRACT;
-    return GetMethodData(pMT, pMT, fCanCache);
+    return GetMethodData(pMT, pMT, computeOptions);
 }
 
 //==========================================================================================
@@ -8311,7 +8116,7 @@ void MethodTable::MethodIterator::Init(MethodTable *pMTDecl, MethodTable *pMTImp
 
     LOG((LF_LOADER, LL_INFO10000, "MT::MethodIterator created for %s.\n", pMTDecl->GetDebugClassName()));
 
-    m_pMethodData = MethodTable::GetMethodData(pMTDecl, pMTImpl);
+    m_pMethodData = MethodTable::GetMethodData(pMTDecl, pMTImpl, MethodDataComputeOptions::Cache);
     CONSISTENCY_CHECK(CheckPointer(m_pMethodData));
     m_iCur = 0;
     m_iMethods = (INT32)m_pMethodData->GetNumMethods();
@@ -8552,9 +8357,14 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pMTParent->EnumMemoryRegions(flags);
     }
 
-    if (HasNonVirtualSlotsArray())
+    if (HasNonVirtualSlots())
     {
-        DacEnumMemoryRegion(dac_cast<TADDR>(GetNonVirtualSlotsArray()), GetNonVirtualSlotsArraySize());
+        DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableAuxiliaryData::GetNonVirtualSlotsArray(GetAuxiliaryData())) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
+    }
+
+    if (HasGenericsStaticsInfo())
+    {
+        DacEnumMemoryRegion(dac_cast<TADDR>(GetGenericsStaticsInfo()), sizeof(GenericsStaticsInfo));
     }
 
     if (HasInterfaceMap())
@@ -8587,10 +8397,10 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         DacEnumMemoryRegion(dac_cast<TADDR>(it.GetIndirectionSlot()), it.GetSize());
     }
 
-    PTR_MethodTableWriteableData pWriteableData = m_pWriteableData;
-    if (pWriteableData.IsValid())
+    PTR_MethodTableAuxiliaryData pAuxiliaryData = m_pAuxiliaryData;
+    if (pAuxiliaryData.IsValid())
     {
-        pWriteableData.EnumMem();
+        pAuxiliaryData.EnumMem();
     }
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
@@ -8788,8 +8598,6 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
         }
     }
 #endif
-
-    // IBC logging is not needed here - slots in ngen images are immutable.
 
 #ifdef TARGET_ARM
     // Ensure on ARM that all target addresses are marked as thumb code.
@@ -9435,10 +9243,10 @@ BOOL MethodTable::Validate()
     ASSERT_AND_CHECK(SanityCheck());
 
 #ifdef _DEBUG
-    ASSERT_AND_CHECK(m_pWriteableData != NULL);
+    ASSERT_AND_CHECK(m_pAuxiliaryData != NULL);
 
-    MethodTableWriteableData *pWriteableData = m_pWriteableData;
-    DWORD dwLastVerifiedGCCnt = pWriteableData->m_dwLastVerifedGCCnt;
+    MethodTableAuxiliaryData *pAuxiliaryData = m_pAuxiliaryData;
+    DWORD dwLastVerifiedGCCnt = pAuxiliaryData->m_dwLastVerifedGCCnt;
     // Here we used to assert that (dwLastVerifiedGCCnt <= GCHeapUtilities::GetGCHeap()->GetGcCount()) but
     // this is no longer true because with background gc. Since the purpose of having
     // m_dwLastVerifedGCCnt is just to only verify the same method table once for each GC
@@ -9464,7 +9272,7 @@ BOOL MethodTable::Validate()
     }
 
 #ifdef _DEBUG
-    pWriteableData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
+    pAuxiliaryData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
 #endif //_DEBUG
 
     return TRUE;

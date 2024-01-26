@@ -83,7 +83,7 @@ jobs:
 
     # Linux PPC64le
     - ${{ if eq(parameters.platform, 'linux_ppc64le') }}:
-        - Ubuntu.2004.PPC64le.Experimental.Open
+        - Ubuntu.2204.PPC64le.Experimental.Open
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
@@ -97,7 +97,7 @@ jobs:
     - ${{ if in(parameters.platform, 'android_x86', 'android_x64', 'linux_bionic_x64') }}:
       - Ubuntu.2204.Amd64.Android.29.Open
     - ${{ if in(parameters.platform, 'android_arm', 'android_arm64', 'linux_bionic_arm64') }}:
-      - Windows.10.Amd64.Android.Open
+      - Windows.11.Amd64.Android.Open
 
     # iOS Simulator/Mac Catalyst arm64
     - ${{ if in(parameters.platform, 'maccatalyst_arm64', 'iossimulator_arm64') }}:

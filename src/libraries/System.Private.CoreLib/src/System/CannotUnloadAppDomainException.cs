@@ -18,13 +18,13 @@ namespace System
         }
 
         public CannotUnloadAppDomainException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_CannotUnloadAppDomainException)
         {
             HResult = HResults.COR_E_CANNOTUNLOADAPPDOMAIN;
         }
 
         public CannotUnloadAppDomainException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_CannotUnloadAppDomainException, innerException)
         {
             HResult = HResults.COR_E_CANNOTUNLOADAPPDOMAIN;
         }

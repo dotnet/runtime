@@ -1,5 +1,7 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Thu Aug 16 09:44:45 MDT 2007
+.\" Manual page created with latex2man on Tue Aug 29 11:41:44 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +12,7 @@
 
 .fi
 ..
-.TH "UNW\\_IS\\_FPREG" "3" "16 August 2007" "Programming Library " "Programming Library "
+.TH "UNW\\_IS\\_FPREG" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
 .SH NAME
 unw_is_fpreg
 \-\- check if a register is a floating\-point register 
@@ -50,17 +52,17 @@ of 0.
 
 .PP
 unw_is_fpreg()
-is thread\-safe as well as safe to use 
+is thread safe as well as safe to use 
 from a signal handler. 
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3),
-unw_get_reg(3),
-unw_set_reg(3),
-unw_get_fpreg(3),
-unw_set_fpreg(3)
+libunwind(3libunwind),
+unw_get_reg(3libunwind),
+unw_set_reg(3libunwind),
+unw_get_fpreg(3libunwind),
+unw_set_fpreg(3libunwind)
 .PP
 .SH AUTHOR
 

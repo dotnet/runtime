@@ -12,7 +12,7 @@ using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    // this maps to src\mono\wasm\runtime\corebindings.ts
+    // this maps to src\mono\browser\runtime\managed-exports.ts
     // the public methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
     internal static unsafe partial class JavaScriptExports
     {
@@ -279,7 +279,7 @@ namespace System.Runtime.InteropServices.JavaScript
         // void InstallMainSynchronizationContext()
         public static void InstallMainSynchronizationContext()
         {
-            InstallWebWorkerInterop(true);
+            JSSynchronizationContext.InstallWebWorkerInterop(true, CancellationToken.None);
         }
 
 #endif

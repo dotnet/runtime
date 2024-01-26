@@ -6,7 +6,7 @@ import BuildConfiguration from "consts:configuration";
 import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, LoadBootResourceCallback } from "../types";
 import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
-import { ENVIRONMENT_IS_WEB, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
+import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { mono_exit, register_exit_handlers } from "./exit";
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
@@ -419,7 +419,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
     }
 
     await detect_features_and_polyfill(emscriptenModule);
-    if (BuildConfiguration === "Debug") {
+    if (BuildConfiguration === "Debug" && !ENVIRONMENT_IS_WORKER) {
         mono_log_info(`starting script ${loaderHelpers.scriptUrl}`);
         mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
     }

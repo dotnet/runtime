@@ -79,7 +79,7 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrsarm64sve.h"
 
 #elif defined(TARGET_LOONGARCH64)
-        #define INST(id, nm, ldst, e1) nm,
+        #define INST(id, nm, ldst, e1, msk, fmt) nm,
         #include "instrs.h"
 
 #elif defined(TARGET_RISCV64)
@@ -1239,7 +1239,7 @@ void CodeGen::inst_RV_RV_TT(
     bool IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
     if (IsEmbBroadcast)
     {
-        instOptions = INS_OPTS_EVEX_b;
+        instOptions = INS_OPTS_EVEX_eb_er_rd;
         if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
         {
             switch (ins)
@@ -1306,7 +1306,7 @@ void CodeGen::inst_RV_RV_TT(
                 op1Reg = targetReg;
             }
 
-            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
+            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg, instOptions);
         }
         break;
 

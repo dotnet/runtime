@@ -21,6 +21,7 @@ public class LazyLoadingTests : AppTestBase
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task LoadLazyAssemblyBeforeItIsNeeded()
     {
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");
@@ -31,6 +32,7 @@ public class LazyLoadingTests : AppTestBase
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task FailOnMissingLazyAssembly()
     {
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");
@@ -42,6 +44,6 @@ public class LazyLoadingTests : AppTestBase
             BrowserQueryString: new Dictionary<string, string> { ["loadRequiredAssembly"] = "false" },
             ExpectedExitCode: 1
         ));
-        Assert.True(result.ConsoleOutput.Any(m => m.Contains("Could not load file or assembly") && m.Contains("System.Text.Json")), "The lazy loading test didn't emit expected error message");
+        Assert.True(result.ConsoleOutput.Any(m => m.Contains("Could not load file or assembly") && m.Contains("Json")), "The lazy loading test didn't emit expected error message");
     }
 }

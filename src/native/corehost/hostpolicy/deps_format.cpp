@@ -144,7 +144,7 @@ void deps_json_t::reconcile_libraries_with_targets(
             for (const auto& asset : assets)
             {
                 auto asset_name = asset.name;
-                if (ends_with(asset_name, _X(".ni"), false))
+                if (utils::ends_with(asset_name, _X(".ni"), false))
                 {
                     asset_name = strip_file_ext(asset_name);
                 }
@@ -595,7 +595,7 @@ void deps_json_t::load(bool is_framework_dependent, std::function<void(const jso
         runtime_target.GetString() :
         runtime_target[_X("name")].GetString();
 
-    trace::verbose(_X("Loading deps file... [%s] as framework dependent=%d, use_fallback_graph=%d"), m_deps_file.c_str(), is_framework_dependent, m_rid_resolution_options.use_fallback_graph);
+    trace::verbose(_X("Loading deps file... [%s]: is_framework_dependent=%d, use_fallback_graph=%d"), m_deps_file.c_str(), is_framework_dependent, m_rid_resolution_options.use_fallback_graph);
 
     if (is_framework_dependent)
     {

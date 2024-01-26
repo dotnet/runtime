@@ -39,7 +39,7 @@ function onMonoConfigReceived(config: MonoConfigInternal): void {
     loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
 
     if (ENVIRONMENT_IS_WEB && config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
-        loaderHelpers.setup_proxy_console("pthread-worker", console, globalThis.location.origin);
+        loaderHelpers.setup_proxy_console("worker-idle", console, globalThis.location.origin);
     }
 }
 
