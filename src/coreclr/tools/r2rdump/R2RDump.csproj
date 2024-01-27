@@ -4,7 +4,7 @@
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <Platforms>x64;x86;arm64;arm;loongarch64</Platforms>
+    <Platforms>x64;x86;arm64;arm;loongarch64;riscv64</Platforms>
     <AssemblyKey>Open</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
