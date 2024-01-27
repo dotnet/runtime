@@ -25,7 +25,7 @@ namespace System
                 int b = 0;
                 char ch;
 
-                for (; (start < end) && (ch = str[start]) != '.' && ch != ':'; ++start)
+                for (; (start < end) && (ch = str[start]) is not ('.' or ':'); ++start)
                 {
                     b = (b * 10) + ch - '0';
                 }
@@ -118,10 +118,10 @@ namespace System
                 if (allowIPv6)
                 {
                     // for ipv4 inside ipv6 the terminator is either ScopeId, prefix or ipv6 terminator
-                    if (ch == ']' || ch == '/' || ch == '%')
+                    if (ch is ']' or '/' or '%')
                         break;
                 }
-                else if (ch == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
+                else if (ch is '/' or '\\' || (notImplicitFile && ch is ':' or '?' or '#'))
                 {
                     break;
                 }
@@ -202,7 +202,7 @@ namespace System
                     if (current < end)
                     {
                         ch = name[current];
-                        if (ch == 'x' || ch == 'X')
+                        if (ch is 'x' or 'X')
                         {
                             numberBase = Hex;
                             current++;
@@ -275,7 +275,7 @@ namespace System
             {
                 // end of string, allowed
             }
-            else if ((ch = name[current]) == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
+            else if ((ch = name[current]) is '/' or '\\' || (notImplicitFile && ch is ':' or '?' or '#'))
             {
                 end = current;
             }

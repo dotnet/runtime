@@ -293,7 +293,7 @@ namespace System
                 if (IsDosPath)
                 {
                     char ch = _string[_info.Offset.Path];
-                    return (ch == '/' || ch == '\\') ? 3 : 2;
+                    return (ch is '/' or '\\') ? 3 : 2;
                 }
                 return 0;
             }
@@ -597,7 +597,7 @@ namespace System
             //
             for (int i = 0; i < relativeStr.Length; ++i)
             {
-                if (relativeStr[i] == '/' || relativeStr[i] == '\\' || relativeStr[i] == '?' || relativeStr[i] == '#')
+                if (relativeStr[i] is '/' or '\\' or '?' or '#')
                 {
                     break;
                 }
@@ -977,7 +977,7 @@ namespace System
                     string str = (IsImplicitFile && _info.Offset.Host == (IsDosPath ? 0 : 2) &&
                         _info.Offset.Query == _info.Offset.End)
                             ? _string
-                            : (IsDosPath && (_string[start] == '/' || _string[start] == '\\'))
+                            : (IsDosPath && _string[start] is '/' or '\\')
                                 ? _string.Substring(start + 1, _info.Offset.Query - start - 1)
                                 : _string.Substring(start, _info.Offset.Query - start);
 
@@ -1014,7 +1014,7 @@ namespace System
                 else
                 {
                     // Dos path
-                    if (_string[start] == '/' || _string[start] == '\\')
+                    if (_string[start] is '/' or '\\')
                     {
                         // Skip leading slash for a DOS path
                         ++start;
@@ -2012,14 +2012,13 @@ namespace System
                 if (_syntax.IsAllSet(UriSyntaxFlags.AllowEmptyHost | UriSyntaxFlags.AllowDOSPath)
                     && NotAny(Flags.ImplicitFile) && (idx + 1 < length))
                 {
-                    char c;
                     int i = idx;
 
                     // V1 Compat: Allow _compression_ of > 3 slashes only for File scheme.
                     // This will skip all slashes and if their number is 2+ it sets the AuthorityFound flag
                     for (; i < length; ++i)
                     {
-                        if (!((c = pUriString[i]) == '\\' || c == '/'))
+                        if (pUriString[i] is not ('\\' or '/'))
                             break;
                     }
 
@@ -2031,10 +2030,9 @@ namespace System
                             _flags |= Flags.AuthorityFound;
                         }
                         // DOS-like path?
-                        if (i + 1 < length && ((c = pUriString[i + 1]) == ':' || c == '|') &&
-                            char.IsAsciiLetter(pUriString[i]))
+                        if (i + 1 < length && pUriString[i + 1] is ':' or '|' && char.IsAsciiLetter(pUriString[i]))
                         {
-                            if (i + 2 >= length || ((c = pUriString[i + 2]) != '\\' && c != '/'))
+                            if (i + 2 >= length || pUriString[i + 2] is not ('\\' or '/'))
                             {
                                 // report an error but only for a file: scheme
                                 if (_syntax.InFact(UriSyntaxFlags.FileLikeUri))
@@ -2062,8 +2060,8 @@ namespace System
                             }
                         }
                         // UNC share?
-                        else if (_syntax.InFact(UriSyntaxFlags.FileLikeUri) && (i - idx >= 2 && i - idx != 3 &&
-                            i < length && pUriString[i] != '?' && pUriString[i] != '#'))
+                        else if (_syntax.InFact(UriSyntaxFlags.FileLikeUri) && i - idx >= 2 && i - idx != 3 &&
+                            i < length && pUriString[i] is not ('?' or '#'))
                         {
                             // V1.0 did not support file:///, fixing it with minimal behavior change impact
                             // Only FILE scheme may have UNC Path flag set
@@ -2092,7 +2090,7 @@ namespace System
                     if (_syntax.InFact(UriSyntaxFlags.MustHaveAuthority))
                     {
                         // (V1.0 compatibility) This will allow http:\\ http:\/ http:/\
-                        if ((first == '/' || first == '\\') && (second == '/' || second == '\\'))
+                        if (first is '/' or '\\' && second is '/' or '\\')
                         {
                             _flags |= Flags.AuthorityFound;
                             idx += 2;
@@ -2233,7 +2231,7 @@ namespace System
                     idx += 2;
                     //skip any other slashes (compatibility with V1.0 parser)
                     int end = (int)(cF & Flags.IndexMask);
-                    while (idx < end && (_string[idx] == '/' || _string[idx] == '\\'))
+                    while (idx < end && _string[idx] is '/' or '\\')
                     {
                         ++idx;
                     }
@@ -2260,7 +2258,7 @@ namespace System
                         // Skip slashes if it was allowed during ctor time
                         // NB: Today this is only allowed if a Unc or DosPath was found after the scheme
                         int end = (int)(cF & Flags.IndexMask);
-                        while (idx < end && (_string[idx] == '/' || _string[idx] == '\\'))
+                        while (idx < end && _string[idx] is '/' or '\\')
                         {
                             notCanonicalScheme = true;
                             ++idx;
@@ -2479,23 +2477,14 @@ namespace System
                 }
                 else if (NotAny(Flags.CanonicalDnsHost))
                 {
-                    // Check to see if we can take the canonical host string out of _string
-                    if (_info.ScopeId is not null)
+                    // Check to see if we can take the canonical host string out of _string.
+                    // IPv6 ScopeId is included when serializing a Uri.
+                    ref Offset offset = ref _info.Offset;
+
+                    if (_info.ScopeId is not null || !_string.AsSpan(offset.Host, offset.End - offset.Host).StartsWith(host, StringComparison.Ordinal))
                     {
                         // IPv6 ScopeId is included when serializing a Uri
                         flags |= (Flags.HostNotCanonical | Flags.E_HostNotCanonical);
-                    }
-                    else
-                    {
-                        for (int i = 0; i < host.Length; ++i)
-                        {
-                            if ((_info.Offset.Host + i) >= _info.Offset.End ||
-                                host[i] != _string[_info.Offset.Host + i])
-                            {
-                                flags |= (Flags.HostNotCanonical | Flags.E_HostNotCanonical);
-                                break;
-                            }
-                        }
                     }
                 }
             }
@@ -2601,14 +2590,14 @@ namespace System
                 else
                 {
                     host = CreateHostStringHelper(host, 0, host.Length, ref flags, ref _info.ScopeId);
-                    for (int i = 0; i < host.Length; ++i)
+
+                    ref Offset offset = ref _info.Offset;
+
+                    if (!_string.AsSpan(offset.Host, offset.End - offset.Host).StartsWith(host, StringComparison.Ordinal))
                     {
-                        if ((_info.Offset.Host + i) >= _info.Offset.End || host[i] != _string[_info.Offset.Host + i])
-                        {
-                            _flags |= (Flags.HostNotCanonical | Flags.E_HostNotCanonical);
-                            break;
-                        }
+                        _flags |= (Flags.HostNotCanonical | Flags.E_HostNotCanonical);
                     }
+
                     _flags = (_flags & ~Flags.HostTypeMask) | (flags & Flags.HostTypeMask);
                 }
             }
@@ -3405,7 +3394,7 @@ namespace System
                 // We use special syntax flag to check if the path is rooted, i.e. has a first slash
                 //
                 if (((_flags & Flags.AuthorityFound) != 0) && ((syntaxFlags & UriSyntaxFlags.PathIsRooted) != 0)
-                    && (_info.Offset.Path == length || (str[_info.Offset.Path] != '/' && str[_info.Offset.Path] != '\\')))
+                    && (_info.Offset.Path == length || str[_info.Offset.Path] is not ('/' or '\\')))
                 {
                     cF |= Flags.FirstSlashAbsent;
                 }
@@ -3803,7 +3792,7 @@ namespace System
             }
 
             //Special case is an empty authority
-            if (idx == length || ((ch = pString[idx]) == '/' || (ch == '\\' && StaticIsFile(syntax)) || ch == '#' || ch == '?'))
+            if (idx == length || (ch = pString[idx]) == '/' || (ch == '\\' && StaticIsFile(syntax)) || ch is '#' or '?')
             {
                 if (syntax.InFact(UriSyntaxFlags.AllowEmptyHost))
                 {
@@ -3830,8 +3819,7 @@ namespace System
             {
                 for (; start < end; ++start)
                 {
-                    if (start == end - 1 || pString[start] == '?' || pString[start] == '#' || pString[start] == '\\' ||
-                        pString[start] == '/')
+                    if (start == end - 1 || pString[start] is '?' or '#' or '\\' or '/')
                     {
                         start = idx;
                         break;
@@ -4013,7 +4001,7 @@ namespace System
                     flags |= Flags.BasicHostType;
                     for (end = idx; end < length; ++end)
                     {
-                        if (pString[end] == '/' || (pString[end] == '?' || pString[end] == '#'))
+                        if (pString[end] is '/' or '?' or '#')
                         {
                             break;
                         }
@@ -4049,8 +4037,9 @@ namespace System
                         int startOtherHost = idx;
                         for (end = idx; end < length; ++end)
                         {
-                            if (dotFound && (pString[end] == '/' || pString[end] == '?' || pString[end] == '#'))
+                            if (dotFound && (pString[end] is '/' or '?' or '#'))
                                 break;
+
                             else if (end < (idx + 2) && pString[end] == '.')
                             {
                                 // allow one or two dots
@@ -4226,27 +4215,25 @@ namespace System
                         foundEscaping = true;
                     }
                 }
-                else if (c == '/' || c == '\\')
+                else if (c is '/' or '\\')
                 {
                     if ((res & Check.BackslashInPath) == 0 && c == '\\')
                     {
                         res |= Check.BackslashInPath;
                     }
-                    if ((res & Check.DotSlashAttn) == 0 && i + 1 != end && (str[i + 1] == '/' || str[i + 1] == '\\'))
+                    if ((res & Check.DotSlashAttn) == 0 && i + 1 != end && (str[i + 1] is '/' or '\\'))
                     {
                         res |= Check.DotSlashAttn;
                     }
                 }
                 else if (c == '.')
                 {
-                    if ((res & Check.DotSlashAttn) == 0 && i + 1 == end || str[i + 1] == '.' || str[i + 1] == '/'
-                        || str[i + 1] == '\\' || str[i + 1] == '?' || str[i + 1] == '#')
+                    if ((res & Check.DotSlashAttn) == 0 && i + 1 == end || str[i + 1] is '.' or '/' or '\\' or '?' or '#')
                     {
                         res |= Check.DotSlashAttn;
                     }
                 }
-                else if (((c <= '"' && c != '!') || (c >= '[' && c <= '^') || c == '>'
-                        || c == '<' || c == '`'))
+                else if ((c <= '"' && c != '!') || (c >= '[' && c <= '^') || c is '>' or '<' or '`')
                 {
                     if (!needsEscaping) needsEscaping = true;
 
@@ -4269,7 +4256,7 @@ namespace System
                     //try unescape a byte hex escaping
                     if (i + 2 < end && (c = UriHelper.DecodeHexChars(str[i + 1], str[i + 2])) != c_DummyChar)
                     {
-                        if (c == '.' || c == '/' || c == '\\')
+                        if (c is '.' or '/' or '\\')
                         {
                             res |= Check.DotSlashEscaped;
                         }
@@ -4722,8 +4709,8 @@ namespace System
 
             //check a special case for the base as DOS path and a rooted relative string
             if (basePart.IsDosPath &&
-                (c1 == '/' || c1 == '\\') &&
-                (relativePart.Length == 1 || (relativePart[1] != '/' && relativePart[1] != '\\')))
+                c1 is '/' or '\\' &&
+                (relativePart.Length == 1 || relativePart[1] is not ('/' or '\\')))
             {
                 // take relative part appended to the base string after the drive letter
                 int idx = basePart.OriginalString.IndexOf(':');
@@ -4740,9 +4727,9 @@ namespace System
             // Check special case for Unc or absolute path in relativePart when base is FILE
             if (StaticIsFile(basePart.Syntax))
             {
-                if (c1 == '\\' || c1 == '/')
+                if (c1 is '\\' or '/')
                 {
-                    if (relativePart.Length >= 2 && (relativePart[1] == '\\' || relativePart[1] == '/'))
+                    if (relativePart.Length >= 2 && relativePart[1] is '\\' or '/')
                     {
                         //Assuming relative is a Unc path and base is a file uri.
                         return basePart.IsImplicitFile ? relativePart : "file:" + relativePart;
@@ -5085,19 +5072,7 @@ namespace System
         [Obsolete("Uri.IsReservedCharacter has been deprecated and is not supported.")]
         protected virtual bool IsReservedCharacter(char character)
         {
-            // This method just does not make sense as protected virtual
-            // It should go public static asap
-
-            return (character == ';')
-                || (character == '/')
-                || (character == ':')
-                || (character == '@')   // OK FS char
-                || (character == '&')
-                || (character == '=')
-                || (character == '+')   // OK FS char
-                || (character == '$')   // OK FS char
-                || (character == ',')
-                ;
+            return character is ';' or '/' or ':' or '@' or '&' or '=' or '+' or '$' or ',';
         }
 
         //
@@ -5113,34 +5088,8 @@ namespace System
         [Obsolete("Uri.IsExcludedCharacter has been deprecated and is not supported.")]
         protected static bool IsExcludedCharacter(char character)
         {
-            // This method just does not make sense as protected
-            // It should go public static asap
-
-            //
-            // the excluded characters...
-            //
-
-            return (character <= 0x20)
-                || (character >= 0x7f)
-                || (character == '<')
-                || (character == '>')
-                || (character == '#')
-                || (character == '%')
-                || (character == '"')
-
-                //
-                // the 'unwise' characters...
-                //
-
-                || (character == '{')
-                || (character == '}')
-                || (character == '|')
-                || (character == '\\')
-                || (character == '^')
-                || (character == '[')
-                || (character == ']')
-                || (character == '`')
-                ;
+            return !char.IsAscii(character) ||
+                character is <= ' ' or '<' or '>' or '#' or '%' or '"' or '{' or '}' or '|' or '\\' or '^' or '[' or ']' or '`';
         }
 
         //
@@ -5159,31 +5108,7 @@ namespace System
             // This method just does not make sense as protected virtual
             // It should go public static asap
 
-            return (character < 0x20)
-                || (character == ';')
-                || (character == '/')
-                || (character == '?')
-                || (character == ':')
-                || (character == '&')
-                || (character == '=')
-                || (character == ',')
-                || (character == '*')
-                || (character == '<')
-                || (character == '>')
-                || (character == '"')
-                || (character == '|')
-                || (character == '\\')
-                || (character == '^')
-                ;
-        }
-
-        //Used by UriBuilder
-        internal bool HasAuthority
-        {
-            get
-            {
-                return InFact(Flags.AuthorityFound);
-            }
+            return character is < ' ' or ';' or '/' or '?' or ':' or '&' or '=' or ',' or '*' or '<' or '>' or '"' or '|' or '\\' or '^';
         }
     } // class Uri
 } // namespace System

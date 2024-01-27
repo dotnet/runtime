@@ -49,22 +49,24 @@ namespace System
             int i = start;
             for (; i < end; ++i)
             {
-                if (name[i] == '/' || name[i] == '\\' || (notImplicitFile && (name[i] == ':' || name[i] == '?' || name[i] == '#')))
+                char c = name[i];
+
+                if (c is '/' or '\\' || (notImplicitFile && c is ':' or '?' or '#'))
                 {
                     end = i;
                     break;
                 }
-                else if (name[i] == '.')
+                else if (c == '.')
                 {
                     ++i;
                     break;
                 }
 
-                if (char.IsLetter(name[i]) || name[i] == '-' || name[i] == '_')
+                if (char.IsLetter(c) || c is '-' or '_')
                 {
                     validShortName = true;
                 }
-                else if (!char.IsAsciiDigit(name[i]))
+                else if (!char.IsAsciiDigit(c))
                 {
                     return false;
                 }
@@ -79,24 +81,26 @@ namespace System
 
             for (; i < end; ++i)
             {
-                if (name[i] == '/' || name[i] == '\\' || (notImplicitFile && (name[i] == ':' || name[i] == '?' || name[i] == '#')))
+                char c = name[i];
+
+                if (c is '/' or '\\' || (notImplicitFile && c is ':' or '?' or '#'))
                 {
                     end = i;
                     break;
                 }
-                else if (name[i] == '.')
+                else if (c == '.')
                 {
                     if (!validShortName || ((i - 1) >= start && name[i - 1] == '.'))
                         return false;
 
                     validShortName = false;
                 }
-                else if (name[i] == '-' || name[i] == '_')
+                else if (c is '-' or '_')
                 {
                     if (!validShortName)
                         return false;
                 }
-                else if (char.IsLetter(name[i]) || char.IsAsciiDigit(name[i]))
+                else if (char.IsLetter(c) || char.IsAsciiDigit(c))
                 {
                     if (!validShortName)
                         validShortName = true;

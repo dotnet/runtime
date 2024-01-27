@@ -310,7 +310,7 @@ namespace System
                         }
 
                         start = i;
-                        for (++i; i < address.Length && address[i] != ']' && address[i] != '/'; ++i)
+                        for (++i; i < address.Length && address[i] is not (']' or '/'); ++i)
                         {
                         }
                         scopeId = new string(address.Slice(start, i - start));
@@ -339,14 +339,8 @@ namespace System
 
                         // check to see if the upcoming number is really an IPv4
                         // address. If it is, convert it to 2 ushort numbers
-                        for (int j = i; j < address.Length &&
-                                        (address[j] != ']') &&
-                                        (address[j] != ':') &&
-                                        (address[j] != '%') &&
-                                        (address[j] != '/') &&
-                                        (j < i + 4); ++j)
+                        for (int j = i; j < address.Length && address[j] is not (']' or ':' or '%' or '/') && (j < i + 4); j++)
                         {
-
                             if (address[j] == '.')
                             {
                                 // we have an IPv4 address. Find the end of it:
@@ -355,7 +349,7 @@ namespace System
                                 // the IPv4 address are the prefix delimiter '/'
                                 // or the end-of-string (which we conveniently
                                 // delimited with ']')
-                                while (j < address.Length && (address[j] != ']') && (address[j] != '/') && (address[j] != '%'))
+                                while (j < address.Length && address[j] is not (']' or '/' or '%'))
                                 {
                                     ++j;
                                 }

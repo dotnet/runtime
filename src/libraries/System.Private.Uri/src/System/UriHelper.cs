@@ -55,7 +55,7 @@ namespace System
                 chSelf = *(selfPtr + i);
                 chOther = *(otherPtr + i);
 
-                if (chSelf == '?' || chSelf == '#')
+                if (chSelf is '?' or '#')
                 {
                     // survived so far and selfPtr does not have any more path segments
                     return true;
@@ -81,7 +81,7 @@ namespace System
                 }
 
                 // if otherPtr terminates then selfPtr must not have any more path segments
-                if (chOther == '?' || chOther == '#')
+                if (chOther is '?' or '#')
                 {
                     break;
                 }
@@ -105,7 +105,7 @@ namespace System
             // If self is longer then it must not have any more path segments
             for (; i < selfLength; ++i)
             {
-                if ((chSelf = *(selfPtr + i)) == '?' || chSelf == '#')
+                if ((chSelf = *(selfPtr + i)) is '?' or '#')
                 {
                     return true;
                 }
@@ -514,14 +514,14 @@ namespace System
         //
         internal static bool IsGenDelim(char ch)
         {
-            return (ch == ':' || ch == '/' || ch == '?' || ch == '#' || ch == '[' || ch == ']' || ch == '@');
+            return ch is ':' or '/' or '?' or '#' or '[' or ']' or '@';
         }
 
         internal static readonly char[] s_WSchars = new char[] { ' ', '\n', '\r', '\t' };
 
         internal static bool IsLWS(char ch)
         {
-            return (ch <= ' ') && (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t');
+            return ch is <= ' ' and (' ' or '\n' or '\r' or '\t');
         }
 
         // Is this a Bidirectional control char.. These get stripped

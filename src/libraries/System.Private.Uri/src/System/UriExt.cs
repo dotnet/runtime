@@ -492,7 +492,7 @@ namespace System
 
                     if (InFact(Flags.UncPath | Flags.DosPath))
                     {
-                        while (++idx < _info.Offset.User && (_string[idx] == '/' || _string[idx] == '\\'))
+                        if (++idx < _info.Offset.User && _string[idx] is '/' or '\\')
                             return false;
                     }
                 }
@@ -726,9 +726,9 @@ namespace System
 
             // Check on the DOS path in the relative Uri (a special case)
             if (relativeStr.Length >= 3
-                && (relativeStr[1] == ':' || relativeStr[1] == '|')
+                && relativeStr[1] is ':' or '|'
                 && char.IsAsciiLetter(relativeStr[0])
-                && (relativeStr[2] == '\\' || relativeStr[2] == '/'))
+                && relativeStr[2] is '\\' or '/')
             {
                 if (baseUri.IsImplicitFile)
                 {
