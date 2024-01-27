@@ -88,7 +88,7 @@ typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 class TypeVarTypeDescMap
 {
     TypeVarTypeDescMap *pNext = NULL;
-    uintptr_t *pTable = NULL;
+    LONG *pTable = NULL;
     TypeVarTypeDesc* pTypeVarTypeDescTable;
     // Number of elements in this node (only RIDs less than this value can be present in this node)
     uint32_t dwCount = 0;
@@ -99,9 +99,9 @@ public:
 
 private:
     TypeVarTypeDescMap(uint8_t* pTable, uint32_t count);
-    static size_t SizeOfBitTableInUintPtr(uint32_t count);
+    static size_t SizeOfBitTableInLONG(uint32_t count);
     static size_t SizeOfBitTable(uint32_t count);
-    static uintptr_t BitMaskForIndex(uint32_t index);
+    static LONG BitMaskForIndex(uint32_t index);
     static uint32_t IndexForBitMask(uint32_t index);
     static TypeVarTypeDesc *GetTypeVarTypeDescWorker(TypeVarTypeDescMap *pNodeCurrent, PTR_Module pModule, mdToken typeOrMethodDef, unsigned int index, mdGenericParam token);
 public:

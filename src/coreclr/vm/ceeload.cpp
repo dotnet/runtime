@@ -5340,16 +5340,16 @@ void DECLSPEC_NORETURN Module::ThrowTypeLoadExceptionImpl(IMDInternalImport *pIn
 
 TypeVarTypeDescMap::TypeVarTypeDescMap() : first(true) {}
 
-/*static*/ size_t TypeVarTypeDescMap::SizeOfBitTableInUintPtr(uint32_t count)
+/*static*/ size_t TypeVarTypeDescMap::SizeOfBitTableInLONG(uint32_t count)
 {
     LIMITED_METHOD_CONTRACT;
-    return (count + (sizeof(uintptr_t) * 8 - 1)) / (sizeof(uintptr_t) * 8);
+    return (count + (sizeof(LONG) * 8 - 1)) / (sizeof(LONG) * 8);
 }
 
 /*static*/ size_t TypeVarTypeDescMap::SizeOfBitTable(uint32_t count)
 {
     LIMITED_METHOD_CONTRACT;
-    return SizeOfBitTableInUintPtr(count) * sizeof(uintptr_t);
+    return SizeOfBitTableInLONG(count) * sizeof(LONG);
 }
 
 /*static*/ S_SIZE_T TypeVarTypeDescMap::ComputeNeededTableSize(uint32_t count)
@@ -5366,11 +5366,11 @@ TypeVarTypeDescMap::TypeVarTypeDescMap(uint8_t* pTable, uint32_t count) : dwCoun
     Init(pTable, count);
 }
 
-/*static*/ uintptr_t TypeVarTypeDescMap::BitMaskForIndex(uint32_t index)
+/*static*/ LONG TypeVarTypeDescMap::BitMaskForIndex(uint32_t index)
 {
     LIMITED_METHOD_CONTRACT;
-    uint32_t whichBitToCheck = index & (sizeof(uintptr_t) * 8 - 1);
-    return (((uintptr_t)1) << (uintptr_t)whichBitToCheck);
+    uint32_t whichBitToCheck = index & (sizeof(LONG) * 8 - 1);
+    return (((LONG)1) << (LONG)whichBitToCheck);
 }
 
 /*static*/ uint32_t TypeVarTypeDescMap::IndexForBitMask(uint32_t index)
@@ -5408,12 +5408,12 @@ TypeVarTypeDescMap::TypeVarTypeDescMap(uint8_t* pTable, uint32_t count) : dwCoun
     }
 
     uint32_t indexInBitTable = IndexForBitMask(indexInTable);
-    uintptr_t mask = BitMaskForIndex(indexInTable);
-    uintptr_t *pIsConstructedBitmaskLocation = &pNodeCurrent->pTable[indexInBitTable];
+    LONG mask = BitMaskForIndex(indexInTable);
+    LONG *pIsConstructedBitmaskLocation = &pNodeCurrent->pTable[indexInBitTable];
     if (!(VolatileLoad(pIsConstructedBitmaskLocation) & mask))
     {
         // Not yet constructed
-        uintptr_t constructingMask = InterlockedOr(&pNodeCurrent->pTable[SizeOfBitTableInUintPtr(pNodeCurrent->dwCount) + indexInBitTable], mask);
+        LONG constructingMask = InterlockedOr(&pNodeCurrent->pTable[SizeOfBitTableInLONG(pNodeCurrent->dwCount) + indexInBitTable], mask);
         if (constructingMask & mask)
         {
             // If the constructingMask was already set, then we were racing to construct. Spin untile the VolatileLoad succeeds
@@ -5448,7 +5448,7 @@ uint8_t* TypeVarTypeDescMap::Init(uint8_t* table, uint32_t rows)
     CONTRACTL_END;
 
     _ASSERTE(pTable == NULL);
-    pTable = (uintptr_t*)table;
+    pTable = (LONG*)table;
     dwCount = rows;
     pTypeVarTypeDescTable = (TypeVarTypeDesc*)(table + SizeOfBitTable(rows) * 2);
     S_SIZE_T neededTableSize = ComputeNeededTableSize(rows);
