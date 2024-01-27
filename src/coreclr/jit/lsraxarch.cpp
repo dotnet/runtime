@@ -434,7 +434,8 @@ int LinearScan::BuildNode(GenTree* tree)
 
             const unsigned nonRaxCandidates = availableIntRegs & ~RBM_RAX;
             BuildUse(addr, nonRaxCandidates);
-            BuildUse(data, varTypeIsByte(data) ? (nonRaxCandidates & RBM_BYTE_REGS) : nonRaxCandidates);
+            BuildUse(data, (varTypeIsByte(tree) || varTypeIsByte(data)) ? (nonRaxCandidates & RBM_BYTE_REGS)
+                                                                        : nonRaxCandidates);
             BuildUse(comparand, RBM_RAX);
             BuildDef(tree, RBM_RAX);
         }
@@ -475,10 +476,6 @@ int LinearScan::BuildNode(GenTree* tree)
             setDelayFree(addrUse);
             tgtPrefUse = addrUse;
             assert(!data->isContained());
-
-            // Codegen will need data to be in the target reg, so we're requesting byteable registers
-            // if either tree or data is a byte type, e.g. tree is TYP_UBYTE and data is TYP_INT (cns)
-            // codegen will emit a mov from the data reg to the target reg.
             BuildUse(data, (varTypeIsByte(data) || varTypeIsByte(tree)) ? RBM_BYTE_REGS : RBM_ALLINT);
             srcCount = 2;
             assert(dstCount == 1);
