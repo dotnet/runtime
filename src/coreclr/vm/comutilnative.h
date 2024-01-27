@@ -245,11 +245,6 @@ public:
 
 extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 
-class ValueTypeHelper {
-public:
-    static FCDECL1(INT32, GetHashCode, Object* objRef);
-};
-
 class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);

@@ -97,6 +97,11 @@ namespace System
         ==============================================================================*/
         public override unsafe int GetHashCode()
         {
+            // The default implementation of GetHashCode() for all value types.
+            // Note that this implementation reveals the value of the fields.
+            // So if the value type contains any sensitive information it should
+            // implement its own GetHashCode().
+
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
 
             // We don't want to expose the method table pointer in the hash code

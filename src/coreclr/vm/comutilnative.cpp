@@ -1838,66 +1838,6 @@ extern "C" INT32 QCALLTYPE ValueType_RegularGetValueTypeHashCode(MethodTable * p
     return ret;
 }
 
-// The default implementation of GetHashCode() for all value types.
-// Note that this implementation reveals the value of the fields.
-// So if the value type contains any sensitive information it should
-// implement its own GetHashCode().
-FCIMPL1(INT32, ValueTypeHelper::GetHashCode, Object* objUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    if (objUNSAFE == NULL)
-        FCThrow(kNullReferenceException);
-
-    OBJECTREF obj = ObjectToOBJECTREF(objUNSAFE);
-    VALIDATEOBJECTREF(obj);
-
-    INT32 hashCode = 0;
-    MethodTable *pMT = objUNSAFE->GetMethodTable();
-
-    // We don't want to expose the method table pointer in the hash code
-    // Let's use the typeID instead.
-    UINT32 typeID = pMT->LookupTypeID();
-    if (typeID == TypeIDProvider::INVALID_TYPE_ID)
-    {
-        // If the typeID has yet to be generated, fall back to GetTypeID
-        // This only needs to be done once per MethodTable
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
-        typeID = pMT->GetTypeID();
-        HELPER_METHOD_FRAME_END();
-    }
-
-    // To get less colliding and more evenly distributed hash codes,
-    // we munge the class index with two big prime numbers
-    hashCode = typeID * 711650207 + 2506965631U;
-
-    BOOL canUseFastGetHashCodeHelper = FALSE;
-    if (pMT->HasCheckedCanCompareBitsOrUseFastGetHashCode())
-    {
-        canUseFastGetHashCodeHelper = pMT->CanCompareBitsOrUseFastGetHashCode();
-    }
-    else
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
-        canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(pMT);
-        HELPER_METHOD_FRAME_END();
-    }
-
-    if (canUseFastGetHashCodeHelper)
-    {
-        hashCode ^= FastGetValueTypeHashCodeHelper(pMT, obj->UnBox());
-    }
-    else
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
-        hashCode ^= RegularGetValueTypeHashCode(pMT, obj->UnBox());
-        HELPER_METHOD_FRAME_END();
-    }
-
-    return hashCode;
-}
-FCIMPLEND
-
 FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 {
     FCALL_CONTRACT;
