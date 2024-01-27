@@ -102,8 +102,46 @@ namespace System
         **Arguments: None.
         **Exceptions: None.
         ==============================================================================*/
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern override int GetHashCode();
+        public override unsafe int GetHashCode()
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
+
+            // We don't want to expose the method table pointer in the hash code
+            // Let's use the typeID instead.
+            uint typeID = 12345;
+
+            // To get less colliding and more evenly distributed hash codes,
+            // we munge the class index with two big prime numbers
+            int hashCode = (int)(typeID * 711650207 + 2506965631U);
+
+            if (CanCompareBits(this))
+            {
+                hashCode ^= FastGetValueTypeHashCodeHelper(pMT, ref this.GetRawData());
+            }
+            else
+            {
+                object obj = this;
+                hashCode ^= RegularGetValueTypeHashCode(pMT, ObjectHandleOnStack.Create(ref obj));
+            }
+
+            GC.KeepAlive(this);
+            return hashCode;
+        }
+
+        private static unsafe int FastGetValueTypeHashCodeHelper(MethodTable* pMT, ref byte data)
+        {
+            int hashCode = 0;
+
+            // this is a struct with no refs and no "strange" offsets, just go through the obj and xor the bits
+            nuint size = pMT->GetNumInstanceFieldBytes();
+            for (nuint i = 0; i < size; i++)
+                hashCode ^= Unsafe.AddByteOffset(ref data, i);
+
+            return hashCode;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "")]
+        private static unsafe partial int RegularGetValueTypeHashCode(MethodTable* pMT, ObjectHandleOnStack obj);
 
         public override string? ToString()
         {
