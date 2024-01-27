@@ -1212,6 +1212,9 @@ void emitIns_R_R_FLAGS_COND(
 
 void emitIns_R_I_FLAGS_COND(instruction ins, emitAttr attr, regNumber reg1, int imm, insCflags flags, insCond cond);
 
+void emitIns_R_PATTERN(
+    instruction ins, emitAttr attr, regNumber reg1, insOpts opt, insSvePattern pattern = SVE_PATTERN_ALL);
+
 void emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, int imm);
 
 void emitIns_BARR(instruction ins, insBarrier barrier);
