@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -4735,6 +4736,54 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector128<float> actualResult = Vector128.Log2(Vector128.Create(value));
             AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
+        }
+
+        [Fact]
+        public void NarrowShortToSByte()
+        {
+            for (int i = 0; i < 256; i++)
+            {
+                short[] input = new short[16];
+                Array.Fill(input, (short)19752);
+
+                sbyte[] output = new sbyte[16];
+                new Random(42).NextBytes(MemoryMarshal.AsBytes(output.AsSpan()));
+
+                Vector128<short> v1 = Vector128.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(input));
+                Vector128<short> v2 = Vector128.LoadUnsafe(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(input), Vector128<short>.Count));
+
+                Vector128<sbyte> result = Vector128.Narrow(v1, v2);
+                result.StoreUnsafe(ref MemoryMarshal.GetArrayDataReference(output));
+
+                foreach (sbyte sb in output)
+                {
+                    Assert.Equal(40, sb);
+                }
+            }
+        }
+
+        [Fact]
+        public void NarrowDoubleToSingle()
+        {
+            for (int i = 0; i < 256; i++)
+            {
+                double[] input = new double[4];
+                Array.Fill(input, -1.551187198625913E+38);
+
+                float[] output = new float[4];
+                new Random(42).NextBytes(MemoryMarshal.AsBytes(output.AsSpan()));
+
+                Vector128<double> v1 = Vector128.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(input));
+                Vector128<double> v2 = Vector128.LoadUnsafe(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(input), Vector128<double>.Count));
+
+                Vector128<float> result = Vector128.Narrow(v1, v2);
+                result.StoreUnsafe(ref MemoryMarshal.GetArrayDataReference(output));
+
+                foreach (float f in output)
+                {
+                    Assert.Equal(-1.55118723E+38, f, 0.01E+38);
+                }
+            }
         }
     }
 }
