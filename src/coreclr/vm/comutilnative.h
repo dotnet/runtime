@@ -252,7 +252,7 @@ public:
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
 extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
-extern "C" INT32 QCALLTYPE ValueType_RegularGetValueTypeHashCode(MethodTable * pMT, QCall::ObjectHandleOnStack objHandle);
+extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, void* objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMethodTable);
 
 class StreamNative {
 public:

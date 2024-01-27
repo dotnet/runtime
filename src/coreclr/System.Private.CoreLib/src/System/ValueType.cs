@@ -10,6 +10,7 @@
 **
 ===========================================================*/
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -95,14 +96,15 @@ namespace System
         **Arguments: None.
         **Exceptions: None.
         ==============================================================================*/
-        public override unsafe int GetHashCode()
+        public override unsafe int GetHashCode() => GetHashCodeHelper(RuntimeHelpers.GetMethodTable(this), ref RuntimeHelpers.GetRawData(this));
+
+        private static unsafe int GetHashCodeHelper(MethodTable* pMT, ref byte rawData)
         {
             // The default implementation of GetHashCode() for all value types.
             // Note that this implementation reveals the value of the fields.
             // So if the value type contains any sensitive information it should
             // implement its own GetHashCode().
 
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
             HashCode hashCode = default;
 
             // To get less colliding and more evenly distributed hash codes,
@@ -113,20 +115,53 @@ namespace System
             {
                 // this is a struct with no refs and no "strange" offsets
                 uint size = pMT->GetNumInstanceFieldBytes();
-                hashCode.AddBytes(MemoryMarshal.CreateReadOnlySpan(ref this.GetRawData(), (int)size));
+                hashCode.AddBytes(MemoryMarshal.CreateReadOnlySpan(ref rawData, (int)size));
             }
             else
             {
-                object obj = this;
-                hashCode.Add(RegularGetValueTypeHashCode(pMT, ObjectHandleOnStack.Create(ref obj)));
+                switch (GetHashCodeStrategy(pMT, ref rawData, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMethodTable))
+                {
+                    case ValueTypeHashCodeStrategy.ReferenceField:
+                        hashCode.Add(Unsafe.As<byte, object>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
+                        break;
+
+                    case ValueTypeHashCodeStrategy.DoubleField:
+                        hashCode.Add(Unsafe.As<byte, double>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
+                        break;
+
+                    case ValueTypeHashCodeStrategy.SingleField:
+                        hashCode.Add(Unsafe.As<byte, float>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
+                        break;
+
+                    case ValueTypeHashCodeStrategy.PrimitiveField:
+                        Debug.Assert(fieldSize != 0);
+                        hashCode.AddBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AddByteOffset(ref rawData, fieldOffset), (int)fieldSize));
+                        break;
+
+                    case ValueTypeHashCodeStrategy.ValueTypeField:
+                        Debug.Assert(fieldMethodTable != null);
+                        hashCode.Add(GetHashCodeHelper(fieldMethodTable, ref Unsafe.AddByteOffset(ref rawData, fieldOffset)));
+                        break;
+                }
             }
 
             return hashCode.ToHashCode();
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_RegularGetValueTypeHashCode")]
-        [SuppressGCTransition]
-        private static unsafe partial int RegularGetValueTypeHashCode(MethodTable* pMT, ObjectHandleOnStack obj);
+        // Must match the definition in src\vm\comutilnative.cpp
+        private enum ValueTypeHashCodeStrategy
+        {
+            None,
+            ReferenceField,
+            DoubleField,
+            SingleField,
+            PrimitiveField,
+            ValueTypeField,
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_GetHashCodeStrategy")]
+        private static unsafe partial ValueTypeHashCodeStrategy GetHashCodeStrategy(
+            MethodTable* pMT, ref byte rawData, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMethodTable);
 
         public override string? ToString()
         {

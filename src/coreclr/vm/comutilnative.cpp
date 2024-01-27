@@ -1696,142 +1696,87 @@ extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodT
     return ret;
 }
 
-static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
+enum ValueTypeHashCodeStrategy
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
+    None,
+    ReferenceField,
+    DoubleField,
+    SingleField,
+    PrimitiveField,
+    ValueTypeField,
+};
 
-    INT32 hashCode = 0;
-    INT32 *pObj = (INT32*)pObjRef;
-
-    // this is a struct with no refs and no "strange" offsets, just go through the obj and xor the bits
-    INT32 size = mt->GetNumInstanceFieldBytes();
-    for (INT32 i = 0; i < (INT32)(size / sizeof(INT32)); i++)
-        hashCode ^= *pObj++;
-
-    return hashCode;
-}
-
-static INT32 RegularGetValueTypeHashCode(MethodTable *mt, void *pObjRef)
+extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, void* pObjRef, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMethodTable)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    INT32 hashCode = 0;
-
-    GCPROTECT_BEGININTERIOR(pObjRef);
-
-    BOOL canUseFastGetHashCodeHelper = FALSE;
-    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
-    {
-        canUseFastGetHashCodeHelper = mt->CanCompareBitsOrUseFastGetHashCode();
-    }
-    else
-    {
-        canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(mt);
-    }
-
-    // While we should not get here directly from ValueTypeHelper::GetHashCode, if we recurse we need to
-    // be able to handle getting the hashcode for an embedded structure whose hashcode is computed by the fast path.
-    if (canUseFastGetHashCodeHelper)
-    {
-        hashCode = FastGetValueTypeHashCodeHelper(mt, pObjRef);
-    }
-    else
-    {
-        // it's looking ugly so we'll use the old behavior in managed code. Grab the first non-null
-        // field and return its hash code or 'it' as hash code
-        // <TODO> Note that the old behavior has already been broken for value types
-        //              that is qualified for CanUseFastGetHashCodeHelper. So maybe we should
-        //              change the implementation here to use all fields instead of just the 1st one.
-        // </TODO>
-        //
-        // <TODO> check this approximation - we may be losing exact type information </TODO>
-        ApproxFieldDescIterator fdIterator(mt, ApproxFieldDescIterator::INSTANCE_FIELDS);
-
-        FieldDesc *field;
-        while ((field = fdIterator.Next()) != NULL)
-        {
-            _ASSERTE(!field->IsRVA());
-            if (field->IsObjRef())
-            {
-                // if we get an object reference we get the hash code out of that
-                if (*(Object**)((BYTE *)pObjRef + field->GetOffsetUnsafe()) != NULL)
-                {
-                    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__OBJECT__GET_HASH_CODE, (*(Object**)((BYTE *)pObjRef + field->GetOffsetUnsafe())));
-                    DECLARE_ARGHOLDER_ARRAY(args, 1);
-                    args[ARGNUM_0] = PTR_TO_ARGHOLDER(*(Object**)((BYTE *)pObjRef + field->GetOffsetUnsafe()));
-                    CALL_MANAGED_METHOD(hashCode, INT32, args);
-                }
-                else
-                {
-                    // null object reference, try next
-                    continue;
-                }
-            }
-            else
-            {
-                CorElementType fieldType = field->GetFieldType();
-                if (fieldType == ELEMENT_TYPE_R8)
-                {
-                    PREPARE_NONVIRTUAL_CALLSITE(METHOD__DOUBLE__GET_HASH_CODE);
-                    DECLARE_ARGHOLDER_ARRAY(args, 1);
-                    args[ARGNUM_0] = PTR_TO_ARGHOLDER(((BYTE *)pObjRef + field->GetOffsetUnsafe()));
-                    CALL_MANAGED_METHOD(hashCode, INT32, args);
-                }
-                else if (fieldType == ELEMENT_TYPE_R4)
-                {
-                    PREPARE_NONVIRTUAL_CALLSITE(METHOD__SINGLE__GET_HASH_CODE);
-                    DECLARE_ARGHOLDER_ARRAY(args, 1);
-                    args[ARGNUM_0] = PTR_TO_ARGHOLDER(((BYTE *)pObjRef + field->GetOffsetUnsafe()));
-                    CALL_MANAGED_METHOD(hashCode, INT32, args);
-                }
-                else if (fieldType != ELEMENT_TYPE_VALUETYPE)
-                {
-                    UINT fieldSize = field->LoadSize();
-                    INT32 *pValue = (INT32*)((BYTE *)pObjRef + field->GetOffsetUnsafe());
-                    for (INT32 j = 0; j < (INT32)(fieldSize / sizeof(INT32)); j++)
-                        hashCode ^= *pValue++;
-                }
-                else
-                {
-                    // got another value type. Get the type
-                    TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
-                    _ASSERTE(!fieldTH.IsNull());
-                    hashCode = RegularGetValueTypeHashCode(fieldTH.GetMethodTable(), (BYTE *)pObjRef + field->GetOffsetUnsafe());
-                }
-            }
-            break;
-        }
-    }
-
-    GCPROTECT_END();
-
-    return hashCode;
-}
-
-extern "C" INT32 QCALLTYPE ValueType_RegularGetValueTypeHashCode(MethodTable * pMT, QCall::ObjectHandleOnStack objHandle)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    INT32 ret = 0;
+    ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
+    *fieldOffset = 0;
+    *fieldSize = 0;
+    *fieldMethodTable = NULL;
 
     BEGIN_QCALL;
 
-    ret = RegularGetValueTypeHashCode(pMT, objHandle.Get()->UnBox());
+    // Should be handled by fast path
+    _ASSERTE(!mt->CanCompareBitsOrUseFastGetHashCode());
+
+    GCX_COOP();
+
+    // it's looking ugly so we'll use the old behavior in managed code. Grab the first non-null
+    // field and return its hash code or 'it' as hash code
+    // <TODO> Note that the old behavior has already been broken for value types
+    //              that is qualified for CanUseFastGetHashCodeHelper. So maybe we should
+    //              change the implementation here to use all fields instead of just the 1st one.
+    // </TODO>
+    //
+    // <TODO> check this approximation - we may be losing exact type information </TODO>
+    ApproxFieldDescIterator fdIterator(mt, ApproxFieldDescIterator::INSTANCE_FIELDS);
+
+    FieldDesc *field;
+    while ((field = fdIterator.Next()) != NULL)
+    {
+        _ASSERTE(!field->IsRVA());
+        *fieldOffset = field->GetOffsetUnsafe();
+        if (field->IsObjRef())
+        {
+            // if we get an object reference we get the hash code out of that
+            if (*(Object**)((BYTE *)pObjRef + field->GetOffsetUnsafe()) != NULL)
+            {
+                ret = ValueTypeHashCodeStrategy::ReferenceField;
+            }
+            else
+            {
+                // null object reference, try next
+                continue;
+            }
+        }
+        else
+        {
+            CorElementType fieldType = field->GetFieldType();
+            if (fieldType == ELEMENT_TYPE_R8)
+            {
+                ret = ValueTypeHashCodeStrategy::DoubleField;
+            }
+            else if (fieldType == ELEMENT_TYPE_R4)
+            {
+                ret = ValueTypeHashCodeStrategy::SingleField;
+            }
+            else if (fieldType != ELEMENT_TYPE_VALUETYPE)
+            {
+                *fieldSize = field->LoadSize();
+                ret = ValueTypeHashCodeStrategy::PrimitiveField;
+            }
+            else
+            {
+                // got another value type. Get the type
+                TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
+                _ASSERTE(!fieldTH.IsNull());
+                *fieldMethodTable = fieldTH.GetMethodTable();
+                ret = ValueTypeHashCodeStrategy::ValueTypeField;
+            }
+        }
+        break;
+    }
 
     END_QCALL;
 
