@@ -66,8 +66,27 @@ namespace System
             return true;
         }
 
+        private static unsafe bool CanCompareBits(object obj)
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+            MethodTableAuxiliaryData* pAuxData = pMT->AuxiliaryData;
+            bool result;
+
+            if (pAuxData->HasCheckedCanCompareBitsOrUseFastGetHashCode)
+            {
+                result = pAuxData->CanCompareBitsOrUseFastGetHashCode;
+            }
+            else
+            {
+                result = CanCompareBitsOrUseFastGetHashCode(pMT);
+            }
+
+            GC.KeepAlive(obj);
+            return result;
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool CanCompareBits(object obj);
+        private static extern unsafe bool CanCompareBitsOrUseFastGetHashCode(MethodTable* pMT);
 
         /*=================================GetHashCode==================================
         **Action: Our algorithm for returning the hashcode is a little bit complex.  We look
