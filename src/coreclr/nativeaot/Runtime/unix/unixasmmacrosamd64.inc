@@ -252,9 +252,6 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
-// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-#define STATUS_REDHAWK_THREAD_ABORT     0x43
-
 //
 // Rename fields of nested structs
 //

@@ -2188,6 +2188,9 @@ public:
 
     bool HasDef(unsigned lclNum);
 
+    bool CanDuplicate(INDEBUG(const char** reason));
+    void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale, bool bottomNeedsRedirection);
+
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoop* loop);
 #endif // DEBUG
@@ -3338,6 +3341,9 @@ public:
     GenTreeBlk* gtNewStoreBlkNode(
         ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
 
+    GenTreeStoreDynBlk* gtNewStoreDynBlkNode(
+        GenTree* addr, GenTree* data, GenTree* dynamicSize, GenTreeFlags indirFlags = GTF_EMPTY);
+
     GenTreeStoreInd* gtNewStoreIndNode(
         var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
 
@@ -3413,21 +3419,8 @@ public:
 
     GenTree* gtClone(GenTree* tree, bool complexOK = false);
 
-    // If `tree` is a lclVar with lclNum `varNum`, return an IntCns with value `varVal`; otherwise,
-    // create a copy of `tree`, adding specified flags, replacing uses of lclVar `deepVarNum` with
-    // IntCnses with value `deepVarVal`.
-    GenTree* gtCloneExpr(
-        GenTree* tree, GenTreeFlags addFlags, unsigned varNum, int varVal, unsigned deepVarNum, int deepVarVal);
-
-    // Create a copy of `tree`, optionally adding specified flags, and optionally mapping uses of local
-    // `varNum` to int constants with value `varVal`.
-    GenTree* gtCloneExpr(GenTree*     tree,
-                         GenTreeFlags addFlags = GTF_EMPTY,
-                         unsigned     varNum   = BAD_VAR_NUM,
-                         int          varVal   = 0)
-    {
-        return gtCloneExpr(tree, addFlags, varNum, varVal, varNum, varVal);
-    }
+    // Create a copy of `tree`
+    GenTree* gtCloneExpr(GenTree* tree);
 
     Statement* gtCloneStmt(Statement* stmt)
     {
@@ -3436,10 +3429,7 @@ public:
     }
 
     // Internal helper for cloning a call
-    GenTreeCall* gtCloneExprCallHelper(GenTreeCall* call,
-                                       GenTreeFlags addFlags   = GTF_EMPTY,
-                                       unsigned     deepVarNum = BAD_VAR_NUM,
-                                       int          deepVarVal = 0);
+    GenTreeCall* gtCloneExprCallHelper(GenTreeCall* call);
 
     // Create copy of an inline or guarded devirtualization candidate tree.
     GenTreeCall* gtCloneCandidateCall(GenTreeCall* call);
@@ -3494,6 +3484,8 @@ public:
     bool gtMarkAddrMode(GenTree* addr, int* costEx, int* costSz, var_types type);
 
     unsigned gtSetEvalOrder(GenTree* tree);
+    bool gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree);
+    bool gtTreeHasLocalRead(GenTree* tree, unsigned lclNum);
 
     void gtSetStmtInfo(Statement* stmt);
 
@@ -5975,8 +5967,6 @@ public:
 
     bool fgOptimizeSwitchBranches(BasicBlock* block);
 
-    bool fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev);
-
     bool fgOptimizeSwitchJumps();
 #ifdef DEBUG
     void fgPrintEdgeWeights();
@@ -6799,6 +6789,8 @@ public:
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     bool optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR);
+    void optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicBlock* prevTestBlock, BasicBlock* target);
+    void optReplaceScalarUsesWithConst(BasicBlock* block, unsigned lclNum, ssize_t cnsVal);
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
 
