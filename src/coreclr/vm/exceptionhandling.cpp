@@ -866,6 +866,24 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
 
 void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFrameChain, LPVOID MemoryStackFp);
 
+static void PopExplicitFrames(Thread *pThread, void *targetSp)
+{
+    Frame* pFrame = pThread->GetFrame();
+    while (pFrame < targetSp)
+    {
+        pFrame->ExceptionUnwind();
+        pFrame->Pop(pThread);
+        pFrame = pThread->GetFrame();
+    }
+
+    GCFrame* pGCFrame = pThread->GetGCFrame();
+    while (pGCFrame && pGCFrame < targetSp)
+    {
+        pGCFrame->Pop();
+        pGCFrame = pThread->GetGCFrame();
+    }
+}
+
 EXTERN_C EXCEPTION_DISPOSITION
 ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
                     IN     PVOID               pEstablisherFrame,
@@ -881,6 +899,19 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_THROWS;
 
+    Thread* pThread         = GetThread();
+
+    if (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+    {
+        if ((pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
+        {
+            GCX_COOP();
+            PopExplicitFrames(pThread, (void*)GetSP(pContextRecord));
+            ExInfo::PopExInfos(pThread, (void*)GetSP(pContextRecord));
+        }
+        return ExceptionContinueSearch;
+    }
+
 #ifndef HOST_UNIX
     if (!(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
     {
@@ -890,7 +921,6 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
             EEPOLICY_HANDLE_FATAL_ERROR(pExceptionRecord->ExceptionCode);
         }
 
-        Thread* pThread         = GetThread();
         ClrUnwindEx(pExceptionRecord,
                     (UINT_PTR)pThread,
                     INVALID_RESUME_ADDRESS,
@@ -931,8 +961,8 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
     if (g_isNewExceptionHandlingEnabled)
     {
-        ProcessCLRExceptionNew(pExceptionRecord, pEstablisherFrame, pContextRecord, pDispatcherContext);
-        UNREACHABLE();
+        return ProcessCLRExceptionNew(pExceptionRecord, pEstablisherFrame, pContextRecord, pDispatcherContext);
+        //UNREACHABLE();
     }
 
     // We must preserve this so that GCStress=4 eh processing doesnt kill last error.
@@ -3615,6 +3645,11 @@ void ExceptionTracker::PopTrackers(
         NOTHROW;
     }
     CONTRACTL_END;
+
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        return;
+    }
 
     Thread*             pThread     = GetThreadNULLOk();
     ExceptionTracker*   pTracker    = (pThread ? (ExceptionTracker*)pThread->GetExceptionState()->m_pCurrentTracker : NULL);
@@ -7545,24 +7580,6 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
     END_QCALL;
 }
 
-static void PopExplicitFrames(Thread *pThread, void *targetSp)
-{
-    Frame* pFrame = pThread->GetFrame();
-    while (pFrame < targetSp)
-    {
-        pFrame->ExceptionUnwind();
-        pFrame->Pop(pThread);
-        pFrame = pThread->GetFrame();
-    }
-
-    GCFrame* pGCFrame = pThread->GetGCFrame();
-    while (pGCFrame && pGCFrame < targetSp)
-    {
-        pGCFrame->Pop();
-        pGCFrame = pThread->GetGCFrame();
-    }
-}
-
 UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
 #ifdef HOST_AMD64        
@@ -8435,7 +8452,9 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                 else
                 {
 #ifdef HOST_WINDOWS
-                    RaiseFailFastException(pTopExInfo->m_ptrs.ExceptionRecord, NULL, 0);
+                    //RaiseFailFastException(pTopExInfo->m_ptrs.ExceptionRecord, NULL, 0);
+                    GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+                    RaiseException(pTopExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE_EXCEPTION, pTopExInfo->m_ptrs.ExceptionRecord->NumberParameters, pTopExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
                     CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);
 #endif
