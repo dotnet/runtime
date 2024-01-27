@@ -239,7 +239,7 @@ static DWORD HashTypeHandle(TypeHandle t)
 }
 
 // Calculate hash value from key
-DWORD HashTypeKey(TypeKey* pKey)
+DWORD HashTypeKey(const TypeKey* pKey)
 {
     CONTRACTL
     {
@@ -275,7 +275,7 @@ DWORD HashTypeKey(TypeKey* pKey)
 // We avoid restoring types during search by cracking the signature
 // encoding used by the zapper for out-of-module types e.g. in the
 // instantiation of an instantiated type.
-EETypeHashEntry_t *EETypeHashTable::FindItem(TypeKey* pKey)
+EETypeHashEntry_t *EETypeHashTable::FindItem(const TypeKey* pKey)
 {
     CONTRACTL
     {
@@ -478,7 +478,7 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
 #endif // #ifndef DACCESS_COMPILE
 }
 
-TypeHandle EETypeHashTable::GetValue(TypeKey *pKey)
+TypeHandle EETypeHashTable::GetValue(const TypeKey *pKey)
 {
     CONTRACTL
     {

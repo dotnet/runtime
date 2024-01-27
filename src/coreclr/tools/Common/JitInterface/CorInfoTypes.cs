@@ -1164,6 +1164,7 @@ namespace Internal.JitInterface
         public CORINFO_CONST_LOOKUP tlsRootObject;
         public CORINFO_CONST_LOOKUP tlsIndexObject;
         public CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+        public CORINFO_CONST_LOOKUP tlsGetAddrFtnPtr;
     };
 
     // System V struct passing

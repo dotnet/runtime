@@ -772,8 +772,8 @@ protected:
 #ifndef TARGET_ARMARCH
         unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
 #endif
-        unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
-        unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
+        unsigned _idTlsGD : 1; // Used to store information related to TLS GD access on linux
+        unsigned _idNoGC : 1;  // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
         // EVEX.b can indicate several context: embedded broadcast, embedded rounding.
         // For normal and embedded broadcast intrinsics, EVEX.L'L has the same semantic, vector length.
@@ -1595,6 +1595,15 @@ protected:
             _idCallRegPtr = 1;
         }
 #endif
+
+        bool idIsTlsGD() const
+        {
+            return _idTlsGD != 0;
+        }
+        void idSetTlsGD()
+        {
+            _idTlsGD = 1;
+        }
 
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
