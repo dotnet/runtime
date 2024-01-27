@@ -3,7 +3,6 @@
 using System;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -22,8 +21,8 @@ public partial class FunctionPtr
         [DllImport(nameof(FunctionPointerNative))]
         static unsafe extern void FillOutPtr(IntPtr* p);
 
-	[DllImport(nameof(FunctionPointerNative))]
-	static unsafe extern void FillOutIntParameter(out IntPtr p);
+        [DllImport(nameof(FunctionPointerNative))]
+        static unsafe extern void FillOutIntParameter(out IntPtr p);
     }
 
     delegate void VoidDelegate();
@@ -185,6 +184,12 @@ public partial class FunctionPtr
     [Fact]
     public static void RunInvalidGenericFunctionPointerTest()
     {
+        if (OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86)
+        {
+            // We have naming mangling issues on Windows x86
+            return;
+        }
+
         Console.WriteLine($"Running {nameof(RunInvalidGenericFunctionPointerTest)}...");
         unsafe
         {
