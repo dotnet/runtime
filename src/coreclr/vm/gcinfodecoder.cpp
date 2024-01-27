@@ -363,7 +363,7 @@ GcInfoDecoder::GcInfoDecoder(
     }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    if(flags & (DECODE_GC_LIFETIMES))
+    if(flags & (DECODE_GC_LIFETIMES | DECODE_INTERRUPTIBILITY))
     {
         if(m_NumSafePoints)
         {
@@ -374,7 +374,8 @@ GcInfoDecoder::GcInfoDecoder(
             m_SafePointIndex = FindSafePoint(offset);
         }
     }
-    else if(flags & (DECODE_FOR_RANGES_CALLBACK | DECODE_INTERRUPTIBILITY))
+
+    if(flags & (DECODE_FOR_RANGES_CALLBACK | DECODE_INTERRUPTIBILITY))
     {
         // Note that normalization as a code offset can be different than
         //  normalization as code length
@@ -385,7 +386,8 @@ GcInfoDecoder::GcInfoDecoder(
     }
 #endif
 
-    if(!m_IsInterruptible && (flags & DECODE_INTERRUPTIBILITY))
+    _ASSERTE(!m_IsInterruptible);
+    if(flags & DECODE_INTERRUPTIBILITY)
     {
         EnumerateInterruptibleRanges(&SetIsInterruptibleCB, this);
     }
