@@ -45,6 +45,7 @@ namespace ILCompiler.ObjectWriter
         public const uint SHT_GROUP = 17;
         public const uint SHT_SYMTAB_SHNDX = 18;
         public const uint SHT_IA_64_UNWIND = 0x70000001;
+        public const uint SHT_ARM_EXIDX = 0x70000001;
         public const uint SHT_ARM_ATTRIBUTES = 0x70000003;
 
         // Section header flags

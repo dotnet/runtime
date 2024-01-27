@@ -53,6 +53,9 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12    = 0x10B,
         IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC = 0x10C,
 
+        // Linux arm32
+        IMAGE_REL_ARM_PREL31                 = 0x10D,
+
         //
         // Relocations for R2R image production
         //
