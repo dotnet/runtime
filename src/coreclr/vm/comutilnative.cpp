@@ -1681,44 +1681,20 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
     return canCompareBitsOrUseFastGetHashCode;
 }
 
-NOINLINE static FC_BOOL_RET CanCompareBitsHelper(MethodTable* mt, OBJECTREF objRef)
+extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable * mt)
 {
-    FC_INNER_PROLOG(ValueTypeHelper::CanCompareBits);
-
-    _ASSERTE(mt != NULL);
-    _ASSERTE(objRef != NULL);
+    QCALL_CONTRACT;
 
     BOOL ret = FALSE;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
+    BEGIN_QCALL;
 
     ret = CanCompareBitsOrUseFastGetHashCode(mt);
 
-    HELPER_METHOD_FRAME_END();
-    FC_INNER_EPILOG();
+    END_QCALL;
 
-    FC_RETURN_BOOL(ret);
+    return ret;
 }
-
-// Return true if the valuetype does not contain pointer, is tightly packed,
-// does not have floating point number field and does not override Equals method.
-FCIMPL1(FC_BOOL_RET, ValueTypeHelper::CanCompareBits, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(obj != NULL);
-    MethodTable* mt = obj->GetMethodTable();
-
-    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
-    {
-        FC_RETURN_BOOL(mt->CanCompareBitsOrUseFastGetHashCode());
-    }
-
-    OBJECTREF objRef(obj);
-
-    FC_INNER_RETURN(FC_BOOL_RET, CanCompareBitsHelper(mt, objRef));
-}
-FCIMPLEND
 
 static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
 {

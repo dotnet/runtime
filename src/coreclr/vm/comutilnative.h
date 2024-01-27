@@ -247,7 +247,6 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 
 class ValueTypeHelper {
 public:
-    static FCDECL1(FC_BOOL_RET, CanCompareBits, Object* obj);
     static FCDECL1(INT32, GetHashCode, Object* objRef);
 };
 
@@ -257,6 +256,7 @@ public:
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
+extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
 
 class StreamNative {
 public:

@@ -67,6 +67,8 @@ namespace System
             return true;
         }
 
+        // Return true if the valuetype does not contain pointer, is tightly packed,
+        // does not have floating point number field and does not override Equals method.
         private static unsafe bool CanCompareBits(object obj)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
@@ -86,7 +88,7 @@ namespace System
             return result;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_CanCompareBitsOrUseFastGetHashCode")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_CanCompareBitsOrUseFastGetHashCode")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool CanCompareBitsOrUseFastGetHashCode(MethodTable* pMT);
 
