@@ -339,7 +339,6 @@ struct VASigCookie
     Volatile<PCODE> pNDirectILStub;         // will be use if target is NDirect (tag == 0)
     PTR_Module      pModule;
     Signature       signature;
-    AllocMemTracker amt;
     DWORD           classInstCount;
     TypeHandle*     classInst;
     DWORD           methodInstCount;

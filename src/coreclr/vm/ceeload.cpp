@@ -4812,12 +4812,12 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
             pCookie->signature = vaSignature;
             pCookie->classInstCount = classInstCount;
             pCookie->methodInstCount = methodInstCount;
+
+            AllocMemTracker amt;
             
             if (classInstCount != 0)
             {
-                DWORD infoSize;
-                DWORD allocSize = DictionaryLayout::GetDictionarySizeFromLayout(classInstCount, NULL, &infoSize);
-                pCookie->classInst = (TypeHandle*)(void*)pCookie->amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(allocSize)));
+                pCookie->classInst = (TypeHandle*)(void*)amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(classInstCount * sizeof(TypeHandle))));
                 for (DWORD i = 0; i < classInstCount; i++)
                 {
                     pCookie->classInst[i] = typeContext->m_classInst[i];
@@ -4826,14 +4826,14 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
 
             if (methodInstCount != 0)
             {
-                DWORD infoSize;
-                DWORD allocSize = DictionaryLayout::GetDictionarySizeFromLayout(methodInstCount, NULL, &infoSize);
-                pCookie->methodInst = (TypeHandle*)(void*)pCookie->amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(allocSize)));
+                pCookie->methodInst = (TypeHandle*)(void*)amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(methodInstCount * sizeof(TypeHandle))));
                 for (DWORD i = 0; i < methodInstCount; i++)
                 {
                     pCookie->methodInst[i] = typeContext->m_methodInst[i];
                 }
             }
+            
+            amt.SuppressRelease();
 
             // Finally, now that it's safe for asynchronous readers to see it,
             // update the count.
