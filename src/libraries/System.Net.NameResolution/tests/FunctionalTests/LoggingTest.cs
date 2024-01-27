@@ -32,14 +32,14 @@ namespace System.Net.NameResolution.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetHostEntry_InvalidHost_LogsError()
         {
-            RemoteExecutor.Invoke(static () =>
+            try
             {
-                using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
+                RemoteExecutor.Invoke(static () =>
                 {
-                    var events = new ConcurrentQueue<EventWrittenEventArgs>();
-
-                    try
+                    using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
                     {
+                        var events = new ConcurrentQueue<EventWrittenEventArgs>();
+
                         listener.RunWithCallback(ev => events.Enqueue(ev), () =>
                         {
                             try
@@ -55,36 +55,35 @@ namespace System.Net.NameResolution.Tests
                                 throw new SkipTestException($"GetHostEntry failed unexpectedly: {e.Message}");
                             }
                         });
-                    }
-                    catch (SkipTestException)
-                    {
-                        // Can't throw SkipTestException here because we're running in RemoteExecutor.
-                        return;
-                    }
 
-                    Assert.True(events.Count > 0, "events.Count should be > 0");
-                    foreach (EventWrittenEventArgs ev in events)
-                    {
-                        Assert.True(ev.Payload.Count >= 3);
-                        Assert.NotNull(ev.Payload[0]);
-                        Assert.NotNull(ev.Payload[1]);
-                        Assert.NotNull(ev.Payload[2]);
+                        Assert.True(events.Count > 0, "events.Count should be > 0");
+                        foreach (EventWrittenEventArgs ev in events)
+                        {
+                            Assert.True(ev.Payload.Count >= 3);
+                            Assert.NotNull(ev.Payload[0]);
+                            Assert.NotNull(ev.Payload[1]);
+                            Assert.NotNull(ev.Payload[2]);
+                        }
                     }
-                }
-            }).Dispose();
+                }).Dispose();
+            }
+            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
+            {
+                throw new SkipTestException(ex.ToString());
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetHostEntryAsync_InvalidHost_LogsError()
         {
-            RemoteExecutor.Invoke(static async () =>
+            try
             {
-                using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
+                RemoteExecutor.Invoke(static async () =>
                 {
-                    var events = new ConcurrentQueue<EventWrittenEventArgs>();
-
-                    try
+                    using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
                     {
+                        var events = new ConcurrentQueue<EventWrittenEventArgs>();
+
                         await listener.RunWithCallbackAsync(ev => events.Enqueue(ev), async () =>
                         {
                             try
@@ -101,23 +100,22 @@ namespace System.Net.NameResolution.Tests
                                 throw new SkipTestException($"GetHostEntryAsync failed unexpectedly: {e.Message}");
                             }
                         }).ConfigureAwait(false);
-                    }
-                    catch (SkipTestException)
-                    {
-                        // Can't throw SkipTestException here because we're running in RemoteExecutor.
-                        return;
-                    }
 
-                    Assert.True(events.Count > 0, "events.Count should be > 0");
-                    foreach (EventWrittenEventArgs ev in events)
-                    {
-                        Assert.True(ev.Payload.Count >= 3);
-                        Assert.NotNull(ev.Payload[0]);
-                        Assert.NotNull(ev.Payload[1]);
-                        Assert.NotNull(ev.Payload[2]);
+                        Assert.True(events.Count > 0, "events.Count should be > 0");
+                        foreach (EventWrittenEventArgs ev in events)
+                        {
+                            Assert.True(ev.Payload.Count >= 3);
+                            Assert.NotNull(ev.Payload[0]);
+                            Assert.NotNull(ev.Payload[1]);
+                            Assert.NotNull(ev.Payload[2]);
+                        }
                     }
-                }
-            }).Dispose();
+                }).Dispose();
+            }
+            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
+            {
+                throw new SkipTestException(ex.ToString());
+            }
 
             static async Task WaitForErrorEventAsync(ConcurrentQueue<EventWrittenEventArgs> events)
             {
@@ -136,14 +134,14 @@ namespace System.Net.NameResolution.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetHostEntry_ValidName_NoErrors()
         {
-            RemoteExecutor.Invoke(static () =>
+            try
             {
-                using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Verbose))
+                RemoteExecutor.Invoke(static () =>
                 {
-                    var events = new ConcurrentQueue<EventWrittenEventArgs>();
-
-                    try
+                    using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Verbose))
                     {
+                        var events = new ConcurrentQueue<EventWrittenEventArgs>();
+
                         listener.RunWithCallback(ev => events.Enqueue(ev), () =>
                         {
                             try
@@ -158,19 +156,18 @@ namespace System.Net.NameResolution.Tests
                                 throw new SkipTestException($"Localhost lookup failed unexpectedly: {e.Message}");
                             }
                         });
-                    }
-                    catch (SkipTestException)
-                    {
-                        // Can't throw SkipTestException here because we're running in RemoteExecutor.
-                        return;
-                    }
 
-                    // We get some traces.
-                    Assert.True(events.Count() > 0);
-                    // No errors or warning for successful query.
-                    Assert.True(events.Count(ev => (int)ev.Level > (int)EventLevel.Informational) == 0);
-                }
-            }).Dispose();
+                        // We get some traces.
+                        Assert.True(events.Count() > 0);
+                        // No errors or warning for successful query.
+                        Assert.True(events.Count(ev => (int)ev.Level > (int)EventLevel.Informational) == 0);
+                    }
+                }).Dispose();
+            }
+            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
+            {
+                throw new SkipTestException(ex.ToString());
+            }
         }
     }
 }
