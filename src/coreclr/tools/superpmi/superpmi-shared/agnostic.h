@@ -539,6 +539,7 @@ struct Agnostic_GetThreadStaticInfo_NativeAOT
     Agnostic_CORINFO_CONST_LOOKUP tlsRootObject;
     Agnostic_CORINFO_CONST_LOOKUP tlsIndexObject;
     Agnostic_CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+    Agnostic_CORINFO_CONST_LOOKUP tlsGetAddrFtnPtr;
 };
 
 struct Agnostic_GetClassCtorInitializationInfo
