@@ -168,6 +168,7 @@ namespace Wasm.Build.Tests
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
+                <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>test-main.js</WasmMainJSPath>
