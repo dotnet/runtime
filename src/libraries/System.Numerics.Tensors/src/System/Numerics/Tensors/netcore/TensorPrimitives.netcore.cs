@@ -3047,6 +3047,7 @@ namespace System.Numerics.Tensors
 
             if (typeof(TInput) == typeof(TOutput))
             {
+                // This ignores the unsafe case where a developer passes in overlapping spans for distinct types.
                 ValidateInputOutputSpanNonOverlapping(x, Rename<TOutput, TInput>(destination));
             }
 
