@@ -425,11 +425,17 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 3;
             assert(dstCount == 1);
 
+            GenTree* addr      = tree->AsCmpXchg()->Addr();
+            GenTree* data      = tree->AsCmpXchg()->Data();
+            GenTree* comparand = tree->AsCmpXchg()->Comparand();
+
             // Comparand is preferenced to RAX.
             // The remaining two operands can be in any reg other than RAX.
-            BuildUse(tree->AsCmpXchg()->Addr(), availableIntRegs & ~RBM_RAX);
-            BuildUse(tree->AsCmpXchg()->Data(), availableIntRegs & ~RBM_RAX);
-            BuildUse(tree->AsCmpXchg()->Comparand(), RBM_RAX);
+
+            const unsigned nonRaxCandidates = availableIntRegs & ~RBM_RAX;
+            BuildUse(addr, nonRaxCandidates);
+            BuildUse(data, varTypeIsByte(data) ? (nonRaxCandidates & RBM_BYTE_REGS) : nonRaxCandidates);
+            BuildUse(comparand, RBM_RAX);
             BuildDef(tree, RBM_RAX);
         }
         break;
@@ -438,10 +444,16 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_XAND:
             if (!tree->IsUnusedValue())
             {
+                GenTree* addr = tree->gtGetOp1();
+                GenTree* data = tree->gtGetOp2();
+
+                // These don't support byte operands.
+                assert(!varTypeIsByte(data));
+
                 // if tree's value is used, we'll emit a cmpxchg-loop idiom (requires RAX)
                 buildInternalIntRegisterDefForNode(tree, availableIntRegs & ~RBM_RAX);
-                BuildUse(tree->gtGetOp1(), availableIntRegs & ~RBM_RAX);
-                BuildUse(tree->gtGetOp2(), availableIntRegs & ~RBM_RAX);
+                BuildUse(addr, availableIntRegs & ~RBM_RAX);
+                BuildUse(data, availableIntRegs & ~RBM_RAX);
                 BuildDef(tree, RBM_RAX);
                 buildInternalRegisterUses();
                 srcCount = 2;
@@ -463,11 +475,14 @@ int LinearScan::BuildNode(GenTree* tree)
             setDelayFree(addrUse);
             tgtPrefUse = addrUse;
             assert(!data->isContained());
-            BuildUse(data);
+
+            // Codegen will need data to be in the target reg, so we're requesting byteable registers
+            // if either tree or data is a byte type, e.g. tree is TYP_UBYTE and data is TYP_INT (cns)
+            // codegen will emit a mov from the data reg to the target reg.
+            BuildUse(data, (varTypeIsByte(data) || varTypeIsByte(tree)) ? RBM_BYTE_REGS : RBM_ALLINT);
             srcCount = 2;
             assert(dstCount == 1);
-            const bool needsByteRegs = (TARGET_POINTER_SIZE == 4) && varTypeIsByte(tree);
-            BuildDef(tree, needsByteRegs ? RBM_BYTE_REGS : RBM_NONE);
+            BuildDef(tree);
         }
         break;
 
