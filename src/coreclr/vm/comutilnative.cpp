@@ -1818,6 +1818,26 @@ static INT32 RegularGetValueTypeHashCode(MethodTable *mt, void *pObjRef)
     return hashCode;
 }
 
+extern "C" INT32 QCALLTYPE ValueType_RegularGetValueTypeHashCode(MethodTable * pMT, QCall::ObjectHandleOnStack objHandle)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    INT32 ret = 0;
+
+    BEGIN_QCALL;
+
+    ret = RegularGetValueTypeHashCode(pMT, objHandle.Get()->UnBox());
+
+    END_QCALL;
+
+    return ret;
+}
+
 // The default implementation of GetHashCode() for all value types.
 // Note that this implementation reveals the value of the fields.
 // So if the value type contains any sensitive information it should

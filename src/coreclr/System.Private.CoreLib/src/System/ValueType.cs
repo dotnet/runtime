@@ -133,7 +133,8 @@ namespace System
             return hashCode;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_RegularGetValueTypeHashCode")]
+        [SuppressGCTransition]
         private static unsafe partial int RegularGetValueTypeHashCode(MethodTable* pMT, ObjectHandleOnStack obj);
 
         public override string? ToString()
