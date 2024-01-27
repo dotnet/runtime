@@ -37,7 +37,7 @@ namespace System
 
             // if there are no GC references in this object we can avoid reflection
             // and do a fast memcmp
-            if (CanCompareBits(this))
+            if (CanCompareBitsOrUseFastGetHashCode(RuntimeHelpers.GetMethodTable(obj))) // MethodTable kept alive by access to object below
             {
                 return SpanHelpers.SequenceEqual(
                     ref RuntimeHelpers.GetRawData(this),
@@ -69,28 +69,21 @@ namespace System
 
         // Return true if the valuetype does not contain pointer, is tightly packed,
         // does not have floating point number field and does not override Equals method.
-        private static unsafe bool CanCompareBits(object obj)
+        private static unsafe bool CanCompareBitsOrUseFastGetHashCode(MethodTable* pMT)
         {
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
             MethodTableAuxiliaryData* pAuxData = pMT->AuxiliaryData;
-            bool result;
 
             if (pAuxData->HasCheckedCanCompareBitsOrUseFastGetHashCode)
             {
-                result = pAuxData->CanCompareBitsOrUseFastGetHashCode;
-            }
-            else
-            {
-                result = CanCompareBitsOrUseFastGetHashCode(pMT);
+                return pAuxData->CanCompareBitsOrUseFastGetHashCode;
             }
 
-            GC.KeepAlive(obj);
-            return result;
+            return CanCompareBitsOrUseFastGetHashCodeHelper(pMT);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_CanCompareBitsOrUseFastGetHashCode")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static unsafe partial bool CanCompareBitsOrUseFastGetHashCode(MethodTable* pMT);
+        private static unsafe partial bool CanCompareBitsOrUseFastGetHashCodeHelper(MethodTable* pMT);
 
         /*=================================GetHashCode==================================
         **Action: Our algorithm for returning the hashcode is a little bit complex.  We look
@@ -114,7 +107,7 @@ namespace System
             // we munge the class index with two big prime numbers
             int hashCode = (int)(typeID * 711650207 + 2506965631U);
 
-            if (CanCompareBits(this))
+            if (CanCompareBitsOrUseFastGetHashCode(pMT))
             {
                 hashCode ^= FastGetValueTypeHashCodeHelper(pMT, ref this.GetRawData());
             }
