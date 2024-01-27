@@ -466,7 +466,8 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(data);
             srcCount = 2;
             assert(dstCount == 1);
-            BuildDef(tree);
+            const bool needsByteRegs = (TARGET_POINTER_SIZE == 4) && varTypeIsByte(tree);
+            BuildDef(tree, needsByteRegs ? RBM_BYTE_REGS : RBM_NONE);
         }
         break;
 
