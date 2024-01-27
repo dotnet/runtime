@@ -318,9 +318,9 @@ DLL_EXPORT bool __stdcall ReleaseMemory(void *mem)
    return true;
 }
 
-DLL_EXPORT bool __stdcall SafeHandleTest(HANDLE sh, long shValue)
+DLL_EXPORT bool __stdcall SafeHandleTest(HANDLE sh, int64_t shValue)
 {
-    return (long)((size_t)(sh)) == shValue;
+    return (int64_t)((size_t)(sh)) == shValue;
 }
 
 DLL_EXPORT long __stdcall SafeHandleOutTest(HANDLE **sh)

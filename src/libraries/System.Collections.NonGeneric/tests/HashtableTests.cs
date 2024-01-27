@@ -356,19 +356,10 @@ namespace System.Collections.Tests
 
             var hash = new Hashtable() { { "a", 1 }, { "b", 2 } };
             DebuggerAttributes.ValidateDebuggerTypeProxyProperties(hash);
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(Hashtable), Hashtable.Synchronized(hash));
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(Hashtable.Synchronized(hash));
 
-            bool threwNull = false;
-            try
-            {
-                DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(Hashtable), null);
-            }
-            catch (TargetInvocationException ex)
-            {
-                threwNull = ex.InnerException is ArgumentNullException;
-            }
-
-            Assert.True(threwNull);
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(Hashtable)));
+            Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
         [Fact]
@@ -779,7 +770,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void HashCodeProvider_Set_ImpactsSearch()
         {
             var hash = new ComparableHashtable(CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);
@@ -834,7 +825,7 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => hash.Comparer = StringComparer.OrdinalIgnoreCase);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Comparer_Set_ImpactsSearch()
         {
             var hash = new ComparableHashtable(CaseInsensitiveHashCodeProvider.DefaultInvariant, StringComparer.OrdinalIgnoreCase);

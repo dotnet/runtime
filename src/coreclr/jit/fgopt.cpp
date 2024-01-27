@@ -945,12 +945,6 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         return false;
     }
 
-    // Don't compact away any loop entry blocks that we added in optCanonicalizeLoops
-    if (block->HasFlag(BBF_OLD_LOOP_HEADER_QUIRK))
-    {
-        return false;
-    }
-
     // We don't want to compact blocks that are in different Hot/Cold regions
     //
     if (fgInDifferentRegions(block, bNext))
@@ -1362,11 +1356,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         block->RemoveFlags(BBF_NONE_QUIRK);
     }
 
-    if (optLoopTableValid)
-    {
-        fgUpdateLoopsAfterCompacting(block, bNext);
-    }
-
 #if DEBUG
     if (verbose && 0)
     {
@@ -1382,66 +1371,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         fgDebugCheckBBlist();
     }
 #endif // DEBUG
-}
-
-//-------------------------------------------------------------
-// fgUpdateLoopsAfterCompacting: Update the loop table after block compaction.
-//
-// Arguments:
-//    block - target of compaction.
-//    bNext - bbNext of `block`. This block has been removed.
-//
-void Compiler::fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext)
-{
-    /* Check if the removed block is not part the loop table */
-    noway_assert(bNext);
-
-    for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
-    {
-        /* Some loops may have been already removed by
-         * loop unrolling or conditional folding */
-
-        if (optLoopTable[loopNum].lpIsRemoved())
-        {
-            continue;
-        }
-
-        /* Check the loop head (i.e. the block preceding the loop) */
-
-        if (optLoopTable[loopNum].lpHead == bNext)
-        {
-            optLoopTable[loopNum].lpHead = block;
-        }
-
-        /* Check the loop bottom */
-
-        if (optLoopTable[loopNum].lpBottom == bNext)
-        {
-            optLoopTable[loopNum].lpBottom = block;
-        }
-
-        /* Check the loop exit */
-
-        if (optLoopTable[loopNum].lpExit == bNext)
-        {
-            noway_assert(optLoopTable[loopNum].lpExitCnt == 1);
-            optLoopTable[loopNum].lpExit = block;
-        }
-
-        /* Check the loop entry */
-
-        if (optLoopTable[loopNum].lpEntry == bNext)
-        {
-            optLoopTable[loopNum].lpEntry = block;
-        }
-
-        /* Check the loop top */
-
-        if (optLoopTable[loopNum].lpTop == bNext)
-        {
-            optLoopTable[loopNum].lpTop = block;
-        }
-    }
 }
 
 //-------------------------------------------------------------
@@ -1506,117 +1435,11 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
         noway_assert(block->bbStmtList == nullptr);
     }
 
-    // Next update the loop table and bbWeights
-    optUpdateLoopsBeforeRemoveBlock(block);
-
     // Mark the block as removed
     block->SetFlags(BBF_REMOVED);
 
     // Update bbRefs and bbPreds for the blocks reached by this block
     fgRemoveBlockAsPred(block);
-}
-
-//-------------------------------------------------------------
-// fgRemoveConditionalJump: Remove or morph a jump when we jump to the same
-// block when both the condition is true or false. Remove the branch condition,
-// but leave any required side effects.
-//
-// Arguments:
-//    block - block with conditional branch
-//
-void Compiler::fgRemoveConditionalJump(BasicBlock* block)
-{
-    noway_assert(block->KindIs(BBJ_COND) && block->TrueTargetIs(block->GetFalseTarget()));
-    assert(compRationalIRForm == block->IsLIR());
-
-    FlowEdge* flow = fgGetPredForBlock(block->GetFalseTarget(), block);
-    noway_assert(flow->getDupCount() == 2);
-
-    // Change the BBJ_COND to BBJ_ALWAYS, and adjust the refCount and dupCount.
-    --block->GetFalseTarget()->bbRefs;
-    block->SetKind(BBJ_ALWAYS);
-    block->SetFlags(BBF_NONE_QUIRK);
-    flow->decrementDupCount();
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("Block " FMT_BB " becoming a BBJ_ALWAYS to " FMT_BB " (jump target is the same whether the condition"
-               " is true or false)\n",
-               block->bbNum, block->GetTarget()->bbNum);
-    }
-#endif
-
-    // Remove the block jump condition
-
-    if (block->IsLIR())
-    {
-        LIR::Range& blockRange = LIR::AsRange(block);
-
-        GenTree* test = blockRange.LastNode();
-        assert(test->OperIsConditionalJump());
-
-        bool               isClosed;
-        unsigned           sideEffects;
-        LIR::ReadOnlyRange testRange = blockRange.GetTreeRange(test, &isClosed, &sideEffects);
-
-        // TODO-LIR: this should really be checking GTF_ALL_EFFECT, but that produces unacceptable
-        //            diffs compared to the existing backend.
-        if (isClosed && ((sideEffects & GTF_SIDE_EFFECT) == 0))
-        {
-            // If the jump and its operands form a contiguous, side-effect-free range,
-            // remove them.
-            blockRange.Delete(this, block, std::move(testRange));
-        }
-        else
-        {
-            // Otherwise, just remove the jump node itself.
-            blockRange.Remove(test, true);
-        }
-    }
-    else
-    {
-        Statement* test = block->lastStmt();
-        GenTree*   tree = test->GetRootNode();
-
-        noway_assert(tree->gtOper == GT_JTRUE);
-
-        GenTree* sideEffList = nullptr;
-
-        if (tree->gtFlags & GTF_SIDE_EFFECT)
-        {
-            gtExtractSideEffList(tree, &sideEffList);
-
-            if (sideEffList)
-            {
-                noway_assert(sideEffList->gtFlags & GTF_SIDE_EFFECT);
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Extracted side effects list from condition...\n");
-                    gtDispTree(sideEffList);
-                    printf("\n");
-                }
-#endif
-            }
-        }
-
-        // Delete the cond test or replace it with the side effect tree
-        if (sideEffList == nullptr)
-        {
-            fgRemoveStmt(block, test);
-        }
-        else
-        {
-            test->SetRootNode(sideEffList);
-
-            if (fgNodeThreading != NodeThreading::None)
-            {
-                gtSetStmtInfo(test);
-                fgSetStmtSeq(test);
-            }
-        }
-    }
 }
 
 //-------------------------------------------------------------
@@ -2684,27 +2507,25 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 }
 
 //-------------------------------------------------------------
-// fgOptimizeBranchToNext:
-//    Optimize a block which has a branch to the following block
+// fgRemoveConditionalJump:
+//    Optimize a BBJ_COND block that unconditionally jumps to the same target
 //
 // Arguments:
-//    block - block with a BBJ_COND jump kind
-//    bNext - target that block jumps to regardless of its condition
-//    bPrev - block which is prior to the first block
+//    block - BBJ_COND block with identical true/false targets
 //
-// Returns: true if changes were made
-//
-bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev)
+void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_COND));
-    assert(block->TrueTargetIs(bNext));
-    assert(block->FalseTargetIs(bNext));
-    assert(block->PrevIs(bPrev));
+    assert(block->TrueTargetIs(block->GetFalseTarget()));
+
+    BasicBlock* target = block->GetTrueTarget();
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nRemoving conditional jump to next block (" FMT_BB " -> " FMT_BB ")\n", block->bbNum, bNext->bbNum);
+        printf("Block " FMT_BB " becoming a BBJ_ALWAYS to " FMT_BB " (jump target is the same whether the condition"
+               " is true or false)\n",
+               block->bbNum, target->bbNum);
     }
 #endif // DEBUG
 
@@ -2803,17 +2624,19 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
         }
     }
 
-    /* Conditional is gone - always jump to the next block */
+    /* Conditional is gone - always jump to target */
 
     block->SetKind(BBJ_ALWAYS);
+    assert(block->TargetIs(target));
+
+    // TODO-NoFallThrough: Set BBF_NONE_QUIRK only when false target is the next block
+    block->SetFlags(BBF_NONE_QUIRK);
 
     /* Update bbRefs and bbNum - Conditional predecessors to the same
         * block are counted twice so we have to remove one of them */
 
-    noway_assert(bNext->countOfInEdges() > 1);
-    fgRemoveRefPred(bNext, block);
-
-    return true;
+    noway_assert(target->countOfInEdges() > 1);
+    fgRemoveRefPred(target, block);
 }
 
 //-------------------------------------------------------------
@@ -4871,10 +4694,6 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
     constexpr bool isPhase     = true;
     const bool     madeChanges = fgUpdateFlowGraph(doTailDup, isPhase);
 
-    // The loop table is no longer valid.
-    optLoopTableValid         = false;
-    optLoopsRequirePreHeaders = false;
-
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -5006,12 +4825,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 {
                     // TODO-NoFallThrough: Fix above condition once bbFalseTarget can diverge from bbNext
                     assert(block->FalseTargetIs(bNext));
-                    if (fgOptimizeBranchToNext(block, bNext, bPrev))
-                    {
-                        change   = true;
-                        modified = true;
-                        bDest    = nullptr;
-                    }
+                    fgRemoveConditionalJump(block);
+
+                    assert(block->KindIs(BBJ_ALWAYS));
+                    assert(block->TargetIs(bNext));
+                    change   = true;
+                    modified = true;
+
+                    // Skip jump optimizations, and try to compact block and bNext later
+                    bDest = nullptr;
                 }
             }
 
@@ -5206,12 +5028,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
                         /* Mark the block as removed */
                         bNext->SetFlags(BBF_REMOVED);
-
-                        if (optLoopTableValid)
-                        {
-                            // Update the loop table if we removed the bottom of a loop, for example.
-                            fgUpdateLoopsAfterCompacting(block, bNext);
-                        }
 
                         // If this is the first Cold basic block update fgFirstColdBlock
                         if (bNext->IsFirstColdBlock(this))

@@ -62,6 +62,10 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
         str         r3, [r1, #OFFSETOF__ExInfo__m_pPrevExInfo]      // pExInfo->m_pPrevExInfo = m_pExInfoStackHead
         str         r1, [r0, #OFFSETOF__Thread__m_pExInfoStackHead] // m_pExInfoStackHead = pExInfo
 
+        // set the exception context field on the ExInfo
+        add         r2, sp, #rsp_offsetof_Context                   // r2 <- PAL_LIMITED_CONTEXT*
+        str         r2, [r1, #OFFSETOF__ExInfo__m_pExContext]       // pExInfo->m_pExContext = pContext
+
         mov         r0, r4 	        // restore the exception code
         // r0 contains the exception code
         // r1 contains the address of the ExInfo

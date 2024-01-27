@@ -112,7 +112,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> NativeName_TestData()
         {
             // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid || PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { "GB", "United Kingdom" };
                 yield return new object[] { "SE", "Sverige" };
@@ -137,7 +137,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> EnglishName_TestData()
         {
             // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid || PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { "en-US", new string[] { "United States" } };
                 yield return new object[] { "US", new string[] { "United States" } };
@@ -208,7 +208,7 @@ namespace System.Globalization.Tests
                                                     "SAU", "SAU" };
             yield return new object[] { 0x412, 134, "South Korean Won", "KRW", "Korean Won", PlatformDetection.IsNlsGlobalization ? "\uc6d0" : "\ub300\ud55c\ubbfc\uad6d\u0020\uc6d0", "KOR", "KOR" };
             yield return new object[] { 0x40d, 117, "Israeli New Shekel", "ILS", "Israeli New Sheqel",
-                                                    PlatformDetection.IsNlsGlobalization || PlatformDetection.ICUVersion.Major >= 58 || PlatformDetection.IsHybridGlobalizationOnOSX  ? "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" : "\u05e9\u05f4\u05d7", "ISR", "ISR" };
+                                                    PlatformDetection.IsNlsGlobalization || PlatformDetection.ICUVersion.Major >= 58 || PlatformDetection.IsHybridGlobalizationOnApplePlatform  ? "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" : "\u05e9\u05f4\u05d7", "ISR", "ISR" };
         }
 
         [Theory]
@@ -219,7 +219,7 @@ namespace System.Globalization.Tests
             Assert.Equal(geoId, ri.GeoId);
 
             // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-            if (PlatformDetection.IsUsingLimitedCultures && !PlatformDetection.IsAndroid && !PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsUsingLimitedCultures && !PlatformDetection.IsAndroid && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 Assert.Equal(currencyShortName, ri.CurrencyEnglishName);
                 Assert.Equal(currencyShortName, ri.CurrencyNativeName);
