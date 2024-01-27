@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -189,7 +191,7 @@ public partial class FunctionPtr
             nint lib = nint.Zero;
             try
             {
-                lib = NativeLibrary.Load(nameof(FunctionPointerNative));
+                lib = NativeLibrary.Load(NativeLibraryToLoad.GetFullPath());
                 nint fnptr = NativeLibrary.GetExport(lib, "ReturnParameter");
                 Console.WriteLine("Testing GenericCalli with string as the parameter type");
                 Assert.Throws<MarshalDirectiveException>(() => GenericCaller<int>.GenericCalli((delegate* unmanaged<string, int>)fnptr, "test"));
@@ -205,6 +207,50 @@ public partial class FunctionPtr
                     NativeLibrary.Free(lib);
                 }
             }
+        }
+    }
+
+    class NativeLibraryToLoad
+    {
+        static string GetFileName()
+        {
+            return GetLibraryFileName(nameof(FunctionPointerNative));
+        }
+
+        static string GetLibraryFileName(string name)
+        {
+            if (OperatingSystem.IsWindows())
+                return $"{name}.dll";
+
+            if (OperatingSystem.IsLinux())
+                return $"lib{name}.so";
+
+            if (OperatingSystem.IsMacOS())
+                return $"lib{name}.dylib";
+
+            throw new PlatformNotSupportedException();
+        }
+
+        internal static string GetFullPath()
+        {
+            return Path.Combine(GetDirectory(), GetFileName());
+        }
+
+        static string GetDirectory()
+        {
+            string directory;
+            if (TestLibrary.Utilities.IsNativeAot)
+            {
+                // NativeAOT test is put in a native/ subdirectory, so we want the parent
+                // directory that contains the native library to load
+                directory = new DirectoryInfo(AppContext.BaseDirectory).Parent.FullName;
+            }
+            else
+            {
+                directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            }
+
+            return directory;
         }
     }
 }
