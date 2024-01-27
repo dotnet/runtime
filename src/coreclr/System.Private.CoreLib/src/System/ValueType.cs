@@ -114,7 +114,11 @@ namespace System
 
             if (CanCompareBitsOrUseFastGetHashCode(pMT))
             {
-                hashCode ^= FastGetValueTypeHashCodeHelper(pMT, ref this.GetRawData());
+                // this is a struct with no refs and no "strange" offsets
+                HashCode hash = default;
+                uint size = pMT->GetNumInstanceFieldBytes();
+                hash.AddBytes(MemoryMarshal.CreateReadOnlySpan(ref this.GetRawData(), (int)size));
+                hashCode ^= hash.ToHashCode();
             }
             else
             {
@@ -123,18 +127,6 @@ namespace System
             }
 
             GC.KeepAlive(this);
-            return hashCode;
-        }
-
-        private static unsafe int FastGetValueTypeHashCodeHelper(MethodTable* pMT, ref byte data)
-        {
-            int hashCode = 0;
-
-            // this is a struct with no refs and no "strange" offsets, just go through the obj and xor the bits
-            nuint size = pMT->GetNumInstanceFieldBytes();
-            for (nuint i = 0; i < size; i++)
-                hashCode ^= Unsafe.AddByteOffset(ref data, i);
-
             return hashCode;
         }
 
