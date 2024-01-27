@@ -4548,6 +4548,11 @@ namespace System
         //
         private static int Compress(Span<char> span, UriParser syntax)
         {
+            if (syntax.InFact(UriSyntaxFlags.ConvertPathSlashes))
+            {
+                span.Replace('\\', '/');
+            }
+
             int slashCount = 0;
             int lastSlash = 0;
             int dotCount = 0;
@@ -4556,10 +4561,6 @@ namespace System
             for (int i = span.Length - 1; i >= 0; i--)
             {
                 char ch = span[i];
-                if (ch == '\\' && syntax.InFact(UriSyntaxFlags.ConvertPathSlashes))
-                {
-                    span[i] = ch = '/';
-                }
 
                 // compress multiple '/' for file URI
                 if (ch == '/')
