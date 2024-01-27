@@ -42,7 +42,7 @@ namespace Mono.Linker
 		readonly LinkContext context;
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> base_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
-		protected readonly Dictionary<MethodDefinition, List<(TypeDefinition InstanceType, InterfaceImplementation ImplementationProvider)>> default_interface_implementations = new Dictionary<MethodDefinition, List<(TypeDefinition, InterfaceImplementation)>> ();
+		protected readonly Dictionary<MethodDefinition, List<(TypeDefinition InstanceType, InterfaceImplementation ImplementationProvider, MethodDefinition DefaultImplementationMethod)>> default_interface_implementations = new Dictionary<MethodDefinition, List<(TypeDefinition, InterfaceImplementation, MethodDefinition)>> ();
 
 		public TypeMapInfo (LinkContext context)
 		{
@@ -84,9 +84,9 @@ namespace Mono.Linker
 			return bases;
 		}
 
-		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface)>? GetDefaultInterfaceImplementations (MethodDefinition method)
+		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface, MethodDefinition DefaultImplementationMethod)>? GetDefaultInterfaceImplementations (MethodDefinition baseMethod)
 		{
-			default_interface_implementations.TryGetValue (method, out var ret);
+			default_interface_implementations.TryGetValue (baseMethod, out var ret);
 			return ret;
 		}
 
@@ -110,14 +110,14 @@ namespace Mono.Linker
 			methods.Add (new OverrideInformation (@base, @override, context, matchingInterfaceImplementation));
 		}
 
-		public void AddDefaultInterfaceImplementation (MethodDefinition @base, TypeDefinition implementingType, InterfaceImplementation matchingInterfaceImplementation)
+		public void AddDefaultInterfaceImplementation (MethodDefinition @base, TypeDefinition implementingType, (InterfaceImplementation, MethodDefinition) matchingInterfaceImplementation)
 		{
 			if (!default_interface_implementations.TryGetValue (@base, out var implementations)) {
-				implementations = new List<(TypeDefinition, InterfaceImplementation)> ();
+				implementations = new List<(TypeDefinition, InterfaceImplementation, MethodDefinition)> ();
 				default_interface_implementations.Add (@base, implementations);
 			}
 
-			implementations.Add ((implementingType, matchingInterfaceImplementation));
+			implementations.Add ((implementingType, matchingInterfaceImplementation.Item1, matchingInterfaceImplementation.Item2));
 		}
 
 		protected virtual void MapType (TypeDefinition type)
@@ -276,7 +276,7 @@ namespace Mono.Linker
 		// Note that this returns a list to potentially cover the diamond case (more than one
 		// most specific implementation of the given interface methods). ILLink needs to preserve
 		// all the implementations so that the proper exception can be thrown at runtime.
-		IEnumerable<InterfaceImplementation> GetDefaultInterfaceImplementations (TypeDefinition type, MethodDefinition interfaceMethod)
+		IEnumerable<(InterfaceImplementation, MethodDefinition)> GetDefaultInterfaceImplementations (TypeDefinition type, MethodDefinition interfaceMethod)
 		{
 			// Go over all interfaces, trying to find a method that is an explicit MethodImpl of the
 			// interface method in question.
@@ -290,7 +290,7 @@ namespace Mono.Linker
 				foreach (var potentialImplMethod in potentialImplInterface.Methods) {
 					if (potentialImplMethod == interfaceMethod &&
 						!potentialImplMethod.IsAbstract) {
-						yield return interfaceImpl;
+						yield return (interfaceImpl, potentialImplMethod);
 					}
 
 					if (!potentialImplMethod.HasOverrides)
@@ -299,7 +299,7 @@ namespace Mono.Linker
 					// This method is an override of something. Let's see if it's the method we are looking for.
 					foreach (var @override in potentialImplMethod.Overrides) {
 						if (context.TryResolve (@override) == interfaceMethod) {
-							yield return interfaceImpl;
+							yield return (interfaceImpl, potentialImplMethod);
 							foundImpl = true;
 							break;
 						}

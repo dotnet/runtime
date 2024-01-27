@@ -236,6 +236,8 @@ namespace Mono.Linker
 
 		public void MarkInstantiated (TypeDefinition type)
 		{
+			if (type.Name == "NotUsedAsIBase")
+				_ = 0;
 			marked_instantiated.Add (type);
 		}
 
@@ -256,7 +258,7 @@ namespace Mono.Linker
 				var resolvedBaseType = context.Resolve (baseType.InterfaceType);
 				if (resolvedBaseType is null)
 					continue;
-				// Don't need to rercurse for interfaces - types implement all interfaces in the interface/base type hierarchy
+				// Don't need to recurse for interfaces - types implement all interfaces in the interface/base type hierarchy
 				types_relevant_to_variant_casting.Add (resolvedBaseType);
 			}
 			if (type.BaseType is not null && context.Resolve(type.BaseType) is {} baseTypeDef) {
@@ -468,7 +470,7 @@ namespace Mono.Linker
 			return TypeMapInfo.GetOverrides (method);
 		}
 
-		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface)> GetDefaultInterfaceImplementations (MethodDefinition method)
+		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface, MethodDefinition DefaultInterfaceMethods)> GetDefaultInterfaceImplementations (MethodDefinition method)
 		{
 			return TypeMapInfo.GetDefaultInterfaceImplementations (method) ?? [];
 		}

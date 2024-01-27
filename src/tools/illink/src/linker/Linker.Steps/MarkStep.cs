@@ -215,6 +215,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.ReturnTypeMarshalSpec,
 			DependencyKind.XmlDescriptor,
 			DependencyKind.UnsafeAccessorTarget,
+			DependencyKind.DefaultImplementationForImplementingType,
 		};
 #endif
 
@@ -731,6 +732,9 @@ namespace Mono.Linker.Steps
 
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, overrideInformation.Override))
 				return true;
+
+			if(Annotations.GetDefaultInterfaceImplementations(overrideInformation.Base).Where(dim => dim.DefaultInterfaceMethods == overrideInformation.Override).ToList() is [var dim])
+				return Annotations.IsRelevantToVariantCasting(dim.InstanceType);
 
 			// In this context, an override needs to be kept if
 			// a) it's an override on an instantiated type (of a marked base) or
@@ -2275,9 +2279,9 @@ namespace Mono.Linker.Steps
 				// Record a logical dependency on the attribute so that we can blame it for the kept members below.
 				Tracer.AddDirectDependency (attribute, new DependencyInfo (DependencyKind.CustomAttribute, type), marked: false);
 
-				MarkTypeWithDebuggerDisplayAttributeValue(type, attribute, (string) attribute.ConstructorArguments[0].Value);
+				MarkTypeWithDebuggerDisplayAttributeValue (type, attribute, (string) attribute.ConstructorArguments[0].Value);
 				if (attribute.HasProperties) {
-					foreach (var  property in attribute.Properties) {
+					foreach (var property in attribute.Properties) {
 						if (property.Name is "Name" or "Type") {
 							MarkTypeWithDebuggerDisplayAttributeValue (type, attribute, (string) property.Argument.Value);
 						}
@@ -2578,7 +2582,7 @@ namespace Mono.Linker.Steps
 			// If the method is static and the implementing type is relevant to variant casting, mark the implementation method.
 			// A static method may only be called through a constrained call if the type is relevant to variant casting.
 			if (@base.IsStatic)
-				return Annotations.IsRelevantToVariantCasting (method.DeclaringType)
+				return Annotations.IsRelevantToVariantCasting (method.DeclaringType) || method.DeclaringType.IsInterface
 					|| IgnoreScope (@base.DeclaringType.Scope);
 
 			// If the implementing type is marked as instantiated, mark the implementation method.
@@ -2814,7 +2818,51 @@ namespace Mono.Linker.Steps
 
 				if (parameter.HasDefaultConstructorConstraint)
 					MarkDefaultConstructor (argumentTypeDef, new DependencyInfo (DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance));
+
+				// var interfaceConstraints = GetConstraintInterfaces (parameter);
+				// foreach (var constrainedInterfacemethod in interfaceConstraints.SelectMany (c => c.Methods).Where (m => m.IsStatic)) {
+				// foreach (var dim in Annotations.GetDefaultInterfaceImplementations (constrainedInterfacemethod)) {
+				// var asdf = new MessageOrigin(parameter);
+				// MarkMethod (dim.DefaultInterfaceMethods, new DependencyInfo (DependencyKind.DefaultImplementationForImplementingType, constrainedInterfacemethod), in asdf);
+				// }
+				// }
 			}
+			// IEnumerable<TypeDefinition> GetConstraintInterfaces (GenericParameter gp)
+			// {
+			//  foreach (var constraint in gp.Constraints) {
+			//      switch (constraint.ConstraintType) {
+			//      case GenericParameter gp2:
+			//          foreach (var td1 in GetConstraintInterfaces (gp2)) {
+			//              yield return td1;
+			//          }
+			//          break;
+			//      case TypeSpecification when constraint.ConstraintType is not GenericInstanceType:
+			//          // Not a resolvable type
+			//          continue;
+			//      default:
+			//          if (Context.Resolve (constraint.ConstraintType) is TypeDefinition { IsInterface: true } td2) {
+			//              yield return td2;
+			//          }
+			//          break;
+			//      }
+			//  }
+			// }
+			// MethodDefinition? def = Context.Resolve (method);
+			// if (def is not null) {
+			//  for (int i = 0; i < gim.GenericArguments.Count; i++) {
+			//      TypeReference arg = gim.GenericArguments[i];
+			//      GenericParameter param = def.GenericParameters[i];
+			//      var interfaceConstraints = GetConstraintInterfaces (param);
+			//      foreach (var constrainedInterfacemethod in interfaceConstraints.SelectMany (c => c.Methods).Where (m => m.IsStatic)) {
+			//          foreach (var dim in Annotations.GetDefaultInterfaceImplementations (constrainedInterfacemethod)) {
+			//              var thisMethodOrigin = new MessageOrigin (def);
+			//              using (ScopeStack.PushScope (thisMethodOrigin)) {
+			//                  MarkMethod (dim.DefaultInterfaceMethods, new DependencyInfo (DependencyKind.DefaultImplementationForImplementingType, method), in thisMethodOrigin);
+			//              }
+			//          }
+			//      }
+			//  }
+			// }
 		}
 
 		IGenericParameterProvider? GetGenericProviderFromInstance (IGenericInstance instance)
@@ -3007,7 +3055,7 @@ namespace Mono.Linker.Steps
 		protected virtual MethodDefinition? MarkMethod (MethodReference reference, DependencyInfo reason, in MessageOrigin origin)
 		{
 			DependencyKind originalReasonKind = reason.Kind;
-			(reference, reason) = GetOriginalMethod (reference, reason);
+			(reference, reason) = GetOriginalMethod (reference, reason, in origin);
 
 			if (reference.DeclaringType is ArrayType arrayType) {
 				MarkType (reference.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, reference));
@@ -3178,14 +3226,15 @@ namespace Mono.Linker.Steps
 			diagnosticContext.AddDiagnostic (DiagnosticId.RequiresUnreferencedCode, displayName, arg1, arg2);
 		}
 
-		protected (MethodReference, DependencyInfo) GetOriginalMethod (MethodReference method, DependencyInfo reason)
+		protected (MethodReference, DependencyInfo) GetOriginalMethod (MethodReference method, DependencyInfo reason, in MessageOrigin origin)
 		{
 			while (method is MethodSpecification specification) {
 				// Blame the method reference (which isn't marked) on the original reason.
 				Tracer.AddDirectDependency (specification, reason, marked: false);
 				// Blame the outgoing element method on the specification.
-				if (method is GenericInstanceMethod gim)
+				if (method is GenericInstanceMethod gim) {
 					MarkGenericArguments (gim);
+				}
 
 				(method, reason) = (specification.ElementMethod, new DependencyInfo (DependencyKind.ElementMethod, specification));
 				Debug.Assert (!(method is MethodSpecification));
@@ -3231,7 +3280,7 @@ namespace Mono.Linker.Steps
 			} else if (method.TryGetProperty (out PropertyDefinition? property))
 				MarkProperty (property, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.PropertyOfPropertyMethod), method));
 			else if (method.TryGetEvent (out EventDefinition? @event)) {
-				MarkEvent (@event, new DependencyInfo (PropagateDependencyKindToAccessors(reason.Kind, DependencyKind.EventOfEventMethod), method));
+				MarkEvent (@event, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventOfEventMethod), method));
 			}
 
 			if (method.HasMetadataParameters ()) {
@@ -3315,7 +3364,7 @@ namespace Mono.Linker.Steps
 		{
 		}
 
-		static DependencyKind PropagateDependencyKindToAccessors(DependencyKind parentDependencyKind, DependencyKind kind)
+		static DependencyKind PropagateDependencyKindToAccessors (DependencyKind parentDependencyKind, DependencyKind kind)
 		{
 			switch (parentDependencyKind) {
 			// If the member is marked due to descriptor or similar, propagate the original reason to suppress some warnings correctly
@@ -3335,11 +3384,11 @@ namespace Mono.Linker.Steps
 				return;
 
 			// keep fields for types with explicit layout, for enums and for InlineArray types
-			if (!type.IsAutoLayout || type.IsEnum || TypeIsInlineArrayType(type))
+			if (!type.IsAutoLayout || type.IsEnum || TypeIsInlineArrayType (type))
 				MarkFields (type, includeStatic: type.IsEnum, reason: new DependencyInfo (DependencyKind.MemberOfType, type));
 		}
 
-		static bool TypeIsInlineArrayType(TypeDefinition type)
+		static bool TypeIsInlineArrayType (TypeDefinition type)
 		{
 			if (!type.IsValueType)
 				return false;
@@ -3584,7 +3633,7 @@ namespace Mono.Linker.Steps
 
 			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt));
 
-			DependencyKind dependencyKind = PropagateDependencyKindToAccessors(reason.Kind, DependencyKind.EventMethod);
+			DependencyKind dependencyKind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventMethod);
 			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
 			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
 			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
@@ -3762,8 +3811,7 @@ namespace Mono.Linker.Steps
 					ScopeStack.UpdateCurrentScopeInstructionOffset (instruction.Offset);
 					if (markForReflectionAccess) {
 						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
-					}
-					else {
+					} else {
 						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
 					}
 					break;
@@ -3828,6 +3876,8 @@ namespace Mono.Linker.Steps
 		{
 			if (Annotations.IsMarked (iface))
 				return;
+			if (iface.InterfaceType.Name == "IBase")
+				_ = 0;
 			Annotations.MarkProcessed (iface, reason ?? new DependencyInfo (DependencyKind.InterfaceImplementationOnType, ScopeStack.CurrentScope.Origin.Provider));
 
 			using var localScope = origin.HasValue ? ScopeStack.PushScope (origin.Value) : null;
