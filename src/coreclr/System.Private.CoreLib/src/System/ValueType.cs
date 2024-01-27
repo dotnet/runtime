@@ -13,12 +13,13 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public abstract class ValueType
+    public abstract partial class ValueType
     {
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Trimmed fields don't make a difference for equality")]
@@ -85,8 +86,9 @@ namespace System
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool CanCompareBitsOrUseFastGetHashCode(MethodTable* pMT);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_CanCompareBitsOrUseFastGetHashCode")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static unsafe partial bool CanCompareBitsOrUseFastGetHashCode(MethodTable* pMT);
 
         /*=================================GetHashCode==================================
         **Action: Our algorithm for returning the hashcode is a little bit complex.  We look
