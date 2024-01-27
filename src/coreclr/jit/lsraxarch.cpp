@@ -434,8 +434,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
             const unsigned nonRaxCandidates = availableIntRegs & ~RBM_RAX;
             BuildUse(addr, nonRaxCandidates);
-            BuildUse(data, (varTypeIsByte(tree) || varTypeIsByte(data)) ? (nonRaxCandidates & RBM_BYTE_REGS)
-                                                                        : nonRaxCandidates);
+            BuildUse(data, varTypeIsByte(tree) ? (nonRaxCandidates & RBM_BYTE_REGS) : nonRaxCandidates);
             BuildUse(comparand, RBM_RAX);
             BuildDef(tree, RBM_RAX);
         }
@@ -476,7 +475,7 @@ int LinearScan::BuildNode(GenTree* tree)
             setDelayFree(addrUse);
             tgtPrefUse = addrUse;
             assert(!data->isContained());
-            BuildUse(data, (varTypeIsByte(data) || varTypeIsByte(tree)) ? RBM_BYTE_REGS : RBM_ALLINT);
+            BuildUse(data, varTypeIsByte(tree) ? RBM_BYTE_REGS : RBM_NONE);
             srcCount = 2;
             assert(dstCount == 1);
             BuildDef(tree);
