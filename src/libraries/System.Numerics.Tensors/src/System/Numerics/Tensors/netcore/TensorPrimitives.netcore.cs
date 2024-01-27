@@ -4022,7 +4022,7 @@ namespace System.Numerics.Tensors
                 Debug.Assert(Vector128<TInput>.IsSupported);
                 Debug.Assert(Vector128<TOutput>.IsSupported);
 
-                twoVectorsFromEnd = x.Length - (Vector256<TInput>.Count * 2);
+                twoVectorsFromEnd = x.Length - (Vector128<TInput>.Count * 2);
                 if (i <= twoVectorsFromEnd)
                 {
                     // Loop handling two input vectors / one output vector at a time.
