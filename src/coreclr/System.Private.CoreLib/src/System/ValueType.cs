@@ -101,7 +101,7 @@ namespace System
 
             // We don't want to expose the method table pointer in the hash code
             // Let's use the typeID instead.
-            uint typeID = 12345;
+            uint typeID = RuntimeHelpers.GetTypeID(pMT);
 
             // To get less colliding and more evenly distributed hash codes,
             // we munge the class index with two big prime numbers

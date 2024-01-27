@@ -330,6 +330,9 @@ namespace System.Runtime.CompilerServices
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
 
+        [LibraryImport(QCall, EntryPoint = "MethodTable_GetTypeID")]
+        internal static unsafe partial uint GetTypeID(MethodTable* pMT);
+
         /// <summary>
         /// Allocate memory that is associated with the <paramref name="type"/> and
         /// will be freed if and when the <see cref="Type"/> is unloaded.

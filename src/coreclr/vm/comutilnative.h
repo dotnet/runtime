@@ -257,6 +257,7 @@ public:
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
 extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
+extern "C" UINT32 QCALLTYPE MethodTable_GetTypeID(MethodTable* mt);
 
 class StreamNative {
 public:

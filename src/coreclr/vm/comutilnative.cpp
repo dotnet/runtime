@@ -1900,6 +1900,27 @@ extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, Metho
     return bResult;
 }
 
+extern "C" UINT32 QCALLTYPE MethodTable_GetTypeID(MethodTable * mt)
+{
+    QCALL_CONTRACT;
+
+    UINT32 typeID = 0;
+
+    BEGIN_QCALL;
+
+    typeID = mt->LookupTypeID();
+    if (typeID == TypeIDProvider::INVALID_TYPE_ID)
+    {
+        // If the typeID has yet to be generated, fall back to GetTypeID
+        // This only needs to be done once per MethodTable
+        typeID = mt->GetTypeID();
+    }
+
+    END_QCALL;
+
+    return typeID;
+}
+
 static MethodTable * g_pStreamMT;
 static WORD g_slotBeginRead, g_slotEndRead;
 static WORD g_slotBeginWrite, g_slotEndWrite;
