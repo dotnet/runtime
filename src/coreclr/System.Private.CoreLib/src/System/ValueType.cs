@@ -103,31 +103,25 @@ namespace System
             // implement its own GetHashCode().
 
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
-
-            // We don't want to expose the method table pointer in the hash code
-            // Let's use the typeID instead.
-            uint typeID = RuntimeHelpers.GetTypeID(pMT);
+            HashCode hashCode = default;
 
             // To get less colliding and more evenly distributed hash codes,
-            // we munge the class index with two big prime numbers
-            int hashCode = (int)(typeID * 711650207 + 2506965631U);
+            // we munge the class index into the hashcode
+            hashCode.Add((IntPtr)pMT);
 
             if (CanCompareBitsOrUseFastGetHashCode(pMT))
             {
                 // this is a struct with no refs and no "strange" offsets
-                HashCode hash = default;
                 uint size = pMT->GetNumInstanceFieldBytes();
-                hash.AddBytes(MemoryMarshal.CreateReadOnlySpan(ref this.GetRawData(), (int)size));
-                hashCode ^= hash.ToHashCode();
+                hashCode.AddBytes(MemoryMarshal.CreateReadOnlySpan(ref this.GetRawData(), (int)size));
             }
             else
             {
                 object obj = this;
-                hashCode ^= RegularGetValueTypeHashCode(pMT, ObjectHandleOnStack.Create(ref obj));
+                hashCode.Add(RegularGetValueTypeHashCode(pMT, ObjectHandleOnStack.Create(ref obj)));
             }
 
-            GC.KeepAlive(this);
-            return hashCode;
+            return hashCode.ToHashCode();
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_RegularGetValueTypeHashCode")]
