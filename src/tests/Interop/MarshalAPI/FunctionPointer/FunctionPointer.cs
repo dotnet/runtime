@@ -181,15 +181,11 @@ public partial class FunctionPtr
         Assert.Equal(expectedValue, outVar);
     }
 
-    [Fact]
+    public static bool CanRunInvalidGenericFunctionPointerTest => !TestLibrary.Utilities.IsNativeAot && !(TestLibrary.Utilities.IsWindows && TestLibrary.Utilities.IsX86);
+
+    [ConditionalFact(nameof(CanRunInvalidGenericFunctionPointerTest))]
     public static void RunInvalidGenericFunctionPointerTest()
     {
-        if (OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86)
-        {
-            // We have naming mangling issues on Windows x86
-            return;
-        }
-
         Console.WriteLine($"Running {nameof(RunInvalidGenericFunctionPointerTest)}...");
         unsafe
         {
