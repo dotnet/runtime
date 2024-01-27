@@ -999,61 +999,61 @@ namespace System.Numerics.Tensors
                 switch (blocks)
                 {
                     case 7:
-                        {
-                            Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 6;
-                        }
+                    {
+                        Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 5;
-                        }
+                    {
+                        Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 4;
-                        }
+                    {
+                        Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 3;
-                        }
+                    {
+                        Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 2;
-                        }
+                    {
+                        Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 1;
-                        }
+                    {
+                        Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 1)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 0;
-                        }
+                    {
+                        Vector128<T> vector = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 1)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)trailing), end, Vector128.Create(TAggregationOperator.IdentityValue));
-                            vresult = TAggregationOperator.Invoke(vresult, end);
-                            break;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)trailing), end, Vector128.Create(TAggregationOperator.IdentityValue));
+                        vresult = TAggregationOperator.Invoke(vresult, end);
+                        break;
+                    }
                 }
 
                 return TAggregationOperator.Invoke(vresult);
@@ -1168,61 +1168,61 @@ namespace System.Numerics.Tensors
                 switch (blocks)
                 {
                     case 7:
-                        {
-                            Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 6;
-                        }
+                    {
+                        Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 5;
-                        }
+                    {
+                        Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 4;
-                        }
+                    {
+                        Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 3;
-                        }
+                    {
+                        Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 2;
-                        }
+                    {
+                        Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 1;
-                        }
+                    {
+                        Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 1)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 0;
-                        }
+                    {
+                        Vector256<T> vector = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 1)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)trailing), end, Vector256.Create(TAggregationOperator.IdentityValue));
-                            vresult = TAggregationOperator.Invoke(vresult, end);
-                            break;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)trailing), end, Vector256.Create(TAggregationOperator.IdentityValue));
+                        vresult = TAggregationOperator.Invoke(vresult, end);
+                        break;
+                    }
                 }
 
                 return TAggregationOperator.Invoke(vresult);
@@ -1337,61 +1337,61 @@ namespace System.Numerics.Tensors
                 switch (blocks)
                 {
                     case 7:
-                        {
-                            Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 6;
-                        }
+                    {
+                        Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 5;
-                        }
+                    {
+                        Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 4;
-                        }
+                    {
+                        Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 3;
-                        }
+                    {
+                        Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 2;
-                        }
+                    {
+                        Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 1;
-                        }
+                    {
+                        Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 1)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 0;
-                        }
+                    {
+                        Vector512<T> vector = TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 1)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end = Vector512.ConditionalSelect(CreateRemainderMaskVector512<T>((int)trailing), end, Vector512.Create(TAggregationOperator.IdentityValue));
-                            vresult = TAggregationOperator.Invoke(vresult, end);
-                            break;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end = Vector512.ConditionalSelect(CreateRemainderMaskVector512<T>((int)trailing), end, Vector512.Create(TAggregationOperator.IdentityValue));
+                        vresult = TAggregationOperator.Invoke(vresult, end);
+                        break;
+                    }
                 }
 
                 return TAggregationOperator.Invoke(vresult);
@@ -1426,87 +1426,87 @@ namespace System.Numerics.Tensors
                     case 11:
                     case 10:
                     case 9:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
-                            Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
-                            Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                            Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+                        Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
 
-                            end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
-                            vresult = TAggregationOperator.Invoke(vresult, end);
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 8:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
-                            Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
-                            Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
+                        Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
-                            Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
-                            Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                            Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
 
-                            end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
-                            vresult = TAggregationOperator.Invoke(vresult, end);
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
-                            Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
-                            Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
+                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 3:
-                        {
-                            result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)));
-                            goto case 2;
-                        }
+                    {
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)));
-                            goto case 1;
-                        }
+                    {
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(xRef));
-                            goto case 0;
-                        }
+                    {
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(xRef));
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
 
                 return result;
@@ -1523,73 +1523,73 @@ namespace System.Numerics.Tensors
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
-                            Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
-                            Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                            Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+                        Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
 
-                            end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
-                            vresult = TAggregationOperator.Invoke(vresult, end);
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
-                            Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
-                            Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
+                        Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
-                            Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
-                            Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                            Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
 
-                            end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
-                            vresult = TAggregationOperator.Invoke(vresult, end);
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 2:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
-                            Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
-                            Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
+                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 1:
-                        {
-                            result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(xRef));
-                            goto case 0;
-                        }
+                    {
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(xRef));
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
 
                 return result;
@@ -1826,68 +1826,68 @@ namespace System.Numerics.Tensors
                 switch (blocks)
                 {
                     case 7:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 7)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 6;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 7)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 6)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 5;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 6)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 5)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 4;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 5)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 4)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 3;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 4)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 3)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 2;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 3)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 2)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 1;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 2)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 1)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 1)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 0;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 1)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 1)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)trailing), end, Vector128.Create(TAggregationOperator.IdentityValue));
-                            vresult = TAggregationOperator.Invoke(vresult, end);
-                            break;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)trailing), end, Vector128.Create(TAggregationOperator.IdentityValue));
+                        vresult = TAggregationOperator.Invoke(vresult, end);
+                        break;
+                    }
                 }
 
                 return TAggregationOperator.Invoke(vresult);
@@ -2017,68 +2017,68 @@ namespace System.Numerics.Tensors
                 switch (blocks)
                 {
                     case 7:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 7)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 6;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 7)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 6)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 5;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 6)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 5)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 4;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 5)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 4)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 3;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 4)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 3)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 2;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 3)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 2)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 1;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 2)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 1)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 1)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 0;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 1)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 1)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)trailing), end, Vector256.Create(TAggregationOperator.IdentityValue));
-                            vresult = TAggregationOperator.Invoke(vresult, end);
-                            break;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)trailing), end, Vector256.Create(TAggregationOperator.IdentityValue));
+                        vresult = TAggregationOperator.Invoke(vresult, end);
+                        break;
+                    }
                 }
 
                 return TAggregationOperator.Invoke(vresult);
@@ -2208,68 +2208,68 @@ namespace System.Numerics.Tensors
                 switch (blocks)
                 {
                     case 7:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 7)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 6;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 7)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 6)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 5;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 6)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 5)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 4;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 5)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 4)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 3;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 4)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)),
-                                                                             Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 3)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 2;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 3)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 2)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 1;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 2)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 1)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 1)));
-                            vresult = TAggregationOperator.Invoke(vresult, vector);
-                            goto case 0;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 1)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 1)));
+                        vresult = TAggregationOperator.Invoke(vresult, vector);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end = Vector512.ConditionalSelect(CreateRemainderMaskVector512<T>((int)trailing), end, Vector512.Create(TAggregationOperator.IdentityValue));
-                            vresult = TAggregationOperator.Invoke(vresult, end);
-                            break;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end = Vector512.ConditionalSelect(CreateRemainderMaskVector512<T>((int)trailing), end, Vector512.Create(TAggregationOperator.IdentityValue));
+                        vresult = TAggregationOperator.Invoke(vresult, end);
+                        break;
+                    }
                 }
 
                 return TAggregationOperator.Invoke(vresult);
@@ -2304,95 +2304,95 @@ namespace System.Numerics.Tensors
                     case 11:
                     case 10:
                     case 9:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
-                            Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                      Vector256.LoadUnsafe(ref yRef));
-                            Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
-                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                  Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
 
-                            end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
-                            vresult = TAggregationOperator.Invoke(vresult, end);
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 8:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
-                            Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                      Vector256.LoadUnsafe(ref yRef));
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
-                            Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                      Vector128.LoadUnsafe(ref yRef));
-                            Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
 
-                            end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
-                            vresult = TAggregationOperator.Invoke(vresult, end);
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
-                            Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                      Vector128.LoadUnsafe(ref yRef));
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 3:
-                        {
-                            result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                                                Unsafe.Add(ref yRef, 2)));
-                            goto case 2;
-                        }
+                    {
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                                            Unsafe.Add(ref yRef, 2)));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                                                Unsafe.Add(ref yRef, 1)));
-                            goto case 1;
-                        }
+                    {
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                                            Unsafe.Add(ref yRef, 1)));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(xRef, yRef));
-                            goto case 0;
-                        }
+                    {
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(xRef, yRef));
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
 
                 return result;
@@ -2409,79 +2409,79 @@ namespace System.Numerics.Tensors
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
-                            Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                      Vector256.LoadUnsafe(ref yRef));
-                            Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
-                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                  Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
 
-                            end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
-                            vresult = TAggregationOperator.Invoke(vresult, end);
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
-                            Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                      Vector256.LoadUnsafe(ref yRef));
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
-                            Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                      Vector128.LoadUnsafe(ref yRef));
-                            Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
 
-                            end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
-                            vresult = TAggregationOperator.Invoke(vresult, end);
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
+                        vresult = TAggregationOperator.Invoke(vresult, end);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 2:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
-                            Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                      Vector128.LoadUnsafe(ref yRef));
-                            vresult = TAggregationOperator.Invoke(vresult, beg);
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                            result = TAggregationOperator.Invoke(vresult);
-                            break;
-                        }
+                        result = TAggregationOperator.Invoke(vresult);
+                        break;
+                    }
 
                     case 1:
-                        {
-                            result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(xRef, yRef));
-                            goto case 0;
-                        }
+                    {
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(xRef, yRef));
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
 
                 return result;
@@ -3275,67 +3275,67 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector128<TInput>.Count)
                 {
                     case 8:
-                        {
-                            Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector128<TOutput> vector = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<TInput>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<TOutput>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<TInput>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<TInput>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -3486,67 +3486,67 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector256<TInput>.Count)
                 {
                     case 8:
-                        {
-                            Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector256<TOutput> vector = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<TInput>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<TOutput>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<TOutput>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<TOutput>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -3697,67 +3697,67 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector512<TInput>.Count)
                 {
                     case 8:
-                        {
-                            Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector512<TOutput> vector = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<TInput>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<TOutput>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<TOutput>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<TOutput>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -3789,75 +3789,75 @@ namespace System.Numerics.Tensors
                     case 11:
                     case 10:
                     case 9:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                            Vector256<TOutput> end = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<TInput>.Count));
+                        Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<TOutput> end = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<TInput>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<TOutput>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<TOutput>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 8:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                            Vector128<TOutput> end = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<TInput>.Count));
+                        Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<TOutput> end = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<TInput>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<TOutput>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<TOutput>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Unsafe.Add(ref dRef, 2) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 2));
-                            goto case 2;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 2) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 2));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Unsafe.Add(ref dRef, 1) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 1));
-                            goto case 1;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 1) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 1));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            dRef = TUnaryOperator.Invoke(xRef);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TUnaryOperator.Invoke(xRef);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -3871,61 +3871,61 @@ namespace System.Numerics.Tensors
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                            Vector256<TOutput> end = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<TInput>.Count));
+                        Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<TOutput> end = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<TInput>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<TOutput>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<TOutput>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                            Vector128<TOutput> end = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<TInput>.Count));
+                        Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<TOutput> end = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<TInput>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<TOutput>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<TOutput>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 2:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 1:
-                        {
-                            dRef = TUnaryOperator.Invoke(xRef);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TUnaryOperator.Invoke(xRef);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -4458,74 +4458,74 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector128<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)),
-                                                                         Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)),
+                                                                     Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -4700,74 +4700,74 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector256<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)),
-                                                                         Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)),
+                                                                     Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -4942,74 +4942,74 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector512<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)),
-                                                                         Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)),
+                                                                     Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -5041,83 +5041,83 @@ namespace System.Numerics.Tensors
                     case 11:
                     case 10:
                     case 9:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                      Vector256.LoadUnsafe(ref yRef));
-                            Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
-                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                  Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 8:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                      Vector256.LoadUnsafe(ref yRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                      Vector128.LoadUnsafe(ref yRef));
-                            Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                      Vector128.LoadUnsafe(ref yRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                             Unsafe.Add(ref yRef, 2));
-                            goto case 2;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                         Unsafe.Add(ref yRef, 2));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                             Unsafe.Add(ref yRef, 1));
-                            goto case 1;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                         Unsafe.Add(ref yRef, 1));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            dRef = TBinaryOperator.Invoke(xRef, yRef);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TBinaryOperator.Invoke(xRef, yRef);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -5131,67 +5131,67 @@ namespace System.Numerics.Tensors
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                      Vector256.LoadUnsafe(ref yRef));
-                            Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
-                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                  Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                      Vector256.LoadUnsafe(ref yRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                      Vector128.LoadUnsafe(ref yRef));
-                            Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 2:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                      Vector128.LoadUnsafe(ref yRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 1:
-                        {
-                            dRef = TBinaryOperator.Invoke(xRef, yRef);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TBinaryOperator.Invoke(xRef, yRef);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -5492,74 +5492,74 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector128<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector128<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -5730,74 +5730,74 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector256<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector256<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -5968,74 +5968,74 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector512<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2))),
-                                                                         yVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector512<T> vector = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2))),
+                                                                     yVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -6067,87 +6067,87 @@ namespace System.Numerics.Tensors
                     case 11:
                     case 10:
                     case 9:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> yVec = Vector256.Create(y);
+                        Vector256<T> yVec = Vector256.Create(y);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
-                                                                      yVec);
-                            Vector256<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count)),
-                                                                      yVec);
+                        Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
+                                                                  yVec);
+                        Vector256<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count)),
+                                                                  yVec);
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 8:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
-                                                                      Vector256.Create(y));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
+                                                                  Vector256.Create(y));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> yVec = Vector128.Create(y);
+                        Vector128<T> yVec = Vector128.Create(y);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
-                                                                                                yVec);
-                            Vector128<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count)),
-                                                                                                yVec);
+                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
+                                                                                            yVec);
+                        Vector128<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count)),
+                                                                                            yVec);
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
-                                                                                                Vector128.Create(y));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
+                                                                                            Vector128.Create(y));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)),
-                                                                             y);
-                            goto case 2;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)),
+                                                                         y);
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)),
-                                                                             y);
-                            goto case 1;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)),
+                                                                          y);
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -6161,71 +6161,71 @@ namespace System.Numerics.Tensors
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> yVec = Vector256.Create(y);
+                        Vector256<T> yVec = Vector256.Create(y);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
-                                                                      yVec);
-                            Vector256<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count)),
-                                                                      yVec);
+                        Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
+                                                                  yVec);
+                        Vector256<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count)),
+                                                                  yVec);
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
-                                                                      Vector256.Create(y));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
+                                                                  Vector256.Create(y));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> yVec = Vector128.Create(y);
+                        Vector128<T> yVec = Vector128.Create(y);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
-                                                                                                yVec);
-                            Vector128<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count)),
-                                                                                                yVec);
+                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
+                                                                                            yVec);
+                        Vector128<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count)),
+                                                                                            yVec);
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 2:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
-                                                                                                Vector128.Create(y));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
+                                                                                            Vector128.Create(y));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 1:
-                        {
-                            dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -6534,81 +6534,81 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector128<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8)),
-                                                                          Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 8)),
-                                                                          Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 8)),
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)),
-                                                                          Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 7)),
-                                                                          Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 7)),
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)),
-                                                                          Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 6)),
-                                                                          Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 6)),
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)),
-                                                                          Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 5)),
-                                                                          Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 5)),
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)),
-                                                                          Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 4)),
-                                                                          Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 4)),
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)),
-                                                                          Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 3)),
-                                                                          Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 3)),
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)),
-                                                                          Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 2)),
-                                                                          Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 2)),
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -6807,81 +6807,81 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector256<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8)),
-                                                                          Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 8)),
-                                                                          Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 8)),
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)),
-                                                                          Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 7)),
-                                                                          Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 7)),
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)),
-                                                                          Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 6)),
-                                                                          Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 6)),
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)),
-                                                                          Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 5)),
-                                                                          Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 5)),
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)),
-                                                                          Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 4)),
-                                                                          Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 4)),
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)),
-                                                                          Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 3)),
-                                                                          Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 3)),
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)),
-                                                                          Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 2)),
-                                                                          Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 2)),
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -7080,81 +7080,81 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector512<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 8)),
-                                                                          Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 8)),
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 7)),
-                                                                          Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 7)),
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 6)),
-                                                                          Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 6)),
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 5)),
-                                                                          Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 5)),
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 4)),
-                                                                          Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 4)),
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 3)),
-                                                                          Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 3)),
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 2)),
-                                                                          Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 2)),
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -7186,91 +7186,91 @@ namespace System.Numerics.Tensors
                     case 11:
                     case 10:
                     case 9:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                       Vector256.LoadUnsafe(ref yRef),
-                                                                       Vector256.LoadUnsafe(ref zRef));
-                            Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
-                                                                       Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
-                                                                       Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 8:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                           Vector256.LoadUnsafe(ref yRef),
-                                                                           Vector256.LoadUnsafe(ref zRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                       Vector256.LoadUnsafe(ref yRef),
+                                                                       Vector256.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           Vector128.LoadUnsafe(ref yRef),
-                                                                           Vector128.LoadUnsafe(ref zRef));
-                            Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                           Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
-                                                                           Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       Vector128.LoadUnsafe(ref yRef),
+                                                                       Vector128.LoadUnsafe(ref zRef));
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                       Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
+                                                                       Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           Vector128.LoadUnsafe(ref yRef),
-                                                                           Vector128.LoadUnsafe(ref zRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       Vector128.LoadUnsafe(ref yRef),
+                                                                       Vector128.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                              Unsafe.Add(ref yRef, 2),
-                                                                              Unsafe.Add(ref zRef, 2));
-                            goto case 2;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                          Unsafe.Add(ref yRef, 2),
+                                                                          Unsafe.Add(ref zRef, 2));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                              Unsafe.Add(ref yRef, 1),
-                                                                              Unsafe.Add(ref zRef, 1));
-                            goto case 1;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                          Unsafe.Add(ref yRef, 1),
+                                                                          Unsafe.Add(ref zRef, 1));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -7284,73 +7284,73 @@ namespace System.Numerics.Tensors
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                       Vector256.LoadUnsafe(ref yRef),
-                                                                       Vector256.LoadUnsafe(ref zRef));
-                            Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
-                                                                       Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
-                                                                       Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                           Vector256.LoadUnsafe(ref yRef),
-                                                                           Vector256.LoadUnsafe(ref zRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           Vector128.LoadUnsafe(ref yRef),
-                                                                           Vector128.LoadUnsafe(ref zRef));
-                            Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                           Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
-                                                                           Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.LoadUnsafe(ref yRef),
+                                                                   Vector128.LoadUnsafe(ref zRef));
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                   Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
+                                                                   Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 2:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           Vector128.LoadUnsafe(ref yRef),
-                                                                           Vector128.LoadUnsafe(ref zRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.LoadUnsafe(ref yRef),
+                                                                   Vector128.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 1:
-                        {
-                            dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -7653,81 +7653,81 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector128<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8)),
-                                                                              Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 8)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 8)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)),
-                                                                              Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 7)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 7)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)),
-                                                                              Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 6)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 6)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)),
-                                                                              Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 5)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 5)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)),
-                                                                              Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 4)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 4)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)),
-                                                                              Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 3)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 3)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)),
-                                                                              Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 2)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)),
+                                                                      Vector128.LoadUnsafe(ref yRef, remainder - (uint)(Vector128<T>.Count * 2)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -7922,81 +7922,81 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector256<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8)),
-                                                                              Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 8)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 8)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)),
-                                                                              Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 7)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 7)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)),
-                                                                              Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 6)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 6)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)),
-                                                                              Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 5)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 5)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)),
-                                                                              Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 4)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 4)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)),
-                                                                              Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 3)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 3)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)),
-                                                                              Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 2)),
-                                                                              zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)),
+                                                                      Vector256.LoadUnsafe(ref yRef, remainder - (uint)(Vector256<T>.Count * 2)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -8191,81 +8191,81 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector512<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 8)),
-                                                                          zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 8)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 7)),
-                                                                          zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 7)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 6)),
-                                                                          zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 6)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 5)),
-                                                                          zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 5)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 4)),
-                                                                          zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 4)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 3)),
-                                                                          zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 3)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)),
-                                                                          Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 2)),
-                                                                          zVec);
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)),
+                                                                      Vector512.LoadUnsafe(ref yRef, remainder - (uint)(Vector512<T>.Count * 2)),
+                                                                      zVec);
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -8297,95 +8297,95 @@ namespace System.Numerics.Tensors
                     case 11:
                     case 10:
                     case 9:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> zVec = Vector256.Create(z);
+                        Vector256<T> zVec = Vector256.Create(z);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                           Vector256.LoadUnsafe(ref yRef),
-                                                                           zVec);
-                            Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
-                                                                           Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
-                                                                           zVec);
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   zVec);
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
+                                                                   zVec);
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 8:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                           Vector256.LoadUnsafe(ref yRef),
-                                                                           Vector256.Create(z));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   Vector256.Create(z));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> zVec = Vector128.Create(z);
+                        Vector128<T> zVec = Vector128.Create(z);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           Vector128.LoadUnsafe(ref yRef),
-                                                                           zVec);
-                            Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                           Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
-                                                                           zVec);
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.LoadUnsafe(ref yRef),
+                                                                   zVec);
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                   Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
+                                                                   zVec);
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           Vector128.LoadUnsafe(ref yRef),
-                                                                           Vector128.Create(z));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.LoadUnsafe(ref yRef),
+                                                                   Vector128.Create(z));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                              Unsafe.Add(ref yRef, 2),
-                                                                              z);
-                            goto case 2;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                          Unsafe.Add(ref yRef, 2),
+                                                                          z);
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                              Unsafe.Add(ref yRef, 1),
-                                                                              z);
-                            goto case 1;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                          Unsafe.Add(ref yRef, 1),
+                                                                          z);
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            dRef = TTernaryOperator.Invoke(xRef, yRef, z);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TTernaryOperator.Invoke(xRef, yRef, z);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -8399,77 +8399,77 @@ namespace System.Numerics.Tensors
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> zVec = Vector256.Create(z);
+                        Vector256<T> zVec = Vector256.Create(z);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                           Vector256.LoadUnsafe(ref yRef),
-                                                                           zVec);
-                            Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
-                                                                           Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
-                                                                           zVec);
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   zVec);
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
+                                                                   zVec);
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                           Vector256.LoadUnsafe(ref yRef),
-                                                                           Vector256.Create(z));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   Vector256.Create(z));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> zVec = Vector128.Create(z);
+                        Vector128<T> zVec = Vector128.Create(z);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           Vector128.LoadUnsafe(ref yRef),
-                                                                           zVec);
-                            Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                           Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
-                                                                           zVec);
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.LoadUnsafe(ref yRef),
+                                                                   zVec);
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                   Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
+                                                                   zVec);
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 2:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           Vector128.LoadUnsafe(ref yRef),
-                                                                           Vector128.Create(z));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.LoadUnsafe(ref yRef),
+                                                                   Vector128.Create(z));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 1:
-                        {
-                            dRef = TTernaryOperator.Invoke(xRef, yRef, z);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TTernaryOperator.Invoke(xRef, yRef, z);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -8772,81 +8772,81 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector128<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8)),
-                                                                              yVec,
-                                                                              Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8)),
+                                                                      yVec,
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)),
-                                                                              yVec,
-                                                                              Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)),
+                                                                      yVec,
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)),
-                                                                              yVec,
-                                                                              Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)),
+                                                                      yVec,
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)),
-                                                                              yVec,
-                                                                              Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)),
+                                                                      yVec,
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)),
-                                                                              yVec,
-                                                                              Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)),
+                                                                      yVec,
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)),
-                                                                              yVec,
-                                                                              Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)),
+                                                                      yVec,
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)),
-                                                                              yVec,
-                                                                              Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector128<T> vector = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)),
+                                                                      yVec,
+                                                                      Vector128.LoadUnsafe(ref zRef, remainder - (uint)(Vector128<T>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -9041,81 +9041,81 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector256<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8)),
-                                                                              yVec,
-                                                                              Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8)),
+                                                                      yVec,
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)),
-                                                                              yVec,
-                                                                              Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)),
+                                                                      yVec,
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)),
-                                                                              yVec,
-                                                                              Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)),
+                                                                      yVec,
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)),
-                                                                              yVec,
-                                                                              Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)),
+                                                                      yVec,
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)),
-                                                                              yVec,
-                                                                              Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)),
+                                                                      yVec,
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)),
-                                                                              yVec,
-                                                                              Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)),
+                                                                      yVec,
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)),
-                                                                              yVec,
-                                                                              Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector256<T> vector = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)),
+                                                                      yVec,
+                                                                      Vector256.LoadUnsafe(ref zRef, remainder - (uint)(Vector256<T>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -9310,81 +9310,81 @@ namespace System.Numerics.Tensors
                 switch (remainder / (uint)Vector512<T>.Count)
                 {
                     case 8:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8)),
-                                                                              yVec,
-                                                                              Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 8)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
-                            goto case 7;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8)),
+                                                                      yVec,
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 8)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
+                        goto case 7;
+                    }
 
                     case 7:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)),
-                                                                              yVec,
-                                                                              Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 7)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
-                            goto case 6;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)),
+                                                                      yVec,
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 7)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
+                        goto case 6;
+                    }
 
                     case 6:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)),
-                                                                              yVec,
-                                                                              Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 6)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
-                            goto case 5;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)),
+                                                                      yVec,
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 6)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
+                        goto case 5;
+                    }
 
                     case 5:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)),
-                                                                              yVec,
-                                                                              Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 5)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
-                            goto case 4;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)),
+                                                                      yVec,
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 5)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
+                        goto case 4;
+                    }
 
                     case 4:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)),
-                                                                              yVec,
-                                                                              Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 4)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
-                            goto case 3;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)),
+                                                                      yVec,
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 4)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
+                        goto case 3;
+                    }
 
                     case 3:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)),
-                                                                              yVec,
-                                                                              Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 3)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
-                            goto case 2;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)),
+                                                                      yVec,
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 3)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)),
-                                                                              yVec,
-                                                                              Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 2)));
-                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
-                            goto case 1;
-                        }
+                    {
+                        Vector512<T> vector = TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)),
+                                                                      yVec,
+                                                                      Vector512.LoadUnsafe(ref zRef, remainder - (uint)(Vector512<T>.Count * 2)));
+                        vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            // Store the last block, which includes any elements that wouldn't fill a full vector
-                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
-                            goto case 0;
-                        }
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            // Store the first block, which includes any elements preceding the first aligned block
-                            beg.StoreUnsafe(ref dRefBeg);
-                            break;
-                        }
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        beg.StoreUnsafe(ref dRefBeg);
+                        break;
+                    }
                 }
             }
 
@@ -9416,95 +9416,95 @@ namespace System.Numerics.Tensors
                     case 11:
                     case 10:
                     case 9:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> yVec = Vector256.Create(y);
+                        Vector256<T> yVec = Vector256.Create(y);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                           yVec,
-                                                                           Vector256.LoadUnsafe(ref zRef));
-                            Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
-                                                                           yVec,
-                                                                           Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   yVec,
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   yVec,
+                                                                   Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 8:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                           Vector256.Create(y),
-                                                                           Vector256.LoadUnsafe(ref zRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.Create(y),
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> yVec = Vector128.Create(y);
+                        Vector128<T> yVec = Vector128.Create(y);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           yVec,
-                                                                           Vector128.LoadUnsafe(ref zRef));
-                            Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                           yVec,
-                                                                           Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   yVec,
+                                                                   Vector128.LoadUnsafe(ref zRef));
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                   yVec,
+                                                                   Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           Vector128.Create(y),
-                                                                           Vector128.LoadUnsafe(ref zRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.Create(y),
+                                                                   Vector128.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
-                                                                              y,
-                                                                              Unsafe.Add(ref zRef, 2));
-                            goto case 2;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 2));
+                        goto case 2;
+                    }
 
                     case 2:
-                        {
-                            Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
-                                                                              y,
-                                                                              Unsafe.Add(ref zRef, 1));
-                            goto case 1;
-                        }
+                    {
+                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 1));
+                        goto case 1;
+                    }
 
                     case 1:
-                        {
-                            dRef = TTernaryOperator.Invoke(xRef, y, zRef);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TTernaryOperator.Invoke(xRef, y, zRef);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -9518,77 +9518,77 @@ namespace System.Numerics.Tensors
                     case 7:
                     case 6:
                     case 5:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> yVec = Vector256.Create(y);
+                        Vector256<T> yVec = Vector256.Create(y);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                           yVec,
-                                                                           Vector256.LoadUnsafe(ref zRef));
-                            Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
-                                                                           yVec,
-                                                                           Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   yVec,
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   yVec,
+                                                                   Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 4:
-                        {
-                            Debug.Assert(Vector256.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
 
-                            Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
-                                                                           Vector256.Create(y),
-                                                                           Vector256.LoadUnsafe(ref zRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.Create(y),
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 3:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> yVec = Vector128.Create(y);
+                        Vector128<T> yVec = Vector128.Create(y);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           yVec,
-                                                                           Vector128.LoadUnsafe(ref zRef));
-                            Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
-                                                                           yVec,
-                                                                           Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   yVec,
+                                                                   Vector128.LoadUnsafe(ref zRef));
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                   yVec,
+                                                                   Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
 
-                            beg.StoreUnsafe(ref dRef);
-                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 2:
-                        {
-                            Debug.Assert(Vector128.IsHardwareAccelerated);
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
 
-                            Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
-                                                                           Vector128.Create(y),
-                                                                           Vector128.LoadUnsafe(ref zRef));
-                            beg.StoreUnsafe(ref dRef);
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.Create(y),
+                                                                   Vector128.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
 
-                            break;
-                        }
+                        break;
+                    }
 
                     case 1:
-                        {
-                            dRef = TTernaryOperator.Invoke(xRef, y, zRef);
-                            goto case 0;
-                        }
+                    {
+                        dRef = TTernaryOperator.Invoke(xRef, y, zRef);
+                        goto case 0;
+                    }
 
                     case 0:
-                        {
-                            break;
-                        }
+                    {
+                        break;
+                    }
                 }
             }
         }
