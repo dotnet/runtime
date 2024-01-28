@@ -672,13 +672,13 @@ namespace System.Numerics.Tensors
 
             if (typeof(TFrom) == typeof(float) && typeof(TTo) == typeof(Half))
             {
-                ConvertToHalf(Rename<TFrom, float>(source), Rename<TTo, Half>(destination));
+                InvokeSpanIntoSpan_2to1<float, ushort, NarrowSingleToHalfAsUInt16Operator>(Rename<TFrom, float>(source), Rename<TTo, ushort>(destination));
                 return true;
             }
 
             if (typeof(TFrom) == typeof(Half) && typeof(TTo) == typeof(float))
             {
-                ConvertToSingle(Rename<TFrom, Half>(source), Rename<TTo, float>(destination));
+                InvokeSpanIntoSpan_1to2<short, float, WidenHalfAsInt16ToSingleOperator>(Rename<TFrom, short>(source), Rename<TTo, float>(destination));
                 return true;
             }
 
