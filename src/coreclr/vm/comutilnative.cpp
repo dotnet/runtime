@@ -1790,6 +1790,8 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, void* pObj
     }
 
     GCPROTECT_END();
+
+    return ret;
 }
 
 extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize)
