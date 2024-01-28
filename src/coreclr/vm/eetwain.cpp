@@ -5215,31 +5215,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
-#if defined(STRESS_HEAP) && defined(PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
-    // When we simulate a hijack during gcstress
-    //  we start with ActiveStackFrame and the offset
-    //  after the call
-    // We need to make it look like a non-leaf frame
-    //  so that it's treated like a regular hijack
-    if (flags & ActiveStackFrame)
-    {
-        GcInfoDecoder _gcInfoDecoder(
-                            gcInfoToken,
-                            DECODE_INTERRUPTIBILITY,
-                            curOffs
-                            );
-        if(!_gcInfoDecoder.IsInterruptible())
-        {
-            // This must be the offset after a call
-#ifdef _DEBUG
-            GcInfoDecoder _safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
-            _ASSERTE(_safePointDecoder.IsSafePoint(curOffs));
-#endif
-            flags &= ~((unsigned)ActiveStackFrame);
-        }
-    }
-#endif // STRESS_HEAP && PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-
 #ifdef _DEBUG
     if (flags & ActiveStackFrame)
     {
