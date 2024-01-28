@@ -57,6 +57,75 @@ namespace System
 
         public virtual Delegate[] GetInvocationList() => new Delegate[] { this };
 
+        /// <summary>
+        /// Gets a value that indicates whether the <see cref="Delegate"/> has single invocation target.
+        /// </summary>
+        /// <value>true if the <see cref="Delegate"/> has single invocation target.</value>
+        public bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
+
+        /// <summary>
+        /// Returns InvocationListEnumerator that follows the IEnumerable pattern and
+        /// thus can be used in a C# 'foreach' statements to retrieve the invocation targets
+        /// of a delegate without allocations.
+        /// </summary>
+        /// <remarks>
+        /// The order of the delegates returned by the enumerator is the same order in which the current delegate invokes the methods that those delegates represent.
+        /// </remarks>
+        public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate d) where TDelegate : System.Delegate
+            => new InvocationListEnumerator<TDelegate>(Unsafe.As<MulticastDelegate>(d));
+
+        /// <summary>
+        /// Enumerates the invocation list of the delegate.
+        /// </summary>
+        /// <typeparam name="TDelegate">Delegate type being enumerated.</typeparam>
+        public struct InvocationListEnumerator<TDelegate> where TDelegate : System.Delegate
+        {
+            private MulticastDelegate _delegate;
+            private int _index;
+
+            internal InvocationListEnumerator(MulticastDelegate d)
+            {
+                _delegate = d;
+                _index = -1;
+            }
+
+            /// <summary>
+            /// Implements the IEnumerator pattern.
+            /// </summary>
+            public TDelegate Current
+            {
+                get
+                {
+                    Delegate? d = _delegate?.TryGetAt(_index);
+                    if (d == null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
+                    }
+                    return Unsafe.As<TDelegate>(d);
+                }
+            }
+
+            /// <summary>
+            /// Implements the IEnumerator pattern.
+            /// </summary>
+            public bool MoveNext()
+            {
+                int index = _index + 1;
+                if (_delegate?.TryGetAt(index) == null)
+                {
+                    return false;
+                }
+                _index = index;
+                return true;
+            }
+
+            /// <summary>
+            /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator
+            /// </summary>
+            [EditorBrowsable(EditorBrowsableState.Never)] // Only here to make foreach work
+            public System.Delegate.InvocationListEnumerator<TDelegate> GetEnumerator() => this;
+        }
+
         public object? DynamicInvoke(params object?[]? args)
         {
             return DynamicInvokeImpl(args);
