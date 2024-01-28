@@ -42,7 +42,7 @@ NESTED_END RhCommonStub, _TEXT
 // IntPtr RhGetCommonStubAddress()
 //
 LEAF_ENTRY RhGetCommonStubAddress, _TEXT
-          ldr           r0, =C_FUNC(RhCommonStub)
+          PREPARE_EXTERNAL_VAR RhCommonStub, r0
           bx            lr
 LEAF_END RhGetCommonStubAddress, _TEXT
 

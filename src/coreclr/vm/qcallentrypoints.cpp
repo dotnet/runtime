@@ -166,6 +166,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MdUtf8String_EqualsCaseInsensitive)
     DllImportEntry(Array_CreateInstance)
     DllImportEntry(Array_GetElementConstructorEntrypoint)
+    DllImportEntry(Array_CanAssignArrayType)
     DllImportEntry(AssemblyName_InitializeAssemblySpec)
     DllImportEntry(AssemblyNative_GetFullName)
     DllImportEntry(AssemblyNative_GetLocation)
@@ -218,12 +219,18 @@ static const Entry s_QCall[] =
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(ThreadNative_Start)
+    DllImportEntry(ThreadNative_SetIsBackground)
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_YieldThread)
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
     DllImportEntry(ThreadNative_SpinWait)
+    DllImportEntry(ThreadNative_Interrupt)
+    DllImportEntry(ThreadNative_Sleep)
+#ifdef FEATURE_COMINTEROP
+    DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
+#endif // FEATURE_COMINTEROP
 #ifdef TARGET_UNIX
     DllImportEntry(WaitHandle_CorWaitOnePrioritizedNative)
 #endif
@@ -288,6 +295,9 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_GetEndComSlot)
     DllImportEntry(MarshalNative_ChangeWrapperHandleStrength)
 #endif
+#ifdef FEATURE_COMINTEROP
+    DllImportEntry(OAVariant_ChangeType)
+#endif // FEATURE_COMINTEROP
     DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)
     DllImportEntry(NativeLibrary_FreeLib)

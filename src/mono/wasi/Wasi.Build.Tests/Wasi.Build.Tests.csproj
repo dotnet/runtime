@@ -23,9 +23,14 @@
     <EnableRunSettingsSupport>false</EnableRunSettingsSupport>
     <DefineConstants>TARGET_WASI</DefineConstants>
     <_MonoSrcWasmDir>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm'))</_MonoSrcWasmDir>
+
+    <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and
+                                        ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv'))"
+                                        >true</InstallWasmtimeForTests>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\workloads-testing.targets" />
+  <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
 
   <PropertyGroup>
     <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>

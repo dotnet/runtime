@@ -325,8 +325,6 @@ namespace ILCompiler
                                 Value value = stack.PopIntoLocation(field.FieldType);
                                 if (value is IInternalModelingOnlyValue)
                                     return Status.Fail(methodIL.OwningMethod, opcode, "Value with no external representation");
-                                if (value is { TargetSupportsWritingFieldData: false })
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Value cannot be written to target as it does not support writing field data and hence FrozenRuntimeTypeNode");
                                 _fieldValues[field] = value;
                             }
                         }
@@ -1860,9 +1858,7 @@ namespace ILCompiler
                         return spanRef.TryAccessElement(spanIndex.AsInt32(), out retVal);
                     }
                     return false;
-                case "GetTypeFromHandle" when method.OwningType is MetadataType typeType
-                        && typeType.Name == "Type" && typeType.Namespace == "System"
-                        && typeType.Module == typeType.Context.SystemModule
+                case "GetTypeFromHandle" when IsSystemType(method.OwningType)
                         && parameters[0] is RuntimeTypeHandleValue typeHandle:
                     {
                         if (!_internedTypes.TryGetValue(typeHandle.Type, out RuntimeTypeValue runtimeType))
@@ -1872,23 +1868,24 @@ namespace ILCompiler
                         retVal = runtimeType;
                         return true;
                     }
-                case "get_IsValueType" when method.OwningType is MetadataType typeType
-                        && typeType.Name == "Type" && typeType.Namespace == "System"
-                        && typeType.Module == typeType.Context.SystemModule
+                case "get_IsValueType" when IsSystemType(method.OwningType)
                         && parameters[0] is RuntimeTypeValue typeToCheckForValueType:
                     {
                         retVal = ValueTypeValue.FromSByte(typeToCheckForValueType.TypeRepresented.IsValueType ? (sbyte)1 : (sbyte)0);
                         return true;
                     }
-                case "op_Equality" when method.OwningType is MetadataType typeType
-                        && typeType.Name == "Type" && typeType.Namespace == "System"
-                        && typeType.Module == typeType.Context.SystemModule
+                case "op_Equality" when IsSystemType(method.OwningType)
                         && (parameters[0] is RuntimeTypeValue || parameters[1] is RuntimeTypeValue):
                     {
                         retVal = ValueTypeValue.FromSByte(parameters[0] == parameters[1] ? (sbyte)1 : (sbyte)0);
                         return true;
                     }
             }
+
+            static bool IsSystemType(TypeDesc type)
+                => type is MetadataType typeType
+                        && typeType.Name == "Type" && typeType.Namespace == "System"
+                        && typeType.Module == typeType.Context.SystemModule;
 
             return false;
         }
@@ -2219,8 +2216,6 @@ namespace ILCompiler
             public virtual float AsSingle() => ThrowInvalidProgram<float>();
             public virtual double AsDouble() => ThrowInvalidProgram<double>();
             public virtual Value Clone() => ThrowInvalidProgram<Value>();
-
-            public virtual bool TargetSupportsWritingFieldData => true;
         }
 
         private abstract class BaseValueTypeValue : Value
@@ -2403,15 +2398,10 @@ namespace ILCompiler
 
             public override bool GetRawData(NodeFactory factory, out object data)
             {
-                if (TargetSupportsWritingFieldData)
-                {
-                    data = factory.SerializedMaximallyConstructableRuntimeTypeObject(TypeRepresented);
-                    return true;
-                }
-
-                data = null;
-                return false;
+                data = factory.SerializedMaximallyConstructableRuntimeTypeObject(TypeRepresented);
+                return true;
             }
+
             public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter, TypePreinit preinitContext)
             {
                 if (!preinitContext._internedTypes.TryGetValue(TypeRepresented, out RuntimeTypeValue result))
@@ -2424,8 +2414,6 @@ namespace ILCompiler
             {
                 builder.EmitPointerReloc(factory.SerializedMaximallyConstructableRuntimeTypeObject(TypeRepresented));
             }
-
-            public override bool TargetSupportsWritingFieldData => EETypeNode.SupportsFrozenRuntimeTypeInstances(Type.Context.Target);
         }
 
         private sealed class ReadOnlySpanValue : BaseValueTypeValue, IInternalModelingOnlyValue

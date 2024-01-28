@@ -140,7 +140,7 @@ namespace System
             return vsb.ToString();
         }
 
-        internal static unsafe void EscapeString(ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
+        internal static unsafe void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
             bool checkExistingEscaped, SearchValues<char> noEscape)
         {
             Debug.Assert(!noEscape.Contains('%'), "Need to treat % specially; it should be part of any escaped set");
@@ -160,7 +160,7 @@ namespace System
         }
 
         private static void EscapeStringToBuilder(
-            ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb,
+            scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb,
             SearchValues<char> noEscape, bool checkExistingEscaped)
         {
             Debug.Assert(!stringToEscape.IsEmpty && !noEscape.Contains(stringToEscape[0]));

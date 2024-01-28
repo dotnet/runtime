@@ -862,7 +862,6 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
         {
             BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
             newBlk->inheritWeight(insertAfter);
-            newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
             JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
             comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
@@ -897,7 +896,6 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     {
         BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true, slowPreheader);
         newBlk->inheritWeight(insertAfter);
-        newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
 
         JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
         comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
@@ -1780,36 +1778,20 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         return false;
     }
 
-    // Make sure the loop doesn't have any embedded exception handling.
-    // Walk the loop blocks from lexically first to lexically last (all blocks in this region must be
-    // part of the loop), looking for a `try` begin block. Note that a loop must entirely contain any
-    // EH region, or be itself entirely contained within an EH region. Thus, looking just for a `try`
-    // begin is sufficient; there is no need to look for other EH constructs, such as a `catch` begin.
-    //
-    // TODO: this limitation could be removed if we do the work to insert new EH regions in the exception table,
-    // for the cloned loop (and its embedded EH regions).
-    //
-    BasicBlockVisit result = loop->VisitLoopBlocks([=](BasicBlock* blk) {
-        if (bbIsTryBeg(blk))
-        {
-            JITDUMP("Loop cloning: rejecting loop " FMT_LP ". It has a `try` begin.\n", loop->GetIndex());
-            return BasicBlockVisit::Abort;
-        }
-
-        return BasicBlockVisit::Continue;
-    });
-
-    if (result == BasicBlockVisit::Abort)
+    INDEBUG(const char* reason);
+    if (!loop->CanDuplicate(INDEBUG(&reason)))
     {
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
         return false;
     }
 
 #ifdef DEBUG
-    // With the EH constraint above verified it is not possible for
-    // BBJ_RETURN blocks to be part of the loop; a BBJ_RETURN block can
-    // only be part of the loop if its exceptional flow can reach the
-    // header, but that would require the handler to also be part of
-    // the loop, which guarantees that the loop contains two distinct
+    // Today we will never see any BBJ_RETURN blocks because we cannot
+    // duplicate loops with EH in them. When we have no try-regions that start
+    // in the loop it is not possible for BBJ_RETURN blocks to be part of the
+    // loop; a BBJ_RETURN block can only be part of the loop if its exceptional
+    // flow can reach the header, but that would require the handler to also be
+    // part of the loop, which guarantees that the loop contains two distinct
     // EH regions.
     loop->VisitLoopBlocks([](BasicBlock* block) {
         assert(!block->KindIs(BBJ_RETURN));
@@ -1819,6 +1801,9 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
 
     // Is the entry block a handler or filter start?  If so, then if we cloned, we could create a jump
     // into the middle of a handler (to go to the cloned copy.)  Reject.
+    // TODO: This seems like it can be deleted. If the header is the beginning
+    // of a handler then the loop should be fully contained within the handler,
+    // and the cloned loop will also be in the handler.
     if (bbIsHandlerBeg(loop->GetHeader()))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Header block is a handler start.\n", loop->GetIndex());
@@ -1829,27 +1814,10 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
     assert(loop->EntryEdges().size() == 1);
     BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
 
-    // If the head and entry are in different EH regions, reject.
+    // If the preheader and header are in different EH regions, reject.
     if (!BasicBlock::sameEHRegion(preheader, loop->GetHeader()))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Preheader and header blocks are in different EH regions.\n",
-                loop->GetIndex());
-        return false;
-    }
-
-    // Is the first block after the last block of the loop a handler or filter start?
-    // Usually, we create a dummy block after the original loop, to skip over the loop clone
-    // and go to where the original loop did.  That raises problems when we don't actually go to
-    // that block; this is one of those cases.  This could be fixed fairly easily; for example,
-    // we could add a dummy nop block after the (cloned) loop bottom, in the same handler scope as the
-    // loop.  This is just a corner to cut to get this working faster.
-    // TODO: Should rework this to avoid the lexically bottom most block here.
-    BasicBlock* bottom = loop->GetLexicallyBottomMostBlock();
-
-    BasicBlock* bbAfterLoop = bottom->Next();
-    if (bbAfterLoop != nullptr && bbIsHandlerBeg(bbAfterLoop))
-    {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Next block after bottom is a handler start.\n",
                 loop->GetIndex());
         return false;
     }
@@ -1873,6 +1841,8 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
             return false;
         }
 
+        // TODO-Quirk: Can be removed, loop invariant is validated by
+        // `FlowGraphNaturalLoop::AnalyzeIteration`.
         if (!iterInfo->TestTree->OperIsCompare() || ((iterInfo->TestTree->gtFlags & GTF_RELOP_ZTT) == 0))
         {
             JITDUMP("Loop cloning: rejecting loop " FMT_LP
@@ -1958,12 +1928,8 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nCloning loop " FMT_LP " with blocks:\n", loop->GetIndex());
-
-        loop->VisitLoopBlocksReversePostOrder([](BasicBlock* block) {
-            printf("  " FMT_BB "\n", block->bbNum);
-            return BasicBlockVisit::Continue;
-        });
+        printf("\nCloning ");
+        FlowGraphNaturalLoop::Dump(loop);
     }
 #endif
 
@@ -2075,136 +2041,16 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
 
-    loop->VisitLoopBlocksLexical([=, &newPred](BasicBlock* blk) {
-        // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
-        // with BasicBlock::CopyTarget().
-        BasicBlock* newBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
-        JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum, newPred->bbNum);
+    loop->Duplicate(&newPred, blockMap, slowPathWeightScaleFactor, /* bottomNeedsRedirection */ false);
 
-        BasicBlock::CloneBlockState(this, newBlk, blk);
-
-        // We're going to create the preds below, which will set the bbRefs properly,
-        // so clear out the cloned bbRefs field.
-        newBlk->bbRefs = 0;
-
-        newBlk->scaleBBWeight(slowPathWeightScaleFactor);
-        blk->scaleBBWeight(fastPathWeightScaleFactor);
-
-        // TODO: scale the pred edges of `blk`?
-
-        // If the loop we're cloning contains nested loops, we need to clear the pre-header bit on
-        // any nested loop pre-header blocks, since they will no longer be loop pre-headers. (This is because
-        // we don't add the slow loop or its child loops to the loop table. It would be simplest to
-        // just re-build the loop table if we want to enable loop optimization of the slow path loops.)
-        if (newBlk->HasFlag(BBF_LOOP_PREHEADER))
-        {
-            JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);
-            newBlk->RemoveFlags(BBF_LOOP_PREHEADER);
-        }
-
-        newBlk->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
-
-        newPred = newBlk;
-        blockMap->Set(blk, newBlk);
-
-        // If the block falls through to a block outside the loop then we may
-        // need to insert a new block to redirect.
-        // Skip this for the bottom block; we duplicate the slow loop such that
-        // the bottom block will fall through to the bottom's original next.
-        if ((blk != bottom) && blk->bbFallsThrough() && !loop->ContainsBlock(blk->Next()))
-        {
-            if (blk->KindIs(BBJ_COND))
-            {
-                BasicBlock* targetBlk = blk->GetFalseTarget();
-                assert(blk->NextIs(targetBlk));
-
-                // Need to insert a block.
-                BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, newPred, /* extendRegion */ true, targetBlk);
-                newRedirBlk->copyEHRegion(newPred);
-                newRedirBlk->bbWeight = blk->Next()->bbWeight;
-                newRedirBlk->CopyFlags(blk->Next(), (BBF_RUN_RARELY | BBF_PROF_WEIGHT));
-                newRedirBlk->scaleBBWeight(slowPathWeightScaleFactor);
-
-                JITDUMP(FMT_BB " falls through to " FMT_BB "; inserted redirection block " FMT_BB "\n", blk->bbNum,
-                        blk->Next()->bbNum, newRedirBlk->bbNum);
-                // This block isn't part of the loop, so below loop won't add
-                // refs for it.
-                fgAddRefPred(targetBlk, newRedirBlk);
-                newPred = newRedirBlk;
-            }
-            else
-            {
-                assert(!"Cannot handle fallthrough");
-            }
-        }
-
+    // Scale old blocks to the fast path weight.
+    loop->VisitLoopBlocks([=](BasicBlock* block) {
+        block->scaleBBWeight(fastPathWeightScaleFactor);
         return BasicBlockVisit::Continue;
     });
 
     // Perform the static optimizations on the fast path.
     optPerformStaticOptimizations(loop, context DEBUGARG(true));
-
-    // Now go through the new blocks, remapping their jump targets within the loop
-    // and updating the preds lists.
-    loop->VisitLoopBlocks([=](BasicBlock* blk) {
-        BasicBlock* newblk = nullptr;
-        bool        b      = blockMap->Lookup(blk, &newblk);
-        assert(b && newblk != nullptr);
-
-        // Jump target should not be set yet
-        assert(!newblk->HasInitializedTarget());
-
-        // First copy the jump destination(s) from "blk".
-        newblk->CopyTarget(this, blk);
-
-        // Now redirect the new block according to "blockMap".
-        optRedirectBlock(newblk, blockMap);
-
-        // Add predecessor edges for the new successors, as well as the fall-through paths.
-        switch (newblk->GetKind())
-        {
-            case BBJ_ALWAYS:
-            case BBJ_CALLFINALLY:
-            case BBJ_CALLFINALLYRET:
-                fgAddRefPred(newblk->GetTarget(), newblk);
-                break;
-
-            case BBJ_COND:
-                fgAddRefPred(newblk->GetFalseTarget(), newblk);
-                fgAddRefPred(newblk->GetTrueTarget(), newblk);
-                break;
-
-            case BBJ_SWITCH:
-                for (BasicBlock* const switchDest : newblk->SwitchTargets())
-                {
-                    fgAddRefPred(switchDest, newblk);
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        return BasicBlockVisit::Continue;
-    });
-
-#ifdef DEBUG
-    // Display the preds for the new blocks, after all the new blocks have been redirected.
-    JITDUMP("Preds after loop copy:\n");
-    loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* blk) {
-        BasicBlock* newblk = nullptr;
-        bool        b      = blockMap->Lookup(blk, &newblk);
-        assert(b && newblk != nullptr);
-        JITDUMP(FMT_BB ":", newblk->bbNum);
-        for (BasicBlock* const predBlock : newblk->PredBlocks())
-        {
-            JITDUMP(" " FMT_BB, predBlock->bbNum);
-        }
-        JITDUMP("\n");
-
-        return BasicBlockVisit::Continue;
-    });
-#endif // DEBUG
 
     // Insert the loop choice conditions. We will create the following structure:
     //
@@ -3159,7 +3005,6 @@ PhaseStatus Compiler::optCloneLoops()
 
     if (optLoopsCloned > 0)
     {
-        fgDomsComputed = false;
         fgRenumberBlocks();
 
         fgInvalidateDfsTree();
