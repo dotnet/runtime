@@ -14,6 +14,8 @@ body:
         Culture data [is not stable](https://learn.microsoft.com/en-us/archive/blogs/shawnste/culture-data-shouldnt-be-considered-stable-except-for-invariant).  It is updated several times a year through host OS channels on all supported platforms.
         #### Porting an application from .NET Framework or .NET Core < 5 to .NET Core 5+ on Windows.
         Beginning with .NET Core 5, .NET now uses the [ICU (International Components for Unicode) libraries for localization](https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization-icu).  While is is possible to [revert to the previous NLS datasource](https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization-icu#use-nls-instead-of-icu), this is not recommended.
+        #### "The data for a culture isn't what it should be!"
+        The ICU libraries use the [Unicode Common Locale Data Repository (CLDR)](https://cldr.unicode.org/) as a datasource.  This data is not maintained by the runtime SDK, nor (outside of legacy Windows applications) by the host OS.  If you believe there is an error in the data the proper place to report it would be the [CLDR Survey Tool](https://cldr.unicode.org/index/survey-tool).
   - type: checkboxes
     id: some-recommendations
     attributes:
