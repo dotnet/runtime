@@ -16,14 +16,15 @@ namespace ILCompiler.ObjectWriter
 {
     internal static class EabiUnwindConverter
     {
-        private enum CFI_OPCODE
-        {
-            CFI_ADJUST_CFA_OFFSET,    // Offset is adjusted relative to the current one.
-            CFI_DEF_CFA_REGISTER,     // New register is used to compute CFA
-            CFI_REL_OFFSET,           // Register is saved at offset from the current CFA
-            CFI_DEF_CFA               // Take address from register and add offset to it.
-        }
-
+        /// <summary>
+        /// Convert from the DWARF CFI opcodes produced by JIT into the ARM EHABI
+        /// opcodes for exception unwinding.
+        /// </summary>
+        /// <param name="blobData">DWARF CFI blob from JIT</param>
+        /// <returns>
+        /// ARM EHABI unwind code, as specified by Exception Handling ABI for the Arm
+        /// Architecture, 2023Q3, section 10.3.
+        /// </returns>
         public static byte[] ConvertCFIToEabi(byte[] blobData)
         {
             if (blobData == null || blobData.Length == 0)
@@ -37,17 +38,50 @@ namespace ILCompiler.ObjectWriter
             // bytes.
             byte[] unwindData = new byte[1024];
             int unwindDataOffset = 0;
+
+            // The DWARF CFI data produced by the JIT describe the method prolog that
+            // saves registers, adjusts the stack, and optionally set ups the frame
+            // register. In contrast, the ARM EHABI unwind code describes how the epilog
+            // would do the unwinding. It lacks the code offsets so it cannot unwind
+            // inside either the prolog, or the epilog. The runtime code detects these
+            // cases when doing the asynchronous unwinding.
+            //
+            // In order to convert between the two formats we thus need to reverse
+            // the order of operatations. The EHABI unwind codes closely mirror the
+            // ARM instructions and they efficiently describe the POP/VPOP operation on
+            // multiple registers. In order to get the most compact representation we
+            // record the pending opertations at each code offset and only flush the
+            // unwind code when necessary.
+
+            // Adjustment to VSP made by VPOP instruction relative to the DWARF CFI
+            // which uses an explicit CFI_ADJUST_CFA_OFFSET opcode.
             int popOffset = 0;
+
+            // Mask of pending Rn registers popped at current code offset.
             uint pendingPopMask = 0;
+
+            // Mask of pending Dn vector registers popped at current code offset.
             uint pendingVPopMask = 0;
+
+            // Stack adjustment by add/sub sp, X instructions
             int pendingSpAdjustment = 0;
+
+            int lastCodeOffset = blobData[blobData.Length - 8];
 
             // Walk the CFI data backwards
             for (int offset = blobData.Length - 8; offset >= 0; offset -= 8)
             {
+                byte codeOffset = blobData[offset];
                 CFI_OPCODE opcode = (CFI_OPCODE)blobData[offset + 1];
                 short dwarfReg = BinaryPrimitives.ReadInt16LittleEndian(blobData.AsSpan(offset + 2));
                 int cfiOffset = BinaryPrimitives.ReadInt32LittleEndian(blobData.AsSpan(offset + 4));
+
+                if (lastCodeOffset != codeOffset)
+                {
+                    Debug.Assert(popOffset == 0);
+                    FlushPendingOperation();
+                    lastCodeOffset = codeOffset;
+                }
 
                 switch (opcode)
                 {
@@ -117,9 +151,8 @@ namespace ILCompiler.ObjectWriter
 
             void FlushPendingOperation()
             {
-                if (pendingSpAdjustment != 0)
+                if (pendingSpAdjustment > 0)
                 {
-                    Debug.Assert(pendingSpAdjustment > 0);
                     Debug.Assert((pendingSpAdjustment & 3) == 0);
                     if (pendingSpAdjustment <= 0x100)
                     {
@@ -144,6 +177,22 @@ namespace ILCompiler.ObjectWriter
                         unwindData[unwindDataOffset++] = (byte)0xb2;
                         unwindDataOffset += DwarfHelper.WriteULEB128(unwindData.AsSpan(unwindDataOffset), (uint)((pendingSpAdjustment - 0x204) >> 2));
                     }
+
+                    pendingSpAdjustment = 0;
+                }
+                else if (pendingSpAdjustment < 0)
+                {
+                    while (pendingSpAdjustment < -0x100)
+                    {
+                        // vsp = vsp - (0x3f << 2) - 4.
+                        // 01111111
+                        unwindData[unwindDataOffset++] = 0x7f;
+                        pendingSpAdjustment += 0x100;
+                    }
+                    // vsp = vsp - (xxxxxx << 2) - 4.
+                    // 01xxxxxx
+                    unwindData[unwindDataOffset++] = (byte)(0x40 | ((-pendingSpAdjustment >> 2) - 1));
+
                     pendingSpAdjustment = 0;
                 }
                 else if (pendingPopMask != 0)

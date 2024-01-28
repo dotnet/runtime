@@ -13,6 +13,11 @@ using static ILCompiler.ObjectWriter.EabiNative;
 
 namespace ILCompiler.ObjectWriter
 {
+    /// <summary>
+    /// Builder class for constructing the .ARM.attributes table that
+    /// describes the parameters of the emitted ARM code for use by the
+    /// linker or debugger.
+    /// </summary>
     internal sealed class EabiAttributesBuilder
     {
         private readonly SectionWriter _sectionWriter;

@@ -466,6 +466,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void CreateEhSections()
         {
+            // ARM creates the EHABI sections lazily in EmitUnwindInfo
             if (_machine is not EM_ARM)
             {
                 base.CreateEhSections();
@@ -544,10 +545,17 @@ namespace ILCompiler.ObjectWriter
                         armUnwindInfo = armUnwindInfo.Slice(2);
                     }
 
-                    // Emit unwind code and dummy relocation to the personality routine
                     extabSectionWriter.EmitAlignment(4);
                     extabSectionWriter.EmitSymbolDefinition(extabSymbolName);
+
+                    // ARM EHABI requires emitting a dummy relocation to the personality routine
+                    // to tell the linker to preserve it.
                     extabSectionWriter.EmitRelocation(0, unwindWord, IMAGE_REL_BASED_ABSOLUTE, personalitySymbolName, 0);
+
+                    // Emit the unwinding code. First word specifies the personality routine,
+                    // format and first few bytes of the unwind code. For longer unwind codes
+                    // the other words follow. They are padded with the "finish" instruction
+                    // (0xB0).
                     extabSectionWriter.Write(unwindWord);
                     while (armUnwindInfo.Length > 0)
                     {

@@ -593,6 +593,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfAbbrev.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCfiOpcode.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCie.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfEhFrame.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfExpressionBuilder.cs" />
