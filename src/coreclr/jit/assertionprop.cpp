@@ -6110,7 +6110,10 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //    evaluates to constant, then the tree is replaced by its side effects and
 //    the constant node.
 //
-Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree)
+Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
+                                                          Statement*  stmt,
+                                                          GenTree*    parent,
+                                                          GenTree*    tree)
 {
     // Don't perform const prop on expressions marked with GTF_DONT_CSE
     // TODO-ASG: delete.
