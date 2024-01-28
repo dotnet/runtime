@@ -35,6 +35,6 @@ namespace System.Reflection
         //  (for example, the methods returned on Array types.)
         //
         // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
-        public virtual MethodBase MetadataDefinitionMethod { get { throw NotImplemented.ByDesign; } }
+        internal virtual MethodBase MetadataDefinitionMethod { get { throw NotImplemented.ByDesign; } }
     }
 }

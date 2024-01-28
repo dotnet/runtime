@@ -263,7 +263,7 @@ namespace System.Runtime.Serialization
             }
 
             Type[]? genericArguments = null;
-            IList<int>? genericArgumentCounts = null;
+            List<int>? genericArgumentCounts = null;
             if (clrType.IsGenericType)
             {
                 genericArguments = clrType.GetGenericArguments();

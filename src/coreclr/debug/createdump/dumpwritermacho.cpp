@@ -268,7 +268,7 @@ DumpWriter::WriteSegments()
                 size_t bytesToRead = std::min(size, sizeof(m_tempBuffer));
                 size_t read = 0;
 
-                if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
+                if (!m_crashInfo.ReadProcessMemory(address, m_tempBuffer, bytesToRead, &read)) {
                     printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx FAILED %s (%x)\n", address, bytesToRead, mach_error_string(g_readProcessMemoryResult), g_readProcessMemoryResult);
                     return false;
                 }

@@ -75,7 +75,12 @@ namespace ILCompiler.ObjectWriter
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
                 nodeWithCodeInfo is ISymbolDefinitionNode)
             {
-                bool useFrameNames = UseFrameNames;
+                // On ARM we always use frame names, even for first frame to ensure that
+                // DWARF data uses PC references without the Thumb bit set. Using a function
+                // symbol would propagate the bit. Unfortunately, the R_ARM_REL32_NOI
+                // relocation is not widely implemented, so using that is not an option.
+                bool isArm = _nodeFactory.Target.Architecture == TargetArchitecture.ARM;
+                bool useFrameNames = isArm || UseFrameNames;
                 SectionWriter lsdaSectionWriter;
 
                 if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
@@ -100,7 +105,7 @@ namespace ILCompiler.ObjectWriter
                     string framSymbolName = $"_fram{i}{currentSymbolName}";
 
                     lsdaSectionWriter.EmitSymbolDefinition(lsdaSymbolName);
-                    if (start != 0 && useFrameNames)
+                    if (useFrameNames && (isArm || start != 0))
                     {
                         sectionWriter.EmitSymbolDefinition(framSymbolName, start);
                     }
@@ -142,7 +147,7 @@ namespace ILCompiler.ObjectWriter
                         }
                     }
 
-                    string startSymbolName = useFrameNames && start != 0 ? framSymbolName : currentSymbolName;
+                    string startSymbolName = useFrameNames && (isArm || start != 0) ? framSymbolName : currentSymbolName;
                     ulong length = (ulong)(end - start);
                     if (!EmitCompactUnwinding(startSymbolName, length, lsdaSymbolName, blob))
                     {

@@ -11,7 +11,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 
 namespace Microsoft.Interop.UnitTests.Verifiers
 {
@@ -79,7 +78,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
             await test.RunAsync(CancellationToken.None);
         }
 
-        internal class Test : CSharpSourceGeneratorTest<TSourceGenerator, XUnitVerifier>
+        internal class Test : CSharpSourceGeneratorTest<TSourceGenerator, DefaultVerifier>
         {
             public Test(TestTargetFramework targetFramework)
             {

@@ -277,15 +277,7 @@ typedef struct {
 	gint64 methods_transformed;
 	gint64 cprop_time;
 	gint64 super_instructions_time;
-	gint32 stloc_nps;
-	gint32 movlocs;
-	gint32 copy_propagations;
-	gint32 constant_folds;
-	gint32 ldlocas_removed;
-	gint32 killed_instructions;
 	gint32 emitted_instructions;
-	gint32 super_instructions;
-	gint32 added_pop_count;
 	gint32 inlined_methods;
 	gint32 inline_failures;
 } MonoInterpStats;
