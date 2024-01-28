@@ -422,81 +422,6 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
 }
 
 //------------------------------------------------------------------------
-// fgReplaceSwitchJumpTarget: update BBJ_SWITCH block so that all control
-//   that previously flowed to oldTarget now flows to newTarget.
-//
-// Arguments:
-//   blockSwitch - block ending in a switch
-//   newTarget   - new branch target
-//   oldTarget   - old branch target
-//
-// Notes:
-//   Updates the jump table and the cached unique target set (if any).
-//
-void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* newTarget, BasicBlock* oldTarget)
-{
-    noway_assert(blockSwitch != nullptr);
-    noway_assert(newTarget != nullptr);
-    noway_assert(oldTarget != nullptr);
-    noway_assert(blockSwitch->KindIs(BBJ_SWITCH));
-    assert(fgPredsComputed);
-
-    // For the jump targets values that match oldTarget of our BBJ_SWITCH
-    // replace predecessor 'blockSwitch' with 'newTarget'
-
-    unsigned     jumpCnt = blockSwitch->GetSwitchTargets()->bbsCount;
-    BasicBlock** jumpTab = blockSwitch->GetSwitchTargets()->bbsDstTab;
-
-    unsigned i = 0;
-
-    // Walk the switch's jump table looking for blocks to update the preds for
-    while (i < jumpCnt)
-    {
-        if (jumpTab[i] == oldTarget) // We will update when jumpTab[i] matches
-        {
-            // Remove the old edge [oldTarget from blockSwitch]
-            //
-            fgRemoveAllRefPreds(oldTarget, blockSwitch);
-
-            //
-            // Change the jumpTab entry to branch to the new location
-            //
-            jumpTab[i] = newTarget;
-
-            //
-            // Create the new edge [newTarget from blockSwitch]
-            //
-            FlowEdge* const newEdge = fgAddRefPred(newTarget, blockSwitch);
-
-            // Now set the correct value of newEdge's DupCount
-            // and replace any other jumps in jumpTab[] that go to oldTarget.
-            //
-            i++;
-            while (i < jumpCnt)
-            {
-                if (jumpTab[i] == oldTarget)
-                {
-                    //
-                    // We also must update this entry in the jumpTab
-                    //
-                    jumpTab[i] = newTarget;
-                    newTarget->bbRefs++;
-                    newEdge->incrementDupCount();
-                }
-                i++; // Check the next entry in jumpTab[]
-            }
-
-            // Maintain, if necessary, the set of unique targets of "block."
-            UpdateSwitchTableTarget(blockSwitch, oldTarget, newTarget);
-
-            return; // We have replaced the jumps to oldTarget with newTarget
-        }
-        i++; // Check the next entry in jumpTab[] for a match
-    }
-    noway_assert(!"Did not find oldTarget in jumpTab[]");
-}
-
-//------------------------------------------------------------------------
 // fgChangeEhfBlock: We have a BBJ_EHFINALLYRET block at 'oldBlock' and we want to move this
 // to 'newBlock'. All of the 'oldBlock' successors need to have their predecessor lists updated
 // by removing edges to 'oldBlock' and adding edges to 'newBlock'.
@@ -683,13 +608,10 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE: // This function can be called before import, so we still have BBJ_LEAVE
-
-            if (block->TargetIs(oldTarget))
-            {
-                block->SetTarget(newTarget);
-                fgRemoveRefPred(oldTarget, block);
-                fgAddRefPred(newTarget, block);
-            }
+            assert(block->TargetIs(oldTarget));
+            block->SetTarget(newTarget);
+            fgRemoveRefPred(oldTarget, block);
+            fgAddRefPred(newTarget, block);
             break;
 
         case BBJ_COND:
@@ -720,7 +642,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             else
             {
                 assert(block->FalseTargetIs(oldTarget));
-                
+
                 // fgRemoveRefPred should have removed the flow edge
                 FlowEdge* oldEdge = fgRemoveRefPred(oldTarget, block);
                 assert(oldEdge != nullptr);
@@ -5074,7 +4996,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     else if (curr->KindIs(BBJ_SWITCH))
     {
         // newBlock replaces 'succ' in the switch.
-        fgReplaceSwitchJumpTarget(curr, newBlock, succ);
+        fgReplaceJumpTarget(curr, newBlock, succ);
 
         // And 'succ' has 'newBlock' as a new predecessor.
         fgAddRefPred(succ, newBlock);
@@ -5221,7 +5143,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     BasicBlock* bPrev = block->Prev();
     BasicBlock* bNext = block->Next();
-    
+
     noway_assert((block == fgFirstBB) || (bPrev && bPrev->NextIs(block)));
     noway_assert(!block->HasFlag(BBF_DONT_REMOVE));
 
