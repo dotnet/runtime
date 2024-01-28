@@ -6,12 +6,16 @@ body:
     attributes:
       value: |
         We're sorry you're experiencing issues with localization data.  There's some things you should be aware of when submitting the report that may help resolve your issue immediately, or will help us to troubleshoot the actual cause.
+        ## Quick Troubleshooting
+        To cover some commonly reported scenarios, there's some simple and quick troubleshooting that should be done.
+
+        Note that by default all localization and culture data comes from the host operating system.  The runtime SDK does not distribute its own set of data, and normally applications should not distribute their own copy either.  While there are occasionally errors when or how we retrieve this data, in most cases this means that any differences between what you expect and what you see are by design.
   - type: checkboxes
-    id: host-acknowledgement
+    id: some-recommendations
     attributes:
-      label: Localization is host dependent
+      label: Some recommended best practices.
       description: |
-        First, by default all localization and culture data comes from the host operating system.  The runtime SDK does not distribute its own set of data, and normally applications should not distribute their own copy either.  While there are occasionally errors when or how we retrieve this data, in most cases this means that any differences between what you expect and what you see are by design.  Due to this, there are some best practices you should keep in mind while designing applications and writing tests;
+        Due to how localization data is handled, there are some best practices you should keep in mind while designing applications and writing tests;
 
           - For any server application (and extending to most persistent backend local services), you _SHOULD_ run the process with an invariant-like culture set (eg, `LC_ALL=C.UTF-8` on Linux), and in the UTC timezone.  For resiliency, such applications _SHOULD_ still explicitly provide the [`InvariantCulture`](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo.invariantculture?view=net-8.0) when internally formatting data, and _SHOULD_ also still use UTC-sourced data (such as [`TimeProvider.GetUtcNow()`](https://learn.microsoft.com/en-us/dotnet/api/system.timeprovider.getutcnow?view=net-8.0#system-timeprovider-getutcnow)).
           - For any local user-facing (most often GUI-based) application, you **MUST** respect and use the culture of the user.
@@ -26,5 +30,5 @@ body:
             - If you have explicit requirements to validate all localized format output, you _SHOULD CONSIDER_ creating and using a custom culture.  This can be done by creating a custom `CultureInfo` object, and can be entirely stable.  There are potential additional benefits to this, such as enabling [pseudolocalization](https://learn.microsoft.com/en-us/globalization/methodology/pseudolocalization) via resource files.
             - If you have explicit requirements to validate the results of all date/time operations, you _SHOULD CONSIDER_ creating and using a custom `TimeZoneInfo` instance.  There are potential additional benefits to this, such as enabling stable testing of certain edge cases (eg, changes to DST rules).
       options:
-        - label: I acknowledge the data is host dependent.
+        - label: My issue is not solved by following these recommendations.
           required: true
