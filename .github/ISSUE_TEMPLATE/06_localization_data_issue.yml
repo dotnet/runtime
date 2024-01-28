@@ -11,7 +11,7 @@ body:
 
         Note that by default all localization and culture data comes from the host operating system.  The runtime SDK does not distribute its own set of data, and normally applications should not distribute their own copy either.  While there are occasionally errors when or how we retrieve this data, in most cases this means that any differences between what you expect and what you see are by design.
         #### "Did nothing" (or only updated the computer) and localization has changed.
-        Culture data [is not stable](https://learn.microsoft.com/en-us/archive/blogs/shawnste/culture-data-shouldnt-be-considered-stable-except-for-invariant).  It is updated several times a year through host OS channels on all supported platforms.
+        Culture data [is not stable](https://learn.microsoft.com/en-us/archive/blogs/shawnste/culture-data-shouldnt-be-considered-stable-except-for-invariant).  It is updated several times a year through host OS channels on all supported platforms.  This includes things like [spaces in time formats](https://github.com/dotnet/runtime/issues/95620).
         #### Porting an application from .NET Framework or .NET Core < 5 to .NET Core 5+ on Windows.
         Beginning with .NET Core 5, .NET now uses the [ICU (International Components for Unicode) libraries for localization](https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization-icu).  While is is possible to [revert to the previous NLS datasource](https://learn.microsoft.com/en-us/dotnet/core/extensions/globalization-icu#use-nls-instead-of-icu), this is not recommended.
         #### "The data for a culture isn't what it should be!"
