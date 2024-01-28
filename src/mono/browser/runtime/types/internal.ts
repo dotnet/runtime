@@ -490,10 +490,11 @@ export type WeakRefInternal<T extends object> = WeakRef<T> & {
 export const monoMessageSymbol = "__mono_message__";
 
 export const enum WorkerToMainMessageType {
+    monoRegistered = "monoRegistered",
+    monoAttached = "monoAttached",
     enabledInterop = "notify_enabled_interop",
-    monoAttached = "notify_mono_attached",
-    monoDetached = "notify_mono_detached",
-    pthreadCreated = "channel_created",
+    monoUnRegistered = "monoUnRegistered",
+    pthreadCreated = "pthreadCreated",
     preload = "preload",
 }
 

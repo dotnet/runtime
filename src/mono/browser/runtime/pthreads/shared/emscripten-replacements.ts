@@ -4,8 +4,8 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { onWorkerLoadInitiated } from "../browser";
-import { afterThreadInitTLS } from "../worker";
+import { onWorkerLoadInitiated, resolveThreadPromises } from "../browser";
+import { mono_wasm_pthread_on_pthread_created } from "../worker";
 import { PThreadLibrary, PThreadWorker, getModulePThread, getRunningWorkers, getUnusedWorkerPool } from "./emscripten-internals";
 import { loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_warn } from "../../logging";
@@ -32,7 +32,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
     };
     modulePThread.threadInitTLS = (): void => {
         originalThreadInitTLS();
-        afterThreadInitTLS();
+        mono_wasm_pthread_on_pthread_created();
     };
     modulePThread.allocateUnusedWorker = allocateUnusedWorker;
     modulePThread.getNewWorker = () => getNewWorker(modulePThread);
@@ -40,6 +40,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
         // when JS interop is installed on JSWebWorker
         // we can't reuse the worker, because user code could leave the worker JS globals in a dirty state
         worker.info.isRunning = false;
+        resolveThreadPromises(worker.pthread_ptr, undefined);
         worker.info.pthreadId = 0;
         if (worker.thread?.port) {
             worker.thread.port.close();

@@ -83,10 +83,53 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
     mono_log_debug("got message from main on the dedicated channel", event.data);
 }
 
+
+/// Called by emscripten when a pthread is setup to run on a worker.  Can be called multiple times
+/// for the same webworker, since emscripten can reuse workers.
+/// This is an implementation detail, that shouldn't be used directly.
+export function mono_wasm_pthread_on_pthread_created(): void {
+    if (!MonoWasmThreads) return;
+
+    const pthread_id = mono_wasm_pthread_ptr();
+    mono_assert(!is_nullish(pthread_id), "pthread_self() returned null");
+    monoThreadInfo.pthreadId = pthread_id;
+    monoThreadInfo.reuseCount++;
+    monoThreadInfo.updateCount++;
+    monoThreadInfo.threadName = `0x${pthread_id.toString(16).padStart(8, "0")}`;
+    update_thread_info();
+
+    // don't do this callback for the main thread
+    if (!ENVIRONMENT_IS_PTHREAD) return;
+
+    currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, pthread_self));
+
+    const channel = new MessageChannel();
+    const workerPort = channel.port1;
+    const mainPort = channel.port2;
+    workerPort.addEventListener("message", monoDedicatedChannelMessageFromMainToWorker);
+    workerPort.start();
+
+    // this could be replacement
+    if (pthread_self && pthread_self.portToBrowser) {
+        pthread_self.portToBrowser.close();
+    }
+
+    pthread_self = new WorkerSelf(monoThreadInfo, workerPort);
+    postMessageToMain({
+        monoCmd: WorkerToMainMessageType.pthreadCreated,
+        info: monoThreadInfo,
+        port: mainPort,
+    }, [mainPort]);
+}
+
 /// Called in the worker thread (not main thread) from mono when a pthread becomes registered to the mono runtime.
 export function mono_wasm_pthread_on_pthread_registered(pthread_id: number): void {
     if (!MonoWasmThreads) return;
     mono_assert(monoThreadInfo !== null && monoThreadInfo.pthreadId == pthread_id, "expected monoThreadInfo to be set already when registering");
+    postMessageToMain({
+        monoCmd: WorkerToMainMessageType.monoRegistered,
+        info: monoThreadInfo,
+    });
     preRunWorker();
 }
 
@@ -132,45 +175,7 @@ export function mono_wasm_pthread_on_pthread_unregistered(pthread_id: number): v
     monoThreadInfo.threadName = monoThreadInfo.threadName + "=>detached";
     update_thread_info();
     postMessageToMain({
-        monoCmd: WorkerToMainMessageType.monoDetached,
+        monoCmd: WorkerToMainMessageType.monoUnRegistered,
         info: monoThreadInfo,
     });
-}
-
-/// This is an implementation detail function.
-/// Called by emscripten when a pthread is setup to run on a worker.  Can be called multiple times
-/// for the same worker, since emscripten can reuse workers.  This is an implementation detail, that shouldn't be used directly.
-export function afterThreadInitTLS(): void {
-    if (!MonoWasmThreads) return;
-
-    const pthread_id = mono_wasm_pthread_ptr();
-    mono_assert(!is_nullish(pthread_id), "pthread_self() returned null");
-    monoThreadInfo.pthreadId = pthread_id;
-    monoThreadInfo.reuseCount++;
-    monoThreadInfo.updateCount++;
-    monoThreadInfo.threadName = `0x${pthread_id.toString(16).padStart(8, "0")}`;
-    update_thread_info();
-
-    // don't do this callback for the main thread
-    if (!ENVIRONMENT_IS_PTHREAD) return;
-
-    currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, pthread_self));
-
-    const channel = new MessageChannel();
-    const workerPort = channel.port1;
-    const mainPort = channel.port2;
-    workerPort.addEventListener("message", monoDedicatedChannelMessageFromMainToWorker);
-    workerPort.start();
-
-    // this could be replacement
-    if (pthread_self && pthread_self.portToBrowser) {
-        pthread_self.portToBrowser.close();
-    }
-
-    pthread_self = new WorkerSelf(monoThreadInfo, workerPort);
-    postMessageToMain({
-        monoCmd: WorkerToMainMessageType.pthreadCreated,
-        info: monoThreadInfo,
-        port: mainPort,
-    }, [mainPort]);
 }

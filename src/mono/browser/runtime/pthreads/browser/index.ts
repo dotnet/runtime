@@ -42,7 +42,7 @@ export function waitForThread(pthreadPtr: pthreadPtr): Promise<Thread> {
     return promiseAndController.promise;
 }
 
-function resolvePromises(pthreadPtr: pthreadPtr, thread: Thread): void {
+export function resolveThreadPromises(pthreadPtr: pthreadPtr, thread?: Thread): void {
     if (!MonoWasmThreads) return;
     const arr = threadPromises.get(pthreadPtr);
     if (arr !== undefined) {
@@ -96,11 +96,12 @@ function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>):
             thread = new ThreadImpl(pthreadId, worker, port);
             worker.thread = thread;
             worker.info.isRunning = true;
-            resolvePromises(pthreadId, thread);
+            resolveThreadPromises(pthreadId, thread);
         // fall through
-        case WorkerToMainMessageType.enabledInterop:
+        case WorkerToMainMessageType.monoRegistered:
         case WorkerToMainMessageType.monoAttached:
-        case WorkerToMainMessageType.monoDetached:
+        case WorkerToMainMessageType.enabledInterop:
+        case WorkerToMainMessageType.monoUnRegistered:
             worker.info = Object.assign(worker.info!, message.info, {});
             break;
         default:
