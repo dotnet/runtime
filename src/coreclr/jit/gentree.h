@@ -884,7 +884,7 @@ public:
 
     bool isContainedVecImmed() const
     {
-        return isContained() && OperIs(GT_CNS_VEC);
+        return isContained() && IsCnsVec();
     }
 
     bool isLclField() const
@@ -9060,7 +9060,7 @@ inline bool GenTree::IsVectorCreate() const
 inline bool GenTree::IsVectorAllBitsSet() const
 {
 #ifdef FEATURE_SIMD
-    if (OperIs(GT_CNS_VEC))
+    if (IsCnsVec())
     {
         return AsVecCon()->IsAllBitsSet();
     }
@@ -9078,7 +9078,7 @@ inline bool GenTree::IsVectorAllBitsSet() const
 inline bool GenTree::IsVectorConst()
 {
 #ifdef FEATURE_SIMD
-    if (OperIs(GT_CNS_VEC))
+    if (IsCnsVec())
     {
         return true;
     }

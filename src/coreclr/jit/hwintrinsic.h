@@ -205,8 +205,10 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_EmbBroadcastCompatible = 0x8000000,
 
     // The intrinsic is an embedded rounding compatible intrinsic
-    HW_Flag_EmbRoundingCompatible = 0x10000000
+    HW_Flag_EmbRoundingCompatible = 0x10000000,
 #endif // TARGET_XARCH
+
+    HW_Flag_CanBenefitFromConstantProp = 0x80000000,
 };
 
 #if defined(TARGET_XARCH)
@@ -612,6 +614,12 @@ struct HWIntrinsicInfo
         }
     }
 #endif // TARGET_XARCH
+
+    static bool CanBenefitFromConstantProp(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_CanBenefitFromConstantProp) != 0;
+    }
 
     static bool IsMaybeCommutative(NamedIntrinsic id)
     {

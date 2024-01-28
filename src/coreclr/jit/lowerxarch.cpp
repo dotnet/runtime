@@ -107,7 +107,7 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
     if (comp->IsBaselineVector512IsaSupportedOpportunistically() ||
         comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
     {
-        if (!node->Data()->OperIs(GT_CNS_VEC))
+        if (!node->Data()->IsCnsVec())
         {
             return;
         }
@@ -116,7 +116,8 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         {
             return;
         }
-        if (node->Data()->AsVecCon()->IsAllBitsSet() || node->Data()->AsVecCon()->IsZero())
+
+        if (node->Data()->IsVectorAllBitsSet() || node->Data()->IsVectorZero())
         {
             // To avoid some unexpected regression, this optimization only applies to non-all 1/0 constant vectors.
             return;
@@ -8739,7 +8740,7 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 //     return true if compress success.
 void Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
 {
-    assert(node->Data()->OperIs(GT_CNS_VEC));
+    assert(node->Data()->IsCnsVec());
     GenTreeVecCon*      vecCon    = node->Data()->AsVecCon();
     GenTreeHWIntrinsic* broadcast = nullptr;
 
@@ -9007,7 +9008,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             return;
                         }
 
-                        assert(op1->OperIs(GT_CNS_VEC));
+                        assert(op1->IsCnsVec());
                         break;
                     }
 
@@ -9123,7 +9124,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                     {
-                        if (op2->OperIs(GT_CNS_VEC) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
+                        if (op2->IsCnsVec() && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
                             node->OperIsEmbBroadcastCompatible())
                         {
                             TryFoldCnsVecForEmbeddedBroadcast(node, op2->AsVecCon());
@@ -9137,7 +9138,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                               (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
                              IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                     {
-                        if (op1->OperIs(GT_CNS_VEC) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
+                        if (op1->IsCnsVec() && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
                             node->OperIsEmbBroadcastCompatible())
                         {
                             TryFoldCnsVecForEmbeddedBroadcast(node, op1->AsVecCon());
