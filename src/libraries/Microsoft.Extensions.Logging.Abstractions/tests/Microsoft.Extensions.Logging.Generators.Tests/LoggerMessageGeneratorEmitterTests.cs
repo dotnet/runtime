@@ -4,7 +4,6 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.Text;
 using SourceGenerators.Tests;
 using Xunit;
 
@@ -162,6 +161,30 @@ internal static partial class TestWithDefaultValues
             await VerifyAgainstBaselineUsingFile("TestWithDefaultValues.generated.txt", testSourceCode);
         }
 #endif
+
+        [Fact]
+        public async Task TestBaseline_TestWithNestedClassWithGenericTypesWithAttributes_Success()
+        {
+            string testSourceCode = @"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{
+    public partial class GenericTypeWithAttribute<[Foo] A, [Bar] B, C>
+    {
+        public void M0<D>(A a, B b, C c, ILogger logger) => Log<D>.M0(logger, a, b, c);
+        private static partial class Log<[Foo] D>
+        {
+            [LoggerMessage(EventId = 42, Level = LogLevel.Debug, Message = ""a = {a}; b = {b}; c = {c}"")]
+            public static partial void M0(ILogger logger, A a, B b, C c);
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.GenericParameter)]
+    public sealed class FooAttribute : Attribute { }
+    [AttributeUsage(AttributeTargets.GenericParameter)]
+    public sealed class BarAttribute : Attribute { }
+}";
+            await VerifyAgainstBaselineUsingFile("TestWithNestedClassWithGenericTypesWithAttributes.generated.txt", testSourceCode);
+        }
 
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
         {

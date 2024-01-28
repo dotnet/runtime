@@ -536,7 +536,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             Keyword = classDec.Keyword.ValueText,
                                             Namespace = nspace,
-                                            Name = classDec.Identifier.ToString() + classDec.TypeParameterList,
+                                            Name = GenerateClassName(classDec),
                                             ParentClass = null,
                                         };
 
@@ -554,7 +554,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             {
                                                 Keyword = parentLoggerClass.Keyword.ValueText,
                                                 Namespace = nspace,
-                                                Name = parentLoggerClass.Identifier.ToString() + parentLoggerClass.TypeParameterList,
+                                                Name = GenerateClassName(parentLoggerClass),
                                                 ParentClass = null,
                                             };
 
@@ -599,6 +599,27 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
 
                 return results;
+            }
+
+            private static string GenerateClassName(TypeDeclarationSyntax typeDeclaration)
+            {
+                if (typeDeclaration.TypeParameterList != null &&
+                    typeDeclaration.TypeParameterList.Parameters.Count != 0)
+                {
+                    // Strip any type parameter attributes, otherwise compilation will fail due to
+                    // duplicate declarations. See https://github.com/dotnet/runtime/issues/97498.
+                    for (int i = 0; i < typeDeclaration.TypeParameterList.Parameters.Count; i++)
+                    {
+                        TypeParameterSyntax parameter = typeDeclaration.TypeParameterList.Parameters[i];
+
+                        if (parameter.AttributeLists.Count > 0)
+                        {
+                            typeDeclaration = typeDeclaration.ReplaceNode(parameter, parameter.WithAttributeLists([]));
+                        }
+                    }
+                }
+
+                return typeDeclaration.Identifier.ToString() + typeDeclaration.TypeParameterList;
             }
 
             private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, TypeDeclarationSyntax classDec, ITypeSymbol loggerSymbol)
