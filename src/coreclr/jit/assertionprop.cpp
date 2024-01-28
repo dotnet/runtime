@@ -2724,10 +2724,10 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //                          managing side-effects.
 //
 // Arguments:
-//    block -  The block containing the tree.
-//    stmt  -  The statement in the block containing the tree.
-//    tree  -  The tree node whose value is known at compile time.
-//             The tree should have a constant value number.
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    tree   -  The tree node whose value is known at compile time.
+//              The tree should have a constant value number.
 //
 // Return Value:
 //    Returns a potentially new or a transformed tree node.
@@ -2747,7 +2747,7 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //    the relop will evaluate to "true" or "false" statically, then the side-effects
 //    will be put into new statements, presuming the JTrue will be folded away.
 //
-GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, Statement* stmt, GenTree* tree)
+GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, GenTree* tree)
 {
     if (tree->OperGet() == GT_JTRUE)
     {
@@ -2995,7 +2995,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, Statement* stmt, G
 
     if (conValTree != nullptr)
     {
-        if (!optIsProfitableToSubstitute(tree, block, stmt, conValTree))
+        if (!optIsProfitableToSubstitute(tree, block, parent, conValTree))
         {
             // Not profitable to substitute
             return nullptr;
@@ -3027,15 +3027,15 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, Statement* stmt, G
 // optIsProfitableToSubstitute: Checks if value worth substituting to dest
 //
 // Arguments:
-//    dest      - destination to substitute value to
-//    destBlock - Basic block of destination
-//    destStmt  - Statement of destination
-//    value     - value we plan to substitute
+//    dest       - destination to substitute value to
+//    destBlock  - Basic block of destination
+//    destParent - Parent of destination
+//    value      - value we plan to substitute
 //
 // Returns:
 //    False if it's likely not profitable to do substitution, True otherwise
 //
-bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, Statement* destStmt, GenTree* value)
+bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* destParent, GenTree* value)
 {
     // Giving up on these kinds of handles demonstrated size improvements
     if (value->IsIconHandle(GTF_ICON_STATIC_HDL, GTF_ICON_CLASS_HDL))
@@ -3060,12 +3060,9 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
 #if defined(FEATURE_HW_INTRINSICS)
         GenTreeVecCon* vecCon = value->AsVecCon();
 
-        FindLinkData linkData = gtFindLink(destStmt, dest);
-        noway_assert(linkData.result != nullptr);
-
-        if ((linkData.parent != nullptr) && linkData.parent->OperIsHWIntrinsic())
+        if ((destParent != nullptr) && destParent->OperIsHWIntrinsic())
         {
-            GenTreeHWIntrinsic* parent       = linkData.parent->AsHWIntrinsic();
+            GenTreeHWIntrinsic* parent       = destParent->AsHWIntrinsic();
             NamedIntrinsic      intrinsicId  = parent->GetHWIntrinsicId();
             var_types           simdBaseType = parent->GetSimdBaseType();
 
@@ -6100,9 +6097,10 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //    This function is called as part of a post-order tree walk.
 //
 // Arguments:
-//    tree  - The currently visited tree node.
-//    stmt  - The statement node in which the "tree" is present.
-//    block - The block that contains the statement that contains the tree.
+//    tree   - The currently visited tree node.
+//    stmt   - The statement node in which the "tree" is present.
+//    parent - The parent node of the tree.
+//    block  - The block that contains the statement that contains the tree.
 //
 // Return Value:
 //    Returns the standard visitor walk result.
@@ -6112,7 +6110,7 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //    evaluates to constant, then the tree is replaced by its side effects and
 //    the constant node.
 //
-Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
+Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree)
 {
     // Don't perform const prop on expressions marked with GTF_DONT_CSE
     // TODO-ASG: delete.
@@ -6203,7 +6201,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
     }
 
     // Perform the constant propagation
-    GenTree* newTree = optVNConstantPropOnTree(block, stmt, tree);
+    GenTree* newTree = optVNConstantPropOnTree(block, parent, tree);
 
     if (newTree == nullptr)
     {
@@ -6284,7 +6282,7 @@ Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTr
 
     pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
 
-    return pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, *ppTree);
+    return pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
 }
 
 /*****************************************************************************
