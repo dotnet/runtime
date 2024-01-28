@@ -10,14 +10,16 @@ export const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
 
 // adapted from Blazor's WebAssemblyResourceLoader.ts
 export async function openCache(): Promise<Cache | null> {
-    // caches will be undefined if we're running on an insecure origin (secure means https or localhost)
-    if (typeof globalThis.caches === "undefined") {
-        return null;
-    }
-
     // cache integrity is compromised if the first request has been served over http (except localhost)
     // in this case, we want to disable caching and integrity validation
     if (ENVIRONMENT_IS_WEB && globalThis.window.isSecureContext === false) {
+        mono_log_warn("Failed to open the cache, running on an insecure origin");
+        return null;
+    }
+
+    // caches will be undefined if we're running on an insecure origin (secure means https or localhost)
+    if (typeof globalThis.caches === "undefined") {
+        mono_log_warn("Failed to open the cache, probably running on an insecure origin");
         return null;
     }
 
