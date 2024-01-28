@@ -3,10 +3,6 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.DeveloperExperience.DeveloperExperience</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.ArraySignature</Target>
   </Suppression>
   <Suppression>
@@ -699,18 +695,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Reflection.Extensions.NonPortable.CustomAttributeInheritanceRules</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Reflection.Extensions.NonPortable.CustomAttributeInstantiator</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Runtime.Augments.DynamicDelegateAugments</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Runtime.Augments.RuntimeAugments</Target>
   </Suppression>
   <Suppression>
@@ -724,14 +708,6 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Runtime.CanonTypeKind</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Runtime.CompilerHelpers.MathHelpers</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Runtime.CompilerHelpers.StartupCodeHelpers</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
@@ -767,10 +743,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Runtime.ReadyToRunSectionType</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Runtime.TypeManagerHandle</Target>
   </Suppression>
   <Suppression>
@@ -783,10 +755,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Array`1</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Diagnostics.DebugAnnotations</Target>
   </Suppression>
   <Suppression>
@@ -796,10 +764,6 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.MDArray</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Reflection.AssemblyRuntimeNameHelpers</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
@@ -859,59 +823,19 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.ForceDictionaryLookupsAttribute</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.ForceLazyDictionaryAttribute</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.StaticClassConstructionContext</Target>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.ExceptionIDs</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.InteropServices.NativeFunctionPointerWrapper</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.InteropServices.PInvokeMarshal</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.RuntimeImportAttribute</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.RuntimeImports</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.TypeLoaderExports</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.RuntimeExceptionHelpers</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.ModuleHandle.#ctor(System.Reflection.Module)</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Reflection.MethodBase.get_MetadataDefinitionMethod</Target>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Reflection.MethodBase.GetParametersAsSpan</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Threading.Lock.#ctor(System.Boolean)</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>

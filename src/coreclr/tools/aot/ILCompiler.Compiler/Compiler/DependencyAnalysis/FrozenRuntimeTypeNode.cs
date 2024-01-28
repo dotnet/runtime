@@ -16,7 +16,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public FrozenRuntimeTypeNode(TypeDesc type, bool constructed)
         {
-            Debug.Assert(EETypeNode.SupportsFrozenRuntimeTypeInstances(type.Context.Target));
             _type = type;
             _constructed = constructed;
         }

@@ -2891,6 +2891,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 //
 void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
+    assert(!varTypeIsSmall(treeNode->TypeGet()));
+
     GenTree*  data      = treeNode->AsOp()->gtOp2;
     GenTree*  addr      = treeNode->AsOp()->gtOp1;
     regNumber dataReg   = data->GetRegNum();
@@ -2944,6 +2946,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 {
     assert(treeNode->OperIs(GT_CMPXCHG));
+    assert(!varTypeIsSmall(treeNode->TypeGet()));
 
     GenTree* locOp       = treeNode->Addr();
     GenTree* valOp       = treeNode->Data();
@@ -4240,13 +4243,6 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(regs != 0);
 
     emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs); // 5-bits;
-
-    // If we cannot fall into the false target, emit a jump to it
-    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
-    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
-    {
-        inst_JMP(EJ_jmp, falseTarget);
-    }
 }
 
 //---------------------------------------------------------------------
@@ -7650,7 +7646,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 #endif
 }
 
-inline void CodeGen::genJumpToThrowHlpBlk_la(
+void CodeGen::genJumpToThrowHlpBlk_la(
     SpecialCodeKind codeKind, instruction ins, regNumber reg1, BasicBlock* failBlk, regNumber reg2)
 {
     assert(INS_beq <= ins && ins <= INS_bgeu);

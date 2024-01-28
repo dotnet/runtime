@@ -6,6 +6,7 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -28,72 +29,92 @@ namespace System.Net.NameResolution.Tests
             Assert.NotEmpty(EventSource.GenerateManifest(esType, "assemblyPathToIncludeInManifest"));
         }
 
-        [ConditionalFact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetHostEntry_InvalidHost_LogsError()
         {
-            using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
+            try
             {
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-
-                listener.RunWithCallback(ev => events.Enqueue(ev), () =>
+                RemoteExecutor.Invoke(static () =>
                 {
-                    try
+                    using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
                     {
-                        Dns.GetHostEntry(Configuration.Sockets.InvalidHost);
-                        throw new SkipTestException("GetHostEntry should fail but it did not.");
-                    }
-                    catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
-                    {
-                    }
-                    catch (Exception e)
-                    {
-                        throw new SkipTestException($"GetHostEntry failed unexpectedly: {e.Message}");
-                    }
-                });
+                        var events = new ConcurrentQueue<EventWrittenEventArgs>();
 
-                Assert.True(events.Count > 0, "events.Count should be > 0");
-                foreach (EventWrittenEventArgs ev in events)
-                {
-                    Assert.True(ev.Payload.Count >= 3);
-                    Assert.NotNull(ev.Payload[0]);
-                    Assert.NotNull(ev.Payload[1]);
-                    Assert.NotNull(ev.Payload[2]);
-                }
+                        listener.RunWithCallback(ev => events.Enqueue(ev), () =>
+                        {
+                            try
+                            {
+                                Dns.GetHostEntry(Configuration.Sockets.InvalidHost);
+                                throw new SkipTestException("GetHostEntry should fail but it did not.");
+                            }
+                            catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
+                            {
+                            }
+                            catch (Exception e)
+                            {
+                                throw new SkipTestException($"GetHostEntry failed unexpectedly: {e.Message}");
+                            }
+                        });
+
+                        Assert.True(events.Count > 0, "events.Count should be > 0");
+                        foreach (EventWrittenEventArgs ev in events)
+                        {
+                            Assert.True(ev.Payload.Count >= 3);
+                            Assert.NotNull(ev.Payload[0]);
+                            Assert.NotNull(ev.Payload[1]);
+                            Assert.NotNull(ev.Payload[2]);
+                        }
+                    }
+                }).Dispose();
+            }
+            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
+            {
+                throw new SkipTestException(ex.ToString());
             }
         }
 
-        [ConditionalFact]
-        public async Task GetHostEntryAsync_InvalidHost_LogsError()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetHostEntryAsync_InvalidHost_LogsError()
         {
-            using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
+            try
             {
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-
-                await listener.RunWithCallbackAsync(ev => events.Enqueue(ev), async () =>
+                RemoteExecutor.Invoke(static async () =>
                 {
-                    try
+                    using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
                     {
-                        await Dns.GetHostEntryAsync(Configuration.Sockets.InvalidHost).ConfigureAwait(false);
-                        throw new SkipTestException("GetHostEntryAsync should fail but it did not.");
-                    }
-                    catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
-                    {
-                        await WaitForErrorEventAsync(events);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new SkipTestException($"GetHostEntryAsync failed unexpectedly: {e.Message}");
-                    }
-                }).ConfigureAwait(false);
+                        var events = new ConcurrentQueue<EventWrittenEventArgs>();
 
-                Assert.True(events.Count > 0, "events.Count should be > 0");
-                foreach (EventWrittenEventArgs ev in events)
-                {
-                    Assert.True(ev.Payload.Count >= 3);
-                    Assert.NotNull(ev.Payload[0]);
-                    Assert.NotNull(ev.Payload[1]);
-                    Assert.NotNull(ev.Payload[2]);
-                }
+                        await listener.RunWithCallbackAsync(ev => events.Enqueue(ev), async () =>
+                        {
+                            try
+                            {
+                                await Dns.GetHostEntryAsync(Configuration.Sockets.InvalidHost).ConfigureAwait(false);
+                                throw new SkipTestException("GetHostEntryAsync should fail but it did not.");
+                            }
+                            catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
+                            {
+                                await WaitForErrorEventAsync(events);
+                            }
+                            catch (Exception e)
+                            {
+                                throw new SkipTestException($"GetHostEntryAsync failed unexpectedly: {e.Message}");
+                            }
+                        }).ConfigureAwait(false);
+
+                        Assert.True(events.Count > 0, "events.Count should be > 0");
+                        foreach (EventWrittenEventArgs ev in events)
+                        {
+                            Assert.True(ev.Payload.Count >= 3);
+                            Assert.NotNull(ev.Payload[0]);
+                            Assert.NotNull(ev.Payload[1]);
+                            Assert.NotNull(ev.Payload[2]);
+                        }
+                    }
+                }).Dispose();
+            }
+            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
+            {
+                throw new SkipTestException(ex.ToString());
             }
 
             static async Task WaitForErrorEventAsync(ConcurrentQueue<EventWrittenEventArgs> events)
@@ -110,32 +131,42 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalFact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetHostEntry_ValidName_NoErrors()
         {
-            using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Verbose))
+            try
             {
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-
-                listener.RunWithCallback(ev => events.Enqueue(ev), () =>
+                RemoteExecutor.Invoke(static () =>
                 {
-                    try
+                    using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Verbose))
                     {
-                        Dns.GetHostEntryAsync("localhost").GetAwaiter().GetResult();
-                        Dns.GetHostEntryAsync(IPAddress.Loopback).GetAwaiter().GetResult();
-                        Dns.GetHostEntry("localhost");
-                        Dns.GetHostEntry(IPAddress.Loopback);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new SkipTestException($"Localhost lookup failed unexpectedly: {e.Message}");
-                    }
-                });
+                        var events = new ConcurrentQueue<EventWrittenEventArgs>();
 
-                // We get some traces.
-                Assert.True(events.Count() > 0);
-                // No errors or warning for successful query.
-                Assert.True(events.Count(ev => (int)ev.Level > (int)EventLevel.Informational) == 0);
+                        listener.RunWithCallback(ev => events.Enqueue(ev), () =>
+                        {
+                            try
+                            {
+                                Dns.GetHostEntryAsync("localhost").GetAwaiter().GetResult();
+                                Dns.GetHostEntryAsync(IPAddress.Loopback).GetAwaiter().GetResult();
+                                Dns.GetHostEntry("localhost");
+                                Dns.GetHostEntry(IPAddress.Loopback);
+                            }
+                            catch (Exception e)
+                            {
+                                throw new SkipTestException($"Localhost lookup failed unexpectedly: {e.Message}");
+                            }
+                        });
+
+                        // We get some traces.
+                        Assert.True(events.Count() > 0);
+                        // No errors or warning for successful query.
+                        Assert.True(events.Count(ev => (int)ev.Level > (int)EventLevel.Informational) == 0);
+                    }
+                }).Dispose();
+            }
+            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
+            {
+                throw new SkipTestException(ex.ToString());
             }
         }
     }
