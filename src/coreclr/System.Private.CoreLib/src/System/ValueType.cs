@@ -96,15 +96,15 @@ namespace System
         **Arguments: None.
         **Exceptions: None.
         ==============================================================================*/
-        public override unsafe int GetHashCode() => GetHashCodeHelper(RuntimeHelpers.GetMethodTable(this), ref RuntimeHelpers.GetRawData(this));
-
-        private static unsafe int GetHashCodeHelper(MethodTable* pMT, ref byte rawData)
+        public override unsafe int GetHashCode()
         {
             // The default implementation of GetHashCode() for all value types.
             // Note that this implementation reveals the value of the fields.
             // So if the value type contains any sensitive information it should
             // implement its own GetHashCode().
 
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
+            ref byte rawData = ref RuntimeHelpers.GetRawData(this);
             HashCode hashCode = default;
 
             // To get less colliding and more evenly distributed hash codes,
@@ -119,7 +119,8 @@ namespace System
             }
             else
             {
-                switch (GetHashCodeStrategy(pMT, ref rawData, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMethodTable))
+                object thisRef = this;
+                switch (GetHashCodeStrategy(pMT, ObjectHandleOnStack.Create(ref thisRef), out uint fieldOffset, out uint fieldSize))
                 {
                     case ValueTypeHashCodeStrategy.ReferenceField:
                         hashCode.Add(Unsafe.As<byte, object>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
@@ -133,14 +134,9 @@ namespace System
                         hashCode.Add(Unsafe.As<byte, float>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
                         break;
 
-                    case ValueTypeHashCodeStrategy.PrimitiveField:
+                    case ValueTypeHashCodeStrategy.FastGetHashCode:
                         Debug.Assert(fieldSize != 0);
                         hashCode.AddBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AddByteOffset(ref rawData, fieldOffset), (int)fieldSize));
-                        break;
-
-                    case ValueTypeHashCodeStrategy.ValueTypeField:
-                        Debug.Assert(fieldMethodTable != null);
-                        hashCode.Add(GetHashCodeHelper(fieldMethodTable, ref Unsafe.AddByteOffset(ref rawData, fieldOffset)));
                         break;
                 }
             }
@@ -155,13 +151,12 @@ namespace System
             ReferenceField,
             DoubleField,
             SingleField,
-            PrimitiveField,
-            ValueTypeField,
+            FastGetHashCode,
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_GetHashCodeStrategy")]
         private static unsafe partial ValueTypeHashCodeStrategy GetHashCodeStrategy(
-            MethodTable* pMT, ref byte rawData, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMethodTable);
+            MethodTable* pMT, ObjectHandleOnStack objHandle, out uint fieldOffset, out uint fieldSize);
 
         public override string? ToString()
         {

@@ -1702,26 +1702,24 @@ enum ValueTypeHashCodeStrategy
     ReferenceField,
     DoubleField,
     SingleField,
-    PrimitiveField,
-    ValueTypeField,
+    FastGetHashCode,
 };
 
-extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, void* pObjRef, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMethodTable)
+static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, void* pObjRef, UINT32* fieldOffset, UINT32* fieldSize)
 {
-    QCALL_CONTRACT;
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
 
-    ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
-    *fieldOffset = 0;
-    *fieldSize = 0;
-    *fieldMethodTable = NULL;
-
-    BEGIN_QCALL;
-
-    // Should be handled by fast path
+    // Should be handled by caller
     _ASSERTE(!mt->CanCompareBitsOrUseFastGetHashCode());
 
-    GCX_COOP();
+    ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
 
+    GCPROTECT_BEGININTERIOR(pObjRef);
+    
     // it's looking ugly so we'll use the old behavior in managed code. Grab the first non-null
     // field and return its hash code or 'it' as hash code
     // <TODO> Note that the old behavior has already been broken for value types
@@ -1736,7 +1734,6 @@ extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, void* 
     while ((field = fdIterator.Next()) != NULL)
     {
         _ASSERTE(!field->IsRVA());
-        *fieldOffset = field->GetOffsetUnsafe();
         if (field->IsObjRef())
         {
             // if we get an object reference we get the hash code out of that
@@ -1755,28 +1752,59 @@ extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, void* 
             CorElementType fieldType = field->GetFieldType();
             if (fieldType == ELEMENT_TYPE_R8)
             {
+                *fieldOffset = field->GetOffsetUnsafe();
                 ret = ValueTypeHashCodeStrategy::DoubleField;
             }
             else if (fieldType == ELEMENT_TYPE_R4)
             {
+                *fieldOffset = field->GetOffsetUnsafe();
                 ret = ValueTypeHashCodeStrategy::SingleField;
             }
             else if (fieldType != ELEMENT_TYPE_VALUETYPE)
             {
+                *fieldOffset = field->GetOffsetUnsafe();
                 *fieldSize = field->LoadSize();
-                ret = ValueTypeHashCodeStrategy::PrimitiveField;
+                ret = ValueTypeHashCodeStrategy::FastGetHashCode;
             }
             else
             {
                 // got another value type. Get the type
                 TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
                 _ASSERTE(!fieldTH.IsNull());
-                *fieldMethodTable = fieldTH.GetMethodTable();
-                ret = ValueTypeHashCodeStrategy::ValueTypeField;
+                MethodTable* fieldMT = fieldTH.GetMethodTable();
+                if (CanCompareBitsOrUseFastGetHashCode(fieldMT))
+                {
+                    *fieldOffset = field->GetOffsetUnsafe();
+                    *fieldSize = field->LoadSize();
+                    ret = ValueTypeHashCodeStrategy::FastGetHashCode;
+                }
+                else
+                {
+                    UINT32 offset = 0;
+                    ret = GetHashCodeStrategy(fieldMT, (BYTE *)pObjRef + field->GetOffsetUnsafe(), &offset, fieldSize);
+                    *fieldOffset = field->GetOffsetUnsafe() + offset;
+                }
             }
         }
         break;
     }
+
+    GCPROTECT_END();
+}
+
+extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize)
+{
+    QCALL_CONTRACT;
+
+    ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
+    *fieldOffset = 0;
+    *fieldSize = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    ret = GetHashCodeStrategy(mt, objHandle.Get()->UnBox(), fieldOffset, fieldSize);
 
     END_QCALL;
 
