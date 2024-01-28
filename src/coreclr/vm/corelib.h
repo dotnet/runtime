@@ -569,12 +569,6 @@ DEFINE_METHOD(OBJECT,               GET_TYPE,               GetType,            
 DEFINE_METHOD(OBJECT,               GET_HASH_CODE,          GetHashCode,                IM_RetInt)
 DEFINE_METHOD(OBJECT,               EQUALS,                 Equals,                     IM_Obj_RetBool)
 
-// DEFINE_CLASS(DOUBLE,                System,                 Double)
-DEFINE_METHOD(DOUBLE,               GET_HASH_CODE,          GetHashCode, IM_RetInt)
-
-// DEFINE_CLASS(SINGLE,                System,                 Single)
-DEFINE_METHOD(SINGLE,               GET_HASH_CODE,          GetHashCode, IM_RetInt)
-
 DEFINE_CLASS(__CANON,              System,                 __Canon)
 
 BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
