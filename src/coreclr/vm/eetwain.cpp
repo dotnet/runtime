@@ -1505,6 +1505,29 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     return false;
 }
 
+/*****************************************************************************
+ *
+ *  Is the function currently in an interruptible range ?
+ */
+bool EECodeManager::IsInterruptible( EECodeInfo     *pCodeInfo,
+                                     DWORD           dwRelOffset)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+
+    GcInfoDecoder gcInfoDecoder(
+            gcInfoToken,
+            DECODE_INTERRUPTIBILITY,
+            dwRelOffset
+            );
+
+    return gcInfoDecoder.IsInterruptible();
+}
+
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 {
@@ -1641,6 +1664,21 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     return (info.interruptible);
 }
 
+/*****************************************************************************
+ *
+ *  Is the function currently in an interruptible range ?
+ */
+bool EECodeManager::IsInterruptible( EECodeInfo     *pCodeInfo,
+                                     DWORD           dwRelOffset)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    return IsGcSafe(pCodeInfo, dwRelOffset);
+}
 
 /*****************************************************************************/
 static

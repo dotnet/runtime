@@ -4731,7 +4731,7 @@ struct ExecutionState
     DWORD           m_RelOffset;        // relative offset at which we're currently executing in this fcn
     IJitManager    *m_pJitManager;
     METHODTOKEN     m_MethodToken;
-    BOOL            m_IsInterruptible;  // is this code interruptible?
+    BOOL            m_IsGcSafe;  // is this code at a point where GC can happen?
 
     ExecutionState() : m_FirstPass(TRUE) {LIMITED_METHOD_CONTRACT;  }
 };
@@ -4867,12 +4867,12 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
             pES->m_pFD = pCF->GetFunction();
             pES->m_MethodToken = pCF->GetMethodToken();
             pES->m_ppvRetAddrPtr = 0;
-            pES->m_IsInterruptible = pCF->IsGcSafe();
+            pES->m_IsGcSafe = pCF->IsGcSafe();
             pES->m_RelOffset = pCF->GetRelOffset();
             pES->m_pJitManager = pCF->GetJitManager();
 
-            STRESS_LOG3(LF_SYNC, LL_INFO1000, "Stopped in Jitted code at pc = %p sp = %p fullyInt=%d\n",
-                GetControlPC(pCF->GetRegisterSet()), GetRegdisplaySP(pCF->GetRegisterSet()), pES->m_IsInterruptible);
+            STRESS_LOG3(LF_SYNC, LL_INFO1000, "Stopped in Jitted code at pc = %p sp = %p gcSafe=%d\n",
+                GetControlPC(pCF->GetRegisterSet()), GetRegdisplaySP(pCF->GetRegisterSet()), pES->m_IsGcSafe);
 
 #if defined(FEATURE_CONSERVATIVE_GC) && !defined(USE_GC_INFO_DECODER)
             if (g_pConfig->GetGCConservative())
@@ -4886,14 +4886,14 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
 #endif // FEATURE_CONSERVATIVE_GC
             {
 #ifndef HIJACK_NONINTERRUPTIBLE_THREADS
-                if (!pES->m_IsInterruptible)
+                if (!pES->m_IsGcSafe)
                 {
                     notJittedCase = true;
                 }
 #else // HIJACK_NONINTERRUPTIBLE_THREADS
                 // if we're not interruptible right here, we need to determine the
                 // return address for hijacking.
-                if (!pES->m_IsInterruptible)
+                if (!pES->m_IsGcSafe)
                 {
 #ifdef FEATURE_EH_FUNCLETS
                     PREGDISPLAY pRDT = pCF->GetRegisterSet();
@@ -5006,7 +5006,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
 #ifdef _DEBUG
             pES->m_pFD = (MethodDesc *)POISONC;
             pES->m_ppvRetAddrPtr = (void **)POISONC;
-            pES->m_IsInterruptible = FALSE;
+            pES->m_IsGcSafe = FALSE;
 #endif
         }
     }
@@ -5490,7 +5490,7 @@ BOOL Thread::HandledJITCase()
     {
         // If we are interruptible and we are in cooperative mode, our caller can
         // just leave us suspended.
-        if (esb.m_IsInterruptible && m_fPreemptiveGCDisabled)
+        if (esb.m_IsGcSafe && m_fPreemptiveGCDisabled)
         {
             _ASSERTE(!ThreadStore::HoldingThreadStore(this));
             ret = TRUE;

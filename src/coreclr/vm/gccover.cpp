@@ -597,7 +597,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         // can really do the GC on the instruction just after the call).
         size_t dwRelOffset = (cur - codeStart) + regionOffsetAdj;
         _ASSERTE(FitsIn<DWORD>(dwRelOffset));
-        if (codeMan->IsGcSafe(&codeInfo, static_cast<DWORD>(dwRelOffset)))
+        if (codeMan->IsInterruptible(&codeInfo, static_cast<DWORD>(dwRelOffset)))
         {
             *(cur + writeableOffset) = INTERRUPT_INSTR;
         }

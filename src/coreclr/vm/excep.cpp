@@ -1896,12 +1896,12 @@ HRESULT SetIPFromSrcToDst(Thread *pThread,
 
     // Do both checks here so compiler doesn't complain about skipping
     // initialization b/c of goto.
-    if (fCanSetIPOnly && !pEECM->IsGcSafe(&codeInfo, offFrom))
+    if (fCanSetIPOnly && !pEECM->IsInterruptible(&codeInfo, offFrom))
     {
         hrReturn = WORST_HR(hrReturn, CORDBG_E_SET_IP_IMPOSSIBLE);
     }
 
-    if (fCanSetIPOnly && !pEECM->IsGcSafe(&codeInfo, offTo))
+    if (fCanSetIPOnly && !pEECM->IsInterruptible(&codeInfo, offTo))
     {
         hrReturn = WORST_HR(hrReturn, CORDBG_E_SET_IP_IMPOSSIBLE);
     }
