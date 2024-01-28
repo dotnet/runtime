@@ -7,6 +7,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Text;
 
 using static ILCompiler.ObjectWriter.EabiNative;
@@ -66,10 +67,10 @@ namespace ILCompiler.ObjectWriter
                             EmitPop((uint)(1u << dwarfReg));
                             popOffset += 4;
                         }
-                        else if (dwarfReg >= 256 && dwarfReg <= 271)
+                        else if (dwarfReg >= 256 && dwarfReg <= 287)
                         {
                             dwarfReg -= 256;
-                            EmitVPop((uint)(3u << (dwarfReg << 1)));
+                            EmitVPop((uint)(1u << dwarfReg));
                             popOffset += 8;
                         }
                         else
@@ -119,22 +120,27 @@ namespace ILCompiler.ObjectWriter
                 if (pendingSpAdjustment != 0)
                 {
                     Debug.Assert(pendingSpAdjustment > 0);
+                    Debug.Assert((pendingSpAdjustment & 3) == 0);
                     if (pendingSpAdjustment <= 0x100)
                     {
                         // vsp = vsp + (xxxxxx << 2) + 4.
+                        // 00xxxxxx
                         unwindData[unwindDataOffset++] = (byte)((pendingSpAdjustment >> 2) - 1);
                     }
                     else if (pendingSpAdjustment <= 0x200)
                     {
                         // vsp = vsp + (0x3f << 2) + 4.
+                        // 00111111
                         unwindData[unwindDataOffset++] = (byte)0x3f;
                         pendingSpAdjustment -= 0x100;
                         // vsp = vsp + (xxxxxx << 2) + 4.
+                        // 00xxxxxx
                         unwindData[unwindDataOffset++] = (byte)((pendingSpAdjustment >> 2) - 1);
                     }
                     else
                     {
                         // vsp = vsp + 0x204 + (uleb128 << 2)
+                        // 10110010 uleb128
                         unwindData[unwindDataOffset++] = (byte)0xb2;
                         unwindDataOffset += DwarfHelper.WriteULEB128(unwindData.AsSpan(unwindDataOffset), (uint)((pendingSpAdjustment - 0x204) >> 2));
                     }
@@ -142,8 +148,35 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (pendingPopMask != 0)
                 {
-                    // TODO: Efficient encodings!
+                    // Try to use efficient encoding if we have a consecutive run of
+                    // r4-rN registers for N <= 11, and either no high registers or r14.
+                    if ((pendingPopMask & 0x10) == 0x10 &&
+                        ((pendingPopMask & 0xF000) == 0 || (pendingPopMask & 0xF000) == 0x4000))
+                    {
+                        uint r5AndHigher = (pendingPopMask & 0xFF0) >> 5;
+                        int bitRunLength = BitOperations.TrailingZeroCount(~r5AndHigher);
+                        // No gaps...
+                        if ((r5AndHigher & ((1 << bitRunLength) - 1)) == r5AndHigher)
+                        {
+                            if ((pendingPopMask & 0xF000) == 0)
+                            {
+                                // Pop r4-r[4+nnn]
+                                // 10100nnn
+                                unwindData[unwindDataOffset++] = (byte)(0xA0 | bitRunLength);
+                            }
+                            else
+                            {
+                                // Pop r4-r[4+nnn], r14
+                                // 10101nnn
+                                unwindData[unwindDataOffset++] = (byte)(0xA8 | bitRunLength);
+                            }
 
+                            pendingPopMask &= 0xF;
+                        }
+                    }
+
+                    // Pop up to 12 integer registers under masks {r15-r12}, {r11-r4}
+                    // 1000iiii iiiiiiii
                     if ((pendingPopMask & 0xFFF0) != 0)
                     {
                         ushort ins = (ushort)(0x8000u | (pendingPopMask >> 4));
@@ -151,6 +184,8 @@ namespace ILCompiler.ObjectWriter
                         unwindData[unwindDataOffset++] = (byte)(ins & 0xff);
                     }
 
+                    // Pop integer registers under mask {r3, r2, r1, r0}
+                    // 10110001 0000iiii
                     if ((pendingPopMask & 0xF) != 0)
                     {
                         ushort ins = (ushort)(0xB100u | (pendingPopMask & 0xf));
@@ -162,7 +197,33 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (pendingVPopMask != 0)
                 {
-                    Debug.Fail("VPOP unwinding not implemented");
+                    // Find consecutive bit runs
+
+                    // Pop VFP double precision registers D[16+ssss]-D[16+ssss+cccc] saved (as if) by VPUSH
+                    // 11001000 sssscccc
+                    uint mask = (pendingVPopMask >> 16);
+                    while (mask > 0)
+                    {
+                        int leadingZeros = BitOperations.LeadingZeroCount(mask);
+                        int bitRunLength = BitOperations.LeadingZeroCount(~(mask << leadingZeros));
+                        unwindData[unwindDataOffset++] = 0xc8;
+                        unwindData[unwindDataOffset++] = (byte)(((15 - leadingZeros) << 8) | bitRunLength);
+                        mask &= (uint)(1u << (16 - leadingZeros - bitRunLength)) - 1u;
+                    }
+
+                    // Pop VFP double precision registers D[ssss]-D[ssss+cccc] saved (as if) by VPUSH
+                    // 11001001 sssscccc
+                    mask = pendingVPopMask & 0xffff;
+                    while (mask > 0)
+                    {
+                        int leadingZeros = BitOperations.LeadingZeroCount(mask);
+                        int bitRunLength = BitOperations.LeadingZeroCount(~(mask << leadingZeros));
+                        unwindData[unwindDataOffset++] = 0xc9;
+                        unwindData[unwindDataOffset++] = (byte)(((15 - leadingZeros) << 8) | bitRunLength);
+                        mask &= (uint)(1u << (16 - leadingZeros - bitRunLength)) - 1u;
+                    }
+
+                    pendingVPopMask = 0;
                 }
             }
         }
