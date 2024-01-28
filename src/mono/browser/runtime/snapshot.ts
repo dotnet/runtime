@@ -115,11 +115,11 @@ export async function getCacheEntry(cacheKey: string): Promise<ArrayBuffer | und
     }
 }
 
-export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mimeType: string) {
+export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mimeType: string): Promise<boolean> {
     try {
         const cache = await openCache();
         if (!cache) {
-            return;
+            return false;
         }
         const copy = MonoWasmThreads
             // storing SHaredArrayBuffer in the cache is not working
@@ -134,9 +134,11 @@ export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mim
         });
 
         await cache.put(cacheKey, responseToCache);
+
+        return true;
     } catch (ex) {
         mono_log_warn("Failed to store entry to the cache: " + cacheKey, ex);
-        return;
+        return false;
     }
 }
 

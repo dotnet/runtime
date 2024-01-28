@@ -35,7 +35,9 @@ export async function interp_pgo_save_data() {
         const u8 = localHeapViewU8();
         const data = u8.slice(pData, pData + expectedSize);
 
-        await storeCacheEntry(cacheKey, data, "application/octet-stream");
+        if (await storeCacheEntry(cacheKey, data, "application/octet-stream")) {
+            mono_log_info("Saved interp_pgo table to cache");
+        }
 
         cleanupCache(tablePrefix, cacheKey); // no await
 
