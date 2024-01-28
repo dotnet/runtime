@@ -3058,19 +3058,45 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
     if (value->IsCnsVec())
     {
 #if defined(FEATURE_HW_INTRINSICS)
-        GenTreeVecCon* vecCon = value->AsVecCon();
+        // Many hwintrinsics can't benefit from constant prop because they don't support
+        // constant folding nor do they support any specialized encodings. So, we want to
+        // skip constant prop and preserve any user-defined locals in that scenario.
+        //
+        // However, if the local is only referenced once then we want to allow propagation
+        // regardless since we can then contain the only actual usage and save a needless
+        // instruction.
+        //
+        // To determine number of uses, we prefer checking SSA first since it is more exact
+        // and can account for patterns where a local is reassigned later. However, if we
+        // can't find an SSA then we fallback to the naive ref count of the local, noting
+        // that we need to check for greater than 2 since it includes both the def and use.
+
+        bool inspectIntrinsic = false;
 
         if ((destParent != nullptr) && destParent->OperIsHWIntrinsic())
         {
-            GenTreeHWIntrinsic* parent       = destParent->AsHWIntrinsic();
+            LclVarDsc* varDsc = lvaGetDesc(lcl);
+
+            if (lcl->HasSsaName())
+            {
+                inspectIntrinsic = varDsc->GetPerSsaData(lcl->GetSsaNum())->GetNumUses() > 1;
+            }
+            else
+            {
+                inspectIntrinsic = varDsc->lvRefCnt() > 2;
+            }
+        }
+
+        if (inspectIntrinsic)
+        {
+            GenTreeHWIntrinsic* parent = destParent->AsHWIntrinsic();
+            GenTreeVecCon*      vecCon = value->AsVecCon();
+
             NamedIntrinsic      intrinsicId  = parent->GetHWIntrinsicId();
             var_types           simdBaseType = parent->GetSimdBaseType();
 
             if (!HWIntrinsicInfo::CanBenefitFromConstantProp(intrinsicId))
             {
-                // Many hwintrinsics can't benefit from constant prop because they don't support
-                // constant folding nor do they support any specialized encodings. So, we want to
-                // skip constant prop and preserve any user-defined locals in that scenario.
                 return false;
             }
 
