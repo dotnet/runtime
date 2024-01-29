@@ -144,11 +144,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
  */
 extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL throwIfNotMarshalable)
 {
-    CONTRACTL
-    {
-        QCALL_CHECK;
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
     INT32 rv = 0;
 
@@ -176,68 +172,57 @@ extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL 
     return rv;
 }
 
-
-/************************************************************************
- * PInvoke.OffsetOfHelper(Class, Field)
- */
-FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
+extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pFieldUNSAFE));
+        QCALL_CHECK;
+        PRECONDITION(pFD != NULL);
     }
     CONTRACTL_END;
 
-    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
+    SIZE_T offset = 0;
 
-    FieldDesc *pField = refField->GetField();
-    TypeHandle th = TypeHandle(pField->GetApproxEnclosingMethodTable());
+    BEGIN_QCALL;
+
+    TypeHandle th = TypeHandle(pFD->GetApproxEnclosingMethodTable());
 
     if (th.IsBlittable())
     {
-        return pField->GetOffset();
+        offset = pFD->GetOffset();
     }
-
-    UINT32 externalOffset = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refField);
+    else
     {
-        GCX_PREEMP();
-        // Determine if the type is marshalable.
+        // Verify the type can be marshalled.
         if (!IsStructMarshalable(th))
         {
-            // It isn't marshalable so throw an ArgumentException.
-            StackSString strTypeName;
+            SString strTypeName;
             TypeString::AppendType(strTypeName, th);
             COMPlusThrow(kArgumentException, IDS_CANNOT_MARSHAL, strTypeName.GetUnicode(), NULL, NULL);
         }
+
         EEClassNativeLayoutInfo const* pNativeLayoutInfo = th.GetMethodTable()->GetNativeLayoutInfo();
+        NativeFieldDescriptor const* pNFD = pNativeLayoutInfo->GetNativeFieldDescriptors();
+        UINT numReferenceFields = pNativeLayoutInfo->GetNumFields();
 
-        NativeFieldDescriptor const*pNFD = pNativeLayoutInfo->GetNativeFieldDescriptors();
-        UINT  numReferenceFields = pNativeLayoutInfo->GetNumFields();
-
-#ifdef _DEBUG
-        bool foundField = false;
-#endif
+        INDEBUG(bool foundField = false;)
         while (numReferenceFields--)
         {
-            if (pNFD->GetFieldDesc() == pField)
+            if (pNFD->GetFieldDesc() == pFD)
             {
-                externalOffset = pNFD->GetExternalOffset();
+                offset = pNFD->GetExternalOffset();
                 INDEBUG(foundField = true);
                 break;
             }
             pNFD++;
         }
-
         CONSISTENCY_CHECK_MSG(foundField, "We should never hit this point since we already verified that the requested field was present from managed code");
     }
-    HELPER_METHOD_FRAME_END();
 
-    return externalOffset;
+    END_QCALL;
+
+    return offset;
 }
-FCIMPLEND
 
 extern "C" void QCALLTYPE MarshalNative_GetDelegateForFunctionPointerInternal(PVOID FPtr, QCall::TypeHandle t, QCall::ObjectHandleOnStack retDelegate)
 {
@@ -420,22 +405,20 @@ FCIMPLEND
 // *** Interop Helpers ***
 //====================================================================
 
-FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID errorInfo)
+extern "C" void QCALLTYPE MarshalNative_GetExceptionForHR(INT32 errorCode, LPVOID errorInfo, QCall::ObjectHandleOnStack retVal)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(FAILED(errorCode));
         PRECONDITION(CheckPointer(errorInfo, NULL_OK));
     }
     CONTRACTL_END;
 
-    OBJECTREF RetExceptionObj = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(RetExceptionObj);
+    BEGIN_QCALL;
 
     // Retrieve the IErrorInfo to use.
-    IErrorInfo *pErrorInfo = (IErrorInfo*)errorInfo;
+    IErrorInfo* pErrorInfo = (IErrorInfo*)errorInfo;
 #ifdef FEATURE_COMINTEROP
     if (pErrorInfo == (IErrorInfo*)(-1))
     {
@@ -446,42 +429,48 @@ FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID erro
         if (SafeGetErrorInfo(&pErrorInfo) != S_OK)
             pErrorInfo = NULL;
     }
-
 #endif // FEATURE_COMINTEROP
-    ::GetExceptionForHR(errorCode, pErrorInfo, &RetExceptionObj);
 
-    HELPER_METHOD_FRAME_END();
+    GCX_COOP();
 
-    return OBJECTREFToObject(RetExceptionObj);
+    OBJECTREF exceptObj = NULL;
+    GCPROTECT_BEGIN(exceptObj);
+    ::GetExceptionForHR(errorCode, pErrorInfo, &exceptObj);
+    retVal.Set(exceptObj);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
-FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
+extern "C" int32_t QCALLTYPE MarshalNative_GetHRForException(QCall::ObjectHandleOnStack obj)
 {
-    CONTRACTL {
-       NOTHROW;    // Used by reverse COM IL stubs, so we must not throw exceptions back to COM
-       DISABLED(GC_TRIGGERS); // FCALLS with HELPER frames have issues with GC_TRIGGERS
-       MODE_COOPERATIVE;
-    } CONTRACTL_END;
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        NOTHROW;    // Used by reverse COM IL stubs, so we must not throw exceptions back to COM
+    }
+    CONTRACTL_END;
 
-    int retVal = 0;
-    OBJECTREF e = (OBJECTREF) eUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_NOTHROW_1({ retVal = COR_E_STACKOVERFLOW; }, e);
+    int32_t hr = E_FAIL;
 
-    retVal = SetupErrorInfo(e);
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_END_NOTHROW();
-    return retVal;
+    GCX_COOP();
+
+    hr = SetupErrorInfo(obj.Get());
+
+    END_QCALL;
+
+    return hr;
 }
-FCIMPLEND
 
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================
 extern "C" IUnknown* QCALLTYPE MarshalNative_GetIUnknownForObject(QCall::ObjectHandleOnStack o)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     IUnknown* retVal = NULL;
 

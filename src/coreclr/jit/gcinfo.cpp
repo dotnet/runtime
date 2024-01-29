@@ -240,7 +240,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
     }
 
     // Ignore any assignments of NULL.
-    GenTree* data = store->Data()->gtSkipReloadOrCopy();
+    GenTree* const data = store->Data()->gtSkipReloadOrCopy();
     if ((data->GetVN(VNK_Liberal) == ValueNumStore::VNForNull()) || data->IsIntegralConst(0))
     {
         return WBF_NoBarrier;
@@ -248,7 +248,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 
     if ((store->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0)
     {
-        // This indirection is not from to the heap.
+        // This indirection is not storing to the heap.
         // This case occurs for stack-allocated objects.
         return WBF_NoBarrier;
     }

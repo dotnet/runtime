@@ -39,6 +39,19 @@ namespace ILCompiler.ObjectWriter
 
             switch (targetArchitecture)
             {
+                case TargetArchitecture.ARM:
+                    CodeAlignFactor = 1;
+                    DataAlignFactor = -4;
+                    ReturnAddressRegister = 14; // LR
+                    Instructions = new byte[]
+                    {
+                        DW_CFA_def_cfa,
+                        13, // SP
+                        0, // Offset from SP
+                    };
+                    InitialCFAOffset = 0;
+                    break;
+
                 case TargetArchitecture.ARM64:
                     CodeAlignFactor = 1;
                     DataAlignFactor = -4;

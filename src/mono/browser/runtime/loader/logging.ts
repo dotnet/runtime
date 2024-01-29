@@ -43,7 +43,8 @@ export function mono_log_error(msg: string, ...data: any) {
     }
     console.error(prefix + msg, ...data);
 }
-
+let tick = "";
+let last = new Date().valueOf();
 function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
     return function (...args: any[]) {
         try {
@@ -60,19 +61,19 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
             }
 
             if (typeof payload === "string") {
-                if (payload[0] == "[") {
-                    const now = new Date().toISOString();
-                    if (MonoWasmThreads && ENVIRONMENT_IS_WORKER) {
-                        payload = `[${threadNamePrefix}][${now}] ${payload}`;
-                    } else {
-                        payload = `[${now}] ${payload}`;
-                    }
-                } else if (MonoWasmThreads && ENVIRONMENT_IS_WORKER) {
-                    if (payload.indexOf("keeping the worker alive for asynchronous operation") !== -1) {
+                if (MonoWasmThreads) {
+                    if (ENVIRONMENT_IS_WORKER && payload.indexOf("keeping the worker alive for asynchronous operation") !== -1) {
                         // muting emscripten noise
                         return;
                     }
-                    payload = `[${threadNamePrefix}] ${payload}`;
+                    if (payload.indexOf("MONO_WASM: ") === 0 || payload.indexOf("[MONO]") === 0) {
+                        const now = new Date();
+                        if (last !== now.valueOf()) {
+                            tick = now.toISOString().substring(11, 23);
+                            last = now.valueOf();
+                        }
+                        payload = `[${threadNamePrefix} ${tick}] ${payload}`;
+                    }
                 }
             }
 
@@ -98,13 +99,13 @@ export function setup_proxy_console(id: string, console: Console, origin: string
         ...console
     };
 
-    setupWS();
-
     const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
 
     consoleWebSocket = new WebSocket(consoleUrl);
     consoleWebSocket.addEventListener("error", logWSError);
     consoleWebSocket.addEventListener("close", logWSClose);
+
+    setupWS();
 }
 
 export function teardown_proxy_console(message?: string) {
@@ -135,7 +136,7 @@ export function teardown_proxy_console(message?: string) {
 }
 
 function send(msg: string) {
-    if (consoleWebSocket.readyState === WebSocket.OPEN) {
+    if (consoleWebSocket && consoleWebSocket.readyState === WebSocket.OPEN) {
         consoleWebSocket.send(msg);
     }
     else {
