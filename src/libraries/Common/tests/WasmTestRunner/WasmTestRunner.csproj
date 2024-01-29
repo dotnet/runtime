@@ -5,15 +5,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CompletionCallbackExecutionSink.cs" />
-    <Compile Include="ConsoleDiagnosticMessageSink.cs" />
-    <Compile Include="Extensions.cs" />
     <Compile Include="WasmTestRunner.cs" />
-    <Compile Include="XUnitFilter.cs" />
-    <Compile Include="XUnitFiltersCollection.cs" />
-    <Compile Include="XUnitFilterType.cs" />
-    <Compile Include="XUnitTestRunner.cs" />
-    <Compile Include="XunitTestRunnerBase.cs" />
     <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="$(MicrosoftDotNetXHarnessTestRunnersXunitVersion)" />
   </ItemGroup>
 </Project>
