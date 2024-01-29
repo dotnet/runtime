@@ -20,18 +20,16 @@ using MethodDebugInformation = Internal.IL.MethodDebugInformation;
 
 namespace ILCompiler
 {
-    public class FeatureSwitchManager : ILProvider
+    public partial class SubstitutionProvider
     {
         private readonly FeatureSwitchHashtable _hashtable;
-        private readonly ILProvider _nestedILProvider;
 
-        public FeatureSwitchManager(ILProvider nestedILProvider, Logger logger, IReadOnlyDictionary<string, bool> switchValues, BodyAndFieldSubstitutions globalSubstitutions)
+        public SubstitutionProvider(Logger logger, IReadOnlyDictionary<string, bool> switchValues, BodyAndFieldSubstitutions globalSubstitutions)
         {
-            _nestedILProvider = nestedILProvider;
             _hashtable = new FeatureSwitchHashtable(logger, switchValues, globalSubstitutions);
         }
 
-        private BodySubstitution GetSubstitution(MethodDesc method)
+        public BodySubstitution GetSubstitution(MethodDesc method)
         {
             if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
@@ -43,7 +41,7 @@ namespace ILCompiler
             return null;
         }
 
-        private object GetSubstitution(FieldDesc field)
+        public object GetSubstitution(FieldDesc field)
         {
             if (field.GetTypicalFieldDefinition() is EcmaField ecmaField)
             {
@@ -64,10 +62,22 @@ namespace ILCompiler
         {
             return GetSubstitution(field) != null;
         }
+    }
+
+    public partial class SubstitutedILProvider : ILProvider
+    {
+        private readonly ILProvider _nestedILProvider;
+        private readonly SubstitutionProvider _substitutionProvider;
+
+        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider)
+        {
+            _nestedILProvider = nestedILProvider;
+            _substitutionProvider = substitutionProvider;
+        }
 
         public override MethodIL GetMethodIL(MethodDesc method)
         {
-            BodySubstitution substitution = GetSubstitution(method);
+            BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
             if (substitution != null)
             {
                 return substitution.EmitIL(method);
@@ -152,8 +162,7 @@ namespace ILCompiler
 
             // Do not attempt to inline resource strings if we only want to use resource keys.
             // The optimizations are not compatible.
-            bool shouldInlineResourceStrings =
-                !_hashtable._switchValues.TryGetValue("System.Resources.UseSystemResourceKeys", out bool useResourceKeys) || !useResourceKeys;
+            bool shouldInlineResourceStrings = _substitutionProvider.ShouldInlineResourceStrings;
 
             ILExceptionRegion[] ehRegions = method.GetExceptionRegions();
             byte[] methodBytes = method.GetILBytes();
@@ -533,7 +542,7 @@ namespace ILCompiler
                     var getter = (EcmaMethod)method.GetObject(new ILReader(newBody, offset + 1).ReadILToken());
 
                     // If we can't get the string, this might be something else.
-                    string resourceString = GetResourceStringForAccessor(getter);
+                    string resourceString = _substitutionProvider.GetResourceStringForAccessor(getter);
                     if (resourceString == null)
                         continue;
 
@@ -577,7 +586,7 @@ namespace ILCompiler
                     MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
                     if (argIndex == 0)
                     {
-                        BodySubstitution substitution = GetSubstitution(method);
+                        BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
                         if (substitution != null && substitution.Value is int
                             && (opcode != ILOpcode.callvirt || !method.IsVirtual))
                         {
@@ -618,7 +627,7 @@ namespace ILCompiler
                     FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
                     if (argIndex == 0)
                     {
-                        object substitution = GetSubstitution(field);
+                        object substitution = _substitutionProvider.GetSubstitution(field);
                         if (substitution is int)
                         {
                             constant = (int)substitution;
@@ -736,8 +745,13 @@ namespace ILCompiler
             constant = 0;
             return false;
         }
+    }
 
-        private string GetResourceStringForAccessor(EcmaMethod method)
+    public partial class SubstitutionProvider
+    {
+        internal bool ShouldInlineResourceStrings => !_hashtable._switchValues.TryGetValue("System.Resources.UseSystemResourceKeys", out bool useResourceKeys) || !useResourceKeys;
+
+        internal string GetResourceStringForAccessor(EcmaMethod method)
         {
             Debug.Assert(method.Name.StartsWith("get_", StringComparison.Ordinal));
             string resourceStringName = method.Name.Substring(4);
@@ -751,7 +765,10 @@ namespace ILCompiler
 
             return null;
         }
+    }
 
+    public partial class SubstitutedILProvider : ILProvider
+    {
         private static bool TryExpandTypeIsValueType(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, out int constant)
         {
             // We expect to see a sequence:
@@ -927,7 +944,10 @@ namespace ILCompiler
         }
 
         private const int TokenTypeString = 0x70; // CorTokenType for strings
+    }
 
+    public partial class SubstitutionProvider
+    {
         private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
             internal readonly IReadOnlyDictionary<string, bool> _switchValues;
