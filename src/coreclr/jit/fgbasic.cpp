@@ -4978,36 +4978,11 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     JITDUMP("Splitting edge from " FMT_BB " to " FMT_BB "; adding " FMT_BB "\n", curr->bbNum, succ->bbNum,
             newBlock->bbNum);
 
-    if (curr->KindIs(BBJ_COND))
-    {
-        if (curr->TrueTargetIs(succ))
-        {
-            curr->SetTrueTarget(newBlock);
-        }
-        else
-        {
-            assert(curr->FalseTargetIs(succ));
-            curr->SetFalseTarget(newBlock);
-        }
+    // newBlock replaces succ as curr's successor.
+    fgReplaceJumpTarget(curr, newBlock, succ);
 
-        fgReplacePred(succ, curr, newBlock);
-        fgAddRefPred(newBlock, curr);
-    }
-    else if (curr->KindIs(BBJ_SWITCH))
-    {
-        // newBlock replaces 'succ' in the switch.
-        fgReplaceJumpTarget(curr, newBlock, succ);
-
-        // And 'succ' has 'newBlock' as a new predecessor.
-        fgAddRefPred(succ, newBlock);
-    }
-    else
-    {
-        assert(curr->KindIs(BBJ_ALWAYS));
-        fgReplacePred(succ, curr, newBlock);
-        curr->SetTarget(newBlock);
-        fgAddRefPred(newBlock, curr);
-    }
+    // And succ has newBlock as a new predecessor.
+    fgAddRefPred(succ, newBlock);
 
     // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
     // branch 50% of the time.
