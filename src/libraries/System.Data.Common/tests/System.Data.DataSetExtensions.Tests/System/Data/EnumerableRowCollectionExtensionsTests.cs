@@ -33,7 +33,7 @@ namespace System.Data
             return (table, one, two, three);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Where_SuccessfullyFindRow()
         {
             TypedTableBase<DataRow> table = new TestTypedTable<DataRow>();
@@ -51,7 +51,7 @@ namespace System.Data
             Assert.Same(two, filtered.First());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void OrderBy_AddSortExpressionValidation()
         {
             var (table, one, two, three) = InstantiateTable();
@@ -65,7 +65,7 @@ namespace System.Data
             Assert.Equal(new DataRow[] { zero, one, two, three }, compared);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void OrderByDescending_AddSortExpressionValidation()
         {
             var (table, one, two, three) = InstantiateTable();
@@ -79,7 +79,7 @@ namespace System.Data
             Assert.Equal(new DataRow[] { four, three, two, one }, comparedBackwards);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void ThenBy_AddSortExpressionValidation()
         {
             var (table, one, two, three) = InstantiateTable();
@@ -97,7 +97,7 @@ namespace System.Data
 
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void ThenByDescending_AddSortExpressionValidation()
         {
             var (table, one, two, three) = InstantiateTable();

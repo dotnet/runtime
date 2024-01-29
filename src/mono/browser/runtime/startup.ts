@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH, ENVIRONMENT_IS_WORKER } from "./globals";
+import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH, ENVIRONMENT_IS_WORKER } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -23,20 +22,17 @@ import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { checkMemorySnapshotSize, getMemorySnapshot, storeMemorySnapshot } from "./snapshot";
 import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
-import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_name } from "./logging";
+import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
 
 // threads
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents } from "./pthreads/worker";
-import { mono_wasm_main_thread_ptr } from "./pthreads/shared";
+import { mono_wasm_main_thread_ptr, mono_wasm_pthread_ptr } from "./pthreads/shared";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
-
-// legacy
-import { init_legacy_exports } from "./net6-legacy/corebindings";
-import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
-import { BINDING, MONO } from "./net6-legacy/globals";
 import { localHeapViewU8 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
+import { runtimeList } from "./exports";
+import { nativeAbort, nativeExit } from "./run";
 
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
@@ -181,6 +177,8 @@ async function preInitWorkerAsync() {
         await ensureUsedWasmFeatures();
         await init_polyfills_async();
         runtimeHelpers.afterPreInit.promise_control.resolve();
+        exportedRuntimeAPI.runtimeId = loaderHelpers.config.runtimeId!;
+        runtimeList.registerRuntime(exportedRuntimeAPI);
         endMeasure(mark, MeasuredBlock.preInitWorker);
     } catch (err) {
         mono_log_error("user preInitWorker() failed", err);
@@ -189,9 +187,11 @@ async function preInitWorkerAsync() {
     }
 }
 
+// runs for each re-attached worker
 export function preRunWorker() {
-    // signal next stage
+    jiterpreter_allocate_tables(); // this will return quickly if already allocated
     runtimeHelpers.runtimeReady = true;
+    // signal next stage
     runtimeHelpers.afterPreRun.promise_control.resolve();
 }
 
@@ -222,14 +222,8 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         await runtimeHelpers.afterPreRun.promise;
         mono_log_debug("onRuntimeInitialized");
 
-        runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
-        runtimeHelpers.abort = (reason: any) => {
-            loaderHelpers.exitReason = reason;
-            if (!loaderHelpers.is_exited()) {
-                cwraps.mono_wasm_abort();
-            }
-            throw reason;
-        };
+        runtimeHelpers.nativeExit = nativeExit;
+        runtimeHelpers.nativeAbort = nativeAbort;
 
         const mark = startMeasure();
         // signal this stage, this will allow pending assets to allocate memory
@@ -263,7 +257,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         if (!ENVIRONMENT_IS_WORKER) {
             Module.runtimeKeepalivePush();
         }
-        runtimeHelpers.runtimeReady = true;
 
         if (runtimeHelpers.config.virtualWorkingDirectory) {
             const FS = Module.FS;
@@ -282,11 +275,13 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         bindings_init();
         jiterpreter_allocate_tables();
-        runtimeHelpers.runtimeReady = true;
 
         if (ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER) {
             Module.runtimeKeepalivePush();
         }
+
+        runtimeHelpers.runtimeReady = true;
+        runtimeList.registerRuntime(exportedRuntimeAPI);
 
         if (MonoWasmThreads) {
             runtimeHelpers.javaScriptExports.install_main_synchronization_context();
@@ -349,8 +344,15 @@ async function postRunAsync(userpostRun: (() => void)[]) {
     runtimeHelpers.afterPostRun.promise_control.resolve();
 }
 
+// runs for each re-detached worker
 export function postRunWorker() {
-    assertNoProxies();
+    if (runtimeHelpers.proxy_context_gc_handle) {
+        const pthread_ptr = mono_wasm_pthread_ptr();
+        mono_log_warn(`JSSynchronizationContext is still installed on worker 0x${pthread_ptr.toString(16)}.`);
+    } else {
+        assertNoProxies();
+    }
+
     // signal next stage
     runtimeHelpers.runtimeReady = false;
     runtimeHelpers.afterPreRun = createPromiseController<void>();
@@ -361,7 +363,6 @@ async function mono_wasm_init_threads() {
         return;
     }
     const threadName = `0x${mono_wasm_main_thread_ptr().toString(16)}-main`;
-    mono_set_thread_name(threadName);
     loaderHelpers.mono_set_thread_name(threadName);
     await instantiateWasmPThreadWorkerPool();
     await mono_wasm_init_diagnostics();
@@ -382,10 +383,6 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
 
     init_c_exports();
     cwraps_internal(INTERNAL);
-    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
-        cwraps_mono_api(MONO);
-        cwraps_binding_api(BINDING);
-    }
     // removeRunDependency triggers the dependenciesFulfilled callback (runCaller) in
     // emscripten - on a worker since we don't have any other dependencies that causes run() to get
     // called too soon; and then it will get called a second time when dotnet.native.js calls it directly.
@@ -409,24 +406,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
 async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
     mono_log_debug("mono_wasm_after_user_runtime_initialized");
     try {
-        if (!Module.disableDotnet6Compatibility && Module.exports) {
-            // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
-            // Useful to export IDBFS or other similar types generally exposed as
-            // global types when emscripten is not modularized.
-            const globalThisAny = globalThis as any;
-            for (let i = 0; i < Module.exports.length; ++i) {
-                const exportName = Module.exports[i];
-                const exportValue = (<any>Module)[exportName];
-
-                if (exportValue != undefined) {
-                    globalThisAny[exportName] = exportValue;
-                }
-                else {
-                    mono_log_warn(`The exported symbol ${exportName} could not be found in the emscripten module`);
-                }
-            }
-        }
-
         mono_log_debug("Initializing mono runtime");
 
         if (Module.onDotnetReady) {
@@ -606,9 +585,6 @@ export function bindings_init(): void {
         const mark = startMeasure();
         strings_init();
         init_managed_exports();
-        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
-            init_legacy_exports();
-        }
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
         runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);

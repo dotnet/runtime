@@ -47,8 +47,14 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     verifyEnvironment();
     assert_js_interop();
     mono_assert(uri && typeof uri === "string", () => `ERR12: Invalid uri ${typeof uri}`);
-
-    const ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
+    let ws: WebSocketExtension;
+    try {
+        ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
+    }
+    catch (e) {
+        mono_log_warn("WebSocket error", e);
+        throw e;
+    }
     const { promise_control: open_promise_control } = createPromiseController<WebSocketExtension>();
 
     ws[wasm_ws_pending_receive_event_queue] = new Queue();
@@ -130,6 +136,11 @@ export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer
 
     if (ws[wasm_ws_is_aborted] || ws[wasm_ws_close_sent]) {
         return rejectedPromise("InvalidState: The WebSocket is not connected.");
+    }
+    if (ws.readyState == WebSocket.CLOSED) {
+        // this is server initiated close but not partial close
+        // because CloseOutputAsync_ServerInitiated_CanSend expectations, we don't fail here
+        return resolvedPromise();
     }
 
     const buffer_view = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
