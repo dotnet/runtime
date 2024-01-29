@@ -469,12 +469,12 @@ ovr_tag_from_mono_vector_class (MonoClass *klass)
 	llvm_ovr_tag_t ret = 0;
 	switch (size) {
 	case 8: ret |= INTRIN_vector64; break;
+	case 12: ret |= INTRIN_vector128; break;
 	case 16: ret |= INTRIN_vector128; break;
 	}
 
 	const char *class_name = m_class_get_name (klass);
-	if (!strcmp ("Vector2", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Quaternion", class_name) || !strcmp ("Plane", class_name)) {
-		// FIXME: Support Vector3
+	if (!strcmp ("Vector2", class_name) || !strcmp ("Vector3", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Quaternion", class_name) || !strcmp ("Plane", class_name)) {
 		return ret | INTRIN_float32;
 	}
 
@@ -507,6 +507,7 @@ ovr_tag_from_llvm_type (LLVMTypeRef type)
 		unsigned int bits = mono_llvm_get_prim_size_bits (type);
 		switch (bits) {
 		case 64: ret |= INTRIN_vector64; break;
+		case 96: ret |= INTRIN_vector128; break;
 		case 128: ret |= INTRIN_vector128; break;
 		default: g_assert_not_reached ();
 		}
@@ -4168,9 +4169,18 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeByRef:
 		case LLVMArgAsFpArgs:
 		{
-			if (mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
-				/* Treat these as normal values */
-				ctx->values [reg] = LLVMBuildLoad2 (builder, ctx->addresses [reg]->type, ctx->addresses [reg]->value, "simd_vtype");
+			MonoClass *klass = mono_class_from_mono_type_internal (ainfo->type);
+			if (mini_class_is_simd (ctx->cfg, klass)){
+				LLVMValueRef loadedVector = LLVMBuildLoad2 (builder, ctx->addresses [reg]->type, ctx->addresses [reg]->value, "simd_vtype");
+
+				if(mono_class_value_size(klass, NULL) == 12){
+					LLVMValueRef zero = LLVMConstReal(LLVMFloatType(), 0.0);
+					LLVMValueRef index = LLVMConstInt(LLVMInt32Type(), 3, 0);
+					loadedVector = LLVMBuildInsertElement(builder, loadedVector, zero, index, "insert_zero");
+				}
+
+				ctx->values[reg] = loadedVector;
+			}
 			break;
 		}
 		default:
@@ -6195,13 +6205,19 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case LLVMArgFpStruct: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (ctx->lmethod_type);
 				LLVMValueRef retval, elem;
-				gboolean is_simd = mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
+
+				MonoClass *klass=  mono_class_from_mono_type_internal (sig->ret);
+				gboolean is_simd = mini_class_is_simd (ctx->cfg, klass);
 
 				if (is_simd) {
 					retval = LLVMConstNull(ret_type);
 
 					if (lhs) {
 						int len = LLVMGetVectorSize (LLVMTypeOf (lhs));
+
+						if (mono_class_value_size (klass, NULL) == 12) 
+							len--;
+						
 						for (int i = 0; i < len; i++) {
 							elem = LLVMBuildExtractElement (builder, lhs, const_int32 (i), "extract_elem");
 							retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val_struct");

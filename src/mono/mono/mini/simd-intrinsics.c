@@ -649,10 +649,8 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	MonoClass *vector_class = mono_class_from_mono_type_internal (vector_type);
 	int vector_size = mono_class_value_size (vector_class, NULL);
 	int element_size;
-
-	// FIXME: Support Vector3
-	guint32 nelems;
-	mini_get_simd_type_info (vector_class, &nelems);
+	
+	guint32 nelems = mini_number_of_elements (vector_class);
 	element_size = vector_size / nelems;
 	gboolean has_single_element = vector_size == element_size;
 

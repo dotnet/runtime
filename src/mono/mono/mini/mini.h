@@ -2959,6 +2959,7 @@ enum {
 
 int mini_primitive_type_size (MonoTypeEnum type);
 MonoTypeEnum mini_get_simd_type_info (MonoClass *klass, guint32 *nelems);
+guint32 mini_number_of_elements(MonoClass *klass);
 
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);

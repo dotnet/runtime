@@ -4592,7 +4592,7 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 		*nelems = 2;
 		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector3")) {
-		*nelems = 3;
+		*nelems = 4;
 		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
@@ -4603,5 +4603,24 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 		printf ("%s\n", klass_name);
 		NOT_IMPLEMENTED;
 		return MONO_TYPE_VOID;
+	}
+}
+
+guint32 mini_number_of_elements(MonoClass *klass){
+	const char *klass_name = m_class_get_name (klass);
+	if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
+		return 4;
+	} else if (!strcmp (klass_name, "Vector2")) {
+		return 2;
+	} else if (!strcmp (klass_name, "Vector3")){
+		return 3;
+	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
+		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
+		int size = mono_class_value_size (klass, NULL);
+		return size / mini_primitive_type_size (etype->type);
+	} else {
+		printf ("%s\n", klass_name);
+		NOT_IMPLEMENTED;
+		return 0;
 	}
 }
