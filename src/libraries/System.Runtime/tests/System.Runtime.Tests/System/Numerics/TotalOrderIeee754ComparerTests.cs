@@ -103,30 +103,32 @@ namespace System.Runtime.Tests
                 yield return new object[] { 0.0f, -0.0f, 1 };
                 yield return new object[] { -0.0f, 0.0f, -1 };
                 yield return new object[] { 0.0f, 1.0f, -1 };
-                yield return new object[] { float.PositiveInfinity, 1.0f, 1 };
-                yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), 1.0f, 1 };
-                yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), float.PositiveInfinity, 1 };
-                yield return new object[] { float.NaN, float.NaN, 0 };
-                if (PlatformDetection.IsRiscV64Process) // float->double cast does not preserve NaN payload and sign on RISC-V
+                yield return new object[] { NFloat.PositiveInfinity, 1.0f, 1 };
+                yield return new object[] { NFloat.NaN, NFloat.NaN, 0 };
+                if (Environment.Is64BitProcess)
                 {
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), float.NegativeInfinity, 1 };
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), -1.0f, 1 };
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), BitConverter.UInt32BitsToSingle(0x7FC00000), 0 };
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt32BitsToSingle(0x7FC00001), 0 }; // implementation defined, not part of IEEE 754 totalOrder                    
+                    yield return new object[] { BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), 1.0d, 1 };
+                    yield return new object[] { BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), NFloat.PositiveInfinity, 1 };
+                    yield return new object[] { BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), NFloat.NegativeInfinity, -1 };
+                    yield return new object[] { BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), -1.0d, -1 };
+                    yield return new object[] { BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), -1 };
+                    yield return new object[] { BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), BitConverter.UInt64BitsToDouble(0x7FF80000_00000001), -1 }; // implementation defined, not part of IEEE 754 totalOrder                    
                 }
                 else
                 {
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), float.NegativeInfinity, -1 };
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), 1.0f, 1 };
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), NFloat.PositiveInfinity, 1 };
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), NFloat.NegativeInfinity, -1 };
                     yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), -1.0f, -1 };
                     yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), BitConverter.UInt32BitsToSingle(0x7FC00000), -1 };
                     yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt32BitsToSingle(0x7FC00001), -1 }; // implementation defined, not part of IEEE 754 totalOrder
                 }
-           }
+            }
         }
 
         [Theory]
         [MemberData(nameof(NFloatTestData))]
-        public void TotalOrderTestNFloat(float x, float y, int result)
+        public void TotalOrderTestNFloat(NFloat x, NFloat y, int result)
         {
             var comparer = new TotalOrderIeee754Comparer<NFloat>();
             Assert.Equal(result, Math.Sign(comparer.Compare(x, y)));
