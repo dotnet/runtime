@@ -104,7 +104,7 @@ extends:
             # and we don't want to overcompilcate helix-queues-setup.yml just for this case.
             helixQueues:
               - Windows.Amd64.Server2022.Open
-              - Windows.11.Amd64.Client
+              - Windows.11.Amd64.Client.Open
             # extra steps, run tests
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
