@@ -20,4 +20,5 @@ const exports = await getAssemblyExports(config.mainAssemblyName);
 const text = exports.MyClass.Greeting();
 console.log(text);
 
+// run the Main() method and exit the process
 await dotnet.run();

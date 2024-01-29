@@ -167,7 +167,7 @@ export function assert_not_disposed(result: any): GCHandle {
 }
 
 function _js_owned_object_finalized(gc_handle: GCHandle): void {
-    if (loaderHelpers.is_exited()) {
+    if (!loaderHelpers.is_runtime_running()) {
         // We're shutting down, so don't bother doing anything else.
         return;
     }
