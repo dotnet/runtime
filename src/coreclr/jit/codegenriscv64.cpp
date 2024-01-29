@@ -5050,7 +5050,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
         // When passed in registers or on the stack, integer scalars narrower than XLEN bits
         // are widened according to the sign of their type up to 32 bits, then sign-extended to XLEN bits.
-        if (EA_SIZE(storeAttr) < EA_PTRSIZE && varTypeUsesIntReg(slotType)) {
+        if (EA_SIZE(storeAttr) < EA_PTRSIZE && varTypeUsesIntReg(slotType))
+        {
             storeAttr = EA_PTRSIZE;
             storeIns  = INS_sd;
         }
