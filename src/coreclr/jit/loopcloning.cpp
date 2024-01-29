@@ -1956,8 +1956,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // ...
     // slow preheader --> slow header
 
-    assert(preheader->HasFlag(BBF_LOOP_PREHEADER));
-
     // Make a new pre-header block for the fast loop.
     JITDUMP("Create new preheader block for fast loop\n");
 
@@ -1965,7 +1963,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true, /*jumpDest*/ loop->GetHeader());
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
     fastPreheader->bbWeight = fastPreheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    fastPreheader->SetFlags(BBF_LOOP_PREHEADER);
 
     if (fastPreheader->JumpsToNext())
     {
@@ -1978,9 +1975,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     fgReplacePred(loop->GetHeader(), preheader, fastPreheader);
     JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", preheader->bbNum,
             loop->GetHeader()->bbNum, fastPreheader->bbNum, loop->GetHeader()->bbNum);
-
-    // 'preheader' is no longer the loop preheader; 'fastPreheader' is!
-    preheader->RemoveFlags(BBF_LOOP_PREHEADER);
 
     // We are going to create blocks after the lexical last block. If it falls
     // out of the loop then insert an explicit jump and insert after that
