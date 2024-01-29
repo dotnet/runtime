@@ -2284,13 +2284,12 @@ static LLVMValueRef
 get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
 {
 	LLVMValueRef callee;
-	char *callee_name;
+	char *callee_name = NULL;
 	MonoJumpInfo *ji = NULL;
 
 	if (ctx->llvm_only)
 		return get_callee_llvmonly (ctx, llvm_sig, type, data);
 
-	callee_name = NULL;
 	/* Cross-assembly direct calls */
 	if (type == MONO_PATCH_INFO_METHOD) {
 		MonoMethod *cmethod = (MonoMethod*)data;
@@ -2313,24 +2312,31 @@ get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gcons
 				mono_aot_get_got_offset (ji);
 
 				callee_name = mono_aot_get_mangled_method_name (cmethod);
-
-				callee = (LLVMValueRef)g_hash_table_lookup (ctx->module->direct_callables, callee_name);
-				if (!callee) {
-					callee = LLVMAddFunction (ctx->lmodule, callee_name, llvm_sig);
-
-					LLVMSetLinkage (callee, LLVMExternalLinkage);
-
-					g_hash_table_insert (ctx->module->direct_callables, callee_name, callee);
-				} else {
-					/* LLVMTypeRef's are uniqued */
-					if (LLVMGetElementType (LLVMTypeOf (callee)) != llvm_sig)
-						callee = LLVMConstBitCast (callee, pointer_type (llvm_sig));
-
-					g_free (callee_name);
-				}
-				return callee;
 			}
 		}
+	} else if (type == MONO_PATCH_INFO_JIT_ICALL_ID) {
+		callee_name = mono_aot_get_direct_call_symbol (type, data);
+	}
+
+	if (callee_name) {
+		/* Directly callable */
+		callee = (LLVMValueRef)g_hash_table_lookup (ctx->module->direct_callables, callee_name);
+		if (!callee) {
+			callee = LLVMAddFunction (ctx->lmodule, callee_name, llvm_sig);
+
+			LLVMSetVisibility (callee, LLVMHiddenVisibility);
+
+			g_hash_table_insert (ctx->module->direct_callables, (char*)callee_name, callee);
+		} else {
+#ifndef USE_OPAQUE_POINTERS
+			/* LLVMTypeRef's are uniqued */
+			if (LLVMGetElementType (LLVMTypeOf (callee)) != llvm_sig)
+				return LLVMConstBitCast (callee, pointer_type (llvm_sig));
+#endif
+
+			g_free (callee_name);
+		}
+		return callee;
 	}
 
 	callee_name = mono_aot_get_plt_symbol (type, data);
@@ -12656,7 +12662,7 @@ emit_method_inner (EmitContext *ctx)
 				LLVMSetLinkage (method, LLVMExternalLinkage);
 				LLVMSetVisibility (method, LLVMHiddenVisibility);
 			}
-
+			
 			goto after_codegen;
 		}
 	}

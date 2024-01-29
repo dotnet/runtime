@@ -6332,6 +6332,8 @@ method_is_externally_callable (MonoAotCompile *acfg, MonoMethod *method)
 		//return TRUE;
 		return FALSE;
 	} else {
+		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && g_hash_table_lookup (llvm_acfg->export_names, method))
+			return TRUE;
 		if (!acfg->aot_opts.direct_extern_calls)
 			return FALSE;
 		if (!acfg->llvm)
@@ -10607,6 +10609,15 @@ append_mangled_method (GString *s, MonoMethod *method)
 char*
 mono_aot_get_mangled_method_name (MonoMethod *method)
 {
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		char *export_name = (char *)g_hash_table_lookup (llvm_acfg->export_names, method);
+		if (export_name) {
+			if (strncmp (export_name, llvm_acfg->user_symbol_prefix, strlen (llvm_acfg->user_symbol_prefix)) == 0) 
+			 	return g_strdup (export_name + strlen (llvm_acfg->user_symbol_prefix));
+			else
+				return export_name;
+		}
+	}
 	// FIXME: use static cache (mempool?)
 	// We call this a *lot*
 
