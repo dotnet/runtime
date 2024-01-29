@@ -42,7 +42,6 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSExportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\SynchronizationContextExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSProxyContext.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />

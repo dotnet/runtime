@@ -411,6 +411,12 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
         // instruction selection due to different memory placement at runtime.
         if (EA_IS_RELOC(origAttr) && genDataIndirAddrCanBeEncodedAsPCRelOffset(imm))
         {
+            if (EA_IS_CNS_TLSGD_RELOC(origAttr))
+            {
+                // NativeAOT code needs special code sequence prefix of call so the
+                // linker will do the fixup and emit accurate TLS access information.
+                GetEmitter()->emitIns_Data16();
+            }
             if (!EA_IS_CNS_SEC_RELOC(origAttr))
             {
                 // We will use lea so displacement and not immediate will be relocatable
@@ -624,9 +630,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 attr = EA_SET_FLG(attr, EA_BYREF_FLG);
             }
 
-            if (con->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+            if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
             {
-                attr = EA_SET_FLG(attr, EA_CNS_SEC_RELOC);
+                if (con->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+                {
+                    attr = EA_SET_FLG(attr, EA_CNS_SEC_RELOC);
+                }
+                else if (con->IsIconHandle(GTF_ICON_TLSGD_OFFSET))
+                {
+                    attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
+                }
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
@@ -1057,7 +1070,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         // all have RMW semantics if VEX support is not available
 
         bool isRMW = !compiler->canUseVexEncoding();
-        inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, op1reg, op2, isRMW);
+        inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, op1reg, op2, isRMW, INS_OPTS_NONE);
 
         genProduceReg(treeNode);
         return;
@@ -4431,6 +4444,7 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
 void CodeGen::genLockedInstructions(GenTreeOp* node)
 {
     assert(node->OperIs(GT_XADD, GT_XCHG, GT_XORR, GT_XAND));
+    assert(node->OperIs(GT_XCHG) || !varTypeIsSmall(node->TypeGet()));
 
     GenTree* addr = node->gtGetOp1();
     GenTree* data = node->gtGetOp2();
@@ -4438,7 +4452,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
 
     assert(addr->isUsedFromReg());
     assert(data->isUsedFromReg());
-    assert((size == EA_4BYTE) || (size == EA_PTRSIZE) || (size == EA_GCREF));
+    assert((size <= EA_PTRSIZE) || (size == EA_GCREF));
 
     genConsumeOperands(node);
 
@@ -4506,7 +4520,15 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
         instGen(INS_lock);
     }
 
-    GetEmitter()->emitIns_AR_R(ins, size, node->GetRegNum(), addr->GetRegNum(), 0);
+    regNumber targetReg = node->GetRegNum();
+    GetEmitter()->emitIns_AR_R(ins, size, targetReg, addr->GetRegNum(), 0);
+
+    if (varTypeIsSmall(node->TypeGet()))
+    {
+        instruction mov = varTypeIsSigned(node->TypeGet()) ? INS_movsx : INS_movzx;
+        GetEmitter()->emitIns_Mov(mov, size, targetReg, targetReg, /* canSkip */ false);
+    }
+
     genProduceReg(node);
 }
 
@@ -4522,6 +4544,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
 
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
+    emitAttr  size       = emitTypeSize(tree->TypeGet());
 
     GenTree* location  = tree->Addr();      // arg1
     GenTree* value     = tree->Data();      // arg2
@@ -4542,10 +4565,18 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     // location is Rm
     instGen(INS_lock);
 
-    GetEmitter()->emitIns_AR_R(INS_cmpxchg, emitTypeSize(targetType), value->GetRegNum(), location->GetRegNum(), 0);
+    GetEmitter()->emitIns_AR_R(INS_cmpxchg, size, value->GetRegNum(), location->GetRegNum(), 0);
 
     // Result is in RAX
-    inst_Mov(targetType, targetReg, REG_RAX, /* canSkip */ true);
+    if (varTypeIsSmall(tree->TypeGet()))
+    {
+        instruction mov = varTypeIsSigned(tree->TypeGet()) ? INS_movsx : INS_movzx;
+        GetEmitter()->emitIns_Mov(mov, size, targetReg, REG_RAX, /* canSkip */ false);
+    }
+    else
+    {
+        inst_Mov(targetType, targetReg, REG_RAX, /* canSkip */ true);
+    }
 
     genProduceReg(tree);
 }
@@ -6176,17 +6207,17 @@ void CodeGen::genCall(GenTreeCall* call)
         {
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_ENTER_STATIC:
-                noway_assert(compiler->syncStartEmitCookie == NULL);
+                noway_assert(compiler->syncStartEmitCookie == nullptr);
                 compiler->syncStartEmitCookie =
                     GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-                noway_assert(compiler->syncStartEmitCookie != NULL);
+                noway_assert(compiler->syncStartEmitCookie != nullptr);
                 break;
             case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_MON_EXIT_STATIC:
-                noway_assert(compiler->syncEndEmitCookie == NULL);
+                noway_assert(compiler->syncEndEmitCookie == nullptr);
                 compiler->syncEndEmitCookie =
                     GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-                noway_assert(compiler->syncEndEmitCookie != NULL);
+                noway_assert(compiler->syncEndEmitCookie != nullptr);
                 break;
             default:
                 break;
@@ -6372,29 +6403,54 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
         else
         {
-            // We have already generated code for gtControlExpr evaluating it into a register.
-            // We just need to emit "call reg" in this case.
-            assert(genIsValidIntReg(target->GetRegNum()));
-
-            // For fast tailcalls this is happening in epilog, so we should
-            // have already consumed target in genCall.
-            if (!call->IsFastTailCall())
+            if (!compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (call->gtFlags & GTF_TLS_GET_ADDR) == 0)
             {
-                genConsumeReg(target);
-            }
+                // We have already generated code for gtControlExpr evaluating it into a register.
+                // We just need to emit "call reg" in this case.
+                assert(genIsValidIntReg(target->GetRegNum()));
 
-            // clang-format off
-            genEmitCall(emitter::EC_INDIR_R,
-                        methHnd,
-                        INDEBUG_LDISASM_COMMA(sigInfo)
-                        nullptr // addr
-                        X86_ARG(argSizeForEmitter),
-                        retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        di,
-                        target->GetRegNum(),
-                        call->IsFastTailCall());
-            // clang-format on
+                // For fast tailcalls this is happening in epilog, so we should
+                // have already consumed target in genCall.
+                if (!call->IsFastTailCall())
+                {
+                    genConsumeReg(target);
+                }
+
+                // clang-format off
+                genEmitCall(emitter::EC_INDIR_R,
+                            methHnd,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            nullptr // addr
+                            X86_ARG(argSizeForEmitter),
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            di,
+                            target->GetRegNum(),
+                            call->IsFastTailCall());
+                // clang-format on
+            }
+            else
+            {
+                GenTree* tlsGetAddr = (GenTree*)call->gtCallMethHnd;
+
+                // NativeAOT code needs special code sequence prefix of call so the
+                // linker will do the fixup and emit accurate TLS access information.
+                GetEmitter()->emitIns_Data16();
+                GetEmitter()->emitIns_Data16();
+
+                // clang-format off
+                genEmitCall(emitter::EC_FUNC_TOKEN,
+                            (CORINFO_METHOD_HANDLE)1,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            (void*)tlsGetAddr->AsIntCon()->gtIconVal // addr
+                            X86_ARG(argSizeForEmitter),
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            di,
+                            target->GetRegNum(),
+                            call->IsFastTailCall());
+                // clang-format on
+            }
         }
     }
     else
@@ -7445,7 +7501,7 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
         // is not available
 
         bool isRMW = !compiler->canUseVexEncoding();
-        inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW);
+        inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
     }
 
     genProduceReg(treeNode);
@@ -7557,7 +7613,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // is not available
 
     bool isRMW = !compiler->canUseVexEncoding();
-    inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW);
+    inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
 
     // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
     // will interpret ULONG value as LONG.  Hence we need to adjust the
@@ -8078,7 +8134,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             regNumber targetReg = treeNode->GetRegNum();
             bool      isRMW     = !compiler->canUseVexEncoding();
 
-            inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, targetReg, srcNode, isRMW);
+            inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, targetReg, srcNode, isRMW, INS_OPTS_NONE);
             break;
         }
 

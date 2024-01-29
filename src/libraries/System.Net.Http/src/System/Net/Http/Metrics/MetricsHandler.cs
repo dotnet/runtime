@@ -212,6 +212,7 @@ namespace System.Net.Http.Metrics
         private static object[]? s_boxedStatusCodes;
         private static string[]? s_statusCodeStrings;
 
+#pragma warning disable CA1859 // we explictly box here
         private static object GetBoxedStatusCode(int statusCode)
         {
             object[] boxes = LazyInitializer.EnsureInitialized(ref s_boxedStatusCodes, static () => new object[512]);
@@ -220,6 +221,7 @@ namespace System.Net.Http.Metrics
                 ? boxes[statusCode] ??= statusCode
                 : statusCode;
         }
+#pragma warning restore
 
         private static string GetErrorStatusCodeString(int statusCode)
         {

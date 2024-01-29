@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using Xunit;
 using Xunit.Sdk;
+
+// Tests specific to .NET Standard non-generic APIs
 
 namespace System.Numerics.Tensors.Tests
 {
@@ -35,6 +33,10 @@ namespace System.Numerics.Tensors.Tests
         protected override void Log(ReadOnlySpan<float> x, Span<float> destination) => TensorPrimitives.Log(x, destination);
         protected override float Log2(float x) => MathF.Log(x, 2);
         protected override void Log2(ReadOnlySpan<float> x, Span<float> destination) => TensorPrimitives.Log2(x, destination);
+        protected override int IndexOfMax(ReadOnlySpan<float> x) => TensorPrimitives.IndexOfMax(x);
+        protected override int IndexOfMaxMagnitude(ReadOnlySpan<float> x) => TensorPrimitives.IndexOfMaxMagnitude(x);
+        protected override int IndexOfMin(ReadOnlySpan<float> x) => TensorPrimitives.IndexOfMin(x);
+        protected override int IndexOfMinMagnitude(ReadOnlySpan<float> x) => TensorPrimitives.IndexOfMinMagnitude(x);
         protected override float Max(ReadOnlySpan<float> x) => TensorPrimitives.Max(x);
         protected override void Max(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) => TensorPrimitives.Max(x, y, destination);
         protected override float Max(float x, float y) => MathF.Max(x, y);
@@ -102,10 +104,10 @@ namespace System.Numerics.Tensors.Tests
 
         protected override float NextRandom() => (float)((Random.NextDouble() * 2) - 1); // For testing purposes, get a mix of negative and positive values.
 
-        protected override void AssertEqualTolerance(float expected, float actual) => AssertEqualTolerance(expected, actual, 0.0001f);
-
-        protected override void AssertEqualTolerance(float expected, float actual, float tolerance)
+        protected override void AssertEqualTolerance(float expected, float actual, float? tolerance = null)
         {
+            tolerance ??= 0.0001f;
+
             double diff = Math.Abs((double)expected - (double)actual);
             if (diff > tolerance && diff > Math.Max(Math.Abs(expected), Math.Abs(actual)) * tolerance)
             {
@@ -174,203 +176,5 @@ namespace System.Numerics.Tensors.Tests
         }
 
         private static unsafe float UInt32ToSingle(uint i) => *(float*)&i;
-
-        // TODO: Move these IndexOf tests to the base class once generic versions are implemented.
-        #region IndexOfMax
-        [Fact]
-        public void IndexOfMax_ReturnsNegative1OnEmpty()
-        {
-            Assert.Equal(-1, TensorPrimitives.IndexOfMax(ReadOnlySpan<float>.Empty));
-        }
-
-        [Fact]
-        public void IndexOfMax()
-        {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
-            {
-                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
-                {
-                    using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
-                    x[expected] = Enumerable.Max(MemoryMarshal.ToEnumerable<float>(x.Memory)) + 1;
-                    Assert.Equal(expected, TensorPrimitives.IndexOfMax(x));
-                }
-            });
-        }
-
-        [Fact]
-        public void IndexOfMax_FirstNaNReturned()
-        {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
-            {
-                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
-                {
-                    using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
-                    x[expected] = float.NaN;
-                    x[tensorLength - 1] = float.NaN;
-                    Assert.Equal(expected, TensorPrimitives.IndexOfMax(x));
-                }
-            });
-        }
-
-        [Fact]
-        public void IndexOfMax_Negative0LesserThanPositive0()
-        {
-            Assert.Equal(1, TensorPrimitives.IndexOfMax([-0f, +0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMax([-0f, -0f, -0f, -0f]));
-            Assert.Equal(4, TensorPrimitives.IndexOfMax([-0f, -0f, -0f, -0f, +0f, +0f, +0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMax([+0f, -0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMax([-1, -0f]));
-            Assert.Equal(2, TensorPrimitives.IndexOfMax([-1, -0f, 1]));
-        }
-        #endregion
-
-        #region IndexOfMaxMagnitude
-        [Fact]
-        public void IndexOfMaxMagnitude_ReturnsNegative1OnEmpty()
-        {
-            Assert.Equal(-1, TensorPrimitives.IndexOfMaxMagnitude(ReadOnlySpan<float>.Empty));
-        }
-
-        [Fact]
-        public void IndexOfMaxMagnitude()
-        {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
-            {
-                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
-                {
-                    using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
-                    x[expected] = Enumerable.Max(MemoryMarshal.ToEnumerable<float>(x.Memory), Math.Abs) + 1;
-                    Assert.Equal(expected, TensorPrimitives.IndexOfMaxMagnitude(x));
-                }
-            });
-        }
-
-        [Fact]
-        public void IndexOfMaxMagnitude_FirstNaNReturned()
-        {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
-            {
-                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
-                {
-                    using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
-                    x[expected] = float.NaN;
-                    x[tensorLength - 1] = float.NaN;
-                    Assert.Equal(expected, TensorPrimitives.IndexOfMaxMagnitude(x));
-                }
-            });
-        }
-
-        [Fact]
-        public void IndexOfMaxMagnitude_Negative0LesserThanPositive0()
-        {
-            Assert.Equal(0, TensorPrimitives.IndexOfMaxMagnitude([-0f, -0f, -0f, -0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMaxMagnitude([-0f, +0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMaxMagnitude([-0f, +0f, +0f, +0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMaxMagnitude([+0f, -0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMaxMagnitude([-1, -0f]));
-            Assert.Equal(2, TensorPrimitives.IndexOfMaxMagnitude([-1, -0f, 1]));
-        }
-        #endregion
-
-        #region IndexOfMin
-        [Fact]
-        public void IndexOfMin_ReturnsNegative1OnEmpty()
-        {
-            Assert.Equal(-1, TensorPrimitives.IndexOfMin(ReadOnlySpan<float>.Empty));
-        }
-
-        [Fact]
-        public void IndexOfMin()
-        {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
-            {
-                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
-                {
-                    using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
-                    x[expected] = Enumerable.Min(MemoryMarshal.ToEnumerable<float>(x.Memory)) - 1;
-                    Assert.Equal(expected, TensorPrimitives.IndexOfMin(x));
-                }
-            });
-        }
-
-        [Fact]
-        public void IndexOfMin_FirstNaNReturned()
-        {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
-            {
-                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
-                {
-                    using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
-                    x[expected] = float.NaN;
-                    x[tensorLength - 1] = float.NaN;
-                    Assert.Equal(expected, TensorPrimitives.IndexOfMin(x));
-                }
-            });
-        }
-
-        [Fact]
-        public void IndexOfMin_Negative0LesserThanPositive0()
-        {
-            Assert.Equal(0, TensorPrimitives.IndexOfMin([-0f, +0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMin([+0f, -0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMin([+0f, -0f, -0f, -0f, -0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMin([-1, -0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMin([-1, -0f, 1]));
-        }
-        #endregion
-
-        #region IndexOfMinMagnitude
-        [Fact]
-        public void IndexOfMinMagnitude_ReturnsNegative1OnEmpty()
-        {
-            Assert.Equal(-1, TensorPrimitives.IndexOfMinMagnitude(ReadOnlySpan<float>.Empty));
-        }
-
-        [Fact]
-        public void IndexOfMinMagnitude()
-        {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
-            {
-                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
-                {
-                    using BoundedMemory<float> x = CreateTensor(tensorLength);
-                    for (int i = 0; i < x.Length; i++)
-                    {
-                        x[i] = i % 2 == 0 ? 42 : -42;
-                    }
-
-                    x[expected] = -41;
-
-                    Assert.Equal(expected, TensorPrimitives.IndexOfMinMagnitude(x));
-                }
-            });
-        }
-
-        [Fact]
-        public void IndexOfMinMagnitude_FirstNaNReturned()
-        {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
-            {
-                foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
-                {
-                    using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
-                    x[expected] = float.NaN;
-                    x[tensorLength - 1] = float.NaN;
-                    Assert.Equal(expected, TensorPrimitives.IndexOfMinMagnitude(x));
-                }
-            });
-        }
-
-        [Fact]
-        public void IndexOfMinMagnitude_Negative0LesserThanPositive0()
-        {
-            Assert.Equal(0, TensorPrimitives.IndexOfMinMagnitude([-0f, -0f, -0f, -0f]));
-            Assert.Equal(0, TensorPrimitives.IndexOfMinMagnitude([-0f, +0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([+0f, -0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([+0f, -0f, -0f, -0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([-1, -0f]));
-            Assert.Equal(1, TensorPrimitives.IndexOfMinMagnitude([-1, -0f, 1]));
-        }
-        #endregion
     }
 }

@@ -477,12 +477,13 @@ mono_threads_wasm_ui_thread_tid (void)
 }
 
 #ifndef DISABLE_THREADS
-extern void mono_wasm_pthread_on_pthread_attached (MonoNativeThreadId pthread_id);
-extern void mono_wasm_pthread_on_pthread_detached (MonoNativeThreadId pthread_id);
+extern void mono_wasm_pthread_on_pthread_attached (MonoNativeThreadId pthread_id, const char* thread_name, gboolean background_thread, gboolean threadpool_thread, gboolean external_eventloop, gboolean debugger_thread);
+extern void mono_wasm_pthread_on_pthread_unregistered (MonoNativeThreadId pthread_id);
+extern void mono_wasm_pthread_on_pthread_registered (MonoNativeThreadId pthread_id);
 #endif
 
 void
-mono_threads_wasm_on_thread_attached (void)
+mono_threads_wasm_on_thread_attached (pthread_t tid, const char* thread_name, gboolean background_thread, gboolean threadpool_thread, gboolean external_eventloop, gboolean debugger_thread)
 {
 #ifdef DISABLE_THREADS
 	return;
@@ -493,16 +494,16 @@ mono_threads_wasm_on_thread_attached (void)
 		// g_assert(!mono_threads_wasm_is_ui_thread ());
 		return;
 	}
+
 	// Notify JS that the pthread attached to Mono
-	pthread_t id = pthread_self ();
 	MONO_ENTER_GC_SAFE;
-	mono_wasm_pthread_on_pthread_attached (id);
+	mono_wasm_pthread_on_pthread_attached (tid, thread_name, background_thread, threadpool_thread, external_eventloop, debugger_thread);
 	MONO_EXIT_GC_SAFE;
 #endif
 }
 
 void
-mono_threads_wasm_on_thread_detached (void)
+mono_threads_wasm_on_thread_unregistered (void)
 {
 #ifdef DISABLE_THREADS
 	return;
@@ -513,7 +514,23 @@ mono_threads_wasm_on_thread_detached (void)
 	// Notify JS that the pthread detached from Mono
 	pthread_t id = pthread_self ();
 
-	mono_wasm_pthread_on_pthread_detached (id);
+	mono_wasm_pthread_on_pthread_unregistered (id);
+#endif
+}
+
+void
+mono_threads_wasm_on_thread_registered (void)
+{
+#ifdef DISABLE_THREADS
+	return;
+#else
+	if (mono_threads_wasm_is_ui_thread ()) {
+		return;
+	}
+	// Notify JS that the pthread registered to Mono
+	pthread_t id = pthread_self ();
+
+	mono_wasm_pthread_on_pthread_registered (id);
 #endif
 }
 
