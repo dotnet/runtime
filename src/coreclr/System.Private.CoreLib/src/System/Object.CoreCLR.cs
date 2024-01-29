@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -15,25 +14,10 @@ namespace System
         {
             // Throws NullReferenceException as expected
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
-
-            Type? type = GetTypeIfExists(pMT);
-
-            if (type is not null)
-                return type;
-
-            GetTypeHelper(pMT, ObjectHandleOnStack.Create(ref type));
-
-            Debug.Assert(type is not null);
+            Type type = Type.GetTypeFromHandleUnsafe((IntPtr)pMT);
             GC.KeepAlive(this);
-
             return type;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe Type? GetTypeIfExists(MethodTable* pMT);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetClassHelper")]
-        private static unsafe partial void GetTypeHelper(MethodTable* pMT, ObjectHandleOnStack ret);
 
         // Returns a new object instance that is a memberwise copy of this
         // object.  This is always a shallow copy of the instance. The method is protected
