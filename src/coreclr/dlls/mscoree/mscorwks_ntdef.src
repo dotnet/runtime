@@ -48,15 +48,12 @@ EXPORTS
         mono_class_get_userdata_offset
         mono_class_instance_size
         mono_class_set_userdata
-        mono_debug_free_source_location
-        mono_debug_lookup_source_location
         mono_debugger_install_attach_detach_callback
         mono_debugger_set_generate_debug_info
         mono_field_get_name
         mono_field_get_offset
         mono_field_get_parent
         mono_image_get_table_rows
-        mono_jit_info_table_find
         coreclr_initialize_domain
         mono_metadata_signature_equal
         mono_metadata_type_equal
@@ -85,7 +82,6 @@ EXPORTS
         mono_unity_g_free
         mono_unity_gc_handles_foreach_get_target
         mono_unity_loader_get_last_error_and_error_prepare_exception
-        mono_unity_managed_callstack
         mono_unity_set_vprintf_func
         mono_unity_type_get_name_full_chunked
         unity_coreclr_create_delegate

@@ -350,16 +350,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_class_set_userdata(MonoClass* klass, v
     ((MonoClass_clr*)klass)->m_pUserData = userdata;
 }
 
-extern "C" EXPORT_API void EXPORT_CC mono_debug_free_source_location(MonoDebugSourceLocation* location)
-{
-}
-
-extern "C" EXPORT_API MonoDebugSourceLocation* EXPORT_CC mono_debug_lookup_source_location(MonoMethod* method, guint32 address, MonoDomain* domain)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return NULL;
-}
-
 typedef void (*MonoDebuggerAttachFunc)(gboolean attached);
 extern "C" EXPORT_API void EXPORT_CC mono_debugger_install_attach_detach_callback (MonoDebuggerAttachFunc func)
 {
@@ -490,12 +480,6 @@ extern "C" EXPORT_API void EXPORT_CC coreclr_image_get_custom_attribute_data(Mon
 
     mdImport->GetCustomAttributeProps(token, type_token);
     mdImport->GetParentToken(token, parent_type_token);
-}
-
-extern "C" EXPORT_API MonoJitInfo* EXPORT_CC mono_jit_info_table_find(MonoDomain* domain, void* ip)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return NULL;
 }
 
 typedef int32_t (*initialize_scripting_runtime_func)();
@@ -1105,12 +1089,6 @@ extern "C" EXPORT_API MonoException* EXPORT_CC mono_unity_loader_get_last_error_
 {
     //ASSERT_NOT_IMPLEMENTED;
     return NULL;
-}
-
-extern "C" EXPORT_API int EXPORT_CC mono_unity_managed_callstack(unsigned char* buffer, int bufferSize, const MonoUnityCallstackOptions * opts)
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return 0;
 }
 
 extern "C" EXPORT_API void EXPORT_CC mono_unity_set_vprintf_func(vprintf_func func)
