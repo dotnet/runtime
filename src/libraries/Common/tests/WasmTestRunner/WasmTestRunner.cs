@@ -65,7 +65,7 @@ public class WasmTestRunner : WasmApplicationEntryPoint
             }
         }
 
-        var runner = new SimpleWasmTestRunner()
+        var runner = new WasmTestRunner()
         {
             TestAssembly = testAssembly,
             ExcludedTraits = excludedTraits,
