@@ -3092,8 +3092,8 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
             GenTreeHWIntrinsic* parent = destParent->AsHWIntrinsic();
             GenTreeVecCon*      vecCon = value->AsVecCon();
 
-            NamedIntrinsic      intrinsicId  = parent->GetHWIntrinsicId();
-            var_types           simdBaseType = parent->GetSimdBaseType();
+            NamedIntrinsic intrinsicId  = parent->GetHWIntrinsicId();
+            var_types      simdBaseType = parent->GetSimdBaseType();
 
             if (!HWIntrinsicInfo::CanBenefitFromConstantProp(intrinsicId))
             {
