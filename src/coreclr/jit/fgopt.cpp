@@ -3491,7 +3491,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         }
     }
 
-    // If we will be reordering blocks, re-establish implicit fallthrough for BBJ_COND blocks
+    // If we will be reordering blocks, ensure the false target of a BBJ_COND block is its next block
     if (useProfile)
     {
         for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
