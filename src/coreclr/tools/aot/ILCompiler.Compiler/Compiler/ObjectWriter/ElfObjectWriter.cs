@@ -487,7 +487,6 @@ namespace ILCompiler.ObjectWriter
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
                 nodeWithCodeInfo is ISymbolDefinitionNode)
             {
-                bool shareSymbol = ShouldShareSymbol((ObjectNode)nodeWithCodeInfo);
                 SectionWriter exidxSectionWriter;
                 SectionWriter extabSectionWriter;
 
