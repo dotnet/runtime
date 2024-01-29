@@ -145,14 +145,6 @@ namespace Internal.Runtime.Augments
             return d.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out isOpenResolver, out isInterpreterEntrypoint);
         }
 
-        public static void GetDelegateData(Delegate delegateObj, out object firstParameter, out object helperObject, out IntPtr extraFunctionPointerOrData, out IntPtr functionPointer)
-        {
-            firstParameter = delegateObj.m_firstParameter;
-            helperObject = delegateObj.m_helperObject;
-            extraFunctionPointerOrData = delegateObj.m_extraFunctionPointerOrData;
-            functionPointer = delegateObj.m_functionPointer;
-        }
-
         // Low level method that returns the loaded modules as array. ReadOnlySpan returning overload
         // cannot be used early during startup.
         public static int GetLoadedModules(TypeManagerHandle[] resultArray)
@@ -195,11 +187,6 @@ namespace Internal.Runtime.Augments
             RuntimeImports.RhUnbox(fieldValue, ref *(byte*)address, fieldType.ToMethodTable());
         }
 
-        public static unsafe ref byte GetRawData(object obj)
-        {
-            return ref obj.GetRawData();
-        }
-
         public static unsafe object LoadValueTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
             return RuntimeImports.RhBox(fieldType.ToMethodTable(), ref *(byte*)address);
@@ -208,11 +195,6 @@ namespace Internal.Runtime.Augments
         public static unsafe object LoadPointerTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
             return ReflectionPointer.Box(*(void**)address, Type.GetTypeFromHandle(fieldType));
-        }
-
-        public static unsafe void StoreValueTypeField(ref byte address, object fieldValue, RuntimeTypeHandle fieldType)
-        {
-            RuntimeImports.RhUnbox(fieldValue, ref address, fieldType.ToMethodTable());
         }
 
         public static unsafe void StoreValueTypeField(object obj, int fieldOffset, object fieldValue, RuntimeTypeHandle fieldType)
@@ -376,13 +358,6 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhBox(type.ToMethodTable(), ref *(byte*)address);
         }
 
-        // Used to mutate the first parameter in a closed static delegate.  Note that this does no synchronization of any kind;
-        // use only on delegate instances you're sure nobody else is using.
-        public static void SetClosedStaticDelegateFirstParameter(Delegate del, object firstParameter)
-        {
-            del.SetClosedStaticFirstParameter(firstParameter);
-        }
-
         //==============================================================================================
         // Execution engine policies.
         //==============================================================================================
@@ -510,11 +485,6 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToMethodTable()->HasCctor;
         }
 
-        public static IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
-        {
-            return RuntimeImports.RhResolveDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot));
-        }
-
         public static unsafe IntPtr ResolveStaticDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot, out RuntimeTypeHandle genericContext)
         {
             MethodTable* genericContextPtr = default;
@@ -524,11 +494,6 @@ namespace Internal.Runtime.Augments
             else
                 genericContext = default;
             return result;
-        }
-
-        public static IntPtr ResolveDispatch(object instance, RuntimeTypeHandle interfaceType, int slot)
-        {
-            return RuntimeImports.RhResolveDispatch(instance, interfaceType.ToMethodTable(), checked((ushort)slot));
         }
 
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
@@ -586,32 +551,6 @@ namespace Internal.Runtime.Augments
         public static bool IsGenericTypeDefinition(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToMethodTable()->IsGenericTypeDefinition;
-        }
-
-        //
-        // This implements the equivalent of the desktop's InvokeUtil::CanPrimitiveWiden() routine.
-        //
-        public static bool CanPrimitiveWiden(RuntimeTypeHandle srcType, RuntimeTypeHandle dstType)
-        {
-            MethodTable* srcEEType = srcType.ToMethodTable();
-            MethodTable* dstEEType = dstType.ToMethodTable();
-
-            if (srcEEType->IsGenericTypeDefinition || dstEEType->IsGenericTypeDefinition)
-                return false;
-            if (srcEEType->IsPointer || dstEEType->IsPointer)
-                return false;
-            if (srcEEType->IsFunctionPointer || dstEEType->IsFunctionPointer)
-                return false;
-            if (srcEEType->IsByRef || dstEEType->IsByRef)
-                return false;
-
-            if (!srcEEType->IsPrimitive)
-                return false;
-            if (!dstEEType->IsPrimitive)
-                return false;
-            if (!new EETypePtr(srcEEType).CorElementTypeInfo.CanWidenTo(new EETypePtr(dstEEType).CorElementType))
-                return false;
-            return true;
         }
 
         public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle? binderBundle)
@@ -686,14 +625,6 @@ namespace Internal.Runtime.Augments
         // Internals
         //==============================================================================================
 
-        internal static TypeLoaderCallbacks TypeLoaderCallbacksIfAvailable
-        {
-            get
-            {
-                return s_typeLoaderCallbacks;
-            }
-        }
-
         internal static TypeLoaderCallbacks TypeLoaderCallbacks
         {
             get
@@ -758,16 +689,6 @@ namespace Internal.Runtime.Augments
             return ((ThunksHeap)thunksHeap).TryGetThunkData(thunkAddress, out context, out target);
         }
 
-        public static int GetThunkSize()
-        {
-            return RuntimeImports.RhpGetThunkSize();
-        }
-
-        public static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> invoker)
-        {
-            return Delegate.CreateObjectArrayDelegate(delegateType, invoker);
-        }
-
         public static IntPtr RhHandleAlloc(object value, GCHandleType type)
         {
             return RuntimeImports.RhHandleAlloc(value, type);
@@ -776,30 +697,6 @@ namespace Internal.Runtime.Augments
         public static void RhHandleFree(IntPtr handle)
         {
             RuntimeImports.RhHandleFree(handle);
-        }
-
-        public static IntPtr RhpGetCurrentThread()
-        {
-            return RuntimeImports.RhpGetCurrentThread();
-        }
-
-        public static void RhpInitiateThreadAbort(IntPtr thread, bool rude)
-        {
-            Exception ex = new ThreadAbortException();
-            RuntimeImports.RhpInitiateThreadAbort(thread, ex, rude);
-        }
-
-        public static void RhpCancelThreadAbort(IntPtr thread)
-        {
-            RuntimeImports.RhpCancelThreadAbort(thread);
-        }
-
-        public static bool SupportsRelativePointers
-        {
-            get
-            {
-                return Internal.Runtime.MethodTable.SupportsRelativePointers;
-            }
         }
     }
 }

@@ -571,28 +571,31 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         newFirstStmt = newFirstStmt->GetNextStmt();
     }
 
+#ifdef TARGET_64BIT
+    // prevBb (BBJ_NONE):                                               [weight: 1.0]
+    //      ...
+    //
+    // tlsRootNullCondBB (BBJ_COND):                                    [weight: 1.0]
+    //      fastPathValue = [tlsRootAddress]
+    //      if (fastPathValue != nullptr)
+    //          goto fastPathBb;
+    //
+    // fallbackBb (BBJ_ALWAYS):                                         [weight: 0]
+    //      tlsRoot = HelperCall();
+    //      goto block;
+    //
+    // fastPathBb(BBJ_ALWAYS):                                          [weight: 1.0]
+    //      tlsRoot = fastPathValue;
+    //
+    // block (...):                                                     [weight: 1.0]
+    //      use(tlsRoot);
+    // ...
+
+    GenTree*             tlsRootAddr   = nullptr;
+    CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
+
     if (TargetOS::IsWindows)
     {
-#ifdef TARGET_64BIT
-        // prevBb (BBJ_NONE):                                               [weight: 1.0]
-        //      ...
-        //
-        // tlsRootNullCondBB (BBJ_COND):                                    [weight: 1.0]
-        //      fastPathValue = [tlsRootAddress]
-        //      if (fastPathValue != nullptr)
-        //          goto fastPathBb;
-        //
-        // fallbackBb (BBJ_ALWAYS):                                         [weight: 0]
-        //      tlsRoot = HelperCall();
-        //      goto block;
-        //
-        // fastPathBb(BBJ_ALWAYS):                                          [weight: 1.0]
-        //      tlsRoot = fastPathValue;
-        //
-        // block (...):                                                     [weight: 1.0]
-        //      use(tlsRoot);
-        // ...
-
         // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
         GenTree* tlsValue = gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
         tlsValue          = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
@@ -609,100 +612,128 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         // Base of coreclr's thread local storage
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-        CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
-
         // This resolves to an offset which is TYP_INT
         GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject.handle, TYP_INT);
         tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET;
 
         // Add the tlsValue and tlsRootOffset to produce tlsRootAddr.
-        GenTree* tlsRootAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, tlsRootOffset);
-
-        // Cache the TlsRootAddr value
-        unsigned tlsRootAddrLclNum         = lvaGrabTemp(true DEBUGARG("TlsRootAddr access"));
-        lvaTable[tlsRootAddrLclNum].lvType = TYP_I_IMPL;
-        GenTree* tlsRootAddrDef            = gtNewStoreLclVarNode(tlsRootAddrLclNum, tlsRootAddr);
-        GenTree* tlsRootAddrUse            = gtNewLclVarNode(tlsRootAddrLclNum);
-
-        // See comments near finalLclNum above regarding TYP_REF
-        GenTree* tlsRootVal = gtNewIndir(TYP_REF, tlsRootAddrUse, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-
-        GenTree* tlsRootDef = gtNewStoreLclVarNode(finalLclNum, tlsRootVal);
-
-        GenTree* tlsRootNullCond = gtNewOperNode(GT_NE, TYP_INT, gtCloneExpr(finalLcl), gtNewIconNode(0, TYP_I_IMPL));
-        tlsRootNullCond          = gtNewOperNode(GT_JTRUE, TYP_VOID, tlsRootNullCond);
-
-        // tlsRootNullCondBB
-        BasicBlock* tlsRootNullCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsRootAddrDef, debugInfo);
-        fgInsertStmtAfter(tlsRootNullCondBB, tlsRootNullCondBB->firstStmt(), fgNewStmtFromTree(tlsRootNullCond));
-        fgInsertStmtAfter(tlsRootNullCondBB, tlsRootNullCondBB->firstStmt(), fgNewStmtFromTree(tlsRootDef));
-
-        CORINFO_CONST_LOOKUP threadStaticSlowHelper = threadStaticInfo.threadStaticBaseSlow;
-
-        // See comments near finalLclNum above regarding TYP_REF
-        GenTreeCall* slowHelper =
-            gtNewIndCallNode(gtNewIconHandleNode((size_t)threadStaticSlowHelper.addr, GTF_ICON_TLS_HDL), TYP_REF);
-        GenTree* helperArg = gtClone(tlsRootAddrUse);
-        slowHelper->gtArgs.PushBack(this, NewCallArg::Primitive(helperArg));
-        fgMorphArgs(slowHelper);
-
-        // fallbackBb
-        GenTree*    fallbackValueDef = gtNewStoreLclVarNode(finalLclNum, slowHelper);
-        BasicBlock* fallbackBb =
-            fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, block, true);
-
-        GenTree*    fastPathValueDef = gtNewStoreLclVarNode(finalLclNum, gtCloneExpr(finalLcl));
-        BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
-
-        *callUse = finalLcl;
-
-        fgMorphStmtBlockOps(block, stmt);
-        gtUpdateStmtSideEffects(stmt);
-
+        tlsRootAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, tlsRootOffset);
+    }
+    else if (TargetOS::IsUnix)
+    {
+        // Code sequence to access thread local variable on linux/x64:
+        //      data16
+        //      lea      rdi, 0x7FE5C418CD28  ; tlsRootObject
+        //      data16 data16
+        //      call     _tls_get_addr
         //
-        // Update preds in all new blocks
-        //
-        fgAddRefPred(fallbackBb, tlsRootNullCondBB);
-        fgAddRefPred(fastPathBb, tlsRootNullCondBB);
+        // This sequence along with `data16` prefix is expected by the linker so it
+        // will patch these with TLS access.
+        GenTree* tls_get_addr_val =
+            gtNewIconHandleNode((size_t)threadStaticInfo.tlsGetAddrFtnPtr.handle, GTF_ICON_FTN_ADDR);
+        tls_get_addr_val->SetContained();
 
-        fgAddRefPred(block, fallbackBb);
-        fgAddRefPred(block, fastPathBb);
+        // GenTreeCall* tlsRefCall = gtNewCallNode(CT_ tls_get_addr_val, TYP_I_IMPL);
+        GenTreeCall* tlsRefCall = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+        tlsRefCall->gtFlags |= GTF_TLS_GET_ADDR;
+        // //
 
-        tlsRootNullCondBB->SetTrueTarget(fastPathBb);
-        tlsRootNullCondBB->SetFalseTarget(fallbackBb);
+        // This is an indirect call which takes an argument.
+        // Populate and set the ABI appropriately.
+        assert(tlsRootObject.handle != 0);
+        GenTree* tlsArg = gtNewIconNode((size_t)tlsRootObject.handle, TYP_I_IMPL);
+        tlsArg->gtFlags |= GTF_ICON_TLSGD_OFFSET;
+        tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
 
-        // Inherit the weights
-        block->inheritWeight(prevBb);
-        tlsRootNullCondBB->inheritWeight(prevBb);
-        fastPathBb->inheritWeight(prevBb);
+        fgMorphArgs(tlsRefCall);
 
-        // fallback will just execute first time
-        fallbackBb->bbSetRunRarely();
-
-        fgRemoveRefPred(block, prevBb);
-        fgAddRefPred(tlsRootNullCondBB, prevBb);
-        prevBb->SetTarget(tlsRootNullCondBB);
-
-        // All blocks are expected to be in the same EH region
-        assert(BasicBlock::sameEHRegion(prevBb, block));
-        assert(BasicBlock::sameEHRegion(prevBb, tlsRootNullCondBB));
-        assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
-
-        JITDUMP("tlsRootNullCondBB: " FMT_BB "\n", tlsRootNullCondBB->bbNum);
-        JITDUMP("fallbackBb: " FMT_BB "\n", fallbackBb->bbNum);
-        JITDUMP("fastPathBb: " FMT_BB "\n", fastPathBb->bbNum);
-#else
-        unreached();
-
-#endif // TARGET_64BIT
-
-        return true;
+        tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
+        tlsRootAddr = tlsRefCall;
     }
     else
     {
         unreached();
     }
-    return false;
+
+    // Cache the TlsRootAddr value
+    unsigned tlsRootAddrLclNum         = lvaGrabTemp(true DEBUGARG("TlsRootAddr access"));
+    lvaTable[tlsRootAddrLclNum].lvType = TYP_I_IMPL;
+    GenTree* tlsRootAddrDef            = gtNewStoreLclVarNode(tlsRootAddrLclNum, tlsRootAddr);
+    GenTree* tlsRootAddrUse            = gtNewLclVarNode(tlsRootAddrLclNum);
+
+    // See comments near finalLclNum above regarding TYP_REF
+    GenTree* tlsRootVal = gtNewIndir(TYP_REF, tlsRootAddrUse, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+    GenTree* tlsRootDef = gtNewStoreLclVarNode(finalLclNum, tlsRootVal);
+
+    GenTree* tlsRootNullCond = gtNewOperNode(GT_NE, TYP_INT, gtCloneExpr(finalLcl), gtNewIconNode(0, TYP_I_IMPL));
+    tlsRootNullCond          = gtNewOperNode(GT_JTRUE, TYP_VOID, tlsRootNullCond);
+
+    // tlsRootNullCondBB
+    BasicBlock* tlsRootNullCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsRootAddrDef, debugInfo);
+    fgInsertStmtAfter(tlsRootNullCondBB, tlsRootNullCondBB->firstStmt(), fgNewStmtFromTree(tlsRootNullCond));
+    fgInsertStmtAfter(tlsRootNullCondBB, tlsRootNullCondBB->firstStmt(), fgNewStmtFromTree(tlsRootDef));
+
+    CORINFO_CONST_LOOKUP threadStaticSlowHelper = threadStaticInfo.threadStaticBaseSlow;
+
+    // See comments near finalLclNum above regarding TYP_REF
+    GenTreeCall* slowHelper =
+        gtNewIndCallNode(gtNewIconHandleNode((size_t)threadStaticSlowHelper.addr, GTF_ICON_TLS_HDL), TYP_REF);
+    GenTree* helperArg = gtClone(tlsRootAddrUse);
+    slowHelper->gtArgs.PushBack(this, NewCallArg::Primitive(helperArg));
+    fgMorphArgs(slowHelper);
+
+    // fallbackBb
+    GenTree*    fallbackValueDef = gtNewStoreLclVarNode(finalLclNum, slowHelper);
+    BasicBlock* fallbackBb =
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, block, true);
+
+    GenTree*    fastPathValueDef = gtNewStoreLclVarNode(finalLclNum, gtCloneExpr(finalLcl));
+    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
+
+    *callUse = finalLcl;
+
+    fgMorphStmtBlockOps(block, stmt);
+    gtUpdateStmtSideEffects(stmt);
+
+    //
+    // Update preds in all new blocks
+    //
+    fgAddRefPred(fallbackBb, tlsRootNullCondBB);
+    fgAddRefPred(fastPathBb, tlsRootNullCondBB);
+
+    fgAddRefPred(block, fallbackBb);
+    fgAddRefPred(block, fastPathBb);
+
+    tlsRootNullCondBB->SetTrueTarget(fastPathBb);
+    tlsRootNullCondBB->SetFalseTarget(fallbackBb);
+
+    // Inherit the weights
+    block->inheritWeight(prevBb);
+    tlsRootNullCondBB->inheritWeight(prevBb);
+    fastPathBb->inheritWeight(prevBb);
+
+    // fallback will just execute first time
+    fallbackBb->bbSetRunRarely();
+
+    fgRemoveRefPred(block, prevBb);
+    fgAddRefPred(tlsRootNullCondBB, prevBb);
+    prevBb->SetTarget(tlsRootNullCondBB);
+
+    // All blocks are expected to be in the same EH region
+    assert(BasicBlock::sameEHRegion(prevBb, block));
+    assert(BasicBlock::sameEHRegion(prevBb, tlsRootNullCondBB));
+    assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
+
+    JITDUMP("tlsRootNullCondBB: " FMT_BB "\n", tlsRootNullCondBB->bbNum);
+    JITDUMP("fallbackBb: " FMT_BB "\n", fallbackBb->bbNum);
+    JITDUMP("fastPathBb: " FMT_BB "\n", fastPathBb->bbNum);
+#else
+    unreached();
+
+#endif // TARGET_64BIT
+
+    return true;
 }
 
 //------------------------------------------------------------------------------

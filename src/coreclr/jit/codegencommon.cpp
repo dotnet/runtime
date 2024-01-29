@@ -1688,6 +1688,8 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
         printf("*************** In genGenerateCode()\n");
         compiler->fgDispBasicBlocks(compiler->verboseTrees);
     }
+
+    genWriteBarrierUsed = false;
 #endif
 
     this->codePtr          = codePtr;
@@ -1696,6 +1698,17 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     DoPhase(this, PHASE_GENERATE_CODE, &CodeGen::genGenerateMachineCode);
     DoPhase(this, PHASE_EMIT_CODE, &CodeGen::genEmitMachineCode);
     DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);
+
+#ifdef DEBUG
+    if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries())
+    {
+        void* ignored;
+        for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_ASSIGN_STRUCT; i++)
+        {
+            compiler->compGetHelperFtn((CorInfoHelpFunc)i, &ignored);
+        }
+    }
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -2693,6 +2706,8 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTreeStoreInd* store)
 //
 CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf)
 {
+    INDEBUG(genWriteBarrierUsed = true);
+
     switch (wbf)
     {
         case GCInfo::WBF_BarrierChecked:

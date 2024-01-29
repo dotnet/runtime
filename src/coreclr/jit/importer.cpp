@@ -10291,8 +10291,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
 #endif
 
-                    op1 = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
-                    op1->gtFlags |= indirFlags;
+                    op1 = gtNewStoreDynBlkNode(op1, op2, op3, indirFlags);
                 }
                 goto SPILL_APPEND;
             }
