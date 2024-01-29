@@ -175,6 +175,8 @@ echo pushd $EXECUTION_DIR
 echo popd
 echo ===========================================================================================================
 pushd $EXECUTION_DIR
+# just for testing temporarily
+sudo dmesg | tail -50
 [[RunCommands]]
 test_exitcode=$?
 if [[ -s testResults.xml ]]; then
@@ -228,7 +230,7 @@ fi
 if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
   # For abrupt failures, in Helix, dump some of the kernel log, in case there is a hint
   if [[ $test_exitcode -ne 1 ]]; then
-    dmesg | tail -50
+    sudo dmesg | tail -50
   fi
 
 fi
