@@ -4585,11 +4585,11 @@ public:
 
     bool IsMismatchedArgType() const
     {
-#ifdef TARGET_RISCV64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         return isValidIntArgReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
 #else
         return false;
-#endif // TARGET_RISCV64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 
     void SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa);
