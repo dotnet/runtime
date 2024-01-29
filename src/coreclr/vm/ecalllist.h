@@ -60,7 +60,7 @@ FCFuncStart(gEnumFuncs)
 FCFuncEnd()
 
 FCFuncStart(gObjectFuncs)
-    FCFuncElement("GetType", ObjectNative::GetClass)
+    FCFuncElement("GetTypeIfExists", ObjectNative::GetClassIfExists)
 FCFuncEnd()
 
 FCFuncStart(gStringFuncs)
