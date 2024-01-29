@@ -2410,7 +2410,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftLeft<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T> =>
+            where T : IShiftOperators<T, int, T> =>
             InvokeSpanIntoSpan(x, new ShiftLeftOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise arithmetic (signed) shifting right of numbers in the specified tensor by the specified shift amount.</summary>
@@ -2425,7 +2425,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftRightArithmetic<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T> =>
+            where T : IShiftOperators<T, int, T> =>
             InvokeSpanIntoSpan(x, new ShiftRightArithmeticOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise logical (unsigned) shifting right of numbers in the specified tensor by the specified shift amount.</summary>
@@ -2440,7 +2440,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftRightLogical<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T> =>
+            where T : IShiftOperators<T, int, T> =>
             InvokeSpanIntoSpan(x, new ShiftRightLogicalOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise sigmoid function on the specified non-empty tensor of numbers.</summary>

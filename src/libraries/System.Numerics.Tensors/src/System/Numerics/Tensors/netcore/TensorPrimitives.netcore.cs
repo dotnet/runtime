@@ -14856,128 +14856,42 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>T &lt;&lt; amount</summary>
-        internal readonly struct ShiftLeftOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IBinaryInteger<T>
+        internal readonly struct ShiftLeftOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
         {
             private readonly int _amount = amount;
 
             public static bool Vectorizable => true;
 
             public T Invoke(T x) => x << _amount;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector128<T> Invoke(Vector128<T> x)
-            {
-                if (sizeof(T) == 1) return Vector128.ShiftLeft(x.AsByte(), _amount).As<byte, T>();
-                if (sizeof(T) == 2) return Vector128.ShiftLeft(x.AsUInt16(), _amount).As<ushort, T>();
-                if (sizeof(T) == 4) return Vector128.ShiftLeft(x.AsUInt32(), _amount).As<uint, T>();
-                if (sizeof(T) == 8) return Vector128.ShiftLeft(x.AsUInt64(), _amount).As<ulong, T>();
-                throw new NotSupportedException();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector256<T> Invoke(Vector256<T> x)
-            {
-                if (sizeof(T) == 1) return Vector256.ShiftLeft(x.AsByte(), _amount).As<byte, T>();
-                if (sizeof(T) == 2) return Vector256.ShiftLeft(x.AsUInt16(), _amount).As<ushort, T>();
-                if (sizeof(T) == 4) return Vector256.ShiftLeft(x.AsUInt32(), _amount).As<uint, T>();
-                if (sizeof(T) == 8) return Vector256.ShiftLeft(x.AsUInt64(), _amount).As<ulong, T>();
-                throw new NotSupportedException();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector512<T> Invoke(Vector512<T> x)
-            {
-                if (sizeof(T) == 1) return Vector512.ShiftLeft(x.AsByte(), _amount).As<byte, T>();
-                if (sizeof(T) == 2) return Vector512.ShiftLeft(x.AsUInt16(), _amount).As<ushort, T>();
-                if (sizeof(T) == 4) return Vector512.ShiftLeft(x.AsUInt32(), _amount).As<uint, T>();
-                if (sizeof(T) == 8) return Vector512.ShiftLeft(x.AsUInt64(), _amount).As<ulong, T>();
-                throw new NotSupportedException();
-            }
+            public Vector128<T> Invoke(Vector128<T> x) => x << _amount;
+            public Vector256<T> Invoke(Vector256<T> x) => x << _amount;
+            public Vector512<T> Invoke(Vector512<T> x) => x << _amount;
         }
 
         /// <summary>T &gt;&gt; amount</summary>
-        internal readonly struct ShiftRightArithmeticOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IBinaryInteger<T>
+        internal readonly struct ShiftRightArithmeticOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
         {
             private readonly int _amount = amount;
 
-            public static bool Vectorizable =>
-                typeof(T) == typeof(sbyte) ||
-                typeof(T) == typeof(short) ||
-                typeof(T) == typeof(int) ||
-                typeof(T) == typeof(long) ||
-                typeof(T) == typeof(nint);
+            public static bool Vectorizable => true;
 
             public T Invoke(T x) => x >> _amount;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector128<T> Invoke(Vector128<T> x)
-            {
-                if (sizeof(T) == 1) return Vector128.ShiftRightArithmetic(x.AsSByte(), _amount).As<sbyte, T>();
-                if (sizeof(T) == 2) return Vector128.ShiftRightArithmetic(x.AsInt16(), _amount).As<short, T>();
-                if (sizeof(T) == 4) return Vector128.ShiftRightArithmetic(x.AsInt32(), _amount).As<int, T>();
-                if (sizeof(T) == 8) return Vector128.ShiftRightArithmetic(x.AsInt64(), _amount).As<long, T>();
-                throw new NotSupportedException();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector256<T> Invoke(Vector256<T> x)
-            {
-                if (sizeof(T) == 1) return Vector256.ShiftRightArithmetic(x.AsSByte(), _amount).As<sbyte, T>();
-                if (sizeof(T) == 2) return Vector256.ShiftRightArithmetic(x.AsInt16(), _amount).As<short, T>();
-                if (sizeof(T) == 4) return Vector256.ShiftRightArithmetic(x.AsInt32(), _amount).As<int, T>();
-                if (sizeof(T) == 8) return Vector256.ShiftRightArithmetic(x.AsInt64(), _amount).As<long, T>();
-                throw new NotSupportedException();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector512<T> Invoke(Vector512<T> x)
-            {
-                if (sizeof(T) == 1) return Vector512.ShiftRightArithmetic(x.AsSByte(), _amount).As<sbyte, T>();
-                if (sizeof(T) == 2) return Vector512.ShiftRightArithmetic(x.AsInt16(), _amount).As<short, T>();
-                if (sizeof(T) == 4) return Vector512.ShiftRightArithmetic(x.AsInt32(), _amount).As<int, T>();
-                if (sizeof(T) == 8) return Vector512.ShiftRightArithmetic(x.AsInt64(), _amount).As<long, T>();
-                throw new NotSupportedException();
-            }
+            public Vector128<T> Invoke(Vector128<T> x) => x >> _amount;
+            public Vector256<T> Invoke(Vector256<T> x) => x >> _amount;
+            public Vector512<T> Invoke(Vector512<T> x) => x >> _amount;
         }
 
         /// <summary>T &gt;&gt;&gt; amount</summary>
-        internal readonly struct ShiftRightLogicalOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IBinaryInteger<T>
+        internal readonly struct ShiftRightLogicalOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
         {
             private readonly int _amount = amount;
 
             public static bool Vectorizable => true;
 
             public T Invoke(T x) => x >>> _amount;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector128<T> Invoke(Vector128<T> x)
-            {
-                if (sizeof(T) == 1) return Vector128.ShiftRightLogical(x.AsByte(), _amount).As<byte, T>();
-                if (sizeof(T) == 2) return Vector128.ShiftRightLogical(x.AsUInt16(), _amount).As<ushort, T>();
-                if (sizeof(T) == 4) return Vector128.ShiftRightLogical(x.AsUInt32(), _amount).As<uint, T>();
-                if (sizeof(T) == 8) return Vector128.ShiftRightLogical(x.AsUInt64(), _amount).As<ulong, T>();
-                throw new NotSupportedException();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector256<T> Invoke(Vector256<T> x)
-            {
-                if (sizeof(T) == 1) return Vector256.ShiftRightLogical(x.AsByte(), _amount).As<byte, T>();
-                if (sizeof(T) == 2) return Vector256.ShiftRightLogical(x.AsUInt16(), _amount).As<ushort, T>();
-                if (sizeof(T) == 4) return Vector256.ShiftRightLogical(x.AsUInt32(), _amount).As<uint, T>();
-                if (sizeof(T) == 8) return Vector256.ShiftRightLogical(x.AsUInt64(), _amount).As<ulong, T>();
-                throw new NotSupportedException();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector512<T> Invoke(Vector512<T> x)
-            {
-                if (sizeof(T) == 1) return Vector512.ShiftRightLogical(x.AsByte(), _amount).As<byte, T>();
-                if (sizeof(T) == 2) return Vector512.ShiftRightLogical(x.AsUInt16(), _amount).As<ushort, T>();
-                if (sizeof(T) == 4) return Vector512.ShiftRightLogical(x.AsUInt32(), _amount).As<uint, T>();
-                if (sizeof(T) == 8) return Vector512.ShiftRightLogical(x.AsUInt64(), _amount).As<ulong, T>();
-                throw new NotSupportedException();
-            }
+            public Vector128<T> Invoke(Vector128<T> x) => x >>> _amount;
+            public Vector256<T> Invoke(Vector256<T> x) => x >>> _amount;
+            public Vector512<T> Invoke(Vector512<T> x) => x >>> _amount;
         }
 
         /// <summary>T.RotateLeft(amount)</summary>
