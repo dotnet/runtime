@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XHarness.TestRunners.Xunit;
 using Xunit.Sdk;
 
-public class SimpleWasmTestRunner : WasmApplicationEntryPoint
+public class WasmTestRunner : WasmApplicationEntryPoint
 {
     public static async Task<int> Main(string[] args)
     {
