@@ -139,8 +139,33 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int TryGetHashCode(object o);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern new bool Equals(object? o1, object? o2);
+        public static new unsafe bool Equals(object? o1, object? o2)
+        {
+            // Compare by ref for normal classes, by value for value types.
+
+            if (ReferenceEquals(o1, o2))
+                return true;
+
+            if (o1 is null || o2 is null)
+                return false;
+
+            MethodTable* pMT = GetMethodTable(o1);
+
+            // If it's not a value class, don't compare by value
+            if (!pMT->IsValueType)
+                return false;
+
+            // Make sure they are the same type.
+            if (pMT != GetMethodTable(o2))
+                return false;
+
+            // Compare the contents
+            uint size = pMT->GetNumInstanceFieldBytes();
+            return SpanHelpers.SequenceEqual(
+                ref GetRawData(o1),
+                ref GetRawData(o2),
+                size);
+        }
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
