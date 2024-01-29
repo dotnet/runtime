@@ -12662,7 +12662,7 @@ emit_method_inner (EmitContext *ctx)
 				LLVMSetLinkage (method, LLVMExternalLinkage);
 				LLVMSetVisibility (method, LLVMHiddenVisibility);
 			}
-			
+
 			goto after_codegen;
 		}
 	}
