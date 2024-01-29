@@ -5377,7 +5377,7 @@ bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIter
     // limited shapes of limits we recognize.
     //
     if ((relop->IsUnsigned() != info->TestTree->IsUnsigned()) || (oper != info->TestOper()) ||
-        !GenTree::Compare(info->Limit(), limitCandidate))
+        !GenTree::Compare(limitCandidate, info->Limit()))
     {
         JITDUMP("    Condition guarantees V%02u %s%s [%06u], but invariant requires V%02u %s%s [%06u]\n", info->IterVar,
                 relop->IsUnsigned() ? "(uns) " : "", GenTree::OpName(oper), Compiler::dspTreeID(limitCandidate),
