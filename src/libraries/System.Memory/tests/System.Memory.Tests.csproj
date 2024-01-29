@@ -276,6 +276,5 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
-    <Compile Include="$(CommonPath)System\MutableDecimal.cs" Link="Common\System\MutableDecimal.cs" />
   </ItemGroup>
 </Project>

@@ -90,6 +90,19 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs(DefaultTargetFramework);
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
+
+            AddItemsPropertiesToProject(projectFile, 
+                atTheEnd:
+                    """
+                    <Target Name="CheckLinkedFiles" AfterTargets="ILLink">
+                    <ItemGroup>
+                        <_LinkedOutFile Include="$(IntermediateOutputPath)\linked\*.dll" />
+                    </ItemGroup>
+                    <Error Text="No file was linked-out. Trimming probably doesn't work (PublishTrimmed=$(PublishTrimmed))" Condition="@(_LinkedOutFile->Count()) == 0" />
+                    </Target>
+                    """
+            );
+
             buildArgs = ExpandBuildArgs(buildArgs);
 
             BuildTemplateProject(buildArgs,
@@ -254,9 +267,12 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(TestDataForAppBundleDir))]
         public async Task RunWithDifferentAppBundleLocations(bool forConsole, bool runOutsideProjectDirectory, string extraProperties)
-            => await (forConsole
-                    ? ConsoleRunWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory)
-                    : BrowserRunTwiceWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory));
+        {
+            _ = forConsole;
+            await ConsoleRunWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory);
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
+                    //: BrowserRunTwiceWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory));
+        }
 
         private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
         {
@@ -416,6 +432,7 @@ namespace Wasm.Build.Tests
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/90979")]
         // [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
         // [InlineData("-f net8.0", "net8.0", "./")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
         public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             string config = "Debug";

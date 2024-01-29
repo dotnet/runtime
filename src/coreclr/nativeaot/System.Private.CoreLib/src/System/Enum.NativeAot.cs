@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.Reflection.Augments;
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
@@ -21,12 +22,12 @@ namespace System
     public abstract partial class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
 #pragma warning disable IDE0060
-        internal static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
+        internal static unsafe EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {
             Debug.Assert(enumType != null);
             Debug.Assert(enumType.IsEnum);
 
-            return enumType.TypeHandle.ToEETypePtr().ElementType switch
+            return enumType.TypeHandle.ToMethodTable()->ElementType switch
             {
                 EETypeElementType.SByte or EETypeElementType.Byte => GetEnumInfo<byte>(enumType),
                 EETypeElementType.Int16 or EETypeElementType.UInt16 => GetEnumInfo<ushort>(enumType),
@@ -57,24 +58,24 @@ namespace System
                         values[i] = (TStorage)valuesAsObject[i];
                     }
                     return new EnumInfo<TStorage>(underlyingType, values, names, isFlags);
-            });
+                });
         }
 #pragma warning restore
 
-        private static object InternalBoxEnum(Type enumType, long value)
+        private static unsafe object InternalBoxEnum(Type enumType, long value)
         {
-            return ToObject(enumType.TypeHandle.ToEETypePtr(), value);
+            return ToObject(enumType.TypeHandle.ToMethodTable(), value);
         }
 
-        private static CorElementType InternalGetCorElementType(RuntimeType rt)
+        private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)
         {
             Debug.Assert(rt.IsActualEnum);
-            return rt.TypeHandle.ToEETypePtr().CorElementType;
+            return new EETypePtr(rt.TypeHandle.ToMethodTable()).CorElementType;
         }
 
-        private CorElementType InternalGetCorElementType()
+        private unsafe CorElementType InternalGetCorElementType()
         {
-            return this.GetEETypePtr().CorElementType;
+            return new EETypePtr(this.GetMethodTable()).CorElementType;
         }
 
         //
@@ -86,16 +87,16 @@ namespace System
         //
         // The return value is "bool" if "value" is not an enum or an "integer type" as defined by the BCL Enum apis.
         //
-        internal static bool TryGetUnboxedValueOfEnumOrInteger(object value, out ulong result)
+        internal static unsafe bool TryGetUnboxedValueOfEnumOrInteger(object value, out ulong result)
         {
-            EETypePtr eeType = value.GetEETypePtr();
+            MethodTable* eeType = value.GetMethodTable();
             // For now, this check is required to flush out pointers.
-            if (!eeType.IsDefType)
+            if (!eeType->IsDefType)
             {
                 result = 0;
                 return false;
             }
-            EETypeElementType elementType = eeType.ElementType;
+            EETypeElementType elementType = eeType->ElementType;
 
             ref byte pValue = ref value.GetRawData();
 
@@ -152,12 +153,12 @@ namespace System
         }
 
         [Conditional("BIGENDIAN")]
-        private static unsafe void AdjustForEndianness(ref byte* pValue, EETypePtr enumEEType)
+        private static unsafe void AdjustForEndianness(ref byte* pValue, MethodTable* enumEEType)
         {
             // On Debug builds, include the big-endian code to help deter bitrot (the "Conditional("BIGENDIAN")" will prevent it from executing on little-endian).
             // On Release builds, exclude code to deter IL bloat and toolchain work.
 #if BIGENDIAN || DEBUG
-            EETypeElementType elementType = enumEEType.ElementType;
+            EETypeElementType elementType = enumEEType->ElementType;
             switch (elementType)
             {
                 case EETypeElementType.SByte:
@@ -187,9 +188,9 @@ namespace System
 
         #region ToObject
 
-        internal static unsafe object ToObject(EETypePtr enumEEType, long value)
+        internal static unsafe object ToObject(MethodTable* enumEEType, long value)
         {
-            Debug.Assert(enumEEType.IsEnum);
+            Debug.Assert(enumEEType->IsEnum);
 
             byte* pValue = (byte*)&value;
             AdjustForEndianness(ref pValue, enumEEType);

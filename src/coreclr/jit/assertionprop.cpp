@@ -1121,7 +1121,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         //
         // Set op1 to the instance pointer of the indirection
         //
-        op1 = op1->gtEffectiveVal(/* commaOnly */ true);
+        op1 = op1->gtEffectiveVal();
 
         ssize_t offset = 0;
         while ((op1->gtOper == GT_ADD) && (op1->gtType == TYP_BYREF))
@@ -1129,12 +1129,12 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             if (op1->gtGetOp2()->IsCnsIntOrI())
             {
                 offset += op1->gtGetOp2()->AsIntCon()->gtIconVal;
-                op1 = op1->gtGetOp1()->gtEffectiveVal(/* commaOnly */ true);
+                op1 = op1->gtGetOp1()->gtEffectiveVal();
             }
             else if (op1->gtGetOp1()->IsCnsIntOrI())
             {
                 offset += op1->gtGetOp1()->AsIntCon()->gtIconVal;
-                op1 = op1->gtGetOp2()->gtEffectiveVal(/* commaOnly */ true);
+                op1 = op1->gtGetOp2()->gtEffectiveVal();
             }
             else
             {
@@ -1783,7 +1783,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     }
 #endif // DEBUG
 
-    // Track the shortcircuit criterias
+    // Track the short-circuit criteria
     optCanPropLclVar |= newAssertion->CanPropLclVar();
     optCanPropEqual |= newAssertion->CanPropEqualOrNotEqual();
     optCanPropNonNull |= newAssertion->CanPropNonNull();
@@ -4356,8 +4356,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
         foldResult = !foldResult;
     }
 
-    op2->AsIntCon()->gtIconVal = foldResult;
-    op2->gtType                = TYP_INT;
+    op2->BashToConst((ssize_t)foldResult, TYP_INT);
 
     return optAssertionProp_Update(op2, tree, stmt);
 }
@@ -4533,7 +4532,7 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
         return true;
     }
 
-    op = op->gtEffectiveVal(/* commaOnly */ true);
+    op = op->gtEffectiveVal();
 
     if (!op->OperIs(GT_LCL_VAR))
     {
@@ -4765,17 +4764,14 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
     {
         return optAssertionProp_Update(call, call, stmt);
     }
-    else if (!optLocalAssertionProp && (call->gtCallType == CT_HELPER))
+    else if (!optLocalAssertionProp && call->IsHelperCall())
     {
-        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFINTERFACE) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFARRAY) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFCLASS) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFANY) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTINTERFACE) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTARRAY) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTANY) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL))
+        const CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+        if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
+            (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY) ||
+            (helper == CORINFO_HELP_CHKCASTINTERFACE) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
+            (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
+            (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
             GenTree* arg1 = call->gtArgs.GetArgByIndex(1)->GetNode();
             if (arg1->gtOper != GT_LCL_VAR)
@@ -4805,6 +4801,11 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
 
                 return optAssertionProp_Update(arg1, call, stmt);
             }
+
+            // TODO-InlineCast: check optAssertionIsNonNull for the object argument and replace
+            // the helper with its nonnull version, e.g.:
+            // CORINFO_HELP_ISINSTANCEOFANY -> CORINFO_HELP_ISINSTANCEOFANY_NONNULL
+            // so then fgLateCastExpansion can skip the null check.
         }
     }
 
@@ -5551,7 +5552,7 @@ public:
     {
         ASSERT_TP pAssertionOut;
 
-        if (predBlock->KindIs(BBJ_COND) && predBlock->HasJumpTo(block))
+        if (predBlock->KindIs(BBJ_COND) && predBlock->TrueTargetIs(block))
         {
             pAssertionOut = mJumpDestOut[predBlock->bbNum];
 
@@ -5559,7 +5560,7 @@ public:
             {
                 // Scenario where next block and conditional block, both point to the same block.
                 // In such case, intersect the assertions present on both the out edges of predBlock.
-                assert(predBlock->NextIs(block));
+                assert(predBlock->FalseTargetIs(block));
                 BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
 
                 if (VerboseDataflow())
@@ -5729,7 +5730,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 
                 if (jumpDestAssertionIndex != NO_ASSERTION_INDEX)
                 {
-                    // Update jumpDestValueGen if we have an assertion for the bbJumpDest edge
+                    // Update jumpDestValueGen if we have an assertion for the bbTarget edge
                     optImpliedAssertions(jumpDestAssertionIndex, jumpDestValueGen);
                     BitVecOps::AddElemD(apTraits, jumpDestValueGen, jumpDestAssertionIndex - 1);
                 }
@@ -5756,7 +5757,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
             optPrintAssertionIndices(block->bbAssertionGen);
             if (block->KindIs(BBJ_COND))
             {
-                printf(" => " FMT_BB " valueGen = ", block->GetJumpDest()->bbNum);
+                printf(" => " FMT_BB " valueGen = ", block->GetTrueTarget()->bbNum);
                 optPrintAssertionIndices(jumpDestGen[block->bbNum]);
             }
             printf("\n");
@@ -6316,7 +6317,7 @@ PhaseStatus Compiler::optAssertionPropMain()
             optDumpAssertionIndices(" out  = ", block->bbAssertionOut, "\n");
             if (block->KindIs(BBJ_COND))
             {
-                printf(" " FMT_BB " = ", block->GetJumpDest()->bbNum);
+                printf(" " FMT_BB " = ", block->GetTrueTarget()->bbNum);
                 optDumpAssertionIndices(bbJtrueAssertionOut[block->bbNum], "\n");
             }
         }

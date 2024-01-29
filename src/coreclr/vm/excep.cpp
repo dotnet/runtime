@@ -2853,7 +2853,10 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
     //  a good thing to preserve the stack trace.
     if (!rethrow)
     {
+        Thread *pThread = GetThread();
+        pThread->IncPreventAbort();
         ExceptionPreserveStackTrace(throwable);
+        pThread->DecPreventAbort();
     }
 
     RealCOMPlusThrowWorker(throwable, rethrow);
@@ -3414,20 +3417,6 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
 
     return bRetVal;
 }
-
-void StackTraceInfo::GetLeafFrameInfo(StackTraceElement* pStackTraceElement)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (NULL == m_pStackTrace)
-    {
-        return;
-    }
-    _ASSERTE(NULL != pStackTraceElement);
-
-    *pStackTraceElement = m_pStackTrace[0];
-}
-
 
 void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP)
 {
@@ -6577,12 +6566,9 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     frame->InitAndLink(pContext);
 
-    CONTEXT ctx = {};
-    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-    REGDISPLAY rd;
     Thread *pThread = GetThread();
 
-    ExInfo exInfo(pThread, &ctx, &rd, ExKind::HardwareFault);
+    ExInfo exInfo(pThread, pExceptionRecord, pContext, ExKind::HardwareFault);
 
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
     if (exceptionCode == STATUS_ACCESS_VIOLATION)
@@ -6598,6 +6584,8 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    pThread->IncPreventAbort();
 
     //Ex.RhThrowHwEx(exceptionCode, &exInfo)
     CALL_MANAGED_METHOD_NORET(args)
@@ -8858,8 +8846,8 @@ BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable)
 // If not specified, this will default to the current exception tracker active
 // on the thread.
 #if defined(FEATURE_EH_FUNCLETS)
-PTR_ExceptionTracker GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
-                                                          PTR_ExceptionTracker pStartingEHTracker)
+PTR_ExceptionTrackerBase GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
+                                                          PTR_ExceptionTrackerBase pStartingEHTracker)
 #elif TARGET_X86
 PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
                                                 PTR_ExInfo pStartingEHTracker)
@@ -8881,7 +8869,7 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
 
     // Get the reference to the current exception tracker
 #if defined(FEATURE_EH_FUNCLETS)
-    PTR_ExceptionTracker pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+    PTR_ExceptionTrackerBase pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
 #elif TARGET_X86
     PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
 #else // !(HOST_64BIT || TARGET_X86)
@@ -8959,8 +8947,8 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
         // Find the reference to the exception tracker corresponding to the preallocated exception,
         // starting the search from the current exception tracker (2nd arg of NULL specifies that).
  #if defined(FEATURE_EH_FUNCLETS)
-        PTR_ExceptionTracker pEHTracker = NULL;
-        PTR_ExceptionTracker pPreviousEHTracker = NULL;
+        PTR_ExceptionTrackerBase pEHTracker = NULL;
+        PTR_ExceptionTrackerBase pPreviousEHTracker = NULL;
 
 #elif TARGET_X86
         PTR_ExInfo pEHTracker = NULL;
@@ -9368,17 +9356,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
     // being thrown, then get them.
     ThreadExceptionState *pExState = pThread->GetExceptionState();
 
-#ifdef FEATURE_EH_FUNCLETS
-    // Ensure that the exception tracker exists
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        _ASSERTE(pExState->GetCurrentExInfo() != NULL);
-    }
-    else
-#endif // FEATURE_EH_FUNCLETS
-    {
-        _ASSERTE(pExState->GetCurrentExceptionTracker() != NULL);
-    }
+    _ASSERTE(pExState->GetCurrentExceptionTracker() != NULL);
 
     // Switch to COOP mode
     GCX_COOP();
@@ -9403,17 +9381,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
 
     // Get the WatsonBucketTracker for the current exception
     PTR_EHWatsonBucketTracker pWatsonBucketTracker;
-#ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        pWatsonBucketTracker = pExState->GetCurrentExInfo()->GetWatsonBucketTracker();
-
-    }
-    else
-#endif // FEATURE_EH_FUNCLETS
-    {
-        pWatsonBucketTracker = pExState->GetCurrentExceptionTracker()->GetWatsonBucketTracker();
-    }
+    pWatsonBucketTracker = pExState->GetCurrentExceptionTracker()->GetWatsonBucketTracker();
 
     // Get the innermost exception object (if any)
     gc.oInnerMostExceptionThrowable = ((EXCEPTIONREF)gc.oCurrentThrowable)->GetBaseException();
@@ -10545,56 +10513,6 @@ void EHWatsonBucketTracker::CaptureUnhandledInfoForWatson(TypeOfReportedError to
 }
 #endif // !TARGET_UNIX
 
-// Given a throwable, this function will attempt to find an active EH tracker corresponding to it.
-// If none found, it will return NULL
-#ifdef FEATURE_EH_FUNCLETS
-PTR_ExceptionTracker GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExceptionTracker pStartingEHTracker)
-#elif TARGET_X86
-PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEHTracker)
-#else
-#error Unsupported platform
-#endif
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        NOTHROW;
-        PRECONDITION(GetThreadNULLOk() != NULL);
-        PRECONDITION(oThrowable != NULL);
-    }
-    CONTRACTL_END;
-
-    // Get the reference to the exception tracker to start with. If one has been provided to us,
-    // then use it. Otherwise, start from the current one.
-#ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#elif TARGET_X86
-    PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#else
-#error Unsupported platform
-#endif
-
-    BOOL fFoundTracker = FALSE;
-
-    // Start walking the list to find the tracker corresponding
-    // to the exception object.
-    while (pEHTracker != NULL)
-    {
-        if (pEHTracker->GetThrowable() == oThrowable)
-        {
-            // found the tracker - break out.
-            fFoundTracker = TRUE;
-            break;
-        }
-
-        // move to the previous tracker...
-        pEHTracker = pEHTracker->GetPreviousExceptionTracker();
-    }
-
-    return fFoundTracker ? pEHTracker : NULL;
-}
-
 // Given an exception code, this method returns a BOOL to indicate if the
 // code belongs to a corrupting exception or not.
 BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable)
@@ -10603,7 +10521,7 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        if (throwable != NULL) MODE_COOPERATIVE; else MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -11032,7 +10950,7 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
         }
 #else // !FEATURE_EH_FUNCLETS
         // Get the active exception tracker
-        PTR_ExceptionTracker pCurEHTracker = pThread->GetExceptionState()->GetCurrentExceptionTracker();
+        PTR_ExceptionTracker pCurEHTracker = (PTR_ExceptionTracker)pThread->GetExceptionState()->GetCurrentExceptionTracker();
         _ASSERTE(pCurEHTracker != NULL);
 
         // We will check if thread abort state needs to be reset only for the case of exception caught in

@@ -19,7 +19,7 @@ using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Extensions.NonPortable
 {
-    public static class CustomAttributeInstantiator
+    internal static class CustomAttributeInstantiator
     {
         //
         // Turn a CustomAttributeData into a live Attribute object. There's nothing actually non-portable about this one,
@@ -87,7 +87,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 if (namedArgument.IsField)
                 {
                     // Field
-                    for (;;)
+                    for (; ; )
                     {
                         FieldInfo? fieldInfo = walk.GetField(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (fieldInfo != null)
@@ -104,7 +104,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 else
                 {
                     // Property
-                    for (;;)
+                    for (; ; )
                     {
                         PropertyInfo? propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (propertyInfo != null)
@@ -150,35 +150,6 @@ namespace Internal.Reflection.Extensions.NonPortable
                 }
                 return array;
             }
-        }
-
-        //
-        // Only public instance fields can be targets of named arguments.
-        //
-        private static bool IsValidNamedArgumentTarget(this FieldInfo fieldInfo)
-        {
-            if ((fieldInfo.Attributes & (FieldAttributes.FieldAccessMask | FieldAttributes.Static | FieldAttributes.Literal)) !=
-                FieldAttributes.Public)
-                return false;
-            return true;
-        }
-
-        //
-        // Only public read/write instance properties can be targets of named arguments.
-        //
-        private static bool IsValidNamedArgumentTarget(this PropertyInfo propertyInfo)
-        {
-            MethodInfo? getter = propertyInfo.GetMethod;
-            MethodInfo? setter = propertyInfo.SetMethod;
-            if (getter == null)
-                return false;
-            if ((getter.Attributes & (MethodAttributes.Static | MethodAttributes.MemberAccessMask)) != MethodAttributes.Public)
-                return false;
-            if (setter == null)
-                return false;
-            if ((setter.Attributes & (MethodAttributes.Static | MethodAttributes.MemberAccessMask)) != MethodAttributes.Public)
-                return false;
-            return true;
         }
     }
 }

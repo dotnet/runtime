@@ -49,9 +49,9 @@ namespace System.Runtime.InteropServices
             return new IntPtr(RuntimeInteropData.GetStructFieldOffset(t.TypeHandle, fieldName));
         }
 
-        private static void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
+        private static unsafe void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
         {
-            if (!allowValueClasses && structure.GetEETypePtr().IsValueType)
+            if (!allowValueClasses && structure.GetMethodTable()->IsValueType)
             {
                 throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
             }
@@ -184,7 +184,7 @@ namespace System.Runtime.InteropServices
         // This method is effectively a no-op for NativeAOT, everything pre-generated.
         static partial void PrelinkCore(MethodInfo m);
 
-        internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t)
+        internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, RuntimeType t)
         {
             return PInvokeMarshal.GetDelegateForFunctionPointer(ptr, t.TypeHandle);
         }
@@ -204,9 +204,9 @@ namespace System.Runtime.InteropServices
             PInvokeMarshal.t_lastError = error;
         }
 
-        internal static bool IsPinnable(object o)
+        internal static unsafe bool IsPinnable(object o)
         {
-            return (o == null) || !o.GetEETypePtr().ContainsGCPointers;
+            return (o == null) || !o.GetMethodTable()->ContainsGCPointers;
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -269,7 +269,7 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
 
-            if (ptr.GetEETypePtr().IsArray ||
+            if (ptr.GetMethodTable()->IsArray ||
                 ptr is string ||
                 ptr is StringBuilder)
             {
@@ -349,7 +349,7 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
 
-            if (ptr.GetEETypePtr().IsArray ||
+            if (ptr.GetMethodTable()->IsArray ||
                 ptr is string ||
                 ptr is StringBuilder)
             {

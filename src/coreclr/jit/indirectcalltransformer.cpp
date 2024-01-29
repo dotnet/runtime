@@ -206,7 +206,7 @@ private:
         void CreateRemainder()
         {
             remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
-            remainderBlock->bbFlags |= BBF_INTERNAL;
+            remainderBlock->SetFlags(BBF_INTERNAL);
         }
 
         virtual void CreateCheck(uint8_t checkIdx) = 0;
@@ -222,12 +222,10 @@ private:
         //
         // Return Value:
         //    new basic block.
-        BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind,
-                                              BasicBlock* insertAfter,
-                                              BasicBlock* jumpDest = nullptr)
+        BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
         {
             BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
-            block->bbFlags |= BBF_IMPORTED;
+            block->SetFlags(BBF_IMPORTED);
             return block;
         }
 
@@ -274,18 +272,18 @@ private:
             if (checkBlock != currBlock)
             {
                 assert(currBlock->KindIs(BBJ_ALWAYS));
-                currBlock->SetJumpDest(checkBlock);
+                currBlock->SetTarget(checkBlock);
                 compiler->fgAddRefPred(checkBlock, currBlock);
             }
 
             // checkBlock
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            checkBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
+            checkBlock->SetCond(elseBlock, thenBlock);
             compiler->fgAddRefPred(elseBlock, checkBlock);
             compiler->fgAddRefPred(thenBlock, checkBlock);
 
             // thenBlock
-            assert(thenBlock->HasJumpTo(remainderBlock));
+            assert(thenBlock->TargetIs(remainderBlock));
             compiler->fgAddRefPred(remainderBlock, thenBlock);
 
             // elseBlock
@@ -368,7 +366,7 @@ private:
             assert(checkIdx == 0);
 
             checkBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock, currBlock->Next());
-            checkBlock->bbFlags |= BBF_NONE_QUIRK;
+            checkBlock->SetFlags(BBF_NONE_QUIRK);
             GenTree*   fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
             GenTree*   fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
             GenTree*   fatPointerAnd   = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, fptrAddressCopy, fatPointerMask);
@@ -397,7 +395,7 @@ private:
         virtual void CreateElse()
         {
             elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, thenBlock->Next());
-            elseBlock->bbFlags |= BBF_NONE_QUIRK;
+            elseBlock->SetFlags(BBF_NONE_QUIRK);
 
             GenTree* fixedFptrAddress  = GetFixedFptrAddress();
             GenTree* actualCallAddress = compiler->gtNewIndir(pointerType, fixedFptrAddress);
@@ -593,7 +591,7 @@ private:
                 checkFallsThrough          = false;
 
                 // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
-                prevCheckBlock->SetJumpKindAndTarget(BBJ_COND, checkBlock);
+                prevCheckBlock->SetCond(checkBlock, prevCheckBlock->Next());
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
                 // Calculate the total likelihood for this check as a sum of likelihoods
@@ -927,7 +925,7 @@ private:
             if (call->CanTailCall() && compiler->gtIsRecursiveCall(methodHnd))
             {
                 compiler->setMethodHasRecursiveTailcall();
-                block->bbFlags |= BBF_RECURSIVE_TAILCALL;
+                block->SetFlags(BBF_RECURSIVE_TAILCALL);
                 JITDUMP("[%06u] is a recursive call in tail position\n", compiler->dspTreeID(call));
             }
             else
@@ -1006,13 +1004,13 @@ private:
         {
             // thenBlock always jumps to remainderBlock
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock, remainderBlock);
-            thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
+            thenBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
             thenBlock->inheritWeightPercentage(currBlock, origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
 
             // Also, thenBlock has a single pred - last checkBlock
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            checkBlock->SetJumpDest(thenBlock);
-            checkBlock->bbFlags |= BBF_NONE_QUIRK;
+            checkBlock->SetTarget(thenBlock);
+            checkBlock->SetFlags(BBF_NONE_QUIRK);
             assert(checkBlock->JumpsToNext());
             compiler->fgAddRefPred(thenBlock, checkBlock);
             compiler->fgAddRefPred(remainderBlock, thenBlock);
@@ -1026,13 +1024,14 @@ private:
         virtual void CreateElse()
         {
             elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, thenBlock->Next());
-            elseBlock->bbFlags |= ((currBlock->bbFlags & BBF_SPLIT_GAINED) | BBF_NONE_QUIRK);
+            elseBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
+            elseBlock->SetFlags(BBF_NONE_QUIRK);
 
             // CheckBlock flows into elseBlock unless we deal with the case
             // where we know the last check is always true (in case of "exact" GDV)
             if (!checkFallsThrough)
             {
-                checkBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock);
+                checkBlock->SetCond(elseBlock, checkBlock->Next());
                 compiler->fgAddRefPred(elseBlock, checkBlock);
             }
             else
@@ -1110,7 +1109,7 @@ private:
 
             BasicBlock* const hotBlock = coldBlock->Prev();
 
-            if (!hotBlock->KindIs(BBJ_ALWAYS) || !hotBlock->HasJumpTo(checkBlock))
+            if (!hotBlock->KindIs(BBJ_ALWAYS) || !hotBlock->TargetIs(checkBlock))
             {
                 JITDUMP("Unexpected flow from hot path " FMT_BB "\n", hotBlock->bbNum);
                 return;
@@ -1155,7 +1154,7 @@ private:
             // not fall through to the check block.
             //
             compiler->fgRemoveRefPred(checkBlock, coldBlock);
-            coldBlock->SetJumpKindAndTarget(BBJ_ALWAYS, elseBlock);
+            coldBlock->SetKindAndTarget(BBJ_ALWAYS, elseBlock);
             compiler->fgAddRefPred(elseBlock, coldBlock);
         }
 

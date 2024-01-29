@@ -243,7 +243,7 @@ namespace System.Security.Cryptography.X509Certificates
                 policy.DeclaredCertificatePolicies = ReadCertPolicyExtension(policyData.CertPolicies);
             }
 
-            if (policyData.CertPolicyMappings!= null)
+            if (policyData.CertPolicyMappings != null)
             {
                 policy.PolicyMapping = ReadCertPolicyMappingsExtension(policyData.CertPolicyMappings);
             }

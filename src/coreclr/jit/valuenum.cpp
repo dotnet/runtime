@@ -2716,7 +2716,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 ValueNum ValueNumStore::VNForFunc(
     var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN, ValueNum arg3VN)
 {
-    assert(arg0VN != NoVN && arg1VN != NoVN && arg2VN != NoVN && arg3VN != NoVN);
+    assert(arg0VN != NoVN && arg1VN != NoVN && arg2VN != NoVN && ((arg3VN != NoVN) || func == VNF_MapStore));
 
     // Function arguments carry no exceptions.
     assert(arg0VN == VNNormalValue(arg0VN));
@@ -2765,9 +2765,11 @@ ValueNum ValueNumStore::VNForMapStore(ValueNum map, ValueNum index, ValueNum val
 {
     assert(MapIsPrecise(map));
 
-    BasicBlock* const            bb      = m_pComp->compCurBB;
-    BasicBlock::loopNumber const loopNum = bb->bbNatLoopNum;
-    ValueNum const               result  = VNForFunc(TypeOfVN(map), VNF_MapStore, map, index, value, loopNum);
+    BasicBlock* const     bb        = m_pComp->compCurBB;
+    FlowGraphNaturalLoop* bbLoop    = m_pComp->m_blockToLoop->GetLoop(bb);
+    unsigned              loopIndex = bbLoop == nullptr ? UINT_MAX : bbLoop->GetIndex();
+
+    ValueNum const result = VNForFunc(TypeOfVN(map), VNF_MapStore, map, index, value, loopIndex);
 
 #ifdef DEBUG
     if (m_pComp->verbose)
@@ -2964,12 +2966,15 @@ ValueNum ValueNumStore::VNForMapSelectInner(ValueNumKind vnk, var_types type, Va
     // If the current tree is in a loop then record memory dependencies for
     // hoisting. Note that this function may be called by other phases than VN
     // (such as VN-based dead store removal).
-    if ((m_pComp->compCurBB != nullptr) && (m_pComp->compCurTree != nullptr) &&
-        m_pComp->compCurBB->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+    if ((m_pComp->compCurBB != nullptr) && (m_pComp->compCurTree != nullptr))
     {
-        memoryDependencies.ForEach([this](ValueNum vn) {
-            m_pComp->optRecordLoopMemoryDependence(m_pComp->compCurTree, m_pComp->compCurBB, vn);
-        });
+        FlowGraphNaturalLoop* loop = m_pComp->m_blockToLoop->GetLoop(m_pComp->compCurBB);
+        if (loop != nullptr)
+        {
+            memoryDependencies.ForEach([this](ValueNum vn) {
+                m_pComp->optRecordLoopMemoryDependence(m_pComp->compCurTree, m_pComp->compCurBB, vn);
+            });
+        }
     }
 
     return result;
@@ -4012,66 +4017,66 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
             }
             break;
         }
-            {
 #ifdef TARGET_64BIT
-                case TYP_REF:
-                case TYP_BYREF:
+        case TYP_REF:
+        case TYP_BYREF:
 #endif
-                case TYP_LONG:
-                    INT64 arg0Val = GetConstantInt64(arg0VN);
-                    assert(!checkedCast || !CheckedOps::CastFromLongOverflows(arg0Val, castToType, srcIsUnsigned));
+        case TYP_LONG:
+        {
+            INT64 arg0Val = GetConstantInt64(arg0VN);
+            assert(!checkedCast || !CheckedOps::CastFromLongOverflows(arg0Val, castToType, srcIsUnsigned));
 
-                    switch (castToType)
+            switch (castToType)
+            {
+                case TYP_BYTE:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(INT8(arg0Val));
+                case TYP_UBYTE:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(UINT8(arg0Val));
+                case TYP_SHORT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(INT16(arg0Val));
+                case TYP_USHORT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(UINT16(arg0Val));
+                case TYP_INT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(INT32(arg0Val));
+                case TYP_UINT:
+                    assert(typ == TYP_INT);
+                    return VNForIntCon(UINT32(arg0Val));
+                case TYP_LONG:
+                case TYP_ULONG:
+                    assert(typ == TYP_LONG);
+                    return arg0VN;
+                case TYP_BYREF:
+                    assert(typ == TYP_BYREF);
+                    return VNForByrefCon((target_size_t)arg0Val);
+                case TYP_FLOAT:
+                    assert(typ == TYP_FLOAT);
+                    if (srcIsUnsigned)
                     {
-                        case TYP_BYTE:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(INT8(arg0Val));
-                        case TYP_UBYTE:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(UINT8(arg0Val));
-                        case TYP_SHORT:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(INT16(arg0Val));
-                        case TYP_USHORT:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(UINT16(arg0Val));
-                        case TYP_INT:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(INT32(arg0Val));
-                        case TYP_UINT:
-                            assert(typ == TYP_INT);
-                            return VNForIntCon(UINT32(arg0Val));
-                        case TYP_LONG:
-                        case TYP_ULONG:
-                            assert(typ == TYP_LONG);
-                            return arg0VN;
-                        case TYP_BYREF:
-                            assert(typ == TYP_BYREF);
-                            return VNForByrefCon((target_size_t)arg0Val);
-                        case TYP_FLOAT:
-                            assert(typ == TYP_FLOAT);
-                            if (srcIsUnsigned)
-                            {
-                                return VNForFloatCon(FloatingPointUtils::convertUInt64ToFloat(UINT64(arg0Val)));
-                            }
-                            else
-                            {
-                                return VNForFloatCon(float(arg0Val));
-                            }
-                        case TYP_DOUBLE:
-                            assert(typ == TYP_DOUBLE);
-                            if (srcIsUnsigned)
-                            {
-                                return VNForDoubleCon(FloatingPointUtils::convertUInt64ToDouble(UINT64(arg0Val)));
-                            }
-                            else
-                            {
-                                return VNForDoubleCon(double(arg0Val));
-                            }
-                        default:
-                            unreached();
+                        return VNForFloatCon(FloatingPointUtils::convertUInt64ToFloat(UINT64(arg0Val)));
                     }
+                    else
+                    {
+                        return VNForFloatCon(float(arg0Val));
+                    }
+                case TYP_DOUBLE:
+                    assert(typ == TYP_DOUBLE);
+                    if (srcIsUnsigned)
+                    {
+                        return VNForDoubleCon(FloatingPointUtils::convertUInt64ToDouble(UINT64(arg0Val)));
+                    }
+                    else
+                    {
+                        return VNForDoubleCon(double(arg0Val));
+                    }
+                default:
+                    unreached();
             }
+        }
         case TYP_FLOAT:
         {
             float arg0Val = GetConstantSingle(arg0VN);
@@ -5213,14 +5218,11 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 //
 ValueNum ValueNumStore::VNForExpr(BasicBlock* block, var_types type)
 {
-    BasicBlock::loopNumber loopNum;
-    if (block == nullptr)
+    unsigned loopIndex = ValueNumStore::UnknownLoop;
+    if (block != nullptr)
     {
-        loopNum = BasicBlock::MAX_LOOP_NUM;
-    }
-    else
-    {
-        loopNum = block->bbNatLoopNum;
+        FlowGraphNaturalLoop* loop = m_pComp->m_blockToLoop->GetLoop(block);
+        loopIndex                  = loop == nullptr ? ValueNumStore::NoLoop : loop->GetIndex();
     }
 
     // VNForFunc(typ, func, vn) but bypasses looking in the cache
@@ -5229,7 +5231,7 @@ ValueNum ValueNumStore::VNForExpr(BasicBlock* block, var_types type)
     unsigned const        offsetWithinChunk = c->AllocVN();
     VNDefFuncAppFlexible* fapp              = c->PointerToFuncApp(offsetWithinChunk, 1);
     fapp->m_func                            = VNF_MemOpaque;
-    fapp->m_args[0]                         = loopNum;
+    fapp->m_args[0]                         = loopIndex;
 
     ValueNum resultVN = c->m_baseVN + offsetWithinChunk;
     return resultVN;
@@ -5915,37 +5917,48 @@ var_types ValueNumStore::TypeOfVN(ValueNum vn) const
 
 //------------------------------------------------------------------------
 // LoopOfVN: If the given value number is VNF_MemOpaque, VNF_MapStore, or
-//    VNF_MemoryPhiDef, return the loop number where the memory update occurs,
-//    otherwise returns MAX_LOOP_NUM.
+//    VNF_MemoryPhiDef, return the loop where the memory update occurs,
+//    otherwise returns nullptr
 //
 // Arguments:
 //    vn - Value number to query
 //
 // Return Value:
-//    The memory loop number, which may be BasicBlock::NOT_IN_LOOP.
-//    Returns BasicBlock::MAX_LOOP_NUM if this VN is not a memory value number.
+//    The memory loop.
 //
-BasicBlock::loopNumber ValueNumStore::LoopOfVN(ValueNum vn)
+FlowGraphNaturalLoop* ValueNumStore::LoopOfVN(ValueNum vn)
 {
     VNFuncApp funcApp;
     if (GetVNFunc(vn, &funcApp))
     {
         if (funcApp.m_func == VNF_MemOpaque)
         {
-            return (BasicBlock::loopNumber)funcApp.m_args[0];
+            unsigned index = (unsigned)funcApp.m_args[0];
+            if ((index == ValueNumStore::NoLoop) || (index == ValueNumStore::UnknownLoop))
+            {
+                return nullptr;
+            }
+
+            return m_pComp->m_loops->GetLoopByIndex(index);
         }
         else if (funcApp.m_func == VNF_MapStore)
         {
-            return (BasicBlock::loopNumber)funcApp.m_args[3];
+            unsigned index = (unsigned)funcApp.m_args[3];
+            if (index == ValueNumStore::NoLoop)
+            {
+                return nullptr;
+            }
+
+            return m_pComp->m_loops->GetLoopByIndex(index);
         }
         else if (funcApp.m_func == VNF_PhiMemoryDef)
         {
             BasicBlock* const block = reinterpret_cast<BasicBlock*>(ConstantValue<ssize_t>(funcApp.m_args[0]));
-            return block->bbNatLoopNum;
+            return m_pComp->m_blockToLoop->GetLoop(block);
         }
     }
 
-    return BasicBlock::MAX_LOOP_NUM;
+    return nullptr;
 }
 
 bool ValueNumStore::IsVNConstant(ValueNum vn)
@@ -6049,10 +6062,12 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)
 {
     assert(IsVNHandle(vn));
-    Chunk*    c      = m_chunks.GetNoExpand(GetChunkNum(vn));
-    unsigned  offset = ChunkOffset(vn);
-    VNHandle* handle = &reinterpret_cast<VNHandle*>(c->m_defs)[offset];
-    return handle->m_flags;
+    Chunk*             c           = m_chunks.GetNoExpand(GetChunkNum(vn));
+    unsigned           offset      = ChunkOffset(vn);
+    VNHandle*          handle      = &reinterpret_cast<VNHandle*>(c->m_defs)[offset];
+    const GenTreeFlags handleFlags = handle->m_flags;
+    assert((handleFlags & ~GTF_ICON_HDL_MASK) == 0);
+    return handleFlags;
 }
 
 GenTreeFlags ValueNumStore::GetFoldedArithOpResultHandleFlags(ValueNum vn)
@@ -6101,7 +6116,7 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 
 bool ValueNumStore::IsVNObjHandle(ValueNum vn)
 {
-    return IsVNHandle(vn) && GetHandleFlags(vn) == GTF_ICON_OBJ_HDL;
+    return IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_OBJ_HDL);
 }
 
 //------------------------------------------------------------------------
@@ -8915,8 +8930,9 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
     }
     else if (IsVNHandle(vn))
     {
-        ssize_t val = ConstantValue<ssize_t>(vn);
-        printf("Hnd const: 0x%p", dspPtr(val));
+        ssize_t            val         = ConstantValue<ssize_t>(vn);
+        const GenTreeFlags handleFlags = GetHandleFlags(vn);
+        printf("Hnd const: 0x%p %s", dspPtr(val), GenTree::gtGetHandleKindString(handleFlags));
     }
     else if (IsVNConstant(vn))
     {
@@ -8959,7 +8975,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 }
                 else
                 {
-                    printf("LngCns: ");
+                    printf("LngCns");
                     if ((val > -1000) && (val < 1000))
                     {
                         printf(" %ld", val);
@@ -9203,7 +9219,7 @@ void ValueNumStore::vnDumpMapStore(Compiler* comp, VNFuncApp* mapStore)
     printf(" := ");
     comp->vnPrint(newValVN, 0);
     printf("]");
-    if (loopNum != BasicBlock::NOT_IN_LOOP)
+    if (loopNum != ValueNumStore::NoLoop)
     {
         printf("@" FMT_LP, loopNum);
     }
@@ -9246,17 +9262,17 @@ void ValueNumStore::vnDumpMemOpaque(Compiler* comp, VNFuncApp* memOpaque)
     assert(memOpaque->m_func == VNF_MemOpaque); // Precondition.
     const unsigned loopNum = memOpaque->m_args[0];
 
-    if (loopNum == BasicBlock::NOT_IN_LOOP)
+    if (loopNum == ValueNumStore::NoLoop)
     {
         printf("MemOpaque:NotInLoop");
     }
-    else if (loopNum == BasicBlock::MAX_LOOP_NUM)
+    else if (loopNum == ValueNumStore::UnknownLoop)
     {
         printf("MemOpaque:Indeterminate");
     }
     else
     {
-        printf("MemOpaque:L%02u", loopNum);
+        printf("MemOpaque:" FMT_LP, loopNum);
     }
 }
 
@@ -9401,6 +9417,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  GT_MDARR_LENGTH,
                                                  GT_MDARR_LOWER_BOUND, // 'dim' value must be considered
                                                  GT_BITCAST,           // Needs to encode the target type.
+                                                 GT_NOP,
 
                                                  // These control-flow operations need no values.
                                                  GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
@@ -9668,7 +9685,7 @@ public:
     //
     bool IsReachable(BasicBlock* bb)
     {
-        return m_comp->m_dfs->Contains(bb) &&
+        return m_comp->m_dfsTree->Contains(bb) &&
                !BitVecOps::IsMember(&m_blockTraits, m_provenUnreachableBlocks, bb->bbNum);
     }
 
@@ -9691,7 +9708,7 @@ public:
             return false;
         }
 
-        if (!predBlock->KindIs(BBJ_COND) || predBlock->JumpsToNext())
+        if (!predBlock->KindIs(BBJ_COND) || predBlock->TrueTargetIs(predBlock->GetFalseTarget()))
         {
             return true;
         }
@@ -9710,7 +9727,7 @@ public:
         }
 
         bool        isTaken         = normalVN != m_comp->vnStore->VNZeroForType(TYP_INT);
-        BasicBlock* unreachableSucc = isTaken ? predBlock->Next() : predBlock->GetJumpDest();
+        BasicBlock* unreachableSucc = isTaken ? predBlock->GetFalseTarget() : predBlock->GetTrueTarget();
         return block != unreachableSucc;
     }
 };
@@ -9764,6 +9781,7 @@ PhaseStatus Compiler::fgValueNumber()
         }
     }
 
+    m_blockToLoop = BlockToNaturalLoopMap::Build(m_loops);
     // Compute the side effects of loops.
     optComputeLoopSideEffects();
 
@@ -9849,8 +9867,8 @@ PhaseStatus Compiler::fgValueNumber()
     // SSA has already computed a post-order taking EH successors into account.
     // Visiting that in reverse will ensure we visit a block's predecessors
     // before itself whenever possible.
-    BasicBlock** postOrder      = m_dfs->GetPostOrder();
-    unsigned     postOrderCount = m_dfs->GetPostOrderCount();
+    BasicBlock** postOrder      = m_dfsTree->GetPostOrder();
+    unsigned     postOrderCount = m_dfsTree->GetPostOrderCount();
     for (unsigned i = postOrderCount; i != 0; i--)
     {
         BasicBlock* block = postOrder[i - 1];
@@ -10007,11 +10025,11 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
                 continue;
             }
 
-            unsigned loopNum;
-            ValueNum newMemoryVN;
-            if (optBlockIsLoopEntry(blk, &loopNum))
+            ValueNum              newMemoryVN;
+            FlowGraphNaturalLoop* loop = m_blockToLoop->GetLoop(blk);
+            if ((loop != nullptr) && (loop->GetHeader() == blk))
             {
-                newMemoryVN = fgMemoryVNForLoopSideEffects(memoryKind, blk, loopNum);
+                newMemoryVN = fgMemoryVNForLoopSideEffects(memoryKind, blk, loop);
             }
             else
             {
@@ -10132,40 +10150,28 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     compCurBB = nullptr;
 }
 
-ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
-                                                BasicBlock* entryBlock,
-                                                unsigned    innermostLoopNum)
+ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind            memoryKind,
+                                                BasicBlock*           entryBlock,
+                                                FlowGraphNaturalLoop* loop)
 {
-    // "loopNum" is the innermost loop for which "blk" is the entry; find the outermost one.
-    assert(innermostLoopNum != BasicBlock::NOT_IN_LOOP);
-    unsigned loopsInNest = innermostLoopNum;
-    unsigned loopNum     = innermostLoopNum;
-    while (loopsInNest != BasicBlock::NOT_IN_LOOP)
-    {
-        if (optLoopTable[loopsInNest].lpEntry != entryBlock)
-        {
-            break;
-        }
-        loopNum     = loopsInNest;
-        loopsInNest = optLoopTable[loopsInNest].lpParent;
-    }
-
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Computing %s state for block " FMT_BB ", entry block for loops %d to %d:\n",
-               memoryKindNames[memoryKind], entryBlock->bbNum, innermostLoopNum, loopNum);
+        printf("Computing %s state for block " FMT_BB ", entry block for loop " FMT_LP ":\n",
+               memoryKindNames[memoryKind], entryBlock->bbNum, loop->GetIndex());
     }
 #endif // DEBUG
 
+    const LoopSideEffects& sideEffs = m_loopSideEffects[loop->GetIndex()];
+
     // If this loop has memory havoc effects, just use a new, unique VN.
-    if (optLoopTable[loopNum].lpLoopHasMemoryHavoc[memoryKind])
+    if (sideEffs.HasMemoryHavoc[memoryKind])
     {
         ValueNum res = vnStore->VNForExpr(entryBlock, TYP_HEAP);
 #ifdef DEBUG
         if (verbose)
         {
-            printf("  Loop %d has memory havoc effect; heap state is new unique $%x.\n", loopNum, res);
+            printf("  Loop " FMT_LP " has memory havoc effect; heap state is new unique $%x.\n", loop->GetIndex(), res);
         }
 #endif // DEBUG
         return res;
@@ -10174,12 +10180,14 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
     // Otherwise, find the predecessors of the entry block that are not in the loop.
     // If there is only one such, use its memory value as the "base."  If more than one,
     // use a new unique VN.
+    // TODO-Cleanup: Ensure canonicalization creates loop preheaders properly for handlers
+    // and simplify this logic.
     BasicBlock* nonLoopPred          = nullptr;
     bool        multipleNonLoopPreds = false;
     for (FlowEdge* pred = BlockPredsWithEH(entryBlock); pred != nullptr; pred = pred->getNextPredEdge())
     {
         BasicBlock* predBlock = pred->getSourceBlock();
-        if (!optLoopTable[loopNum].lpContains(predBlock))
+        if (!loop->ContainsBlock(predBlock))
         {
             if (nonLoopPred == nullptr)
             {
@@ -10228,11 +10236,10 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
     if (memoryKind == GcHeap)
     {
         // First the fields/field maps.
-        Compiler::LoopDsc::FieldHandleSet* fieldsMod = optLoopTable[loopNum].lpFieldsModified;
+        FieldHandleSet* fieldsMod = sideEffs.FieldsModified;
         if (fieldsMod != nullptr)
         {
-            for (Compiler::LoopDsc::FieldHandleSet::Node* const ki :
-                 Compiler::LoopDsc::FieldHandleSet::KeyValueIteration(fieldsMod))
+            for (FieldHandleSet::Node* const ki : FieldHandleSet::KeyValueIteration(fieldsMod))
             {
                 CORINFO_FIELD_HANDLE fldHnd    = ki->GetKey();
                 FieldKindForVN       fieldKind = ki->GetValue();
@@ -10255,10 +10262,10 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
             }
         }
         // Now do the array maps.
-        Compiler::LoopDsc::ClassHandleSet* elemTypesMod = optLoopTable[loopNum].lpArrayElemTypesModified;
+        ClassHandleSet* elemTypesMod = sideEffs.ArrayElemTypesModified;
         if (elemTypesMod != nullptr)
         {
-            for (const CORINFO_CLASS_HANDLE elemClsHnd : Compiler::LoopDsc::ClassHandleSet::KeyIteration(elemTypesMod))
+            for (const CORINFO_CLASS_HANDLE elemClsHnd : ClassHandleSet::KeyIteration(elemTypesMod))
             {
 #ifdef DEBUG
                 if (verbose)
@@ -10289,10 +10296,8 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
         // If there were any fields/elements modified, this should have been recorded as havoc
         // for ByrefExposed.
         assert(memoryKind == ByrefExposed);
-        assert((optLoopTable[loopNum].lpFieldsModified == nullptr) ||
-               optLoopTable[loopNum].lpLoopHasMemoryHavoc[memoryKind]);
-        assert((optLoopTable[loopNum].lpArrayElemTypesModified == nullptr) ||
-               optLoopTable[loopNum].lpLoopHasMemoryHavoc[memoryKind]);
+        assert((sideEffs.FieldsModified == nullptr) || sideEffs.HasMemoryHavoc[memoryKind]);
+        assert((sideEffs.ArrayElemTypesModified == nullptr) || sideEffs.HasMemoryHavoc[memoryKind]);
     }
 
 #ifdef DEBUG
@@ -10575,8 +10580,8 @@ void Compiler::fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree)
 //------------------------------------------------------------------------
 // fgValueNumberStore: Does value numbering for a store.
 //
-// While this methods does indeed give a VN to the store tree itself, its
-// main objective is to update the various state that holds values, i. e.
+// While this method does indeed give a VN to the store tree itself, its
+// main objective is to update the various state that holds values, i.e.
 // the per-SSA VNs for tracked variables and the heap states for analyzable
 // (to fields and arrays) stores.
 //
@@ -11165,6 +11170,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
             // These do not represent values.
             case GT_NO_OP:
+            case GT_NOP:
             case GT_JMP:   // Control flow
             case GT_LABEL: // Control flow
 #if !defined(FEATURE_EH_FUNCLETS)
@@ -11367,34 +11373,21 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 if (GenTree::OperIsUnary(oper))
                 {
-                    if (tree->AsOp()->gtOp1 != nullptr)
-                    {
-                        ValueNumPair op1VNP;
-                        ValueNumPair op1VNPx;
-                        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1VNP, &op1VNPx);
+                    assert(tree->gtGetOp1() != nullptr);
+                    ValueNumPair op1VNP;
+                    ValueNumPair op1VNPx;
+                    vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1VNP, &op1VNPx);
 
-                        // If we are fetching the array length for an array ref that came from global memory
-                        // then for CSE safety we must use the conservative value number for both
-                        //
-                        if (tree->OperIsArrLength() && ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
-                        {
-                            // use the conservative value number for both when computing the VN for the ARR_LENGTH
-                            op1VNP.SetBoth(op1VNP.GetConservative());
-                        }
-
-                        tree->gtVNPair =
-                            vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(), vnf, op1VNP), op1VNPx);
-                    }
-                    else // Is actually nullary.
+                    // If we are fetching the array length for an array ref that came from global memory
+                    // then for CSE safety we must use the conservative value number for both
+                    //
+                    if (tree->OperIsArrLength() && ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
                     {
-                        // Mostly we'll leave these without a value number, assuming we'll detect these as VN failures
-                        // if they actually need to have values.  With the exception of NOPs, which can sometimes have
-                        // meaning.
-                        if (tree->OperGet() == GT_NOP)
-                        {
-                            tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                        }
+                        // use the conservative value number for both when computing the VN for the ARR_LENGTH
+                        op1VNP.SetBoth(op1VNP.GetConservative());
                     }
+
+                    tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(), vnf, op1VNP), op1VNPx);
                 }
                 else // we have a binary oper
                 {
@@ -12359,6 +12352,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_ReadyToRunStaticBaseGC:
         case VNF_ReadyToRunStaticBaseNonGC:
         case VNF_ReadyToRunStaticBaseThread:
+        case VNF_ReadyToRunStaticBaseThreadNoctor:
         case VNF_ReadyToRunStaticBaseThreadNonGC:
         case VNF_ReadyToRunGenericStaticBase:
         case VNF_ReadyToRunIsInstanceOf:
@@ -12745,6 +12739,9 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
         case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
             vnf = VNF_ReadyToRunStaticBaseThread;
+            break;
+        case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
+            vnf = VNF_ReadyToRunStaticBaseThreadNoctor;
             break;
         case CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
             vnf = VNF_ReadyToRunStaticBaseThreadNonGC;

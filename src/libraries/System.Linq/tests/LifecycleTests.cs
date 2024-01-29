@@ -21,7 +21,7 @@ namespace System.Linq.Tests
                 from sink in Sinks()
                 select (source, unary1, unary2, sink);
 
-            Assert.All(inputs, input =>
+            foreach (var input in inputs)
             {
                 var (source, unary1, unary2, sink) = input;
                 var e = new LifecycleTrackingEnumerable<int>(source.Work);
@@ -43,7 +43,7 @@ namespace System.Linq.Tests
                 bool shortCircuits = argError || ShortCircuits(source, unary1, unary2, sink);
                 Assert.InRange(e.EnumeratorCtorCalls, shortCircuits ? 0 : 1, 1);
                 Assert.Equal(e.EnumeratorCtorCalls, e.EnumeratorDisposeCalls);
-            });
+            }
         }
 
         [Fact]
@@ -57,7 +57,7 @@ namespace System.Linq.Tests
                 from sink in Sinks()
                 select (source, unary, binary, sink);
 
-            Assert.All(inputs, input =>
+            foreach (var input in inputs)
             {
                 var (source, unary, binary, sink) = input;
                 var es = new[] { new LifecycleTrackingEnumerable<int>(source.Work), new LifecycleTrackingEnumerable<int>(source.Work) };
@@ -82,7 +82,7 @@ namespace System.Linq.Tests
                     Assert.InRange(e.EnumeratorCtorCalls, shortCircuits ? 0 : 1, 1);
                     Assert.Equal(e.EnumeratorCtorCalls, e.EnumeratorDisposeCalls);
                 });
-            });
+            }
         }
 
         private static bool ShortCircuits(params Operation[] ops) => ops.Any(o => o.ShortCircuits);

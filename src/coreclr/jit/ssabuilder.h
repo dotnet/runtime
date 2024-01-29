@@ -34,15 +34,6 @@ public:
     void Build();
 
 private:
-    // Ensures that the basic block graph has a root for the dominator graph, by ensuring
-    // that there is a first block that is not in a try region (adding an empty block for that purpose
-    // if necessary).  Eventually should move to Compiler.
-    void SetupBBRoot();
-
-    // Computes each block's immediate dominator and records it in the
-    // BasicBlock in bbIDom.
-    void ComputeImmediateDom();
-
     // Compute flow graph dominance frontiers.
     void ComputeDominanceFrontiers(BasicBlock** postOrder, int count, BlkToBlkVectorMap* mapDF);
 
@@ -91,7 +82,7 @@ private:
     Compiler*     m_pCompiler;
     CompAllocator m_allocator;
 
-    // Bit vector used by TopologicalSort and ComputeImmediateDom to track already visited blocks.
+    // Bit vector used by ComputeImmediateDom to track already visited blocks.
     BitVecTraits m_visitedTraits;
     BitVec       m_visited;
 

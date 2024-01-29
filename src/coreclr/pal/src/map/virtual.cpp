@@ -98,7 +98,6 @@ namespace VirtualMemoryLogging
         Commit = 0x30,
         Decommit = 0x40,
         Release = 0x50,
-        Reset = 0x60,
         ReserveFromExecutableMemoryAllocatorWithinRange = 0x70
     };
 
@@ -458,61 +457,6 @@ static BOOL VIRTUALStoreAllocationInfo(
 
 /******
  *
- *  VIRTUALResetMemory() - Helper function that resets the memory
- *
- *
- */
-static LPVOID VIRTUALResetMemory(
-                IN CPalThread *pthrCurrent, /* Currently executing thread */
-                IN LPVOID lpAddress,        /* Region to reserve or commit */
-                IN SIZE_T dwSize)           /* Size of Region */
-{
-    LPVOID pRetVal = NULL;
-    UINT_PTR StartBoundary;
-    SIZE_T MemSize;
-
-    TRACE( "Resetting the memory now..\n");
-
-    StartBoundary = (UINT_PTR) ALIGN_DOWN(lpAddress, GetVirtualPageSize());
-    MemSize = ALIGN_UP((UINT_PTR)lpAddress + dwSize, GetVirtualPageSize()) - StartBoundary;
-
-    int st;
-#if HAVE_MADV_FREE
-    // Try to use MADV_FREE if supported. It tells the kernel that the application doesn't
-    // need the pages in the range. Freeing the pages can be delayed until a memory pressure
-    // occurs.
-    st = madvise((LPVOID)StartBoundary, MemSize, MADV_FREE);
-    if (st != 0)
-#endif
-    {
-        // In case the MADV_FREE is not supported, use MADV_DONTNEED
-        st = posix_madvise((LPVOID)StartBoundary, MemSize, POSIX_MADV_DONTNEED);
-    }
-
-    if (st == 0)
-    {
-        pRetVal = lpAddress;
-
-#ifdef MADV_DONTDUMP
-        // Do not include reset memory in coredump.
-        madvise((LPVOID)StartBoundary, MemSize, MADV_DONTDUMP);
-#endif
-    }
-
-    LogVaOperation(
-        VirtualMemoryLogging::VirtualOperation::Reset,
-        lpAddress,
-        dwSize,
-        0,
-        0,
-        pRetVal,
-        pRetVal != NULL);
-
-    return pRetVal;
-}
-
-/******
- *
  *  VIRTUALReserveMemory() - Helper function that actually reserves the memory.
  *
  *      NOTE: I call SetLastError in here, because many different error states
@@ -524,13 +468,19 @@ static LPVOID VIRTUALReserveMemory(
                 IN LPVOID lpAddress,        /* Region to reserve or commit */
                 IN SIZE_T dwSize,           /* Size of Region */
                 IN DWORD flAllocationType,  /* Type of allocation */
-                IN DWORD flProtect)         /* Type of access protection */
+                IN DWORD flProtect,         /* Type of access protection */
+                OUT BOOL *newMemory = NULL) /* Set if new virtual memory is allocated */
 {
     LPVOID pRetVal      = NULL;
     UINT_PTR StartBoundary;
     SIZE_T MemSize;
 
     TRACE( "Reserving the memory now..\n");
+
+    if (newMemory != NULL)
+    {
+        *newMemory = false;
+    }
 
     // First, figure out where we're trying to reserve the memory and
     // how much we need. On most systems, requests to mmap must be
@@ -565,6 +515,11 @@ static LPVOID VIRTUALReserveMemory(
              flAllocationType |= MEM_RESERVE_EXECUTABLE;
         }
         pRetVal = ReserveVirtualMemory(pthrCurrent, (LPVOID)StartBoundary, MemSize, flAllocationType);
+
+        if (newMemory != NULL && pRetVal != NULL)
+        {
+            *newMemory = true;
+        }
     }
 
     if (pRetVal != NULL)
@@ -674,8 +629,11 @@ static LPVOID ReserveVirtualMemory(
 #endif  // MMAP_ANON_IGNORES_PROTECTION
 
 #ifdef MADV_DONTDUMP
-    // Do not include reserved memory in coredump.
-    madvise(pRetVal, MemSize, MADV_DONTDUMP);
+    // Do not include reserved uncommitted memory in coredump.
+    if (!(fAllocationType & MEM_COMMIT))
+    {
+        madvise(pRetVal, MemSize, MADV_DONTDUMP);
+    }
 #endif
 
     return pRetVal;
@@ -702,6 +660,7 @@ VIRTUALCommitMemory(
     PCMI pInformation           = 0;
     LPVOID pRetVal              = NULL;
     BOOL IsLocallyReserved      = FALSE;
+    BOOL IsNewMemory            = FALSE;
     INT nProtect;
 
     if ( lpAddress )
@@ -724,7 +683,7 @@ VIRTUALCommitMemory(
         */
         LPVOID pReservedMemory =
                 VIRTUALReserveMemory( pthrCurrent, lpAddress, dwSize,
-                                      flAllocationType, flProtect );
+                                      flAllocationType, flProtect, &IsNewMemory );
 
         TRACE( "Reserve and commit the memory!\n " );
 
@@ -766,8 +725,11 @@ VIRTUALCommitMemory(
     }
 
 #ifdef MADV_DODUMP
-    // Include committed memory in coredump.
-    madvise((void *) StartBoundary, MemSize, MADV_DODUMP);
+    // Include committed memory in coredump. Any newly allocated memory included by default.
+    if (!IsNewMemory)
+    {
+        madvise((void *) StartBoundary, MemSize, MADV_DODUMP);
+    }
 #endif
 
     pRetVal = (void *) StartBoundary;
@@ -928,7 +890,7 @@ VirtualAlloc(
     }
 
     /* Test for un-supported flags. */
-    if ( ( flAllocationType & ~( MEM_COMMIT | MEM_RESERVE | MEM_RESET | MEM_TOP_DOWN | MEM_RESERVE_EXECUTABLE | MEM_LARGE_PAGES ) ) != 0 )
+    if ( ( flAllocationType & ~( MEM_COMMIT | MEM_RESERVE | MEM_TOP_DOWN | MEM_RESERVE_EXECUTABLE | MEM_LARGE_PAGES ) ) != 0 )
     {
         ASSERT( "flAllocationType can be one, or any combination of MEM_COMMIT, \
                MEM_RESERVE, MEM_TOP_DOWN, MEM_RESERVE_EXECUTABLE, or MEM_LARGE_PAGES.\n" );
@@ -956,26 +918,6 @@ VirtualAlloc(
         flProtect,
         NULL,
         TRUE);
-
-    if ( flAllocationType & MEM_RESET )
-    {
-        if ( flAllocationType != MEM_RESET )
-        {
-            ASSERT( "MEM_RESET cannot be used with any other allocation flags in flAllocationType.\n" );
-            pthrCurrent->SetLastError( ERROR_INVALID_PARAMETER );
-            goto done;
-        }
-
-        InternalEnterCriticalSection(pthrCurrent, &virtual_critsec);
-        pRetVal = VIRTUALResetMemory( pthrCurrent, lpAddress, dwSize );
-        InternalLeaveCriticalSection(pthrCurrent, &virtual_critsec);
-
-        if ( !pRetVal )
-        {
-            /* Error messages are already displayed, just leave. */
-            goto done;
-        }
-    }
 
     if ( flAllocationType & MEM_RESERVE )
     {

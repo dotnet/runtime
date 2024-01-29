@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Type? result = null;
             foreach (ServiceCallSite parameterCallSite in constructorCallSite.ParameterCallSites)
             {
-                Type? scoped =  VisitCallSite(parameterCallSite, state);
+                Type? scoped = VisitCallSite(parameterCallSite, state);
                 result ??= scoped;
             }
             return result;

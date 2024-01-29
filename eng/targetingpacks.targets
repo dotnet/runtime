@@ -53,9 +53,13 @@
                       RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
                       LatestRuntimeFrameworkVersion="$(ProductVersion)"
                       RuntimePackNamePatterns="$(LocalFrameworkOverrideName).Runtime.Mono.**RID**"
-                      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;browser-wasm;wasi-wasm;ios-arm64;ios-arm;iossimulator-arm64;iossimulator-x64;iossimulator-x86;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-x64;maccatalyst-arm64;android-arm64;android-arm;android-x64;android-x86"
+                      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;browser-wasm;ios-arm64;ios-arm;iossimulator-arm64;iossimulator-x64;iossimulator-x86;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-x64;maccatalyst-arm64;android-arm64;android-arm;android-x64;android-x86"
                       RuntimePackLabels="Mono"
                       Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and ('@(KnownRuntimePack)' == '' or @(KnownRuntimePack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('RuntimePackLabels', 'Mono')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)')) == '')" />
+    <!-- always add wasi-wasm as it is never added by the sdk -->
+    <KnownRuntimePack Update="@(KnownRuntimePack->WithMetadataValue('Identity', '$(LocalFrameworkOverrideName)')->WithMetadataValue('RuntimePackLabels', 'Mono')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))"
+                      RuntimePackRuntimeIdentifiers="%(RuntimePackRuntimeIdentifiers);wasi-wasm"
+                      Condition="'$(UseLocalTargetingRuntimePack)' == 'true'" />
     <KnownRuntimePack Include="$(LocalFrameworkOverrideName)"
                       TargetFramework="$(NetCoreAppCurrent)"
                       RuntimeFrameworkName="$(LocalFrameworkOverrideName)"

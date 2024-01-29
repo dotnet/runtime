@@ -110,3 +110,5 @@ ThreadPoolWorkerThreadStop
 ThreadPoolWorkerThreadWait
 ThreadPoolWorkingThreadCount
 ThreadRunning
+WaitHandleWaitStart
+WaitHandleWaitStop

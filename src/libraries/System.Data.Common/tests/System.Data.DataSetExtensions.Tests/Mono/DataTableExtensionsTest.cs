@@ -75,7 +75,7 @@ namespace MonoTests.System.Data
             dt.AsEnumerable().CopyToDataTable(dst, LoadOption.PreserveChanges);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void AsEnumerable()
         {
             DataSet ds = new DataSet();

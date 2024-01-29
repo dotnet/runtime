@@ -136,10 +136,7 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssembl
     m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET),
 #endif
     m_debuggerFlags(debuggerFlags),
-    m_fTerminated(FALSE),
-#if FEATURE_READYTORUN
-    m_isInstrumentedStatus(IS_INSTRUMENTED_UNSET)
-#endif // FEATURE_READYTORUN
+    m_fTerminated(FALSE)
 {
     STANDARD_VM_CONTRACT;
 }
@@ -198,9 +195,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     InterlockedIncrement((LONG*)&g_cAssemblies);
 
     PrepareModuleForAssembly(m_pModule, pamTracker);
-
-    if (!m_pModule->IsReadyToRun())
-        CacheManifestExportedTypes(pamTracker);
 
     // We'll load the friend assembly information lazily.  For the ngen case we should avoid
     //  loading it entirely.
@@ -952,24 +946,6 @@ Module * Assembly::FindModuleByTypeRef(
 
 #ifndef DACCESS_COMPILE
 
-void Assembly::CacheManifestExportedTypes(AllocMemTracker *pamTracker)
-{
-    STANDARD_VM_CONTRACT;
-
-    mdToken mdExportedType;
-
-    HENUMInternalHolder phEnum(GetMDImport());
-    phEnum.EnumInit(mdtExportedType,
-                    mdTokenNil);
-
-    ClassLoader::AvailableClasses_LockHolder lh(m_pClassLoader);
-
-    for(int i = 0; GetMDImport()->EnumNext(&phEnum, &mdExportedType); i++)
-        m_pClassLoader->AddExportedTypeHaveLock(GetModule(),
-                                                mdExportedType,
-                                                pamTracker);
-}
-
 void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
@@ -1660,119 +1636,6 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
 
     return result;
 }
-
-#ifdef FEATURE_READYTORUN
-BOOL Assembly::IsInstrumented()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
-    // This will set the value of m_isInstrumentedStatus by calling IsInstrumentedHelper()
-    // that method performs string pattern matching using the Config value of ZapBBInstr
-    // We cache the value returned from that method in m_isInstrumentedStatus
-    //
-    if (m_isInstrumentedStatus == IS_INSTRUMENTED_UNSET)
-    {
-        EX_TRY
-        {
-            FAULT_NOT_FATAL();
-
-            if (IsInstrumentedHelper())
-            {
-                m_isInstrumentedStatus = IS_INSTRUMENTED_TRUE;
-            }
-            else
-            {
-                m_isInstrumentedStatus = IS_INSTRUMENTED_FALSE;
-            }
-        }
-
-        EX_CATCH
-        {
-            m_isInstrumentedStatus = IS_INSTRUMENTED_FALSE;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
-    }
-
-    // At this point m_isInstrumentedStatus can't have the value of IS_INSTRUMENTED_UNSET
-    _ASSERTE(m_isInstrumentedStatus != IS_INSTRUMENTED_UNSET);
-
-    return (m_isInstrumentedStatus == IS_INSTRUMENTED_TRUE);
-}
-
-BOOL Assembly::IsInstrumentedHelper()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
-    // Dynamic Assemblies cannot be instrumented
-    if (IsDynamic())
-        return false;
-
-    // We must have a native image in order to perform IBC instrumentation
-    if (!GetPEAssembly()->IsReadyToRun())
-        return false;
-
-    // @Consider using the full name instead of the short form
-    // (see GetFusionAssemblyName()->IsEqual).
-
-    LPCUTF8 szZapBBInstr = g_pConfig->GetZapBBInstr();
-    LPCUTF8 szAssemblyName = GetSimpleName();
-
-    if (!szZapBBInstr || !szAssemblyName ||
-        (*szZapBBInstr == '\0') || (*szAssemblyName == '\0'))
-        return false;
-
-    // Convert to unicode so that we can do a case insensitive comparison
-
-    SString instrumentedAssemblyNamesList(SString::Utf8, szZapBBInstr);
-    SString assemblyName(SString::Utf8, szAssemblyName);
-
-    const WCHAR *wszInstrumentedAssemblyNamesList = instrumentedAssemblyNamesList.GetUnicode();
-    const WCHAR *wszAssemblyName                  = assemblyName.GetUnicode();
-
-    // wszInstrumentedAssemblyNamesList is a space separated list of assembly names.
-    // We need to determine if wszAssemblyName is in this list.
-    // If there is a "*" in the list, then all assemblies match.
-
-    const WCHAR * pCur = wszInstrumentedAssemblyNamesList;
-
-    do
-    {
-        _ASSERTE(pCur[0] != W('\0'));
-        const WCHAR * pNextSpace = u16_strchr(pCur, W(' '));
-        _ASSERTE(pNextSpace == NULL || pNextSpace[0] == W(' '));
-
-        if (pCur != pNextSpace)
-        {
-            // pCur is not pointing to a space
-            _ASSERTE(pCur[0] != W(' '));
-
-            if (pCur[0] == W('*') && (pCur[1] == W(' ') || pCur[1] == W('\0')))
-                return true;
-
-            if (pNextSpace == NULL)
-            {
-                // We have reached the last name in the list. There are no more spaces.
-                return (SString::_wcsicmp(wszAssemblyName, pCur) == 0);
-            }
-            else
-            {
-                if (SString::_wcsnicmp(wszAssemblyName, pCur, static_cast<COUNT_T>(pNextSpace - pCur)) == 0)
-                    return true;
-            }
-        }
-
-        pCur = pNextSpace + 1;
-    }
-    while (pCur[0] != W('\0'));
-
-    return false;
-}
-#endif // FEATURE_READYTORUN
-
 
 #ifdef FEATURE_COMINTEROP
 

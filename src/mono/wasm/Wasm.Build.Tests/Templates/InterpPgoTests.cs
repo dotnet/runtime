@@ -107,6 +107,7 @@ public class InterpPgoTests : WasmTemplateTestBase
 
             Assert.Contains("Hello, Browser!", output);
             // Verify that table data was loaded from cache
+            // if this breaks, it could be caused by change in config which affects the config hash and the cache storage hash key
             Assert.Contains(" bytes of interp_pgo data (table size == ", output);
             // Verify that the table was saved after the app ran
             Assert.Contains("Saved interp_pgo table", output);
