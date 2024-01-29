@@ -539,10 +539,10 @@ internal sealed class Xcode
             foreach (string aFile in Directory.GetFiles(workspace, "*.a"))
             {
                 string aFileName = Path.GetFileNameWithoutExtension(aFile);
-                if((libName.StartsWith("libSystem.Globalization", StringComparison.OrdinalIgnoreCase) ||
-                    libName.StartsWith("libicudata", StringComparison.OrdinalIgnoreCase) ||
-                    libName.StartsWith("libicui18n", StringComparison.OrdinalIgnoreCase) ||
-                    libName.StartsWith("libicuuc", StringComparison.OrdinalIgnoreCase)) && hybridGlobalization)
+                if((aFileName.StartsWith("libSystem.Globalization", StringComparison.OrdinalIgnoreCase) ||
+                    aFileName.StartsWith("libicudata", StringComparison.OrdinalIgnoreCase) ||
+                    aFileName.StartsWith("libicui18n", StringComparison.OrdinalIgnoreCase) ||
+                    aFileName.StartsWith("libicuuc", StringComparison.OrdinalIgnoreCase)) && hybridGlobalization)
                     continue;
                 else if (aFileName.StartsWith("libSystem.HybridGlobalization", StringComparison.OrdinalIgnoreCase) && !hybridGlobalization)
                     continue;
