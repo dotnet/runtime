@@ -779,14 +779,16 @@ protected:
 #define _idBound _idCustom1 /* jump target / frame offset bound */
 #define _idTlsGD _idCustom2 /* Used to store information related to TLS GD access on linux */
 #define _idNoGC _idCustom3  /* Some helpers don't get recorded in GC tables */
-#define _idEvexAaaContext ((_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1) /* bits used for the EVEX.aaa context */
+#define _idEvexAaaContext                                                                                              \
+    ((_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1) /* bits used for the EVEX.aaa context                         \
+                                                                                              */
 
 #if !defined(TARGET_ARMARCH)
-        unsigned    _idCustom4 : 1;
+        unsigned _idCustom4 : 1;
 
-#define _idCallRegPtr _idCustom4 /* IL indirect calls : addr in reg */
+#define _idCallRegPtr _idCustom4   /* IL indirect calls : addr in reg */
 #define _idEvexZContext _idCustom4 /* bits used for the EVEX.z context */
-#endif // !TARGET_ARMARCH
+#endif                             // !TARGET_ARMARCH
 
 #if defined(TARGET_XARCH)
         // EVEX.b can indicate several context: embedded broadcast, embedded rounding.
