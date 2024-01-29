@@ -62,22 +62,32 @@ export function http_wasm_create_controller(): HttpController {
 }
 
 export function http_wasm_abort_request(controller: HttpController): void {
-    if (controller.streamWriter) {
-        controller.streamWriter.abort();
+    try {
+        if (controller.streamWriter) {
+            controller.streamWriter.abort();
+        }
+    }
+    catch (err) {
+        // ignore
     }
     http_wasm_abort_response(controller);
 }
 
 export function http_wasm_abort_response(controller: HttpController): void {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
-    controller.abortController.abort();
-    if (controller.streamReader) {
-        controller.streamReader.cancel().catch((err) => {
-            if (err && err.name !== "AbortError") {
-                Module.err("Error in http_wasm_abort_response: " + err);
-            }
-            // otherwise, it's expected
-        });
+    try {
+        if (controller.streamReader) {
+            controller.streamReader.cancel().catch((err) => {
+                if (err && err.name !== "AbortError") {
+                    Module.err("Error in http_wasm_abort_response: " + err);
+                }
+                // otherwise, it's expected
+            });
+        }
+        controller.abortController.abort();
+    }
+    catch (err) {
+        // ignore
     }
 }
 

@@ -323,7 +323,7 @@ namespace Wasm.Build.Tests
             {
                 _testOutput.WriteLine($"Exit code: {exitCode}");
                 if (exitCode != expectedAppExitCode)
-                    throw new XunitException($"[{testCommand}] Exit code, expected {expectedAppExitCode} but got {exitCode} for command: {testCommand} {args}");
+                    throw new XunitException($"[{testCommand}] Exit code, expected {expectedAppExitCode} but got {exitCode} for command: {args}");
             }
 
             return output;
@@ -370,6 +370,7 @@ namespace Wasm.Build.Tests
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
+                <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>test-main.js</WasmMainJSPath>
