@@ -72,16 +72,6 @@ DO_API(MonoMethod*, mono_method_get_last_managed, ())
 
 DO_API(void, mono_set_assemblies_path_null_separated, (const char* name))
 
-DO_API(MonoJitInfo*, mono_jit_info_table_find, (MonoDomain * domain, void* ip))
-
-DO_API(int, mono_unity_managed_callstack, (unsigned char* buffer, int bufferSize, const MonoUnityCallstackOptions * opts));
-
-DO_API_OPTIONAL(MonoDebugSourceLocation*, mono_debug_lookup_source_location_by_il, (MonoMethod * method, guint32 il_offset, MonoDomain * domain))
-DO_API(MonoDebugSourceLocation*, mono_debug_lookup_source_location, (MonoMethod * method, guint32 address, MonoDomain * domain))
-DO_API(void, mono_debug_free_source_location, (MonoDebugSourceLocation * location))
-DO_API_OPTIONAL(MonoDebugMethodJitInfo*, mono_debug_find_method, (MonoMethod * method, MonoDomain * domain))
-DO_API_OPTIONAL(void, mono_debug_free_method_jit_info, (MonoDebugMethodJitInfo * jit))
-
 DO_API(gint32, mono_class_instance_size, (MonoClass * klass))
 DO_API(guint32, mono_class_get_type_token, (MonoClass * klass))
 DO_API(MonoProperty*, mono_class_get_property_from_name, (MonoClass * klass, const char *name))
