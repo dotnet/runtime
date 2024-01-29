@@ -47,8 +47,14 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     verifyEnvironment();
     assert_js_interop();
     mono_assert(uri && typeof uri === "string", () => `ERR12: Invalid uri ${typeof uri}`);
-
-    const ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
+    let ws: WebSocketExtension;
+    try {
+        ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
+    }
+    catch (e) {
+        mono_log_warn("WebSocket error", e);
+        throw e;
+    }
     const { promise_control: open_promise_control } = createPromiseController<WebSocketExtension>();
 
     ws[wasm_ws_pending_receive_event_queue] = new Queue();
