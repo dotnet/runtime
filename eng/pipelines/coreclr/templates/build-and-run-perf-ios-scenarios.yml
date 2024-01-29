@@ -1,5 +1,5 @@
 parameters:
-  hybridGlobalization: False
+  hybridGlobalization: True
 
 jobs:
   # build mono iOS scenarios HybridGlobalization

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "../../globals";
-import { pthreadPtr } from "./types";
-import MonoWasmThreads from "consts:monoWasmThreads";
+import { Thread } from "../browser";
+import { PThreadInfo, pthreadPtr } from "./types";
 
 /** @module emscripten-internals accessors to the functions in the emscripten PThreads library, including
  * the low-level representations of {@linkcode pthreadPtr} thread info structs, etc.
@@ -15,9 +15,10 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 // This is what we know about the Emscripten PThread library
 export interface PThreadLibrary {
     unusedWorkers: PThreadWorker[];
+    runningWorkers: PThreadWorker[];
     pthreads: PThreadInfoMap;
     allocateUnusedWorker: () => void;
-    loadWasmModuleToWorker: (worker: Worker) => Promise<Worker>;
+    loadWasmModuleToWorker: (worker: PThreadWorker) => Promise<PThreadWorker>;
     threadInitTLS: () => void,
     getNewWorker: () => PThreadWorker,
     returnWorkerToPool: (worker: PThreadWorker) => void,
@@ -28,47 +29,37 @@ export interface PThreadLibrary {
 export interface PThreadWorker extends Worker {
     pthread_ptr: pthreadPtr;
     loaded: boolean;
-    interopInstalled: boolean;
-}
-
-interface PThreadObject {
-    worker: PThreadWorker;
+    // this info is updated via async messages from the worker, it could be stale
+    info: PThreadInfo;
+    thread?: Thread;
 }
 
 interface PThreadInfoMap {
-    [key: pthreadPtr]: PThreadObject | undefined;
+    [key: pthreadPtr]: PThreadWorker;
 }
 
 
-function isRunningPThreadWorker(w: Worker): w is PThreadWorker {
-    return (<any>w).pthread !== undefined;
+export function getWorker(pthreadPtr: pthreadPtr): PThreadWorker | undefined {
+    return getModulePThread().pthreads[pthreadPtr];
 }
 
-/// These utility functions dig into Emscripten internals
-export const Internals = !MonoWasmThreads ? null as any : {
-    get modulePThread(): PThreadLibrary {
-        return (<any>Module).PThread as PThreadLibrary;
-    },
-    getWorker: (pthreadPtr: pthreadPtr): PThreadWorker | undefined => {
-        return Internals.modulePThread.pthreads[pthreadPtr];
-    },
-    getThreadId: (worker: Worker): pthreadPtr | undefined => {
-        /// See library_pthread.js in Emscripten.
-        /// They hang a "pthread" object from the worker if the worker is running a thread, and remove it when the thread stops by doing `pthread_exit` or when it's joined using `pthread_join`.
-        if (!isRunningPThreadWorker(worker))
-            return undefined;
-        return worker.pthread_ptr;
-    },
-    allocateUnusedWorker: (): void => {
-        /// See library_pthread.js in Emscripten.
-        /// This function allocates a new worker and adds it to the pool of workers.
-        /// It's called when the pool of workers is empty and a new thread is created.
-        Internals.modulePThread.allocateUnusedWorker();
-    },
-    getUnusedWorkerPool: (): Worker[] => {
-        return Internals.modulePThread.unusedWorkers;
-    },
-    loadWasmModuleToWorker: (worker: Worker): Promise<Worker> => {
-        return Internals.modulePThread.loadWasmModuleToWorker(worker);
-    }
-};
+export function allocateUnusedWorker(): void {
+    /// See library_pthread.js in Emscripten.
+    /// This function allocates a new worker and adds it to the pool of workers.
+    /// It's called when the pool of workers is empty and a new thread is created.
+    getModulePThread().allocateUnusedWorker();
+}
+export function getUnusedWorkerPool(): PThreadWorker[] {
+    return getModulePThread().unusedWorkers;
+}
+export function getRunningWorkers(): PThreadWorker[] {
+    return getModulePThread().runningWorkers;
+}
+
+export function loadWasmModuleToWorker(worker: PThreadWorker): Promise<PThreadWorker> {
+    return getModulePThread().loadWasmModuleToWorker(worker);
+}
+
+export function getModulePThread(): PThreadLibrary {
+    return (<any>Module).PThread as PThreadLibrary;
+}

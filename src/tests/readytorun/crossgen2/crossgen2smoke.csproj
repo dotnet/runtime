@@ -5,6 +5,13 @@
 
     <!-- This is an explicit crossgen test -->
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <CrossGen2TestCheckPdb>true</CrossGen2TestCheckPdb>
   </PropertyGroup>
+
+  <ItemGroup>
+    <CheckPdbSymbol Include="System.Int32 Program+SomeClass::GetHashCode()" />
+    <CheckPdbSymbol Include="System.String Program::ObjectToStringOnGenericParamTestWorker(System.__Canon&amp;)" />
+  </ItemGroup>
+
   <Import Project="smoketest.targets" />
 </Project>

@@ -347,6 +347,11 @@ namespace System
             scoped Span<byte> buffer;
             byte[]? arrayFromPool = null;
 
+            if (value.Length == 0)
+            {
+                result = default;
+                return ParsingStatus.Failed;
+            }
             if (value.Length < 255)
             {
                 buffer = stackalloc byte[value.Length + 1 + 1];
@@ -529,13 +534,17 @@ namespace System
         // algorithm with a running time of O(N^2). And if it is greater than the threshold, use
         // a divide-and-conquer algorithm with a running time of O(NlogN).
         //
+        // `1233`, which is approx the upper bound of most RSA key lengths, covers the majority
+        // of most common inputs and allows for the less naive algorithm to be used for
+        // large/uncommon inputs.
+        //
 #if DEBUG
         // Mutable for unit testing...
         internal static
 #else
         internal const
 #endif
-        int s_naiveThreshold = 20000;
+        int s_naiveThreshold = 1233;
         private static ParsingStatus NumberToBigInteger(ref NumberBuffer number, out BigInteger result)
         {
             int currentBufferSize = 0;

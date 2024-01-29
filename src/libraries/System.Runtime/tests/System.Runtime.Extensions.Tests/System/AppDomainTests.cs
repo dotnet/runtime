@@ -512,9 +512,14 @@ namespace System.Tests
         {
             RemoteExecutor.Invoke(() => {
                 bool AssemblyLoadFlag = false;
+                bool isMono = PlatformDetection.IsMonoRuntime;
                 AssemblyLoadEventHandler handler = (sender, args) =>
                 {
-                    Assert.Equal(AppDomain.CurrentDomain, sender);
+                    if (isMono)
+                        Assert.True(AppDomain.CurrentDomain == sender);
+                    else
+                        Assert.Equal(AppDomain.CurrentDomain, sender);
+
                     Assert.NotNull(args);
                     Assert.NotNull(args.LoadedAssembly);
 

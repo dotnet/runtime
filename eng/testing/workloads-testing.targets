@@ -5,6 +5,20 @@
     <InstallWorkloadForTesting Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(ArchiveTests)' == 'true'">true</InstallWorkloadForTesting>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <SdkWithNoWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-none\</SdkWithNoWorkloadForTestingPath>
+    <SdkWithNoWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithNoWorkloadForTestingPath)))</SdkWithNoWorkloadForTestingPath>
+
+    <SdkWithNoWorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithNoWorkloadStampPath>
+    <SdkWithNoWorkload_WorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)workload.stamp</SdkWithNoWorkload_WorkloadStampPath>
+
+    <SdkWithWorkloadForTestingPath Condition="'$(SdkWithWorkloadForTestingPath)' == ''">$(ArtifactsBinDir)dotnet-latest\</SdkWithWorkloadForTestingPath>
+    <SdkWithWorkloadForTestingPath Condition="'$(SdkWithWorkloadForTestingPath)' != ''">$([MSBuild]::NormalizeDirectory($(SdkWithWorkloadForTestingPath)))</SdkWithWorkloadForTestingPath>
+
+    <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>
+    <SdkWithWorkload_WorkloadStampPath>$(SdkWithWorkloadForTestingPath)workload.stamp</SdkWithWorkload_WorkloadStampPath>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(InstallWorkloadForTesting)' == 'true'">
     <_SdkForWorkloadTestingBasePath>$(ArtifactsBinDir)</_SdkForWorkloadTestingBasePath>
     <_SdkWithNoWorkloadPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-none'))</_SdkWithNoWorkloadPath>
@@ -55,8 +69,8 @@
     <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 8.0 -Quality daily" />
 
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
-    <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
-    <_DefaultPropsForNuGetBuild Include="TargetArchitecture=$(TargetArchitecture)" />
+    <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOSForWorkload)" />
+    <_DefaultPropsForNuGetBuild Include="TargetArchitecture=$(TargetArchitectureForWorkload)" />
     <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
   </ItemGroup>
 
@@ -150,6 +164,8 @@
   </Target>
 
   <Target Name="GetWorkloadInputs" DependsOnTargets="$(GetWorkloadInputsDependsOn)">
+    <Error Condition="'$(TargetOSForWorkload)' == ''" Text="%24(TargetOSForWorkload) is unset" />
+    <Error Condition="'$(TargetArchitectureForWorkload)' == ''" Text="%24(TargetArchitectureForWorkload) is unset" />
     <ItemGroup>
       <AvailableNuGetsInArtifacts Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
 
@@ -157,7 +173,7 @@
       <_SdkWithWorkloadToInstall Include="@(WorkloadCombinationsToInstall)" />
       <_SdkWithWorkloadToInstall InstallPath="$(_SdkForWorkloadTestingBasePath)\dotnet-%(Identity)" />
       <!--<_SdkWithWorkloadToInstall StampPath="%(InstallPath)\version-%(Version).stamp" Condition="'%(Version)' != ''" />-->
-      <_SdkWithWorkloadToInstall StampPath="%(InstallPath)\.workload-installed.$(RuntimeIdentifier).stamp" />
+      <_SdkWithWorkloadToInstall StampPath="%(InstallPath)\.workload-installed.$(RIDForWorkload).stamp" />
     </ItemGroup>
 
     <Error Text="Cannot find any nupkg files in $(LibrariesShippingPackagesDir), needed for workloads" Condition="@(AvailableNuGetsInArtifacts->Count()) == 0" />
@@ -216,4 +232,7 @@
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />
   </Target>
+
+  <Import Project="$(MSBuildThisFileDirectory)workloads-wasi.targets" Condition="'$(RIDForWorkload)' == 'wasi-wasm'" />
+  <Import Project="$(MSBuildThisFileDirectory)workloads-browser.targets" Condition="'$(RIDForWorkload)' == 'browser-wasm'" />
 </Project>

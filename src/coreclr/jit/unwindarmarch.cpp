@@ -329,10 +329,6 @@ void Compiler::unwindPushMaskInt(regMaskTP maskInt)
     if (generateCFIUnwindCodes())
     {
         // If we are pushing LR, we should give unwind codes in terms of caller's PC
-        if (maskInt & RBM_LR)
-        {
-            maskInt = (maskInt & ~RBM_LR) | RBM_PC;
-        }
         unwindPushPopMaskCFI(maskInt, false);
         return;
     }

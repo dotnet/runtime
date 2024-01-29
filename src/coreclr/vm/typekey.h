@@ -9,7 +9,7 @@
 // Support for type lookups based on components of the type (as opposed to string)
 // Used in
 // * Table of constructed types (Module::m_pAvailableParamTypes)
-// * Types currently being loaded (ClassLoader::m_pUnresolvedClassHash)
+// * Types currently being loaded (PendingTypeLoadTable)
 //
 // Type handles are in one-to-one correspondence with TypeKeys
 // In particular, note that tokens in the key are resolved TypeDefs
@@ -59,6 +59,11 @@ class TypeKey
         } asFnPtr;
     } u;
 
+    TypeKey()
+    {
+        // Used to construct InvalidTypeKey
+        m_kind = (CorElementType)0;
+    }
 public:
 
     // Constructor for BYREF/PTR/ARRAY/SZARRAY types
@@ -98,6 +103,11 @@ public:
         u.asFnPtr.m_callConv = callConv;
         u.asFnPtr.m_numArgs = numArgs;
         u.asFnPtr.m_pRetAndArgTypes = retAndArgTypes;
+    }
+
+    static TypeKey InvalidTypeKey()
+    {
+        return TypeKey();
     }
 
     CorElementType GetKind() const
@@ -207,7 +217,7 @@ public:
         return u.asFnPtr.m_pRetAndArgTypes;
     }
 
-    BOOL Equals(TypeKey *pKey) const
+    BOOL Equals(const TypeKey *pKey) const
     {
         WRAPPER_NO_CONTRACT;
         return TypeKey::Equals(this, pKey);
