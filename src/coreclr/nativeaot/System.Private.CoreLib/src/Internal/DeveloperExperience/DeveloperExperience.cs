@@ -1,22 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// We want the Debug.WriteLine statements below to actually do something.
-#define DEBUG
-
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
-using System.Reflection;
 using System.Runtime;
-using System.Text;
 
 using Internal.Runtime.Augments;
 
 namespace Internal.DeveloperExperience
 {
-    public class DeveloperExperience
+    internal class DeveloperExperience
     {
         public virtual string CreateStackTraceString(IntPtr ip, bool includeFileInfo, out bool isStackTraceHidden)
         {

@@ -751,7 +751,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     //
     BasicBlock* notInRangeBb = m_b1->GetTrueTarget();
     BasicBlock* inRangeBb;
-    if (notInRangeBb == m_b2->GetTrueTarget())
+    if (m_b2->TrueTargetIs(notInRangeBb))
     {
         // Shape 1: both conditions jump to NotInRange
         //
@@ -765,7 +765,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         // ...
         inRangeBb = m_b2->GetFalseTarget();
     }
-    else if (notInRangeBb == m_b2->GetFalseTarget())
+    else if (m_b2->FalseTargetIs(notInRangeBb))
     {
         // Shape 2: 2nd block jumps to InRange
         //
@@ -807,11 +807,16 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
+    // Re-direct firstBlock to jump to inRangeBb
     m_comp->fgAddRefPred(inRangeBb, m_b1);
     if (!cmp2IsReversed)
     {
-        // Re-direct firstBlock to jump to inRangeBb
         m_b1->SetTrueTarget(inRangeBb);
+        m_b1->SetFalseTarget(notInRangeBb);
+    }
+    else
+    {
+        m_b1->SetFalseTarget(inRangeBb);
     }
 
     // Remove the 2nd condition block as we no longer need it
@@ -1015,7 +1020,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
-    if (m_comp->fgCanCompactBlocks(m_b1, m_b2))
+    if (m_b1->NextIs(m_b2) && m_comp->fgCanCompactBlocks(m_b1, m_b2))
     {
         m_comp->fgCompactBlocks(m_b1, m_b2);
     }

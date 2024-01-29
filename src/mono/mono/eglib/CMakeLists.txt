@@ -41,7 +41,7 @@ set(eglib_common_sources
     gutf8.c
     ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c)
 
-if(IS_BIG_ENDIAN)
+if(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
   set_source_files_properties("${CLR_SRC_NATIVE_DIR}/minipal/utf8.c" PROPERTIES COMPILE_FLAGS "-DBIGENDIAN=1")
 endif()
 

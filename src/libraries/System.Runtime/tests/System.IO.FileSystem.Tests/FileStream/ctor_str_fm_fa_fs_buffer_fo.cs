@@ -33,12 +33,14 @@ namespace System.IO.Tests
         [InlineData(FileOptions.SequentialScan)]
         [InlineData(FileOptions.WriteThrough)]
         [InlineData((FileOptions)0x20000000)] // FILE_FLAG_NO_BUFFERING on Windows
+        [InlineData((FileOptions)0x02000000)] // FILE_FLAG_BACKUP_SEMANTICS on Windows
         [InlineData(FileOptions.Asynchronous)]
         [InlineData(FileOptions.Asynchronous | FileOptions.DeleteOnClose)]
         [InlineData(FileOptions.Asynchronous | FileOptions.RandomAccess)]
         [InlineData(FileOptions.Asynchronous | FileOptions.SequentialScan)]
         [InlineData(FileOptions.Asynchronous | FileOptions.WriteThrough)]
         [InlineData(FileOptions.Asynchronous | (FileOptions)0x20000000)]
+        [InlineData(FileOptions.Asynchronous | (FileOptions)0x02000000)]
         [InlineData(FileOptions.Asynchronous | FileOptions.DeleteOnClose | FileOptions.RandomAccess | FileOptions.SequentialScan | FileOptions.WriteThrough)]
         public void ValidFileOptions(FileOptions option)
         {

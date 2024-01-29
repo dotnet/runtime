@@ -418,8 +418,9 @@ struct emitLclVarAddr
     // Constructor
     void initLclVarAddr(int varNum, unsigned offset);
 
-    int lvaVarNum(); // Returns the variable to access. Note that it returns a negative number for compiler spill temps.
-    unsigned lvaOffset(); // returns the offset into the variable to access
+    int lvaVarNum() const; // Returns the variable to access. Note that it returns a negative number for compiler spill
+                           // temps.
+    unsigned lvaOffset() const; // returns the offset into the variable to access
 
     // This struct should be 32 bits in size for the release build.
     // We have this constraint because this type is used in a union
@@ -771,8 +772,8 @@ protected:
 #ifndef TARGET_ARMARCH
         unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
 #endif
-        unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
-        unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
+        unsigned _idTlsGD : 1; // Used to store information related to TLS GD access on linux
+        unsigned _idNoGC : 1;  // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
         // EVEX.b can indicate several context: embedded broadcast, embedded rounding.
         // For normal and embedded broadcast intrinsics, EVEX.L'L has the same semantic, vector length.
@@ -1595,6 +1596,15 @@ protected:
         }
 #endif
 
+        bool idIsTlsGD() const
+        {
+            return _idTlsGD != 0;
+        }
+        void idSetTlsGD()
+        {
+            _idTlsGD = 1;
+        }
+
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
         // code, it is not necessary to generate GC info for a call so labeled.
@@ -2164,7 +2174,7 @@ protected:
     static const IS_INFO emitGetSchedInfo(insFormat f);
 #endif // TARGET_XARCH
 
-    cnsval_ssize_t emitGetInsSC(instrDesc* id);
+    cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
     unsigned emitInsCount;
 
     /************************************************************************/
@@ -2534,7 +2544,7 @@ private:
                              DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
     void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
-    void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
+    bool emitSetLoopBackEdge(const BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig,
                                                   size_t offset DEBUG_ARG(bool isAlignAdjusted)
