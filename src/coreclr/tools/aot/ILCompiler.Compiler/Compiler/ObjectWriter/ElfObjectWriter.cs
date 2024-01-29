@@ -43,7 +43,7 @@ namespace ILCompiler.ObjectWriter
         // Symbol table
         private readonly Dictionary<string, uint> _symbolNameToIndex = new();
 
-        private int _managedCodeSectionIndex;
+        private Dictionary<int, (SectionWriter ExidxSectionWriter, SectionWriter ExtabSectionWriter)> _armUnwindSections;
         private static readonly ObjectNodeSection ArmUnwindIndexSection = new ObjectNodeSection(".ARM.exidx", SectionType.UnwindData);
         private static readonly ObjectNodeSection ArmUnwindTableSection = new ObjectNodeSection(".ARM.extab", SectionType.ReadOnly);
         private static readonly ObjectNodeSection ArmAttributesSection = new ObjectNodeSection(".ARM.attributes", SectionType.ReadOnly);
@@ -163,11 +163,6 @@ namespace ILCompiler.ObjectWriter
                     Info = STT_NOTYPE,
                     Name = $"$t.{sectionIndex}"
                 });
-
-                if (section == ObjectNodeSection.ManagedCodeUnixContentSection)
-                {
-                    _managedCodeSectionIndex = sectionIndex;
-                }
             }
 
             base.CreateSection(section, comdatName, symbolName ?? sectionName, sectionStream);
@@ -490,18 +485,29 @@ namespace ILCompiler.ObjectWriter
                 SectionWriter exidxSectionWriter;
                 SectionWriter extabSectionWriter;
 
-                if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo) ||
-                    sectionWriter.SectionIndex != _managedCodeSectionIndex)
+                if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
                 {
                     exidxSectionWriter = GetOrCreateSection(ArmUnwindIndexSection, currentSymbolName, $"_unwind0{currentSymbolName}");
                     extabSectionWriter = GetOrCreateSection(ArmUnwindTableSection, currentSymbolName, $"_extab0{currentSymbolName}");
+                    _sections[exidxSectionWriter.SectionIndex].LinkSection = _sections[sectionWriter.SectionIndex];
                 }
                 else
                 {
-                    exidxSectionWriter = GetOrCreateSection(ArmUnwindIndexSection);
-                    extabSectionWriter = GetOrCreateSection(ArmUnwindTableSection);
+                    _armUnwindSections ??= new();
+                    if (_armUnwindSections.TryGetValue(sectionWriter.SectionIndex, out var unwindSections))
+                    {
+                        exidxSectionWriter = unwindSections.ExidxSectionWriter;
+                        extabSectionWriter = unwindSections.ExtabSectionWriter;
+                    }
+                    else
+                    {
+                        string sectionName = _sections[sectionWriter.SectionIndex].Name;
+                        exidxSectionWriter = GetOrCreateSection(new ObjectNodeSection($"{ArmUnwindIndexSection.Name}{sectionName}", ArmUnwindIndexSection.Type));
+                        extabSectionWriter = GetOrCreateSection(new ObjectNodeSection($"{ArmUnwindTableSection.Name}{sectionName}", ArmUnwindTableSection.Type));
+                        _sections[exidxSectionWriter.SectionIndex].LinkSection = _sections[sectionWriter.SectionIndex];
+                        _armUnwindSections.Add(sectionWriter.SectionIndex, (exidxSectionWriter, extabSectionWriter));
+                    }
                 }
-                _sections[exidxSectionWriter.SectionIndex].LinkSection = _sections[sectionWriter.SectionIndex];
 
                 long mainLsdaOffset = 0;
                 Span<byte> unwindWord = stackalloc byte[4];
