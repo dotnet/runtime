@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropretyGroup>
+  <PropertyGroup>
     <MonoAotIncompatible>true</MonoAotIncompatible>
-  </PropretyGroup>
+  </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_d.??proj" />
