@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
 
         public MethodImportAttributes Flags => _flags;
 
-        internal static DllImportData CreateDllImportData(CustomAttributeInfo attr, out bool preserveSig)
+        internal static DllImportData Create(CustomAttributeInfo attr, out bool preserveSig)
         {
             string? moduleName = (string?)attr._ctorArgs[0];
             if (string.IsNullOrEmpty(moduleName))
@@ -47,23 +47,10 @@ namespace System.Reflection.Emit
                         preserveSig = (bool)value;
                         break;
                     case "CallingConvention":
-                        importAttributes |= (CallingConvention)value switch
-                        {
-                            CallingConvention.Cdecl => MethodImportAttributes.CallingConventionCDecl,
-                            CallingConvention.FastCall => MethodImportAttributes.CallingConventionFastCall,
-                            CallingConvention.StdCall => MethodImportAttributes.CallingConventionStdCall,
-                            CallingConvention.ThisCall => MethodImportAttributes.CallingConventionThisCall,
-                            _ => MethodImportAttributes.CallingConventionWinApi // Roslyn defaults with this
-                        };
+                        importAttributes |= MatchNativeCallingConvention((CallingConvention)value);
                         break;
                     case "CharSet":
-                        importAttributes |= (CharSet)value switch
-                        {
-                            CharSet.Ansi => MethodImportAttributes.CharSetAnsi,
-                            CharSet.Auto => MethodImportAttributes.CharSetAuto,
-                            CharSet.Unicode => MethodImportAttributes.CharSetUnicode,
-                            _ => MethodImportAttributes.CharSetAuto
-                        };
+                        importAttributes |= MatchNativeCharSet((CharSet)value);
                         break;
                     case "EntryPoint":
                         entryPoint = (string?)value;
@@ -105,6 +92,38 @@ namespace System.Reflection.Emit
 
             return new DllImportData(moduleName, entryPoint, importAttributes);
         }
+
+        internal static DllImportData Create(string moduleName, string entryName, CallingConvention nativeCallConv, CharSet nativeCharSet)
+        {
+            if (string.IsNullOrEmpty(moduleName))
+            {
+                throw new ArgumentException(SR.Argument_DllNameCannotBeEmpty);
+            }
+
+            MethodImportAttributes importAttributes = MatchNativeCallingConvention(nativeCallConv);
+            importAttributes |= MatchNativeCharSet(nativeCharSet);
+
+            return new DllImportData(moduleName, entryName, importAttributes);
+        }
+
+        private static MethodImportAttributes MatchNativeCharSet(CharSet nativeCharSet) =>
+            nativeCharSet switch
+            {
+                CharSet.Ansi => MethodImportAttributes.CharSetAnsi,
+                CharSet.Auto => MethodImportAttributes.CharSetAuto,
+                CharSet.Unicode => MethodImportAttributes.CharSetUnicode,
+                _ => MethodImportAttributes.CharSetAuto
+            };
+
+        private static MethodImportAttributes MatchNativeCallingConvention(CallingConvention nativeCallConv) =>
+            nativeCallConv switch
+            {
+                CallingConvention.Cdecl => MethodImportAttributes.CallingConventionCDecl,
+                CallingConvention.FastCall => MethodImportAttributes.CallingConventionFastCall,
+                CallingConvention.StdCall => MethodImportAttributes.CallingConventionStdCall,
+                CallingConvention.ThisCall => MethodImportAttributes.CallingConventionThisCall,
+                _ => MethodImportAttributes.CallingConventionWinApi // Roslyn defaults with this
+            };
     }
 
     internal sealed class MarshallingData

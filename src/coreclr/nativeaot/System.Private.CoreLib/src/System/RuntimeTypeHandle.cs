@@ -21,9 +21,6 @@ namespace System
         internal unsafe RuntimeTypeHandle(MethodTable* pEEType)
             => _value = (IntPtr)pEEType;
 
-        internal RuntimeTypeHandle(EETypePtr pEEType)
-            => _value = pEEType.RawValue;
-
         private RuntimeTypeHandle(IntPtr value)
             => _value = value;
 
@@ -36,12 +33,12 @@ namespace System
             return false;
         }
 
-        public override int GetHashCode()
+        public override unsafe int GetHashCode()
         {
             if (IsNull)
                 return 0;
 
-            return this.ToEETypePtr().GetHashCode();
+            return (int)this.ToMethodTable()->HashCode;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,12 +95,6 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal EETypePtr ToEETypePtr()
-        {
-            return new EETypePtr(_value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

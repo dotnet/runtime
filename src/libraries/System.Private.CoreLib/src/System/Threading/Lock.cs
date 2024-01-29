@@ -38,8 +38,24 @@ namespace System.Threading
         private uint _state; // see State for layout
         private uint _recursionCount;
         private short _spinCount;
-        private ushort _waiterStartTimeMs;
+
+        // The lowest bit is a flag, when set it indicates that the lock should use trivial waits
+        private ushort _waiterStartTimeMsAndFlags;
+
         private AutoResetEvent? _waitEvent;
+
+#if NATIVEAOT // The method needs to be public in NativeAOT so that other private libraries can access it
+        public Lock(bool useTrivialWaits)
+#else
+        internal Lock(bool useTrivialWaits)
+#endif
+            : this()
+        {
+            if (useTrivialWaits)
+            {
+                _waiterStartTimeMsAndFlags = 1;
+            }
+        }
 
         /// <summary>
         /// Enters the lock. Once the method returns, the calling thread would be the only thread that holds the lock.
@@ -444,9 +460,9 @@ namespace System.Threading
 
         Wait:
             bool areContentionEventsEnabled =
-                NativeRuntimeEventSource.Log?.IsEnabled(
+                NativeRuntimeEventSource.Log.IsEnabled(
                     EventLevel.Informational,
-                    NativeRuntimeEventSource.Keywords.ContentionKeyword) ?? false;
+                    NativeRuntimeEventSource.Keywords.ContentionKeyword);
             AutoResetEvent waitEvent = _waitEvent ?? CreateWaitEvent(areContentionEventsEnabled);
             if (State.TryLockBeforeWait(this))
             {
@@ -463,7 +479,7 @@ namespace System.Threading
                 long waitStartTimeTicks = 0;
                 if (areContentionEventsEnabled)
                 {
-                    NativeRuntimeEventSource.Log!.ContentionStart(this);
+                    NativeRuntimeEventSource.Log.ContentionStart(this);
                     waitStartTimeTicks = Stopwatch.GetTimestamp();
                 }
 
@@ -472,7 +488,7 @@ namespace System.Threading
                 int remainingTimeoutMs = timeoutMs;
                 while (true)
                 {
-                    if (!waitEvent.WaitOne(remainingTimeoutMs))
+                    if (!waitEvent.WaitOneNoCheck(remainingTimeoutMs, UseTrivialWaits))
                     {
                         break;
                     }
@@ -535,7 +551,7 @@ namespace System.Threading
                     {
                         double waitDurationNs =
                             (Stopwatch.GetTimestamp() - waitStartTimeTicks) * 1_000_000_000.0 / Stopwatch.Frequency;
-                        NativeRuntimeEventSource.Log!.ContentionStop(waitDurationNs);
+                        NativeRuntimeEventSource.Log.ContentionStop(waitDurationNs);
                     }
 
                     return currentThreadId;
@@ -551,7 +567,19 @@ namespace System.Threading
             return new ThreadId(0);
         }
 
-        private void ResetWaiterStartTime() => _waiterStartTimeMs = 0;
+        // Trivial waits are:
+        // - Not interruptible by Thread.Interrupt
+        // - Don't allow reentrance through APCs or message pumping
+        // - Not forwarded to SynchronizationContext wait overrides
+        private bool UseTrivialWaits => (_waiterStartTimeMsAndFlags & 1) != 0;
+
+        private ushort WaiterStartTimeMs
+        {
+            get => (ushort)(_waiterStartTimeMsAndFlags >> 1);
+            set => _waiterStartTimeMsAndFlags = (ushort)((value << 1) | (_waiterStartTimeMsAndFlags & 1));
+        }
+
+        private void ResetWaiterStartTime() => WaiterStartTimeMs = 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RecordWaiterStartTime()
@@ -562,7 +590,7 @@ namespace System.Threading
                 // Don't record zero, that value is reserved for indicating that a time is not recorded
                 currentTimeMs--;
             }
-            _waiterStartTimeMs = currentTimeMs;
+            WaiterStartTimeMs = currentTimeMs;
         }
 
         private bool ShouldStopPreemptingWaiters
@@ -571,7 +599,7 @@ namespace System.Threading
             get
             {
                 // If the recorded time is zero, a time has not been recorded yet
-                ushort waiterStartTimeMs = _waiterStartTimeMs;
+                ushort waiterStartTimeMs = WaiterStartTimeMs;
                 return
                     waiterStartTimeMs != 0 &&
                     (ushort)Environment.TickCount - waiterStartTimeMs >= MaxDurationMsForPreemptingWaiters;

@@ -59,19 +59,19 @@ namespace System.Runtime.CompilerServices
         }
 
         [return: NotNullIfNotNull(nameof(obj))]
-        public static object? GetObjectValue(object? obj)
+        public static unsafe object? GetObjectValue(object? obj)
         {
             if (obj == null)
                 return null;
 
-            EETypePtr eeType = obj.GetEETypePtr();
-            if ((!eeType.IsValueType) || eeType.IsPrimitive)
+            MethodTable* eeType = obj.GetMethodTable();
+            if ((!eeType->IsValueType) || eeType->IsPrimitive)
                 return obj;
 
             return obj.MemberwiseClone();
         }
 
-        public static new bool Equals(object? o1, object? o2)
+        public static new unsafe bool Equals(object? o1, object? o2)
         {
             if (o1 == o2)
                 return true;
@@ -80,11 +80,11 @@ namespace System.Runtime.CompilerServices
                 return false;
 
             // If it's not a value class, don't compare by value
-            if (!o1.GetEETypePtr().IsValueType)
+            if (!o1.GetMethodTable()->IsValueType)
                 return false;
 
             // Make sure they are the same type.
-            if (o1.GetEETypePtr() != o2.GetEETypePtr())
+            if (o1.GetMethodTable() != o2.GetMethodTable())
                 return false;
 
             return RuntimeImports.RhCompareObjectContentsAndPadding(o1, o2);
@@ -182,17 +182,16 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>()
+        public static unsafe bool IsReferenceOrContainsReferences<T>()
         {
-            var pEEType = EETypePtr.EETypePtrOf<T>();
-            return !pEEType.IsValueType || pEEType.ContainsGCPointers;
+            MethodTable* pEEType = MethodTable.Of<T>();
+            return !pEEType->IsValueType || pEEType->ContainsGCPointers;
         }
 
         [Intrinsic]
-        internal static bool IsReference<T>()
+        internal static unsafe bool IsReference<T>()
         {
-            var pEEType = EETypePtr.EETypePtrOf<T>();
-            return !pEEType.IsValueType;
+            return !MethodTable.Of<T>()->IsValueType;
         }
 
         [Intrinsic]
@@ -231,9 +230,6 @@ namespace System.Runtime.CompilerServices
 
         internal static unsafe ref MethodTable* GetMethodTableRef(this object obj)
             => ref obj.m_pEEType;
-
-        internal static unsafe EETypePtr GetEETypePtr(this object obj)
-            => new EETypePtr(obj.m_pEEType);
 
         // Returns true iff the object has a component size;
         // i.e., is variable length like System.String or Array.
@@ -350,7 +346,7 @@ namespace System.Runtime.CompilerServices
                 throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(type);
             }
             // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
-            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(new EETypePtr(mt)) != 0);
+            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(mt) != 0);
 
             if (mt->IsNullable)
             {

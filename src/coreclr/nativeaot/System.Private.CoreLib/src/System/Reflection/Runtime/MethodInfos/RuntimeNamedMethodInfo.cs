@@ -148,7 +148,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return methodInfo;
         }
 
-        public sealed override MethodBase MetadataDefinitionMethod
+        internal sealed override MethodBase MetadataDefinitionMethod
         {
             get
             {

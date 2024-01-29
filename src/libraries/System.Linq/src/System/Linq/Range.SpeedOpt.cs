@@ -42,10 +42,10 @@ namespace System.Linq
                 ref int end = ref Unsafe.Add(ref pos, destination.Length);
 
                 if (Vector.IsHardwareAccelerated &&
-                    Vector<int>.Count <= 8 &&
+                    Vector<int>.Count <= 16 &&
                     destination.Length >= Vector<int>.Count)
                 {
-                    Vector<int> init = new Vector<int>((ReadOnlySpan<int>)[0, 1, 2, 3, 4, 5, 6, 7]);
+                    Vector<int> init = new Vector<int>((ReadOnlySpan<int>)[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
                     Vector<int> current = new Vector<int>(value) + init;
                     Vector<int> increment = new Vector<int>(Vector<int>.Count);
 
