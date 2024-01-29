@@ -99,9 +99,9 @@
       <Sha>687be2a32a302aaade82380c0eaafa5af85fb4da</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.24072.5">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.24075.1">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>2249c9a81ec9b6cd86791c21e6e69fbc07099788</Sha>
+      <Sha>e659f328bf255d3e17e81296117c3aed1d461f2f</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.24076.1">
@@ -321,17 +321,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>205ef031e0fe5152dede0bd9f99d0f6f9e7f1e45</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.24073.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.24077.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>a7dfc0c3c4bc2eef6ba70576cdede18464ca7ff6</Sha>
+      <Sha>f49b5c0db06528a9580686a5b63b0e5b4aba566b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.24073.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.24077.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>a7dfc0c3c4bc2eef6ba70576cdede18464ca7ff6</Sha>
+      <Sha>f49b5c0db06528a9580686a5b63b0e5b4aba566b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.24073.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.24077.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>a7dfc0c3c4bc2eef6ba70576cdede18464ca7ff6</Sha>
+      <Sha>f49b5c0db06528a9580686a5b63b0e5b4aba566b</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="9.0.0-beta.24076.5">
       <Uri>https://github.com/dotnet/arcade</Uri>
