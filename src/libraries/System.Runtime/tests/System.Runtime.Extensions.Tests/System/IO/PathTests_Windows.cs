@@ -563,6 +563,9 @@ namespace System.IO.Tests
             { @"C:tmp", @"C:\git\runtime", @"C:\git\runtime\tmp" },
             { @"C:", @"C:\git\runtime", @"C:\git\runtime" },
             { @"C", @"C:\git\runtime", @"C:\git\runtime\C" },
+            // https://github.com/dotnet/runtime/issues/97615
+            { @"c:", @"C:\git\runtime", @"C:\git\runtime" },
+            { @"C:tmp", @"c:\git\runtime", @"c:\git\runtime\tmp" },
 
             { @"Z:tmp\foo\..", @"C:\git\runtime", @"Z:\tmp" },
             { @"Z:tmp\foo\.", @"C:\git\runtime", @"Z:\tmp\foo" },

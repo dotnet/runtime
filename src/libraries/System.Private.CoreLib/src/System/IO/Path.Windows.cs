@@ -89,7 +89,7 @@ namespace System.IO
                 // Drive relative paths
                 Debug.Assert(length == 2 || !PathInternal.IsDirectorySeparator(path[2]));
 
-                if (GetVolumeName(path.AsSpan()).EqualsOrdinal(GetVolumeName(basePath.AsSpan())))
+                if (GetVolumeName(path.AsSpan()).EqualsOrdinalIgnoreCase(GetVolumeName(basePath.AsSpan())))
                 {
                     // Matching root
                     // "C:Foo" and "C:\Bar" => "C:\Bar\Foo"
