@@ -11,7 +11,7 @@ export const tablePrefix = "https://dotnet.generated.invalid/interp_pgo";
 
 export async function interp_pgo_save_data() {
     if (!loaderHelpers.is_runtime_running()) {
-        mono_log_info("Skipped saveing interp_pgo table (already exited)");
+        mono_log_info("Skipped saving interp_pgo table (already exited)");
         return;
     }
     const cacheKey = await getCacheKey(tablePrefix);
