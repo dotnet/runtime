@@ -693,35 +693,15 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             break;
 
         case BBJ_COND:
-        {
-            FlowEdge* oldEdge = fgGetPredForBlock(oldTarget, block);
-            assert(oldEdge != nullptr);
 
+            // Functionally equivalent to above
             if (block->TrueTargetIs(oldTarget))
             {
-                if (block->FalseTargetIs(oldTarget))
-                {
-                    assert(oldEdge->getDupCount() == 2);
-                    fgRemoveConditionalJump(block);
-                    assert(block->KindIs(BBJ_ALWAYS));
-                    block->SetTarget(newTarget);
-                }
-                else
-                {
-                    block->SetTrueTarget(newTarget);
-                }
+                block->SetTrueTarget(newTarget);
+                fgRemoveRefPred(oldTarget, block);
+                fgAddRefPred(newTarget, block);
             }
-            else
-            {
-                assert(block->FalseTargetIs(oldTarget));
-                block->SetFalseTarget(newTarget);
-            }
-
-            assert(oldEdge->getDupCount() == 1);
-            fgRemoveRefPred(oldTarget, block);
-            fgAddRefPred(newTarget, block);
             break;
-        }
 
         case BBJ_SWITCH:
         {
@@ -1393,7 +1373,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_Create:
                             case NI_Vector128_CreateScalar:
                             case NI_Vector128_CreateScalarUnsafe:
-                            case NI_VectorT128_CreateBroadcast:
+                            case NI_VectorT_CreateBroadcast:
 #if defined(TARGET_XARCH)
                             case NI_BMI1_TrailingZeroCount:
                             case NI_BMI1_X64_TrailingZeroCount:
@@ -1407,7 +1387,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector512_CreateScalar:
                             case NI_Vector256_CreateScalarUnsafe:
                             case NI_Vector512_CreateScalarUnsafe:
-                            case NI_VectorT256_CreateBroadcast:
                             case NI_X86Base_BitScanForward:
                             case NI_X86Base_X64_BitScanForward:
                             case NI_X86Base_BitScanReverse:
@@ -1649,20 +1628,20 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_AsUInt64:
                             case NI_Vector128_AsVector4:
                             case NI_Vector128_op_UnaryPlus:
-                            case NI_VectorT128_As:
-                            case NI_VectorT128_AsVectorByte:
-                            case NI_VectorT128_AsVectorDouble:
-                            case NI_VectorT128_AsVectorInt16:
-                            case NI_VectorT128_AsVectorInt32:
-                            case NI_VectorT128_AsVectorInt64:
-                            case NI_VectorT128_AsVectorNInt:
-                            case NI_VectorT128_AsVectorNUInt:
-                            case NI_VectorT128_AsVectorSByte:
-                            case NI_VectorT128_AsVectorSingle:
-                            case NI_VectorT128_AsVectorUInt16:
-                            case NI_VectorT128_AsVectorUInt32:
-                            case NI_VectorT128_AsVectorUInt64:
-                            case NI_VectorT128_op_UnaryPlus:
+                            case NI_VectorT_As:
+                            case NI_VectorT_AsVectorByte:
+                            case NI_VectorT_AsVectorDouble:
+                            case NI_VectorT_AsVectorInt16:
+                            case NI_VectorT_AsVectorInt32:
+                            case NI_VectorT_AsVectorInt64:
+                            case NI_VectorT_AsVectorNInt:
+                            case NI_VectorT_AsVectorNUInt:
+                            case NI_VectorT_AsVectorSByte:
+                            case NI_VectorT_AsVectorSingle:
+                            case NI_VectorT_AsVectorUInt16:
+                            case NI_VectorT_AsVectorUInt32:
+                            case NI_VectorT_AsVectorUInt64:
+                            case NI_VectorT_op_UnaryPlus:
 #if defined(TARGET_XARCH)
                             case NI_Vector256_As:
                             case NI_Vector256_AsByte:
@@ -1678,20 +1657,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector256_AsUInt32:
                             case NI_Vector256_AsUInt64:
                             case NI_Vector256_op_UnaryPlus:
-                            case NI_VectorT256_As:
-                            case NI_VectorT256_AsVectorByte:
-                            case NI_VectorT256_AsVectorDouble:
-                            case NI_VectorT256_AsVectorInt16:
-                            case NI_VectorT256_AsVectorInt32:
-                            case NI_VectorT256_AsVectorInt64:
-                            case NI_VectorT256_AsVectorNInt:
-                            case NI_VectorT256_AsVectorNUInt:
-                            case NI_VectorT256_AsVectorSByte:
-                            case NI_VectorT256_AsVectorSingle:
-                            case NI_VectorT256_AsVectorUInt16:
-                            case NI_VectorT256_AsVectorUInt32:
-                            case NI_VectorT256_AsVectorUInt64:
-                            case NI_VectorT256_op_UnaryPlus:
                             case NI_Vector512_As:
                             case NI_Vector512_AsByte:
                             case NI_Vector512_AsDouble:
@@ -1736,9 +1701,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_get_AllBitsSet:
                             case NI_Vector128_get_One:
                             case NI_Vector128_get_Zero:
-                            case NI_VectorT128_get_AllBitsSet:
-                            case NI_VectorT128_get_One:
-                            case NI_VectorT128_get_Zero:
+                            case NI_VectorT_get_AllBitsSet:
+                            case NI_VectorT_get_One:
+                            case NI_VectorT_get_Zero:
 #if defined(TARGET_XARCH)
                             case NI_Vector256_get_AllBitsSet:
                             case NI_Vector256_get_One:
@@ -1746,9 +1711,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector512_get_AllBitsSet:
                             case NI_Vector512_get_One:
                             case NI_Vector512_get_Zero:
-                            case NI_VectorT256_get_AllBitsSet:
-                            case NI_VectorT256_get_One:
-                            case NI_VectorT256_get_Zero:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
                             {
@@ -5070,17 +5032,13 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     if (curr->KindIs(BBJ_COND))
     {
+        curr->SetFalseTarget(curr->Next());
+        fgReplacePred(succ, curr, newBlock);
         if (curr->TrueTargetIs(succ))
         {
+            // Now 'curr' jumps to newBlock
             curr->SetTrueTarget(newBlock);
         }
-        else
-        {
-            assert(curr->FalseTargetIs(succ));
-            curr->SetFalseTarget(newBlock);
-        }
-
-        fgReplacePred(succ, curr, newBlock);
         fgAddRefPred(newBlock, curr);
     }
     else if (curr->KindIs(BBJ_SWITCH))
@@ -5289,12 +5247,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         /* At this point the bbPreds and bbRefs had better be zero */
         noway_assert((block->bbRefs == 0) && (block->bbPreds == nullptr));
-
-        if (bPrev->KindIs(BBJ_COND) && bPrev->FalseTargetIs(block))
-        {
-            assert(bNext != nullptr);
-            bPrev->SetFalseTarget(bNext);
-        }
     }
     else // block is empty
     {
@@ -5393,15 +5345,24 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     break;
 
                 case BBJ_COND:
-                    if (predBlock->TrueTargetIs(block))
+                    /* The links for the direct predecessor case have already been updated above */
+                    if (!predBlock->TrueTargetIs(block))
                     {
-                        predBlock->SetTrueTarget(succBlock);
+                        break;
                     }
 
-                    if (predBlock->FalseTargetIs(block))
+                    /* Check if both sides of the BBJ_COND now jump to the same block */
+                    if (predBlock->FalseTargetIs(succBlock))
                     {
-                        predBlock->SetFalseTarget(succBlock);
+                        // Make sure we are replacing "block" with "succBlock" in predBlock->bbTarget.
+                        noway_assert(predBlock->TrueTargetIs(block));
+                        predBlock->SetTrueTarget(succBlock);
+                        fgRemoveConditionalJump(predBlock);
+                        break;
                     }
+
+                    noway_assert(predBlock->TrueTargetIs(block));
+                    predBlock->SetTrueTarget(succBlock);
                     break;
 
                 case BBJ_CALLFINALLY:
@@ -5436,9 +5397,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 break;
 
             case BBJ_COND:
-                // block should not be a target anymore
-                assert(!bPrev->TrueTargetIs(block));
-                assert(!bPrev->FalseTargetIs(block));
+                bPrev->SetFalseTarget(block->Next());
 
                 /* Check if both sides of the BBJ_COND now jump to the same block */
                 if (bPrev->TrueTargetIs(bPrev->GetFalseTarget()))
@@ -5506,7 +5465,7 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
 //   Newly inserted block after bSrc that jumps to bDst,
 //   or nullptr if bSrc already falls through to bDst
 //
-BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, bool noFallThroughQuirk /* = false */)
+BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 {
     assert(bSrc != nullptr);
     assert(fgPredsComputed);
@@ -5514,18 +5473,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, b
 
     /* If bSrc falls through to a block that is not bDst, we will insert a jump to bDst */
 
-    if (bSrc->KindIs(BBJ_COND) && bSrc->FalseTargetIs(bDst) && !bSrc->NextIs(bDst))
+    if (bSrc->KindIs(BBJ_COND) && !bSrc->NextIs(bDst))
     {
-        assert(fgGetPredForBlock(bDst, bSrc) != nullptr);
-
-        // Allow the caller to decide whether to use the old logic of maintaining implicit fallthrough behavior,
-        // or to allow BBJ_COND blocks' false targets to diverge from bbNext.
-        // TODO-NoFallThrough: Remove this quirk once callers' dependencies on implicit fallthrough are gone.
-        if (noFallThroughQuirk)
-        {
-            return jmpBlk;
-        }
-
         // Add a new block after bSrc which jumps to 'bDst'
         jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
         bSrc->SetFalseTarget(jmpBlk);
@@ -5696,14 +5645,8 @@ bool Compiler::fgRenumberBlocks()
  */
 bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc /* = NULL */)
 {
-    if (bJump->KindIs(BBJ_COND))
-    {
-        assert(bJump->TrueTargetIs(bDest) || bJump->FalseTargetIs(bDest));
-    }
-    else
-    {
-        assert(bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest));
-    }
+    assert((bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest)) ||
+           (bJump->KindIs(BBJ_COND) && bJump->TrueTargetIs(bDest)));
 
     bool        result = false;
     BasicBlock* bTemp  = (bSrc == nullptr) ? bJump : bSrc;
