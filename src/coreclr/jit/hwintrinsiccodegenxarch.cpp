@@ -255,7 +255,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
         if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
         {
-            assert(isTableDriven);
             size_t expectedArgNum = HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId);
 
             if (numArgs == expectedArgNum)
@@ -269,6 +268,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 switch (numArgs)
                 {
+                    case 2:
+                    {
+                        numArgs = 1;
+                        node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1));
+                        break;
+                    }
+
                     case 3:
                     {
                         numArgs = 2;
@@ -304,6 +310,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     switch (numArgs)
                     {
+                        case 1:
+                        {
+                            auto emitSwCase = [&](int8_t i) {
+                                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                                genHWIntrinsic_R_RM(node, ins, simdSize, newInstOptions);
+                            };
+                            regNumber baseReg = node->ExtractTempReg();
+                            regNumber offsReg = node->GetSingleTempReg();
+                            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
+                                                            emitSwCase);
+                            break;
+                        }
                         case 2:
                         {
                             auto emitSwCase = [&](int8_t i) {
@@ -396,7 +414,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, op1);
+                        genHWIntrinsic_R_RM(node, ins, simdSize, instOptions);
                     }
                 }
                 break;
@@ -498,14 +516,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         regNumber offsReg = node->GetSingleTempReg();
                         genHWIntrinsicJumpTableFallback(intrinsicId, op2Reg, baseReg, offsReg, emitSwCase);
                     }
-                }
-                else if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) &&
-                         HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) == numArgs && !op2->IsCnsIntOrI())
-                {
-                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_RM(node, ins, simdSize, i); };
-                    regNumber                    baseReg = node->ExtractTempReg();
-                    regNumber                    offsReg = node->GetSingleTempReg();
-                    genHWIntrinsicJumpTableFallback(intrinsicId, op2Reg, baseReg, offsReg, emitSwCase);
                 }
                 else if (node->TypeGet() == TYP_VOID)
                 {
@@ -757,16 +767,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 //    attr - The emit attribute for the instruction being generated
 //    ival - a "fake" immediate to indicate the rounding mode
 //
-void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival)
+void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, insOpts instOptions)
 {
     regNumber targetReg = node->GetRegNum();
     GenTree*  op1       = node->Op(1);
-    regNumber op1Reg    = op1->GetRegNum();
 
     assert(targetReg != REG_NA);
-    assert(op1Reg != REG_NA);
 
-    node->SetEmbRoundingMode((uint8_t)ival);
+    if((instOptions & INS_OPTS_b_MASK) != 0)
+    {
+        // As embedded rounding only appies in R_R_R case, we can skip other checks for different paths.
+        OperandDesc rmOpDesc = genOperandDesc(op1);
+        assert(rmOpDesc.GetKind() == OperandKind::Reg);
+        regNumber op1Reg    = op1->GetRegNum();
+        assert(op1Reg != REG_NA);
+
+        GetEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, instOptions);
+        return;
+    }
 
     genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
 }
@@ -792,19 +810,6 @@ void CodeGen::genHWIntrinsic_R_RM(
     {
         assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
         assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, rmOp);
-    }
-
-    if (node->GetEmbRoundingMode() != 0)
-    {
-        // As embedded rounding only appies in R_R_R case, we can skip other checks for different paths.
-        OperandDesc rmOpDesc = genOperandDesc(rmOp);
-        assert(rmOpDesc.GetKind() == OperandKind::Reg);
-        regNumber rmOpReg = rmOpDesc.GetReg();
-
-        uint8_t mode        = node->GetEmbRoundingMode();
-        insOpts instOptions = GetEmitter()->GetEmbRoundingMode(mode);
-        GetEmitter()->emitIns_R_R(ins, attr, reg, rmOpReg, instOptions);
-        return;
     }
 
     switch (rmOpDesc.GetKind())
@@ -2595,6 +2600,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
+        case NI_AVX512F_ConvertToInt32:
         case NI_AVX512F_ConvertToUInt32:
         case NI_AVX512F_ConvertToUInt32WithTruncation:
         case NI_AVX512F_X64_ConvertToInt64:
@@ -2605,7 +2611,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             emitAttr attr = emitTypeSize(targetType);
 
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            genHWIntrinsic_R_RM(node, ins, attr, targetReg, node->Op(1));
+            genHWIntrinsic_R_RM(node, ins, attr, instOptions);
             break;
         }
 
@@ -2617,21 +2623,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             if (varTypeIsFloating(baseType))
             {
                 instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-                // There are cases when ConvertToVector256Int32/UInt32 with embedded rounding faeture are called and the
-                // control byte is not constant. Generate the jump table fallback in this case.
-                if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) &&
-                    HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) == numArgs && !node->Op(numArgs)->IsCnsIntOrI())
-                {
-                    auto emitSwCase                      = [&](int8_t i) { genHWIntrinsic_R_RM(node, ins, attr, i); };
-                    regNumber                    op2Reg  = node->Op(2)->GetRegNum();
-                    regNumber                    baseReg = node->ExtractTempReg();
-                    regNumber                    offsReg = node->GetSingleTempReg();
-                    genHWIntrinsicJumpTableFallback(intrinsicId, op2Reg, baseReg, offsReg, emitSwCase);
-                }
-                else
-                {
-                    genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
-                }
+                genHWIntrinsic_R_RM(node, ins, attr, instOptions);
                 break;
             }
             FALLTHROUGH;
