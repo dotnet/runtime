@@ -263,6 +263,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal("Test", ex.Message);
         }
 
+        [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task Executor_Propagates_After_Delay(Executor executor)
+        {
+            using var cts = CreateTestCaseTimeoutSource();
+            bool hit = false;
+            var failedTask = executor.Execute(async () =>
+            {
+                await executor.StickyAwait(WebWorkerTestHelper.CreateDelay(), cts.Token);
+                await WebWorkerTestHelper.JSDelay(10);
+
+                hit = true;
+                throw new InvalidOperationException("Test");
+            }, cts.Token);
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await failedTask);
+            Assert.True(hit);
+            Assert.Equal("Test", ex.Message);
+        }
+
         #endregion
 
         #region Console, Yield, Delay, Timer

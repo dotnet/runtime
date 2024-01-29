@@ -43,7 +43,9 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.WebSocket.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.cs" />
     <None Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
+    <None Include="System\Runtime\InteropServices\JavaScript\test.json" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
+    <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\test.json" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviors, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI } from ".";
+import type { AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI, SingleAssetBehaviors } from ".";
 import type { PThreadLibrary } from "../pthreads/shared/emscripten-internals";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
@@ -147,7 +147,7 @@ export type LoaderHelpers = {
     getPromiseController: <T>(promise: ControllablePromise<T>) => PromiseController<T>,
     assertIsControllablePromise: <T>(promise: Promise<T>) => asserts promise is ControllablePromise<T>,
     mono_download_assets: () => Promise<void>,
-    resolve_single_asset_path: (behavior: AssetBehaviors) => AssetEntryInternal,
+    resolve_single_asset_path: (behavior: SingleAssetBehaviors) => AssetEntryInternal,
     setup_proxy_console: (id: string, console: Console, origin: string) => void
     mono_set_thread_name: (tid: string) => void
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
@@ -192,8 +192,8 @@ export type RuntimeHelpers = {
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
     quit: Function,
-    mono_wasm_exit?: (code: number) => void,
-    abort: (reason: any) => void,
+    nativeExit: (code: number) => void,
+    nativeAbort: (reason: any) => void,
     javaScriptExports: JavaScriptExports,
     storeMemorySnapshotPending: boolean,
     memorySnapshotCacheKey: string,

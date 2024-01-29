@@ -356,7 +356,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
         }
         catch (ex) {
-            runtimeHelpers.abort(ex);
+            runtimeHelpers.nativeAbort(ex);
         }
     }
 
@@ -376,7 +376,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
         }
         catch (ex) {
-            runtimeHelpers.abort(ex);
+            runtimeHelpers.nativeAbort(ex);
         }
     }
 

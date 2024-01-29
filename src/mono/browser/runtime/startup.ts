@@ -25,13 +25,14 @@ import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
 import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
 
 // threads
-import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool, cancelThreads } from "./pthreads/browser";
+import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents } from "./pthreads/worker";
 import { mono_wasm_main_thread_ptr, mono_wasm_pthread_ptr } from "./pthreads/shared";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 import { localHeapViewU8 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
+import { nativeAbort, nativeExit } from "./run";
 
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
@@ -221,17 +222,8 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         await runtimeHelpers.afterPreRun.promise;
         mono_log_debug("onRuntimeInitialized");
 
-        runtimeHelpers.mono_wasm_exit = !MonoWasmThreads ? cwraps.mono_wasm_exit : (code) => {
-            cancelThreads();
-            cwraps.mono_wasm_exit(code);
-        };
-        runtimeHelpers.abort = (reason: any) => {
-            loaderHelpers.exitReason = reason;
-            if (!loaderHelpers.is_exited()) {
-                cwraps.mono_wasm_abort();
-            }
-            throw reason;
-        };
+        runtimeHelpers.nativeExit = nativeExit;
+        runtimeHelpers.nativeAbort = nativeAbort;
 
         const mark = startMeasure();
         // signal this stage, this will allow pending assets to allocate memory

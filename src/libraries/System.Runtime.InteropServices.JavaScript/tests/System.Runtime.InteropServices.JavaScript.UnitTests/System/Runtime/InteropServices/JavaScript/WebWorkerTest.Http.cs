@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task HttpClient_ContentInSameThread(Executor executor)
         {
             using var cts = CreateTestCaseTimeoutSource();
-            var uri = WebWorkerTestHelper.GetOriginUrl() + "/_framework/blazor.boot.json";
+            var uri = WebWorkerTestHelper.GetOriginUrl() + "/test.json";
 
             await executor.Execute(async () =>
             {
@@ -26,7 +26,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 using var response = await client.GetAsync(uri);
                 response.EnsureSuccessStatusCode();
                 var body = await response.Content.ReadAsStringAsync();
-                Assert.StartsWith("{", body);
+                Assert.Contains("hello", body);
+                Assert.Contains("world", body);
             }, cts.Token);
         }
 

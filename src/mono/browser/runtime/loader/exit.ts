@@ -126,10 +126,10 @@ export function mono_exit(exit_code: number, reason?: any): void {
 }
 
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
-    if (runtimeHelpers.runtimeReady && runtimeHelpers.mono_wasm_exit) {
+    if (runtimeHelpers.runtimeReady && runtimeHelpers.nativeExit) {
         runtimeHelpers.runtimeReady = false;
         try {
-            runtimeHelpers.mono_wasm_exit(exit_code);
+            runtimeHelpers.nativeExit(exit_code);
         }
         catch (err) {
             if (runtimeHelpers.ExitStatus && !(err instanceof runtimeHelpers.ExitStatus)) {
