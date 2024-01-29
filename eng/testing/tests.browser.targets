@@ -91,6 +91,7 @@
     <WasmTestAppArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmTestAppArgs) -backgroundExec</WasmTestAppArgs>
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
+    <!-- TEMPORAL --><WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_THREAD_ID=true</WasmXHarnessMonoArgs>
     <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
     <!-- snapshots are not yet supported with threads -->
     <WasmXHarnessMonoArgs Condition="'$(MonoWasmBuildVariant)' == 'multithread'">$(WasmXHarnessMonoArgs) --no-memory-snapshot</WasmXHarnessMonoArgs>
