@@ -2891,6 +2891,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 //
 void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
+    assert(!varTypeIsSmall(treeNode->TypeGet()));
+
     GenTree*  data      = treeNode->AsOp()->gtOp2;
     GenTree*  addr      = treeNode->AsOp()->gtOp1;
     regNumber dataReg   = data->GetRegNum();
@@ -2944,6 +2946,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 {
     assert(treeNode->OperIs(GT_CMPXCHG));
+    assert(!varTypeIsSmall(treeNode->TypeGet()));
 
     GenTree* locOp       = treeNode->Addr();
     GenTree* valOp       = treeNode->Data();

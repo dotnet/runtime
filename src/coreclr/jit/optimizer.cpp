@@ -1478,26 +1478,22 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     }
     // clang-format on
 
-    // After this point, assume we've changed the IR. In particular, we call gtSetStmtInfo() which
-    // can modify the IR. We may still fail to unroll if the EH region conditions don't hold, or if
-    // the size heuristics don't succeed.
+    INDEBUG(const char* reason);
+    if (!loop->CanDuplicate(INDEBUG(&reason)))
+    {
+        JITDUMP("Failed to unroll loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
+        return false;
+    }
+
+    // After this point, assume we've changed the IR. In particular, we call
+    // gtSetStmtInfo() which can modify the IR.
     *changedIR = true;
 
     // Heuristic: Estimated cost in code size of the unrolled loop.
 
     ClrSafeInt<unsigned> loopCostSz; // Cost is size of one iteration
 
-    BasicBlockVisit result = loop->VisitLoopBlocksReversePostOrder([=, &loopCostSz](BasicBlock* block) {
-
-        if (!BasicBlock::sameEHRegion(block, loop->GetHeader()))
-        {
-            // Unrolling would require cloning EH regions
-            // Note that only non-funclet model (x86) could actually have a loop including a handler
-            // but not it's corresponding `try`, if its `try` was moved due to being marked "rare".
-            JITDUMP("Failed to unroll loop " FMT_LP ": EH constraint\n", loop->GetIndex());
-            return BasicBlockVisit::Abort;
-        }
-
+    loop->VisitLoopBlocksReversePostOrder([=, &loopCostSz](BasicBlock* block) {
         for (Statement* const stmt : block->Statements())
         {
             gtSetStmtInfo(stmt);
@@ -1507,17 +1503,13 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
         return BasicBlockVisit::Continue;
     });
 
-    if (result == BasicBlockVisit::Abort)
-    {
-        return false;
-    }
-
 #ifdef DEBUG
-    // With the EH constraint above verified it is not possible for
-    // BBJ_RETURN blocks to be part of the loop; a BBJ_RETURN block can
-    // only be part of the loop if its exceptional flow can reach the
-    // header, but that would require the handler to also be part of
-    // the loop, which guarantees that the loop contains two distinct
+    // Today we will never see any BBJ_RETURN blocks because we cannot
+    // duplicate loops with EH in them. When we have no try-regions that start
+    // in the loop it is not possible for BBJ_RETURN blocks to be part of the
+    // loop; a BBJ_RETURN block can only be part of the loop if its exceptional
+    // flow can reach the header, but that would require the handler to also be
+    // part of the loop, which guarantees that the loop contains two distinct
     // EH regions.
     loop->VisitLoopBlocks([](BasicBlock* block) {
         assert(!block->KindIs(BBJ_RETURN));
@@ -1586,153 +1578,51 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     BasicBlock* exit =
         loop->ContainsBlock(exiting->GetTrueTarget()) ? exiting->GetFalseTarget() : exiting->GetTrueTarget();
 
-    // If the bottom block falls out of the loop, then insert an
-    // explicit block to branch around the unrolled iterations we are
-    // going to create.
+    // If the original bottom block was falling out of the loop, then insert an
+    // explicit block to branch around the unrolled iterations we created.
     if (bottom->KindIs(BBJ_COND))
     {
         // TODO-NoFallThrough: Shouldn't need new BBJ_ALWAYS block once bbFalseTarget can diverge from bbNext
-        BasicBlock* bottomNext = bottom->Next();
-        assert(bottom->FalseTargetIs(bottomNext));
+        BasicBlock* bottomFalseTarget = bottom->GetFalseTarget();
         JITDUMP("Create branch around unrolled loop\n");
-        BasicBlock* bottomRedirBlk = fgNewBBafter(BBJ_ALWAYS, bottom, /*extendRegion*/ true, bottomNext);
+        BasicBlock* bottomRedirBlk = fgNewBBafter(BBJ_ALWAYS, bottom, /*extendRegion*/ true, bottomFalseTarget);
         JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", bottomRedirBlk->bbNum, bottom->bbNum);
 
         bottom->SetFalseTarget(bottomRedirBlk);
         fgAddRefPred(bottomRedirBlk, bottom);
         JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomRedirBlk->bbNum);
-        fgReplacePred(bottomNext, bottom, bottomRedirBlk);
-        JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomNext->bbNum,
-                bottomRedirBlk->bbNum, bottomNext->bbNum);
+        fgReplacePred(bottomFalseTarget, bottom, bottomRedirBlk);
+        JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", bottom->bbNum,
+                bottomFalseTarget->bbNum, bottomRedirBlk->bbNum, bottomFalseTarget->bbNum);
 
         insertAfter = bottomRedirBlk;
     }
 
     for (int lval = lbeg; iterToUnroll > 0; iterToUnroll--)
     {
-        BasicBlock* testBlock = nullptr;
-        loop->VisitLoopBlocksLexical([&](BasicBlock* block) {
+        // Block weight should no longer have the loop multiplier
+        //
+        // Note this is not quite right, as we may not have upscaled by this amount
+        // and we might not have upscaled at all, if we had profile data.
+        //
+        weight_t scaleWeight = 1.0 / BB_LOOP_WEIGHT_SCALE;
+        loop->Duplicate(&insertAfter, &blockMap, scaleWeight, /* bottomNeedsRedirection */ true);
 
-            // Don't set a jump target for now.
-            // BasicBlock::CopyTarget() will fix the jump kind/target in the loop below.
-            BasicBlock* newBlock = fgNewBBafter(BBJ_ALWAYS, insertAfter, /*extendRegion*/ true);
-            insertAfter          = newBlock;
-
-            blockMap.Set(block, newBlock, BlockToBlockMap::Overwrite);
-
-            // Now clone block state and statements from `from` block to `to` block.
-            //
-            BasicBlock::CloneBlockState(this, newBlock, block);
-
-            optReplaceScalarUsesWithConst(newBlock, lvar, lval);
-
-            newBlock->RemoveFlags(BBF_OLD_LOOP_HEADER_QUIRK);
-
-            // Block weight should no longer have the loop multiplier
-            //
-            // Note this is not quite right, as we may not have upscaled by this amount
-            // and we might not have upscaled at all, if we had profile data.
-            //
-            newBlock->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
-
-            // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-            assert(newBlock->KindIs(BBJ_ALWAYS));
-            assert(!newBlock->HasInitializedTarget());
-
-            if (block == iterInfo.TestBlock)
-            {
-                // Remove the test; we're doing a full unroll.
-
-                Statement* testCopyStmt = newBlock->lastStmt();
-                GenTree*   testCopyExpr = testCopyStmt->GetRootNode();
-                assert(testCopyExpr->gtOper == GT_JTRUE);
-                GenTree* sideEffList = nullptr;
-                gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
-                if (sideEffList == nullptr)
-                {
-                    fgRemoveStmt(newBlock, testCopyStmt);
-                }
-                else
-                {
-                    testCopyStmt->SetRootNode(sideEffList);
-                }
-
-                // Save the test block of the previously unrolled
-                // iteration, so that we can redirect it when we create
-                // the next iteration (or to the exit for the last
-                // iteration).
-                assert(testBlock == nullptr);
-                testBlock = newBlock;
-            }
-            else if (block->bbFallsThrough() && !loop->ContainsBlock(block->Next()))
-            {
-                assert(block->KindIs(BBJ_COND) && "Cannot handle fallthrough for non BBJ_COND block");
-                // Handle fallthrough.
-                // TODO-Quirk: Skip empty blocks and go directly to their destination.
-                BasicBlock* targetBlk = block->Next();
-                if (targetBlk->KindIs(BBJ_ALWAYS) && targetBlk->isEmpty())
-                    targetBlk = targetBlk->GetTarget();
-
-                BasicBlock* newRedirBlk = fgNewBBafter(BBJ_ALWAYS, insertAfter, /* extendRegion */ true, targetBlk);
-                newRedirBlk->copyEHRegion(insertAfter);
-                newRedirBlk->bbWeight = block->Next()->bbWeight;
-                newRedirBlk->CopyFlags(block->Next(), BBF_RUN_RARELY | BBF_PROF_WEIGHT);
-                newRedirBlk->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
-
-                fgAddRefPred(targetBlk, newRedirBlk);
-                insertAfter = newRedirBlk;
-            }
-
-            return BasicBlockVisit::Continue;
-        });
-
-        assert(testBlock != nullptr);
-
-        // Now redirect any branches within the newly-cloned iteration.
+        // Replace all uses of the loop iterator with the current value.
         loop->VisitLoopBlocks([=, &blockMap](BasicBlock* block) {
-            // Do not include the test block; we will redirect it on
-            // the next iteration or after the loop.
-            if (block == iterInfo.TestBlock)
-            {
-                return BasicBlockVisit::Continue;
-            }
-
-            // Jump kind/target should not be set yet
-            BasicBlock* newBlock = blockMap[block];
-            assert(!newBlock->HasInitializedTarget());
-
-            // Now copy the jump kind/target
-            newBlock->CopyTarget(this, block);
-            optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
-
+            optReplaceScalarUsesWithConst(blockMap[block], lvar, lval);
             return BasicBlockVisit::Continue;
         });
 
-        // Redirect previous iteration (or entry) to this iteration.
-        if (prevTestBlock != nullptr)
-        {
-            // Redirect exit edge from previous iteration to new entry.
-            assert(prevTestBlock->KindIs(BBJ_ALWAYS));
-            BasicBlock* newHeader = blockMap[loop->GetHeader()];
-            prevTestBlock->SetTarget(newHeader);
-            fgAddRefPred(newHeader, prevTestBlock);
+        // Remove the test we created in the duplicate; we're doing a full unroll.
+        BasicBlock* testBlock = blockMap[iterInfo.TestBlock];
 
-            JITDUMP("Redirecting previously created exiting " FMT_BB " -> " FMT_BB " (unrolled iteration header)\n",
-                    prevTestBlock->bbNum, newHeader->bbNum);
-        }
-        else
-        {
-            // Redirect all predecessors to the new one.
-            for (FlowEdge* enterEdge : loop->EntryEdges())
-            {
-                BasicBlock* entering = enterEdge->getSourceBlock();
-                JITDUMP("Redirecting " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", entering->bbNum,
-                        loop->GetHeader()->bbNum, entering->bbNum, blockMap[loop->GetHeader()]->bbNum);
-                assert(!entering->KindIs(BBJ_COND)); // Ensured by canonicalization
-                optRedirectBlock(entering, &blockMap, Compiler::RedirectBlockOption::UpdatePredLists);
-            }
-        }
+        optRedirectPrevUnrollIteration(loop, prevTestBlock, blockMap[loop->GetHeader()]);
 
+        // Save the test block of the previously unrolled
+        // iteration, so that we can redirect it when we create
+        // the next iteration (or to the exit for the last
+        // iteration).
         prevTestBlock = testBlock;
 
         // update the new value for the unrolled iterator
@@ -1761,26 +1651,7 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     // loop invariant is true on every iteration. That means we have a
     // guarding check before we enter the loop that will always be
     // false.
-    if (prevTestBlock != nullptr)
-    {
-        assert(prevTestBlock->KindIs(BBJ_ALWAYS));
-        prevTestBlock->SetTarget(exit);
-        fgAddRefPred(exit, prevTestBlock);
-        JITDUMP("Redirecting final iteration exiting " FMT_BB " to original exit " FMT_BB "\n", prevTestBlock->bbNum,
-                exit->bbNum);
-    }
-    else
-    {
-        blockMap.Set(loop->GetHeader(), exit, BlockToBlockMap::Overwrite);
-        for (FlowEdge* entryEdge : loop->EntryEdges())
-        {
-            BasicBlock* entering = entryEdge->getSourceBlock();
-            assert(!entering->KindIs(BBJ_COND)); // Ensured by canonicalization
-            optRedirectBlock(entering, &blockMap, Compiler::RedirectBlockOption::UpdatePredLists);
-            JITDUMP("Redirecting original entry " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n",
-                    entering->bbNum, loop->GetHeader()->bbNum, entering->bbNum, exit->bbNum);
-        }
-    }
+    optRedirectPrevUnrollIteration(loop, prevTestBlock, exit);
 
     // The old loop body is unreachable now, but we will remove those
     // blocks after we finish unrolling.
@@ -1798,6 +1669,65 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
 #endif // DEBUG
 
     return true;
+}
+
+//-----------------------------------------------------------------------------
+// optRedirectPrevUnrollIteration:
+//   Redirect the previous unrolled loop iteration (or entry) to a new target.
+//
+// Parameters:
+//   loop          - The loop that is being unrolled
+//   prevTestBlock - The test block of the previous iteration, or nullptr if
+//                   this is the first unrolled iteration.
+//   target        - The new target for the previous iteration.
+//
+//
+// Remarks:
+//   If "prevTestBlock" is nullptr, then the entry edges of the loop are
+//   redirected to the target. Otherwise "prevTestBlock" has its terminating
+//   statement removed and is changed to a BBJ_ALWAYS that goes to the target.
+//
+void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicBlock* prevTestBlock, BasicBlock* target)
+{
+    if (prevTestBlock != nullptr)
+    {
+        assert(prevTestBlock->KindIs(BBJ_COND));
+        Statement* testCopyStmt = prevTestBlock->lastStmt();
+        GenTree*   testCopyExpr = testCopyStmt->GetRootNode();
+        assert(testCopyExpr->gtOper == GT_JTRUE);
+        GenTree* sideEffList = nullptr;
+        gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+        if (sideEffList == nullptr)
+        {
+            fgRemoveStmt(prevTestBlock, testCopyStmt);
+        }
+        else
+        {
+            testCopyStmt->SetRootNode(sideEffList);
+        }
+
+        fgRemoveRefPred(prevTestBlock->GetTrueTarget(), prevTestBlock);
+        fgRemoveRefPred(prevTestBlock->GetFalseTarget(), prevTestBlock);
+
+        // Redirect exit edge from previous iteration to new entry.
+        prevTestBlock->SetKindAndTarget(BBJ_ALWAYS, target);
+        fgAddRefPred(target, prevTestBlock);
+
+        JITDUMP("Redirecting previously created exiting " FMT_BB " -> " FMT_BB "\n", prevTestBlock->bbNum,
+                target->bbNum);
+    }
+    else
+    {
+        // Redirect all predecessors to the new one.
+        for (FlowEdge* enterEdge : loop->EntryEdges())
+        {
+            BasicBlock* entering = enterEdge->getSourceBlock();
+            JITDUMP("Redirecting " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", entering->bbNum,
+                    loop->GetHeader()->bbNum, entering->bbNum, target->bbNum);
+            assert(!entering->KindIs(BBJ_COND)); // Ensured by canonicalization
+            fgReplaceJumpTarget(entering, target, loop->GetHeader());
+        }
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -2594,7 +2524,7 @@ void Compiler::optResetLoopInfo()
             block->RemoveFlags(BBF_RUN_RARELY);
         }
 
-        block->RemoveFlags(BBF_LOOP_FLAGS);
+        block->RemoveFlags(BBF_LOOP_HEAD);
     }
 }
 
@@ -3132,7 +3062,6 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         {
             JITDUMP("Natural loop " FMT_LP " already has preheader " FMT_BB "\n", loop->GetIndex(),
                     preheaderCandidate->bbNum);
-            preheaderCandidate->SetFlags(BBF_LOOP_PREHEADER);
             return false;
         }
     }
@@ -3144,7 +3073,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     }
 
     BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false, header);
-    preheader->SetFlags(BBF_INTERNAL | BBF_LOOP_PREHEADER);
+    preheader->SetFlags(BBF_INTERNAL);
     fgSetEHRegionForNewPreheader(preheader);
 
     if (preheader->NextIs(header))
