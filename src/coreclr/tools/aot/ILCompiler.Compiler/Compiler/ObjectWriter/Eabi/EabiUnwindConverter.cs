@@ -36,7 +36,7 @@ namespace ILCompiler.ObjectWriter
 
             // The maximum sequence length of the ARM EHABI unwinding code is 1024
             // bytes.
-            byte[] unwindData = new byte[1024];
+            byte[] unwindData = ArrayPool<byte>.Shared.Rent(1024);
             int unwindDataOffset = 0;
 
             // The DWARF CFI data produced by the JIT describe the method prolog that
@@ -126,7 +126,9 @@ namespace ILCompiler.ObjectWriter
 
             FlushPendingOperation();
 
-            return unwindData[..unwindDataOffset];
+            var result = unwindData[..unwindDataOffset];
+            ArrayPool<byte>.Shared.Return(unwindData);
+            return result;
 
             void EmitPop(uint popMask)
             {
