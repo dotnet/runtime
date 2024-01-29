@@ -2,11 +2,11 @@
 cmake_minimum_required(VERSION 3.10..3.20)
 
 project(System.HybridGlobalization.Native C)
-
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
-    if (ANDROID_FORCE_ICU_DATA_DIR)
-        add_definitions(-DANDROID_FORCE_ICU_DATA_DIR)
-    endif()
+    # if (ANDROID_FORCE_ICU_DATA_DIR)
+    #     add_definitions(-DANDROID_FORCE_ICU_DATA_DIR)
+    # endif()
 
     add_compile_options(-Wno-switch-enum)
     add_compile_options(-Wno-covered-switch-default)
@@ -21,38 +21,38 @@ if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     add_compile_options(-Wno-extra-semi-stmt)
     add_compile_options(-Wno-unknown-warning-option)
 
-    # The mobile configurations in particular bring their own ICU, so skip
-    if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
-        if (CLR_CMAKE_TARGET_OSX)
-            execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
-            set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
-        endif()
+    # # The mobile configurations in particular bring their own ICU, so skip
+    # if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    #     if (CLR_CMAKE_TARGET_OSX)
+    #         execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
+    #         set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
+    #     endif()
 
-        find_path(UCURR_H "unicode/ucurr.h" PATHS ${ICU_HOMEBREW_INC_PATH})
-        if(UCURR_H STREQUAL UCURR_H-NOTFOUND)
-            message(FATAL_ERROR "Cannot find ucurr.h, try installing libicu-dev (or the appropriate package for your platform)")
-            return()
-        endif()
+    #     find_path(UCURR_H "unicode/ucurr.h" PATHS ${ICU_HOMEBREW_INC_PATH})
+    #     if(UCURR_H STREQUAL UCURR_H-NOTFOUND)
+    #         message(FATAL_ERROR "Cannot find ucurr.h, try installing libicu-dev (or the appropriate package for your platform)")
+    #         return()
+    #     endif()
 
-        if(CLR_CMAKE_TARGET_OSX)
-            add_definitions(-DOSX_ICU_LIBRARY_PATH="/usr/lib/libicucore.dylib")
-            add_definitions(-DU_DISABLE_RENAMING)
-        else()
-            find_library(ICUUC icuuc)
-            if(ICUUC STREQUAL ICUUC-NOTFOUND)
-                message(FATAL_ERROR "Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform)")
-                return()
-            endif()
+    #     if(CLR_CMAKE_TARGET_OSX)
+    #         add_definitions(-DOSX_ICU_LIBRARY_PATH="/usr/lib/libicucore.dylib")
+    #         add_definitions(-DU_DISABLE_RENAMING)
+    #     else()
+    #         find_library(ICUUC icuuc)
+    #         if(ICUUC STREQUAL ICUUC-NOTFOUND)
+    #             message(FATAL_ERROR "Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform)")
+    #             return()
+    #         endif()
 
-            find_library(ICUI18N icui18n)
-            if(ICUI18N STREQUAL ICUI18N-NOTFOUND)
-                message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
-                return()
-            endif()
-        endif()
+    #         find_library(ICUI18N icui18n)
+    #         if(ICUI18N STREQUAL ICUI18N-NOTFOUND)
+    #             message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
+    #             return()
+    #         endif()
+    #     endif()
 
-        include_directories(${UCURR_H})
-    endif()
+    #     include_directories(${UCURR_H})
+    # endif()
 endif()
 
 include(configure.cmake)
@@ -70,11 +70,11 @@ if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVO
     )
 endif()
 
-if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
-    include_directories(${CMAKE_ICU_DIR}/include)
-    link_libraries(${CMAKE_ICU_DIR}/lib/libicuuc.a ${CMAKE_ICU_DIR}/lib/libicui18n.a ${CMAKE_ICU_DIR}/lib/libicudata.a)
-    link_libraries(stdc++)
-endif()
+# if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+#     include_directories(${CMAKE_ICU_DIR}/include)
+#     link_libraries(${CMAKE_ICU_DIR}/lib/libicuuc.a ${CMAKE_ICU_DIR}/lib/libicui18n.a ${CMAKE_ICU_DIR}/lib/libicudata.a)
+#     link_libraries(stdc++)
+# endif()
 
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     link_libraries(icucore)
@@ -95,7 +95,7 @@ if (LOCAL_BUILD)
     # For minipal files
     include_directories(../../)
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
-elseif (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+elseif (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_definitions(-DSTATIC_ICU)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim_static.c)
 else()
@@ -147,23 +147,23 @@ add_library(System.HybridGlobalization.Native-Static
     entrypoints.c
 )
 
-if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
+if(CLR_CMAKE_TARGET_UNIX)
     set_target_properties(System.HybridGlobalization.Native-Static PROPERTIES OUTPUT_NAME System.HybridGlobalization.Native  CLEAN_DIRECT_OUTPUT 1)
 endif()
 
 install (TARGETS System.HybridGlobalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL AND NOT CLR_CMAKE_TARGET_HAIKU)
-    if (GEN_SHARED_LIB)
-        add_custom_command(TARGET System.HybridGlobalization.Native POST_BUILD
-            COMMENT "Verifying System.HybridGlobalization.Native.so dependencies"
-            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
-                $<TARGET_FILE:System.HybridGlobalization.Native>
-                "Verification failed. System.HybridGlobalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
-            VERBATIM
-        )
-    endif()
-endif()
+# if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL AND NOT CLR_CMAKE_TARGET_HAIKU)
+#     if (GEN_SHARED_LIB)
+#         add_custom_command(TARGET System.HybridGlobalization.Native POST_BUILD
+#             COMMENT "Verifying System.HybridGlobalization.Native.so dependencies"
+#             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
+#                 $<TARGET_FILE:System.HybridGlobalization.Native>
+#                 "Verification failed. System.HybridGlobalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
+#             VERBATIM
+#         )
+#     endif()
+# endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
     if(STATIC_LIBS_ONLY)
@@ -183,4 +183,5 @@ if(CLR_CMAKE_TARGET_WIN32)
         install_static_library(System.HybridGlobalization.Native.Aot aotsdk nativeaot)
         install_static_library(System.HybridGlobalization.Native.Aot.GuardCF aotsdk nativeaot)
     endif()
+endif()
 endif()
