@@ -354,7 +354,7 @@ export function invoke_method_and_handle_exception(method: MonoMethod, args: JSM
     try {
         set_args_context(args);
         const fail = cwraps.mono_wasm_invoke_method_bound(method, args, fail_root.address);
-        if (fail) runtimeHelpers.abort("ERR24: Unexpected error: " + monoStringToString(fail_root));
+        if (fail) runtimeHelpers.nativeAbort("ERR24: Unexpected error: " + monoStringToString(fail_root));
         if (is_args_exception(args)) {
             const exc = get_arg(args, 0);
             throw marshal_exception_to_js(exc);
@@ -370,7 +370,7 @@ export function invoke_method_raw(method: MonoMethod): void {
     const fail_root = mono_wasm_new_root<MonoString>();
     try {
         const fail = cwraps.mono_wasm_invoke_method_raw(method, fail_root.address);
-        if (fail) runtimeHelpers.abort("ERR24: Unexpected error: " + monoStringToString(fail_root));
+        if (fail) runtimeHelpers.nativeAbort("ERR24: Unexpected error: " + monoStringToString(fail_root));
     }
     finally {
         fail_root.release();
