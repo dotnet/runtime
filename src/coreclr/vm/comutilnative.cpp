@@ -1705,12 +1705,13 @@ enum ValueTypeHashCodeStrategy
     FastGetHashCode,
 };
 
-static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, void* pObjRef, UINT32* fieldOffset, UINT32* fieldSize)
+static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize)
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
     // Should be handled by caller
@@ -1729,7 +1730,7 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, void* pObj
         {
             GCX_COOP();
             // if we get an object reference we get the hash code out of that
-            if (*(Object**)((BYTE *)objHandle->Unbox() + *fieldOffset + field->GetOffsetUnsafe()) != NULL)
+            if (*(Object**)((BYTE *)objHandle.Get()->UnBox() + *fieldOffset + field->GetOffsetUnsafe()) != NULL)
             {
                 ret = ValueTypeHashCodeStrategy::ReferenceField;
             }
@@ -1779,8 +1780,6 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, void* pObj
         }
         break;
     }
-
-    GCPROTECT_END();
 
     return ret;
 }
