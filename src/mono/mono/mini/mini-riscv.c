@@ -4350,7 +4350,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = mono_riscv_emit_imm (code, RISCV_T0, cfg->stack_offset);
 		// calculate SP
 		riscv_sub (code, RISCV_SP, RISCV_SP, RISCV_T0);
-		mono_emit_unwind_op_def_cfa_offset (cfg, code, RISCV_SP, cfg->stack_offset);
+		mono_emit_unwind_op_def_cfa_offset (cfg, code, cfg->stack_offset);
 
 		// save return value
 		stack_size += sizeof (target_mgreg_t);
