@@ -22,7 +22,8 @@ namespace R2RDump
             Target_X64,
             Target_Thumb,
             Target_Arm64,
-            Target_LoongArch64
+            Target_LoongArch64,
+            Target_RiscV64,
         };
 
         [DllImport(_dll, CallingConvention = CallingConvention.Cdecl)]
@@ -76,6 +77,9 @@ namespace R2RDump
                     break;
                 case Machine.LoongArch64:
                     target = TargetArch.Target_LoongArch64;
+                    break;
+                case Machine.RiscV64:
+                    target = TargetArch.Target_RiscV64;
                     break;
                 default:
                     Program.WriteWarning($"{machine} not supported on CoreDisTools");
@@ -191,6 +195,10 @@ namespace R2RDump
                     // Instructions are dumped as 4-byte hexadecimal integers
                     Machine.LoongArch64 => 4 * 2 + 1,
 
+                    // Instructions are dumped as 4-byte hexadecimal integers
+                    // TODO: update once RISC-V runtime supports "C" extension (compressed instructions)
+                    Machine.RiscV64 => 4 * 2 + 1,
+
                     _ => throw new NotImplementedException()
                 };
 
@@ -260,7 +268,8 @@ namespace R2RDump
                     }
                     else
                     {
-                        if ((_reader.Machine == Machine.Arm64) || (_reader.Machine == Machine.LoongArch64))
+                        // TODO: update once RISC-V runtime supports "C" extension (compressed instructions)
+                        if (_reader.Machine is Machine.Arm64 or Machine.LoongArch64 or Machine.RiscV64)
                         {
                             // Replace " hh hh hh hh " byte dump with " hhhhhhhh ".
                             // CoreDisTools should be fixed to dump bytes this way for ARM64.

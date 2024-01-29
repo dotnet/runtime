@@ -83,10 +83,68 @@ static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 }
 
 //------------------------------------------------------------------------
+// AddEmbRoundingMode: Adds the embedded rounding mode to the insOpts
+//
+// Arguments:
+//    instOptions - The existing insOpts
+//    mode        - The embedded rounding mode to add to instOptions
+//
+// Return Value:
+//    The modified insOpts
+//
+static insOpts AddEmbRoundingMode(insOpts instOptions, int8_t mode)
+{
+    // The full rounding mode is a bitmask in the shape of:
+    // * RC: 2-bit rounding control
+    // * RS: 1-bit rounding select
+    // * P:  1-bit precision mask
+    // *     4-bit reserved
+    //
+    // The embedded rounding form assumes that P is 1, indicating
+    // that floating-point exceptions should not be raised and also
+    // assumes that RS is 0, indicating that MXCSR.RC is ignored.
+    //
+    // Given that the user is specifying a rounding mode and that
+    // .NET doesn't support raising IEEE 754 floating-point exceptions,
+    // we simplify the handling below to only consider the 2-bits of RC.
+
+    assert((instOptions & INS_OPTS_b_MASK) == 0);
+    unsigned result = static_cast<unsigned>(instOptions);
+
+    switch (mode & 0x03)
+    {
+        case 0x01:
+        {
+            result |= INS_OPTS_EVEX_eb_er_rd;
+            break;
+        }
+
+        case 0x02:
+        {
+            result |= INS_OPTS_EVEX_er_ru;
+            break;
+        }
+
+        case 0x03:
+        {
+            result |= INS_OPTS_EVEX_er_rz;
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    return static_cast<insOpts>(result);
+}
+
+//------------------------------------------------------------------------
 // genHWIntrinsic: Generates the code for a given hardware intrinsic node.
 //
 // Arguments:
-//    node - The hardware intrinsic node
+//    node        - The hardware intrinsic node
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
@@ -99,7 +157,89 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     assert(compiler->compIsaSupportedDebugOnly(isa));
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
 
-    if (genIsTableDrivenHWIntrinsic(intrinsicId, category))
+    bool    isTableDriven = genIsTableDrivenHWIntrinsic(intrinsicId, category);
+    insOpts instOptions   = INS_OPTS_NONE;
+
+    if (GetEmitter()->UseEvexEncoding())
+    {
+        if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
+        {
+            assert(isTableDriven);
+            size_t expectedArgNum = HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId);
+
+            if (numArgs == expectedArgNum)
+            {
+                GenTree* lastOp = node->Op(numArgs);
+
+                // Now that we've extracted the rounding mode, we'll remove the
+                // last operand, adjust the arg count, and continue. This allows
+                // us to reuse all the existing logic without having to add new
+                // specialized handling everywhere.
+
+                switch (numArgs)
+                {
+                    case 3:
+                    {
+                        numArgs = 2;
+                        node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1), node->Op(2));
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+
+                if (lastOp->isContained())
+                {
+                    assert(lastOp->IsCnsIntOrI());
+
+                    int8_t mode = static_cast<int8_t>(lastOp->AsIntCon()->IconValue());
+                    instOptions = AddEmbRoundingMode(instOptions, mode);
+                }
+                else
+                {
+                    var_types baseType = node->GetSimdBaseType();
+
+                    instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                    assert(ins != INS_invalid);
+
+                    emitAttr simdSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
+                    assert(simdSize != 0);
+
+                    genConsumeMultiOpOperands(node);
+                    genConsumeRegs(lastOp);
+
+                    switch (numArgs)
+                    {
+                        case 2:
+                        {
+                            auto emitSwCase = [&](int8_t i) {
+                                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                                genHWIntrinsic_R_R_RM(node, ins, simdSize, newInstOptions);
+                            };
+                            regNumber baseReg = node->ExtractTempReg();
+                            regNumber offsReg = node->GetSingleTempReg();
+                            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
+                                                            emitSwCase);
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    genProduceReg(node);
+                    return;
+                }
+            }
+        }
+    }
+
+    if (isTableDriven)
     {
         regNumber targetReg = node->GetRegNum();
         var_types baseType  = node->GetSimdBaseType();
@@ -231,7 +371,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // Until we improve the handling of addressing modes in the emitter, we'll create a
                     // temporary GT_IND to generate code with.
                     GenTreeIndir load = indirForm(node->TypeGet(), addr);
-                    genHWIntrinsic_R_R_RM(node, ins, simdSize, targetReg, otherReg, &load);
+
+                    assert(!node->isRMWHWIntrinsic(compiler));
+                    inst_RV_RV_TT(ins, simdSize, targetReg, otherReg, &load, false, instOptions);
                 }
                 else if (HWIntrinsicInfo::isImmOp(intrinsicId, op2))
                 {
@@ -272,7 +414,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-                    genHWIntrinsic_R_R_RM(node, ins, simdSize);
+                    genHWIntrinsic_R_R_RM(node, ins, simdSize, instOptions);
                 }
                 break;
             }
@@ -332,13 +474,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         emit->emitIns_R_R(ins, simdSize, op1Reg, op2Reg);
                     }
-                }
-                else if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) && !op3->IsCnsIntOrI())
-                {
-                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_R_RM(node, ins, simdSize, i); };
-                    regNumber                    baseReg = node->ExtractTempReg();
-                    regNumber                    offsReg = node->GetSingleTempReg();
-                    genHWIntrinsicJumpTableFallback(intrinsicId, op3Reg, baseReg, offsReg, emitSwCase);
                 }
                 else
                 {
@@ -426,6 +561,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 unreached();
                 break;
         }
+
         genProduceReg(node);
         return;
     }
@@ -443,11 +579,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         case InstructionSet_SSE:
         case InstructionSet_SSE_X64:
-            genSSEIntrinsic(node);
+            genSSEIntrinsic(node, instOptions);
             break;
         case InstructionSet_SSE2:
         case InstructionSet_SSE2_X64:
-            genSSE2Intrinsic(node);
+            genSSE2Intrinsic(node, instOptions);
             break;
         case InstructionSet_SSE41:
         case InstructionSet_SSE41_X64:
@@ -466,7 +602,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX512BW_VL:
         case InstructionSet_AVX512VBMI:
         case InstructionSet_AVX512VBMI_VL:
-            genAvxFamilyIntrinsic(node);
+            genAvxFamilyIntrinsic(node, instOptions);
             break;
         case InstructionSet_AES:
             genAESIntrinsic(node);
@@ -475,7 +611,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_BMI1_X64:
         case InstructionSet_BMI2:
         case InstructionSet_BMI2_X64:
-            genBMI1OrBMI2Intrinsic(node);
+            genBMI1OrBMI2Intrinsic(node, instOptions);
             break;
         case InstructionSet_FMA:
             genFMAIntrinsic(node);
@@ -698,63 +834,18 @@ void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, e
 //                        register/memory operand, and that returns a value in register
 //
 // Arguments:
-//    node - The hardware intrinsic node
-//    ins  - The instruction being generated
-//    attr - The emit attribute for the instruction being generated
+//    node        - The hardware intrinsic node
+//    ins         - The instruction being generated
+//    attr        - The emit attribute for the instruction being generated
+//    instOptions - The options that modify how the instruction is generated
 //
-void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr)
+void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, insOpts instOptions)
 {
     regNumber targetReg = node->GetRegNum();
     GenTree*  op1       = node->Op(1);
     GenTree*  op2       = node->Op(2);
     regNumber op1Reg    = op1->GetRegNum();
 
-    assert(targetReg != REG_NA);
-    assert(op1Reg != REG_NA);
-
-    genHWIntrinsic_R_R_RM(node, ins, attr, targetReg, op1Reg, op2);
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsic_R_R_RM: Generates the code for a hardware intrinsic node that takes a register operand, a
-//                        register/memory operand, and that returns a value in register
-//
-// Arguments:
-//    node - The hardware intrinsic node
-//    ins  - The instruction being generated
-//    attr - The emit attribute for the instruction being generated
-//    ival - a "fake" immediate to indicate the rounding mode
-//
-void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival)
-{
-    regNumber targetReg = node->GetRegNum();
-    GenTree*  op1       = node->Op(1);
-    GenTree*  op2       = node->Op(2);
-    regNumber op1Reg    = op1->GetRegNum();
-
-    assert(targetReg != REG_NA);
-    assert(op1Reg != REG_NA);
-
-    node->SetEmbRoundingMode((uint8_t)ival);
-
-    genHWIntrinsic_R_R_RM(node, ins, attr, targetReg, op1Reg, op2);
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsic_R_R_RM: Generates the code for a hardware intrinsic node that takes a register operand, a
-//                        register/memory operand, and that returns a value in register
-//
-// Arguments:
-//    node - The hardware intrinsic node
-//    ins  - The instruction being generated
-//    attr - The emit attribute for the instruction being generated
-//    targetReg - The register allocated to the result
-//    op1Reg    - The register allocated to the first operand
-//    op2       - Another operand that maybe in register or memory
-//
-void CodeGen::genHWIntrinsic_R_R_RM(
-    GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTree* op2)
-{
     assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);
 
@@ -765,34 +856,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(
     }
 
     bool isRMW = node->isRMWHWIntrinsic(compiler);
-
-    if (node->GetEmbRoundingMode() != 0)
-    {
-        // As embedded rounding only appies in R_R_R case, we can skip other checks for different paths.
-        OperandDesc op2Desc = genOperandDesc(op2);
-        assert(op2Desc.GetKind() == OperandKind::Reg);
-        regNumber op2Reg = op2Desc.GetReg();
-
-        if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
-        {
-            // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW instruction.
-            //
-            // For non-commutative instructions, we should have ensured that op2 was marked
-            // delay free in order to prevent it from getting assigned the same register
-            // as target. However, for commutative instructions, we can just swap the operands
-            // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
-
-            op2Reg = op1Reg;
-            op1Reg = targetReg;
-        }
-
-        uint8_t mode        = node->GetEmbRoundingMode();
-        insOpts instOptions = GetEmitter()->GetEmbRoundingMode(mode);
-        GetEmitter()->emitIns_SIMD_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
-        return;
-    }
-
-    inst_RV_RV_TT(ins, attr, targetReg, op1Reg, op2, isRMW);
+    inst_RV_RV_TT(ins, attr, targetReg, op1Reg, op2, isRMW, instOptions);
 }
 
 //------------------------------------------------------------------------
@@ -1526,9 +1590,10 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node)
 // genSSEIntrinsic: Generates the code for an SSE hardware intrinsic node
 //
 // Arguments:
-//    node - The hardware intrinsic node
+//    node        - The hardware intrinsic node
+//    instOptions - The options used to when generating the instruction.
 //
-void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
+void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     regNumber      targetReg   = node->GetRegNum();
@@ -1553,7 +1618,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(baseType == TYP_LONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE);
+            genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
             break;
         }
 
@@ -1590,9 +1655,10 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 // genSSE2Intrinsic: Generates the code for an SSE2 hardware intrinsic node
 //
 // Arguments:
-//    node - The hardware intrinsic node
+//    node        - The hardware intrinsic node
+//    instOptions - The options used to when generating the instruction.
 //
-void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
+void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     regNumber      targetReg   = node->GetRegNum();
@@ -1608,7 +1674,7 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
         {
             assert(baseType == TYP_LONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE);
+            genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
             break;
         }
 
@@ -1812,9 +1878,10 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
 // genAvxFamilyIntrinsic: Generates the code for an AVX/AVX2/AVX512 hardware intrinsic node
 //
 // Arguments:
-//    node - The hardware intrinsic node
+//    node        - The hardware intrinsic node
+//    instOptions - The options used to when generating the instruction.
 //
-void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
+void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
@@ -2457,7 +2524,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(baseType == TYP_ULONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE);
+            genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
             break;
         }
 
@@ -2484,9 +2551,10 @@ void CodeGen::genAESIntrinsic(GenTreeHWIntrinsic* node)
 // genBMI1OrBMI2Intrinsic: Generates the code for a BMI1 and BMI2 hardware intrinsic node
 //
 // Arguments:
-//    node - The hardware intrinsic node
+//    node        - The hardware intrinsic node
+//    instOptions - The options used to when generating the instruction.
 //
-void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
+void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     regNumber      targetReg   = node->GetRegNum();
@@ -2512,7 +2580,7 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_BMI2_X64_ZeroHighBits:
         {
             assert((targetType == TYP_INT) || (targetType == TYP_LONG));
-            genHWIntrinsic_R_R_RM(node, ins, emitTypeSize(node->TypeGet()));
+            genHWIntrinsic_R_R_RM(node, ins, emitTypeSize(node->TypeGet()), instOptions);
             break;
         }
 
@@ -2576,7 +2644,8 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_Mov(INS_mov, attr, REG_EDX, op1Reg, /* canSkip */ true);
 
             // generate code for MULX
-            genHWIntrinsic_R_R_RM(node, ins, attr, targetReg, lowReg, op2);
+            assert(!node->isRMWHWIntrinsic(compiler));
+            inst_RV_RV_TT(ins, attr, targetReg, lowReg, op2, false, INS_OPTS_NONE);
 
             // If requires the lower half result, store in the memory pointed to by op3
             if (numArgs == 3)

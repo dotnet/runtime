@@ -504,14 +504,32 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.WriteBarrier_EAX;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EBX:
+                    id = ReadyToRunHelper.WriteBarrier_EBX;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_ECX:
                     id = ReadyToRunHelper.WriteBarrier_ECX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EDI:
+                    id = ReadyToRunHelper.WriteBarrier_EDI;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_ESI:
+                    id = ReadyToRunHelper.WriteBarrier_ESI;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.CheckedWriteBarrier_EAX;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_EBX;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
                     id = ReadyToRunHelper.CheckedWriteBarrier_ECX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_EDI;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_ESI;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST:
@@ -2139,7 +2157,7 @@ namespace Internal.JitInterface
                     }
                     else if (field.IsThreadStatic)
                     {
-                        if (MethodBeingCompiled.Context.Target.IsWindows && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
+                        if ((MethodBeingCompiled.Context.Target.IsWindows || MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Linux) && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
                         {
                             ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex((MetadataType)field.OwningType);
                             if (index is TypeThreadStaticIndexNode ti)
@@ -2407,6 +2425,7 @@ namespace Internal.JitInterface
             pInfo->tlsIndexObject = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
             pInfo->tlsRootObject = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
             pInfo->threadStaticBaseSlow = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
+            pInfo->tlsGetAddrFtnPtr = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("__tls_get_addr"));
         }
 
 #pragma warning disable CA1822 // Mark members as static
