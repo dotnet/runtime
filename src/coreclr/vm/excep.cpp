@@ -3383,7 +3383,7 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
         }
         else if (!pCf->HasFaulted() && pStackTraceElem->ip != 0)
         {
-            pStackTraceElem->ip -= 1;
+            pStackTraceElem->ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
             pStackTraceElem->flags |= STEF_IP_ADJUSTED;
         }
 

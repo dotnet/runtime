@@ -1245,7 +1245,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
         bRes = g_pDebugInterface->GetILOffsetFromNative(
             pFunc,
             (LPCBYTE)this->ip,
-            fAdjustOffset ? this->dwOffset - 1 : this->dwOffset,
+            fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset,
             &this->dwILOffset);
     }
 
