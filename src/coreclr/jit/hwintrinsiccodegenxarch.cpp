@@ -108,7 +108,7 @@ static insOpts AddEmbRoundingMode(insOpts instOptions, int8_t mode)
     // .NET doesn't support raising IEEE 754 floating-point exceptions,
     // we simplify the handling below to only consider the 2-bits of RC.
 
-    assert((instOptions & INS_OPTS_b_MASK) == 0);
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
     unsigned result = static_cast<unsigned>(instOptions);
 
     switch (mode & 0x03)
@@ -141,6 +141,35 @@ static insOpts AddEmbRoundingMode(insOpts instOptions, int8_t mode)
 }
 
 //------------------------------------------------------------------------
+// AddEmbMaskingMode: Adds the embedded masking mode to the insOpts
+//
+// Arguments:
+//    instOptions   - The existing insOpts
+//    maskReg       - The register to use for the embedded mask
+//    mergeWithZero - true if the mask merges with zero; otherwise, false
+//
+// Return Value:
+//    The modified insOpts
+//
+static insOpts AddEmbMaskingMode(insOpts instOptions, regNumber maskReg, bool mergeWithZero)
+{
+    assert((instOptions & INS_OPTS_EVEX_aaa_MASK) == 0);
+    assert((instOptions & INS_OPTS_EVEX_z_MASK) == 0);
+
+    unsigned result = static_cast<unsigned>(instOptions);
+    unsigned em_k   = (maskReg - KBASE) << 2;
+    unsigned em_z   = mergeWithZero ? INS_OPTS_EVEX_em_zero : 0;
+
+    assert(emitter::isMaskReg(maskReg));
+    assert((em_k & INS_OPTS_EVEX_aaa_MASK) == em_k);
+
+    result |= em_k;
+    result |= em_z;
+
+    return static_cast<insOpts>(result);
+}
+
+//------------------------------------------------------------------------
 // genHWIntrinsic: Generates the code for a given hardware intrinsic node.
 //
 // Arguments:
@@ -152,6 +181,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
     HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     size_t                 numArgs     = node->GetOperandCount();
+    GenTree*               embMaskOp   = nullptr;
 
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
     assert(compiler->compIsaSupportedDebugOnly(isa));
@@ -162,6 +192,67 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     if (GetEmitter()->UseEvexEncoding())
     {
+        if (numArgs == 3)
+        {
+            GenTree* op2 = node->Op(2);
+
+            if (op2->IsEmbMaskOp())
+            {
+                assert(intrinsicId == NI_AVX512F_BlendVariableMask);
+                assert(op2->isContained());
+                assert(op2->OperIsHWIntrinsic());
+
+                // We currently only support this for table driven intrinsics
+                assert(isTableDriven);
+
+                GenTree* op1 = node->Op(1);
+                GenTree* op3 = node->Op(3);
+
+                regNumber targetReg = node->GetRegNum();
+                regNumber mergeReg  = op1->GetRegNum();
+                regNumber maskReg   = op3->GetRegNum();
+
+                // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
+                assert(!op2->isRMWHWIntrinsic(compiler));
+
+                bool mergeWithZero = op1->isContained();
+
+                if (mergeWithZero)
+                {
+                    // We're merging with zero, so we the target register isn't RMW
+                    assert(op1->IsVectorZero());
+                    mergeWithZero = true;
+                }
+                else
+                {
+                    // We're merging with a non-zero value, so the target register is RMW
+                    emitAttr attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
+                    GetEmitter()->emitIns_Mov(INS_movaps, attr, targetReg, mergeReg, /* canSkip */ true);
+                }
+
+                // Update op2 to use the actual target register
+                op2->ClearContained();
+                op2->SetRegNum(targetReg);
+
+                // Fixup all the already initialized variables
+                node        = op2->AsHWIntrinsic();
+                intrinsicId = node->GetHWIntrinsicId();
+                isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
+                category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+                numArgs     = node->GetOperandCount();
+
+                // Add the embedded masking info to the insOpts
+                instOptions = AddEmbMaskingMode(instOptions, maskReg, mergeWithZero);
+
+                // We don't need to genProduceReg(node) since that will be handled by processing op2
+                // likewise, processing op2 will ensure its own registers are consumed
+
+                // Make sure we consume the registers that are getting specially handled
+                genConsumeReg(op1);
+                embMaskOp = op3;
+            }
+        }
+
         if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
         {
             assert(isTableDriven);
@@ -562,9 +653,19 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
         }
 
+        if (embMaskOp != nullptr)
+        {
+            // Handle an extra operand we need to consume so that
+            // embedded masking can work without making the overall
+            // logic significantly more complex.
+            genConsumeReg(embMaskOp);
+        }
+
         genProduceReg(node);
         return;
     }
+
+    assert(embMaskOp == nullptr);
 
     switch (isa)
     {

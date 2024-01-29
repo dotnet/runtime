@@ -205,7 +205,10 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_EmbBroadcastCompatible = 0x8000000,
 
     // The intrinsic is an embedded rounding compatible intrinsic
-    HW_Flag_EmbRoundingCompatible = 0x10000000
+    HW_Flag_EmbRoundingCompatible = 0x10000000,
+
+    // The intrinsic is an embedded masking incompatible intrinsic
+    HW_Flag_EmbMaskingIncompatible = 0x20000000,
 #endif // TARGET_XARCH
 };
 
@@ -595,6 +598,12 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_EmbRoundingCompatible) != 0;
+    }
+
+    static bool IsEmbMaskingCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbMaskingIncompatible) == 0;
     }
 
     static size_t EmbRoundingArgPos(NamedIntrinsic id)
