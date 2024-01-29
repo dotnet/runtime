@@ -1718,16 +1718,7 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, void* pObj
 
     ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
 
-    GCPROTECT_BEGININTERIOR(pObjRef);
-    
-    // it's looking ugly so we'll use the old behavior in managed code. Grab the first non-null
-    // field and return its hash code or 'it' as hash code
-    // <TODO> Note that the old behavior has already been broken for value types
-    //              that is qualified for CanUseFastGetHashCodeHelper. So maybe we should
-    //              change the implementation here to use all fields instead of just the 1st one.
-    // </TODO>
-    //
-    // <TODO> check this approximation - we may be losing exact type information </TODO>
+    // Grab the first non-null field and return its hash code or 'it' as hash code
     ApproxFieldDescIterator fdIterator(mt, ApproxFieldDescIterator::INSTANCE_FIELDS);
 
     FieldDesc *field;
@@ -1736,8 +1727,9 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, void* pObj
         _ASSERTE(!field->IsRVA());
         if (field->IsObjRef())
         {
+            GCX_COOP();
             // if we get an object reference we get the hash code out of that
-            if (*(Object**)((BYTE *)pObjRef + field->GetOffsetUnsafe()) != NULL)
+            if (*(Object**)((BYTE *)objHandle->Unbox() + *fieldOffset + field->GetOffsetUnsafe()) != NULL)
             {
                 ret = ValueTypeHashCodeStrategy::ReferenceField;
             }
@@ -1780,9 +1772,8 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, void* pObj
                 }
                 else
                 {
-                    UINT32 offset = 0;
-                    ret = GetHashCodeStrategy(fieldMT, (BYTE *)pObjRef + field->GetOffsetUnsafe(), &offset, fieldSize);
-                    *fieldOffset = field->GetOffsetUnsafe() + offset;
+                    *fieldOffset += field->GetOffsetUnsafe();
+                    ret = GetHashCodeStrategy(fieldMT, objHandle, fieldOffset, fieldSize);
                 }
             }
         }
@@ -1804,9 +1795,8 @@ extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall:
 
     BEGIN_QCALL;
 
-    GCX_COOP();
 
-    ret = GetHashCodeStrategy(mt, objHandle.Get()->UnBox(), fieldOffset, fieldSize);
+    ret = GetHashCodeStrategy(mt, objHandle, fieldOffset, fieldSize);
 
     END_QCALL;
 
