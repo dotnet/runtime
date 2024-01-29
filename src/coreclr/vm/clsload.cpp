@@ -824,7 +824,7 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 
     if (typeHnd.GetLoadLevel() < level)
     {
-        if (level > CLASS_LOAD_UNRESTORED)
+        if (level >= CLASS_LOAD_APPROXPARENTS)
         {
             TypeKey typeKey = typeHnd.GetTypeKey();
 
@@ -2059,7 +2059,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
 
         POSTCONDITION(CheckPointer(RETVAL, NameHandle::OKToLoad(typeDefOrRef, tokenNotToLoad) && (fNotFoundAction == ThrowIfNotFound) ? NULL_NOT_OK : NULL_OK));
-        POSTCONDITION(level <= CLASS_LOAD_UNRESTORED || RETVAL.IsNull() || RETVAL.IsRestored());
+        POSTCONDITION(level <= CLASS_LOAD_APPROXPARENTS || RETVAL.IsNull() || RETVAL.IsRestored());
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -2630,8 +2630,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
 
     switch (currentLevel)
     {
-        // Attain at least level CLASS_LOAD_UNRESTORED (if just locating type in ngen image)
-        // or at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
+        // Attain at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
         case CLASS_LOAD_BEGIN :
             {
                 AllocMemTracker amTracker;
@@ -2642,13 +2641,6 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
                     amTracker.SuppressRelease();
                 typeHnd = published;
             }
-            break;
-
-        case CLASS_LOAD_UNRESTOREDTYPEKEY :
-            break;
-
-        // Attain level CLASS_LOAD_APPROXPARENTS, starting with unrestored class
-        case CLASS_LOAD_UNRESTORED :
             break;
 
         // Attain level CLASS_LOAD_EXACTPARENTS

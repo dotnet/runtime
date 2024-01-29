@@ -1576,8 +1576,6 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
 const char * const classLoadLevelName[] =
 {
     "BEGIN",
-    "UNRESTOREDTYPEKEY",
-    "UNRESTORED",
     "APPROXPARENTS",
     "EXACTPARENTS",
     "DEPENDENCIES_LOADED",
@@ -1603,7 +1601,6 @@ CHECK TypeHandle::CheckLoadLevel(ClassLoadLevel requiredLevel)
         //                   ("Type has not been sufficiently loaded (actual level is %d, required level is %d)",
         //                    /* debugTypeName.GetUnicode(), */ actualLevel, requiredLevel /* classLoadLevelName[actualLevel], classLoadLevelName[requiredLevel] */));
     }
-    CONSISTENCY_CHECK((actualLevel > CLASS_LOAD_UNRESTORED) == IsRestored());
     CHECK_OK;
 }
 

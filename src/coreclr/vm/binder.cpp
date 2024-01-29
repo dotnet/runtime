@@ -232,7 +232,7 @@ NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
     const CoreLibClassDescription *d = (&g_CoreLib)->m_classDescriptions + (int)id;
 
     PTR_MethodTable pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), d->nameSpace, d->name,
-        ClassLoader::ReturnNullIfNotFound, ClassLoader::DontLoadTypes, CLASS_LOAD_UNRESTOREDTYPEKEY).AsMethodTable();
+        ClassLoader::ReturnNullIfNotFound, ClassLoader::DontLoadTypes, CLASS_LOAD_APPROXPARENTS).AsMethodTable();
 
     _ASSERTE((pMT == NULL) || (pMT->GetModule() == GetModule()));
 
