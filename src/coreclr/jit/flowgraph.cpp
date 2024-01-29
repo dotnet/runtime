@@ -5481,18 +5481,6 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock**     insertAfter,
 
         newBlk->scaleBBWeight(weightScale);
 
-        // If the loop we're cloning contains nested loops, we need to clear the pre-header bit on
-        // any nested loop pre-header blocks, since they will no longer be loop pre-headers.
-        //
-        // TODO-Cleanup: BBF_LOOP_PREHEADER can be removed; we do not attempt
-        // to keep it up to date anymore when we do FG changes.
-        //
-        if (newBlk->HasFlag(BBF_LOOP_PREHEADER))
-        {
-            JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);
-            newBlk->RemoveFlags(BBF_LOOP_PREHEADER);
-        }
-
         *insertAfter = newBlk;
         map->Set(blk, newBlk, BlockToBlockMap::Overwrite);
 
