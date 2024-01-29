@@ -2819,6 +2819,9 @@ void ILStubLinker::SetStubTargetCallingConv(CorInfoCallConvExtension callConv)
                 m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL)));
                 m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_MEMBERFUNCTION)));
                 break;
+            case CorInfoCallConvExtension::Swift:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_SWIFT)));
+                break;
             default:
                 _ASSERTE("Unknown calling convention. Unable to encode it in the native function pointer signature.");
                 break;
