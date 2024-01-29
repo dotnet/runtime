@@ -267,7 +267,6 @@ namespace System.Net.WebSockets.Client.Tests
 
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     ConnectAsync(cws, ub.Uri, cts.Token));
-                _output.WriteLine(ex.Message);
                 Assert.True(ex.WebSocketErrorCode == WebSocketError.Faulted ||
                     ex.WebSocketErrorCode == WebSocketError.NotAWebSocket, $"Actual WebSocketErrorCode {ex.WebSocketErrorCode} {ex.InnerException?.Message} \n {ex}");
                 Assert.Equal(WebSocketState.Closed, cws.State);

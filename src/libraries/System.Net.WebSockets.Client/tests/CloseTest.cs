@@ -44,18 +44,14 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
-                _output.WriteLine("SendAsync starting.");
                 await cws.SendAsync(
                     WebSocketData.GetBufferFromText(shutdownWebSocketMetaCommand),
                     WebSocketMessageType.Text,
                     true,
                     cts.Token);
-                _output.WriteLine("SendAsync done.");
 
                 var recvBuffer = new byte[256];
-                _output.WriteLine("ReceiveAsync starting.");
                 WebSocketReceiveResult recvResult = await cws.ReceiveAsync(new ArraySegment<byte>(recvBuffer), cts.Token);
-                _output.WriteLine("ReceiveAsync done.");
 
                 // Verify received server-initiated close message.
                 Assert.Equal(WebSocketCloseStatus.NormalClosure, recvResult.CloseStatus);
@@ -68,12 +64,10 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(shutdownWebSocketMetaCommand, cws.CloseStatusDescription);
 
                 // Send back close message to acknowledge server-initiated close.
-                _output.WriteLine("Close starting.");
                 var closeStatus = PlatformDetection.IsNotBrowser ? WebSocketCloseStatus.InvalidMessageType : (WebSocketCloseStatus)3210;
                 await (useCloseOutputAsync ?
                     cws.CloseOutputAsync(closeStatus, string.Empty, cts.Token) :
                     cws.CloseAsync(closeStatus, string.Empty, cts.Token));
-                _output.WriteLine("Close done.");
                 Assert.Equal(WebSocketState.Closed, cws.State);
 
                 // Verify that there is no follow-up echo close message back from the server by
