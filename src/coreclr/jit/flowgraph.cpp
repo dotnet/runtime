@@ -5338,10 +5338,10 @@ bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIter
     // entry case, and preheader creation should ensure that that's the
     // only time we'll see a BBJ_COND init block. However, it does not
     // hurt to let this logic be correct by construction.
-    bool enterSide = CondInitBlockEnterSide(initBlock);
+    bool enterOnTrue = InitBlockEntersLoopOnTrue(initBlock);
 
     JITDUMP("  Init block " FMT_BB " enters the loop when condition [%06u] evaluates to %s\n", initBlock->bbNum,
-            Compiler::dspTreeID(relop), enterSide ? "true" : "false");
+            Compiler::dspTreeID(relop), enterOnTrue ? "true" : "false");
 
     GenTree*   limitCandidate;
     genTreeOps oper;
@@ -5365,16 +5365,19 @@ bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIter
         return false;
     }
 
-    if (!enterSide)
+    if (!enterOnTrue)
     {
         oper = GenTree::ReverseRelop(oper);
     }
 
     // Here we want to prove that [iterVar] [oper] [limitCandidate] implies
     // [iterVar] [info->IterOper()] [info->Limit()]. Currently we just do the
-    // simple exact checks, but this could be improved.
-
-    if ((relop->IsUnsigned() != info->TestTree->IsUnsigned()) || (oper != info->TestOper()))
+    // simple exact checks, but this could be improved. Note that using
+    // `GenTree::Compare` for the limits is ok for a "same value" check for the
+    // limited shapes of limits we recognize.
+    //
+    if ((relop->IsUnsigned() != info->TestTree->IsUnsigned()) || (oper != info->TestOper()) ||
+        !GenTree::Compare(info->Limit(), limitCandidate))
     {
         JITDUMP("    Condition guarantees V%02u %s%s [%06u], but invariant requires V%02u %s%s [%06u]\n", info->IterVar,
                 relop->IsUnsigned() ? "(uns) " : "", GenTree::OpName(oper), Compiler::dspTreeID(limitCandidate),
@@ -5388,7 +5391,7 @@ bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIter
 }
 
 //------------------------------------------------------------------------
-// CondInitBlockEnterSide: Determine whether a BBJ_COND init block enters the
+// InitBlockEntersLoopOnTrue: Determine whether a BBJ_COND init block enters the
 // loop in the false or true case.
 //
 // Parameters:
@@ -5402,7 +5405,7 @@ bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIter
 //   Handles only limited cases (optExtractInitTestIncr ensures that we see
 //   only limited cases).
 //
-bool FlowGraphNaturalLoop::CondInitBlockEnterSide(BasicBlock* initBlock)
+bool FlowGraphNaturalLoop::InitBlockEntersLoopOnTrue(BasicBlock* initBlock)
 {
     assert(initBlock->KindIs(BBJ_COND));
 
@@ -5416,6 +5419,10 @@ bool FlowGraphNaturalLoop::CondInitBlockEnterSide(BasicBlock* initBlock)
         return true;
     }
 
+    // `optExtractInitTestIncr` may look at preds of preds to find an init
+    // block, so try a little bit harder. Today this always happens since we
+    // always have preheaders created in the places we call
+    // FlowGraphNaturalLoop::AnalyzeIteration.
     for (FlowEdge* enterEdge : EntryEdges())
     {
         BasicBlock* entering = enterEdge->getSourceBlock();

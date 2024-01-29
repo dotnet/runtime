@@ -2097,7 +2097,7 @@ class FlowGraphNaturalLoop
     bool MatchLimit(unsigned iterVar, GenTree* test, NaturalLoopIterInfo* info);
     bool CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info);
     bool IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIterInfo* info);
-    bool CondInitBlockEnterSide(BasicBlock* initBlock);
+    bool InitBlockEntersLoopOnTrue(BasicBlock* initBlock);
     template<typename T>
     static bool EvaluateRelop(T op1, T op2, genTreeOps oper);
 public:
