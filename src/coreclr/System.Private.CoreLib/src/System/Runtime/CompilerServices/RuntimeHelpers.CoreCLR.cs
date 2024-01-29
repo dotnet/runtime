@@ -237,8 +237,8 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
         private static partial void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object AllocateUninitializedClone(object obj);
+        [LibraryImport(QCall, EntryPoint = "ObjectNative_AllocateUninitializedClone")]
+        internal static partial void AllocateUninitializedClone(ObjectHandleOnStack objHandle);
 
         /// <returns>true if given type is reference type or value type that contains references</returns>
         [Intrinsic]

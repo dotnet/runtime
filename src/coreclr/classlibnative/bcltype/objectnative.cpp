@@ -118,36 +118,34 @@ FCIMPL1(Object*, ObjectNative::GetClass, Object* pThis)
 }
 FCIMPLEND
 
-FCIMPL1(Object*, ObjectNative::AllocateUninitializedClone, Object* pObjUNSAFE)
+extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    // Delegate error handling to managed side (it will throw NullReferenceException)
-    if (pObjUNSAFE == NULL)
-        return NULL;
+    _ASSERTE(objHandle.Get() != NULL); // Should be handled at managed side
 
-    OBJECTREF refClone  = ObjectToOBJECTREF(pObjUNSAFE);
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refClone);
-
+    GCX_COOP();
+    OBJECTREF refClone = objHandle.Get();
     MethodTable* pMT = refClone->GetMethodTable();
-
+    
     // assert that String has overloaded the Clone() method
     _ASSERTE(pMT != g_pStringClass);
-
-    if (pMT->IsArray()) {
-        refClone = DupArrayForCloning((BASEARRAYREF)refClone);
-    } else {
+    
+    if (pMT->IsArray())
+    {
+        objHandle.Set(DupArrayForCloning((BASEARRAYREF)refClone));
+    }
+    else
+    {
         // We don't need to call the <cinit> because we know
         //  that it has been called....(It was called before this was created)
-        refClone = AllocateObject(pMT);
+        objHandle.Set(AllocateObject(pMT));
     }
 
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(refClone);
+    END_QCALL;
 }
-FCIMPLEND
 
 extern "C" BOOL QCALLTYPE Monitor_Wait(QCall::ObjectHandleOnStack pThis, INT32 Timeout)
 {
