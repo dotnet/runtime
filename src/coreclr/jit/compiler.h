@@ -2189,7 +2189,7 @@ public:
     bool HasDef(unsigned lclNum);
 
     bool CanDuplicate(INDEBUG(const char** reason));
-    void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale, bool bottomNeedsRedirection);
+    void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale);
 
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoop* loop);
@@ -6783,7 +6783,7 @@ public:
     bool optCompactLoop(FlowGraphNaturalLoop* loop);
     BasicBlock* optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* top);
     BasicBlock* optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* insertionPoint, BasicBlock* top, BasicBlock* bottom);
-    bool optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext);
+    bool optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* newNext);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
     void optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader);
 

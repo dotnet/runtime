@@ -2000,25 +2000,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // bottomNext
     BasicBlock* bottom  = loop->GetLexicallyBottomMostBlock();
     BasicBlock* newPred = bottom;
-    if (bottom->KindIs(BBJ_COND))
-    {
-        // TODO-NoFallThrough: Shouldn't need new BBJ_ALWAYS block once bbFalseTarget can diverge from bbNext
-        BasicBlock* bottomNext = bottom->Next();
-        assert(bottom->FalseTargetIs(bottomNext));
-        JITDUMP("Create branch around cloned loop\n");
-        BasicBlock* bottomRedirBlk = fgNewBBafter(BBJ_ALWAYS, bottom, /*extendRegion*/ true, bottomNext);
-        JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", bottomRedirBlk->bbNum, bottom->bbNum);
-        bottomRedirBlk->bbWeight = bottomRedirBlk->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-
-        bottom->SetFalseTarget(bottomRedirBlk);
-        fgAddRefPred(bottomRedirBlk, bottom);
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomRedirBlk->bbNum);
-        fgReplacePred(bottomNext, bottom, bottomRedirBlk);
-        JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomNext->bbNum,
-                bottomRedirBlk->bbNum, bottomNext->bbNum);
-
-        newPred = bottomRedirBlk;
-    }
 
     // Create a new preheader for the slow loop immediately before the slow
     // loop itself. All failed conditions will branch to the slow preheader.
@@ -2035,7 +2016,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
 
-    loop->Duplicate(&newPred, blockMap, slowPathWeightScaleFactor, /* bottomNeedsRedirection */ false);
+    loop->Duplicate(&newPred, blockMap, slowPathWeightScaleFactor);
 
     // Scale old blocks to the fast path weight.
     loop->VisitLoopBlocks([=](BasicBlock* block) {

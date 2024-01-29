@@ -4370,10 +4370,9 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         for (FlowEdge* const predEdge : loop->m_header->PredEdges())
         {
             BasicBlock* predBlock = predEdge->getSourceBlock();
-            if (dfsTree->Contains(predBlock) && !dfsTree->IsAncestor(header, predEdge->getSourceBlock()))
+            if (dfsTree->Contains(predBlock) && !dfsTree->IsAncestor(header, predBlock))
             {
-                JITDUMP(FMT_BB " -> " FMT_BB " is an entry edge\n", predEdge->getSourceBlock()->bbNum,
-                        loop->m_header->bbNum);
+                JITDUMP(FMT_BB " -> " FMT_BB " is an entry edge\n", predBlock->bbNum, loop->m_header->bbNum);
                 loop->m_entryEdges.push_back(predEdge);
             }
         }
@@ -5449,16 +5448,8 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
 //   insertAfter            - [in, out] Block to insert duplicated blocks after; updated to last block inserted.
 //   map                    - A map that will have mappings from loop blocks to duplicated blocks added to it.
 //   weightScale            - Factor to scale weight of new blocks by
-//   bottomNeedsRedirection - Whether or not to insert a redirection block for the bottom block in case of fallthrough
 //
-// Remarks:
-//   Due to fallthrough this block may need to insert blocks with no
-//   corresponding source block in "map".
-//
-void FlowGraphNaturalLoop::Duplicate(BasicBlock**     insertAfter,
-                                     BlockToBlockMap* map,
-                                     weight_t         weightScale,
-                                     bool             bottomNeedsRedirection)
+void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale)
 {
     assert(CanDuplicate(nullptr));
 
@@ -5483,38 +5474,6 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock**     insertAfter,
 
         *insertAfter = newBlk;
         map->Set(blk, newBlk, BlockToBlockMap::Overwrite);
-
-        // If the block falls through to a block outside the loop then we may
-        // need to insert a new block to redirect.
-        // Skip this once we get to the bottom block if our cloned version is
-        // going to fall into the right version anyway.
-        if (blk->bbFallsThrough() && !ContainsBlock(blk->Next()) && ((blk != bottom) || bottomNeedsRedirection))
-        {
-            if (blk->KindIs(BBJ_COND))
-            {
-                BasicBlock* targetBlk = blk->GetFalseTarget();
-                assert(blk->NextIs(targetBlk));
-
-                // Need to insert a block.
-                BasicBlock* newRedirBlk =
-                    comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /* extendRegion */ true, targetBlk);
-                newRedirBlk->copyEHRegion(*insertAfter);
-                newRedirBlk->bbWeight = blk->Next()->bbWeight;
-                newRedirBlk->CopyFlags(blk->Next(), (BBF_RUN_RARELY | BBF_PROF_WEIGHT));
-                newRedirBlk->scaleBBWeight(weightScale);
-
-                JITDUMP(FMT_BB " falls through to " FMT_BB "; inserted redirection block " FMT_BB "\n", blk->bbNum,
-                        blk->Next()->bbNum, newRedirBlk->bbNum);
-                // This block isn't part of the loop, so below loop won't add
-                // refs for it.
-                comp->fgAddRefPred(targetBlk, newRedirBlk);
-                *insertAfter = newRedirBlk;
-            }
-            else
-            {
-                assert(!"Cannot handle fallthrough");
-            }
-        }
 
         return BasicBlockVisit::Continue;
     });
