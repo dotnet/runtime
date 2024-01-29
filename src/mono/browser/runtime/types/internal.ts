@@ -86,10 +86,10 @@ export type MonoConfigInternal = MonoConfig & {
     runtimeId?: number
 
     // related to config hash
-    preferredIcuAsset: string | null,
-    resourcesHash: string | undefined,
-    GitHash: string | undefined,
-    ProductVersion: string | undefined,
+    preferredIcuAsset?: string | null,
+    resourcesHash?: string,
+    GitHash?: string,
+    ProductVersion?: string,
 };
 
 export type RunArguments = {
@@ -125,7 +125,7 @@ export type LoaderHelpers = {
     scriptDirectory: string
     scriptUrl: string
     modulesUniqueQuery?: string
-    preferredIcuAsset: string | null,
+    preferredIcuAsset?: string | null,
     invariantMode: boolean,
 
     actual_downloaded_assets_count: number,
