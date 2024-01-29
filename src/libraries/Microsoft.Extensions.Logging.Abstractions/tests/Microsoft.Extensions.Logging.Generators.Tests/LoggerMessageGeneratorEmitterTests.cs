@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using SourceGenerators.Tests;
 using Xunit;
@@ -184,6 +185,16 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
     public sealed class BarAttribute : Attribute { }
 }";
             await VerifyAgainstBaselineUsingFile("TestWithNestedClassWithGenericTypesWithAttributes.generated.txt", testSourceCode);
+        }
+
+        [Fact]
+        public void GenericTypeParameterAttributesAreRetained()
+        {
+            var type = typeof(TestClasses.NestedClassWithGenericTypesWithAttributesTestsExtensions<,,>).GetTypeInfo();
+
+            Assert.Equal(3, type.GenericTypeParameters.Length);
+            Assert.NotNull(type.GenericTypeParameters[0].GetCustomAttribute<TestClasses.FooAttribute>());
+            Assert.NotNull(type.GenericTypeParameters[1].GetCustomAttribute<TestClasses.BarAttribute>());
         }
 
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
