@@ -377,7 +377,8 @@ namespace ILCompiler
                         logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
             }
 
-            ilProvider = new FeatureSwitchManager(ilProvider, logger, featureSwitches, substitutions);
+            SubstitutionProvider substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
+            ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider);
 
             CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
