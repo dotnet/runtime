@@ -15,7 +15,7 @@ namespace Microsoft.Extensions
 #endif
     .Configuration.Binder.Tests
 {
-    public partial class ConfigurationBinderCollectionTests
+    public sealed partial class ConfigurationBinderCollectionTests : ConfigurationBinderTestsBase
     {
         [Fact]
         public void GetList()
@@ -216,49 +216,57 @@ namespace Microsoft.Extensions
             Assert.Equal("val_3", options[KeyUintEnum.ghi]);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetSByteDictionary()
         {
             GetIntDictionaryT<sbyte>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetByteDictionary()
         {
             GetIntDictionaryT<byte>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetShortDictionary()
         {
             GetIntDictionaryT<short>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetUShortDictionary()
         {
             GetIntDictionaryT<ushort>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetIntDictionary()
         {
             GetIntDictionaryT<int>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetUIntDictionary()
         {
             GetIntDictionaryT<uint>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetLongDictionary()
         {
             GetIntDictionaryT<long>(0, 1, 2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
+        // Reflection fallback: generic type info not supported with source gen.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
         public void GetULongDictionary()
         {
             GetIntDictionaryT<ulong>(0, 1, 2);
@@ -278,7 +286,9 @@ namespace Microsoft.Extensions
             var config = configurationBuilder.Build();
 
             var options = new Dictionary<T, string>();
+#pragma warning disable SYSLIB1104 
             config.GetSection("IntegerKeyDictionary").Bind(options);
+#pragma warning restore SYSLIB1104
 
             Assert.Equal(3, options.Count);
 
@@ -711,6 +721,40 @@ namespace Microsoft.Extensions
             Assert.Equal(1, options.ObjectDictionary["abc"].Integer);
             Assert.Equal(2, options.ObjectDictionary["def"].Integer);
             Assert.Equal(3, options.ObjectDictionary["ghi"].Integer);
+        }
+
+        [Fact]
+        public void ObjectDictionaryWithHarcodedElements()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ObjectDictionary:abc:Integer", "1"},
+                {"ObjectDictionary:def", "null"},
+                {"ObjectDictionary:ghi", "null"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            options.ObjectDictionary = new()
+            {
+                {"abc", new(){ Integer = 42}},
+                {"def", new(){ Integer = 42}},
+            };
+
+            Assert.Equal(2, options.ObjectDictionary.Count);
+            Assert.Equal(42, options.ObjectDictionary["abc"].Integer);
+            Assert.Equal(42, options.ObjectDictionary["def"].Integer);
+
+            config.Bind(options);
+
+            Assert.Equal(3, options.ObjectDictionary.Count);
+
+            Assert.Equal(1, options.ObjectDictionary["abc"].Integer);
+            Assert.Equal(42, options.ObjectDictionary["def"].Integer);
+            Assert.Equal(0, options.ObjectDictionary["ghi"].Integer);
         }
 
         [Fact]

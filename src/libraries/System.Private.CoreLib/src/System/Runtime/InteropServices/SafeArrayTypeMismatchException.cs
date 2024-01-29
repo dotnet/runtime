@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
@@ -11,7 +12,7 @@ namespace System.Runtime.InteropServices
     /// than the safe array sub type specified in the metadata.
     /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SafeArrayTypeMismatchException : SystemException
     {
         public SafeArrayTypeMismatchException()
@@ -21,13 +22,13 @@ namespace System.Runtime.InteropServices
         }
 
         public SafeArrayTypeMismatchException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_SafeArrayTypeMismatchException)
         {
             HResult = HResults.COR_E_SAFEARRAYTYPEMISMATCH;
         }
 
         public SafeArrayTypeMismatchException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_SafeArrayTypeMismatchException, inner)
         {
             HResult = HResults.COR_E_SAFEARRAYTYPEMISMATCH;
         }

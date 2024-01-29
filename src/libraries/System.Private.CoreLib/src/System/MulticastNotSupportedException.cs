@@ -6,12 +6,13 @@
 // This is thrown when you add multiple callbacks to a non-multicast delegate.
 ////////////////////////////////////////////////////////////////////////////////
 
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class MulticastNotSupportedException : SystemException
     {
         public MulticastNotSupportedException()
@@ -21,13 +22,13 @@ namespace System
         }
 
         public MulticastNotSupportedException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_MulticastNotSupportedException)
         {
             HResult = HResults.COR_E_MULTICASTNOTSUPPORTED;
         }
 
         public MulticastNotSupportedException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_MulticastNotSupportedException, inner)
         {
             HResult = HResults.COR_E_MULTICASTNOTSUPPORTED;
         }

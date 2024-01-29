@@ -810,6 +810,9 @@
   <data name="PlatformNotSupported_CryptographyOpenSSL" xml:space="preserve">
     <value>OpenSSL is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_CryptographyOpenSSLNotFound" xml:space="preserve">
+    <value>OpenSSL is required for algorithm '{0}' but could not be found or loaded.</value>
+  </data>
   <data name="Security_AccessDenied" xml:space="preserve">
     <value>Access is denied.</value>
   </data>
@@ -824,5 +827,11 @@
   </data>
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
+  </data>
+  <data name="Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded" xml:space="preserve">
+    <value>PKCS12 (PFX) without a supplied password has exceeded maximum allowed iterations. See https://go.microsoft.com/fwlink/?linkid=2233907 for more information.</value>
+  </data>
+  <data name="Cryptography_X509_PfxWithoutPassword_ProblemFound" xml:space="preserve">
+    <value>There was a problem with the PKCS12 (PFX) without a supplied password. See https://go.microsoft.com/fwlink/?linkid=2233907 for more information.</value>
   </data>
 </root>

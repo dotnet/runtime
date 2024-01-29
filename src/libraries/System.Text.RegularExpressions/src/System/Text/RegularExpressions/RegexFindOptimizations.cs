@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
@@ -95,7 +94,7 @@ namespace System.Text.RegularExpressions
                 if (RegexPrefixAnalyzer.FindFirstCharClass(root) is string charClass)
                 {
                     // See if the set is limited to holding only a few characters.
-                    Span<char> scratch = stackalloc char[5]; // max optimized by IndexOfAny today
+                    Span<char> scratch = stackalloc char[5]; // max efficiently optimized by IndexOfAny today
                     int scratchCount;
                     char[]? chars = null;
                     if (!RegexCharClass.IsNegated(charClass) &&
@@ -109,12 +108,14 @@ namespace System.Text.RegularExpressions
                     {
                         // The set contains one and only one character, meaning every match starts
                         // with the same literal value (potentially case-insensitive). Search for that.
+                        Debug.Assert(!RegexCharClass.IsNegated(charClass));
                         FixedDistanceLiteral = (chars[0], null, 0);
                         FindMode = FindNextStartingPositionMode.LeadingChar_RightToLeft;
                     }
                     else
                     {
                         // The set may match multiple characters.  Search for that.
+                        Debug.Assert(!RegexCharClass.IsNegated(charClass) || chars is null);
                         FixedDistanceSets = new List<FixedDistanceSet>()
                         {
                             new FixedDistanceSet(chars, charClass, 0)
@@ -154,22 +155,32 @@ namespace System.Text.RegularExpressions
 
             // As a backup, see if we can find a literal after a leading atomic loop.  That might be better than whatever sets we find, so
             // we want to know whether we have one in our pocket before deciding whether to use a leading set (we'll prefer a leading
-            // set if it's something for which we can vectorize a search).
-            (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? literalAfterLoop = RegexPrefixAnalyzer.FindLiteralFollowingLeadingLoop(root);
+            // set if it's something for which we can search efficiently).
+            (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal)? literalAfterLoop = RegexPrefixAnalyzer.FindLiteralFollowingLeadingLoop(root);
 
-            // If we got such sets, we'll likely use them.  However, if the best of them is something that doesn't support a vectorized
-            // search and we did successfully find a literal after an atomic loop we could search instead, we prefer the vectorizable search.
+            // If we got such sets, we'll likely use them.  However, if the best of them is something that doesn't support an efficient
+            // search and we did successfully find a literal after an atomic loop we could search instead, we prefer the efficient search.
+            // For example, if we have a negated set, we will still prefer the literal-after-an-atomic-loop because negated sets typically
+            // contain _many_ characters (e.g. [^a] is everything but 'a') and are thus more likely to very quickly match, which means any
+            // vectorization employed is less likely to kick in and be worth the startup overhead.
             if (fixedDistanceSets is not null)
             {
+                // Sort the sets by "quality", such that whatever set is first is the one deemed most efficient to use.
+                // In some searches, we may use multiple sets, so we want the subsequent ones to also be the efficiency runners-up.
                 RegexPrefixAnalyzer.SortFixedDistanceSetsByQuality(fixedDistanceSets);
-                if (fixedDistanceSets[0].Chars is not null || literalAfterLoop is null)
+
+                // If there is no literal after the loop, use whatever set we got.
+                // If there is a literal after the loop, consider it to be better than a negated set and better than a set with many characters.
+                if (literalAfterLoop is null ||
+                    (fixedDistanceSets[0].Chars is not null && !fixedDistanceSets[0].Negated))
                 {
                     // Determine whether to do searching based on one or more sets or on a single literal. Compiled engines
                     // don't need to special-case literals as they already do codegen to create the optimal lookup based on
                     // the set's characteristics.
                     if (!compiled &&
                         fixedDistanceSets.Count == 1 &&
-                        fixedDistanceSets[0].Chars is { Length: 1 })
+                        fixedDistanceSets[0].Chars is { Length: 1 } &&
+                        !fixedDistanceSets[0].Negated)
                     {
                         FixedDistanceLiteral = (fixedDistanceSets[0].Chars![0], null, fixedDistanceSets[0].Distance);
                         FindMode = FindNextStartingPositionMode.FixedDistanceChar_LeftToRight;
@@ -186,8 +197,9 @@ namespace System.Text.RegularExpressions
 
                         // Store the sets, and compute which mode to use.
                         FixedDistanceSets = fixedDistanceSets;
-                        FindMode = (fixedDistanceSets.Count == 1 && fixedDistanceSets[0].Distance == 0) ? FindNextStartingPositionMode.LeadingSet_LeftToRight
-                            : FindNextStartingPositionMode.FixedDistanceSets_LeftToRight;
+                        FindMode = (fixedDistanceSets.Count == 1 && fixedDistanceSets[0].Distance == 0) ?
+                            FindNextStartingPositionMode.LeadingSet_LeftToRight :
+                            FindNextStartingPositionMode.FixedDistanceSets_LeftToRight;
                         _asciiLookups = new uint[fixedDistanceSets.Count][];
                     }
                     return;
@@ -240,31 +252,23 @@ namespace System.Text.RegularExpressions
         public List<FixedDistanceSet>? FixedDistanceSets { get; }
 
         /// <summary>Data about a character class at a fixed offset from the start of any match to a pattern.</summary>
-        public struct FixedDistanceSet
+        public struct FixedDistanceSet(char[]? chars, string set, int distance)
         {
-            public FixedDistanceSet(char[]? chars, string set, int distance)
-            {
-                Chars = chars;
-                Set = set;
-                Distance = distance;
-            }
 
             /// <summary>The character class description.</summary>
-            public string Set;
+            public string Set = set;
             /// <summary>Whether the <see cref="Set"/> is negated.</summary>
             public bool Negated;
             /// <summary>Small list of all of the characters that make up the set, if known; otherwise, null.</summary>
-            public char[]? Chars;
+            public char[]? Chars = chars;
             /// <summary>The distance of the set from the beginning of the match.</summary>
-            public int Distance;
+            public int Distance = distance;
             /// <summary>As an alternative to <see cref="Chars"/>, a description of the single range the set represents, if it does.</summary>
             public (char LowInclusive, char HighInclusive)? Range;
-            /// <summary>As an alternative to <see cref="Chars"/>, a description of the set of ASCII characters it represents, if it does.</summary>
-            public char[]? AsciiSet;
         }
 
         /// <summary>When in literal after set loop node, gets the literal to search for and the RegexNode representing the leading loop.</summary>
-        public (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? LiteralAfterLoop { get; }
+        public (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal)? LiteralAfterLoop { get; }
 
         /// <summary>Analyzes a list of fixed-distance sets to extract a case-sensitive string at a fixed distance.</summary>
         private static (string String, int Distance)? FindFixedDistanceString(List<FixedDistanceSet> fixedDistanceSets)
@@ -322,6 +326,7 @@ namespace System.Text.RegularExpressions
             return best;
         }
 
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
         /// <summary>Try to advance to the next starting position that might be a location for a match.</summary>
         /// <param name="textSpan">The text to search.</param>
         /// <param name="pos">The position in <paramref name="textSpan"/>.  This is updated with the found position.</param>
@@ -578,12 +583,11 @@ namespace System.Text.RegularExpressions
                     {
                         FixedDistanceSet primarySet = FixedDistanceSets![0];
                         char[]? chars = primarySet.Chars;
-                        string set = primarySet.Set;
 
                         ReadOnlySpan<char> span = textSpan.Slice(pos);
-                        if (chars is not null)
+                        if (chars is { Length: <= 5 }) // 5 == currently the max length efficiently handled by IndexOfAny{Except} without SearchValues
                         {
-                            int i = span.IndexOfAny(chars);
+                            int i = primarySet.Negated ? span.IndexOfAnyExcept(chars) : span.IndexOfAny(chars);
                             if (i >= 0)
                             {
                                 pos += i;
@@ -595,7 +599,7 @@ namespace System.Text.RegularExpressions
                             ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
                             for (int i = 0; i < span.Length; i++)
                             {
-                                if (RegexCharClass.CharInClass(span[i], set, ref startingAsciiLookup))
+                                if (RegexCharClass.CharInClass(span[i], primarySet.Set, ref startingAsciiLookup))
                                 {
                                     pos += i;
                                     return true;
@@ -648,12 +652,13 @@ namespace System.Text.RegularExpressions
 
                         int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
 
-                        if (primarySet.Chars is not null)
+                        if (primarySet.Chars is { Length: <= 5 }) // 5 == currently the max length efficiently handled by IndexOfAny{Except}
                         {
                             for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
                             {
                                 int offset = inputPosition + primarySet.Distance;
-                                int index = textSpan.Slice(offset).IndexOfAny(primarySet.Chars);
+                                ReadOnlySpan<char> textSpanAtOffset = textSpan.Slice(offset);
+                                int index = primarySet.Negated ? textSpanAtOffset.IndexOfAnyExcept(primarySet.Chars) : textSpanAtOffset.IndexOfAny(primarySet.Chars);
                                 if (index < 0)
                                 {
                                     break;
@@ -720,7 +725,7 @@ namespace System.Text.RegularExpressions
                 case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight:
                     {
                         Debug.Assert(LiteralAfterLoop is not null);
-                        (RegexNode loopNode, (char Char, string? String, char[]? Chars) literal) = LiteralAfterLoop.GetValueOrDefault();
+                        (RegexNode loopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) literal) = LiteralAfterLoop.GetValueOrDefault();
 
                         Debug.Assert(loopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                         Debug.Assert(loopNode.N == int.MaxValue);
@@ -731,7 +736,7 @@ namespace System.Text.RegularExpressions
                             ReadOnlySpan<char> slice = textSpan.Slice(startingPos);
 
                             // Find the literal.  If we can't find it, we're done searching.
-                            int i = literal.String is not null ? slice.IndexOf(literal.String.AsSpan()) :
+                            int i = literal.String is not null ? slice.IndexOf(literal.String.AsSpan(), literal.StringComparison) :
                                     literal.Chars is not null ? slice.IndexOfAny(literal.Chars.AsSpan()) :
                                     slice.IndexOf(literal.Char);
                             if (i < 0)
@@ -769,6 +774,7 @@ namespace System.Text.RegularExpressions
                     return true;
             }
         }
+#endif
     }
 
     /// <summary>Mode to use for searching for the next location of a possible match.</summary>

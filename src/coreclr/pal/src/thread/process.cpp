@@ -33,6 +33,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/stackstring.hpp"
 #include "pal/signal.hpp"
 
+#include <generatedumpflags.h>
 #include <clrconfignocache.h>
 
 #include <errno.h>
@@ -205,6 +206,9 @@ LPWSTR g_lpwstrAppDir = NULL;
 
 // Thread ID of thread that has started the ExitProcess process
 Volatile<LONG> terminator = 0;
+
+// Id of thread generating a core dump
+Volatile<LONG> g_crashingThreadId = 0;
 
 // Process and session ID of this process.
 DWORD gPID = (DWORD) -1;
@@ -1193,7 +1197,10 @@ ExitProcess(
            Update: [TODO] PROCSuspendOtherThreads has been removed. Can this
            code be changed? */
         WARN("termination already started from another thread; blocking.\n");
-        poll(NULL, 0, INFTIM);
+        while (true)
+        {
+            poll(NULL, 0, INFTIM);
+        }
     }
 
     /* ExitProcess may be called even if PAL is not initialized.
@@ -2053,8 +2060,6 @@ PROCFormatInt64(ULONG64 value)
     return buffer;
 }
 
-static const INT UndefinedDumpType = 0;
-
 /*++
 Function
   PROCBuildCreateDumpCommandLine
@@ -2119,15 +2124,18 @@ PROCBuildCreateDumpCommandLine(
 
     switch (dumpType)
     {
-        case 1: argv.push_back("--normal");
+        case DumpTypeNormal:
+            argv.push_back("--normal");
             break;
-        case 2: argv.push_back("--withheap");
+        case DumpTypeWithHeap:
+            argv.push_back("--withheap");
             break;
-        case 3: argv.push_back("--triage");
+        case DumpTypeTriage:
+            argv.push_back("--triage");
             break;
-        case 4: argv.push_back("--full");
+        case DumpTypeFull:
+            argv.push_back("--full");
             break;
-        case UndefinedDumpType:
         default:
             break;
     }
@@ -2173,19 +2181,39 @@ PROCBuildCreateDumpCommandLine(
 Function:
   PROCCreateCrashDump
 
-  Creates crash dump of the process. Can be called from the
-  unhandled native exception handler.
+  Creates crash dump of the process. Can be called from the unhandled
+  native exception handler. Allows only one thread to generate the core
+  dump if serialize is true.
 
-(no return value)
+Return:
+  TRUE - succeeds, FALSE - fails
 --*/
 BOOL
 PROCCreateCrashDump(
     std::vector<const char*>& argv,
     LPSTR errorMessageBuffer,
-    INT cbErrorMessageBuffer)
+    INT cbErrorMessageBuffer,
+    bool serialize)
 {
     _ASSERTE(argv.size() > 0);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
+
+    if (serialize)
+    {
+        size_t currentThreadId = THREADSilentGetCurrentThreadId();
+        size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
+        if (previousThreadId != 0)
+        {
+            // Should never reenter or recurse
+            _ASSERTE(previousThreadId != currentThreadId);
+
+            // The first thread generates the crash info and any other threads are blocked
+            while (true)
+            {
+                poll(NULL, 0, INFTIM);
+            }
+        }
+    }
 
     int pipe_descs[2];
     if (pipe(pipe_descs) == -1)
@@ -2321,13 +2349,13 @@ PROCAbortInitialize()
         const char* logFilePath = dmpLogToFileCfg.IsSet() ? dmpLogToFileCfg.AsString() : nullptr;
 
         CLRConfigNoCache dmpTypeCfg = CLRConfigNoCache::Get("DbgMiniDumpType", /*noprefix*/ false, &getenv);
-        DWORD dumpType = UndefinedDumpType;
+        DWORD dumpType = DumpTypeUnknown;
         if (dmpTypeCfg.IsSet())
         {
             (void)dmpTypeCfg.TryAsInteger(10, dumpType);
-            if (dumpType < 1 || dumpType > 4)
+            if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
             {
-                dumpType = UndefinedDumpType;
+                dumpType = DumpTypeUnknown;
             }
         }
 
@@ -2398,7 +2426,7 @@ PAL_GenerateCoreDump(
 {
     std::vector<const char*> argvCreateDump;
 
-    if (dumpType < 1 || dumpType > 4)
+    if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
         return FALSE;
     }
@@ -2411,7 +2439,7 @@ PAL_GenerateCoreDump(
     BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, nullptr, dumpType, flags);
     if (result)
     {
-        result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer);
+        result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer, false);
     }
     free(program);
     free(pidarg);
@@ -2427,11 +2455,13 @@ Function:
 
 Parameters:
   signal - POSIX signal number
+  siginfo - POSIX signal info or nullptr
+  serialize - allow only one thread to generate core dump
 
 (no return value)
 --*/
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
 {
     // If enabled, launch the create minidump utility and wait until it completes
     if (!g_argvCreateDump.empty())
@@ -2489,7 +2519,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
             argv.push_back(nullptr);
         }
 
-        PROCCreateCrashDump(argv, nullptr, 0);
+        PROCCreateCrashDump(argv, nullptr, 0, serialize);
 
         free(signalArg);
         free(crashThreadArg);
@@ -2518,7 +2548,7 @@ PROCAbort(int signal, siginfo_t* siginfo)
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal, siginfo);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, true);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.
@@ -2791,6 +2821,12 @@ CorUnix::InitializeProcessCommandLine(
     if (lpwstrFullPath)
     {
         LPWSTR lpwstr = PAL_wcsrchr(lpwstrFullPath, '/');
+        if (!lpwstr)
+        {
+            ERROR("Invalid full path\n");
+            palError = ERROR_INTERNAL_ERROR;
+            goto exit;
+        }    
         lpwstr[0] = '\0';
         size_t n = PAL_wcslen(lpwstrFullPath) + 1;
 
@@ -3220,7 +3256,10 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
            TerminateProcess won't call DllMain, so there's no danger to get
            caught in an infinite loop */
         WARN("termination already started from another thread; blocking.\n");
-        poll(NULL, 0, INFTIM);
+        while (true)
+        {
+            poll(NULL, 0, INFTIM);
+        }
     }
 
     /* Try to lock the initialization count to prevent multiple threads from

@@ -1066,6 +1066,15 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_array_accessor_wrapper (m);
+			} else if (subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR) {
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
+				if (!m)
+					return FALSE;
+				MonoUnsafeAccessorKind kind = (MonoUnsafeAccessorKind) decode_value (p, &p);
+				uint32_t name_len = decode_value (p, &p);
+				const char *member_name = (const char*)p;
+				p += name_len + 1;
+				ref->method = mono_marshal_get_unsafe_accessor_wrapper (m, kind, member_name);
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN) {
 				ref->method = mono_marshal_get_gsharedvt_in_wrapper ();
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
@@ -1186,43 +1195,57 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
 			int subtype = decode_value (p, &p);
 
-			if (!target)
-				return FALSE;
-
-			if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC) {
-				if (strcmp (target->name, "runtime_invoke_dynamic") != 0)
-					return FALSE;
-				ref->method = target;
-			} else if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT) {
-				/* Direct wrapper */
+			switch (subtype) {
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC: {
+				ref->method = mono_marshal_get_runtime_invoke_dynamic ();
+				break;
+			}
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT: {
 				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_runtime_invoke (m, FALSE);
-			} else if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL) {
-				/* Virtual direct wrapper */
+				break;
+			}
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL: {
 				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_runtime_invoke (m, TRUE);
-			} else {
-				MonoMethodSignature *sig;
+				break;
+			}
+			case WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL: {
+				MonoMethodSignature *sig = decode_signature_with_target (module, NULL, p, &p);
 
-				sig = decode_signature_with_target (module, NULL, p, &p);
-				info = mono_marshal_get_wrapper_info (target);
-				g_assert (info);
+				/*
+				 * Its hard to reconstruct these wrappers, the ones returned by
+				 * mono_marshal_get_runtime_invoke_for_sig () work the same, but they
+				 * are not the same since they are cached in a different hash. So if the target is set,
+				 * compare the signature.
+				 */
+				if (target) {
+					WrapperInfo *wrapper_info = mono_marshal_get_wrapper_info (target);
+					g_assert (wrapper_info);
 
-				if (info->subtype != subtype) {
+					if (wrapper_info->subtype != subtype) {
+						g_free (sig);
+						return FALSE;
+					}
+					g_assert (wrapper_info->d.runtime_invoke.sig);
+					const gboolean same_sig = mono_metadata_signature_equal (sig, wrapper_info->d.runtime_invoke.sig);
 					g_free (sig);
-					return FALSE;
+					if (same_sig)
+						ref->method = target;
+					else
+						return FALSE;
+				} else {
+					ref->method = mono_marshal_get_runtime_invoke_for_sig (sig);
 				}
-				g_assert (info->d.runtime_invoke.sig);
-				const gboolean same_sig = mono_metadata_signature_equal (sig, info->d.runtime_invoke.sig);
-				g_free (sig);
-				if (same_sig)
-					ref->method = target;
-				else
-					return FALSE;
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+				break;
 			}
 			break;
 		}
@@ -2260,17 +2283,15 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	if (make_unreadable) {
 #ifndef TARGET_WIN32
-		guint8 *addr;
 		guint8 *page_start, *page_end;
-		int err, len;
+		int err;
 
-		addr = amodule->mem_begin;
-		g_assert (addr);
-		len = amodule->mem_end - amodule->mem_begin;
+		g_assert (amodule->mem_begin);
+		g_assert (amodule->mem_end);
 
 		/* Round down in both directions to avoid modifying data which is not ours */
-		page_start = (guint8 *) (((gssize) (addr)) & ~ (mono_pagesize () - 1)) + mono_pagesize ();
-		page_end = (guint8 *) (((gssize) (addr + len)) & ~ (mono_pagesize () - 1));
+		page_start = (guint8 *) (((gssize) (amodule->mem_begin)) & ~ (mono_pagesize () - 1)) + mono_pagesize ();
+		page_end = (guint8 *) (((gssize) (amodule->mem_end)) & ~ (mono_pagesize () - 1));
 		if (page_end > page_start) {
 			err = mono_mprotect (page_start, (page_end - page_start), MONO_MMAP_NONE);
 			g_assert (err == 0);
@@ -2508,6 +2529,7 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->no_special_static_fields = (flags >> 7) & 0x1;
 	info->is_generic_container = (flags >> 8) & 0x1;
 	info->has_weak_fields = (flags >> 9) & 0x1;
+	info->has_deferred_failure = (flags >> 10) & 0x1;
 
 	if (info->has_cctor) {
 		res = decode_method_ref (module, &ref, buf, &buf, error);
@@ -3726,7 +3748,7 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 		/* Unused */
 		int len = mono_jit_info_size (0, 0, 0);
 		jinfo = (MonoJitInfo *)alloc0_jit_info_data (mem_manager, len, async);
-		mono_jit_info_init (jinfo, method, code, code_len, 0, 0, 0);
+		mono_jit_info_init (jinfo, method, code, GPTRDIFF_TO_INT (code_len), 0, 0, 0);
 	} else {
 		jinfo = decode_exception_debug_info (amodule, method, ex_info, code, GPTRDIFF_TO_UINT32 (code_len));
 	}
@@ -3961,6 +3983,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_GC_NURSERY_BITS:
 	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT:
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT:
+	case MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG:
 		break;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		ji->data.uindex = decode_value (p, &p);
@@ -4096,7 +4119,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			case MONO_PATCH_INFO_DELEGATE_INFO:
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
-			case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+			case MONO_PATCH_INFO_GSHAREDVT_CALL:
+			case MONO_PATCH_INFO_SIGNATURE: {
 				MonoJumpInfo tmp;
 				tmp.type = patch_type;
 				if (!decode_patch (aot_module, mp, &tmp, p, &p))
@@ -6021,7 +6045,7 @@ mono_aot_get_unbox_arbitrary_trampoline (gpointer addr)
 static int
 i32_idx_comparer (const void *key, const void *member)
 {
-	gint32 idx1 = GPOINTER_TO_INT (key);
+	gint32 idx1 = GCONSTPOINTER_TO_INT (key);
 	gint32 idx2 = *(gint32*)member;
 	return idx1 - idx2;
 }
@@ -6029,7 +6053,7 @@ i32_idx_comparer (const void *key, const void *member)
 static int
 ui16_idx_comparer (const void *key, const void *member)
 {
-	int idx1 = GPOINTER_TO_INT (key);
+	int idx1 = GCONSTPOINTER_TO_INT (key);
 	int idx2 = *(guint16*)member;
 	return idx1 - idx2;
 }

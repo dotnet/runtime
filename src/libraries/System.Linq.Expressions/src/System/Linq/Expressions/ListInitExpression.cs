@@ -105,6 +105,7 @@ namespace System.Linq.Expressions
         /// <param name="initializers">An array of <see cref="Expression"/> objects to use to populate the <see cref="ListInitExpression.Initializers"/> collection.</param>
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ListInit"/> and the <see cref="ListInitExpression.NewExpression"/> property set to the specified value.</returns>
         [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
+        [RequiresDynamicCode(GenericMethodRequiresDynamicCode)]
         public static ListInitExpression ListInit(NewExpression newExpression, params Expression[] initializers)
         {
             return ListInit(newExpression, initializers as IEnumerable<Expression>);
@@ -117,6 +118,7 @@ namespace System.Linq.Expressions
         /// <param name="initializers">An <see cref="IEnumerable{T}"/> that contains <see cref="Expressions.ElementInit"/> objects to use to populate the <see cref="ListInitExpression.Initializers"/> collection.</param>
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ListInit"/> and the <see cref="ListInitExpression.NewExpression"/> property set to the specified value.</returns>
         [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
+        [RequiresDynamicCode(GenericMethodRequiresDynamicCode)]
         public static ListInitExpression ListInit(NewExpression newExpression, IEnumerable<Expression> initializers)
         {
             ArgumentNullException.ThrowIfNull(newExpression);
@@ -140,6 +142,7 @@ namespace System.Linq.Expressions
         /// <param name="initializers">An array of <see cref="Expression"/> objects to use to populate the <see cref="ListInitExpression.Initializers"/> collection.</param>
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ListInit"/> and the <see cref="ListInitExpression.NewExpression"/> property set to the specified value.</returns>
         [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
+        [RequiresDynamicCode(GenericMethodRequiresDynamicCode)]
         public static ListInitExpression ListInit(NewExpression newExpression, MethodInfo? addMethod, params Expression[] initializers)
         {
             return ListInit(newExpression, addMethod, initializers as IEnumerable<Expression>);
@@ -153,6 +156,7 @@ namespace System.Linq.Expressions
         /// <param name="initializers">An <see cref="IEnumerable{T}"/> that contains <see cref="Expression"/> objects to use to populate the Initializers collection.</param>
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ListInit"/> and the <see cref="ListInitExpression.NewExpression"/> property set to the specified value.</returns>
         [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
+        [RequiresDynamicCode(GenericMethodRequiresDynamicCode)]
         public static ListInitExpression ListInit(NewExpression newExpression, MethodInfo? addMethod, IEnumerable<Expression> initializers)
         {
             if (addMethod == null)

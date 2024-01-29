@@ -15,8 +15,7 @@ namespace
     bool coreclr_bind(const pal::string_t& libcoreclr_path)
     {
         assert(coreclr_contract.coreclr_initialize == nullptr);
-        coreclr_resolver_t::resolve_coreclr(libcoreclr_path, coreclr_contract);
-        return true;
+        return coreclr_resolver_t::resolve_coreclr(libcoreclr_path, coreclr_contract);
     }
 
     void log_error(const char* line)
@@ -166,9 +165,6 @@ namespace
         _X("STARTUP_HOOKS"),
         _X("APP_PATHS"),
         _X("RUNTIME_IDENTIFIER"),
-        _X("BUNDLE_PROBE"),
-        _X("HOSTPOLICY_EMBEDDED"),
-        _X("PINVOKE_OVERRIDE")
     };
 
     static_assert((sizeof(PropertyNameMapping) / sizeof(*PropertyNameMapping)) == static_cast<size_t>(common_property::Last), "Invalid property count");

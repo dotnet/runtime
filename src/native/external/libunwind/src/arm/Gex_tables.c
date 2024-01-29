@@ -508,18 +508,20 @@ arm_phdr_cb (struct dl_phdr_info *info, size_t size, void *data)
 }
 
 HIDDEN int
-arm_find_proc_info (unw_addr_space_t as, unw_word_t ip,
-                    unw_proc_info_t *pi, int need_unwind_info, void *arg)
+arm_find_proc_info2 (unw_addr_space_t as, unw_word_t ip,
+                     unw_proc_info_t *pi, int need_unwind_info, void *arg,
+                     int methods)
 {
   int ret = -1;
   intrmask_t saved_mask;
 
   Debug (14, "looking for IP=0x%lx\n", (long) ip);
 
-  if (UNW_TRY_METHOD(UNW_ARM_METHOD_DWARF))
+  if (UNW_TRY_METHOD (UNW_ARM_METHOD_DWARF) && (methods & UNW_ARM_METHOD_DWARF))
     ret = dwarf_find_proc_info (as, ip, pi, need_unwind_info, arg);
 
-  if (ret < 0 && UNW_TRY_METHOD (UNW_ARM_METHOD_EXIDX))
+  if (ret < 0 && UNW_TRY_METHOD (UNW_ARM_METHOD_EXIDX) &&
+      (methods & UNW_ARM_METHOD_EXIDX))
     {
       struct arm_cb_data cb_data;
 
@@ -529,7 +531,7 @@ arm_find_proc_info (unw_addr_space_t as, unw_word_t ip,
       cb_data.di.format = -1;
 
       SIGPROCMASK (SIG_SETMASK, &unwi_full_mask, &saved_mask);
-      ret = dl_iterate_phdr (arm_phdr_cb, &cb_data);
+      ret = as->iterate_phdr_function (arm_phdr_cb, &cb_data);
       SIGPROCMASK (SIG_SETMASK, &saved_mask, NULL);
 
       if (cb_data.di.format != -1)
@@ -540,6 +542,14 @@ arm_find_proc_info (unw_addr_space_t as, unw_word_t ip,
     }
 
   return ret;
+}
+
+HIDDEN int
+arm_find_proc_info (unw_addr_space_t as, unw_word_t ip,
+                    unw_proc_info_t *pi, int need_unwind_info, void *arg)
+{
+    return arm_find_proc_info2 (as, ip, pi, need_unwind_info, arg,
+                                UNW_ARM_METHOD_ALL);
 }
 
 HIDDEN void

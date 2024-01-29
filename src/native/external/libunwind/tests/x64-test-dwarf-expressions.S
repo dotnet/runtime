@@ -64,7 +64,7 @@ DW_CFA_expression_inner:
   # DW_CFA_expression(0x10), r12(0x0c), Length(0x02),        (preamble)
   # DW_OP_lit16(0x40), DW_OP_minus(0x1c)                     (instructions)
   # Parsing starts with the CFA on the stack, then pushes 16, then does a minus
-  # which is eqivalent to a=pop(), b=pop(), push(b-a), leaving us with a value
+  # which is equivalent to a=pop(), b=pop(), push(b-a), leaving us with a value
   # of cfa-16 (cfa points at old rsp, cfa-8 is our rip, so we stored r12 at
   # cfa-16).
   xor %r12, %r12                             # Trash r12
@@ -76,3 +76,6 @@ DW_CFA_expression_inner:
   ret
   .cfi_endproc
 .size DW_CFA_expression_inner,.-DW_CFA_expression_inner
+
+      /* We do not need executable stack.  */
+      .section        .note.GNU-stack,"",@progbits

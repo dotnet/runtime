@@ -29,6 +29,12 @@ namespace Microsoft.Extensions.DependencyInjection
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter)]
+    public partial class FromKeyedServicesAttribute : System.Attribute
+    {
+        public FromKeyedServicesAttribute(object key) { }
+        public object Key { get { throw null; } }
+    }
     public partial interface IServiceCollection : System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
     {
     }
@@ -41,6 +47,10 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         bool IsService(System.Type serviceType);
     }
+    public partial interface IServiceProviderIsKeyedService : IServiceProviderIsService
+    {
+        bool IsKeyedService(System.Type serviceType, object? serviceKey);
+    }
     public partial interface IServiceScope : System.IDisposable
     {
         System.IServiceProvider ServiceProvider { get; }
@@ -49,9 +59,18 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         Microsoft.Extensions.DependencyInjection.IServiceScope CreateScope();
     }
+    public partial interface IKeyedServiceProvider : System.IServiceProvider
+    {
+        object? GetKeyedService(System.Type serviceType, object? serviceKey);
+        object GetRequiredKeyedService(System.Type serviceType, object? serviceKey);
+    }
     public partial interface ISupportRequiredService
     {
         object GetRequiredService(System.Type serviceType);
+    }
+    public static partial class KeyedService
+    {
+        public static object AnyKey { get { throw null; } }
     }
     public delegate object ObjectFactory(System.IServiceProvider serviceProvider, object?[]? arguments);
     public delegate T ObjectFactory<T>(System.IServiceProvider serviceProvider, object?[]? arguments);
@@ -75,6 +94,29 @@ namespace Microsoft.Extensions.DependencyInjection
     }
     public static partial class ServiceCollectionServiceExtensions
     {
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type serviceType, object? serviceKey) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, object? serviceKey, System.Func<System.IServiceProvider, object, object> implementationFactory) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedScoped<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedScoped<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, System.Func<System.IServiceProvider, object, TService> implementationFactory) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedScoped<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey) where TService : class where TImplementation : class, TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedScoped<TService, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, System.Func<System.IServiceProvider, object, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedSingleton(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type serviceType, object? serviceKey) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedSingleton(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, object? serviceKey, System.Func<System.IServiceProvider, object, object> implementationFactory) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedSingleton(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, object? serviceKey, object implementationInstance) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedSingleton(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedSingleton<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedSingleton<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, System.Func<System.IServiceProvider, object, TService> implementationFactory) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedSingleton<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, TService implementationInstance) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedSingleton<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey) where TService : class where TImplementation : class, TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedSingleton<TService, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, System.Func<System.IServiceProvider, object, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedTransient(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type serviceType, object? serviceKey) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedTransient(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, object? serviceKey, System.Func<System.IServiceProvider, object, object> implementationFactory) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedTransient(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedTransient<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedTransient<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, System.Func<System.IServiceProvider, object, TService> implementationFactory) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedTransient<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey) where TService : class where TImplementation : class, TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddKeyedTransient<TService, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, System.Func<System.IServiceProvider, object, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type serviceType) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, System.Func<System.IServiceProvider, object> implementationFactory) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Type serviceType, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType) { throw null; }
@@ -103,15 +145,43 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public ServiceDescriptor(System.Type serviceType, System.Func<System.IServiceProvider, object> factory, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
         public ServiceDescriptor(System.Type serviceType, object instance) { }
+        public ServiceDescriptor(System.Type serviceType, object? serviceKey, System.Func<System.IServiceProvider, object?, object> factory, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
+        public ServiceDescriptor(System.Type serviceType, object? serviceKey, object instance) { }
+        public ServiceDescriptor(System.Type serviceType, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
         public ServiceDescriptor(System.Type serviceType, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
         public System.Func<System.IServiceProvider, object>? ImplementationFactory { get { throw null; } }
         public object? ImplementationInstance { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Type? ImplementationType { get { throw null; } }
+        public bool IsKeyedService { get { throw null; } }
+        public System.Func<System.IServiceProvider, object?, object>? KeyedImplementationFactory { get { throw null; } }
+        public object? KeyedImplementationInstance { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+        public System.Type? KeyedImplementationType { get { throw null; } }
         public Microsoft.Extensions.DependencyInjection.ServiceLifetime Lifetime { get { throw null; } }
+        public object? ServiceKey { get { throw null; } }
         public System.Type ServiceType { get { throw null; } }
         public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor Describe(System.Type serviceType, System.Func<System.IServiceProvider, object> implementationFactory, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor Describe(System.Type serviceType, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor DescribeKeyed(System.Type serviceType, object? serviceKey, System.Func<System.IServiceProvider, object, object> implementationFactory, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor DescribeKeyed(System.Type serviceType, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedScoped(System.Type service, object? serviceKey, System.Func<System.IServiceProvider, object, object> implementationFactory) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedScoped(System.Type service, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedScoped<TService>(object? serviceKey, System.Func<System.IServiceProvider, object, TService> implementationFactory) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedScoped<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(object? serviceKey) where TService : class where TImplementation : class, TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedScoped<TService, TImplementation>(object? serviceKey, System.Func<System.IServiceProvider, object, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedSingleton(System.Type serviceType, object? serviceKey, System.Func<System.IServiceProvider, object, object> implementationFactory) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedSingleton(System.Type serviceType, object? serviceKey, object implementationInstance) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedSingleton(System.Type service, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedSingleton<TService>(object? serviceKey, System.Func<System.IServiceProvider, object, TService> implementationFactory) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedSingleton<TService>(object? serviceKey, TService implementationInstance) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedSingleton<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(object? serviceKey) where TService : class where TImplementation : class, TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedSingleton<TService, TImplementation>(object? serviceKey, System.Func<System.IServiceProvider, object, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedTransient(System.Type service, object? serviceKey, System.Func<System.IServiceProvider, object, object> implementationFactory) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedTransient(System.Type service, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedTransient<TService>(object? serviceKey, System.Func<System.IServiceProvider, object, TService> implementationFactory) where TService : class { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedTransient<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(object? serviceKey) where TService : class where TImplementation : class, TService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor KeyedTransient<TService, TImplementation>(object? serviceKey, System.Func<System.IServiceProvider, object, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService { throw null; }
         public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor Scoped(System.Type service, System.Func<System.IServiceProvider, object> implementationFactory) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor Scoped(System.Type service, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor Scoped<TService>(System.Func<System.IServiceProvider, TService> implementationFactory) where TService : class { throw null; }
@@ -131,11 +201,25 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor Transient<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>() where TService : class where TImplementation : class, TService { throw null; }
         public static Microsoft.Extensions.DependencyInjection.ServiceDescriptor Transient<TService, TImplementation>(System.Func<System.IServiceProvider, TImplementation> implementationFactory) where TService : class where TImplementation : class, TService { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter)]
+    public partial class ServiceKeyAttribute : System.Attribute
+    {
+        public ServiceKeyAttribute() { }
+    }
     public enum ServiceLifetime
     {
         Singleton = 0,
         Scoped = 1,
         Transient = 2,
+    }
+    public static partial class ServiceProviderKeyedServiceExtensions
+    {
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The native code for an IEnumerable<serviceType> might not be available at runtime.")]
+        public static System.Collections.Generic.IEnumerable<object?> GetKeyedServices(this System.IServiceProvider provider, System.Type serviceType, object? serviceKey) { throw null; }
+        public static System.Collections.Generic.IEnumerable<T> GetKeyedServices<T>(this System.IServiceProvider provider, object? serviceKey) { throw null; }
+        public static T? GetKeyedService<T>(this System.IServiceProvider provider, object? serviceKey) { throw null; }
+        public static object GetRequiredKeyedService(this System.IServiceProvider provider, System.Type serviceType, object? serviceKey) { throw null; }
+        public static T GetRequiredKeyedService<T>(this System.IServiceProvider provider, object? serviceKey) where T : notnull { throw null; }
     }
     public static partial class ServiceProviderServiceExtensions
     {
@@ -182,5 +266,26 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         public static void TryAddTransient<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection) where TService : class { }
         public static void TryAddTransient<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Func<System.IServiceProvider, TService> implementationFactory) where TService : class { }
         public static void TryAddTransient<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection) where TService : class where TImplementation : class, TService { }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection RemoveAllKeyed(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, System.Type serviceType, object? serviceKey) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection RemoveAllKeyed<T>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, object? serviceKey) { throw null; }
+        public static void TryAddKeyedScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type service, object? serviceKey) { }
+        public static void TryAddKeyedScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, System.Type service, object? serviceKey, System.Func<System.IServiceProvider, object, object> implementationFactory) { }
+        public static void TryAddKeyedScoped(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, System.Type service, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType) { }
+        public static void TryAddKeyedScoped<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, object? serviceKey) where TService : class { }
+        public static void TryAddKeyedScoped<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, System.Func<System.IServiceProvider, object, TService> implementationFactory) where TService : class { }
+        public static void TryAddKeyedScoped<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, object? serviceKey) where TService : class where TImplementation : class, TService { }
+        public static void TryAddKeyedSingleton(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type service, object? serviceKey) { }
+        public static void TryAddKeyedSingleton(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, System.Type service, object? serviceKey, System.Func<System.IServiceProvider, object, object> implementationFactory) { }
+        public static void TryAddKeyedSingleton(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, System.Type service, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType) { }
+        public static void TryAddKeyedSingleton<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, object? serviceKey) where TService : class { }
+        public static void TryAddKeyedSingleton<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, System.Func<System.IServiceProvider, object, TService> implementationFactory) where TService : class { }
+        public static void TryAddKeyedSingleton<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, object? serviceKey, TService instance) where TService : class { }
+        public static void TryAddKeyedSingleton<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, object? serviceKey) where TService : class where TImplementation : class, TService { }
+        public static void TryAddKeyedTransient(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type service, object? serviceKey) { }
+        public static void TryAddKeyedTransient(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, System.Type service, object? serviceKey, System.Func<System.IServiceProvider, object, object> implementationFactory) { }
+        public static void TryAddKeyedTransient(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, System.Type service, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType) { }
+        public static void TryAddKeyedTransient<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, object? serviceKey) where TService : class { }
+        public static void TryAddKeyedTransient<TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, object? serviceKey, System.Func<System.IServiceProvider, object, TService> implementationFactory) where TService : class { }
+        public static void TryAddKeyedTransient<TService, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection collection, object? serviceKey) where TService : class where TImplementation : class, TService { }
     }
 }

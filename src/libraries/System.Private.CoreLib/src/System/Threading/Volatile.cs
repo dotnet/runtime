@@ -10,16 +10,16 @@ namespace System.Threading
     /// <summary>Methods for accessing memory with volatile semantics.</summary>
     public static unsafe class Volatile
     {
-        // The VM may replace these implementations with more efficient ones in some cases.
-        // In coreclr, for example, see getILIntrinsicImplementationForVolatile() in jitinterface.cpp.
+        // The runtime may replace these implementations with more efficient ones in some cases.
+        // In coreclr, for example, see importercalls.cpp.
 
         #region Boolean
         private struct VolatileBoolean { public volatile bool Value; }
 
         [Intrinsic]
         [NonVersionable]
-        public static bool Read(ref bool location) =>
-            Unsafe.As<bool, VolatileBoolean>(ref location).Value;
+        public static bool Read(ref readonly bool location) =>
+            Unsafe.As<bool, VolatileBoolean>(ref Unsafe.AsRef(in location)).Value;
 
         [Intrinsic]
         [NonVersionable]
@@ -32,8 +32,8 @@ namespace System.Threading
 
         [Intrinsic]
         [NonVersionable]
-        public static byte Read(ref byte location) =>
-            Unsafe.As<byte, VolatileByte>(ref location).Value;
+        public static byte Read(ref readonly byte location) =>
+            Unsafe.As<byte, VolatileByte>(ref Unsafe.AsRef(in location)).Value;
 
         [Intrinsic]
         [NonVersionable]
@@ -44,9 +44,9 @@ namespace System.Threading
         #region Double
         [Intrinsic]
         [NonVersionable]
-        public static double Read(ref double location)
+        public static double Read(ref readonly double location)
         {
-            long result = Read(ref Unsafe.As<double, long>(ref location));
+            long result = Read(ref Unsafe.As<double, long>(ref Unsafe.AsRef(in location)));
             return BitConverter.Int64BitsToDouble(result);
         }
 
@@ -61,8 +61,8 @@ namespace System.Threading
 
         [Intrinsic]
         [NonVersionable]
-        public static short Read(ref short location) =>
-            Unsafe.As<short, VolatileInt16>(ref location).Value;
+        public static short Read(ref readonly short location) =>
+            Unsafe.As<short, VolatileInt16>(ref Unsafe.AsRef(in location)).Value;
 
         [Intrinsic]
         [NonVersionable]
@@ -75,8 +75,8 @@ namespace System.Threading
 
         [Intrinsic]
         [NonVersionable]
-        public static int Read(ref int location) =>
-            Unsafe.As<int, VolatileInt32>(ref location).Value;
+        public static int Read(ref readonly int location) =>
+            Unsafe.As<int, VolatileInt32>(ref Unsafe.AsRef(in location)).Value;
 
         [Intrinsic]
         [NonVersionable]
@@ -87,12 +87,12 @@ namespace System.Threading
         #region Int64
         [Intrinsic]
         [NonVersionable]
-        public static long Read(ref long location) =>
+        public static long Read(ref readonly long location) =>
 #if TARGET_64BIT
-            (long)Unsafe.As<long, VolatileIntPtr>(ref location).Value;
+            (long)Unsafe.As<long, VolatileIntPtr>(ref Unsafe.AsRef(in location)).Value;
 #else
             // On 32-bit machines, we use Interlocked, since an ordinary volatile read would not be atomic.
-            Interlocked.CompareExchange(ref location, 0, 0);
+            Interlocked.CompareExchange(ref Unsafe.AsRef(in location), 0, 0);
 #endif
 
         [Intrinsic]
@@ -111,8 +111,8 @@ namespace System.Threading
 
         [Intrinsic]
         [NonVersionable]
-        public static IntPtr Read(ref IntPtr location) =>
-            Unsafe.As<IntPtr, VolatileIntPtr>(ref location).Value;
+        public static IntPtr Read(ref readonly IntPtr location) =>
+            Unsafe.As<IntPtr, VolatileIntPtr>(ref Unsafe.AsRef(in location)).Value;
 
         [Intrinsic]
         [NonVersionable]
@@ -126,8 +126,8 @@ namespace System.Threading
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static sbyte Read(ref sbyte location) =>
-            Unsafe.As<sbyte, VolatileSByte>(ref location).Value;
+        public static sbyte Read(ref readonly sbyte location) =>
+            Unsafe.As<sbyte, VolatileSByte>(ref Unsafe.AsRef(in location)).Value;
 
         [CLSCompliant(false)]
         [Intrinsic]
@@ -141,8 +141,8 @@ namespace System.Threading
 
         [Intrinsic]
         [NonVersionable]
-        public static float Read(ref float location) =>
-            Unsafe.As<float, VolatileSingle>(ref location).Value;
+        public static float Read(ref readonly float location) =>
+            Unsafe.As<float, VolatileSingle>(ref Unsafe.AsRef(in location)).Value;
 
         [Intrinsic]
         [NonVersionable]
@@ -156,8 +156,8 @@ namespace System.Threading
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static ushort Read(ref ushort location) =>
-            Unsafe.As<ushort, VolatileUInt16>(ref location).Value;
+        public static ushort Read(ref readonly ushort location) =>
+            Unsafe.As<ushort, VolatileUInt16>(ref Unsafe.AsRef(in location)).Value;
 
         [CLSCompliant(false)]
         [Intrinsic]
@@ -172,8 +172,8 @@ namespace System.Threading
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static uint Read(ref uint location) =>
-            Unsafe.As<uint, VolatileUInt32>(ref location).Value;
+        public static uint Read(ref readonly uint location) =>
+            Unsafe.As<uint, VolatileUInt32>(ref Unsafe.AsRef(in location)).Value;
 
         [CLSCompliant(false)]
         [Intrinsic]
@@ -186,8 +186,8 @@ namespace System.Threading
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static ulong Read(ref ulong location) =>
-            (ulong)Read(ref Unsafe.As<ulong, long>(ref location));
+        public static ulong Read(ref readonly ulong location) =>
+            (ulong)Read(ref Unsafe.As<ulong, long>(ref Unsafe.AsRef(in location)));
 
         [CLSCompliant(false)]
         [Intrinsic]
@@ -202,8 +202,8 @@ namespace System.Threading
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static UIntPtr Read(ref UIntPtr location) =>
-            Unsafe.As<UIntPtr, VolatileUIntPtr>(ref location).Value;
+        public static UIntPtr Read(ref readonly UIntPtr location) =>
+            Unsafe.As<UIntPtr, VolatileUIntPtr>(ref Unsafe.AsRef(in location)).Value;
 
         [CLSCompliant(false)]
         [Intrinsic]
@@ -218,8 +218,8 @@ namespace System.Threading
         [Intrinsic]
         [NonVersionable]
         [return: NotNullIfNotNull(nameof(location))]
-        public static T Read<T>([NotNullIfNotNull(nameof(location))] ref T location) where T : class? =>
-            Unsafe.As<T>(Unsafe.As<T, VolatileObject>(ref location).Value);
+        public static T Read<T>([NotNullIfNotNull(nameof(location))] ref readonly T location) where T : class? =>
+            Unsafe.As<T>(Unsafe.As<T, VolatileObject>(ref Unsafe.AsRef(in location)).Value);
 
         [Intrinsic]
         [NonVersionable]

@@ -215,7 +215,8 @@ namespace System.SpanTests
             SearchValuesTestHelper.TestRandomInputs(
                 expected: IndexOfAnyReferenceImpl,
                 indexOfAny: (searchSpace, values) => searchSpace.IndexOfAny(values),
-                searchValues: (searchSpace, values) => searchSpace.IndexOfAny(values));
+                searchValues: (searchSpace, values) => searchSpace.IndexOfAny(values),
+                searchValuesContains: (searchSpace, values) => searchSpace.ContainsAny(values));
 
             static int IndexOfAnyReferenceImpl(ReadOnlySpan<byte> searchSpace, ReadOnlySpan<byte> values)
             {
@@ -238,7 +239,8 @@ namespace System.SpanTests
             SearchValuesTestHelper.TestRandomInputs(
                 expected: IndexOfAnyReferenceImpl,
                 indexOfAny: (searchSpace, values) => searchSpace.IndexOfAny(values),
-                searchValues: (searchSpace, values) => searchSpace.IndexOfAny(values));
+                searchValues: (searchSpace, values) => searchSpace.IndexOfAny(values),
+                searchValuesContains: (searchSpace, values) => searchSpace.ContainsAny(values));
 
             static int IndexOfAnyReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
             {
@@ -261,7 +263,8 @@ namespace System.SpanTests
             SearchValuesTestHelper.TestRandomInputs(
                 expected: LastIndexOfAnyReferenceImpl,
                 indexOfAny: (searchSpace, values) => searchSpace.LastIndexOfAny(values),
-                searchValues: (searchSpace, values) => searchSpace.LastIndexOfAny(values));
+                searchValues: (searchSpace, values) => searchSpace.LastIndexOfAny(values),
+                searchValuesContains: (searchSpace, values) => searchSpace.ContainsAny(values));
 
             static int LastIndexOfAnyReferenceImpl(ReadOnlySpan<byte> searchSpace, ReadOnlySpan<byte> values)
             {
@@ -284,7 +287,8 @@ namespace System.SpanTests
             SearchValuesTestHelper.TestRandomInputs(
                 expected: LastIndexOfAnyReferenceImpl,
                 indexOfAny: (searchSpace, values) => searchSpace.LastIndexOfAny(values),
-                searchValues: (searchSpace, values) => searchSpace.LastIndexOfAny(values));
+                searchValues: (searchSpace, values) => searchSpace.LastIndexOfAny(values),
+                searchValuesContains: (searchSpace, values) => searchSpace.ContainsAny(values));
 
             static int LastIndexOfAnyReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
             {
@@ -307,7 +311,8 @@ namespace System.SpanTests
             SearchValuesTestHelper.TestRandomInputs(
                 expected: IndexOfAnyExceptReferenceImpl,
                 indexOfAny: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values),
-                searchValues: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values));
+                searchValues: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values),
+                searchValuesContains: (searchSpace, values) => searchSpace.ContainsAnyExcept(values));
 
             static int IndexOfAnyExceptReferenceImpl(ReadOnlySpan<byte> searchSpace, ReadOnlySpan<byte> values)
             {
@@ -330,7 +335,8 @@ namespace System.SpanTests
             SearchValuesTestHelper.TestRandomInputs(
                 expected: IndexOfAnyExceptReferenceImpl,
                 indexOfAny: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values),
-                searchValues: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values));
+                searchValues: (searchSpace, values) => searchSpace.IndexOfAnyExcept(values),
+                searchValuesContains: (searchSpace, values) => searchSpace.ContainsAnyExcept(values));
 
             static int IndexOfAnyExceptReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
             {
@@ -353,7 +359,8 @@ namespace System.SpanTests
             SearchValuesTestHelper.TestRandomInputs(
                 expected: LastIndexOfAnyExceptReferenceImpl,
                 indexOfAny: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values),
-                searchValues: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values));
+                searchValues: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values),
+                searchValuesContains: (searchSpace, values) => searchSpace.ContainsAnyExcept(values));
 
             static int LastIndexOfAnyExceptReferenceImpl(ReadOnlySpan<byte> searchSpace, ReadOnlySpan<byte> values)
             {
@@ -376,7 +383,8 @@ namespace System.SpanTests
             SearchValuesTestHelper.TestRandomInputs(
                 expected: LastIndexOfAnyExceptReferenceImpl,
                 indexOfAny: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values),
-                searchValues: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values));
+                searchValues: (searchSpace, values) => searchSpace.LastIndexOfAnyExcept(values),
+                searchValuesContains: (searchSpace, values) => searchSpace.ContainsAnyExcept(values));
 
             static int LastIndexOfAnyExceptReferenceImpl(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> values)
             {
@@ -433,36 +441,47 @@ namespace System.SpanTests
 
             public delegate int SearchValuesSearchDelegate<T>(ReadOnlySpan<T> searchSpace, SearchValues<T> values) where T : IEquatable<T>?;
 
-            public static void TestRandomInputs(IndexOfAnySearchDelegate<byte> expected, IndexOfAnySearchDelegate<byte> indexOfAny, SearchValuesSearchDelegate<byte> searchValues)
+            public delegate bool SearchValuesContainsDelegate<T>(ReadOnlySpan<T> searchSpace, SearchValues<T> values) where T : IEquatable<T>?;
+
+            public static void TestRandomInputs(
+                IndexOfAnySearchDelegate<byte> expected,
+                IndexOfAnySearchDelegate<byte> indexOfAny,
+                SearchValuesSearchDelegate<byte> searchValues,
+                SearchValuesContainsDelegate<byte> searchValuesContains)
             {
                 var rng = new Random(42);
 
                 for (int iterations = 0; iterations < 1_000_000; iterations++)
                 {
                     // There are more interesting corner cases with ASCII needles, test those more.
-                    Test(rng, s_randomBytes, s_randomAsciiBytes, expected, indexOfAny, searchValues);
+                    Test(rng, s_randomBytes, s_randomAsciiBytes, expected, indexOfAny, searchValues, searchValuesContains);
 
-                    Test(rng, s_randomBytes, s_randomBytes, expected, indexOfAny, searchValues);
+                    Test(rng, s_randomBytes, s_randomBytes, expected, indexOfAny, searchValues, searchValuesContains);
                 }
             }
 
-            public static void TestRandomInputs(IndexOfAnySearchDelegate<char> expected, IndexOfAnySearchDelegate<char> indexOfAny, SearchValuesSearchDelegate<char> searchValues)
+            public static void TestRandomInputs(
+                IndexOfAnySearchDelegate<char> expected,
+                IndexOfAnySearchDelegate<char> indexOfAny,
+                SearchValuesSearchDelegate<char> searchValues,
+                SearchValuesContainsDelegate<char> searchValuesContains)
             {
                 var rng = new Random(42);
 
                 for (int iterations = 0; iterations < 1_000_000; iterations++)
                 {
                     // There are more interesting corner cases with ASCII needles, test those more.
-                    Test(rng, s_randomChars, s_randomAsciiChars, expected, indexOfAny, searchValues);
+                    Test(rng, s_randomChars, s_randomAsciiChars, expected, indexOfAny, searchValues, searchValuesContains);
 
-                    Test(rng, s_randomChars, s_randomLatin1Chars, expected, indexOfAny, searchValues);
+                    Test(rng, s_randomChars, s_randomLatin1Chars, expected, indexOfAny, searchValues, searchValuesContains);
 
-                    Test(rng, s_randomChars, s_randomChars, expected, indexOfAny, searchValues);
+                    Test(rng, s_randomChars, s_randomChars, expected, indexOfAny, searchValues, searchValuesContains);
                 }
             }
 
             private static void Test<T>(Random rng, ReadOnlySpan<T> haystackRandom, ReadOnlySpan<T> needleRandom,
-                IndexOfAnySearchDelegate<T> expected, IndexOfAnySearchDelegate<T> indexOfAny, SearchValuesSearchDelegate<T> searchValues)
+                IndexOfAnySearchDelegate<T> expected, IndexOfAnySearchDelegate<T> indexOfAny,
+                SearchValuesSearchDelegate<T> searchValues, SearchValuesContainsDelegate<T> searchValuesContains)
                 where T : struct, INumber<T>, IMinMaxValue<T>
             {
                 ReadOnlySpan<T> haystack = GetRandomSlice(rng, haystackRandom, MaxHaystackLength);
@@ -475,6 +494,7 @@ namespace System.SpanTests
                 int expectedIndex = expected(haystack, needle);
                 int indexOfAnyIndex = indexOfAny(haystack, needle);
                 int searchValuesIndex = searchValues(haystack, searchValuesInstance);
+                bool searchValuesContainsResult = searchValuesContains(haystack, searchValuesInstance);
 
                 if (expectedIndex != indexOfAnyIndex)
                 {
@@ -484,6 +504,11 @@ namespace System.SpanTests
                 if (expectedIndex != searchValuesIndex)
                 {
                     AssertionFailed(haystack, needle, expectedIndex, searchValuesIndex, nameof(searchValues));
+                }
+
+                if ((expectedIndex >= 0) != searchValuesContainsResult)
+                {
+                    AssertionFailed(haystack, needle, expectedIndex, searchValuesContainsResult ? 0 : -1, nameof(searchValuesContainsResult));
                 }
             }
 
@@ -499,7 +524,7 @@ namespace System.SpanTests
                 string readableHaystack = string.Join(", ", haystack.ToArray().Select(c => int.CreateChecked(c)));
                 string readableNeedle = string.Join(", ", needle.ToArray().Select(c => int.CreateChecked(c)));
 
-                Assert.True(false, $"Expected {expected}, got {approach}={actual} for needle='{readableNeedle}', haystack='{readableHaystack}'");
+                Assert.Fail($"Expected {expected}, got {approach}={actual} for needle='{readableNeedle}', haystack='{readableHaystack}'");
             }
         }
     }

@@ -648,6 +648,8 @@
 	</assembly>
         <assembly fullname="System.Private.CoreLib" feature="System.StartupHookProvider.IsSupported" featurevalue="true" featuredefault="true">
             <type fullname="System.StartupHookProvider">
+                <!-- ds-rt-coreclr.h: ds_rt_apply_startup_hook -->
+                <method name="CallStartupHook" />
                 <!-- object.c: mono_runtime_run_startup_hooks -->
                 <method name="ProcessStartupHooks" />
             </type>

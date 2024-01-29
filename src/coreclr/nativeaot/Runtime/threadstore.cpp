@@ -10,7 +10,6 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -19,12 +18,12 @@
 #include "rhbinder.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 #include "RuntimeInstance.h"
 #include "TargetPtrs.h"
 #include "yieldprocessornormalized.h"
 
 #include "slist.inl"
-#include "GCMemoryHelpers.h"
 
 EXTERN_C volatile uint32_t RhpTrapThreads;
 volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
@@ -430,21 +429,11 @@ C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
 #ifndef _MSC_VER
 __thread ThreadBuffer tls_CurrentThread;
-
-// the root of inlined threadstatics storage
-// there is only one now,
-// eventually this will be emitted by ILC and we may have more than one such variable
-__thread InlinedThreadStaticRoot tls_InlinedThreadStatics;
 #endif
 
 EXTERN_C ThreadBuffer* RhpGetThread()
 {
     return &tls_CurrentThread;
-}
-
-COOP_PINVOKE_HELPER(Object**, RhGetInlinedThreadStaticStorage, ())
-{
-    return &tls_InlinedThreadStatics.m_threadStaticsBase;
 }
 
 #endif // !DACCESS_COMPILE

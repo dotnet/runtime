@@ -38,6 +38,8 @@
       DOTNET_EnableSSE42;
       DOTNET_EnableSSSE3;
       DOTNET_JitStressEvexEncoding;
+      DOTNET_PreferredVectorBitWidth;
+      DOTNET_MaxVectorTBitWidth;
       DOTNET_ForceRelocs;
       DOTNET_GCStress;
       DOTNET_GCName;
@@ -49,7 +51,6 @@
       DOTNET_JitStress;
       DOTNET_JitStressProcedureSplitting;
       DOTNET_JitStressRegs;
-      DOTNET_JitEnablePhysicalPromotion;
       DOTNET_TailcallStress;
       DOTNET_ReadyToRun;
       DOTNET_ZapDisable;
@@ -71,12 +72,16 @@
       DOTNET_JitRandomEdgeCounts;
       DOTNET_JitRandomOnStackReplacement;
       DOTNET_JitRandomlyCollect64BitCounts;
+      DOTNET_JitStressModeNames;
+      DOTNET_JitGuardedDevirtualizationMaxTypeChecks;
+      DOTNET_JitProfileCasts;
       DOTNET_TieredPGO_InstrumentedTierAlwaysOptimized;
       DOTNET_JitForceControlFlowGuard;
       DOTNET_JitCFGUseDispatcher;
       RunningIlasmRoundTrip;
       DOTNET_JitSynthesizeCounts;
-      DOTNET_JitCheckSynthesizedCounts
+      DOTNET_JitCheckSynthesizedCounts;
+      DOTNET_JitEnableCrossBlockLocalAssertionProp
     </DOTNETVariables>
   </PropertyGroup>
   <ItemGroup>
@@ -107,7 +112,7 @@
     <TestEnvironment Include="jitstress2_tiered" JitStress="2" TieredCompilation="1" />
     <TestEnvironment Include="jitstress_isas_incompletehwintrinsic" EnableIncompleteISAClass="1"  />
     <TestEnvironment Include="jitstress_isas_nohwintrinsic" EnableHWIntrinsic="0" />
-    <TestEnvironment Include="jitstress_isas_x86_evex" JitStressEvexEncoding="1" />
+    <TestEnvironment Include="jitstress_isas_x86_evex" JitStressEvexEncoding="1" PreferredVectorBitWidth="512" />
     <TestEnvironment Include="jitstress_isas_x86_noaes" EnableAES="0" /> <!-- Depends on SSE2 -->
     <TestEnvironment Include="jitstress_isas_x86_noavx" EnableAVX="0" /> <!-- Depends on SSE42 -->
     <TestEnvironment Include="jitstress_isas_x86_noavx2" EnableAVX2="0" /> <!-- Depends on AVX -->
@@ -126,6 +131,8 @@
     <TestEnvironment Include="jitstress_isas_x86_nosse41" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
     <TestEnvironment Include="jitstress_isas_x86_nosse42" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_x86_nossse3" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
+    <TestEnvironment Include="jitstress_isas_x86_vectort128" JitStressEvexEncoding="1" MaxVectorTBitWidth="128" />
+    <TestEnvironment Include="jitstress_isas_x86_vectort512" JitStressEvexEncoding="1" MaxVectorTBitWidth="512" />
     <TestEnvironment Include="jitstress_isas_1_x86_noaes" JitStress="1" EnableAES="0" /> <!-- Depends on SSE2 -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx" JitStress="1" EnableAVX="0" /> <!-- Depends on SSE42 -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx2" JitStress="1" EnableAVX2="0" /> <!-- Depends on AVX -->
@@ -215,8 +222,9 @@
     <TestEnvironment Include="jitpartialcompilation" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitpartialcompilation_pgo" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
-    <TestEnvironment Include="jitphysicalpromotion" JitEnablePhysicalPromotion="1" TieredCompilation="0" />
-    <TestEnvironment Include="jitphysicalpromotion_full" JitEnablePhysicalPromotion="1" JitStressModeNames="STRESS_PHYSICAL_PROMOTION_COST STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
+    <TestEnvironment Include="jitphysicalpromotion_only" JitStressModeNames="STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
+    <TestEnvironment Include="jitphysicalpromotion_full" JitStressModeNames="STRESS_PHYSICAL_PROMOTION_COST STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
+    <TestEnvironment Include="jitcrossblocklocalassertionprop" JitEnableCrossBlockLocalAssertionProp="1" TieredCompilation="0" />
     <TestEnvironment Include="jitcfg" JitForceControlFlowGuard="1" />
     <TestEnvironment Include="jitcfg_dispatcher_always" JitForceControlFlowGuard="1" JitCFGUseDispatcher="1" />
     <TestEnvironment Include="jitcfg_dispatcher_never" JitForceControlFlowGuard="1" JitCFGUseDispatcher="0" />
@@ -224,9 +232,9 @@
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
     <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
-    <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
+    <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitProfileCasts="1"/>
     <TestEnvironment Include="fullpgo_methodprofiling" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" />
-    <TestEnvironment Include="fullpgo_methodprofiling_always_optimized" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" TieredPGO_InstrumentedTierAlwaysOptimized="1" />
+    <TestEnvironment Include="fullpgo_methodprofiling_always_optimized" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" TieredPGO_InstrumentedTierAlwaysOptimized="1" JitGuardedDevirtualizationMaxTypeChecks="3" JitProfileCasts="1" />
     <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="fullpgo_random_gdv_methodprofiling_only" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitClassProfiling="0" JitDelegateProfiling="1" JitVTableProfiling="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1" JitRandomlyCollect64BitCounts="1" />

@@ -559,7 +559,7 @@ uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 // Get id of the process
 uint32_t GCToOSInterface::GetCurrentProcessId()
 {
-    return ::GetCurrentThreadId();
+    return ::GetCurrentProcessId();
 }
 
 // Set ideal processor for the current thread
@@ -943,7 +943,16 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     return &g_processAffinitySet;
 }
 
-// Return the size of the user-mode portion of the virtual address space of this process.
+// Return the maximum address of the of the virtual address space of this process.
+// Return:
+//  non zero if it has succeeded, 0 if it has failed
+size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
+{
+    // On Windows, the maximum address is the same as the virtual memory limit, unlike Unix
+    return GCToOSInterface::GetVirtualMemoryLimit();
+}
+
+// Return the size of the available user-mode portion of the virtual address space of this process.
 // Return:
 //  non zero if it has succeeded, (size_t)-1 if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()

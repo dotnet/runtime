@@ -620,7 +620,7 @@ namespace System.Text
 
                         // TODO: Is the below logic also valid for big-endian platforms?
                         Vector<byte> latin1Vector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
-                        Unsafe.WriteUnaligned<Vector<byte>>(pLatin1Buffer + currentOffset, latin1Vector);
+                        Unsafe.WriteUnaligned(pLatin1Buffer + currentOffset, latin1Vector);
 
                         currentOffset += SizeOfVector;
                     } while (currentOffset <= finalOffsetWhereCanLoop);
@@ -1088,8 +1088,8 @@ namespace System.Text
                         Vector.Widen(Vector.AsVectorByte(latin1Vector), out Vector<ushort> utf16LowVector, out Vector<ushort> utf16HighVector);
 
                         // TODO: Is the below logic also valid for big-endian platforms?
-                        Unsafe.WriteUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset, utf16LowVector);
-                        Unsafe.WriteUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count, utf16HighVector);
+                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset, utf16LowVector);
+                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset + Vector<ushort>.Count, utf16HighVector);
 
                         currentOffset += SizeOfVector;
                     } while (currentOffset <= finalOffsetWhereCanIterate);

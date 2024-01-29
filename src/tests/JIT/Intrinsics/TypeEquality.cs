@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Optimization of type equality tests to various
 // vtable and handle comparisons.
@@ -50,9 +51,10 @@ class X
    }
 }
 
-class P
+public class P
 {
-   public static int Main()
+   [Fact]
+   public static int TestEntryPoint()
    {   
       bool passed = true;
 

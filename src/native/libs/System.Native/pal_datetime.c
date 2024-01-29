@@ -4,6 +4,7 @@
 #include "pal_config.h"
 #include "pal_datetime.h"
 #include "pal_utilities.h"
+#include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,7 +22,7 @@ static const int64_t TICKS_PER_MICROSECOND = 10; /* 1000 / 100 */
 #endif
 
 #if defined(TARGET_WASI) || defined(TARGET_BROWSER)
-extern const unsigned char* mono_wasm_get_bundled_file(const char* name, int* out_length);
+extern bool mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out);
 #endif
 
 //
@@ -60,6 +61,12 @@ char* SystemNative_GetDefaultTimeZone(void)
         return NULL;
     }
 }
+#elif !defined(__APPLE__)
+char* SystemNative_GetDefaultTimeZone(void)
+{
+    assert_err(false, "This function is not supported on this platform.", EINVAL);
+    return NULL;
+}
 #endif
 
 const char* SystemNative_GetTimeZoneData(const char* name, int* length)
@@ -67,7 +74,18 @@ const char* SystemNative_GetTimeZoneData(const char* name, int* length)
     assert(name != NULL);
     assert(length != NULL);
 #if defined(TARGET_WASI) || defined(TARGET_BROWSER)
-    return (const char*) mono_wasm_get_bundled_file(name, length);
+    const uint8_t *data = NULL;
+    uint32_t data_len = 0;
+
+    mono_bundled_resources_get_data_resource_values (name, &data, &data_len);
+    assert (data_len <= INT_MAX);
+    if (data_len > INT_MAX) {
+        data_len = 0;
+        data = NULL;
+    }
+
+    *length = (int)data_len;
+    return (const char *)data;
 #else
     assert_msg(false, "Not supported on this platform", 0);
     (void)name; // unused

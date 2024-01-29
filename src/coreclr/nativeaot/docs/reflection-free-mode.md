@@ -1,6 +1,6 @@
 # Reflection-free mode
 
-Reflection-free mode is a mode of the NativeAOT compiler and runtime that greatly reduces the functionality of the reflection APIs and brings a couple interesting benefits as a result. The benefits of this mode are:
+Reflection-free mode is a highly experimental mode of the NativeAOT compiler and runtime that greatly reduces the functionality of the reflection APIs and brings a couple interesting benefits as a result. The benefits of this mode are:
 
 * Greatly reduced size of self contained deployments - a fully self-contained "Hello world" style app compiles to a 1 MB file (on x64) with _no dependencies_.
 * Reduced working set and better code locality - parts of the program are more tightly packed together.
@@ -15,8 +15,6 @@ To enable reflection-free mode in a project that is already using NativeAOT, add
   <IlcDisableReflection>true</IlcDisableReflection>
 </PropertyGroup>
 ```
-
-(More switches are documented in the [Optimizing NativeAOT](optimizing.md) document.)
 
 ## What's different at compile time with reflection disabled
 
@@ -74,21 +72,17 @@ To achieve similar result for when querying for ``Assembly`` (will instead give 
 
 And here for CustomAttributes (will return an empty array):
 
-
 ```xml
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="Switch.System.Reflection.Disabled.DoNotThrowForAttributes" Value="true" />
   </ItemGroup>
 ```
 
-Note:
+## Internal implementation
 
-To make ``NativeLibrary`` API, and on the same occasion``Socket``, to work, you'll need:
+The reflection-free mode is implemented as a collection of features that can be controlled individually via the AOT compiler command line options for experiments and troubleshooting, including:
+- `--scanreflection` (also exposed as `IlcScanReflection` build property): Infer reflection usage by code analysis. This feature is disabled for reflection-free mode.
+- `--reflectiondata:none`: Disables generation of reflection data.
+- `--feature:System.Collections.Generic.DefaultComparers=false`: Disables `EqualityComparer<T>.Default` and `Comparer<T>.Default` optimizations that are based on reflection.
 
-```xml
-  <ItemGroup>
-    <RuntimeHostConfigurationOption Include="Switch.System.Reflection.Disabled.DoNotThrowForAssembly" Value="true" />
-    <RuntimeHostConfigurationOption Include="Switch.System.Reflection.Disabled.DoNotThrowForAttributes" Value="true" />
-  </ItemGroup>
-```
-
+The complete set of individual features that the reflection-free mode is composed from currently can be found by looking for `IlcDisableReflection` in [Microsoft.NETCore.Native.targets](../BuildIntegration/Microsoft.NETCore.Native.targets).

@@ -1,15 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Buffers;
+using System.Text;
 
 namespace System
 {
     internal static class UriHelper
     {
+        public static unsafe string SpanToLowerInvariantString(ReadOnlySpan<char> span)
+        {
+#pragma warning disable CS8500 // takes address of managed type
+            return string.Create(span.Length, (IntPtr)(&span), static (buffer, spanPtr) =>
+            {
+                int charsWritten = (*(ReadOnlySpan<char>*)spanPtr).ToLowerInvariant(buffer);
+                Debug.Assert(charsWritten == buffer.Length);
+            });
+#pragma warning restore CS8500
+        }
+
         // http://host/Path/Path/File?Query is the base of
         //      - http://host/Path/Path/File/ ...    (those "File" words may be different in semantic but anyway)
         //      - http://host/Path/Path/#Fragment
@@ -129,7 +140,7 @@ namespace System
             return vsb.ToString();
         }
 
-        internal static unsafe void EscapeString(ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
+        internal static unsafe void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
             bool checkExistingEscaped, SearchValues<char> noEscape)
         {
             Debug.Assert(!noEscape.Contains('%'), "Need to treat % specially; it should be part of any escaped set");
@@ -149,7 +160,7 @@ namespace System
         }
 
         private static void EscapeStringToBuilder(
-            ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb,
+            scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb,
             SearchValues<char> noEscape, bool checkExistingEscaped)
         {
             Debug.Assert(!stringToEscape.IsEmpty && !noEscape.Contains(stringToEscape[0]));
@@ -269,7 +280,7 @@ namespace System
                 UnescapeString(pStr, start, end, ref dest, rsvd1, rsvd2, rsvd3, unescapeMode, syntax, isQuery);
             }
         }
-        internal static unsafe void UnescapeString(ReadOnlySpan<char> input, ref ValueStringBuilder dest,
+        internal static unsafe void UnescapeString(scoped ReadOnlySpan<char> input, scoped ref ValueStringBuilder dest,
            char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax, bool isQuery)
         {
             fixed (char* pStr = &MemoryMarshal.GetReference(input))
@@ -290,7 +301,7 @@ namespace System
             bool iriParsing = Uri.IriParsingStatic(syntax)
                                 && ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.EscapeUnescape);
 
-            for (int next = start; next < end; )
+            for (int next = start; next < end;)
             {
                 char ch = (char)0;
 

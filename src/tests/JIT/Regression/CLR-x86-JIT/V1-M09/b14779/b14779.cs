@@ -12,13 +12,12 @@ namespace DefaultNamespace
     public class cinfo
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Console.Out.WriteLine("Char Class tests");
 
             VTestIsPrintable();
             VTestIsTitleCase();
-            return 100;
         }
         internal static void VTestIsPrintable()
         {

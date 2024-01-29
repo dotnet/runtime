@@ -21,6 +21,7 @@ public class Test
         public static uint s_2;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
         public static int Test1()
         {
             int vr0 = default(int);
@@ -42,6 +43,7 @@ public class Test
         public static sbyte s_44;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
         public static int Test2()
         {
             try
@@ -58,12 +60,13 @@ public class Test
         public static uint s_4;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
         public static int Test3()
         {
             return M17(0);
         }
 
-        public static int M17(long arg0)
+        static int M17(long arg0)
         {
             short var0 = default(short);
             if ((ulong)((-s_4) & arg0) >= 1)
@@ -78,6 +81,7 @@ public class Test
         public static int[] s_12 = new int[] { 0 };
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
         public static int Test4()
         {
             s_12[0] = -2147483648;
@@ -85,23 +89,5 @@ public class Test
             Consume(vr9);
             return vr9 ? 0 : 100;
         }
-    }
-
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        if (Program.Test1() != 100)
-            return 0;
-
-        if (Program.Test2() != 100)
-            return 0;
-
-        if (Program.Test3() != 100)
-            return 0;
-
-        if (Program.Test4() != 100)
-            return 0;
-
-        return 100;
     }
 }

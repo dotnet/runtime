@@ -11,6 +11,7 @@ namespace System.Diagnostics.Metrics
     /// <remarks>
     /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, and <see cref="decimal" />
     /// </remarks>
+    [DebuggerDisplay("Name = {Name}, Meter = {Meter.Name}")]
     public abstract partial class Instrument<T> : Instrument where T : struct
     {
         /// <summary>
@@ -21,7 +22,20 @@ namespace System.Diagnostics.Metrics
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
-        protected Instrument(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description)
+        protected Instrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null)
+        {
+        }
+
+        /// <summary>
+        /// Create the metrics instrument using the properties meter, name, description, and unit.
+        /// All classes extending Instrument{T} need to call this constructor when constructing object of the extended class.
+        /// </summary>
+        /// <param name="meter">The meter that created the instrument.</param>
+        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="unit">Optional instrument unit of measurements.</param>
+        /// <param name="description">Optional instrument description.</param>
+        /// <param name="tags">Optional instrument tags.</param>
+        protected Instrument(Meter meter, string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)
         {
             ValidateTypeParameter<T>();
         }

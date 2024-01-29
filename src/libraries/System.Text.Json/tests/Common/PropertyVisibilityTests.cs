@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Numerics;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -239,6 +242,22 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal("DefaultValue", ((ClassWithIgnoredPublicProperty)obj).MyString);
             Assert.Equal("NewDefaultValue", ((ClassWithIgnoredPublicPropertyAndNewSlotPrivate)obj).MyString);
+        }
+
+        [Fact]
+        public async void Ignore_BasePublicPropertyIgnored_ConflictWithDerivedPublicPropertyIgnored()
+        {
+            var obj = new ClassWithIgnoredPublicPropertyAndNewSlotPublicAndIgnoredToo();
+
+            string json = await Serializer.SerializeWrapper(obj);
+
+            Assert.Equal(@"{}", json);
+
+            json = @"{""MyString"":""NewValue""}";
+            obj = await Serializer.DeserializeWrapper<ClassWithIgnoredPublicPropertyAndNewSlotPublicAndIgnoredToo>(json);
+
+            Assert.Equal("DefaultValue", ((ClassWithIgnoredPublicProperty)obj).MyString);
+            Assert.Equal("NewDefaultValue", obj.MyString);
         }
 
         [Fact]
@@ -648,6 +667,37 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"{""MyProp"":null}", serialized);
         }
 
+        [Fact]
+        public async Task CorrectlyIgnorePropertyWithNewModifier()
+        {
+            Class2 instanceOfSecondClassWithSameName,
+                actualDeserializationResult;
+            string actualSerializationResult;
+
+            instanceOfSecondClassWithSameName = new Class2();
+            instanceOfSecondClassWithSameName.class1.Info = "Some content";
+            ((NamespaceBase.Class2)instanceOfSecondClassWithSameName).class1.Info = "Some other content";
+
+            actualSerializationResult = await Serializer.SerializeWrapper(instanceOfSecondClassWithSameName);
+            actualDeserializationResult = await Serializer.DeserializeWrapper<Class2>(actualSerializationResult);
+            Assert.Equal("{}", actualSerializationResult);
+            Assert.Equal(Class1.DefaultValueForInfo, actualDeserializationResult.class1.Info);
+            Assert.Equal(NamespaceBase.Class1.DefaultValueForInfo, ((NamespaceBase.Class2)actualDeserializationResult).class1.Info);
+        }
+
+        public class Class1
+        {
+            public const string DefaultValueForInfo = $"Some default content of {nameof(Info)} property of {nameof(Tests)}";
+
+            public string Info { get; set; } = DefaultValueForInfo;
+        }
+
+        public class Class2 : NamespaceBase.Class2
+        {
+            [JsonIgnore]
+            public new Class1 class1 => new Class1();
+        }
+
         public class ClassWithInternalField
         {
             internal string MyString = "DefaultValue";
@@ -810,6 +860,12 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithIgnoredPublicPropertyAndNewSlotPrivate : ClassWithIgnoredPublicProperty
         {
             internal new string MyString { get; set; } = "NewDefaultValue";
+        }
+
+        public class ClassWithIgnoredPublicPropertyAndNewSlotPublicAndIgnoredToo : ClassWithIgnoredPublicProperty
+        {
+            [JsonIgnore]
+            public new string MyString { get; set; } = "NewDefaultValue";
         }
 
         public class ClassWithIgnoredPropertyNamingConflictPrivate
@@ -1068,6 +1124,138 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task ProtectedMembers()
+        {
+            var options = Serializer.CreateOptions(includeFields: true);
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassWithProtectedMembers));
+            Assert.Empty(typeInfo.Properties);
+
+            var value = new ClassWithProtectedMembers();
+            value.SetValues(field: 10, property: 20);
+
+            string json = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal("{}", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithProtectedMembers>("""{"_field":10,"Property":20}""");
+            value.GetValues(out int field, out int property);
+            Assert.Equal(0, field);
+            Assert.Equal(0, property);
+        }
+
+        [Fact]
+        public async Task ProtectedGetter()
+        {
+            var value = new ClassWithProtectedGetter { Property = 42 };
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("{}", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithProtectedGetter>("""{"Property":42}""");
+            Assert.Equal(42, value.GetValue());
+        }
+
+        [Fact]
+        public async Task ProtectedSetter()
+        {
+            var value = new ClassWithProtectedSetter();
+            value.SetValue(42);
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"Property":42}""", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithProtectedSetter>(json);
+            Assert.Equal(0, value.Property);
+        }
+
+        [Fact]
+        public async Task PrivateProtectedMembers()
+        {
+            var options = Serializer.CreateOptions(includeFields: true);
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassWithPrivateProtectedMembers));
+            Assert.Empty(typeInfo.Properties);
+
+            var value = new ClassWithPrivateProtectedMembers();
+            value.SetValues(field: 10, property: 20);
+
+            string json = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal("{}", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithPrivateProtectedMembers>("""{"_field":10,"Property":20}""");
+            value.GetValues(out int field, out int property);
+            Assert.Equal(0, field);
+            Assert.Equal(0, property);
+        }
+
+        [Fact]
+        public async Task PrivateProtectedGetter()
+        {
+            var value = new ClassWithPrivateProtectedGetter { Property = 42 };
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("{}", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithPrivateProtectedGetter>("""{"Property":42}""");
+            Assert.Equal(42, value.GetValue());
+        }
+
+        [Fact]
+        public async Task PrivateProtectedSetter()
+        {
+            var value = new ClassWithPrivateProtectedSetter();
+            value.SetValue(42);
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"Property":42}""", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithPrivateProtectedSetter>(json);
+            Assert.Equal(0, value.Property);
+        }
+
+        [Fact]
+        public async Task InternalProtectedMembers()
+        {
+            var options = Serializer.CreateOptions(includeFields: true);
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassWithInternalProtectedMembers));
+            Assert.Empty(typeInfo.Properties);
+
+            var value = new ClassWithInternalProtectedMembers();
+            value.SetValues(field: 10, property: 20);
+
+            string json = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal("{}", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithInternalProtectedMembers>("""{"_field":10,"Property":20}""");
+            value.GetValues(out int field, out int property);
+            Assert.Equal(0, field);
+            Assert.Equal(0, property);
+        }
+
+        [Fact]
+        public async Task InternalProtectedGetter()
+        {
+            var value = new ClassWithInternalProtectedGetter { Property = 42 };
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("{}", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithInternalProtectedGetter>("""{"Property":42}""");
+            Assert.Equal(42, value.GetValue());
+        }
+
+        [Fact]
+        public async Task InternalProtectedSetter()
+        {
+            var value = new ClassWithInternalProtectedSetter();
+            value.SetValue(42);
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"Property":42}""", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithInternalProtectedSetter>(json);
+            Assert.Equal(0, value.Property);
+        }
+
+        [Fact]
         public async Task MissingObjectProperty()
         {
             ClassWithMissingObjectProperty obj
@@ -1134,10 +1322,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Needs support for more collections.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53393")]
-#endif
         public async Task JsonIgnoreAttribute_UnsupportedCollection()
         {
             string json =
@@ -1227,7 +1411,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public async Task JsonIgnoreAttribute_UnsupportedBigInteger()
         {
             string json = @"{""MyBigInteger"":1}";
@@ -1331,6 +1514,69 @@ namespace System.Text.Json.Serialization.Tests
             {
                 MyString = value;
             }
+        }
+
+        public class ClassWithProtectedMembers
+        {
+            protected int _field;
+            protected int Property { get; set; }
+
+            public void SetValues(int field, int property) => (_field, Property) = (field, property);
+            public void GetValues(out int field, out int property) => (field, property) = (_field, Property);
+        }
+
+        public class ClassWithProtectedGetter
+        {
+            public int Property { protected get; set; }
+            public int GetValue() => Property;
+        }
+
+        public class ClassWithProtectedSetter
+        {
+            public int Property { get; protected set; }
+            public void SetValue(int value) => Property = value;
+        }
+
+        public class ClassWithPrivateProtectedMembers
+        {
+            private protected int _field;
+            private protected int Property { get; set; }
+
+            public void SetValues(int field, int property) => (_field, Property) = (field, property);
+            public void GetValues(out int field, out int property) => (field, property) = (_field, Property);
+        }
+
+        public class ClassWithPrivateProtectedGetter
+        {
+            public int Property { private protected get; set; }
+            public int GetValue() => Property;
+        }
+
+        public class ClassWithPrivateProtectedSetter
+        {
+            public int Property { get; private protected set; }
+            public void SetValue(int value) => Property = value;
+        }
+
+        public class ClassWithInternalProtectedMembers
+        {
+            protected internal int _field;
+            protected internal int Property { get; set; }
+
+            public void SetValues(int field, int property) => (_field, Property) = (field, property);
+            public void GetValues(out int field, out int property) => (field, property) = (_field, Property);
+        }
+
+        public class ClassWithInternalProtectedGetter
+        {
+            public int Property { internal protected get; set; }
+            public int GetValue() => Property;
+        }
+
+        public class ClassWithInternalProtectedSetter
+        {
+            public int Property { get; internal protected set; }
+            public void SetValue(int value) => Property = value;
         }
 
         public class ClassWithReadOnlyFields
@@ -1521,10 +1767,6 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(ClassWithProperty_IgnoreConditionAlways))]
         [InlineData(typeof(ClassWithProperty_IgnoreConditionAlways_Ctor))]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreConditionSetToAlwaysWorks(Type type)
         {
             string json = @"{""MyString"":""Random"",""MyDateTime"":""2020-03-23"",""MyInt"":4}";
@@ -1548,7 +1790,7 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; set; }
         }
 
-        private class ClassWithProperty_IgnoreConditionAlways_Ctor
+        public class ClassWithProperty_IgnoreConditionAlways_Ctor
         {
             public string MyString { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
@@ -1564,10 +1806,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionWhenWritingDefault_ClassProperty_TestData))]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreConditionWhenWritingDefault_ClassProperty(Type type, JsonSerializerOptions options)
         {
             // Property shouldn't be ignored if it isn't null.
@@ -1618,7 +1856,7 @@ namespace System.Text.Json.Serialization.Tests
             public int Int2 { get; set; }
         }
 
-        private class ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor
+        public class ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -1642,10 +1880,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionWhenWritingDefault_StructProperty_TestData))]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreConditionWhenWritingDefault_StructProperty(Type type, JsonSerializerOptions options)
         {
             // Property shouldn't be ignored if it isn't null.
@@ -1674,7 +1908,7 @@ namespace System.Text.Json.Serialization.Tests
             public int Int2 { get; set; }
         }
 
-        private struct StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor
+        public struct StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -1698,10 +1932,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionNever_TestData))]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreConditionNever(Type type)
         {
             // Property should always be (de)serialized, even when null.
@@ -1733,10 +1963,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionNever_TestData))]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreConditionNever_IgnoreNullValues_True(Type type)
         {
             // Property should always be (de)serialized.
@@ -1810,9 +2036,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53393")]
-#endif
         public async Task ClassWithComplexObjectsUsingIgnoreWhenWritingDefaultAttribute()
         {
             string json = @"{""Class"":{""MyInt16"":18}, ""Dictionary"":null}";
@@ -1841,9 +2064,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53393")]
-#endif
         public async Task ClassWithComplexObjectUsingIgnoreNeverAttribute()
         {
             string json = @"{""Class"":null, ""Dictionary"":null}";
@@ -2125,10 +2345,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task ValueType_Properties_NotIgnoredWhen_IgnoreNullValues_Active_LargeStructTest()
         {
             var options = new JsonSerializerOptions { IgnoreNullValues = true };
@@ -2162,10 +2378,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task ValueType_Properties_NotIgnoredWhen_IgnoreNullValues_Active_SmallStructTest()
         {
             var options = new JsonSerializerOptions { IgnoreNullValues = true };
@@ -2228,7 +2440,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private struct SmallStructWithValueAndReferenceTypes
+        public struct SmallStructWithValueAndReferenceTypes
         {
             public string MyString { get; }
             public int MyInt { get; set; }
@@ -2252,10 +2464,6 @@ namespace System.Text.Json.Serialization.Tests
         public class PointClass { }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task Ignore_WhenWritingNull_Globally()
         {
             var options = new JsonSerializerOptions
@@ -2329,17 +2537,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task Ignore_WhenWritingNull_PerProperty()
         {
-            var options = new JsonSerializerOptions
-            {
-                IncludeFields = true
-            };
-
             string json = @"{
 ""MyPointClass2_IgnoredWhenWritingNull"":{},
 ""MyString1_IgnoredWhenWritingNull"":""Default"",
@@ -2354,7 +2553,7 @@ namespace System.Text.Json.Serialization.Tests
 }";
 
             // All members should correspond to JSON contents, as ignore doesn't apply to deserialization.
-            ClassWithThingsToIgnore_PerProperty obj = await Serializer.DeserializeWrapper<ClassWithThingsToIgnore_PerProperty>(json, options);
+            ClassWithThingsToIgnore_PerProperty obj = await Serializer.DeserializeWrapper<ClassWithThingsToIgnore_PerProperty>(json);
             Assert.NotNull(obj.MyPointClass2_IgnoredWhenWritingNull);
             Assert.Equal("Default", obj.MyString1_IgnoredWhenWritingNull);
             Assert.Null(obj.MyNullableBool1_IgnoredWhenWritingNull);
@@ -2378,7 +2577,7 @@ namespace System.Text.Json.Serialization.Tests
 ""MyNullableBool2_IgnoredWhenWritingNull"":true,
 ""MyPointStruct1"":{""X"":0,""Y"":0}
 }";
-            JsonTestHelper.AssertJsonEqual(expectedJson, await Serializer.SerializeWrapper(obj, options));
+            JsonTestHelper.AssertJsonEqual(expectedJson, await Serializer.SerializeWrapper(obj));
         }
 
         public class ClassWithThingsToIgnore_PerProperty
@@ -2389,6 +2588,7 @@ namespace System.Text.Json.Serialization.Tests
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public string MyString2_IgnoredWhenWritingNull;
 
+            [JsonInclude]
             public int MyInt1;
 
             public int MyInt2 { get; set; }
@@ -2396,15 +2596,16 @@ namespace System.Text.Json.Serialization.Tests
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public bool? MyNullableBool1_IgnoredWhenWritingNull { get; set; }
 
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            [JsonInclude, JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public bool? MyNullableBool2_IgnoredWhenWritingNull;
 
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            [JsonInclude, JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public PointClass MyPointClass1_IgnoredWhenWritingNull;
 
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public PointClass MyPointClass2_IgnoredWhenWritingNull { get; set; }
 
+            [JsonInclude]
             public Point_2D_Struct_WithAttribute MyPointStruct1;
 
             public Point_2D_Struct_WithAttribute MyPointStruct2 { get; set; }
@@ -2498,10 +2699,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Needs bug fixes to custom converter handling.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreCondition_WhenWritingDefault_OnValueTypeWithCustomConverter()
         {
             var obj = new MyClassWithValueType();
@@ -2549,10 +2746,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Needs bug fixes to custom converter handling.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreCondition_WhenWritingNull_OnValueTypeWithCustomConverter()
         {
             string json;
@@ -2940,6 +3133,34 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task SimpleInterfaceHierarchyWithNamingConflict_ShouldMaskShadowedProperties()
+        {
+            var value = new ISimpleInterfaceHierarchyWithNamingConflict.Implementation();
+
+            string json = await Serializer.SerializeWrapper<ISimpleInterfaceHierarchyWithNamingConflict>(value);
+            Assert.Equal("""{"Value":2}""", json);
+
+            json = await Serializer.SerializeWrapper<ISimpleInterfaceHierarchyWithNamingConflict.IDerivedInterface>(value);
+            Assert.Equal("""{"Value":1}""", json);
+        }
+
+        public interface ISimpleInterfaceHierarchyWithNamingConflict
+        {
+            int Value { get; set; }
+
+            public interface IDerivedInterface : ISimpleInterfaceHierarchyWithNamingConflict
+            {
+                new int Value { get; set; }
+            }
+
+            public class Implementation : IDerivedInterface
+            {
+                public int Value { get; set; } = 1;
+                int ISimpleInterfaceHierarchyWithNamingConflict.Value { get; set; } = 2;
+            }
+        }
+
+        [Fact]
         public async Task DiamondInterfaceHierarchyWithNamingConflict_ThrowsJsonException()
         {
             var value = new IDiamondInterfaceHierarchyWithNamingConflict.Implementation
@@ -3006,5 +3227,100 @@ namespace System.Text.Json.Serialization.Tests
                 public int DerivedProperty { get; set; }
             }
         }
+
+        [Fact]
+        public async virtual Task TestCollectionWithPrivateElementType()
+        {
+            // The reflection-based serializer supports enumerables whose element type is private.
+
+            CollectionWithPrivateElementType collection = CollectionWithPrivateElementType.CreatePopulatedInstance();
+
+            string json = await Serializer.SerializeWrapper(collection);
+            Assert.Equal(collection.GetExpectedJson(), json);
+
+            collection = await Serializer.DeserializeWrapper<CollectionWithPrivateElementType>(json);
+            collection.Validate();
+        }
+
+        public class CollectionWithPrivateElementType : ICollection<PrivateEnum>
+        {
+            private readonly ICollection<PrivateEnum> _values = new List<PrivateEnum>();
+
+            public static CollectionWithPrivateElementType CreatePopulatedInstance()
+                => new CollectionWithPrivateElementType { _values = { PrivateEnum.A, PrivateEnum.B, PrivateEnum.C } };
+
+            public void Validate() => Assert.Equal(new[] { PrivateEnum.A, PrivateEnum.B, PrivateEnum.C }, this);
+            public string GetExpectedJson() => "[0,1,2]";
+
+            int ICollection<PrivateEnum>.Count => _values.Count;
+            bool ICollection<PrivateEnum>.IsReadOnly => _values.IsReadOnly;
+            void ICollection<PrivateEnum>.Add(PrivateEnum item) => _values.Add(item);
+            void ICollection<PrivateEnum>.Clear() => _values.Clear();
+            bool ICollection<PrivateEnum>.Contains(PrivateEnum item) => _values.Contains(item);
+            void ICollection<PrivateEnum>.CopyTo(PrivateEnum[] array, int arrayIndex) => _values.CopyTo(array, arrayIndex);
+            IEnumerator<PrivateEnum> IEnumerable<PrivateEnum>.GetEnumerator() => _values.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
+            bool ICollection<PrivateEnum>.Remove(PrivateEnum item) => _values.Remove(item);
+        }
+
+        [Fact]
+        public async virtual Task TestDictionaryWithPrivateKeyAndValueType()
+        {
+            // The reflection-based serializer supports dictionaries whose key/value types are private
+
+            DictionaryWithPrivateKeyAndValueType collection = DictionaryWithPrivateKeyAndValueType.CreatePopulatedInstance();
+
+            string json = await Serializer.SerializeWrapper(collection);
+            Assert.Equal(collection.GetExpectedJson(), json);
+
+            collection = await Serializer.DeserializeWrapper<DictionaryWithPrivateKeyAndValueType>(json);
+            collection.Validate();
+        }
+
+        public class DictionaryWithPrivateKeyAndValueType : IDictionary<PrivateEnum, PrivateEnum>
+        {
+            private readonly IDictionary<PrivateEnum, PrivateEnum> _values = new Dictionary<PrivateEnum, PrivateEnum>();
+
+            public static DictionaryWithPrivateKeyAndValueType CreatePopulatedInstance()
+                => new DictionaryWithPrivateKeyAndValueType { _values = { [PrivateEnum.A] = PrivateEnum.B, [PrivateEnum.B] = PrivateEnum.C } };
+
+            public void Validate() => Assert.Equal(new KeyValuePair<PrivateEnum, PrivateEnum>[] { new(PrivateEnum.A, PrivateEnum.B), new(PrivateEnum.B, PrivateEnum.C) }, this);
+            public string GetExpectedJson() => """{"A":1,"B":2}""";
+
+            PrivateEnum IDictionary<PrivateEnum, PrivateEnum>.this[PrivateEnum key] { get => _values[key]; set => _values[key] = value; }
+            ICollection<PrivateEnum> IDictionary<PrivateEnum, PrivateEnum>.Keys => _values.Keys;
+            ICollection<PrivateEnum> IDictionary<PrivateEnum, PrivateEnum>.Values => _values.Values;
+            int ICollection<KeyValuePair<PrivateEnum, PrivateEnum>>.Count => _values.Count;
+            bool ICollection<KeyValuePair<PrivateEnum, PrivateEnum>>.IsReadOnly => _values.IsReadOnly;
+            void IDictionary<PrivateEnum, PrivateEnum>.Add(PrivateEnum key, PrivateEnum value) => _values.Add(key, value);
+            void ICollection<KeyValuePair<PrivateEnum, PrivateEnum>>.Add(KeyValuePair<PrivateEnum, PrivateEnum> item) => _values.Add(item);
+            void ICollection<KeyValuePair<PrivateEnum, PrivateEnum>>.Clear() => _values.Clear();
+            bool ICollection<KeyValuePair<PrivateEnum, PrivateEnum>>.Contains(KeyValuePair<PrivateEnum, PrivateEnum> item) => _values.Contains(item);
+            bool IDictionary<PrivateEnum, PrivateEnum>.ContainsKey(PrivateEnum key) => _values.ContainsKey(key);
+            void ICollection<KeyValuePair<PrivateEnum, PrivateEnum>>.CopyTo(KeyValuePair<PrivateEnum, PrivateEnum>[] array, int arrayIndex) => _values.CopyTo(array, arrayIndex);
+            IEnumerator<KeyValuePair<PrivateEnum, PrivateEnum>> IEnumerable<KeyValuePair<PrivateEnum, PrivateEnum>>.GetEnumerator() => _values.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
+            bool IDictionary<PrivateEnum, PrivateEnum>.Remove(PrivateEnum key) => _values.Remove(key);
+            bool ICollection<KeyValuePair<PrivateEnum, PrivateEnum>>.Remove(KeyValuePair<PrivateEnum, PrivateEnum> item) => _values.Remove(item);
+            bool IDictionary<PrivateEnum, PrivateEnum>.TryGetValue(PrivateEnum key, out PrivateEnum value) => _values.TryGetValue(key, out value);
+        }
+
+        private enum PrivateEnum { A = 0, B = 1, C = 2 }
+    }
+}
+
+namespace NamespaceBase
+{
+    public class Class1
+    {
+        public const string DefaultValueForInfo = $"Some default content of {nameof(Info)} property of {nameof(NamespaceBase)}";
+
+        public string Info { get; set; } = DefaultValueForInfo;
+    }
+
+    public class Class2
+    {
+        [JsonIgnore]
+        public Class1 class1 => new Class1();
     }
 }

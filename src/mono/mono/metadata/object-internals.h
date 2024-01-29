@@ -742,6 +742,19 @@ typedef struct {
 	gboolean (*get_class_from_name) (MonoImage *image, const char *name_space, const char *name, MonoClass **res);
 	gpointer (*build_imt_trampoline) (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
 	MonoJitInfo *(*find_jit_info_in_aot) (MonoImage *image, gpointer addr);
+	/**
+	 * mono_class_set_deferred_type_load_failure_callback:
+	 * @param klass: Class in which the failure was detected.
+	 * @param fmt: printf-style error message string.
+	 *
+	 * The callback is responsible for processing the failure information provided by the @klass parameter and the error message format string @fmt.
+	 * If a deferred failure occurs, the callback should return FALSE to let the AOT compiler proceed with the class layout setup.
+	 * Otherwise, if the callback returns TRUE, it indicates that the failure should be reported.
+	 *
+	 * @returns: TRUE if the failure is handled and the runtime should not proceed with class setup, FALSE if the failure should be deferred for runtime class setup.
+	 * 
+	 */
+	gboolean (*mono_class_set_deferred_type_load_failure_callback) (MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -2147,5 +2160,8 @@ mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean 
 
 void
 mono_runtime_run_startup_hooks (void);
+
+MONO_COMPONENT_API gpointer
+mono_get_span_data_from_field (MonoClassField *field_handle, MonoType *field_type, MonoType *target_type, gint32 *count);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

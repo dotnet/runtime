@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <IsShipping>false</IsShipping>
+    <!-- Reference the outputs to have them available as build outputs. -->
+    <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <IncludeSymbols>false</IncludeSymbols>
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <PackageDescription>Internal transport package to provide dotnet-api-docs with the reference assemblies and compiler generated documentation files from dotnet/runtime.</PackageDescription>
+    <NoWarn>$(NoWarn);NU5128;NU5131</NoWarn>
+    <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);IncludeProjectReferenceCompilerGeneratedSecondaryOutputInPackage</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Requires Private=true to calculate ReferenceCopyLocalPaths items. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)sfx-src.proj;
+                               $(LibrariesProjectRoot)oob-src.proj"
+                      PrivateAssets="all"
+                      Private="true" />
+  </ItemGroup>
+
+  <!-- Include the reference assembly and put the documentation file next to it. -->
+  <Target Name="IncludeProjectReferenceCompilerGeneratedSecondaryOutputInPackage"
+          DependsOnTargets="BuildOnlySettings;ResolveReferences">
+    <ItemGroup>
+
+      <!-- Exclude private assemblies -->
+      <ProjectReferenceCopyLocalPathNonPrivate Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('IsPrivateAssembly', 'false'))" />
+
+      <ReferenceAssemblyFile Include="@(ProjectReferenceCopyLocalPathNonPrivate->WithMetadataValue('Extension', '.dll')->Metadata('ReferenceAssembly'))" />
+      <CompilerGeneratedXmlDocFile Include="@(ProjectReferenceCopyLocalPathNonPrivate->WithMetadataValue('UseCompilerGeneratedDocXmlFile', 'true')->WithMetadataValue('Extension', '.xml'))" />
+      <TfmSpecificPackageFile Include="@(ReferenceAssemblyFile);
+                                       @(CompilerGeneratedXmlDocFile)"
+                              PackagePath="ref\$(NetCoreAppCurrent)\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PartialFacadeCompilerGeneratedXmlDocFile Include="@(CompilerGeneratedXmlDocFile->WithMetadataValue('IsPartialFacadeAssembly', 'true'))" />
+      <PlatformNotSupportedCompilerGeneratedXmlDocFile Include="@(CompilerGeneratedXmlDocFile->WithMetadataValue('IsPlatformNotSupportedAssembly', 'true'))" />
+    </ItemGroup>
+
+    <Error Text="Compiler generated XML documentation files are missing data because partial facade assemblies aren't yet supported by the repo infrastructure. Consider removing the partial facade feature or setting the 'GenerateDocumentationFile' property to false in the project file. Assemblies: @(PartialFacadeCompilerGeneratedXmlDocFile->Metadata('Filename'), ', ')."
+           Condition="'@(PartialFacadeCompilerGeneratedXmlDocFile)' != ''" />
+
+    <Error Text="Compiler generated XML documentation files are missing data because PNSE (platform not supported exception) assemblies aren't yet supported by the repo infrastructure. Consider removing the PNSE feature or setting the 'GenerateDocumentationFile' property to false in the project file. Assemblies: @(PlatformNotSupportedCompilerGeneratedXmlDocFile->Metadata('Filename'), ', ')."
+           Condition="'@(PlatformNotSupportedCompilerGeneratedXmlDocFile)' != ''" />
+  </Target>
+
+</Project>

@@ -6,10 +6,9 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
-
-#pragma warning disable 8500 // address of managed types
 
 namespace System.Buffers
 {
@@ -25,6 +24,7 @@ namespace System.Buffers
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>
         /// <param name="values">The set of values.</param>
+        /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
         public static SearchValues<byte> Create(ReadOnlySpan<byte> values)
         {
             if (values.IsEmpty)
@@ -67,6 +67,7 @@ namespace System.Buffers
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>
         /// <param name="values">The set of values.</param>
+        /// /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
         public static SearchValues<char> Create(ReadOnlySpan<char> values)
         {
             if (values.IsEmpty)
@@ -112,11 +113,9 @@ namespace System.Buffers
             // IndexOfAnyAsciiSearcher for chars is slower than Any3CharSearchValues, but faster than Any4SearchValues
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
-                IndexOfAnyAsciiSearcher.ComputeBitmap(values, out Vector256<byte> bitmap, out BitVector256 lookup);
-
-                return (Ssse3.IsSupported || PackedSimd.IsSupported) && lookup.Contains(0)
-                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(bitmap, lookup)
-                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(bitmap, lookup);
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
+                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values)
+                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values);
             }
 
             // Vector128<char> isn't valid. Treat the values as shorts instead.
@@ -134,13 +133,53 @@ namespace System.Buffers
                 return new Any5SearchValues<char, short>(shortValues);
             }
 
-            if (maxInclusive < 256)
+            scoped ReadOnlySpan<char> probabilisticValues = values;
+
+            if (Vector128.IsHardwareAccelerated && values.Length < 8)
             {
-                // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported
+                // ProbabilisticMap does a Span.Contains check to confirm potential matches.
+                // If we have fewer than 8 values, pad them with existing ones to make the verification faster.
+                Span<char> newValues = stackalloc char[8];
+                newValues.Fill(values[0]);
+                values.CopyTo(newValues);
+                probabilisticValues = newValues;
+            }
+
+            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && minInclusive < 128)
+            {
+                // If we have both ASCII and non-ASCII characters, use an implementation that
+                // does an optimistic ASCII fast-path and then falls back to the ProbabilisticMap.
+
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && probabilisticValues.Contains('\0')
+                    ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(probabilisticValues)
+                    : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(probabilisticValues);
+            }
+
+            // We prefer using the ProbabilisticMap over Latin1CharSearchValues if the former is vectorized.
+            if (!(Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && maxInclusive < 256)
+            {
+                // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported.
                 return new Latin1CharSearchValues(values);
             }
 
-            return new ProbabilisticCharSearchValues(values);
+            return new ProbabilisticCharSearchValues(probabilisticValues);
+        }
+
+        /// <summary>
+        /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
+        /// </summary>
+        /// <param name="values">The set of values.</param>
+        /// <param name="comparisonType">Specifies whether to use <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/> search semantics.</param>
+        /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
+        /// <remarks>Only <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/> may be used.</remarks>
+        public static SearchValues<string> Create(ReadOnlySpan<string> values, StringComparison comparisonType)
+        {
+            if (comparisonType is not (StringComparison.Ordinal or StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(SR.Argument_SearchValues_UnsupportedStringComparison, nameof(comparisonType));
+            }
+
+            return StringSearchValues.Create(values, ignoreCase: comparisonType == StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool TryGetSingleRange<T>(ReadOnlySpan<T> values, out T minInclusive, out T maxInclusive)
@@ -187,12 +226,12 @@ namespace System.Buffers
             static abstract bool Value { get; }
         }
 
-        private readonly struct TrueConst : IRuntimeConst
+        internal readonly struct TrueConst : IRuntimeConst
         {
             public static bool Value => true;
         }
 
-        private readonly struct FalseConst : IRuntimeConst
+        internal readonly struct FalseConst : IRuntimeConst
         {
             public static bool Value => false;
         }

@@ -49,7 +49,7 @@ namespace Mono.Linker
 			this.context = context;
 		}
 
-		void EnsureProcessed (AssemblyDefinition assembly)
+		public void EnsureProcessed (AssemblyDefinition assembly)
 		{
 			if (!assemblies.Add (assembly))
 				return;
@@ -57,6 +57,8 @@ namespace Mono.Linker
 			foreach (TypeDefinition type in assembly.MainModule.Types)
 				MapType (type);
 		}
+
+		public ICollection<MethodDefinition> MethodsWithOverrideInformation => override_methods.Keys;
 
 		/// <summary>
 		/// Returns a list of all known methods that override <paramref name="method"/>. The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
@@ -148,22 +150,25 @@ namespace Mono.Linker
 					// keeping more methods than needed.
 
 					if (!resolvedInterfaceMethod.IsVirtual
-						|| resolvedInterfaceMethod.IsFinal
-						|| !resolvedInterfaceMethod.IsNewSlot)
+						|| resolvedInterfaceMethod.IsFinal)
 						continue;
 
-					// Try to find an implementation with a name/sig match on the current type
-					MethodDefinition? exactMatchOnType = TryMatchMethod (type, interfaceMethod);
-					if (exactMatchOnType != null) {
-						AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType);
-						continue;
-					}
+					// Static methods on interfaces must be implemented only via explicit method-impl record
+					// not by a signature match. So there's no point in running this logic for static methods.
+					if (!resolvedInterfaceMethod.IsStatic) {
+						// Try to find an implementation with a name/sig match on the current type
+						MethodDefinition? exactMatchOnType = TryMatchMethod (type, interfaceMethod);
+						if (exactMatchOnType != null) {
+							AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType);
+							continue;
+						}
 
-					// Next try to find an implementation with a name/sig match in the base hierarchy
-					var @base = GetBaseMethodInTypeHierarchy (type, interfaceMethod);
-					if (@base != null) {
-						AnnotateMethods (resolvedInterfaceMethod, @base, interfaceImpl.OriginalImpl);
-						continue;
+						// Next try to find an implementation with a name/sig match in the base hierarchy
+						var @base = GetBaseMethodInTypeHierarchy (type, interfaceMethod);
+						if (@base != null) {
+							AnnotateMethods (resolvedInterfaceMethod, @base, interfaceImpl.OriginalImpl);
+							continue;
+						}
 					}
 
 					// Look for a default implementation last.

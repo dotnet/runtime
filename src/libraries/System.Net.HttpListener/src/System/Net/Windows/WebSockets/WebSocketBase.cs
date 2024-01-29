@@ -180,7 +180,7 @@ namespace System.Net.WebSockets
                 }
 
                 EnsureReceiveOperation();
-                receiveResult = (await _receiveOperation!.Process(buffer, linkedCancellationToken).SuppressContextFlow())!;
+                receiveResult = (await _receiveOperation!.Process(buffer, linkedCancellationToken).ConfigureAwait(false))!;
 
                 if (NetEventSource.Log.IsEnabled() && receiveResult.Count > 0)
                 {
@@ -268,7 +268,7 @@ namespace System.Net.WebSockets
                         }
                     }
 
-                    await keepAliveTask.SuppressContextFlow();
+                    await keepAliveTask.ConfigureAwait(false);
                     ThrowIfPendingException();
 
                     _sendOutstandingOperationHelper.CompleteOperation(ownsCancellationTokenSource);
@@ -281,7 +281,7 @@ namespace System.Net.WebSockets
 
                 EnsureSendOperation();
                 _sendOperation!.BufferType = GetBufferType(messageType, endOfMessage);
-                await _sendOperation.Process(buffer, linkedCancellationToken).SuppressContextFlow();
+                await _sendOperation.Process(buffer, linkedCancellationToken).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -301,7 +301,7 @@ namespace System.Net.WebSockets
             bool sendFrameLockTaken = false;
             try
             {
-                await _sendFrameThrottle.WaitAsync(cancellationToken).SuppressContextFlow();
+                await _sendFrameThrottle.WaitAsync(cancellationToken).ConfigureAwait(false);
                 sendFrameLockTaken = true;
 
                 if (sendBuffers.Count > 1 &&
@@ -309,16 +309,14 @@ namespace System.Net.WebSockets
                     _innerStreamAsWebSocketStream.SupportsMultipleWrite)
                 {
                     await _innerStreamAsWebSocketStream.MultipleWriteAsync(sendBuffers,
-                        cancellationToken).SuppressContextFlow();
+                        cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
                     foreach (ArraySegment<byte> buffer in sendBuffers)
                     {
-                        await _innerStream.WriteAsync(buffer.Array!,
-                            buffer.Offset,
-                            buffer.Count,
-                            cancellationToken).SuppressContextFlow();
+                        await _innerStream.WriteAsync(buffer.Array!.AsMemory(buffer.Offset, buffer.Count),
+                            cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
@@ -425,7 +423,7 @@ namespace System.Net.WebSockets
                     if (closeOutputTask != null)
                     {
                         ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                        await closeOutputTask.SuppressContextFlow();
+                        await closeOutputTask.ConfigureAwait(false);
                         TakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
                     }
                 }
@@ -441,7 +439,7 @@ namespace System.Net.WebSockets
                             Task keepAliveTask = _keepAliveTask;
 
                             ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                            await keepAliveTask.SuppressContextFlow();
+                            await keepAliveTask.ConfigureAwait(false);
                             TakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
 
                             ThrowIfPendingException();
@@ -461,7 +459,7 @@ namespace System.Net.WebSockets
                     _closeOutputTask = _closeOutputOperation!.Process(null, linkedCancellationToken);
 
                     ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
-                    await _closeOutputTask.SuppressContextFlow();
+                    await _closeOutputTask.ConfigureAwait(false);
                     TakeLocks(ref thisLockTaken, ref sessionHandleLockTaken);
 
                     if (OnCloseOutputCompleted())
@@ -471,7 +469,7 @@ namespace System.Net.WebSockets
                         try
                         {
                             callCompleteOnCloseCompleted = await StartOnCloseCompleted(
-                                thisLockTaken, sessionHandleLockTaken, linkedCancellationToken).SuppressContextFlow();
+                                thisLockTaken, sessionHandleLockTaken, linkedCancellationToken).ConfigureAwait(false);
                         }
                         catch (Exception)
                         {
@@ -570,7 +568,7 @@ namespace System.Net.WebSockets
                         ReleaseLock(_thisLock, ref thisLockTaken);
                     }
 
-                    await _closeNetworkConnectionTask.SuppressContextFlow();
+                    await _closeNetworkConnectionTask.ConfigureAwait(false);
                 }
                 catch (Exception closeNetworkConnectionTaskException)
                 {
@@ -654,7 +652,7 @@ namespace System.Net.WebSockets
                     ReleaseLock(_thisLock, ref lockTaken);
                     try
                     {
-                        await closeOutputTask.SuppressContextFlow();
+                        await closeOutputTask.ConfigureAwait(false);
                     }
                     catch (Exception closeOutputError)
                     {
@@ -687,7 +685,7 @@ namespace System.Net.WebSockets
                         // linkedCancellationToken can be CancellationToken.None if ownsCloseCancellationTokenSource==false
                         // This is still ok because OnCloseOutputCompleted won't start any IO operation in this case
                         callCompleteOnCloseCompleted = await StartOnCloseCompleted(
-                            lockTaken, false, linkedCancellationToken).SuppressContextFlow();
+                            lockTaken, false, linkedCancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception)
                     {
@@ -725,7 +723,7 @@ namespace System.Net.WebSockets
                     WebSocketReceiveResult? receiveResult = null;
                     try
                     {
-                        receiveResult = await receiveAsyncTask.SuppressContextFlow();
+                        receiveResult = await receiveAsyncTask.ConfigureAwait(false);
                     }
                     catch (Exception receiveException)
                     {
@@ -766,7 +764,7 @@ namespace System.Net.WebSockets
                 {
                     _receiveOutstandingOperationHelper.CompleteOperation(ownsReceiveCancellationTokenSource);
                     ReleaseLock(_thisLock, ref lockTaken);
-                    await _closeReceivedTaskCompletionSource!.Task.SuppressContextFlow();
+                    await _closeReceivedTaskCompletionSource!.Task.ConfigureAwait(false);
                 }
 
                 // When ownsReceiveCancellationTokenSource is true and an exception is thrown, the lock will be taken.
@@ -793,7 +791,7 @@ namespace System.Net.WebSockets
                             // linkedCancellationToken can be CancellationToken.None if ownsCloseCancellationTokenSource==false
                             // This is still ok because OnCloseOutputCompleted won't start any IO operation in this case
                             callCompleteOnCloseCompleted = await StartOnCloseCompleted(
-                                lockTaken, false, linkedCancellationToken).SuppressContextFlow();
+                                lockTaken, false, linkedCancellationToken).ConfigureAwait(false);
                         }
                         catch (Exception)
                         {
@@ -1278,7 +1276,7 @@ namespace System.Net.WebSockets
                             thisPtr.EnsureKeepAliveOperation();
                             thisPtr._keepAliveTask = thisPtr._keepAliveOperation!.Process(null, linkedCancellationToken);
                             ReleaseLock(thisPtr.SessionHandle, ref lockTaken);
-                            await thisPtr._keepAliveTask!.SuppressContextFlow();
+                            await thisPtr._keepAliveTask!.ConfigureAwait(false);
                         }
                     }
                     finally
@@ -1411,7 +1409,7 @@ namespace System.Net.WebSockets
                                                 try
                                                 {
                                                     callCompleteOnCloseCompleted = await _webSocket.StartOnCloseCompleted(
-                                                        thisLockTaken, sessionHandleLockTaken, cancellationToken).SuppressContextFlow();
+                                                        thisLockTaken, sessionHandleLockTaken, cancellationToken).ConfigureAwait(false);
                                                 }
                                                 catch (Exception)
                                                 {
@@ -1461,7 +1459,7 @@ namespace System.Net.WebSockets
                                                 payload.Offset,
                                                 payload.Count,
                                                 cancellationToken);
-                                            count = await readTask.SuppressContextFlow();
+                                            count = await readTask.ConfigureAwait(false);
                                             _webSocket._keepAliveTracker.OnDataReceived();
                                         }
                                         catch (ObjectDisposedException objectDisposedException)
@@ -1491,7 +1489,7 @@ namespace System.Net.WebSockets
                                     WebSocketProtocolComponent.WebSocketCompleteAction(_webSocket, actionContext, 0);
                                     AsyncOperationCompleted = true;
                                     ReleaseLock(_webSocket.SessionHandle, ref sessionHandleLockTaken);
-                                    await _webSocket._innerStream.FlushAsync(cancellationToken).SuppressContextFlow();
+                                    await _webSocket._innerStream.FlushAsync(cancellationToken).ConfigureAwait(false);
                                     Monitor.Enter(_webSocket.SessionHandle, ref sessionHandleLockTaken);
                                     break;
                                 case WebSocketProtocolComponent.Action.SendToNetwork:
@@ -1539,7 +1537,7 @@ namespace System.Net.WebSockets
 
                                             ReleaseLock(_webSocket.SessionHandle, ref sessionHandleLockTaken);
                                             HttpWebSocket.ThrowIfConnectionAborted(_webSocket._innerStream, false);
-                                            await _webSocket.SendFrameAsync(sendBuffers, cancellationToken).SuppressContextFlow();
+                                            await _webSocket.SendFrameAsync(sendBuffers, cancellationToken).ConfigureAwait(false);
                                             Monitor.Enter(_webSocket.SessionHandle, ref sessionHandleLockTaken);
                                             _webSocket.ThrowIfPendingException();
                                             bytesSent += sendBufferSize;

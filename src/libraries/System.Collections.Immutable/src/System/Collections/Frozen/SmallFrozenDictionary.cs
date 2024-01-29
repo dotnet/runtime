@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Frozen
@@ -24,8 +25,8 @@ namespace System.Collections.Frozen
         {
             Debug.Assert(source.Count != 0);
 
-            _keys = source.Keys.ToArray(source.Count);
-            _values = source.Values.ToArray(source.Count);
+            _keys = source.Keys.ToArray();
+            _values = source.Values.ToArray();
         }
 
         private protected override TKey[] KeysCore => _keys;

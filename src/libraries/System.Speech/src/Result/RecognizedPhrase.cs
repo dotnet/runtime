@@ -1163,7 +1163,7 @@ namespace System.Speech.Recognition
 
             private string DisplayDebugInfo()
             {
-                return $"'rule={_rule}";
+                return $"'rule = {_rule}";
             }
             internal Grammar _grammar;
             internal string _rule;
@@ -1176,7 +1176,7 @@ namespace System.Speech.Recognition
             internal RuleNode _next;
             internal RuleNode _child;
         }
-        [DebuggerDisplay("Name={_name} node={_ruleNode._rule} value={_value != null && _value.Value != null ? _value.Value.ToString() : \"\"}")]
+        [DebuggerDisplay("Name = {_name}, node = {_ruleNode._rule}, value = {_value != null && _value.Value != null ? _value.Value.ToString() : \"\"}")]
         private struct ResultPropertiesRef
         {
             internal string _name;

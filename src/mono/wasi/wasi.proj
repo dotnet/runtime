@@ -65,38 +65,34 @@
     </ManagedToNativeGenerator>
   </Target>
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleObjectFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)">
+  <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)" Condition="'$(InvariantTimezone)' != 'true'">
     <PropertyGroup>
       <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
-      <_WasmTimezonesBundleObjectFile>$(WasiObjDir)\wasm-bundled-timezones.o</_WasmTimezonesBundleObjectFile>
+      <_WasmTimezonesBundleObjectFile>wasm-bundled-timezones.o</_WasmTimezonesBundleObjectFile>
       <_WasmTimezonesBundleArchive>$(WasiObjDir)\wasm-bundled-timezones.a</_WasmTimezonesBundleArchive>
       <_WasmTimezonesArchiveRsp>$(WasiObjDir)\wasm-bundled-timezones-archive.rsp</_WasmTimezonesArchiveRsp>
     </PropertyGroup>
     <ItemGroup>
       <_WasmTimezonesInternal Include="$(_WasmTimezonesPath)\**\*.*" WasmRole="Timezone"/>
     </ItemGroup>
-    <GetFileHash Files="@(_WasmTimezonesInternal)">
-      <Output TaskParameter="Items" ItemName="_WasmBundleTimezonesWithHashes" />
-    </GetFileHash>
     <ItemGroup>
-      <_WasmBundleTimezonesWithHashes Update="@(_WasmBundleTimezonesWithHashes)">
-        <DestinationFile>$(WasiObjDir)\wasm-bundled-$([System.String]::Copy(%(_WasmBundleTimezonesWithHashes.FileHash))).o</DestinationFile>
-        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
-      </_WasmBundleTimezonesWithHashes>
+      <_WasmTimezonesInternal Update="@(_WasmTimezonesInternal)">
+        <RegisteredName>/usr/share/zoneinfo/$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmTimezonesInternal.Identity)).Replace('\','/'))</RegisteredName>
+      </_WasmTimezonesInternal>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->
-    <EmitWasmBundleObjectFiles 
-      FilesToBundle="@(_WasmBundleTimezonesWithHashes)" 
+    <EmitBundleObjectFiles
+      FilesToBundle="@(_WasmTimezonesInternal)"
       ClangExecutable="$(WasiClang)"
-      BundleName="timezones"
+      BundleRegistrationFunctionName="mono_register_timezones_bundle"
       BundleFile="$(_WasmTimezonesBundleObjectFile)"
-      RegistrationCallbackFunctionName="mono_wasm_add_bundled_file"
-      >
-    </EmitWasmBundleObjectFiles>
+      OutputDirectory="$(WasiObjDir)">
+      <Output TaskParameter="BundledResources" ItemName="BundledWasiTimezones" />
+    </EmitBundleObjectFiles>
     <ItemGroup>
-      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), %(_WasmBundleTimezonesWithHashes.DestinationFile)).Replace('\','/'))" />
-      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), $(_WasmTimezonesBundleObjectFile)).Replace('\','/'))" />
+      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), %(BundledWasiTimezones.DestinationFile)).Replace('\','/'))" />
+      <WasmBundleTimezonesObjects Include="$(_WasmTimezonesBundleObjectFile)" />
     </ItemGroup>
     <WriteLinesToFile File="$(_WasmTimezonesArchiveRsp)"
       Overwrite="true"
@@ -111,15 +107,15 @@
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
       <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
-      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
-      <_WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.DestinationFile)" />
+      <_WasmBundleTimezonesToDelete Remove="$(WasiObjDir)\$(_WasmTimezonesBundleObjectFile)" />
+      <_WasmBundleTimezonesToDelete Remove="%(BundledWasiTimezones.DestinationFile)" />
     </ItemGroup>
     <Delete Files="@(_WasmBundleTimezonesToDelete)" />
   </Target>
 
   <Target Name="GenerateWasiPropsAndRspFiles">
 
-    <!-- Generate wasi-props.json -->
+    <!-- Generate wasm-props.json -->
     <ItemGroup>
       <!-- TODOWASI
       <_WasiLinkFlags Include="-Wl, - - allow-undefined"/>
@@ -137,8 +133,8 @@
 
       <_WasiCompileFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'include').Replace('\','/'))"/>
       <_WasiCompileFlags Condition="'$(MonoWasmThreads)' != 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'include').Replace('\','/'))"/>
-      <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include').Replace('\','/'))"/>
-      <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'mono-include').Replace('\','/'))"/>
+      <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(WasiProjectRoot)', 'include').Replace('\','/'))"/>
+      <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(WasiProjectRoot)', 'mono-include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'mono', 'eglib').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
@@ -150,21 +146,18 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasmOptConfigurationFlags>@(WasmOptConfigurationFlags, '%3B ') </_WasmOptConfigurationFlags>
       <_WasiPropsJson>
 <![CDATA[
 {
   "items": {
-    "WasmOptConfigurationFlags": [
-      { "identity": "WasmOptConfigurationFlags", "value": "$(_WasmOptConfigurationFlags)" }
-    ]
+    "WasmOptConfigurationFlags": [@(WasmOptConfigurationFlags -> '%22%(Identity)%22', ',')],
   }
 }
 ]]>
       </_WasiPropsJson>
     </PropertyGroup>
 
-    <WriteLinesToFile File="$(NativeBinDir)src\emcc-props.json"
+    <WriteLinesToFile File="$(NativeBinDir)src\wasm-props.json"
                       Lines="$(_WasiPropsJson)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
@@ -222,9 +215,9 @@
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot;</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true' and '$(Configuration)' == 'Release'">$(CMakeBuildRuntimeConfigureCmd) -DWASM_OPT_ADDITIONAL_FLAGS=&quot;--enable-simd&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_COMPILE_OPTIONS=&quot;-msimd128&quot; -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;simd&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' != 'true'">$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_INTERPSIMDTABLES_LIB=&quot;nosimd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreadsNoUser)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_WASM_USER_THREADS=1</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; wasm &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)</CMakeBuildRuntimeConfigureCmd>
 
       <CMakeOptions Condition="'$(MonoVerboseBuild)' != ''">-v</CMakeOptions>
@@ -233,15 +226,17 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <_FilesToCopy Include="$(BrowserProjectRoot)runtime\runtime.c"                 DestinationFolder="$(NativeBinDir)src" />
+      <_FilesToCopy Include="$(BrowserProjectRoot)runtime\pinvoke.c"                 DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/driver.c"            DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/main.c"              DestinationFolder="$(NativeBinDir)src" />
-      <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/pinvoke.c"           DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/stubs.c"             DestinationFolder="$(NativeBinDir)src" />
       <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/synthetic-pthread.c" DestinationFolder="$(NativeBinDir)src" />
 
-      <_FilesToCopy Include="$(MonoProjectRoot)wasi\mono-include\driver.h"           DestinationFolder="$(NativeBinDir)include\wasm" />
-      <_FilesToCopy Include="$(MonoProjectRoot)wasi\mono-include\pinvoke.h"          DestinationFolder="$(NativeBinDir)include\wasm" />
-      <_FilesToCopy Include="$(MonoProjectRoot)wasm\runtime\gc-common.h"             DestinationFolder="$(NativeBinDir)include\wasm" />
+      <_FilesToCopy Include="$(WasiProjectRoot)mono-include\driver.h"           DestinationFolder="$(NativeBinDir)include\wasm" />
+      <_FilesToCopy Include="$(BrowserProjectRoot)runtime\gc-common.h"               DestinationFolder="$(NativeBinDir)include\wasm" />
+      <_FilesToCopy Include="$(BrowserProjectRoot)runtime\runtime.h"                 DestinationFolder="$(NativeBinDir)include\wasm" />
+      <_FilesToCopy Include="$(BrowserProjectRoot)runtime\pinvoke.h"                 DestinationFolder="$(NativeBinDir)include\wasm" />
     </ItemGroup>
 
     <Copy SourceFiles="$(PInvokeTableFile)"
@@ -268,6 +263,7 @@
     <ItemGroup>
       <IcuDataFiles Include="$(NativeBinDir)*.dat" />
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;" />
+      <WasmSrcFiles Include="$(_WasiDefaultsRspPath);$(_WasiCompileRspPath);$(_WasiLinkRspPath);$(NativeBinDir)src\wasm-props.json" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
 

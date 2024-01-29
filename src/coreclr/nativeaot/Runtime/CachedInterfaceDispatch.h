@@ -26,12 +26,6 @@ struct InterfaceDispatchCacheEntry
 // the owning interface dispatch indirection cell) and a list entry used to link the caches in one of a couple
 // of lists related to cache reclamation.
 
-#if defined(HOST_ARM) || defined(HOST_X86)
-// On ARM and x86 the slow path in the stubs needs to reload the cell pointer from the cache due to the lack
-// of available (volatile non-argument) registers.
-#define INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
-#endif // defined(HOST_ARM) || defined(HOST_X86)
-
 #pragma warning(push)
 #pragma warning(disable:4200) // nonstandard extension used: zero-sized array in struct/union
 struct InterfaceDispatchCell;
@@ -42,6 +36,8 @@ struct InterfaceDispatchCache
     {
         InterfaceDispatchCache *    m_pNextFree;    // next in free list
 #ifdef INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
+        // On ARM and x86 the slow path in the stubs needs to reload the cell pointer from the cache due to the lack
+        // of available (volatile non-argument) registers.
         InterfaceDispatchCell  *    m_pCell;        // pointer back to interface dispatch cell
 #endif
     };

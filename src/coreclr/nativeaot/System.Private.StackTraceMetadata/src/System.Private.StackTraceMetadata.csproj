@@ -2,6 +2,8 @@
   <PropertyGroup>
     <!-- we access a lot of internals of System.Private.CoreLib, disable compiling against the ref assembly for now so we don't need to update it -->
     <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+    <!-- CA2252: Opt in to preview features before using them (Lock) -->
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,8 +20,14 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\StackTraceMetadata\StackTraceMetadata.cs" />
     <Compile Include="Internal\StackTraceMetadata\MethodNameFormatter.cs" />
+    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
+      <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MetadataBlob.cs">
       <Link>Internal\Runtime\MetadataBlob.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\StackTraceData.cs">
+      <Link>Internal\Runtime\StackTraceData.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Logging.cs" />
+    <Compile Include="Microsoft.Extensions.Logging.Forwards.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -25,10 +25,10 @@ namespace ILCompiler
         private readonly FeatureSwitchHashtable _hashtable;
         private readonly ILProvider _nestedILProvider;
 
-        public FeatureSwitchManager(ILProvider nestedILProvider, Logger logger, IEnumerable<KeyValuePair<string, bool>> switchValues)
+        public FeatureSwitchManager(ILProvider nestedILProvider, Logger logger, IReadOnlyDictionary<string, bool> switchValues, BodyAndFieldSubstitutions globalSubstitutions)
         {
             _nestedILProvider = nestedILProvider;
-            _hashtable = new FeatureSwitchHashtable(logger, new Dictionary<string, bool>(switchValues));
+            _hashtable = new FeatureSwitchHashtable(logger, switchValues, globalSubstitutions);
         }
 
         private BodySubstitution GetSubstitution(MethodDesc method)
@@ -591,6 +591,13 @@ namespace ILCompiler
                         {
                             return true;
                         }
+                        else if (method.IsIntrinsic && method.Name is "get_IsValueType"
+                            && method.OwningType is MetadataType mdt
+                            && mdt.Name == "Type" && mdt.Namespace == "System" && mdt.Module == mdt.Context.SystemModule
+                            && TryExpandTypeIsValueType(methodIL, body, flags, currentOffset, out constant))
+                        {
+                            return true;
+                        }
                         else
                         {
                             constant = 0;
@@ -745,6 +752,40 @@ namespace ILCompiler
             return null;
         }
 
+        private static bool TryExpandTypeIsValueType(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, out int constant)
+        {
+            // We expect to see a sequence:
+            // ldtoken Foo
+            // call GetTypeFromHandle
+            // -> offset points here
+            constant = 0;
+            const int SequenceLength = 10;
+            if (offset < SequenceLength)
+                return false;
+
+            if ((flags[offset - SequenceLength] & OpcodeFlags.InstructionStart) == 0)
+                return false;
+
+            ILReader reader = new ILReader(body, offset - SequenceLength);
+
+            TypeDesc type = ReadLdToken(ref reader, methodIL, flags);
+            if (type == null)
+                return false;
+
+            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+                return false;
+
+            // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+            // Unfortunately this means dataflow will still see code that the rest of the system
+            // might have optimized away. It should not be a problem in practice.
+            if (type.IsSignatureVariable)
+                return false;
+
+            constant = type.IsValueType ? 1 : 0;
+
+            return true;
+        }
+
         private static bool TryExpandTypeEquality(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string op, out int constant)
         {
             // We expect to see a sequence:
@@ -793,37 +834,37 @@ namespace ILCompiler
                 constant ^= 1;
 
             return true;
+        }
 
-            static TypeDesc ReadLdToken(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
-            {
-                ILOpcode opcode = reader.ReadILOpcode();
-                if (opcode != ILOpcode.ldtoken)
-                    return null;
+        private static TypeDesc ReadLdToken(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
+        {
+            ILOpcode opcode = reader.ReadILOpcode();
+            if (opcode != ILOpcode.ldtoken)
+                return null;
 
-                TypeDesc t = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+            TypeDesc t = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
 
-                if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
-                    return null;
+            if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
+                return null;
 
-                return t;
-            }
+            return t;
+        }
 
-            static bool ReadGetTypeFromHandle(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
-            {
-                ILOpcode opcode = reader.ReadILOpcode();
-                if (opcode != ILOpcode.call)
-                    return false;
+        private static bool ReadGetTypeFromHandle(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
+        {
+            ILOpcode opcode = reader.ReadILOpcode();
+            if (opcode != ILOpcode.call)
+                return false;
 
-                MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+            MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
 
-                if (!method.IsIntrinsic || method.Name != "GetTypeFromHandle")
-                    return false;
+            if (!method.IsIntrinsic || method.Name != "GetTypeFromHandle")
+                return false;
 
-                if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
-                    return false;
+            if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
+                return false;
 
-                return true;
-            }
+            return true;
         }
 
         private sealed class SubstitutedMethodIL : MethodIL
@@ -889,13 +930,15 @@ namespace ILCompiler
 
         private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
-            internal readonly Dictionary<string, bool> _switchValues;
+            internal readonly IReadOnlyDictionary<string, bool> _switchValues;
             private readonly Logger _logger;
+            private readonly BodyAndFieldSubstitutions _globalSubstitutions;
 
-            public FeatureSwitchHashtable(Logger logger, Dictionary<string, bool> switchValues)
+            public FeatureSwitchHashtable(Logger logger, IReadOnlyDictionary<string, bool> switchValues, BodyAndFieldSubstitutions globalSubstitutions)
             {
                 _logger = logger;
                 _switchValues = switchValues;
+                _globalSubstitutions = globalSubstitutions;
             }
 
             protected override bool CompareKeyToValue(EcmaModule key, AssemblyFeatureInfo value) => key == value.Module;
@@ -905,7 +948,7 @@ namespace ILCompiler
 
             protected override AssemblyFeatureInfo CreateValueFromKey(EcmaModule key)
             {
-                return new AssemblyFeatureInfo(key, _logger, _switchValues);
+                return new AssemblyFeatureInfo(key, _logger, _switchValues, _globalSubstitutions);
             }
         }
 
@@ -913,15 +956,17 @@ namespace ILCompiler
         {
             public EcmaModule Module { get; }
 
-            public Dictionary<MethodDesc, BodySubstitution> BodySubstitutions { get; }
-            public Dictionary<FieldDesc, object> FieldSubstitutions { get; }
+            public IReadOnlyDictionary<MethodDesc, BodySubstitution> BodySubstitutions { get; }
+            public IReadOnlyDictionary<FieldDesc, object> FieldSubstitutions { get; }
             public Dictionary<string, string> InlineableResourceStrings { get; }
 
-            public AssemblyFeatureInfo(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public AssemblyFeatureInfo(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues, BodyAndFieldSubstitutions globalSubstitutions)
             {
                 Module = module;
 
                 PEMemoryBlock resourceDirectory = module.PEReader.GetSectionData(module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
+
+                BodyAndFieldSubstitutions substitutions = default;
 
                 foreach (var resourceHandle in module.MetadataReader.ManifestResources)
                 {
@@ -945,7 +990,7 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        (BodySubstitutions, FieldSubstitutions) = BodySubstitutionsParser.GetSubstitutions(logger, module.Context, ms, resource, module, "name", featureSwitchValues);
+                        substitutions = BodySubstitutionsParser.GetSubstitutions(logger, module.Context, ms, resource, module, "name", featureSwitchValues);
                     }
                     else if (InlineableStringsResourceNode.IsInlineableStringsResource(module, resourceName))
                     {
@@ -969,6 +1014,12 @@ namespace ILCompiler
                         }
                     }
                 }
+
+                // Also apply any global substitutions
+                // Note we allow these to overwrite substitutions in the assembly
+                substitutions.AppendFrom(globalSubstitutions);
+
+                (BodySubstitutions, FieldSubstitutions) = (substitutions.BodySubstitutions, substitutions.FieldSubstitutions);
             }
         }
     }

@@ -191,11 +191,11 @@ public:
     // * For the 64 bit jit this is implemented by code:PreJit.compileMethod
     // Note: setTargetOS must be called before this api is used.
     virtual CorJitResult compileMethod (
-            ICorJitInfo                 *comp,               /* IN */
-            struct CORINFO_METHOD_INFO  *info,               /* IN */
-            unsigned /* code:CorJitFlag */   flags,          /* IN */
-            uint8_t                        **nativeEntry,       /* OUT */
-            uint32_t                       *nativeSizeOfCode    /* OUT */
+            ICorJitInfo*                    comp,               /* IN */
+            struct CORINFO_METHOD_INFO*     info,               /* IN */
+            unsigned /* code:CorJitFlag */  flags,              /* IN */
+            uint8_t**                       nativeEntry,        /* OUT */
+            uint32_t*                       nativeSizeOfCode    /* OUT */
             ) = 0;
 
     // Do any appropriate work at process shutdown.  Default impl is to do nothing.
@@ -251,7 +251,7 @@ public:
     virtual void reserveUnwindInfo (
             bool                isFunclet,             /* IN */
             bool                isColdCode,            /* IN */
-            uint32_t               unwindSize             /* IN */
+            uint32_t            unwindSize             /* IN */
             ) = 0;
 
     // Allocate and initialize the .rdata and .pdata for this method or
@@ -272,19 +272,18 @@ public:
     //    funcKind        type of funclet (main method code, handler, filter)
     //
     virtual void allocUnwindInfo (
-            uint8_t *              pHotCode,              /* IN */
-            uint8_t *              pColdCode,             /* IN */
-            uint32_t               startOffset,           /* IN */
-            uint32_t               endOffset,             /* IN */
-            uint32_t               unwindSize,            /* IN */
-            uint8_t *              pUnwindBlock,          /* IN */
-            CorJitFuncKind      funcKind               /* IN */
+            uint8_t *               pHotCode,              /* IN */
+            uint8_t *               pColdCode,             /* IN */
+            uint32_t                startOffset,           /* IN */
+            uint32_t                endOffset,             /* IN */
+            uint32_t                unwindSize,            /* IN */
+            uint8_t *               pUnwindBlock,          /* IN */
+            CorJitFuncKind          funcKind               /* IN */
             ) = 0;
 
-        // Get a block of memory needed for the code manager information,
-        // (the info for enumerating the GC pointers while crawling the
-        // stack frame).
-        // Note that allocMem must be called first
+    // Get a block of memory needed for the code manager information,
+    // (the info for enumerating the GC pointers while crawling the
+    // stack frame). Note that allocMem must be called first.
     virtual void * allocGCInfo (
             size_t                  size        /* IN */
             ) = 0;
@@ -293,7 +292,7 @@ public:
     // This is guaranteed to be called before any 'setEHinfo' call.
     // Note that allocMem must be called before this method can be called.
     virtual void setEHcount (
-            unsigned                cEH          /* IN */
+            unsigned                cEH         /* IN */
             ) = 0;
 
     // Set the values for one particular exception handler block.
@@ -303,7 +302,7 @@ public:
     // determine if a "finally" clause is executing.
     virtual void setEHinfo (
             unsigned                 EHnumber,   /* IN  */
-            const CORINFO_EH_CLAUSE *clause      /* IN */
+            const CORINFO_EH_CLAUSE* clause      /* IN */
             ) = 0;
 
     // Level -> fatalError, Level 2 -> Error, Level 3 -> Warning
@@ -340,8 +339,8 @@ public:
     {
         enum
         {
-            SIZE = 8,
-            SAMPLE_INTERVAL = 32,
+            SIZE = 32,
+            SAMPLE_INTERVAL = 64,
             CLASS_FLAG     = 0x80000000,
             INTERFACE_FLAG = 0x40000000,
             DELEGATE_FLAG  = 0x20000000,
@@ -356,6 +355,18 @@ public:
     {
         uint64_t Count;
         void* HandleTable[HandleHistogram32::SIZE];
+    };
+
+    struct ValueHistogram32
+    {
+        uint32_t Count;
+        intptr_t ValueTable[HandleHistogram32::SIZE];
+    };
+
+    struct ValueHistogram64
+    {
+        uint64_t Count;
+        intptr_t ValueTable[HandleHistogram32::SIZE];
     };
 
     enum class PgoInstrumentationKind
@@ -395,6 +406,11 @@ public:
         EdgeLongCount = (DescriptorMin * 6) | EightByte, // edge counter using unsigned 8 byte int
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
         GetLikelyMethod = (DescriptorMin * 7) | MethodHandle, // Compressed get likely method data
+
+        // Same as type/method histograms, but for generic integer values
+        ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
+        ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
+        ValueHistogram = (DescriptorMin * 9) | EightByte,
     };
 
     struct PgoInstrumentationSchema
@@ -463,20 +479,19 @@ public:
     // the call site has no signature information (e.g. a helper call) or has no method handle
     // (e.g. a CALLI P/Invoke), then null should be passed instead.
     virtual void recordCallSite(
-            uint32_t                 instrOffset,  /* IN */
-            CORINFO_SIG_INFO *    callSig,      /* IN */
-            CORINFO_METHOD_HANDLE methodHandle  /* IN */
+            uint32_t                instrOffset,  /* IN */
+            CORINFO_SIG_INFO *      callSig,      /* IN */
+            CORINFO_METHOD_HANDLE   methodHandle  /* IN */
             ) = 0;
 
     // A relocation is recorded if we are pre-jitting.
     // A jump thunk may be inserted if we are jitting
     virtual void recordRelocation(
-            void *                 location,   /* IN  */
-            void *                 locationRW, /* IN  */
-            void *                 target,     /* IN  */
-            uint16_t                   fRelocType, /* IN  */
-            uint16_t                   slotNum = 0,  /* IN  */
-            int32_t                  addlDelta = 0 /* IN  */
+            void *                  location,     /* IN  */
+            void *                  locationRW,   /* IN  */
+            void *                  target,       /* IN  */
+            uint16_t                fRelocType,   /* IN  */
+            int32_t                 addlDelta = 0 /* IN  */
             ) = 0;
 
     virtual uint16_t getRelocTypeHint(void * target) = 0;
@@ -491,9 +506,9 @@ public:
     // Fetches extended flags for a particular compilation instance. Returns
     // the number of bytes written to the provided buffer.
     virtual uint32_t getJitFlags(
-        CORJIT_FLAGS* flags,       /* IN: Points to a buffer that will hold the extended flags. */
-        uint32_t        sizeInBytes   /* IN: The size of the buffer. Note that this is effectively a
-                                          version number for the CORJIT_FLAGS value. */
+        CORJIT_FLAGS*   flags,       /* IN: Points to a buffer that will hold the extended flags. */
+        uint32_t        sizeInBytes  /* IN: The size of the buffer. Note that this is effectively a
+                                            version number for the CORJIT_FLAGS value. */
         ) = 0;
 };
 

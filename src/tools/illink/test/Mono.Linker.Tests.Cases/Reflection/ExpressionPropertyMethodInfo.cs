@@ -2,13 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Reflection
@@ -228,8 +224,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		// https://github.com/dotnet/linker/issues/2670
-		[ExpectedWarning ("IL2103", nameof (Expression) + "." + nameof (Expression.Property), ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2103", nameof (Expression) + "." + nameof (Expression.Property))]
 		static void TestUnknownMethod (MethodInfo mi)
 		{
 			Expression.Property (null, mi);

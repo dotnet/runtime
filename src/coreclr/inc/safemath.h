@@ -688,6 +688,10 @@ private:
     INDEBUG( mutable bool m_checkedOverflow; )
 };
 
+#if defined(_MSC_VER) && defined(HOST_ARM64) // Workaround for https://github.com/dotnet/runtime/issues/93442
+#pragma optimize("", off)
+#endif
+
 template <>
 inline bool ClrSafeInt<int64_t>::multiply(int64_t lhs, int64_t rhs, int64_t &result)
 {
@@ -873,6 +877,10 @@ inline bool ClrSafeInt<uint8_t>::multiply(uint8_t lhs, uint8_t rhs, uint8_t &res
     result = (uint8_t)tmp;
     return true;
 }
+
+#if defined(_MSC_VER) && defined(HOST_ARM64) // Workaround for https://github.com/dotnet/runtime/issues/93442
+#pragma optimize("", on)
+#endif
 
 // Allows creation of a ClrSafeInt corresponding to the type of the argument.
 template <typename T>

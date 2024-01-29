@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Xml.Schema;
 
@@ -321,7 +321,7 @@ namespace System.Xml
             ArgumentException.ThrowIfNullOrEmpty(inputUri);
 
             // resolve and open the url
-            XmlResolver tmpResolver = GetXmlResolver() ?? new XmlUrlResolver();
+            XmlResolver tmpResolver = GetXmlResolver() ?? GetDefaultPermissiveResolver();
 
             // create text XML reader
             XmlReader reader = new XmlTextReaderImpl(inputUri, this, inputContext, tmpResolver);
@@ -436,7 +436,7 @@ namespace System.Xml
 
                 if (resolver == null && !IsXmlResolverSet)
                 {
-                    resolver = new XmlUrlResolver();
+                    resolver = GetDefaultPermissiveResolver();
                 }
             }
 
@@ -612,7 +612,7 @@ namespace System.Xml
 
             if (needWrap)
             {
-                if ( baseReader is IXmlNamespaceResolver readerAsNsResolver)
+                if (baseReader is IXmlNamespaceResolver readerAsNsResolver)
                 {
                     return new XmlCharCheckingReaderWithNS(baseReader, readerAsNsResolver, checkChars, noWhitespace, noComments, noPIs, dtdProc);
                 }
@@ -621,6 +621,11 @@ namespace System.Xml
             }
 
             return baseReader;
+        }
+
+        internal static XmlResolver GetDefaultPermissiveResolver()
+        {
+            return LocalAppContextSwitches.IsNetworkingEnabledByDefault ? new XmlUrlResolver() : XmlResolver.FileSystemResolver;
         }
 
         [DoesNotReturn]

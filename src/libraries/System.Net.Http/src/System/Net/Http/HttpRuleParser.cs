@@ -41,10 +41,10 @@ namespace System.Net.Http
         }
 
         internal static bool IsToken(ReadOnlySpan<char> input) =>
-            input.IndexOfAnyExcept(s_tokenChars) < 0;
+            !input.ContainsAnyExcept(s_tokenChars);
 
         internal static bool IsToken(ReadOnlySpan<byte> input) =>
-            input.IndexOfAnyExcept(s_tokenBytes) < 0;
+            !input.ContainsAnyExcept(s_tokenBytes);
 
         internal static string GetTokenString(ReadOnlySpan<byte> input)
         {
@@ -83,7 +83,7 @@ namespace System.Net.Http
         }
 
         internal static bool ContainsNewLine(string value, int startIndex = 0) =>
-            value.AsSpan(startIndex).IndexOfAny('\r', '\n') >= 0;
+            value.AsSpan(startIndex).ContainsAny('\r', '\n');
 
         internal static int GetNumberLength(string input, int startIndex, bool allowDecimal)
         {

@@ -30,7 +30,9 @@ git config --system core.longpaths true
 
 ### Visual Studio
 
-Install [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/). The Community edition is available free of charge. Visual Studio 2022 17.3 or later is required. Note that Visual Studio and the development tools described below are required, regardless of whether you plan to use the IDE or not. The installation process goes as follows:
+Install [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/). The Community edition is available free of charge. Visual Studio 2022 17.8 or later is required. Note that as we ramp up on a given release the libraries code may start using preview language features. While an older IDE may still succeed in building the projects, the IDE may report mismatched diagnostics in the Errors and Warnings window. Using the latest public preview of Visual Studio is required to ensure the IDE experience is well behaved in such scenarios.
+
+Note that Visual Studio and the development tools described below are required, regardless of whether you plan to use the IDE or not. The installation process goes as follows:
 
 * It's recommended to use **Workloads** installation approach. The following are the minimum requirements:
   * **.NET Desktop Development** with all default components,
@@ -38,7 +40,7 @@ Install [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/). The
 * To build for Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
   * For Arm64, check the box for _MSVC v143* VS 2022 C++ ARM64 build tools (Latest)_.
 * To build the tests, you will need some additional components:
-  * **C++/CLI support for v142 build tools (Latest)**.
+  * **C++/CLI support for v143 build tools (Latest)**.
 
 A `.vsconfig` file is included in the root of the _dotnet/runtime_ repository that includes all components needed to build the _dotnet/runtime_ repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) to install all necessary components.
 
@@ -51,7 +53,9 @@ These steps are required only in case the tools have not been installed as Visua
 * Install [CMake](https://cmake.org/download) for Windows.
 * Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable. The installation script has a check box to do this, but you can do it yourself after the fact following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable).
 
-The _dotnet/runtime_ repository recommends using CMake 3.16.4 or newer, but it may work with CMake 3.15.5.
+The _dotnet/runtime_ repository requires using CMake 3.20 or newer.
+
+**NOTE**: If you plan on using the `-msbuild` flag for building the repo, you will need version 3.21 at least. This is because the VS2022 generator doesn't exist in CMake until said version.
 
 #### Ninja
 

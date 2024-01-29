@@ -155,8 +155,8 @@ namespace System.Numerics
                             int xSignificandLength = x.GetSignificandByteCount();
                             int ySignificandLength = y.GetSignificandByteCount();
 
-                            Span<byte> significandX = xSignificandLength <= StackAllocThreshold ? stackalloc byte[xSignificandLength] : new byte[xSignificandLength];
-                            Span<byte> significandY = ySignificandLength <= StackAllocThreshold ? stackalloc byte[ySignificandLength] : new byte[ySignificandLength];
+                            Span<byte> significandX = (uint)xSignificandLength <= StackAllocThreshold ? stackalloc byte[xSignificandLength] : new byte[xSignificandLength];
+                            Span<byte> significandY = (uint)ySignificandLength <= StackAllocThreshold ? stackalloc byte[ySignificandLength] : new byte[ySignificandLength];
 
                             x.WriteSignificandBigEndian(significandX);
                             y.WriteSignificandBigEndian(significandY);

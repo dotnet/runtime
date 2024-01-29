@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class RemoteBase
 {
@@ -41,10 +42,11 @@ class LocalImpl2 : RemoteBase_InSeparateAssembly
     }
 }
 
-static class App
+public static class App
 {
 
-    public static int Main() 
+    [Fact]
+    public static int TestEntryPoint() 
     { 
         string res = LocalImpl.Touch();
         if (res != "IProtected.Touch")

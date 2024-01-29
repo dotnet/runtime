@@ -29,7 +29,13 @@ namespace System.Text.Json
         public JsonPropertyDictionary(bool caseInsensitive, int capacity)
         {
             _stringComparer = caseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-            _propertyList = new List<KeyValuePair<string, T>>(capacity);
+
+            if (capacity > ListToDictionaryThreshold)
+            {
+                _propertyDictionary = new(capacity, _stringComparer);
+            }
+
+            _propertyList = new(capacity);
         }
 
         // Enable direct access to the List for performance reasons.
@@ -148,13 +154,7 @@ namespace System.Text.Json
             }
         }
 
-        public IEnumerator<KeyValuePair<string, T>> GetEnumerator()
-        {
-            foreach (KeyValuePair<string, T> item in _propertyList)
-            {
-                yield return item;
-            }
-        }
+        public List<KeyValuePair<string, T>>.Enumerator GetEnumerator() => _propertyList.GetEnumerator();
 
         public IList<string> Keys => GetKeyCollection();
 
@@ -205,11 +205,11 @@ namespace System.Text.Json
 
             set
             {
-                SetValue(propertyName, value);
+                SetValue(propertyName, value, out bool _);
             }
         }
 
-        public T? SetValue(string propertyName, T value, Action? assignParent = null)
+        public T? SetValue(string propertyName, T value, out bool valueAlreadyInDictionary)
         {
             if (IsReadOnly)
             {
@@ -223,14 +223,14 @@ namespace System.Text.Json
 
             CreateDictionaryIfThresholdMet();
 
+            valueAlreadyInDictionary = false;
             T? existing = null;
 
             if (_propertyDictionary != null)
             {
                 // Fast path if item doesn't exist in dictionary.
-                if (JsonHelpers.TryAdd(_propertyDictionary, propertyName, value))
+                if (_propertyDictionary.TryAdd(propertyName, value))
                 {
-                    assignParent?.Invoke();
                     _propertyList.Add(new KeyValuePair<string, T>(propertyName, value));
                     return null;
                 }
@@ -239,6 +239,7 @@ namespace System.Text.Json
                 if (ReferenceEquals(existing, value))
                 {
                     // Ignore if the same value.
+                    valueAlreadyInDictionary = true;
                     return null;
                 }
             }
@@ -256,18 +257,17 @@ namespace System.Text.Json
                     if (ReferenceEquals(current.Value, value))
                     {
                         // Ignore if the same value.
+                        valueAlreadyInDictionary = true;
                         return null;
                     }
 
                     existing = current.Value;
                 }
 
-                assignParent?.Invoke();
                 _propertyList[i] = new KeyValuePair<string, T>(propertyName, value);
             }
             else
             {
-                assignParent?.Invoke();
                 _propertyDictionary?.Add(propertyName, value);
                 _propertyList.Add(new KeyValuePair<string, T>(propertyName, value));
                 Debug.Assert(existing == null);
@@ -303,7 +303,7 @@ namespace System.Text.Json
             }
             else
             {
-                if (!JsonHelpers.TryAdd(_propertyDictionary, propertyName, value))
+                if (!_propertyDictionary.TryAdd(propertyName, value))
                 {
                     return false;
                 }

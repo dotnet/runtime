@@ -8,14 +8,22 @@ using System.Runtime.InteropServices.Marshalling;
 namespace SharedTypes.ComInterfaces
 {
     [GeneratedComInterface]
-    [Guid(_guid)]
+    [Guid(IID)]
     internal partial interface IDerived : IGetAndSetInt
     {
         void SetName([MarshalUsing(typeof(Utf16StringMarshaller))] string name);
 
-        [return:MarshalUsing(typeof(Utf16StringMarshaller))]
+        [return: MarshalUsing(typeof(Utf16StringMarshaller))]
         string GetName();
 
-        internal new const string _guid = "7F0DB364-3C04-4487-9193-4BB05DC7B654";
+        internal new const string IID = "7F0DB364-3C04-4487-9193-4BB05DC7B654";
+    }
+
+    [GeneratedComClass]
+    internal partial class Derived : GetAndSetInt, IDerived
+    {
+        string _data = "hello";
+        public string GetName() => _data;
+        public void SetName(string name) => _data = name;
     }
 }

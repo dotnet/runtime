@@ -16,7 +16,7 @@ namespace System.Collections.Generic
     {
         public override int Compare(T x, T y)
         {
-            return System.Runtime.CompilerServices.RuntimeHelpers.EnumCompareTo(x, y);
+            return RuntimeHelpers.EnumCompareTo(x, y);
         }
     }
 }

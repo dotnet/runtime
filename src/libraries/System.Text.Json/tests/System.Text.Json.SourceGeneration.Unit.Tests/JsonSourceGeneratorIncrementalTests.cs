@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
+using SourceGenerators.Tests;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
@@ -18,20 +19,21 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [MemberData(nameof(GetCompilationHelperFactories))]
         public static void CompilingTheSameSourceResultsInEqualModels(Func<Compilation> factory)
         {
-            JsonSourceGeneratorResult result1 = CompilationHelper.RunJsonSourceGenerator(factory());
-            JsonSourceGeneratorResult result2 = CompilationHelper.RunJsonSourceGenerator(factory());
+            JsonSourceGeneratorResult result1 = CompilationHelper.RunJsonSourceGenerator(factory(), disableDiagnosticValidation: true);
+            JsonSourceGeneratorResult result2 = CompilationHelper.RunJsonSourceGenerator(factory(), disableDiagnosticValidation: true);
 
-            if (result1.SourceGenModel is null)
-            {
-                Assert.Null(result2.SourceGenModel);
-            }
-            else
-            {
-                Assert.NotSame(result1.SourceGenModel, result2.SourceGenModel);
-                AssertStructurallyEqual(result1.SourceGenModel, result2.SourceGenModel);
+            Assert.Equal(result1.ContextGenerationSpecs.Length, result2.ContextGenerationSpecs.Length);
 
-                Assert.Equal(result1.SourceGenModel, result2.SourceGenModel);
-                Assert.Equal(result1.SourceGenModel.GetHashCode(), result2.SourceGenModel.GetHashCode());
+            for (int i = 0; i < result1.ContextGenerationSpecs.Length; i++)
+            {
+                ContextGenerationSpec ctx1 = result1.ContextGenerationSpecs[i];
+                ContextGenerationSpec ctx2 = result2.ContextGenerationSpecs[i];
+
+                Assert.NotSame(ctx1, ctx2);
+                GeneratorTestHelpers.AssertStructurallyEqual(ctx1, ctx2);
+
+                Assert.Equal(ctx1, ctx2);
+                Assert.Equal(ctx1.GetHashCode(), ctx2.GetHashCode());
             }
         }
 
@@ -39,7 +41,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static void CompilingEquivalentSourcesResultsInEqualModels()
         {
             string source1 = """
-                using System;
                 using System.Text.Json.Serialization;
                 
                 namespace Test
@@ -49,7 +50,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 
                     public class MyPoco
                     {
-                        public string MyProperty { get; set; } = 42;
+                        public int MyProperty { get; set; } = 42;
                     }
                 }
                 """;
@@ -63,7 +64,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     // Same as above but with different implementation
                     public class MyPoco
                     {
-                        public string MyProperty
+                        public int MyProperty
                         {
                             get => -1;
                             set => throw new NotSupportedException();
@@ -78,21 +79,24 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSourceGeneratorResult result1 = CompilationHelper.RunJsonSourceGenerator(CompilationHelper.CreateCompilation(source1));
             JsonSourceGeneratorResult result2 = CompilationHelper.RunJsonSourceGenerator(CompilationHelper.CreateCompilation(source2));
-            Assert.Empty(result1.Diagnostics);
-            Assert.Empty(result2.Diagnostics);
 
-            Assert.NotSame(result1.SourceGenModel, result2.SourceGenModel);
-            AssertStructurallyEqual(result1.SourceGenModel, result2.SourceGenModel);
+            Assert.Equal(1, result1.ContextGenerationSpecs.Length);
+            Assert.Equal(1, result2.ContextGenerationSpecs.Length);
 
-            Assert.Equal(result1.SourceGenModel, result2.SourceGenModel);
-            Assert.Equal(result1.SourceGenModel.GetHashCode(), result2.SourceGenModel.GetHashCode());
+            ContextGenerationSpec ctx1 = result1.ContextGenerationSpecs[0];
+            ContextGenerationSpec ctx2 = result2.ContextGenerationSpecs[0];
+
+            Assert.NotSame(ctx1, ctx2);
+            GeneratorTestHelpers.AssertStructurallyEqual(ctx1, ctx2);
+
+            Assert.Equal(ctx1, ctx2);
+            Assert.Equal(ctx1.GetHashCode(), ctx2.GetHashCode());
         }
 
         [Fact]
         public static void CompilingDifferentSourcesResultsInUnequalModels()
         {
             string source1 = """
-                using System;
                 using System.Text.Json.Serialization;
                 
                 namespace Test
@@ -102,13 +106,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 
                     public class MyPoco
                     {
-                        public string MyProperty { get; set; } = 42;
+                        public int MyProperty { get; set; } = 42;
                     }
                 }
                 """;
 
             string source2 = """
-                using System;
                 using System.Text.Json.Serialization;
                 
                 namespace Test
@@ -118,25 +121,29 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 
                     public class MyPoco
                     {
-                        public string MyProperty { get; } = 42; // same, but missing a getter
+                        public int MyProperty { get; } = 42; // same, but missing a getter
                     }
                 }
                 """;
 
             JsonSourceGeneratorResult result1 = CompilationHelper.RunJsonSourceGenerator(CompilationHelper.CreateCompilation(source1));
             JsonSourceGeneratorResult result2 = CompilationHelper.RunJsonSourceGenerator(CompilationHelper.CreateCompilation(source2));
-            Assert.Empty(result1.Diagnostics);
-            Assert.Empty(result2.Diagnostics);
 
-            Assert.NotEqual(result1.SourceGenModel, result2.SourceGenModel);
+            Assert.Equal(1, result1.ContextGenerationSpecs.Length);
+            Assert.Equal(1, result2.ContextGenerationSpecs.Length);
+
+            ContextGenerationSpec ctx1 = result1.ContextGenerationSpecs[0];
+            ContextGenerationSpec ctx2 = result2.ContextGenerationSpecs[0];
+            Assert.NotEqual(ctx1, ctx2);
         }
 
         [Theory]
         [MemberData(nameof(GetCompilationHelperFactories))]
         public static void SourceGenModelDoesNotEncapsulateSymbolsOrCompilationData(Func<Compilation> factory)
         {
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(factory());
-            WalkObjectGraph(result.SourceGenModel);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(factory(), disableDiagnosticValidation: true);
+            WalkObjectGraph(result.ContextGenerationSpecs);
+            WalkObjectGraph(result.Diagnostics);
 
             static void WalkObjectGraph(object obj)
             {
@@ -182,31 +189,55 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [MemberData(nameof(GetCompilationHelperFactories))]
         public static void IncrementalGenerator_SameInput_DoesNotRegenerate(Func<Compilation> factory)
         {
-            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver();
             Compilation compilation = factory();
+            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver(compilation);
 
             driver = driver.RunGenerators(compilation);
             GeneratorRunResult runResult = driver.GetRunResult().Results[0];
-            Assert.Collection(runResult.TrackedSteps[JsonSourceGenerator.SourceGenerationSpecTrackingName],
-                step =>
-                {
-                    Assert.Collection(step.Inputs,
-                        source => Assert.Equal(IncrementalStepRunReason.New, source.Source.Outputs[source.OutputIndex].Reason));
-                    Assert.Collection(step.Outputs,
-                        output => Assert.Equal(IncrementalStepRunReason.New, output.Reason));
-                });
+
+            IncrementalGeneratorRunStep[] runSteps = GetSourceGenRunStep(runResult);
+            if (runSteps != null)
+            {
+                Assert.Collection(runSteps,
+                    step =>
+                    {
+                        Assert.Collection(step.Inputs,
+                            source => Assert.Equal(IncrementalStepRunReason.New, source.Source.Outputs[source.OutputIndex].Reason));
+                        Assert.Collection(step.Outputs,
+                            output => Assert.Equal(IncrementalStepRunReason.New, output.Reason));
+                    });
+            }
 
             // run the same compilation through again, and confirm the output wasn't called
             driver = driver.RunGenerators(compilation);
             runResult = driver.GetRunResult().Results[0];
-            Assert.Collection(runResult.TrackedSteps[JsonSourceGenerator.SourceGenerationSpecTrackingName],
-                step =>
+            IncrementalGeneratorRunStep[] runSteps2 = GetSourceGenRunStep(runResult);
+
+            if (runSteps != null)
+            {
+                Assert.Collection(runSteps2,
+                    step =>
+                    {
+                        Assert.Collection(step.Inputs,
+                            source => Assert.Equal(IncrementalStepRunReason.Cached, source.Source.Outputs[source.OutputIndex].Reason));
+                        Assert.Collection(step.Outputs,
+                            output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
+                    });
+            }
+            else
+            {
+                Assert.Null(runSteps2);
+            }
+
+            static IncrementalGeneratorRunStep[]? GetSourceGenRunStep(GeneratorRunResult runResult)
+            {
+                if (!runResult.TrackedSteps.TryGetValue(JsonSourceGenerator.SourceGenerationSpecTrackingName, out var runSteps))
                 {
-                    Assert.Collection(step.Inputs,
-                        source => Assert.Equal(IncrementalStepRunReason.Cached, source.Source.Outputs[source.OutputIndex].Reason));
-                    Assert.Collection(step.Outputs,
-                        output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
-                });
+                    return null;
+                }
+
+                return runSteps.ToArray();
+            }
         }
 
         [Fact]
@@ -250,8 +281,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver();
             Compilation compilation = CompilationHelper.CreateCompilation(source1);
+            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver(compilation);
 
             driver = driver.RunGenerators(compilation);
             GeneratorRunResult runResult = driver.GetRunResult().Results[0];
@@ -313,8 +344,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver();
             Compilation compilation = CompilationHelper.CreateCompilation(source1);
+            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver(compilation);
 
             driver = driver.RunGenerators(compilation);
             GeneratorRunResult runResult = driver.GetRunResult().Results[0];
@@ -346,75 +377,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return typeof(CompilationHelper).GetMethods(BindingFlags.Static | BindingFlags.Public)
                 .Where(m => m.ReturnType == typeof(Compilation) && m.GetParameters().Length == 0)
                 .Select(m => new object[] { Delegate.CreateDelegate(typeof(Func<Compilation>), m) });
-        }
-
-        /// <summary>
-        /// Asserts for structural equality, returning a path to the mismatching data when not equal.
-        /// </summary>
-        private static void AssertStructurallyEqual<T>(T expected, T actual)
-        {
-            CheckAreEqualCore(expected, actual, new());
-            static void CheckAreEqualCore(object expected, object actual, Stack<string> path)
-            {
-                if (expected is null || actual is null)
-                {
-                    if (expected is not null || actual is not null)
-                    {
-                        FailNotEqual();
-                    }
-
-                    return;
-                }
-
-                Type type = expected.GetType();
-                if (type != actual.GetType())
-                {
-                    FailNotEqual();
-                    return;
-                }
-
-                if (expected is IEnumerable leftCollection)
-                {
-                    if (actual is not IEnumerable rightCollection)
-                    {
-                        FailNotEqual();
-                        return;
-                    }
-
-                    object?[] expectedValues = leftCollection.Cast<object?>().ToArray();
-                    object?[] actualValues = rightCollection.Cast<object?>().ToArray();
-
-                    for (int i = 0; i < Math.Max(expectedValues.Length, actualValues.Length); i++)
-                    {
-                        object? expectedElement = i < expectedValues.Length ? expectedValues[i] : "<end of collection>";
-                        object? actualElement = i < actualValues.Length ? actualValues[i] : "<end of collection>";
-
-                        path.Push($"[{i}]");
-                        CheckAreEqualCore(expectedElement, actualElement, path);
-                        path.Pop();
-                    }
-                }
-
-                if (type.GetProperty("EqualityContract", BindingFlags.Instance | BindingFlags.NonPublic, null, returnType: typeof(Type), types: Array.Empty<Type>(), null) != null)
-                {
-                    // Type is a C# record, run pointwise equality comparison.
-                    foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-                    {
-                        path.Push("." + property.Name);
-                        CheckAreEqualCore(property.GetValue(expected), property.GetValue(actual), path);
-                        path.Pop();
-                    }
-
-                    return;
-                }
-
-                if (!expected.Equals(actual))
-                {
-                    FailNotEqual();
-                }
-
-                void FailNotEqual() => Assert.Fail($"Value not equal in ${string.Join("", path.Reverse())}: expected {expected}, but was {actual}.");
-            }
         }
     }
 }

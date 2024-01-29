@@ -241,11 +241,11 @@ void LIR::Use::ReplaceWith(GenTree* replacement)
 //    lclNum - The local to use for temporary storage. If BAD_VAR_NUM (the
 //             default) is provided, this method will create and use a new
 //             local var.
-//    assign - On return, if non null, contains the created assignment node
+//    pStore - On return, if non null, contains the created store node
 //
 // Return Value: The number of the local var used for temporary storage.
 //
-unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTree** assign)
+unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTree** pStore)
 {
     assert(IsInitialized());
     assert(compiler != nullptr);
@@ -259,7 +259,7 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
         lclNum = compiler->lvaGrabTemp(true DEBUGARG("ReplaceWithLclVar is creating a new local variable"));
     }
 
-    GenTreeLclVar* const store = compiler->gtNewTempAssign(lclNum, node)->AsLclVar();
+    GenTreeLclVar* const store = compiler->gtNewTempStore(lclNum, node)->AsLclVar();
     assert(store != nullptr);
     assert(store->gtOp1 == node);
 
@@ -273,9 +273,9 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
     JITDUMP("ReplaceWithLclVar created store :\n");
     DISPNODE(store);
 
-    if (assign != nullptr)
+    if (pStore != nullptr)
     {
-        *assign = store;
+        *pStore = store;
     }
     return lclNum;
 }
@@ -1438,7 +1438,7 @@ public:
 
             if (nodeInfo.IsLclVarWrite())
             {
-                // If this node is a lclVar write, it must be not alias a lclVar with an outstanding read
+                // If this node is a lclVar write, it must not alias a lclVar with an outstanding read
                 SmallHashTable<GenTree*, GenTree*>* reads;
                 if (unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
                 {
@@ -1770,7 +1770,7 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
         assert(insertionPoint != nullptr);
 
 #if DEBUG
-        switch (block->bbJumpKind)
+        switch (block->GetKind())
         {
             case BBJ_COND:
                 assert(insertionPoint->OperIsConditionalJump());
@@ -1792,6 +1792,70 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
     }
 
     blockRange.InsertBefore(insertionPoint, std::move(range));
+}
+
+//------------------------------------------------------------------------
+// LIR::LastNode:
+//    Given two nodes in the same block range, find which node appears last.
+//
+// Arguments:
+//    node1 - The first node
+//    node2 - The second node
+//
+// Returns:
+//    Node that appears last.
+//
+GenTree* LIR::LastNode(GenTree* node1, GenTree* node2)
+{
+    assert(node1 != nullptr);
+    assert(node2 != nullptr);
+
+    if (node1 == node2)
+    {
+        return node1;
+    }
+
+    GenTree* cursor1 = node1->gtNext;
+    GenTree* cursor2 = node2->gtNext;
+
+    while (true)
+    {
+        if ((cursor1 == node2) || (cursor2 == nullptr))
+        {
+            return node2;
+        }
+
+        if ((cursor2 == node1) || (cursor1 == nullptr))
+        {
+            return node1;
+        }
+
+        cursor1 = cursor1->gtNext;
+        cursor2 = cursor2->gtNext;
+    }
+}
+
+//------------------------------------------------------------------------
+// LIR::LastNode:
+//    Given an array of nodes in a block range, find the last one.
+//
+// Arguments:
+//    nodes    - Pointer to nodes
+//    numNodes - Number of nodes
+//
+// Returns:
+//    Node that appears last.
+//
+GenTree* LIR::LastNode(GenTree** nodes, size_t numNodes)
+{
+    assert(numNodes > 0);
+    GenTree* lastNode = nodes[0];
+    for (size_t i = 1; i < numNodes; i++)
+    {
+        lastNode = LastNode(lastNode, nodes[i]);
+    }
+
+    return lastNode;
 }
 
 #ifdef DEBUG

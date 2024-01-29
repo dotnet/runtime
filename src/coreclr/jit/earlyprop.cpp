@@ -26,9 +26,9 @@ bool Compiler::optDoEarlyPropForFunc()
 
 bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
 {
-    // TODO-MDArray: bool bbHasMDArrayRef = (block->bbFlags & BBF_HAS_MD_IDX_LEN) != 0;
-    bool bbHasArrayRef  = (block->bbFlags & BBF_HAS_IDX_LEN) != 0;
-    bool bbHasNullCheck = (block->bbFlags & BBF_HAS_NULLCHECK) != 0;
+    // TODO-MDArray: bool bbHasMDArrayRef = block->HasFlag(BBF_HAS_MID_IDX_LEN);
+    bool bbHasArrayRef  = block->HasFlag(BBF_HAS_IDX_LEN);
+    bool bbHasNullCheck = block->HasFlag(BBF_HAS_NULLCHECK);
     return bbHasArrayRef || bbHasNullCheck;
 }
 
@@ -58,7 +58,7 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
         assert(false);
     }
 
-    if ((basicBlock->bbFlags & bbFlag) == 0)
+    if (!basicBlock->HasFlag((BasicBlockFlags)bbFlag))
     {
         printf("%s is not set on " FMT_BB " but is required because of the following tree \n", bbFlagStr,
                basicBlock->bbNum);
@@ -362,7 +362,7 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 
     // Track along the use-def chain to get the array length
     LclSsaVarDsc*        ssaVarDsc   = lvaTable[lclNum].GetPerSsaData(ssaNum);
-    GenTreeLclVarCommon* ssaDefStore = ssaVarDsc->GetAssignment();
+    GenTreeLclVarCommon* ssaDefStore = ssaVarDsc->GetDefNode();
 
     // Incoming parameters or live-in variables don't have actual definition tree node for
     // their FIRST_SSA_NUM. Definitions induced by calls do not record the store node. See
@@ -427,7 +427,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
                             compCurBB);
     }
 #else
-    if ((compCurBB->bbFlags & BBF_HAS_NULLCHECK) == 0)
+    if (!compCurBB->HasFlag(BBF_HAS_NULLCHECK))
     {
         return false;
     }
@@ -441,8 +441,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
     {
 #ifdef DEBUG
         // Make sure the transformation happens in debug, check, and release build.
-        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) &&
-               (compCurBB->bbFlags & BBF_HAS_NULLCHECK) != 0);
+        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) && compCurBB->HasFlag(BBF_HAS_NULLCHECK));
         if (verbose)
         {
             printf("optEarlyProp Marking a null check for removal\n");
@@ -454,7 +453,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         nullCheckTree->gtFlags &= ~(GTF_EXCEPT | GTF_DONT_CSE);
 
         // Set this flag to prevent reordering
-        nullCheckTree->gtFlags |= GTF_ORDER_SIDEEFF;
+        nullCheckTree->SetHasOrderingSideEffect();
         nullCheckTree->gtFlags |= GTF_IND_NONFAULTING;
 
         if (nullCheckParent != nullptr)
@@ -565,7 +564,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
             return nullptr;
         }
 
-        GenTreeLclVarCommon* defNode = defLoc->GetAssignment();
+        GenTreeLclVarCommon* defNode = defLoc->GetDefNode();
         if ((defNode == nullptr) || !defNode->OperIs(GT_STORE_LCL_VAR) || (defNode->GetLclNum() != lclNum))
         {
             return nullptr;
@@ -577,8 +576,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
             return nullptr;
         }
 
-        const bool commaOnly              = true;
-        GenTree*   commaOp1EffectiveValue = defValue->gtGetOp1()->gtEffectiveVal(commaOnly);
+        GenTree* commaOp1EffectiveValue = defValue->gtGetOp1()->gtEffectiveVal();
 
         if (commaOp1EffectiveValue->OperGet() != GT_NULLCHECK)
         {
@@ -764,8 +762,7 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree,
             else if (isInsideTry)
             {
                 // Inside try we allow only stores to locals not live in handlers.
-                // lvVolatileHint is set to true on variables that are line in handlers.
-                result = tree->OperIs(GT_STORE_LCL_VAR) && !lvaTable[tree->AsLclVar()->GetLclNum()].lvVolatileHint;
+                result = tree->OperIs(GT_STORE_LCL_VAR) && !lvaTable[tree->AsLclVar()->GetLclNum()].lvLiveInOutOfHndlr;
             }
             else
             {

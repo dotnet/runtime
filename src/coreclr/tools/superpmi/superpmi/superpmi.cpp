@@ -18,7 +18,6 @@
 #include "mclist.h"
 #include "methodstatsemitter.h"
 #include "spmiutil.h"
-#include "metricssummary.h"
 #include "fileio.h"
 
 extern int doParallelSuperPMI(CommandLine::Options& o);
@@ -122,19 +121,57 @@ static NearDifferResult InvokeNearDiffer(NearDiffer*           nearDiffer,
     return param.result;
 }
 
+static const char* ResultToString(ReplayResult result)
+{
+    switch (result)
+    {
+    case ReplayResult::Success:
+        return "Success";
+    case ReplayResult::Error:
+        return "Error";
+    case ReplayResult::Miss:
+        return "Miss";
+    default:
+        return "Unknown";
+    }
+}
+
 static bool PrintDiffsCsvHeader(FileWriter& fw)
 {
-    return fw.Printf("Context,Context size,Base size,Diff size,Base instructions,Diff instructions\n");
+    return fw.Printf("Context,Context size,Base result,Diff result,MinOpts,Has diff,Base size,Diff size,Base instructions,Diff instructions\n");
 }
 
 static bool PrintDiffsCsvRow(
     FileWriter& fw,
-    int context,
-    uint32_t contextSize,
-    long long baseSize, long long diffSize,
-    long long baseInstructions, long long diffInstructions)
+    int context, uint32_t contextSize,
+    const ReplayResults& baseRes,
+    const ReplayResults& diffRes,
+    bool hasDiff)
 {
-    return fw.Printf("%d,%u,%lld,%lld,%lld,%lld\n", context, contextSize, baseSize, diffSize, baseInstructions, diffInstructions);
+    return fw.Printf("%d,%u,%s,%s,%s,%s,%u,%u,%lld,%lld\n",
+        context, contextSize,
+        ResultToString(baseRes.Result), ResultToString(diffRes.Result),
+        baseRes.IsMinOpts ? "True" : "False",
+        hasDiff ? "True" : "False",
+        baseRes.NumCodeBytes, diffRes.NumCodeBytes,
+        baseRes.NumExecutedInstructions, diffRes.NumExecutedInstructions);
+}
+
+static bool PrintReplayCsvHeader(FileWriter& fw)
+{
+    return fw.Printf("Context,Context size,Result,MinOpts,Size,Instructions\n");
+}
+
+static bool PrintReplayCsvRow(
+    FileWriter& fw,
+    int context, uint32_t contextSize,
+    const ReplayResults& res)
+{
+    return fw.Printf("%d,%u,%s,%s,%u,%lld\n",
+        context, contextSize,
+        ResultToString(res.Result),
+        res.IsMinOpts ? "True" : "False",
+        res.NumCodeBytes, res.NumExecutedInstructions);
 }
 
 // Run superpmi. The return value is as follows:
@@ -161,10 +198,8 @@ int __cdecl main(int argc, char* argv[])
     SimpleTimer st3;
     SimpleTimer st4;
     st2.Start();
-    JitInstance::Result res, res2 = JitInstance::RESULT_ERROR;
-    HRESULT             hr  = E_FAIL;
-    MethodContext*      mc  = nullptr;
-    JitInstance *       jit = nullptr, *jit2 = nullptr;
+    JitInstance* jit = nullptr;
+    JitInstance* jit2 = nullptr;
     MethodStatsEmitter* methodStatsEmitter = nullptr;
 
 #ifdef SuperPMI_ChewMemory
@@ -182,7 +217,7 @@ int __cdecl main(int argc, char* argv[])
 
     bool   collectThroughput = false;
     MCList failingToReplayMCL;
-    FileWriter diffCsv;
+    FileWriter detailsCsv;
 
     CommandLine::Options o;
     if (!CommandLine::Parse(argc, argv, &o))
@@ -196,8 +231,6 @@ int __cdecl main(int argc, char* argv[])
     }
 
     SetBreakOnException(o.breakOnException);
-
-    SetSuperPmiTargetArchitecture(o.targetArchitecture);
 
     if (o.methodStatsTypes != NULL &&
         (strchr(o.methodStatsTypes, '*') != NULL || strchr(o.methodStatsTypes, 't') != NULL ||
@@ -241,11 +274,11 @@ int __cdecl main(int argc, char* argv[])
     {
         failingToReplayMCL.InitializeMCL(o.mclFilename);
     }
-    if (o.diffsInfo != nullptr)
+    if (o.details != nullptr)
     {
-        if (!FileWriter::CreateNew(o.diffsInfo, &diffCsv))
+        if (!FileWriter::CreateNew(o.details, &detailsCsv))
         {
-            LogError("Could not create file %s", o.diffsInfo);
+            LogError("Could not create file %s", o.details);
             return (int)SpmiResult::GeneralFailure;
         }
     }
@@ -266,6 +299,7 @@ int __cdecl main(int argc, char* argv[])
     int failToReplayCount = 0;
     int errorCount        = 0;
     int errorCount2       = 0;
+    int diffsCount        = 0;
     int missingCount      = 0;
     int index             = 0;
     int excludedCount     = 0;
@@ -281,16 +315,29 @@ int __cdecl main(int argc, char* argv[])
         }
     }
 
-    if (o.diffsInfo != nullptr)
+    if (o.details != nullptr)
     {
-        PrintDiffsCsvHeader(diffCsv);
+        if (o.applyDiff)
+        {
+            PrintDiffsCsvHeader(detailsCsv);
+        }
+        else
+        {
+            PrintReplayCsvHeader(detailsCsv);
+        }
     }
 
-    MetricsSummaries totalBaseMetrics;
-    MetricsSummaries totalDiffMetrics;
+    // This doesn't change in the work loop below, so compute it once.
+    double totalWork = reader->TotalWork() * o.repeatCount;
 
     while (true)
     {
+        // Read the progress before doing the method context read. This is because when we output progress below,
+        // we output a sum of this plus the per-repeatCount progress for the currently read MC.
+        double progressBeforeCurrentMC = reader->Progress() * o.repeatCount;
+
+        // Read the Method Context data from the file.
+
         MethodContextBuffer mcb = reader->GetNextMethodContext();
         if (mcb.Error())
         {
@@ -301,28 +348,12 @@ int __cdecl main(int argc, char* argv[])
             LogDebug("Done processing method contexts");
             break;
         }
-        if ((loadedCount % 500 == 0) && (loadedCount > 0))
-        {
-            st1.Stop();
-            if (o.applyDiff)
-            {
-                LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  Diffs %d  FailedCompile %d at %d per second",
-                           reader->PercentComplete(), loadedCount, jittedCount, totalBaseMetrics.Overall.NumContextsWithDiffs,
-                           failToReplayCount, (int)((double)500 / st1.GetSeconds()));
-            }
-            else
-            {
-                LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  FailedCompile %d at %d per second",
-                           reader->PercentComplete(), loadedCount, jittedCount, failToReplayCount,
-                           (int)((double)500 / st1.GetSeconds()));
-            }
-            st1.Start();
-        }
 
         // Now read the data into a MethodContext. This could throw if the method context data is corrupt.
 
         loadedCount++;
         const int mcIndex = reader->GetMethodContextIndex();
+        MethodContext* mc = nullptr;
         if (!MethodContext::Initialize(mcIndex, mcb.buff, mcb.size, &mc))
         {
             return (int)SpmiResult::GeneralFailure;
@@ -341,325 +372,90 @@ int __cdecl main(int argc, char* argv[])
             continue;
         }
 
-        if (jit == nullptr)
-        {
-            SimpleTimer stInitJit;
+        // Save the stored CompileResult
+        mc->originalCR = mc->cr;
 
-            jit = JitInstance::InitJit(o.nameOfJit, o.breakOnAssert, &stInitJit, mc, o.forceJitOptions, o.jitOptions);
+        // Compile this method context as many times as we have been asked to (default is once).
+        for (int iter = 0; iter < o.repeatCount; iter++)
+        {
             if (jit == nullptr)
             {
-                // InitJit already printed a failure message
-                return (int)SpmiResult::JitFailedToInit;
-            }
+                SimpleTimer stInitJit;
 
-            if (o.nameOfJit2 != nullptr)
-            {
-                jit2 = JitInstance::InitJit(o.nameOfJit2, o.breakOnAssert, &stInitJit, mc, o.forceJit2Options,
-                                            o.jit2Options);
-                if (jit2 == nullptr)
+                jit = JitInstance::InitJit(o.nameOfJit, o.breakOnAssert, &stInitJit, mc, o.forceJitOptions, o.jitOptions);
+                if (jit == nullptr)
                 {
                     // InitJit already printed a failure message
                     return (int)SpmiResult::JitFailedToInit;
                 }
-            }
-        }
 
-        // I needed to reason about what crl contains at any point in time
-        // Here is my guess based on reading the code so far
-        // crl initially contains the CompileResult from the MCH file
-        // However if we have a second jit it has the CompileResult from Jit1
-        CompileResult* crl = mc->cr;
-
-        mc->cr         = new CompileResult();
-        mc->originalCR = crl;
-
-        if (mc->WasEnvironmentChanged(jit->getEnvironment()))
-        {
-            if (!jit->resetConfig(mc))
-            {
-                LogError("JIT can't reset environment");
-            }
-            if (o.nameOfJit2 != nullptr)
-            {
-                if (!jit2->resetConfig(mc))
+                if (o.nameOfJit2 != nullptr)
                 {
-                    LogError("JIT2 can't reset environment");
+                    jit2 = JitInstance::InitJit(o.nameOfJit2, o.breakOnAssert, &stInitJit, mc, o.forceJit2Options,
+                                                o.jit2Options);
+                    if (jit2 == nullptr)
+                    {
+                        // InitJit already printed a failure message
+                        return (int)SpmiResult::JitFailedToInit;
+                    }
                 }
             }
-        }
 
-        MetricsSummary baseMetrics;
-        bool isMinOpts;
-        jittedCount++;
-        st3.Start();
-        res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &baseMetrics, &isMinOpts);
-        st3.Stop();
-        LogDebug("Method %d compiled%s in %fms, result %d",
-            reader->GetMethodContextIndex(), (o.nameOfJit2 == nullptr) ? "" : " by JIT1", st3.GetMilliseconds(), res);
-
-        MetricsSummary& totalBaseMetricsOpts = isMinOpts ? totalBaseMetrics.MinOpts : totalBaseMetrics.FullOpts;
-        MetricsSummary& totalDiffMetricsOpts = isMinOpts ? totalDiffMetrics.MinOpts : totalDiffMetrics.FullOpts;
-
-        totalBaseMetrics.Overall.AggregateFrom(baseMetrics);
-
-        if (res == JitInstance::RESULT_SUCCESS)
-        {
-            totalBaseMetricsOpts.AggregateFrom(baseMetrics);
-
-            if (Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
-            {
-                mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
-            }
-        }
-
-        MetricsSummary diffMetrics;
-
-        if (o.nameOfJit2 != nullptr)
-        {
-            // Lets get the results for the 2nd JIT
-            // We will save the first JIT's CR to save space for the 2nd JIT CR
-            // Note that the recorded CR is still stored in MC->originalCR
-            crl    = mc->cr;
+            // Create a new CompileResult for this compilation (the CompileResult from the stored file is
+            // in originalCR if necessary).
             mc->cr = new CompileResult();
 
-            bool isMinOptsDiff;
-            st4.Start();
-            res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &diffMetrics, &isMinOptsDiff);
-            st4.Stop();
-            LogDebug("Method %d compiled by JIT2 in %fms, result %d", reader->GetMethodContextIndex(),
-                     st4.GetMilliseconds(), res2);
+            // For asm diffs, we need to store away the CompileResult generated by the first JIT when compiling
+            // with the 2nd JIT.
+            CompileResult* crl = nullptr;
 
-            totalDiffMetrics.Overall.AggregateFrom(diffMetrics);
-
-            if (res2 == JitInstance::RESULT_SUCCESS)
+            if (mc->WasEnvironmentChanged(jit->getEnvironment()))
             {
-                totalDiffMetricsOpts.AggregateFrom(diffMetrics);
+                if (!jit->resetConfig(mc))
+                {
+                    LogError("JIT can't reset environment");
+                }
+                if (o.nameOfJit2 != nullptr)
+                {
+                    if (!jit2->resetConfig(mc))
+                    {
+                        LogError("JIT2 can't reset environment");
+                    }
+                }
+            }
 
+            jittedCount++;
+            st3.Start();
+            ReplayResults res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput);
+            st3.Stop();
+            LogDebug("Method %d compiled%s in %fms, result %d",
+                reader->GetMethodContextIndex(), (o.nameOfJit2 == nullptr) ? "" : " by JIT1", st3.GetMilliseconds(), res);
+
+            if (res.Result == ReplayResult::Success)
+            {
                 if (Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
                 {
                     mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
                 }
             }
-
-            if (res2 == JitInstance::RESULT_ERROR)
-            {
-                errorCount2++;
-                LogError("Method %d of size %d failed to load and compile correctly by JIT2 (%s).",
-                         reader->GetMethodContextIndex(), mc->methodSize, o.nameOfJit2);
-                if (errorCount2 == o.failureLimit)
-                {
-                    LogError("More than %d methods compilation failed by JIT2. Skip compiling remaining methods.", o.failureLimit);
-                    break;
-                }
-            }
-
-            // Methods that don't compile due to missing JIT-EE information
-            // should still be added to the failing MC list.
-            // However, we will not add this MC# if JIT1 also failed, Else there will be duplicate logging
-            if ((res == JitInstance::RESULT_SUCCESS) && (res2 != JitInstance::RESULT_SUCCESS) &&
-                (o.mclFilename != nullptr))
-            {
-                failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
-            }
-        }
-
-        if (res == JitInstance::RESULT_SUCCESS)
-        {
-            if (collectThroughput)
-            {
-                if (o.nameOfJit2 != nullptr && res2 == JitInstance::RESULT_SUCCESS)
-                {
-                    // TODO-Bug?: bug in getting the lowest cycle time??
-                    ULONGLONG dif1, dif2, dif3, dif4;
-                    dif1 = (jit->times[0] - jit2->times[0]) * (jit->times[0] - jit2->times[0]);
-                    dif2 = (jit->times[0] - jit2->times[1]) * (jit->times[0] - jit2->times[1]);
-                    dif3 = (jit->times[1] - jit2->times[0]) * (jit->times[1] - jit2->times[0]);
-                    dif4 = (jit->times[1] - jit2->times[1]) * (jit->times[1] - jit2->times[1]);
-
-                    if (dif1 < dif2)
-                    {
-                        if (dif3 < dif4)
-                        {
-                            if (dif1 < dif3)
-                            {
-                                crl->clockCyclesToCompile    = jit->times[0];
-                                mc->cr->clockCyclesToCompile = jit2->times[0];
-                            }
-                            else
-                            {
-                                crl->clockCyclesToCompile    = jit->times[1];
-                                mc->cr->clockCyclesToCompile = jit2->times[0];
-                            }
-                        }
-                        else
-                        {
-                            if (dif1 < dif4)
-                            {
-                                crl->clockCyclesToCompile    = jit->times[0];
-                                mc->cr->clockCyclesToCompile = jit2->times[0];
-                            }
-                            else
-                            {
-                                crl->clockCyclesToCompile    = jit->times[1];
-                                mc->cr->clockCyclesToCompile = jit2->times[1];
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (dif3 < dif4)
-                        {
-                            if (dif2 < dif3)
-                            {
-                                crl->clockCyclesToCompile    = jit->times[0];
-                                mc->cr->clockCyclesToCompile = jit2->times[1];
-                            }
-                            else
-                            {
-                                crl->clockCyclesToCompile    = jit->times[1];
-                                mc->cr->clockCyclesToCompile = jit2->times[0];
-                            }
-                        }
-                        else
-                        {
-                            if (dif2 < dif4)
-                            {
-                                crl->clockCyclesToCompile    = jit->times[0];
-                                mc->cr->clockCyclesToCompile = jit2->times[1];
-                            }
-                            else
-                            {
-                                crl->clockCyclesToCompile    = jit->times[1];
-                                mc->cr->clockCyclesToCompile = jit2->times[1];
-                            }
-                        }
-                    }
-
-                    if (methodStatsEmitter != nullptr)
-                    {
-                        methodStatsEmitter->Emit(reader->GetMethodContextIndex(), mc, crl->clockCyclesToCompile,
-                                                 mc->cr->clockCyclesToCompile);
-                    }
-                }
-                else
-                {
-                    if (jit->times[0] > jit->times[1])
-                        mc->cr->clockCyclesToCompile = jit->times[1];
-                    else
-                        mc->cr->clockCyclesToCompile = jit->times[0];
-                    if (methodStatsEmitter != nullptr)
-                    {
-                        methodStatsEmitter->Emit(reader->GetMethodContextIndex(), mc, mc->cr->clockCyclesToCompile, 0);
-                    }
-                }
-            }
-
-            if (!collectThroughput && methodStatsEmitter != nullptr)
-            {
-                // We have a separate call to Emit for collectThroughput
-                methodStatsEmitter->Emit(reader->GetMethodContextIndex(), mc, -1, -1);
-            }
-
-            if (o.applyDiff)
-            {
-                // We need at least two compile results to diff: they can either both come from JIT
-                // invocations, or one can be loaded from the method context file.
-
-                // We need to check both CompileResults to ensure we have a valid CR
-                if (crl->AllocMem == nullptr || mc->cr->AllocMem == nullptr)
-                {
-                    LogError("method %d is missing a compileResult, cannot do diffing",
-                             reader->GetMethodContextIndex());
-
-                    // If we are here this means that either we have 2 Jits and the second Jit failed to compile
-                    // Or we have single Jit and the MethodContext doesn't have an originalCR
-                    // In both cases we don't need to add this to the MCList again
-                }
-                else
-                {
-                    NearDifferResult result = InvokeNearDiffer(&nearDiffer, &mc, &crl, &reader);
-
-                    switch (result)
-                    {
-                        case NearDifferResult::SuccessWithDiff:
-                            totalBaseMetrics.Overall.NumContextsWithDiffs++;
-                            totalDiffMetrics.Overall.NumContextsWithDiffs++;
-
-                            totalBaseMetricsOpts.NumContextsWithDiffs++;
-                            totalDiffMetricsOpts.NumContextsWithDiffs++;
-
-                            // This is a difference in ASM outputs from Jit1 & Jit2 and not a playback failure
-                            // We will add this MC to the diffs info if there is one.
-                            // Otherwise this will end up in failingMCList
-                            if (o.diffsInfo != nullptr)
-                            {
-                                PrintDiffsCsvRow(
-                                    diffCsv,
-                                    reader->GetMethodContextIndex(),
-                                    mcb.size,
-                                    baseMetrics.NumCodeBytes, diffMetrics.NumCodeBytes,
-                                    baseMetrics.NumExecutedInstructions, diffMetrics.NumExecutedInstructions);
-                            }
-                            else if (o.mclFilename != nullptr)
-                            {
-                                failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
-                            }
-
-                            break;
-                        case NearDifferResult::SuccessWithoutDiff:
-                            break;
-                        case NearDifferResult::Failure:
-                            if (o.mclFilename != nullptr)
-                                failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
-
-                            break;
-                    }
-
-                    totalBaseMetrics.Overall.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
-                    totalDiffMetrics.Overall.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
-
-                    totalBaseMetricsOpts.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
-                    totalDiffMetricsOpts.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
-
-                    totalBaseMetrics.Overall.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
-                    totalDiffMetrics.Overall.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
-
-                    totalBaseMetricsOpts.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
-                    totalDiffMetricsOpts.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
-                }
-            }
-        }
-        else
-        {
-            failToReplayCount++;
-
-            // Methods that don't compile due to missing JIT-EE information
-            // should still be added to the failing MC list but we don't create MC repro for them.
-            if (o.mclFilename != nullptr)
-            {
-                failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
-            }
-
-            // The following only apply specifically to failures caused by errors (as opposed
-            // to, for instance, failures caused by missing JIT-EE details).
-            if (res == JitInstance::RESULT_ERROR)
+            else if (res.Result == ReplayResult::Error)
             {
                 errorCount++;
                 LogError("Method %d of size %d failed to load and compile correctly%s (%s).",
-                         reader->GetMethodContextIndex(), mc->methodSize,
-                         (o.nameOfJit2 == nullptr) ? "" : " by JIT1", o.nameOfJit);
+                            reader->GetMethodContextIndex(), mc->methodSize,
+                            (o.nameOfJit2 == nullptr) ? "" : " by JIT1", o.nameOfJit);
                 if (errorCount == o.failureLimit)
                 {
                     LogError("More than %d methods failed%s. Skip compiling remaining methods.",
                         o.failureLimit, (o.nameOfJit2 == nullptr) ? "" : " by JIT1");
-                    break;
+                    goto doneRepeatCount;
                 }
                 if ((o.reproName != nullptr) && (o.indexCount == -1))
                 {
                     char buff[500];
                     sprintf_s(buff, 500, "%s-%d.mc", o.reproName, reader->GetMethodContextIndex());
                     HANDLE hFileOut = CreateFileA(buff, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+                                                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
                     if (hFileOut == INVALID_HANDLE_VALUE)
                     {
                         LogError("Failed to open output '%s'. GetLastError()=%u", buff, GetLastError());
@@ -680,23 +476,273 @@ int __cdecl main(int argc, char* argv[])
                     __debugbreak();
                 }
             }
+
+            ReplayResults res2;
+            res2.Result = ReplayResult::Success;
+            if (o.nameOfJit2 != nullptr)
+            {
+                // Lets get the results for the 2nd JIT.
+                // We will save the first JIT's CR to save space for the 2nd JIT CR
+                crl    = mc->cr;
+                mc->cr = new CompileResult();
+
+                st4.Start();
+                res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput);
+                st4.Stop();
+                LogDebug("Method %d compiled by JIT2 in %fms, result %d", reader->GetMethodContextIndex(),
+                         st4.GetMilliseconds(), res2);
+
+                if (res2.Result == ReplayResult::Success)
+                {
+                    if (Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
+                    {
+                        mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
+                    }
+                }
+                else if (res2.Result == ReplayResult::Error)
+                {
+                    errorCount2++;
+                    LogError("Method %d of size %d failed to load and compile correctly by JIT2 (%s).",
+                             reader->GetMethodContextIndex(), mc->methodSize, o.nameOfJit2);
+                    if (errorCount2 == o.failureLimit)
+                    {
+                        LogError("More than %d methods compilation failed by JIT2. Skip compiling remaining methods.", o.failureLimit);
+                        goto doneRepeatCount;
+                    }
+                }
+            }
+
+            if ((res.Result == ReplayResult::Success) && (res2.Result == ReplayResult::Success))
+            {
+                if (collectThroughput)
+                {
+                    if ((o.nameOfJit2 != nullptr) && (res2.Result == ReplayResult::Success))
+                    {
+                        // TODO-Bug?: bug in getting the lowest cycle time??
+                        ULONGLONG dif1, dif2, dif3, dif4;
+                        dif1 = (jit->times[0] - jit2->times[0]) * (jit->times[0] - jit2->times[0]);
+                        dif2 = (jit->times[0] - jit2->times[1]) * (jit->times[0] - jit2->times[1]);
+                        dif3 = (jit->times[1] - jit2->times[0]) * (jit->times[1] - jit2->times[0]);
+                        dif4 = (jit->times[1] - jit2->times[1]) * (jit->times[1] - jit2->times[1]);
+
+                        if (dif1 < dif2)
+                        {
+                            if (dif3 < dif4)
+                            {
+                                if (dif1 < dif3)
+                                {
+                                    crl->clockCyclesToCompile    = jit->times[0];
+                                    mc->cr->clockCyclesToCompile = jit2->times[0];
+                                }
+                                else
+                                {
+                                    crl->clockCyclesToCompile    = jit->times[1];
+                                    mc->cr->clockCyclesToCompile = jit2->times[0];
+                                }
+                            }
+                            else
+                            {
+                                if (dif1 < dif4)
+                                {
+                                    crl->clockCyclesToCompile    = jit->times[0];
+                                    mc->cr->clockCyclesToCompile = jit2->times[0];
+                                }
+                                else
+                                {
+                                    crl->clockCyclesToCompile    = jit->times[1];
+                                    mc->cr->clockCyclesToCompile = jit2->times[1];
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (dif3 < dif4)
+                            {
+                                if (dif2 < dif3)
+                                {
+                                    crl->clockCyclesToCompile    = jit->times[0];
+                                    mc->cr->clockCyclesToCompile = jit2->times[1];
+                                }
+                                else
+                                {
+                                    crl->clockCyclesToCompile    = jit->times[1];
+                                    mc->cr->clockCyclesToCompile = jit2->times[0];
+                                }
+                            }
+                            else
+                            {
+                                if (dif2 < dif4)
+                                {
+                                    crl->clockCyclesToCompile    = jit->times[0];
+                                    mc->cr->clockCyclesToCompile = jit2->times[1];
+                                }
+                                else
+                                {
+                                    crl->clockCyclesToCompile    = jit->times[1];
+                                    mc->cr->clockCyclesToCompile = jit2->times[1];
+                                }
+                            }
+                        }
+
+                        if (methodStatsEmitter != nullptr)
+                        {
+                            methodStatsEmitter->Emit(reader->GetMethodContextIndex(), mc, crl->clockCyclesToCompile,
+                                                     mc->cr->clockCyclesToCompile);
+                        }
+                    }
+                    else
+                    {
+                        if (jit->times[0] > jit->times[1])
+                            mc->cr->clockCyclesToCompile = jit->times[1];
+                        else
+                            mc->cr->clockCyclesToCompile = jit->times[0];
+                        if (methodStatsEmitter != nullptr)
+                        {
+                            methodStatsEmitter->Emit(reader->GetMethodContextIndex(), mc, mc->cr->clockCyclesToCompile, 0);
+                        }
+                    }
+                }
+
+                if (!collectThroughput && methodStatsEmitter != nullptr)
+                {
+                    // We have a separate call to Emit for collectThroughput
+                    methodStatsEmitter->Emit(reader->GetMethodContextIndex(), mc, -1, -1);
+                }
+
+                if (o.applyDiff)
+                {
+                    NearDifferResult diffResult = NearDifferResult::Failure;
+                    // We need at least two compile results to diff: they can either both come from JIT
+                    // invocations, or one can be loaded from the method context file.
+
+                    // We need to check both CompileResults to ensure we have a valid CR
+                    if (crl->AllocMem == nullptr || mc->cr->AllocMem == nullptr)
+                    {
+                        LogError("method %d is missing a compileResult, cannot do diffing",
+                                 reader->GetMethodContextIndex());
+                    }
+                    else
+                    {
+                        diffResult = InvokeNearDiffer(&nearDiffer, &mc, &crl, &reader);
+
+                        switch (diffResult)
+                        {
+                            case NearDifferResult::SuccessWithDiff:
+                                diffsCount++;
+                                // This is a difference in ASM outputs from Jit1 & Jit2 and not a playback failure
+                                // We will add this MC to the details if there is one below.
+                                // Otherwise add it in the failingMCList here.
+                                if (o.details == nullptr)
+                                {
+                                    failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+                                }
+
+                                break;
+                            case NearDifferResult::SuccessWithoutDiff:
+                                break;
+                            case NearDifferResult::Failure:
+                                if (o.mclFilename != nullptr)
+                                    failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+
+                                break;
+                        }
+                    }
+
+                    if (o.details != nullptr)
+                    {
+                        PrintDiffsCsvRow(
+                            detailsCsv,
+                            reader->GetMethodContextIndex(),
+                            mcb.size,
+                            res, res2,
+                            /* hasDiff */ diffResult != NearDifferResult::SuccessWithoutDiff);
+                    }
+                }
+                else
+                {
+                    if (o.details != nullptr)
+                    {
+                        PrintReplayCsvRow(
+                            detailsCsv,
+                            reader->GetMethodContextIndex(),
+                            mcb.size,
+                            res);
+                    }
+                }
+            }
             else
             {
-                Assert(res == JitInstance::RESULT_MISSING);
-                missingCount++;
+                failToReplayCount++;
+
+                // Methods that don't compile due to missing JIT-EE information
+                // should still be added to the failing MC list but we don't create MC repro for them.
+                if (o.mclFilename != nullptr)
+                {
+                    failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+                }
+
+                if ((res.Result == ReplayResult::Miss) || (res2.Result == ReplayResult::Miss))
+                {
+                    missingCount++;
+                }
+
+                if (o.details != nullptr)
+                {
+                    if (o.applyDiff)
+                    {
+                        PrintDiffsCsvRow(
+                            detailsCsv,
+                            reader->GetMethodContextIndex(), mcb.size,
+                            res, res2,
+                            /* hasDiff */ false);
+                    }
+                    else
+                    {
+                        PrintReplayCsvRow(detailsCsv, reader->GetMethodContextIndex(), mcb.size, res);
+                    }
+                }
             }
+
+            // Write a progress message if necessary.
+            const int progressInterval = 500;
+            if ((jittedCount > 0) && (jittedCount % progressInterval == 0))
+            {
+                // Note that if progress is measured in terms of bytes of method contexts, instead of a method
+                // context count, then adding `iter` here will be wildly inaccurate. However, in that case --
+                // when we don't have a TOC or index list -- we have no idea how many method contexts are in
+                // the file nor the "average size" of any single method context.
+                double currentProgress = progressBeforeCurrentMC + iter;
+                double percentComplete = 100.0 * currentProgress / totalWork;
+
+                st1.Stop();
+                if (o.applyDiff)
+                {
+                    LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  Diffs %d  FailedCompile %d at %d per second",
+                               percentComplete, loadedCount, jittedCount, diffsCount,
+                               failToReplayCount, (int)((double)progressInterval / st1.GetSeconds()));
+                }
+                else
+                {
+                    LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  FailedCompile %d at %d per second",
+                               percentComplete, loadedCount, jittedCount, failToReplayCount,
+                               (int)((double)progressInterval / st1.GetSeconds()));
+                }
+                st1.Start();
+            }
+
+            delete crl;
         }
 
-        delete crl;
         delete mc;
     }
+doneRepeatCount:
     delete reader;
 
     // NOTE: these output status strings are parsed by parallelsuperpmi.cpp::ProcessChildStdOut().
     if (o.applyDiff)
     {
         LogInfo(g_AsmDiffsSummaryFormatString, loadedCount, jittedCount, failToReplayCount, excludedCount,
-                missingCount, totalDiffMetrics.Overall.NumContextsWithDiffs);
+                missingCount, diffsCount);
     }
     else
     {
@@ -705,16 +751,6 @@ int __cdecl main(int argc, char* argv[])
 
     st2.Stop();
     LogVerbose("Total time: %fms", st2.GetMilliseconds());
-
-    if (o.baseMetricsSummaryFile != nullptr)
-    {
-        totalBaseMetrics.SaveToFile(o.baseMetricsSummaryFile);
-    }
-
-    if (o.diffMetricsSummaryFile != nullptr)
-    {
-        totalDiffMetrics.SaveToFile(o.diffMetricsSummaryFile);
-    }
 
     if (methodStatsEmitter != nullptr)
     {
@@ -733,7 +769,7 @@ int __cdecl main(int argc, char* argv[])
     {
         result = SpmiResult::Error;
     }
-    else if (o.applyDiff && (totalDiffMetrics.Overall.NumContextsWithDiffs > 0))
+    else if (o.applyDiff && (diffsCount > 0))
     {
         result = SpmiResult::Diffs;
     }

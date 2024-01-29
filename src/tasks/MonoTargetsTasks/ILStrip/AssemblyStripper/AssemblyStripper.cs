@@ -12,6 +12,18 @@ using CilStrip.Mono.Cecil.Metadata;
 
 namespace AssemblyStripper
 {
+    class CustomAttrRowComparer : IComparer
+    {
+        public int Compare(object left, object right)
+        {
+            CustomAttributeRow row_left = (CustomAttributeRow)left;
+            CustomAttributeRow row_right = (CustomAttributeRow)right;
+            var leftParentCodedIdx = Utilities.CompressMetadataToken(CodedIndex.HasCustomAttribute, row_left.Parent);
+            var rightParentCodedIdx = Utilities.CompressMetadataToken(CodedIndex.HasCustomAttribute, row_right.Parent);
+            return leftParentCodedIdx.CompareTo(rightParentCodedIdx);
+        }
+    }
+
     public class AssemblyStripper
     {
         AssemblyDefinition assembly;
@@ -40,6 +52,7 @@ namespace AssemblyStripper
             PatchMethods();
             PatchFields();
             PatchResources();
+            SortCustomAttributes();
             Write();
         }
 
@@ -192,6 +205,20 @@ namespace AssemblyStripper
             }
         }
 
+        // Types that are trimmed away also have their respective rows removed from the 
+        // custom attribute table. This introduces holes in their places, causing the table 
+        // to no longer be sorted by Parent, corrupting the assembly. Runtimes assume ordering
+        // and may fail to locate the attributes set for a particular type. This step sorts 
+        // the custom attribute table again.
+        void SortCustomAttributes()
+        {
+            CustomAttributeTable table = (CustomAttributeTable)stripped_tables[CustomAttributeTable.RId];
+            if (table == null)
+                return;
+
+            table.Rows.Sort(new CustomAttrRowComparer());
+        }
+
         void Write()
         {
             stripped.MetadataRoot.Accept(metadata_writer);
@@ -209,7 +236,6 @@ namespace AssemblyStripper
         {
             AssemblyDefinition assembly = AssemblyFactory.GetAssembly(assemblyFile);
             AssemblyStripper.StripAssembly(assembly, outputPath);
-            
         }
     }
 }

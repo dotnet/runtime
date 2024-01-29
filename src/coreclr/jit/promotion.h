@@ -7,12 +7,19 @@
 #include "compiler.h"
 #include "vector.h"
 
+// We limit the max number of fields that can be promoted in a single struct to
+// avoid pathological cases (e.g. machine generated code). Furthermore,
+// writebacks before struct uses introduce commas with nested trees for each
+// field written back, so without a limit we could create arbitrarily deep
+// trees.
+const int PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT = 64;
+
 // Represents a single replacement of a (field) access into a struct local.
 struct Replacement
 {
     unsigned  Offset;
     var_types AccessType;
-    unsigned  LclNum;
+    unsigned  LclNum = BAD_VAR_NUM;
     // Is the replacement local (given by LclNum) fresher than the value in the struct local?
     bool NeedsWriteBack = true;
     // Is the value in the struct local fresher than the replacement local?
@@ -21,16 +28,10 @@ struct Replacement
     // back before transferring control if necessary.
     bool NeedsReadBack = false;
 #ifdef DEBUG
-    const char* Description;
+    const char* Description = "";
 #endif
 
-    Replacement(unsigned offset, var_types accessType, unsigned lclNum DEBUGARG(const char* description))
-        : Offset(offset)
-        , AccessType(accessType)
-        , LclNum(lclNum)
-#ifdef DEBUG
-        , Description(description)
-#endif
+    Replacement(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
     {
     }
 
@@ -59,6 +60,7 @@ public:
         }
 
         bool IntersectsOrAdjacent(const Segment& other) const;
+        bool Intersects(const Segment& other) const;
         bool Contains(const Segment& other) const;
         void Merge(const Segment& other);
     };
@@ -67,18 +69,17 @@ private:
     jitstd::vector<Segment> m_segments;
 
 public:
-    StructSegments(CompAllocator allocator) : m_segments(allocator)
+    explicit StructSegments(CompAllocator allocator) : m_segments(allocator)
     {
     }
 
     void Add(const Segment& segment);
     void Subtract(const Segment& segment);
     bool IsEmpty();
-    bool IsSingleSegment(Segment* result);
     bool CoveringSegment(Segment* result);
+    bool Intersects(const Segment& segment);
 
 #ifdef DEBUG
-    void Check(FixedBitVect* vect);
     void Dump();
 #endif
 };
@@ -88,12 +89,14 @@ struct AggregateInfo
 {
     jitstd::vector<Replacement> Replacements;
     unsigned                    LclNum;
+    // Unpromoted parts of the struct local.
+    StructSegments Unpromoted;
     // Min offset in the struct local of the unpromoted part.
     unsigned UnpromotedMin = 0;
     // Max offset in the struct local of the unpromoted part.
     unsigned UnpromotedMax = 0;
 
-    AggregateInfo(CompAllocator alloc, unsigned lclNum) : Replacements(alloc), LclNum(lclNum)
+    AggregateInfo(CompAllocator alloc, unsigned lclNum) : Replacements(alloc), LclNum(lclNum), Unpromoted(alloc)
     {
     }
 
@@ -103,9 +106,35 @@ struct AggregateInfo
                                  Replacement** endReplacement);
 };
 
+// Map that stores information about promotions made for each local.
+class AggregateInfoMap
+{
+    jitstd::vector<AggregateInfo*> m_aggregates;
+    unsigned                       m_numLocals;
+    unsigned*                      m_lclNumToAggregateIndex;
+
+public:
+    AggregateInfoMap(CompAllocator allocator, unsigned numLocals);
+    void Add(AggregateInfo* agg);
+    AggregateInfo* Lookup(unsigned lclNum);
+
+    jitstd::vector<AggregateInfo*>::iterator begin()
+    {
+        return m_aggregates.begin();
+    }
+
+    jitstd::vector<AggregateInfo*>::iterator end()
+    {
+        return m_aggregates.end();
+    }
+};
+
+typedef JitHashTable<ClassLayout*, JitPtrKeyFuncs<ClassLayout>, class StructSegments*> ClassLayoutStructSegmentsMap;
+
 class Promotion
 {
-    Compiler* m_compiler;
+    Compiler*                     m_compiler;
+    ClassLayoutStructSegmentsMap* m_significantSegmentsCache = nullptr;
 
     friend class LocalUses;
     friend class LocalsUseVisitor;
@@ -115,10 +144,8 @@ class Promotion
     friend class DecompositionPlan;
     friend class StructSegments;
 
-    static StructSegments SignificantSegments(Compiler*    compiler,
-                                              ClassLayout* layout DEBUGARG(FixedBitVect** bitVectRepr = nullptr));
+    StructSegments SignificantSegments(ClassLayout* layout);
 
-    void InsertInitialReadBack(unsigned lclNum, const jitstd::vector<Replacement>& replacements, Statement** prevStmt);
     void ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
                                              const jitstd::vector<Replacement>& replacements,
                                              Statement**                        prevStmt);
@@ -149,7 +176,7 @@ class Promotion
             size_t mid = min + (max - min) / 2;
             if (vec[mid].*field == offset)
             {
-                while (mid > 0 && vec[mid - 1].*field == offset)
+                while ((mid > 0) && (vec[mid - 1].*field == offset))
                 {
                     mid--;
                 }
@@ -169,6 +196,11 @@ class Promotion
         return ~min;
     }
 
+    bool HaveCandidateLocals();
+
+    static bool IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
+    static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
+
 public:
     explicit Promotion(Compiler* compiler) : m_compiler(compiler)
     {
@@ -180,13 +212,13 @@ public:
 // Class to represent liveness information for a struct local's fields and remainder.
 class StructDeaths
 {
-    BitVec   m_deaths;
-    unsigned m_numFields = 0;
+    BitVec         m_deaths;
+    AggregateInfo* m_aggregate = nullptr;
 
     friend class PromotionLiveness;
 
 private:
-    StructDeaths(BitVec deaths, unsigned numFields) : m_deaths(deaths), m_numFields(numFields)
+    StructDeaths(BitVec deaths, AggregateInfo* agg) : m_deaths(deaths), m_aggregate(agg)
     {
     }
 
@@ -204,24 +236,25 @@ struct BasicBlockLiveness;
 // Class to compute and track liveness information pertaining promoted structs.
 class PromotionLiveness
 {
-    Compiler*                       m_compiler;
-    jitstd::vector<AggregateInfo*>& m_aggregates;
-    BitVecTraits*                   m_bvTraits                = nullptr;
-    unsigned*                       m_structLclToTrackedIndex = nullptr;
-    unsigned                        m_numVars                 = 0;
-    BasicBlockLiveness*             m_bbInfo                  = nullptr;
-    bool                            m_hasPossibleBackEdge     = false;
-    BitVec                          m_liveIn;
-    BitVec                          m_ehLiveVars;
+    Compiler*           m_compiler;
+    AggregateInfoMap&   m_aggregates;
+    BitVecTraits*       m_bvTraits                = nullptr;
+    unsigned*           m_structLclToTrackedIndex = nullptr;
+    unsigned            m_numVars                 = 0;
+    BasicBlockLiveness* m_bbInfo                  = nullptr;
+    bool                m_hasPossibleBackEdge     = false;
+    BitVec              m_liveIn;
+    BitVec              m_ehLiveVars;
     JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BitVec> m_aggDeaths;
 
 public:
-    PromotionLiveness(Compiler* compiler, jitstd::vector<AggregateInfo*>& aggregates)
+    PromotionLiveness(Compiler* compiler, AggregateInfoMap& aggregates)
         : m_compiler(compiler), m_aggregates(aggregates), m_aggDeaths(compiler->getAllocator(CMK_Promotion))
     {
     }
 
     void Run();
+    bool IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     bool IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 
@@ -244,20 +277,27 @@ class DecompositionPlan;
 
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
-    Promotion*                      m_prom;
-    jitstd::vector<AggregateInfo*>& m_aggregates;
-    PromotionLiveness*              m_liveness;
-    bool                            m_madeChanges = false;
+    friend class DecompositionPlan;
+
+    Promotion*         m_promotion;
+    AggregateInfoMap&  m_aggregates;
+    PromotionLiveness* m_liveness;
+    bool               m_madeChanges         = false;
+    unsigned           m_numPendingReadBacks = 0;
+    bool               m_mayHaveForwardSub   = false;
+    Statement*         m_currentStmt         = nullptr;
+    BasicBlock*        m_currentBlock        = nullptr;
 
 public:
     enum
     {
         DoPostOrder       = true,
         UseExecutionOrder = true,
+        ComputeStack      = true,
     };
 
-    ReplaceVisitor(Promotion* prom, jitstd::vector<AggregateInfo*>& aggregates, PromotionLiveness* liveness)
-        : GenTreeVisitor(prom->m_compiler), m_prom(prom), m_aggregates(aggregates), m_liveness(liveness)
+    ReplaceVisitor(Promotion* prom, AggregateInfoMap& aggregates, PromotionLiveness* liveness)
+        : GenTreeVisitor(prom->m_compiler), m_promotion(prom), m_aggregates(aggregates), m_liveness(liveness)
     {
     }
 
@@ -266,28 +306,45 @@ public:
         return m_madeChanges;
     }
 
-    void Reset()
+    bool MayHaveForwardSubOpportunity()
     {
-        m_madeChanges = false;
+        return m_mayHaveForwardSub;
     }
+
+    void StartBlock(BasicBlock* block);
+    void EndBlock();
+    void StartStatement(Statement* stmt);
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
-    void LoadStoreAroundCall(GenTreeCall* call, GenTree* user);
+    void SetNeedsWriteBack(Replacement& rep);
+    void ClearNeedsWriteBack(Replacement& rep);
+    void SetNeedsReadBack(Replacement& rep);
+    void ClearNeedsReadBack(Replacement& rep);
+
+    template <typename Func>
+    void VisitOverlappingReplacements(unsigned lcl, unsigned offs, unsigned size, Func func);
+
+    void      InsertPreStatementReadBacks();
+    void      InsertPreStatementWriteBacks();
+    GenTree** InsertMidTreeReadBacks(GenTree** use);
+
+    void ReadBackAfterCall(GenTreeCall* call, GenTree* user);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
-    void StoreBeforeReturn(GenTreeUnOp* ret);
-    void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
-    void MarkForReadBack(unsigned lcl, unsigned offs, unsigned size);
+    void CheckForwardSubForLastUse(unsigned lclNum);
+    void WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs, unsigned size);
+    void WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
+    void MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEBUGARG(const char* reason));
 
-    void HandleAssignment(GenTree** use, GenTree* user);
+    void HandleStructStore(GenTree** use, GenTree* user);
     bool OverlappingReplacements(GenTreeLclVarCommon* lcl,
                                  Replacement**        firstReplacement,
                                  Replacement**        endReplacement = nullptr);
-    void EliminateCommasInBlockOp(GenTreeOp* asg, DecompositionStatementList* result);
-    void InitFields(GenTreeLclVarCommon* dst, Replacement* firstRep, Replacement* endRep, DecompositionPlan* plan);
-    void CopyBetweenFields(GenTree*                    dst,
+    void EliminateCommasInBlockOp(GenTree* store, DecompositionStatementList* result);
+    void InitFields(GenTreeLclVarCommon* dstStore, Replacement* firstRep, Replacement* endRep, DecompositionPlan* plan);
+    void CopyBetweenFields(GenTree*                    store,
                            Replacement*                dstFirstRep,
                            Replacement*                dstEndRep,
                            GenTree*                    src,

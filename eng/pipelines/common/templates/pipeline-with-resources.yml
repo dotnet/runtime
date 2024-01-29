@@ -15,8 +15,9 @@ resources:
         ROOTFS_DIR: /crossrootfs/armv6
 
     - container: linux_arm64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-biarch-amd64-arm64
       env:
+        ROOTFS_HOST_DIR: /crossrootfs/x64
         ROOTFS_DIR: /crossrootfs/arm64
 
     - container: linux_musl_x64
@@ -33,10 +34,14 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64-alpine
       env:
         ROOTFS_DIR: /crossrootfs/arm64
-    # This container contains all required toolsets to build for Android and for Linux with bionic libc.
 
+    # This container contains all required toolsets to build for Android and for Linux with bionic libc.
     - container: linux_bionic
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-android
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-android-amd64
+
+    # This container contains all required toolsets to build for Android as well as tooling to build docker images.
+    - container: android_docker
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-android-docker
 
     - container: linux_x64
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64
@@ -81,13 +86,17 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
 
     - container: browser_wasm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly-net8
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-webassembly-20230913040940-1edc1c6
+      env:
+        ROOTFS_DIR: /crossrootfs/x64
 
     - container: wasi_wasm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-webassembly-net8
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-webassembly-20230917141449-2aaa02c
+      env:
+        ROOTFS_DIR: /crossrootfs/x64
 
     - container: freebsd_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64-freebsd-13
       env:
         ROOTFS_DIR: /crossrootfs/x64
 
@@ -97,7 +106,7 @@ resources:
         ROOTFS_DIR: /crossrootfs/armel
 
     - container: debpkg
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-debpkg
 
     - container: rpmpkg
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-fpm

@@ -12,13 +12,15 @@ using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Xunit;
 
 namespace Tracing.Tests.RundownValidation
 {
 
     public class RundownValidation
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // This test validates that the rundown events are present
             // and that the rundown contains the necessary events to get
@@ -42,12 +44,30 @@ namespace Tracing.Tests.RundownValidation
 
         private static Func<EventPipeEventSource, Func<int>> _DoesRundownContainMethodEvents = (source) =>
         {
+            bool hasRuntimeStart = false;
+            bool hasMethodDCStopInit = false;
+            bool hasMethodDCStopComplete = false;
+            bool hasLoaderModuleDCStop = false;
+            bool hasLoaderDomainModuleDCStop = false;
+            bool hasAssemblyModuleDCStop = false;
             bool hasMethodDCStopVerbose = false;
             bool hasMethodILToNativeMap = false;
+            bool hasAppDomainDCStop = false;
+
             ClrRundownTraceEventParser rundownParser = new ClrRundownTraceEventParser(source);
+            rundownParser.RuntimeStart += (eventData) => hasRuntimeStart = true;
+            rundownParser.MethodDCStopInit += (eventData) => hasMethodDCStopInit = true;
+            rundownParser.MethodDCStopComplete += (eventData) => hasMethodDCStopComplete = true;
+            rundownParser.LoaderModuleDCStop += (eventData) => hasLoaderModuleDCStop = true;
+            rundownParser.LoaderDomainModuleDCStop += (eventData) => hasLoaderDomainModuleDCStop = true;
+            rundownParser.LoaderAssemblyDCStop += (eventData) => hasAssemblyModuleDCStop = true;
             rundownParser.MethodDCStopVerbose += (eventData) => hasMethodDCStopVerbose = true;
             rundownParser.MethodILToNativeMapDCStop += (eventData) => hasMethodILToNativeMap = true;
-            return () => hasMethodDCStopVerbose && hasMethodILToNativeMap ? 100 : -1;
+            rundownParser.LoaderAppDomainDCStop += (eventData) => hasAppDomainDCStop = true;
+            return () =>
+                hasRuntimeStart && hasMethodDCStopInit && hasMethodDCStopComplete &&
+                hasLoaderModuleDCStop && hasLoaderDomainModuleDCStop && hasAssemblyModuleDCStop &&
+                hasMethodDCStopVerbose && hasMethodILToNativeMap && hasAppDomainDCStop ? 100 : -1;
         };
     }
 }

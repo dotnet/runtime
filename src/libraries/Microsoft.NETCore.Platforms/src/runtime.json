@@ -1244,6 +1244,41 @@
         "debian-x86"
       ]
     },
+    "debian.12": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "debian.12-arm": {
+      "#import": [
+        "debian.12",
+        "debian-arm"
+      ]
+    },
+    "debian.12-arm64": {
+      "#import": [
+        "debian.12",
+        "debian-arm64"
+      ]
+    },
+    "debian.12-armel": {
+      "#import": [
+        "debian.12",
+        "debian-armel"
+      ]
+    },
+    "debian.12-x64": {
+      "#import": [
+        "debian.12",
+        "debian-x64"
+      ]
+    },
+    "debian.12-x86": {
+      "#import": [
+        "debian.12",
+        "debian-x86"
+      ]
+    },
     "debian.8": {
       "#import": [
         "debian"
@@ -1691,6 +1726,17 @@
       "#import": [
         "gentoo",
         "linux-x64"
+      ]
+    },
+    "haiku": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "haiku-x64": {
+      "#import": [
+        "haiku",
+        "unix-x64"
       ]
     },
     "illumos": {

@@ -4,14 +4,24 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
   </PropertyGroup>
 
+  <ItemGroup>
+    <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
+  </ItemGroup>
+
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
-  <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
-  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="AndroidAppBuilderTask" 
+             AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
+  <UsingTask TaskName="MonoAOTCompiler" 
+             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
+             TaskName="NdkToolFinderTask"
+             AssemblyFile="$(MobileBuildTasksAssemblyPath)" />
   
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
@@ -35,46 +45,62 @@
              Condition="'$(ForceAOT)' == 'true'"/>
     <RemoveDir Directories="$(ApkDir)" />
 
-    <PropertyGroup>
-      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</AndroidAbi>
-      <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
-    </PropertyGroup>
-
     <Message Importance="High" Text="Path: $(PublishDir)" />
     <Message Importance="High" Text="SourceDir: $(OutputPath)" />
 
-    <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' != 'true'">
-      <_AotOutputType>AsmOnly</_AotOutputType>
-      <_AotModulesTablePath>$(ApkDir)\modules.c</_AotModulesTablePath>
-    </PropertyGroup>
+    <!-- Make sure marshal-ilgen is included in the components list. -->
+    <ItemGroup>
+      <RuntimeComponents Include="marshal-ilgen" KeepDuplicates="false"/>
+    </ItemGroup>
 
     <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' == 'true'">
       <_AotOutputType>Library</_AotOutputType>
       <_AotLibraryFormat>So</_AotLibraryFormat>
-      <_PrebuiltOS Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x86_64</_PrebuiltOS>
-      <_PrebuiltOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin-x86_64</_PrebuiltOS>
-      <_PrebuiltOS Condition="$([MSBuild]::IsOSPlatform('Windows'))">windows-x86_64</_PrebuiltOS>
-      <_PrebuiltAbi Condition="'$(TargetArchitecture)' == 'arm'">arm-linux-androideabi$</_PrebuiltAbi>
-      <_PrebuiltAbi Condition="'$(TargetArchitecture)' == 'arm64'">aarch64-linux-android</_PrebuiltAbi>
-      <_PrebuiltAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64-linux-android</_PrebuiltAbi>
-      <_PrebuiltAbi Condition="'$(TargetArchitecture)' == 'x86'">i686-linux-android</_PrebuiltAbi>
-      <_AotToolPrefix>$(ANDROID_NDK_ROOT)\toolchains\llvm\prebuilt\$(_PrebuiltOS)\bin\$(_PrebuiltAbi)-</_AotToolPrefix>
+      <_AotMode Condition="'$(AotMode)' == ''">Normal</_AotMode>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' != 'true'">
+      <_AotOutputType>AsmOnly</_AotOutputType>
+      <_AotModulesTablePath>$(ApkDir)\modules.c</_AotModulesTablePath>
+      <_AotMode Condition="'$(AotMode)' == ''">Full</_AotMode>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">21</AndroidLibraryMinApiLevel>
+    </PropertyGroup>
+
+    <NdkToolFinderTask
+      Condition="'$(AOTWithLibraryFiles)' == 'true'"
+      Architecture="$(TargetArchitecture)"
+      HostOS="$(_HostOS)"
+      MinApiLevel="$(AndroidLibraryMinApiLevel)">
+      <Output TaskParameter="AsPrefixPath" PropertyName="_AsPrefixPath" />
+      <Output TaskParameter="ToolPrefixPath" PropertyName="_ToolPrefixPath" />
+      <Output TaskParameter="Triple" PropertyName="_Triple" />
+      <Output TaskParameter="LdName" PropertyName="_LdName" />
+      <Output TaskParameter="LdPath" PropertyName="_LdPath" />
+      <Output TaskParameter="ClangPath" PropertyName="_ClangPath" />
+    </NdkToolFinderTask>
+
+    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true'">
+      <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
+      <_ToolPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_ToolPrefixPath)'))</_ToolPrefixPath>
     </PropertyGroup>
 
     <MonoAOTCompiler Condition="'$(ForceAOT)' == 'true'"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
-        OutputDir="$(_MobileIntermediateOutputPath)"
-        Mode="Full"
-        OutputType="$(_AotOutputType)"
-        Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(_AotModulesTablePath)"
-        ToolPrefix="$(_AotToolPrefix)"
-        LibraryFormat="$(_AotLibraryFormat)"
+        AsPrefix="$(_AsPrefixPath)"
+        Assemblies="@(AotInputAssemblies)"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
         IntermediateOutputPath="$(IntermediateOutputPath)"
-        UseLLVM="$(UseLLVM)"
-        LLVMPath="$(MonoAotCrossDir)">
+        LibraryFormat="$(_AotLibraryFormat)"
+        LLVMPath="$(MonoAotCrossDir)"
+        Mode="$(_AotMode)"
+        OutputDir="$(_MobileIntermediateOutputPath)"
+        OutputType="$(_AotOutputType)"
+        ToolPrefix="$(_ToolPrefixPath)"
+        UseAotDataFile="false"
+        UseLLVM="$(UseLLVM)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
@@ -89,7 +115,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\android-$(TargetArchitecture)\native\include\mono-2.0"
         OutputDir="$(ApkDir)"
         ProjectName="HelloAndroid"
-        RuntimeComponents="$(RuntimeComponents)"
+        RuntimeComponents="@(RuntimeComponents)"
         RuntimeIdentifier="$(RuntimeIdentifier)"
         StripDebugSymbols="$(StripDebugSymbols)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />

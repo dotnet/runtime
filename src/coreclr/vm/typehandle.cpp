@@ -31,7 +31,7 @@ BOOL TypeHandle::Verify()
     if (IsNull())
         return(TRUE);
 
-    if (!IsRestored_NoLogging())
+    if (!IsRestored())
         return TRUE;
 
     if (IsArray())
@@ -138,26 +138,10 @@ BOOL TypeHandle::ContainsGenericVariables(BOOL methodOnly /*=FALSE*/) const
     STATIC_CONTRACT_NOTHROW;
     SUPPORTS_DAC;
 
-    if (HasTypeParam())
-    {
-        return GetTypeParam().ContainsGenericVariables(methodOnly);
-    }
-
-    if (IsGenericVariable())
-    {
-        if (!methodOnly)
-            return TRUE;
-
-        PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(AsTypeDesc());
-        return TypeFromToken(pTyVar->GetTypeOrMethodDef()) == mdtMethodDef;
-    }
-    else if (HasInstantiation())
-    {
-        if (GetMethodTable()->ContainsGenericVariables(methodOnly))
-            return TRUE;
-    }
-
-    return FALSE;
+    if (IsTypeDesc())
+        return AsTypeDesc()->ContainsGenericVariables(methodOnly);
+    else
+        return AsMethodTable()->ContainsGenericVariables(methodOnly);
 }
 
 //@GENERICS:
@@ -1030,20 +1014,6 @@ BOOL TypeHandle::IsFnPtrType() const
             (GetSignatureCorElementType() == ELEMENT_TYPE_FNPTR));
 }
 
-BOOL TypeHandle::IsRestored_NoLogging() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (!IsTypeDesc())
-    {
-        return AsMethodTable()->IsRestored_NoLogging();
-    }
-    else
-    {
-        return AsTypeDesc()->IsRestored_NoLogging();
-    }
-}
-
 BOOL TypeHandle::IsRestored() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -1546,7 +1516,7 @@ TypeKey TypeHandle::GetTypeKey() const
 
 #ifdef _DEBUG
 // Check that a type handle matches the key provided
-CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
+CHECK TypeHandle::CheckMatchesKey(const TypeKey *pKey) const
 {
     WRAPPER_NO_CONTRACT;
     CONTRACT_VIOLATION(TakesLockViolation);        // this is debug-only code

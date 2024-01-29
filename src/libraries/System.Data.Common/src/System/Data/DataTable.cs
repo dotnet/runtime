@@ -4,18 +4,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Data
 {
@@ -2352,7 +2352,7 @@ namespace System.Data
             return targetTable;
         }
 
-        private DataTable CloneHierarchy(DataTable sourceTable, DataSet ds, Hashtable? visitedMap)
+        private static DataTable CloneHierarchy(DataTable sourceTable, DataSet ds, Hashtable? visitedMap)
         {
             visitedMap ??= new Hashtable();
             if (visitedMap.Contains(sourceTable))
@@ -5496,7 +5496,7 @@ namespace System.Data
             WriteXmlSchema(w, writeHierarchy);
         }
 
-        private bool CheckForClosureOnExpressions(DataTable dt, bool writeHierarchy)
+        private static bool CheckForClosureOnExpressions(DataTable dt, bool writeHierarchy)
         {
             List<DataTable> tableList = new List<DataTable>();
             tableList.Add(dt);
@@ -6617,7 +6617,7 @@ namespace System.Data
             }
         }
 
-        private void CreateTableList(DataTable currentTable, List<DataTable> tableList)
+        private static void CreateTableList(DataTable currentTable, List<DataTable> tableList)
         {
             foreach (DataRelation r in currentTable.ChildRelations)
             {

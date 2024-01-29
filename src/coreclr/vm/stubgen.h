@@ -524,7 +524,7 @@ public:
 
     CorElementType GetStubTargetReturnElementType() { WRAPPER_NO_CONTRACT; return m_nativeFnSigBuilder.GetReturnElementType(); }
 
-    static void GetManagedTypeHelper(LocalDesc* pLoc, Module* pModule, PCCOR_SIGNATURE pSig, SigTypeContext *pTypeContext, MethodDesc *pMD);
+    static void GetManagedTypeHelper(LocalDesc* pLoc, Module* pModule, PCCOR_SIGNATURE pSig, SigTypeContext *pTypeContext);
 
     BOOL StubHasVoidReturnType();
 
@@ -720,6 +720,7 @@ public:
     void EmitCGT_UN     ();
     void EmitCLT        ();
     void EmitCLT_UN     ();
+    void EmitCONSTRAINED(int token);
     void EmitCONV_I     ();
     void EmitCONV_I1    ();
     void EmitCONV_I2    ();

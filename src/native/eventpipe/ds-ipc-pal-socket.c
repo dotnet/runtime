@@ -844,12 +844,15 @@ ipc_alloc_tcp_address (
 	ds_ipc_addrinfo_t *info = NULL;
 	ep_char8_t *address = NULL;
 	int32_t port = 0;
+	int result_getaddrinfo = -1;
+	const ep_char8_t *host_address = NULL;
+	const ep_char8_t *host_port = NULL;
 
 	address = ep_rt_utf8_string_dup (ipc_name);
 	ep_raise_error_if_nok (address != NULL);
 
-	const ep_char8_t *host_address = address;
-	const ep_char8_t *host_port = strrchr (address, ':');
+	host_address = address;
+	host_port = strrchr (address, ':');
 
 	if (host_port && host_port != host_address) {
 		size_t host_address_len = host_port - address;
@@ -863,7 +866,6 @@ ipc_alloc_tcp_address (
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = (mode == DS_IPC_CONNECTION_MODE_LISTEN) ? AI_PASSIVE : 0;
 
-	int result_getaddrinfo = -1;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	if (mode == DS_IPC_CONNECTION_MODE_LISTEN && *host_address == '*') {
 #ifdef DS_IPC_PAL_AF_INET6

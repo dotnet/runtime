@@ -3,6 +3,9 @@
 
 namespace System.Threading.RateLimiting
 {
+    /// <summary>
+    /// Abstraction that specifies that the <see cref="RateLimiter"/> implementation is capable of replenishing tokens.
+    /// </summary>
     public abstract class ReplenishingRateLimiter : RateLimiter
     {
         /// <summary>

@@ -17,10 +17,10 @@ namespace System.Reflection.TypeLoading
             MemberInfo[] members = attributeType.GetMember(name, MemberTypes.Field | MemberTypes.Property, BindingFlags.Public | BindingFlags.Instance);
             if (members.Length == 0)
                 throw new MissingMemberException(attributeType.FullName, name);
+            MemberInfo match = members[0];
             if (members.Length > 1)
-                throw new AmbiguousMatchException();
-
-            return new CustomAttributeNamedArgument(members[0], new CustomAttributeTypedArgument(argumentType!, value));
+                throw ThrowHelper.GetAmbiguousMatchException(match);
+            return new CustomAttributeNamedArgument(match, new CustomAttributeTypedArgument(argumentType!, value));
         }
 
         /// <summary>

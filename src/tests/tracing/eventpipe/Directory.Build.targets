@@ -5,7 +5,6 @@
 
   <!-- EventPipe tests use Microsoft.Extensions.Logging and getting its dependencies require this workaround for NativeAOT
   -->
-  <Import Project="$(RepoRoot)eng/liveBuilds.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
   <!-- Get all the *.dll files that has IsNative != "true"-->
   <Target Name="GetRequiredNativeAOTAssemblies" 
       DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild"

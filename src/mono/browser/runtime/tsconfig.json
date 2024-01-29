@@ -1,0 +1,10 @@
+{
+    "extends": "./tsconfig.shared.json",
+    "compilerOptions": {
+        "lib": [
+            "esnext",
+            "dom"
+        ],
+        "sourceMap": true,
+    }
+}

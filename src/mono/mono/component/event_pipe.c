@@ -17,7 +17,6 @@
 #include <emscripten/emscripten.h>
 #endif
 
-extern void ep_rt_mono_component_init (void);
 static bool _event_pipe_component_inited = false;
 
 struct _EventPipeProviderConfigurationNative {
@@ -127,7 +126,7 @@ static MonoComponentEventPipe fn_table = {
 	&ep_provider_add_event,
 	&event_pipe_get_session_info,
 	&event_pipe_thread_ctrl_activity_id,
-	&ep_rt_mono_write_event_ee_startup_start,
+	&ep_rt_write_event_ee_startup_start,
 	&ep_rt_write_event_threadpool_worker_thread_start,
 	&ep_rt_write_event_threadpool_worker_thread_stop,
 	&ep_rt_write_event_threadpool_worker_thread_wait,
@@ -139,8 +138,13 @@ static MonoComponentEventPipe fn_table = {
 	&ep_rt_write_event_threadpool_io_dequeue,
 	&ep_rt_write_event_threadpool_working_thread_count,
 	&ep_rt_write_event_threadpool_io_pack,
+	&ep_rt_write_event_contention_lock_created,
+	&ep_rt_write_event_contention_start,
+	&ep_rt_write_event_contention_stop,
+	&ep_rt_write_event_wait_handle_wait_start,
+	&ep_rt_write_event_wait_handle_wait_stop,
 	&event_pipe_signal_session,
-	&event_pipe_wait_for_session_signal
+	&event_pipe_wait_for_session_signal,
 };
 
 static bool

@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.General.NativeFormat;
-using System.Reflection.Runtime.CustomAttributes;
-
-using Internal.Reflection.Core;
-using Internal.Reflection.Core.Execution;
 
 using Internal.Metadata.NativeFormat;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
 {
@@ -21,11 +20,9 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
     //
     internal sealed partial class NativeFormatMethodParameterInfo : RuntimeFatMethodParameterInfo
     {
-        private NativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterTypeHandle, TypeContext typeContext)
+        private NativeFormatMethodParameterInfo(MethodBase member, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterTypeHandle, TypeContext typeContext)
             : base(member, position, qualifiedParameterTypeHandle, typeContext)
         {
-            _methodHandle = methodHandle;
-            _parameterHandle = parameterHandle;
             _parameter = parameterHandle.GetParameter(Reader);
         }
 
@@ -70,8 +67,6 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
                 || DefaultValueParser.GetDefaultValueFromAttributeIfAny(CustomAttributes, raw, out defaultValue);
         }
 
-        private readonly MethodHandle _methodHandle;
-        private readonly ParameterHandle _parameterHandle;
         private readonly Parameter _parameter;
     }
 }

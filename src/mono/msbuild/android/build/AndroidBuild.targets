@@ -2,12 +2,14 @@
   <PropertyGroup>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
-    <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
-    <AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AndroidGenerateAppBundle>
+    <AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true' and '$(ForceLibraryModeGenerateAppBundle)' != 'true'">false</AndroidGenerateAppBundle>
 
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 
+  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
+             TaskName="NdkToolFinderTask"
+             AssemblyFile="$(MobileBuildTasksAssemblyPath)" />
   <UsingTask Condition="'$(AndroidGenerateAppBundle)' == 'true'"
              TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
@@ -37,31 +39,29 @@
 
       <BundleDir>$(AndroidBundleDir)</BundleDir>
       <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
-      <_AotModuleTablePath>$(AndroidBundleDir)\modules.c</_AotModuleTablePath>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
+    <ItemGroup Condition="'$(UseNativeAOTRuntime)' != 'true'">
+      <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)" />
+      <!-- Make sure marshal-ilgen is included in the components list. -->
+      <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' != 'true'" Include="marshal-ilgen" KeepDuplicates="false" />
+    </ItemGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
-      <!-- add all non stub libs first -->
-      <!-- if RuntimeComponents is empty, exclude -static.a and include -stub-static.a instead -->
-      <!-- if RuntimeComponents is *, we're ok because all -static.a is included -->
-      <!-- if RuntimeComponents is a list, add to items and only pull in -static.a -->
+      <_CommonLinkerArgs Include="-l:libz.so" />
+      <_CommonLinkerArgs Include="-l:liblog.so" />
+      <_CommonLinkerArgs Include="-l:libc.so" />
+      <_CommonLinkerArgs Include="-l:libm.so" />
+      <_CommonLinkerArgs Include="--build-id=sha1" />
 
-      <_UsedComponents 
-        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
-        Include="$(RuntimeComponents)" />
-
-      <_RuntimeLibraries 
-        Include="$(AndroidBuildDir)\*-stub-static.a" />
-      <_RuntimeLibraries 
-        Include="$(AndroidBuildDir)\*.a"
-        Exclude="$(AndroidBuildDir)\*-static.a" />
-
-      <_RuntimeLibraries Remove="$(AndroidBuildDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
-      <_RuntimeLibraries Include="$(AndroidBuildDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
+      <!-- include all libraries except components -->
+      <_RuntimeLibraries Include="$(AndroidBuildDir)\*.a" Exclude="$(AndroidBuildDir)\libmono-component-*.a" />
+      <!-- include all component stub libraries -->
+      <_RuntimeLibraries Include="$(AndroidBuildDir)\libmono-component-*-stub-static.a" />
+      <!-- if RuntimeComponents is not empty, remove stubs for the required components and include the actual component library -->
+      <_RuntimeLibraries Condition="'@(RuntimeComponents)' != ''" Remove="$(AndroidBuildDir)\libmono-component-%(RuntimeComponents.Identity)-stub-static.a" />
+      <_RuntimeLibraries Condition="'@(RuntimeComponents)' != ''" Include="$(AndroidBuildDir)\libmono-component-%(RuntimeComponents.Identity)-static.a" />
+      <!-- if RuntimeComponents is empty, do nothing as we already included all the component stubs above -->
     </ItemGroup>
   </Target>
 
@@ -72,6 +72,7 @@
     </PropertyGroup>
 
     <RemoveDir Directories="$(AndroidBundleDir)" />
+    <MakeDir Directories="$(AndroidBundleDir)" />
   </Target>
 
   <Target Name="_AndroidResolveReferences">
@@ -94,11 +95,21 @@
       <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Normal</_AOTMode>
       <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
       <_AOTMode Condition="'$(ForceFullAOT)' == 'true'">Full</_AOTMode>
+      <_AotOutputType>AsmOnly</_AotOutputType>
+    </PropertyGroup>
+    <!-- Should consider renaming property to something more appropriate-->
+    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true'">
+      <_AotOutputType>Library</_AotOutputType>
+      <_AotLibraryFormat>So</_AotLibraryFormat>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' != 'true'">
+      <_AotModuleTablePath>$(AndroidBundleDir)\modules.c</_AotModuleTablePath>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <_UsesRuntimeInitCallback>$(UsesRuntimeInitCallback)</_UsesRuntimeInitCallback>
       <_UsesRuntimeInitCallback Condition="'$(_UsesRuntimeInitCallback)' == ''">true</_UsesRuntimeInitCallback>
+      <_AotOutputType>ObjectFile</_AotOutputType>
     </PropertyGroup>
 
     <ItemGroup>
@@ -124,6 +135,28 @@
     <PropertyGroup>
       <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
       <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">21</AndroidLibraryMinApiLevel>
+    </PropertyGroup>
+
+    <NdkToolFinderTask
+      Condition="'$(AOTWithLibraryFiles)' == 'true' or '$(_IsLibraryMode)' == 'true'"
+      Architecture="$(TargetArchitecture)"
+      HostOS="$(_HostOS)"
+      MinApiLevel="$(AndroidLibraryMinApiLevel)">
+      <Output TaskParameter="AsPrefixPath" PropertyName="_AsPrefixPath" />
+      <Output TaskParameter="ToolPrefixPath" PropertyName="_ToolPrefixPath" />
+      <Output TaskParameter="Triple" PropertyName="_Triple" />
+      <Output TaskParameter="LdName" PropertyName="_LdName" />
+      <Output TaskParameter="LdPath" PropertyName="_LdPath" />
+      <Output TaskParameter="ClangPath" PropertyName="_ClangPath" />
+    </NdkToolFinderTask>
+
+    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true' or '$(_IsLibraryMode)' == 'true'">
+      <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
+      <_ToolPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_ToolPrefixPath)'))</_ToolPrefixPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -180,19 +213,28 @@
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Android" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_CompilerBinaryPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</_CompilerBinaryPath>
+      <_MonoLLVMPath>$(MonoAotCrossDir)</_MonoLLVMPath>
+      <_MonoLLVMPath Condition="'$(_MonoLLVMPath)' == '' and '$(MonoEnableLLVM)' == 'true'">$([System.IO.Path]::GetDirectoryName("$(_CompilerBinaryPath)"))</_MonoLLVMPath>
+    </PropertyGroup>
+
     <MonoAOTCompiler
         AotModulesTablePath="$(_AotModuleTablePath)"
+        AsPrefix="$(_AsPrefixPath)"
         Assemblies="@(_AotInputAssemblies)"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        CompilerBinaryPath="$(_CompilerBinaryPath)"
         DirectPInvokes="@(DirectPInvokes)"
         DirectPInvokeLists="@(DirectPInvokeLists)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
-        LLVMPath="$(MonoAotCrossDir)"
+        LibraryFormat="$(_AotLibraryFormat)"
+        LLVMPath="$(_MonoLLVMPath)"
         MibcProfilePath="@(ProfiledAOTProfilePaths)"
         Mode="$(_AOTMode)"
         OutputDir="$(_MobileIntermediateOutputPath)"
-        OutputType="AsmOnly"
+        OutputType="$(_AotOutputType)"
+        ToolPrefix="$(_ToolPrefixPath)"
         UseAotDataFile="$(_UseAotDataFile)"
         UseLLVM="$(MonoEnableLLVM)">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AssembliesToBundleInternal" />
@@ -228,7 +270,7 @@
         NativeDependencies="@(_NativeDependencies)"
         OutputDir="$(AndroidBundleDir)"
         ProjectName="$(AssemblyName)"
-        RuntimeComponents="$(RuntimeComponents)"
+        RuntimeComponents="@(RuntimeComponents)"
         RuntimeIdentifier="$(RuntimeIdentifier)"
         StripDebugSymbols="False">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
@@ -247,7 +289,8 @@
   <Target Name="_AndroidGenerateRuntimeConfig"
           Inputs="$(_AndroidRuntimeConfigFilePath)"
           Outputs="$(_ParsedRuntimeConfigFilePath)"
-          Condition="Exists('$(_AndroidRuntimeConfigFilePath)')">
+          Condition="Exists('$(_AndroidRuntimeConfigFilePath)')"
+          BeforeTargets="_GenerateBundle">
     <ItemGroup>
       <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
       <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>

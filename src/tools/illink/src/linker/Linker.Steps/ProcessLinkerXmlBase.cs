@@ -162,7 +162,7 @@ namespace Mono.Linker.Steps
 
 				string fullname = GetFullName (typeNav);
 
-				if (fullname.IndexOf ("*") != -1) {
+				if (fullname.Contains ('*')) {
 					if (ProcessTypePattern (fullname, assembly, typeNav))
 						continue;
 				}

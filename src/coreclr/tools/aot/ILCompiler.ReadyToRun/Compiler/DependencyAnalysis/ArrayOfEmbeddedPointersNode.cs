@@ -30,13 +30,12 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public delegate void OnMarkedDelegate(EmbeddedPointerIndirectionNode<TTarget> embeddedObject);
 
-        public ArrayOfEmbeddedPointersNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedPointerIndirectionNode<TTarget>> nodeSorter)
+        public ArrayOfEmbeddedPointersNode(string mangledName, IComparer<EmbeddedPointerIndirectionNode<TTarget>> nodeSorter)
             : base(
-                  startSymbolMangledName,
-                  endSymbolMangledName,
+                  mangledName,
                   nodeSorter)
         {
-            _startSymbolMangledName = startSymbolMangledName;
+            _startSymbolMangledName = mangledName;
         }
 
         public EmbeddedObjectNode NewNode(TTarget target)

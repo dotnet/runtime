@@ -136,13 +136,16 @@
     <value>Stream aborted by peer ({0}).</value>
   </data>
   <data name="SystemNetQuic_PlatformNotSupported" xml:space="preserve">
-    <value>System.Net.Quic is not supported on this platform.</value>
+    <value>System.Net.Quic is not supported on this platform: {0}</value>
   </data>
   <data name="net_quic_writing_notallowed" xml:space="preserve">
     <value>Writing is not allowed on stream.</value>
   </data>
   <data name="net_quic_in_range" xml:space="preserve">
-    <value>'{0}'' should be within [0, {1}) range.</value>
+    <value>'{0}' should be within [0, {1}) range.</value>
+  </data>
+  <data name="net_quic_power_of_2" xml:space="preserve">
+    <value>'{0}' must be a power of 2.</value>
   </data>
   <data name="net_quic_not_null_listener" xml:space="preserve">
     <value>'{0}' must be specified to start the listener.</value>
@@ -195,20 +198,11 @@
   <data name="net_quic_accept_not_allowed" xml:space="preserve">
     <value>QuicConnection is configured to not accept any streams.</value>
   </data>
-  <data name="net_quic_address_in_use" xml:space="preserve">
-    <value>The local address is already in use.</value>
-  </data>
-  <data name="net_quic_host_unreachable" xml:space="preserve">
-    <value>The server is currently unreachable.</value>
-  </data>
   <data name="net_quic_connection_refused" xml:space="preserve">
     <value>The server refused the connection.</value>
   </data>
   <data name="net_quic_protocol_error" xml:space="preserve">
     <value>A QUIC protocol error was encountered</value>
-  </data>
-  <data name="net_quic_alpn_in_use" xml:space="preserve">
-    <value>Another QUIC listener is already listening on one of the requested application protocols on the same port.</value>
   </data>
   <data name="net_quic_ver_neg_error" xml:space="preserve">
     <value>A version negotiation error was encountered.</value>
@@ -218,9 +212,6 @@
   </data>
   <data name="net_quic_connection_idle" xml:space="preserve">
     <value>The connection timed out from inactivity.</value>
-  </data>
-  <data name="net_quic_invalid_address" xml:space="preserve">
-    <value>Binding to socket failed, likely caused by a family mismatch between local and remote address.</value>
   </data>
   <data name="net_quic_auth" xml:space="preserve">
     <value>Authentication failed: {0}.</value>
@@ -238,6 +229,9 @@
   </data>
   <data name="net_InvalidSocketAddressSize" xml:space="preserve">
     <value>The supplied {0} is an invalid size for the {1} end point.</value>
+  </data>
+  <data name="net_quic_callback_error" xml:space="preserve">
+    <value>User configured callback failed.</value>
   </data>
 </root>
 

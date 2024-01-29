@@ -7,6 +7,16 @@
         <target state="translated">Koleksiyon türü desteklenmiyor: '{0}'.</target>
         <note />
       </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
+        <target state="translated">Bağlama mantığı bir bağlayıcı çağrısı için oluşturulmadı. Desteklenmeyen giriş düzenleri şunları içerir: genel çağrılar, geçirilen kutulu nesneler ve ‘genel’ veya ‘iç’ olmayan geçirme türleri.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoTitle">
+        <source>The target type for a binder call could not be determined</source>
+        <target state="translated">Bir bağlayıcı çağrısının hedef türü belirlenemedi</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
         <target state="translated">Sözlük anahtarı türü desteklenmiyor: '{0}'.</target>
@@ -17,14 +27,19 @@
         <target state="translated">Koleksiyon öğesi türü desteklenmiyor: '{0}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
-        <source>The project's language version has to be at least 'C# 11'.</source>
-        <target state="translated">Projenin dil sürümü en az 'C# 11' olmalıdır.</target>
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
+        <source>The project's language version has to be at least 'C# 12'.</source>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
-        <source>Language version is required to be at least C# 11</source>
-        <target state="translated">Dil sürümünün en az C# 11 olması gerekir</target>
+        <source>Language version is required to be at least C# 12</source>
+        <target state="translated">Dil sürümünün en az C# 12 olması gerekir</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="translated">Ortak örnek oluşturucu içermediğinden '{0}' türündeki örnek oluşturulamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
@@ -32,9 +47,9 @@
         <target state="translated">Çok boyutlu diziler desteklenmiyor: '{0}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NeedPublicParameterlessConstructor">
-        <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="translated">Yalnızca genel parametresiz oluşturucular içeren nesneler desteklenmiyor: '{0}'.</target>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="translated">Birden çok ortak parametreli oluşturucu içerdiğinden '{0}' türündeki örnek oluşturulamıyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">
@@ -60,6 +75,16 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type</source>
         <target state="translated">Bir tür için bağlama mantığı oluşturulmadı</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindMessageFormat">
+        <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
+        <target state="translated">'{0}' hedef türüne sahip bir bağlayıcı çağrısı için bağlama mantığı oluşturulmadı. Değer türleri yapılandırma ‘Bağlama’ yöntemleri için geçersiz girişlerdir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindTitle">
+        <source>Value types are invalid inputs to configuration 'Bind' methods</source>
+        <target state="translated">Değer türleri yapılandırma ‘Bağlama’ yöntemleri için geçersiz girişlerdir</target>
         <note />
       </trans-unit>
     </body>

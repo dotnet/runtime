@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class AppsettingsTests : BuildTestBase
+public class AppsettingsTests : BlazorWasmTestBase
 {
     public AppsettingsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -21,7 +21,7 @@ public class AppsettingsTests : BuildTestBase
     [Fact]
     public async Task FileInVfs()
     {
-        string id = $"blazor_{Path.GetRandomFileName()}";
+        string id = $"blazor_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
 
         string projectDirectory = Path.GetDirectoryName(projectFile)!;
@@ -43,12 +43,16 @@ public class AppsettingsTests : BuildTestBase
         bool existsChecked = false;
         bool contentChecked = false;
 
-        await BlazorRunForBuildWithDotnetRun("debug", onConsoleMessage: msg =>
+        await BlazorRunForBuildWithDotnetRun(new BlazorRunOptions()
         {
-            if (msg.Text.Contains("appSettings Exists 'True'"))
-                existsChecked = true;
-            else if (msg.Text.Contains($"appSettings Content '{{ \"Id\": \"{id}\" }}'"))
-                contentChecked = true;
+            Config = "debug",
+            OnConsoleMessage = msg =>
+            {
+                if (msg.Text.Contains("appSettings Exists 'True'"))
+                    existsChecked = true;
+                else if (msg.Text.Contains($"appSettings Content '{{ \"Id\": \"{id}\" }}'"))
+                    contentChecked = true;
+            }
         });
 
         Assert.True(existsChecked, "File '/appsettings.json' wasn't found");

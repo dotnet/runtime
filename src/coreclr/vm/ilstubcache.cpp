@@ -18,20 +18,20 @@
 
 const char* FormatSig(MethodDesc* pMD, LoaderHeap *pHeap, AllocMemTracker *pamTracker);
 
-ILStubCache::ILStubCache(LoaderHeap *pHeap)
+ILStubCache::ILStubCache(LoaderAllocator *pAllocator)
     : m_crst(CrstStubCache, CRST_UNSAFE_ANYMODE)
-    , m_heap(pHeap)
+    , m_pAllocator(pAllocator)
     , m_pStubMT(NULL)
 {
     WRAPPER_NO_CONTRACT;
 }
 
-void ILStubCache::Init(LoaderHeap* pHeap)
+void ILStubCache::Init(LoaderAllocator* pAllocator)
 {
     LIMITED_METHOD_CONTRACT;
 
-    CONSISTENCY_CHECK(NULL == m_heap);
-    m_heap = pHeap;
+    CONSISTENCY_CHECK(NULL == m_pAllocator);
+    m_pAllocator = pAllocator;
 }
 
 #ifndef DACCESS_COMPILE
@@ -159,6 +159,7 @@ namespace
             case DynamicMethodDesc::StubWrapperDelegate:    return "IL_STUB_WrapperDelegate_Invoke";
             case DynamicMethodDesc::StubTailCallStoreArgs:  return "IL_STUB_StoreTailCallArgs";
             case DynamicMethodDesc::StubTailCallCallTarget: return "IL_STUB_CallTailCallTarget";
+            case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_bVirtualStaticMethodDispatch";
             default:
                 UNREACHABLE_MSG("Unknown stub type");
         }
@@ -319,6 +320,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         }
     }
 
+    if (SF_IsVirtualStaticMethodDispatchStub(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubVirtualStaticMethodDispatch);
+    }
+
 // if we made it this far, we can set a more descriptive stub name
 #ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
@@ -388,7 +394,7 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
         if (NULL == m_pStubMT)
         {
             AllocMemTracker amt;
-            MethodTable* pNewMT = CreateMinimalMethodTable(pModule, m_heap, &amt);
+            MethodTable* pNewMT = CreateMinimalMethodTable(pModule, m_pAllocator, &amt);
             amt.SuppressRelease();
             VolatileStore<MethodTable*>(&m_pStubMT, pNewMT);
         }
@@ -397,6 +403,45 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
     RETURN m_pStubMT;
 }
 
+
+MethodDesc* ILStubCache::LookupStubMethodDesc(ILStubHashBlob* pHashBlob)
+{
+    CrstHolder ch(&m_crst);
+
+    // Try to find the stub
+    const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
+    if (phe)
+    {
+        return phe->m_pMethodDesc;
+    }
+
+    return NULL;
+}
+
+MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* pHashBlob)
+{
+    size_t cbSizeOfBlob = pHashBlob->m_cbSizeOfBlob;
+
+    CrstHolder ch(&m_crst);
+
+    const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
+    if (phe == NULL)
+    {
+        AllocMemHolder<ILStubHashBlob> pBlobHolder( m_pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
+        ILStubHashBlob* pBlob = pBlobHolder;
+        _ASSERTE(pHashBlob->m_cbSizeOfBlob == cbSizeOfBlob);
+        memcpy(pBlob, pHashBlob, cbSizeOfBlob);
+
+        m_hashMap.Add(ILStubCacheEntry{ pMD, pBlob });
+        pBlobHolder.SuppressRelease();
+
+        return pMD;
+    }
+    else
+    {
+        return phe->m_pMethodDesc;
+    }
+}
 #endif // DACCESS_COMPILE
 
 //
@@ -508,7 +553,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
             SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
         }
 
-        pMD = ILStubCache::CreateNewMethodDesc(m_heap, pStubMT, dwStubFlags, pSigModule, pSig, cbSig, &typeContext, pamTracker);
+        pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, &typeContext, pamTracker);
 
         if (SF_IsSharedStub(dwStubFlags))
         {
@@ -519,7 +564,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
             const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
             if (phe == NULL)
             {
-                AllocMemHolder<ILStubHashBlob> pBlobHolder( m_heap->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
+                AllocMemHolder<ILStubHashBlob> pBlobHolder( m_pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
                 pBlob = pBlobHolder;
                 _ASSERTE(pHashBlob->m_cbSizeOfBlob == cbSizeOfBlob);
                 memcpy(pBlob, pHashBlob, cbSizeOfBlob);

@@ -1,28 +1,29 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Tensor class which represents and extends multi-dimensional arrays.
-
-Commonly Used Types:
-System.Numerics.Tensors.Tensor&lt;T&gt;
-System.Numerics.Tensors.CompressedSparseTensor&lt;T&gt;
-System.Numerics.Tensors.DenseTensor&lt;T&gt;
-System.Numerics.Tensors.SparseTensor&lt;T&gt;</PackageDescription>
+    <PackageDescription>Provides support for operating over tensors.</PackageDescription>
+    <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Properties\InternalsVisibleTo.cs" />
-    <Compile Include="System\Numerics\Tensors\ArrayTensorExtensions.cs" />
-    <Compile Include="System\Numerics\Tensors\ArrayUtilities.cs" />
-    <Compile Include="System\Numerics\Tensors\CompressedSparseTensor.cs" />
-    <Compile Include="System\Numerics\Tensors\DenseTensor.cs" />
-    <Compile Include="System\Numerics\Tensors\SparseTensor.cs" />
-    <Compile Include="System\Numerics\Tensors\Tensor.cs" />
+    <Compile Include="System\Numerics\Tensors\TensorPrimitives.Single.cs" />
+    <Compile Include="System\Numerics\Tensors\TensorPrimitives.Helpers.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Single.netcore.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.T.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.netcore.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="System\Numerics\Tensors\netstandard\TensorPrimitives.Single.netstandard.cs" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Numerics\src\Microsoft.Bcl.Numerics.csproj" />
   </ItemGroup>
+
 </Project>

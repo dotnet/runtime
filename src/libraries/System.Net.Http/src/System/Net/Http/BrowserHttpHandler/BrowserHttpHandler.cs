@@ -1,34 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Net.Security;
 using System.IO;
+using System.Net.Security;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices.JavaScript;
 
 namespace System.Net.Http
 {
     // **Note** on `Task.ConfigureAwait(continueOnCapturedContext: true)` for the WebAssembly Browser.
-    // The current implementation of WebAssembly for the Browser does not have a SynchronizationContext nor a Scheduler
-    // thus forcing the callbacks to run on the main browser thread.  When threading is eventually implemented using
-    // emscripten's threading model of remote worker threads, via SharedArrayBuffer, any API calls will have to be
-    // remoted back to the main thread.  Most APIs only work on the main browser thread.
-    // During discussions the concensus has been that it will not matter right now which value is used for ConfigureAwait
-    // we should put this in place now.
+    // the JavaScript objects have thread affinity, it is necessary that the continuations run the same thread as the start of the async method.
     internal sealed class BrowserHttpHandler : HttpMessageHandler
     {
-        private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
-        private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
         private bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
         // flag to determine if the _allowAutoRedirect was explicitly set or not.
         private bool _isAllowAutoRedirectTouched;
-
-        /// <summary>
-        /// Gets whether the current Browser supports streaming responses
-        /// </summary>
-        private static bool StreamingSupported { get; } = BrowserHttpInterop.SupportsStreamingResponse();
 
         #region PlatformNotSupported
 #pragma warning disable CA1822
@@ -116,6 +106,8 @@ namespace System.Net.Http
             }
         }
 
+        internal ClientCertificateOption ClientCertificateOptions;
+
         public const bool SupportsAutomaticDecompression = false;
         public const bool SupportsProxy = false;
         public const bool SupportsRedirectConfiguration = true;
@@ -128,46 +120,104 @@ namespace System.Net.Http
             throw new PlatformNotSupportedException();
         }
 
-        private static async Task<WasmFetchResponse> CallFetch(HttpRequestMessage request, CancellationToken cancellationToken, bool? allowAutoRedirect)
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            int headerCount = request.Headers.Count + request.Content?.Headers.Count ?? 0;
-            List<string> headerNames = new List<string>(headerCount);
-            List<string> headerValues = new List<string>(headerCount);
-            JSObject abortController = BrowserHttpInterop.CreateAbortController();
-            CancellationTokenRegistration? abortRegistration = cancellationToken.Register(() =>
+            bool? allowAutoRedirect = _isAllowAutoRedirectTouched ? AllowAutoRedirect : null;
+            var controller = new BrowserHttpController(request, allowAutoRedirect, cancellationToken);
+            return controller.CallFetch();
+        }
+    }
+
+    internal sealed class BrowserHttpController : IDisposable
+    {
+        private static readonly HttpRequestOptionsKey<bool> EnableStreamingRequest = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
+        private static readonly HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+        private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object>>("WebAssemblyFetchOptions");
+
+        internal readonly JSObject _jsController;
+        private readonly CancellationTokenRegistration _abortRegistration;
+        private readonly string[] _optionNames;
+        private readonly object?[] _optionValues;
+        private readonly string[] _headerNames;
+        private readonly string[] _headerValues;
+        private readonly string uri;
+        private readonly CancellationToken _cancellationToken;
+        private readonly HttpRequestMessage _request;
+        private bool _isDisposed;
+
+        public BrowserHttpController(HttpRequestMessage request, bool? allowAutoRedirect, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            if (request.RequestUri == null)
             {
-                if (!abortController.IsDisposed)
-                {
-                    BrowserHttpInterop.AbortRequest(abortController);
-                }
-                abortController.Dispose();
-            });
-            try
+                throw new ArgumentNullException(nameof(request.RequestUri));
+            }
+
+            _cancellationToken = cancellationToken;
+            _request = request;
+
+            JSObject httpController = BrowserHttpInterop.CreateController();
+            CancellationTokenRegistration abortRegistration = cancellationToken.Register(static s =>
             {
-                if (request.RequestUri == null)
+                JSObject _httpController = (JSObject)s!;
+
+                if (!_httpController.IsDisposed)
                 {
-                    throw new ArgumentNullException(nameof(request.RequestUri));
+                    BrowserHttpInterop.AbortRequest(_httpController);
                 }
+            }, httpController);
 
-                string uri = request.RequestUri.IsAbsoluteUri ? request.RequestUri.AbsoluteUri : request.RequestUri.ToString();
 
-                bool hasFetchOptions = request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions);
-                int optionCount = 1 + (allowAutoRedirect.HasValue ? 1 : 0) + (hasFetchOptions && fetchOptions != null ? fetchOptions.Count : 0);
-                int optionIndex = 0;
-                string[] optionNames = new string[optionCount];
-                object?[] optionValues = new object?[optionCount];
+            _jsController = httpController;
+            _abortRegistration = abortRegistration;
 
-                optionNames[optionIndex] = "method";
-                optionValues[optionIndex] = request.Method.Method;
+            uri = request.RequestUri.IsAbsoluteUri ? request.RequestUri.AbsoluteUri : request.RequestUri.ToString();
+
+            bool hasFetchOptions = request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions);
+            int optionCount = 1 + (allowAutoRedirect.HasValue ? 1 : 0) + (hasFetchOptions && fetchOptions != null ? fetchOptions.Count : 0);
+            int optionIndex = 0;
+
+            // note there could be more values for each header name and so this is just name count
+            int headerCount = request.Headers.Count + (request.Content?.Headers.Count ?? 0);
+
+            _optionNames = new string[optionCount];
+            _optionValues = new object?[optionCount];
+
+            _optionNames[optionIndex] = "method";
+            _optionValues[optionIndex] = request.Method.Method;
+            optionIndex++;
+            if (allowAutoRedirect.HasValue)
+            {
+                _optionNames[optionIndex] = "redirect";
+                _optionValues[optionIndex] = allowAutoRedirect.Value ? "follow" : "manual";
                 optionIndex++;
-                if (allowAutoRedirect.HasValue)
+            }
+
+            if (hasFetchOptions && fetchOptions != null)
+            {
+                foreach (KeyValuePair<string, object> item in fetchOptions)
                 {
-                    optionNames[optionIndex] = "redirect";
-                    optionValues[optionIndex] = allowAutoRedirect.Value ? "follow" : "manual";
+                    _optionNames[optionIndex] = item.Key;
+                    _optionValues[optionIndex] = item.Value;
                     optionIndex++;
                 }
+            }
 
-                foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
+            var headerNames = new List<string>(headerCount);
+            var headerValues = new List<string>(headerCount);
+
+            foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
+            {
+                foreach (string value in header.Value)
+                {
+                    headerNames.Add(header.Key);
+                    headerValues.Add(value);
+                }
+            }
+
+            if (request.Content != null)
+            {
+                foreach (KeyValuePair<string, IEnumerable<string>> header in request.Content.Headers)
                 {
                     foreach (string value in header.Value)
                     {
@@ -175,200 +225,248 @@ namespace System.Net.Http
                         headerValues.Add(value);
                     }
                 }
+            }
+            _headerNames = headerNames.ToArray();
+            _headerValues = headerValues.ToArray();
+        }
 
-                if (request.Content != null)
+        public async Task<HttpResponseMessage> CallFetch()
+        {
+            CancellationHelper.ThrowIfCancellationRequested(_cancellationToken);
+
+            BrowserHttpWriteStream? writeStream = null;
+            Task fetchPromise;
+            bool streamingRequestEnabled = false;
+
+            try
+            {
+                if (_request.Content != null)
                 {
-                    foreach (KeyValuePair<string, IEnumerable<string>> header in request.Content.Headers)
+                    if (BrowserHttpInterop.SupportsStreamingRequest())
                     {
-                        foreach (string value in header.Value)
-                        {
-                            headerNames.Add(header.Key);
-                            headerValues.Add(value);
-                        }
+                        _request.Options.TryGetValue(EnableStreamingRequest, out streamingRequestEnabled);
                     }
-                }
 
-                if (hasFetchOptions && fetchOptions != null)
-                {
-                    foreach (KeyValuePair<string, object> item in fetchOptions)
+                    if (streamingRequestEnabled)
                     {
-                        optionNames[optionIndex] = item.Key;
-                        optionValues[optionIndex] = item.Value;
-                        optionIndex++;
-                    }
-                }
-
-                Task<JSObject>? promise;
-                cancellationToken.ThrowIfCancellationRequested();
-                if (request.Content != null)
-                {
-                    if (request.Content is StringContent)
-                    {
-                        string body = await request.Content.ReadAsStringAsync(cancellationToken)
-                            .ConfigureAwait(true);
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, body);
+                        fetchPromise = BrowserHttpInterop.FetchStream(_jsController, uri, _headerNames, _headerValues, _optionNames, _optionValues);
+                        writeStream = new BrowserHttpWriteStream(this);
+                        await _request.Content.CopyToAsync(writeStream, _cancellationToken).ConfigureAwait(false);
+                        var closePromise = BrowserHttpInterop.TransformStreamClose(_jsController);
+                        await BrowserHttpInterop.CancellationHelper(closePromise, _cancellationToken, _jsController).ConfigureAwait(false);
                     }
                     else
                     {
-                        byte[] buffer = await request.Content.ReadAsByteArrayAsync(cancellationToken)
-                            .ConfigureAwait(true);
-                        cancellationToken.ThrowIfCancellationRequested();
+                        byte[] buffer = await _request.Content.ReadAsByteArrayAsync(_cancellationToken).ConfigureAwait(false);
+                        CancellationHelper.ThrowIfCancellationRequested(_cancellationToken);
 
-                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
+                        Memory<byte> bufferMemory = buffer.AsMemory();
+                        // http_wasm_fetch_byte makes a copy of the bytes synchronously, so we can un-pin it synchronously
+                        using MemoryHandle pinBuffer = bufferMemory.Pin();
+                        fetchPromise = BrowserHttpInterop.FetchBytes(_jsController, uri, _headerNames, _headerValues, _optionNames, _optionValues, pinBuffer, buffer.Length);
                     }
                 }
                 else
                 {
-                    promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController);
+                    fetchPromise = BrowserHttpInterop.Fetch(_jsController, uri, _headerNames, _headerValues, _optionNames, _optionValues);
                 }
+                await BrowserHttpInterop.CancellationHelper(fetchPromise, _cancellationToken, _jsController).ConfigureAwait(false);
 
-                cancellationToken.ThrowIfCancellationRequested();
-                ValueTask<JSObject> wrappedTask = BrowserHttpInterop.CancelationHelper(promise, cancellationToken, abortController);
-                JSObject fetchResponse = await wrappedTask.ConfigureAwait(true);
-                return new WasmFetchResponse(fetchResponse, abortRegistration.Value);
+                return ConvertResponse();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // this would also trigger abort
-                abortRegistration?.Dispose();
+                Dispose(); // will also abort request
+                if (ex is JSException jse)
+                {
+                    throw new HttpRequestException(jse.Message, jse);
+                }
                 throw;
             }
-        }
-
-        private static HttpResponseMessage ConvertResponse(HttpRequestMessage request, WasmFetchResponse fetchResponse)
-        {
-            string? responseType = fetchResponse.ResponseType;
-            HttpResponseMessage responseMessage = new HttpResponseMessage((HttpStatusCode)fetchResponse.Status);
-            responseMessage.RequestMessage = request;
-            if (responseType == "opaqueredirect")
+            finally
             {
-                // Here we will set the ReasonPhrase so that it can be evaluated later.
-                // We do not have a status code but this will signal some type of what happened
-                // after interrogating the status code for success or not i.e. IsSuccessStatusCode
-                //
-                // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
-                // opaqueredirect: The fetch request was made with redirect: "manual".
-                // The Response's status is 0, headers are empty, body is null and trailer is empty.
-                responseMessage.SetReasonPhraseWithoutValidation(fetchResponse.ResponseType);
-            }
-
-            bool streamingEnabled = false;
-            if (StreamingSupported)
-            {
-                request.Options.TryGetValue(EnableStreamingResponse, out streamingEnabled);
-            }
-
-            responseMessage.Content = streamingEnabled
-                ? new StreamContent(new WasmHttpReadStream(fetchResponse))
-                : new BrowserHttpContent(fetchResponse);
-
-
-            // Some of the headers may not even be valid header types in .NET thus we use TryAddWithoutValidation
-            // CORS will only allow access to certain headers on browser.
-            BrowserHttpInterop.GetResponseHeaders(fetchResponse.FetchResponse, responseMessage.Headers, responseMessage.Content.Headers);
-
-            return responseMessage;
-        }
-
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            ArgumentNullException.ThrowIfNull(request);
-            return Impl(request, cancellationToken, _isAllowAutoRedirectTouched ? AllowAutoRedirect : null);
-
-            static async Task<HttpResponseMessage> Impl(HttpRequestMessage request, CancellationToken cancellationToken, bool? allowAutoRedirect)
-            {
-                WasmFetchResponse fetchRespose = await CallFetch(request, cancellationToken, allowAutoRedirect).ConfigureAwait(true);
-                return ConvertResponse(request, fetchRespose);
-            }
-        }
-    }
-
-    internal sealed class WasmFetchResponse : IDisposable
-    {
-        public readonly JSObject FetchResponse;
-        private readonly CancellationTokenRegistration _abortRegistration;
-        private bool _isDisposed;
-
-        public WasmFetchResponse(JSObject fetchResponse, CancellationTokenRegistration abortRegistration)
-        {
-            ArgumentNullException.ThrowIfNull(fetchResponse);
-
-            FetchResponse = fetchResponse;
-            _abortRegistration = abortRegistration;
-        }
-
-        public string ResponseType
-        {
-            get
-            {
-                return FetchResponse.GetPropertyAsString("type")!;
+                writeStream?.Dispose();
             }
         }
 
-        public int Status
+        private HttpResponseMessage ConvertResponse()
         {
-            get
+            lock (this)
             {
-                return FetchResponse.GetPropertyAsInt32("status");
-            }
+                ThrowIfDisposed();
+                string? responseType = BrowserHttpInterop.GetResponseType(_jsController);
+                int status = BrowserHttpInterop.GetResponseStatus(_jsController);
+                HttpResponseMessage responseMessage = new HttpResponseMessage((HttpStatusCode)status);
+                responseMessage.RequestMessage = _request;
+                if (responseType == "opaqueredirect")
+                {
+                    // Here we will set the ReasonPhrase so that it can be evaluated later.
+                    // We do not have a status code but this will signal some type of what happened
+                    // after interrogating the status code for success or not i.e. IsSuccessStatusCode
+                    //
+                    // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+                    // opaqueredirect: The fetch request was made with redirect: "manual".
+                    // The Response's status is 0, headers are empty, body is null and trailer is empty.
+                    responseMessage.SetReasonPhraseWithoutValidation(responseType);
+                }
+
+                bool streamingResponseEnabled = false;
+                if (BrowserHttpInterop.SupportsStreamingResponse())
+                {
+                    _request.Options.TryGetValue(EnableStreamingResponse, out streamingResponseEnabled);
+                }
+
+                responseMessage.Content = streamingResponseEnabled
+                    ? new StreamContent(new BrowserHttpReadStream(this))
+                    : new BrowserHttpContent(this);
+
+                BrowserHttpInterop.GetResponseHeaders(_jsController!, responseMessage.Headers, responseMessage.Content.Headers);
+
+                return responseMessage;
+            } //lock
         }
 
         public void ThrowIfDisposed()
         {
-            ObjectDisposedException.ThrowIf(_isDisposed && FetchResponse.IsDisposed, this);
+            lock (this)
+            {
+                ObjectDisposedException.ThrowIf(_isDisposed, this);
+            } //lock
         }
 
         public void Dispose()
         {
-            if (_isDisposed)
-                return;
-
-            _isDisposed = true;
-            _abortRegistration.Dispose();
-
-            if (FetchResponse != null && !FetchResponse.IsDisposed)
+            lock (this)
             {
-                BrowserHttpInterop.AbortResponse(FetchResponse);
+                if (_isDisposed)
+                    return;
+                _isDisposed = true;
             }
-            FetchResponse?.Dispose();
+            _abortRegistration.Dispose();
+            if (_jsController != null)
+            {
+                if (!_jsController.IsDisposed)
+                {
+                    BrowserHttpInterop.AbortRequest(_jsController);// aborts also response
+                }
+                _jsController.Dispose();
+            }
         }
+    }
+
+    internal sealed class BrowserHttpWriteStream : Stream
+    {
+        private readonly BrowserHttpController _controller; // we don't own it, we don't dispose it from here
+        public BrowserHttpWriteStream(BrowserHttpController controller)
+        {
+            ArgumentNullException.ThrowIfNull(controller);
+
+            _controller = controller;
+        }
+
+        private Task WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        {
+            CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
+            _controller.ThrowIfDisposed();
+
+            // http_wasm_transform_stream_write makes a copy of the bytes synchronously, so we can dispose the handle synchronously
+            using MemoryHandle pinBuffer = buffer.Pin();
+            Task writePromise = BrowserHttpInterop.TransformStreamWriteUnsafe(_controller._jsController, buffer, pinBuffer);
+            return BrowserHttpInterop.CancellationHelper(writePromise, cancellationToken, _controller._jsController);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        {
+            return new ValueTask(WriteAsyncCore(buffer, cancellationToken));
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+        }
+
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+
+        protected override void Dispose(bool disposing)
+        {
+        }
+
+        public override void Flush()
+        {
+        }
+
+        #region PlatformNotSupported
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+        public override long Length => throw new NotSupportedException();
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException(SR.net_http_synchronous_writes_not_supported);
+        }
+        #endregion
     }
 
     internal sealed class BrowserHttpContent : HttpContent
     {
         private byte[]? _data;
         private int _length = -1;
-        private readonly WasmFetchResponse _fetchResponse;
+        private readonly BrowserHttpController _controller;
 
-        public BrowserHttpContent(WasmFetchResponse fetchResponse)
+        public BrowserHttpContent(BrowserHttpController controller)
         {
-            ArgumentNullException.ThrowIfNull(fetchResponse);
-
-            _fetchResponse = fetchResponse;
+            ArgumentNullException.ThrowIfNull(controller);
+            _controller = controller;
         }
 
-        // TODO alocate smaller buffer and call multiple times
+        // TODO allocate smaller buffer and call multiple times
         private async ValueTask<byte[]> GetResponseData(CancellationToken cancellationToken)
         {
-            if (_data != null)
+            Task<int> promise;
+            lock (_controller)
             {
+                if (_data != null)
+                {
+                    return _data;
+                }
+                _controller.ThrowIfDisposed();
+                promise = BrowserHttpInterop.GetResponseLength(_controller._jsController!);
+            } //lock
+            _length = await BrowserHttpInterop.CancellationHelper(promise, cancellationToken, _controller._jsController).ConfigureAwait(false);
+            lock (_controller)
+            {
+                _data = new byte[_length];
+
+                BrowserHttpInterop.GetResponseBytes(_controller._jsController!, new Span<byte>(_data));
+
                 return _data;
-            }
-            _fetchResponse.ThrowIfDisposed();
-            Task<int> promise = BrowserHttpInterop.GetResponseLength(_fetchResponse.FetchResponse);
-            _length = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, null, _fetchResponse.FetchResponse).ConfigureAwait(true);
-            _data = new byte[_length];
-
-            BrowserHttpInterop.GetResponseBytes(_fetchResponse.FetchResponse, new Span<byte>(_data));
-
-            return _data;
+            } //lock
         }
 
         protected override async Task<Stream> CreateContentReadStreamAsync()
         {
-            byte[] data = await GetResponseData(CancellationToken.None).ConfigureAwait(true);
+            byte[] data = await GetResponseData(CancellationToken.None).ConfigureAwait(false);
             return new MemoryStream(data, writable: false);
         }
 
@@ -378,8 +476,9 @@ namespace System.Net.Http
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(stream, nameof(stream));
-            byte[] data = await GetResponseData(cancellationToken).ConfigureAwait(true);
-            await stream.WriteAsync(data, cancellationToken).ConfigureAwait(true);
+
+            byte[] data = await GetResponseData(cancellationToken).ConfigureAwait(false);
+            await stream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
         }
 
         protected internal override bool TryComputeLength(out long length)
@@ -396,35 +495,40 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            _fetchResponse?.Dispose();
+            _controller.Dispose();
             base.Dispose(disposing);
         }
     }
 
-    internal sealed class WasmHttpReadStream : Stream
+    internal sealed class BrowserHttpReadStream : Stream
     {
-        private WasmFetchResponse _fetchResponse;
+        private BrowserHttpController _controller; // we own the object and have to dispose it
 
-        public WasmHttpReadStream(WasmFetchResponse fetchResponse)
+        public BrowserHttpReadStream(BrowserHttpController controller)
         {
-            _fetchResponse = fetchResponse;
+            _controller = controller;
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
+            _controller.ThrowIfDisposed();
 
-            _fetchResponse.ThrowIfDisposed();
-            cancellationToken.ThrowIfCancellationRequested();
-            using (Buffers.MemoryHandle handle = buffer.Pin())
+            MemoryHandle pinBuffer = buffer.Pin();
+            int bytesCount;
+            try
             {
-                Task<int> promise = GetStreamedResponseBytesUnsafe(_fetchResponse, buffer, handle);
-                int response = await BrowserHttpInterop.CancelationHelper(promise, cancellationToken, null, _fetchResponse.FetchResponse).ConfigureAwait(true);
-                return response;
-            }
+                _controller.ThrowIfDisposed();
 
-            unsafe static Task<int> GetStreamedResponseBytesUnsafe(WasmFetchResponse _fetchResponse, Memory<byte> buffer, System.Buffers.MemoryHandle handle)
-                => BrowserHttpInterop.GetStreamedResponseBytes(_fetchResponse.FetchResponse, (IntPtr)handle.Pointer, buffer.Length);
+                var promise = BrowserHttpInterop.GetStreamedResponseBytesUnsafe(_controller._jsController, buffer, pinBuffer);
+                bytesCount = await BrowserHttpInterop.CancellationHelper(promise, cancellationToken, _controller._jsController).ConfigureAwait(false);
+            }
+            finally
+            {
+                // this must be after await, because http_wasm_get_streamed_response_bytes is using the buffer in a continuation
+                pinBuffer.Dispose();
+            }
+            return bytesCount;
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -436,22 +540,24 @@ namespace System.Net.Http
         public override bool CanRead => true;
         public override bool CanSeek => false;
         public override bool CanWrite => false;
-        public override long Length => throw new NotSupportedException();
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
 
         protected override void Dispose(bool disposing)
         {
-            _fetchResponse?.Dispose();
+            _controller.Dispose();
         }
 
         public override void Flush()
         {
         }
 
+        #region PlatformNotSupported
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+        public override long Length => throw new NotSupportedException();
         public override int Read(byte[] buffer, int offset, int count)
         {
             throw new NotSupportedException(SR.net_http_synchronous_reads_not_supported);
@@ -471,5 +577,6 @@ namespace System.Net.Http
         {
             throw new NotSupportedException();
         }
+        #endregion
     }
 }

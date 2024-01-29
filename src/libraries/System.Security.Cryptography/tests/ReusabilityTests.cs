@@ -37,6 +37,17 @@ namespace System.Security.Cryptography.Tests
             yield return new object[] { new HMACSHA256(), };
             yield return new object[] { new HMACSHA384(), };
             yield return new object[] { new HMACSHA512(), };
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                yield return new object[] { SHA3_256.Create() };
+                yield return new object[] { SHA3_384.Create() };
+                yield return new object[] { SHA3_512.Create() };
+
+                yield return new object[] { new HMACSHA3_256() };
+                yield return new object[] { new HMACSHA3_384() };
+                yield return new object[] { new HMACSHA3_512() };
+            }
         }
     }
 }

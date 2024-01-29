@@ -30,6 +30,6 @@ namespace System.Reflection
 
         private Type[] GetCustomModifiers(bool required) =>
              (_typeSignature._signature != null) ?
-                _typeSignature._signature.GetCustomModifiersAtOffset(_typeSignature._offset, required) : Type.EmptyTypes;
+                _typeSignature._signature.GetCustomModifiersAtOffset(_typeSignature._offset, required) : EmptyTypes;
     }
 }

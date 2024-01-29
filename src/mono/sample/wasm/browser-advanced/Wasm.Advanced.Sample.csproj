@@ -3,7 +3,7 @@
   <PropertyGroup>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
-    <WasmEnableLegacyJsInterop>false</WasmEnableLegacyJsInterop>
+    <InvariantTimezone>true</InvariantTimezone>
     <WasmEnableWebcil>false</WasmEnableWebcil>
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
     <EmccEnableAssertions>true</EmccEnableAssertions>
@@ -14,9 +14,13 @@
     <_ServeHeaders>$(_ServeHeaders) -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot;</_ServeHeaders>
     <!-- enable reporting to profiler in browser dev tools -->
     <WasmProfilers>browser;</WasmProfilers>
+
+    <!-- Put "framework" (dotnet.js, dlls, etc) files directly into the AppBundle -->
+    <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
   </PropertyGroup>
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />
+    <WasmExtraFilesToDeploy Include="advanced-sample.lib.module.js" />
     <!-- add export GL object from Module -->
     <EmccExportedRuntimeMethod Include="GL" />
     <NativeFileReference Include="fibonacci.c" />

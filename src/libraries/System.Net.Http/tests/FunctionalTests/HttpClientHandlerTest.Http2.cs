@@ -31,14 +31,17 @@ namespace System.Net.Http.Functional.Tests
         private async Task AssertProtocolErrorAsync(Task task, ProtocolErrors errorCode)
         {
             HttpRequestException outerEx = await Assert.ThrowsAsync<HttpRequestException>(() => task);
-            _output.WriteLine(outerEx.InnerException.Message);
+            _output.WriteLine($"Outer exception: {outerEx}");
+            Assert.Equal(HttpRequestError.HttpProtocolError, outerEx.HttpRequestError);
             HttpProtocolException protocolEx = Assert.IsType<HttpProtocolException>(outerEx.InnerException);
+            Assert.Equal(HttpRequestError.HttpProtocolError, protocolEx.HttpRequestError);
             Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
         private async Task AssertHttpProtocolException(Task task, ProtocolErrors errorCode)
         {
             HttpProtocolException protocolEx = await Assert.ThrowsAsync<HttpProtocolException>(() => task);
+            Assert.Equal(HttpRequestError.HttpProtocolError, protocolEx.HttpRequestError);
             Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
@@ -136,7 +139,8 @@ namespace System.Net.Http.Functional.Tests
 
                 Http2LoopbackConnection connection = await server.AcceptConnectionAsync(timeout: null);
                 _ = await connection.ReadSettingsAsync();
-
+                // Wait until client starts sending request
+                _ = await connection.ReadFrameAsync(TestHelper.PassingTestTimeout);
                 GoAwayFrame goAwayFrame = new GoAwayFrame(lastStreamId: 0, (int)ProtocolErrors.HTTP_1_1_REQUIRED, additionalDebugData: Array.Empty<byte>(), streamId: 0);
                 await connection.WriteFrameAsync(goAwayFrame);
 
@@ -301,6 +305,24 @@ namespace System.Net.Http.Functional.Tests
                 // Send a reset stream frame so that the stream moves to a terminal state.
                 RstStreamFrame resetStream = new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.INTERNAL_ERROR, streamId);
                 await connection.WriteFrameAsync(resetStream);
+
+                await AssertProtocolErrorAsync(sendTask, ProtocolErrors.INTERNAL_ERROR);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_IncorrectServerPreface_RequestFailsWithAppropriateHttpProtocolException()
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                Http2LoopbackConnection connection = await server.AcceptConnectionAsync();
+                await connection.ReadSettingsAsync();
+                // Wait until client starts sending request
+                _ = await connection.ReadFrameAsync(TestHelper.PassingTestTimeout);
+                await connection.SendGoAway(0, ProtocolErrors.INTERNAL_ERROR);
 
                 await AssertProtocolErrorAsync(sendTask, ProtocolErrors.INTERNAL_ERROR);
             }

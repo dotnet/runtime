@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-
+using System.Reflection;
+using System.Reflection.Runtime.BindingFlagSupport;
+using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.CustomAttributes;
-using System.Reflection.Runtime.BindingFlagSupport;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
@@ -22,7 +21,6 @@ namespace System.Reflection.Runtime.FieldInfos
     //
     // The Runtime's implementation of fields.
     //
-    [DebuggerDisplay("{_debugName}")]
     internal abstract partial class RuntimeFieldInfo : FieldInfo
     {
         //
@@ -76,7 +74,7 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-                return _contextTypeInfo;
+                return _contextTypeInfo.ToType();
             }
         }
 
@@ -87,7 +85,7 @@ namespace System.Reflection.Runtime.FieldInfos
                 Type fieldType = _lazyFieldType;
                 if (fieldType == null)
                 {
-                    _lazyFieldType = fieldType = this.FieldRuntimeType;
+                    _lazyFieldType = fieldType = this.FieldRuntimeType.ToType();
                 }
 
                 return fieldType;
@@ -127,7 +125,7 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-                return _reflectedType;
+                return _reflectedType.ToType();
             }
         }
 
@@ -215,7 +213,7 @@ namespace System.Reflection.Runtime.FieldInfos
                     {
                         _lazyFieldAccessor = fieldAccessor = TryGetFieldAccessor();
                         if (fieldAccessor == null)
-                            throw ReflectionCoreExecution.ExecutionDomain.CreateNonInvokabilityException(this);
+                            throw ReflectionCoreExecution.ExecutionEnvironment.CreateNonInvokabilityException(this);
                     }
                 }
                 return fieldAccessor;
@@ -229,18 +227,13 @@ namespace System.Reflection.Runtime.FieldInfos
 
         protected RuntimeFieldInfo WithDebugName()
         {
-            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
-            populateDebugNames = true;
-#endif
-            if (!populateDebugNames)
-                return this;
-
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = MetadataName;
             }
+#endif
             return this;
         }
 
@@ -264,6 +257,8 @@ namespace System.Reflection.Runtime.FieldInfos
 
         private volatile Type _lazyFieldType;
 
+#if DEBUG
         private string _debugName;
+#endif
     }
 }

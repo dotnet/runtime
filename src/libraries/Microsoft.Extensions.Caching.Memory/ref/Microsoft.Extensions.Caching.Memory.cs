@@ -27,6 +27,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public MemoryCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions> optionsAccessor) { }
         public MemoryCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions> optionsAccessor, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory) { }
         public int Count { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<object> Keys { get { throw null; } }
         public void Clear() { }
         public void Compact(double percentage) { }
         public Microsoft.Extensions.Caching.Memory.ICacheEntry CreateEntry(object key) { throw null; }
@@ -42,6 +43,9 @@ namespace Microsoft.Extensions.Caching.Memory
         public MemoryCacheOptions() { }
         public Microsoft.Extensions.Internal.ISystemClock? Clock { get { throw null; } set { } }
         public double CompactionPercentage { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("This property is retained only for compatibility.  Remove use and instead call MemoryCache.Compact as needed.", error: true)]
+        public bool CompactOnMemoryPressure { get; set; }
         public System.TimeSpan ExpirationScanFrequency { get { throw null; } set { } }
         Microsoft.Extensions.Caching.Memory.MemoryCacheOptions Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions>.Value { get { throw null; } }
         public long? SizeLimit { get { throw null; } set { } }

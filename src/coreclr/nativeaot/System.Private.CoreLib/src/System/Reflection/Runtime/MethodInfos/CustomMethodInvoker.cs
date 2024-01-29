@@ -3,15 +3,15 @@
 
 using System.Diagnostics;
 
-using Internal.Runtime.Augments;
 using Internal.Reflection.Core.Execution;
+using Internal.Runtime.Augments;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
     //
     // Custom invoker for edge case scenarios not handled by the toolchain. Examples: Strings and Nullables.
     //
-    internal sealed class CustomMethodInvoker : MethodInvoker
+    internal sealed class CustomMethodInvoker : MethodBaseInvoker
     {
         public CustomMethodInvoker(Type thisType, Type[] parameterTypes, InvokerOptions options, CustomMethodInvokerAction action)
         {
@@ -21,7 +21,16 @@ namespace System.Reflection.Runtime.MethodInfos
             _parameterTypes = parameterTypes;
         }
 
-        protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException) =>
+            InvokeSpecial(thisObject, arguments, binderBundle, wrapInTargetInvocationException);
+
+        protected internal sealed override object? Invoke(object? thisObject, Span<object?> arguments) =>
+            InvokeSpecial(thisObject, arguments, binderBundle: null, wrapInTargetInvocationException: false);
+
+        protected internal sealed override object? InvokeDirectWithFewArgs(object? thisObject, Span<object?> arguments) =>
+            InvokeSpecial(thisObject, arguments, binderBundle: null, wrapInTargetInvocationException: false);
+
+        private object? InvokeSpecial(object? thisObject, ReadOnlySpan<object?> arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             // This does not handle optional parameters. None of the methods we use custom invocation for have them.
             if (!(thisObject == null && 0 != (_options & InvokerOptions.AllowNullThis)))
@@ -46,6 +55,27 @@ namespace System.Reflection.Runtime.MethodInfos
                 throw new TargetInvocationException(e);
             }
             return result;
+        }
+
+        protected sealed override object CreateInstance(object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            // Custom method invokers need to also create the instance, so we just pass a null this.
+            Debug.Assert((_options & InvokerOptions.AllowNullThis) != 0);
+            return Invoke(null, arguments, binderBundle, wrapInTargetInvocationException);
+        }
+
+        protected internal sealed override object CreateInstance(Span<object?> arguments)
+        {
+            // Custom method invokers need to also create the instance, so we just pass a null this.
+            Debug.Assert((_options & InvokerOptions.AllowNullThis) != 0);
+            return Invoke(null, arguments);
+        }
+
+        protected internal sealed override object CreateInstanceWithFewArgs(Span<object?> arguments)
+        {
+            // Custom method invokers need to also create the instance, so we just pass a null this.
+            Debug.Assert((_options & InvokerOptions.AllowNullThis) != 0);
+            return InvokeDirectWithFewArgs(null, arguments);
         }
 
         public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen)

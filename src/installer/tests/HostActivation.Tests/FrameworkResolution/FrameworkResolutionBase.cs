@@ -88,14 +88,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         public class SharedTestStateBase : IDisposable
         {
             private readonly string _builtDotnet;
-            private readonly RepoDirectoriesProvider _repoDirectories;
             private readonly string _baseDir;
             private readonly TestArtifact _baseDirArtifact;
 
             public SharedTestStateBase()
             {
                 _builtDotnet = Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish");
-                _repoDirectories = new RepoDirectoriesProvider();
 
                 string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "frameworkResolution");
                 _baseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
@@ -129,11 +127,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 testApp.PopulateSelfContained(TestApp.MockedComponent.HostPolicy);
 
                 // ./SelfContainedApp.exe
-                string selfContainedAppExePath = Path.Combine(testAppDir, Binaries.GetExeFileNameForCurrentPlatform("SelfContainedApp"));
-                File.Copy(
-                    Binaries.AppHost.FilePath,
-                    selfContainedAppExePath);
-                AppHostExtensions.BindAppHost(selfContainedAppExePath);
+                testApp.CreateAppHost(copyResources: false);
 
                 return testApp;
             }

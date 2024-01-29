@@ -5,12 +5,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Xml.Schema;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
@@ -332,7 +332,7 @@ namespace System.Xml.Serialization
             MethodInfo XmlSerializationWriter_WriteEndElement = typeof(XmlSerializationWriter).GetMethod(
                 "WriteEndElement",
                 CodeGenerator.InstanceBindingFlags,
-                new Type[] { typeof(object) }
+                s_objectType
                 )!;
             object oVar = ilg.GetVariable(source);
             ilg.Ldarg(0);
@@ -353,6 +353,11 @@ namespace System.Xml.Serialization
             WriteTag("WriteEmptyTag", name, ns);
         }
 
+        private static readonly string[] s_argNamesP = new string[] { "p" };
+        private static readonly string[] s_argNamesO = new string[] { "o" };
+        private static readonly Type[] s_objectArrayType = new Type[] { typeof(object[]) };
+        private static readonly Type[] s_objectType = new Type[] { typeof(object) };
+
         [RequiresUnreferencedCode("calls WriteMember")]
         private string GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
@@ -365,8 +370,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(void),
                 methodName,
-                new Type[] { typeof(object[]) },
-                new string[] { "p" },
+                s_objectArrayType,
+                s_argNamesP,
                 CodeGenerator.PublicMethodAttributes
                 );
 
@@ -557,8 +562,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(void),
                 methodName,
-                new Type[] { typeof(object) },
-                new string[] { "o" },
+                s_objectType,
+                s_argNamesO,
                 CodeGenerator.PublicMethodAttributes
                 );
 
@@ -1004,7 +1009,7 @@ namespace System.Xml.Serialization
                 MethodInfo XmlSerializationWriter_CreateUnknownTypeException = typeof(XmlSerializationWriter).GetMethod(
                     "CreateUnknownTypeException",
                     CodeGenerator.InstanceBindingFlags,
-                    new Type[] { typeof(object) }
+                    s_objectType
                     )!;
                 ilg.Ldarg(0);
                 ilg.Ldarg(oArg);
@@ -1849,7 +1854,7 @@ namespace System.Xml.Serialization
                     MethodInfo XmlSerializationWriter_CreateUnknownTypeException = typeof(XmlSerializationWriter).GetMethod(
                         "CreateUnknownTypeException",
                         CodeGenerator.InstanceBindingFlags,
-                        new Type[] { typeof(object) })!;
+                        s_objectType)!;
                     ilg.Ldarg(0);
                     source.Load(typeof(object));
                     ilg.Call(XmlSerializationWriter_CreateUnknownTypeException);
@@ -2064,7 +2069,7 @@ namespace System.Xml.Serialization
                     MethodInfo XmlSerializationWriter_CreateInvalidAnyTypeException = typeof(XmlSerializationWriter).GetMethod(
                         "CreateInvalidAnyTypeException",
                         CodeGenerator.InstanceBindingFlags,
-                        new Type[] { typeof(object) }
+                        s_objectType
                         )!;
                     ilg.Ldarg(0);
                     source.Load(null);

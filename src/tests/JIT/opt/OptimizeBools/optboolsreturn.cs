@@ -160,6 +160,53 @@ public class CBoolTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool GreaterThanOrEqualZero(int x)
+    {
+        return x == 0 || x > 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool GreaterThanOrEqualZeroBis(int x)
+    {
+        return  x > 0 || x == 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool LessThanOrEqualZero(int x)
+    {
+        return x == 0 || x < 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool LessThanOrEqualZeroBis(int x)
+    {
+        return x < 0 || x == 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool GreaterThanZero(int x)
+    {
+        return x != 0 && x >= 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool GreaterThanZeroBis(int x)
+    {
+        return x >= 0 && x != 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool LessThanZero(int x)
+    {
+        return x != 0 && x <= 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool LessThanZeroBis(int x)
+    {
+        return x <= 0 && x != 0;
+    }
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool AreBothGreatThanZero(int x, int y)
     {
         bool b = x >= 0 && y >= 0;
@@ -188,6 +235,94 @@ public class CBoolTest
         if (b)
         {
             Console.WriteLine("IsEitherNonZero true");
+        }
+        return b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsGreaterThanOrEqualZero(int x)
+    {
+        bool b = x == 0 || x > 0;
+        if (b)
+        {
+            Console.WriteLine("IsGreaterThanOrEqualZero true");
+        }
+        return b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsGreaterThanOrEqualZeroBis(int x)
+    {
+        bool b =  x > 0 || x == 0;
+        if (b)
+        {
+            Console.WriteLine("IsGreaterThanOrEqualZeroBis true");
+        }
+        return b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsLessThanOrEqualZero(int x)
+    {
+        bool b = x == 0 || x < 0;
+        if (b)
+        {
+            Console.WriteLine("IsLessThanOrEqualZero true");
+        }
+        return b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsLessThanOrEqualZeroBis(int x)
+    {
+        bool b =  x < 0 || x == 0;
+        if (b)
+        {
+            Console.WriteLine("IsLessThanOrEqualZeroBis true");
+        }
+        return b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsGreaterThanZero(int x)
+    {
+        bool b = x != 0 && x >= 0;
+        if (b)
+        {
+            Console.WriteLine("IsGreaterThanZero true");
+        }
+        return b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsGreaterThanZeroBis(int x)
+    {
+        bool b = x >= 0 && x != 0;
+        if (b)
+        {
+            Console.WriteLine("IsGreaterThanZeroBis true");
+        }
+        return b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsLessThanZero(int x)
+    {
+        bool b = x != 0 && x <= 0;
+        if (b)
+        {
+            Console.WriteLine("IsLessThanZero true");
+        }
+        return b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsLessThanZeroBis(int x)
+    {
+        bool b = x <= 0 && x != 0;
+        if (b)
+        {
+            Console.WriteLine("IsLessThanZeroBis true");
         }
         return b;
     }
@@ -511,6 +646,150 @@ public class CBoolTest
             return 101;
         }
 
+        if (!GreaterThanOrEqualZero(10))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanOrEqualZero(10) failed");
+            return 101;
+        }
+
+        if (!GreaterThanOrEqualZero(0))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanOrEqualZero(0) failed");
+            return 101;
+        }
+
+        if (GreaterThanOrEqualZero(-10))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanOrEqualZero(-10) failed");
+            return 101;
+        }
+
+        if (!GreaterThanOrEqualZeroBis(10))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanOrEqualZeroBis(10) failed");
+            return 101;
+        }
+
+        if (!GreaterThanOrEqualZeroBis(0))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanOrEqualZeroBis(0) failed");
+            return 101;
+        }
+
+        if (GreaterThanOrEqualZeroBis(-10))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanOrEqualZeroBis(-10) failed");
+            return 101;
+        }
+
+        if (!GreaterThanZero(10))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanZero(10) failed");
+            return 101;
+        }
+
+        if (GreaterThanZero(0))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanZero(0) failed");
+            return 101;
+        }
+
+        if (GreaterThanZero(-10))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanZero(-10) failed");
+            return 101;
+        }
+
+        if (!GreaterThanZeroBis(10))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanZeroBis(10) failed");
+            return 101;
+        }
+
+        if (GreaterThanZeroBis(0))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanZero(0) failed");
+            return 101;
+        }
+
+        if (GreaterThanZeroBis(-10))
+        {
+            Console.WriteLine("CBoolTest:GreaterThanZero(-10) failed");
+            return 101;
+        }
+
+        if (LessThanOrEqualZero(10))
+        {
+            Console.WriteLine("CBoolTest:LessThanOrEqualZero(10) failed");
+            return 101;
+        }
+
+        if (!LessThanOrEqualZero(0))
+        {
+            Console.WriteLine("CBoolTest:LessThanOrEqualZero(0) failed");
+            return 101;
+        }
+
+        if (!LessThanOrEqualZero(-10))
+        {
+            Console.WriteLine("CBoolTest:LessThanOrEqualZero(-10) failed");
+            return 101;
+        }
+
+        if (LessThanOrEqualZeroBis(10))
+        {
+            Console.WriteLine("CBoolTest:LessThanOrEqualZeroBis(10) failed");
+            return 101;
+        }
+
+        if (!LessThanOrEqualZeroBis(0))
+        {
+            Console.WriteLine("CBoolTest:LessThanOrEqualZeroBis(0) failed");
+            return 101;
+        }
+
+        if (!LessThanOrEqualZeroBis(-10))
+        {
+            Console.WriteLine("CBoolTest:LessThanOrEqualZeroBis(-10) failed");
+            return 101;
+        }
+
+        if (LessThanZero(10))
+        {
+            Console.WriteLine("CBoolTest:LessThanZero(10) failed");
+            return 101;
+        }
+
+        if (LessThanZero(0))
+        {
+            Console.WriteLine("CBoolTest:LessThanZero(0) failed");
+            return 101;
+        }
+
+        if (!LessThanZero(-10))
+        {
+            Console.WriteLine("CBoolTest:LessThanZero(-10) failed");
+            return 101;
+        }
+
+        if (LessThanZeroBis(10))
+        {
+            Console.WriteLine("CBoolTest:LessThanZeroBis(10) failed");
+            return 101;
+        }
+
+        if (LessThanZeroBis(0))
+        {
+            Console.WriteLine("CBoolTest:LessThanZeroBis(0) failed");
+            return 101;
+        }
+
+        if (!LessThanZeroBis(-10))
+        {
+            Console.WriteLine("CBoolTest:LessThanZeroBis(-10) failed");
+            return 101;
+        }
+
         if (IsEitherLessThanZero(45, 23))
         {
             Console.WriteLine("CBoolTest:IsEitherLessThanZero(45, 23) failed");
@@ -574,6 +853,150 @@ public class CBoolTest
         if (IsEitherNonZero(0, 0))
         {
             Console.WriteLine("CBoolTest:IsEitherNonZero(0, 0) failed");
+            return 101;
+        }
+
+        if (!IsGreaterThanOrEqualZero(10))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanOrEqualZero(10) failed");
+            return 101;
+        }
+
+        if (!IsGreaterThanOrEqualZero(0))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanOrEqualZero(0) failed");
+            return 101;
+        }
+
+        if (IsGreaterThanOrEqualZero(-10))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanOrEqualZero(-10) failed");
+            return 101;
+        }
+
+        if (!IsGreaterThanOrEqualZeroBis(10))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanOrEqualZeroBis(10) failed");
+            return 101;
+        }
+
+        if (!IsGreaterThanOrEqualZeroBis(0))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanOrEqualZeroBis(0) failed");
+            return 101;
+        }
+
+        if (IsGreaterThanOrEqualZeroBis(-10))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanOrEqualZeroBis(-10) failed");
+            return 101;
+        }
+
+        if (!IsGreaterThanZero(10))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanZero(10) failed");
+            return 101;
+        }
+
+        if (IsGreaterThanZero(0))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanZero(0) failed");
+            return 101;
+        }
+
+        if (IsGreaterThanZero(-10))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanZero(-10) failed");
+            return 101;
+        }
+
+        if (!IsGreaterThanZeroBis(10))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanZeroBis(10) failed");
+            return 101;
+        }
+
+        if (IsGreaterThanZeroBis(0))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanZeroBis(0) failed");
+            return 101;
+        }
+
+        if (IsGreaterThanZeroBis(-10))
+        {
+            Console.WriteLine("CBoolTest:IsGreaterThanZero(-10) failed");
+            return 101;
+        }
+
+        if (IsLessThanOrEqualZero(10))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanOrEqualZero(10) failed");
+            return 101;
+        }
+
+        if (!IsLessThanOrEqualZero(0))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanOrEqualZero(0) failed");
+            return 101;
+        }
+
+        if (!IsLessThanOrEqualZero(-10))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanOrEqualZero(-10) failed");
+            return 101;
+        }
+
+        if (IsLessThanOrEqualZeroBis(10))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanOrEqualZeroBis(10) failed");
+            return 101;
+        }
+
+        if (!IsLessThanOrEqualZeroBis(0))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanOrEqualZeroBis(0) failed");
+            return 101;
+        }
+
+        if (!IsLessThanOrEqualZeroBis(-10))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanOrEqualZeroBis(-10) failed");
+            return 101;
+        }
+
+        if (IsLessThanZero(10))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanZero(10) failed");
+            return 101;
+        }
+
+        if (IsLessThanZero(0))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanZero(0) failed");
+            return 101;
+        }
+
+        if (!IsLessThanZero(-10))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanZero(-10) failed");
+            return 101;
+        }
+
+        if (IsLessThanZeroBis(10))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanZeroBis(10) failed");
+            return 101;
+        }
+
+        if (IsLessThanZeroBis(0))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanZeroBis(0) failed");
+            return 101;
+        }
+
+        if (!IsLessThanZeroBis(-10))
+        {
+            Console.WriteLine("CBoolTest:IsLessThanZeroBis(-10) failed");
             return 101;
         }
 

@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <DefineConstants>$(DefineConstants);RESOURCE_KEYS</DefineConstants>
     
     <!-- Requires the framework to also be compiled with UseSystemResourceKeys -->
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- Test infra issue on apple devices: https://github.com/dotnet/runtime/issues/89917 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>

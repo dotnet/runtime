@@ -67,6 +67,16 @@
         <target state="translated">Günlüğe kaydetme yöntemleri statik olmalıdır</target>
         <note />
       </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
+        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">Günlüğe kaydetme kaynak oluşturucusu C# {0} sürümünde kullanılamıyor. Lütfen dil sürümü {1} veya üstü bir sürümü kullanın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">C# dil sürümü kaynak oluşturucu tarafından desteklenmiyor.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
         <target state="translated">'{0}' günlüğe kaydetme yöntemi hatalı biçimlendirilmiş biçim dizeleri içeriyor</target>

@@ -18,14 +18,13 @@
     <Compile Include="MemoryMarshal\CreateSpan.cs" />
     <Compile Include="MemoryMarshal\CreateReadOnlySpan.cs" />
     <Compile Include="MemoryMarshal\CreateReadOnlySpanFromNullTerminated.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs"
-             Link="ParsersAndFormatters\Formatter\RealFormatterTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs" Link="ParsersAndFormatters\Formatter\RealFormatterTestsBase.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\RealFormatterTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs"
-             Link="ParsersAndFormatters\Parser\RealParserTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs" Link="ParsersAndFormatters\Parser\RealParserTestsBase.cs" />
     <Compile Include="ParsersAndFormatters\Parser\RealParserTests.cs" />
     <Compile Include="ReadOnlySpan\Contains.byte.cs" />
     <Compile Include="ReadOnlySpan\Contains.T.cs" />
+    <Compile Include="Span\StringSearchValues.cs" />
     <Compile Include="Span\Reflection.cs" />
     <Compile Include="SequenceReader\Advance.cs" />
     <Compile Include="SequenceReader\BasicTests.cs" />
@@ -276,9 +275,6 @@
     <Compile Include="Base64\Base64ValidationUnitTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"
-             Link="Common\System\Buffers\NativeMemoryManager.cs" />
-    <Compile Include="$(CommonPath)System\MutableDecimal.cs"
-             Link="Common\System\MutableDecimal.cs" />
+    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
   </ItemGroup>
 </Project>

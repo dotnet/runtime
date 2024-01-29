@@ -12,9 +12,9 @@
 #include "switches.h"
 #include "stresslog.h"
 #include "clrhost.h"
+#include "ex.h"
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
-#include "ex.h"
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS
@@ -266,7 +266,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
             StressLogHeader* hdr = (StressLogHeader*)(uint8_t*)(void*)theLog.hMapView;
             hdr->headerSize = sizeof(StressLogHeader);
             hdr->magic = *(uint32_t*)"LRTS";
-            hdr->version = 0x00010001;
+            hdr->version = 0x00010002;
             hdr->memoryBase = (uint8_t*)hdr;
             hdr->memoryCur = hdr->memoryBase + sizeof(StressLogHeader);
             hdr->memoryLimit = hdr->memoryBase + maxBytesTotal;
@@ -524,7 +524,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
             if (msgs->isDead)
             {
                 BOOL hasTimeStamp = msgs->curPtr != (StressMsg *)msgs->chunkListTail->EndPtr();
-                if (hasTimeStamp && msgs->curPtr->timeStamp < recycleStamp)
+                if (hasTimeStamp && msgs->curPtr->GetTimeStamp() < recycleStamp)
                 {
                     skipInsert = TRUE;
                     InterlockedDecrement(&theLog.deadCount);
@@ -535,7 +535,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
                 {
                     oldestDeadMsg = msgs;
                 }
-                else if (hasTimeStamp && oldestDeadMsg->curPtr->timeStamp > msgs->curPtr->timeStamp)
+                else if (hasTimeStamp && oldestDeadMsg->curPtr->GetTimeStamp() > msgs->curPtr->GetTimeStamp())
                 {
                     oldestDeadMsg = msgs;
                 }
@@ -750,30 +750,24 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
         moduleIndex++;
     }
 
-    // _ASSERTE ( offs < StressMsg::maxOffset );
-    if (offs >= StressMsg::maxOffset)
+    if (offs > StressMsg::maxOffset)
     {
-#ifdef _DEBUG
-        DebugBreak(); // in lieu of the above _ASSERTE
-#endif // _DEBUG
-
-        // Set it to this string instead.
-        offs =
-#ifdef _DEBUG
-            (size_t)"<BUG: StressLog format string beyond maxOffset>";
-#else // _DEBUG
-            0; // a 0 offset is ignored by StressLog::Dump
-#endif // _DEBUG else
+        // This string is at a location that is too far away from the base address of the module set.
+        // We can handle up to 68GB of native modules registered in the stresslog (like the runtime or GC).
+        // Managed assemblies cannot write to the stresslog.
+        // If you hit this break, there's either a bug or the string that was passed in is not a static string
+        // in the module.
+        DebugBreak();
+        offs = 0;
     }
 
     // Get next available slot
     StressMsg* msg = AdvanceWrite(cArgs);
 
-    msg->timeStamp = getTimeStamp();
-    msg->facility = facility;
-    msg->formatOffset = offs;
-    msg->numberOfArgs = cArgs & 0x7;
-    msg->numberOfArgsX = cArgs >> 3;
+    msg->SetTimeStamp(getTimeStamp());
+    msg->SetFacility(facility);
+    msg->SetFormatOffset(offs);
+    msg->SetNumberOfArgs(cArgs);
 
     for ( int i = 0; i < cArgs; ++i )
     {

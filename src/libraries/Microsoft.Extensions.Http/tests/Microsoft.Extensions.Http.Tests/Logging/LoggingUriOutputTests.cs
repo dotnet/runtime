@@ -167,19 +167,5 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             Assert.Equal("HTTP GET http://api.example.com/search?term=Western%20Australia", message.Scope.ToString());
         }
 #endif
-
-        private class TestMessageHandler : HttpClientHandler
-        {
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                var response = new HttpResponseMessage();
-
-                return Task.FromResult(response);
-            }
-
-#if NET5_0_OR_GREATER
-            protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => new();
-#endif
-        }
     }
 }

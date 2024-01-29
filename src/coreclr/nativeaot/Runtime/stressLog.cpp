@@ -21,7 +21,6 @@
 #include "Crst.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -167,7 +166,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper(Thread * pThread) {
             if (msgs->isDead)
             {
                 bool hasTimeStamp = msgs->curPtr != (StressMsg *)msgs->chunkListTail->EndPtr();
-                if (hasTimeStamp && msgs->curPtr->timeStamp < recycleStamp)
+                if (hasTimeStamp && msgs->curPtr->GetTimeStamp() < recycleStamp)
                 {
                     skipInsert = TRUE;
                     PalInterlockedDecrement(&theLog.deadCount);
@@ -178,7 +177,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper(Thread * pThread) {
                 {
                     oldestDeadMsg = msgs;
                 }
-                else if (hasTimeStamp && oldestDeadMsg->curPtr->timeStamp > msgs->curPtr->timeStamp)
+                else if (hasTimeStamp && oldestDeadMsg->curPtr->GetTimeStamp() > msgs->curPtr->GetTimeStamp())
                 {
                     oldestDeadMsg = msgs;
                 }
@@ -307,26 +306,24 @@ void ThreadStressLog::LogMsg ( uint32_t facility, int cArgs, const char* format,
 
     size_t offs = ((size_t)format - StressLog::theLog.moduleOffset);
 
-    ASSERT(offs < StressMsg::maxOffset);
-    if (offs >= StressMsg::maxOffset)
+    if (offs > StressMsg::maxOffset)
     {
-        // Set it to this string instead.
-        offs =
-#ifdef _DEBUG
-            (size_t)"<BUG: StressLog format string beyond maxOffset>";
-#else // _DEBUG
-            0; // a 0 offset is ignored by StressLog::Dump
-#endif // _DEBUG else
+        // This string is at a location that is too far away from the base address of the module.
+        // We can handle up to 68GB of native modules registered in the stresslog.
+        // If you hit this break, and the NativeAOT image is not around 68GB,
+        // there's either a bug or the string that was passed in is not a static string
+        // in the module.
+        PalDebugBreak();
+        offs = 0;
     }
 
     // Get next available slot
     StressMsg* msg = AdvanceWrite(cArgs);
 
-    msg->timeStamp = getTimeStamp();
-    msg->facility = facility;
-    msg->formatOffset = offs;
-    msg->numberOfArgs = cArgs & 0x7;
-    msg->numberOfArgsX = cArgs >> 3;
+    msg->SetTimeStamp(getTimeStamp());
+    msg->SetFacility(facility);
+    msg->SetFormatOffset(offs);
+    msg->SetNumberOfArgs(cArgs);
 
     for ( int i = 0; i < cArgs; ++i )
     {
@@ -334,7 +331,7 @@ void ThreadStressLog::LogMsg ( uint32_t facility, int cArgs, const char* format,
         msg->args[i] = data;
     }
 
-    ASSERT(IsValid() && threadId == PalGetCurrentThreadIdForLogging());
+    ASSERT(IsValid() && threadId == PalGetCurrentOSThreadId());
 }
 
 
@@ -342,7 +339,7 @@ void ThreadStressLog::Activate (Thread * pThread)
 {
     _ASSERTE(pThread != NULL);
     //there is no need to zero buffers because we could handle garbage contents
-    threadId = PalGetCurrentThreadIdForLogging();
+    threadId = PalGetCurrentOSThreadId();
     isDead = FALSE;
     curWriteChunk = chunkListTail;
     curPtr = (StressMsg *)curWriteChunk->EndPtr ();
@@ -487,7 +484,7 @@ ThreadStressLog* StressLog::FindLatestThreadLog() const
     for (const ThreadStressLog* ptr = this->logs; ptr != NULL; ptr = ptr->next)
     {
         if (ptr->readPtr != NULL)
-            if (latestLog == 0 || ptr->readPtr->timeStamp > latestLog->readPtr->timeStamp)
+            if (latestLog == 0 || ptr->readPtr->GetTimeStamp() > latestLog->readPtr->GetTimeStamp())
                 latestLog = ptr;
     }
     return const_cast<ThreadStressLog*>(latestLog);
@@ -517,14 +514,14 @@ void StressLog::EnumerateStressMsgs(/*STRESSMSGCALLBACK*/void* smcbWrapper, /*EN
             if (hr != S_OK)
                 strcpy_s(format, _countof(format), "Could not read address of format string");
 
-            double deltaTime = ((double) (latestMsg->timeStamp - this->startTimeStamp)) / this->tickFrequency;
+            double deltaTime = ((double) (latestMsg->GetTimeStamp() - this->startTimeStamp)) / this->tickFrequency;
 
             // Pass a copy of the args to the callback to avoid foreign code overwriting the stress log
             // entries (this was the case for %s arguments)
             memcpy_s(argsCopy, sizeof(argsCopy), latestMsg->args, (latestMsg->numberOfArgs)*sizeof(void*));
 
             // @TODO: Truncating threadId to 32-bit
-            if (!smcb((UINT32)latestLog->threadId, deltaTime, latestMsg->facility, format, argsCopy, token))
+            if (!smcb((UINT32)latestLog->threadId, deltaTime, latestMsg->GetFacility(), format, argsCopy, token))
                 break;
         }
 

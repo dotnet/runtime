@@ -119,6 +119,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("Inheritance.VirtualMethods");
 		}
 
+		public static IEnumerable<TestCaseData> InlineArrayTests ()
+		{
+			return NUnitCasesBySuiteName ("InlineArrays");
+		}
+
 		public static IEnumerable<TestCaseData> InteropTests ()
 		{
 			return NUnitCasesBySuiteName ("Interop");
@@ -199,6 +204,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("TestFramework");
 		}
 
+		public static IEnumerable<TestCaseData> TopLevelStatementsTests ()
+		{
+			return NUnitCasesBySuiteName ("TopLevelStatements");
+		}
+
 		public static IEnumerable<TestCaseData> TracingTests ()
 		{
 			return NUnitCasesBySuiteName ("Tracing");
@@ -241,8 +251,8 @@ namespace Mono.Linker.Tests.TestCases
 
 		public static TestCaseCollector CreateCollector ()
 		{
-			GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath);
-			return new TestCaseCollector (rootSourceDirectory, testCaseAssemblyPath);
+			GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyRoot);
+			return new TestCaseCollector (rootSourceDirectory, testCaseAssemblyRoot);
 		}
 
 		public static NPath TestCasesRootDirectory {
@@ -277,10 +287,10 @@ namespace Mono.Linker.Tests.TestCases
 			return data;
 		}
 
-		static void GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath)
+		static void GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyRoot)
 		{
 			rootSourceDirectory = Path.GetFullPath (Path.Combine (PathUtilities.GetTestsSourceRootDirectory (), "Mono.Linker.Tests.Cases"));
-			testCaseAssemblyPath = PathUtilities.GetTestAssemblyPath ("Mono.Linker.Tests.Cases");
+			testCaseAssemblyRoot = PathUtilities.GetTestAssemblyRoot ("Mono.Linker.Tests.Cases");
 		}
 	}
 }

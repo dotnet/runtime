@@ -14,11 +14,21 @@ namespace System.Net.Security
         private X509RevocationMode _checkCertificateRevocation = X509RevocationMode.NoCheck;
         private SslProtocols _enabledSslProtocols = SecurityProtocol.SystemDefaultSecurityProtocols;
         private bool _allowRenegotiation = true;
+        private bool _allowTlsResume = true;
 
         public bool AllowRenegotiation
         {
             get => _allowRenegotiation;
             set => _allowRenegotiation = value;
+        }
+
+        /// <summary>
+        ///  Gets or sets a value that indicates whether the SslStream should allow TLS resumption.
+        /// </summary>
+        public bool AllowTlsResume
+        {
+            get => _allowTlsResume;
+            set => _allowTlsResume = value;
         }
 
         public LocalCertificateSelectionCallback? LocalCertificateSelectionCallback { get; set; }

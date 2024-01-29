@@ -20,7 +20,7 @@
 */
 class PerfInfo {
 public:
-    PerfInfo(int pid);
+    PerfInfo(int pid, const char* basePath);
     ~PerfInfo();
     void LogImage(PEAssembly* pPEAssembly, CHAR* guid);
 

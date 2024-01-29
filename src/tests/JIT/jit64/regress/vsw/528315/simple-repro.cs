@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-internal enum NodeType
+public enum NodeType
 {
     True, False, Not, Other
 }
 
-internal class Node
+public class Node
 {
     public NodeType NodeType;
     public Node Child;
@@ -15,7 +15,7 @@ internal class Node
 
     public Node(string s) { name = s; }
 }
-internal class NodeFactory
+public class NodeFactory
 {
     public Node Conditional(Node condition, Node trueBranch, Node falseBranch)
     {

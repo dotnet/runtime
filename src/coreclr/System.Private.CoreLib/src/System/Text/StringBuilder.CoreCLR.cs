@@ -12,7 +12,7 @@ namespace System.Text
         {
             // This function assumes that required capacity will be less
             // than the max capacity of the StringBuilder
-            Diagnostics.Debug.Assert(requiredCapacity <= m_MaxCapacity);
+            Debug.Assert(requiredCapacity <= m_MaxCapacity);
 
             int newCapacity = Capacity;
             // Round the current capacity to the nearest multiple of 2

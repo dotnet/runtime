@@ -15,7 +15,8 @@
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj');
                                    Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj" />
     <ProjectReference Include="@(AnyProject);
-                               $(CoreLibProject)"
+                               $(CoreLibProject);
+                               shims\*\src\*.csproj"
                       Exclude="@(NonNetCoreAppProject)" />
   </ItemGroup>
 

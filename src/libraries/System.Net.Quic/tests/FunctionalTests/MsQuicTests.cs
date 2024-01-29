@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
+using TestUtilities;
 
 namespace System.Net.Quic.Tests
 {
@@ -46,7 +47,7 @@ namespace System.Net.Quic.Tests
     }
 
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public class MsQuicTests : QuicTestBase, IClassFixture<CertificateSetup>
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
@@ -55,6 +56,125 @@ namespace System.Net.Quic.Tests
         public MsQuicTests(ITestOutputHelper output, CertificateSetup setup) : base(output)
         {
             _certificates = setup;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public async Task QuicRootedObjectGetReleased()
+        {
+            async Task<(WeakReference<QuicListener>, WeakReference<QuicConnection>, WeakReference<QuicConnection>, WeakReference<QuicStream>, WeakReference<QuicStream>)> GetWeakReferencesAsync()
+            {
+                // Set up all objects, keep their weak reference.
+                QuicListener listener = await CreateQuicListener();
+                WeakReference<QuicListener> wrListener = new WeakReference<QuicListener>(listener);
+
+                var (clientConnection, serverConnection) = await CreateConnectedQuicConnection(listener);
+                WeakReference<QuicConnection> wrClientConnection = new WeakReference<QuicConnection>(clientConnection);
+                WeakReference<QuicConnection> wrServerConnection = new WeakReference<QuicConnection>(serverConnection);
+
+                QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                await clientStream.WriteAsync(new byte[5], completeWrites: true);
+
+                QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
+                await serverStream.WriteAsync(new byte[10], completeWrites: true);
+
+                WeakReference<QuicStream> wrClientStream = new WeakReference<QuicStream>(clientStream);
+                WeakReference<QuicStream> wrServerStream = new WeakReference<QuicStream>(serverStream);
+
+                while (!clientStream.ReadsClosed.IsCompleted)
+                {
+                    int bytes = await clientStream.ReadAsync(new byte[10]);
+                    if (bytes == 0)
+                    {
+                        break;
+                    }
+                }
+                while (!serverStream.ReadsClosed.IsCompleted)
+                {
+                    int bytes = await serverStream.ReadAsync(new byte[10]);
+                    if (bytes == 0)
+                    {
+                        break;
+                    }
+                }
+
+                // Dispose everything and check if all weak references are dead.
+                await clientStream.DisposeAsync();
+                await serverStream.DisposeAsync();
+                await clientConnection.DisposeAsync();
+                await serverConnection.DisposeAsync();
+                await listener.DisposeAsync();
+
+                return (wrListener, wrClientConnection, wrServerConnection, wrClientStream, wrServerStream);
+            }
+
+            var (wrListener, wrClientConnection, wrServerConnection, wrClientStream, wrServerStream) = await GetWeakReferencesAsync();
+
+            for (int i = 0; i < 20; ++i)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                await Task.Delay(100 * i);
+
+                if (TestWeakReferences())
+                {
+                    continue;
+                }
+                break;
+
+                bool TestWeakReferences()
+                    => wrListener.TryGetTarget(out _) ||
+                       wrClientConnection.TryGetTarget(out _) ||
+                       wrServerConnection.TryGetTarget(out _) ||
+                       wrClientStream.TryGetTarget(out _) ||
+                       wrServerStream.TryGetTarget(out _);
+            }
+
+            Assert.False(wrListener.TryGetTarget(out _));
+            Assert.False(wrClientConnection.TryGetTarget(out _));
+            Assert.False(wrServerConnection.TryGetTarget(out _));
+            Assert.False(wrClientStream.TryGetTarget(out _));
+            Assert.False(wrServerStream.TryGetTarget(out _));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public async Task QuicRootedConnectionGetsReleased_ConnectFails()
+        {
+            WeakReference<QuicConnection> wrServerConnection = default;
+            // Set up all objects, keep their weak reference.
+            var listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ConnectionOptionsCallback = (connection, _, _) =>
+            {
+                wrServerConnection = new WeakReference<QuicConnection>(connection);
+                var serverConnectionOptions = CreateQuicServerOptions();
+                serverConnectionOptions.ServerAuthenticationOptions = new SslServerAuthenticationOptions();
+                return ValueTask.FromResult(serverConnectionOptions);
+            };
+            QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateConnectedQuicConnection(listener));
+
+            // Dispose everything and check if all weak references are dead.
+            await listener.DisposeAsync();
+
+            for (int i = 0; i < 20; ++i)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                await Task.Delay(100 * i);
+
+                if (TestWeakReferences())
+                {
+                    continue;
+                }
+                bool TestWeakReferences()
+                    => wrServerConnection.TryGetTarget(out _);
+
+                break;
+            }
+
+            Assert.False(wrServerConnection.TryGetTarget(out _));
         }
 
         [Fact]
@@ -264,7 +384,8 @@ namespace System.Net.Quic.Tests
 
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar1";
 
-            await Assert.ThrowsAsync<ArithmeticException>(() => CreateQuicConnection(clientOptions).AsTask());
+            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await CreateQuicConnection(clientOptions));
+            Assert.True(exception.InnerException is ArithmeticException);
             await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
 
             // Make sure the listener is still usable and there is no lingering bad connection
@@ -419,6 +540,49 @@ namespace System.Net.Quic.Tests
                 };
 
                 await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(clientOptions));
+            }
+            finally
+            {
+                foreach (X509Certificate2 cert in chain)
+                {
+                    cert.Dispose();
+                }
+                certificate.Dispose();
+            }
+        }
+
+        [Fact]
+        public async Task ConnectWithCertificate_MissingTargetHost_Succeeds()
+        {
+            (X509Certificate2 certificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates("localhost");
+            try
+            {
+                var quicOptions = new QuicListenerOptions()
+                {
+                    // loopback may resolve to IPv6
+                    ListenEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0),
+                    ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                    ConnectionOptionsCallback = (_, _, _) =>
+                    {
+                        var serverOptions = CreateQuicServerOptions();
+                        serverOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
+                        return ValueTask.FromResult(serverOptions);
+                    }
+                };
+                await using QuicListener listener = await CreateQuicListener(quicOptions);
+
+                QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(new DnsEndPoint("localhost", listener.LocalEndPoint.Port));
+                // Do not set target host on client options, it should be taken from remote endpoint and used for both ClientHello SNI and Server cert validation
+                clientOptions.ClientAuthenticationOptions.TargetHost = null;
+                clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                {
+                    Assert.Equal(certificate.Subject, cert.Subject);
+                    Assert.Equal(certificate.Issuer, cert.Issuer);
+                    Assert.Equal(SslPolicyErrors.None, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
+                    return true;
+                };
+
+                await CreateQuicConnection(clientOptions);
             }
             finally
             {
@@ -588,6 +752,32 @@ namespace System.Net.Quic.Tests
             await serverConnection.DisposeAsync();
         }
 
+        [Fact]
+        public async Task OpenStreamAsync_BlocksUntilAvailable_PeerClosesWritingUnidirectional()
+        {
+            QuicListenerOptions listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = CreateQuicServerOptions();
+                    serverOptions.MaxInboundBidirectionalStreams = 1;
+                    serverOptions.MaxInboundUnidirectionalStreams = 1;
+                    return ValueTask.FromResult(serverOptions);
+                }
+            };
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
+
+            // Open one stream, second call should block
+            await using var stream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
+            await stream.WriteAsync(new byte[64 * 1024], completeWrites: true);
+            await Assert.ThrowsAsync<TimeoutException>(() => clientConnection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional).AsTask().WaitAsync(TimeSpan.FromSeconds(1)));
+
+            await clientConnection.DisposeAsync();
+            await serverConnection.DisposeAsync();
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -626,11 +816,24 @@ namespace System.Net.Quic.Tests
 
             // Close the streams, the waitTask should finish as a result.
             await stream.DisposeAsync();
-            QuicStream newStream = await serverConnection.AcceptInboundStreamAsync();
-            await newStream.DisposeAsync();
+            // Drain all server streams.
+            while (true)
+            {
+                using var acceptCts = new CancellationTokenSource(TimeSpan.FromSeconds(0.5));
+                try
+                {
+                    QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync(acceptCts.Token);
+                    await serverStream.DisposeAsync();
+                }
+                catch (OperationCanceledException)
+                {
+                    // Token expired, no more streams in the server queue, exit the loop.
+                    break;
+                }
+            }
 
             // next call should work as intended
-            newStream = await OpenStreamAsync(clientConnection).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+            var newStream = await OpenStreamAsync(clientConnection).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
             await newStream.DisposeAsync();
 
             await clientConnection.DisposeAsync();
@@ -896,6 +1099,7 @@ namespace System.Net.Quic.Tests
 
         [Fact]
         [OuterLoop("May take several seconds")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/85331", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version20348OrLower))]
         public async Task ByteMixingOrNativeAVE_MinimalFailingTest()
         {
             const int writeSize = 64 * 1024;
@@ -1238,7 +1442,7 @@ namespace System.Net.Quic.Tests
             await using (clientConnection)
             await using (serverConnection)
             {
-                Assert.Equal(expectedHostName, clientConnection.TargetHostName);
+                Assert.Equal(hostname, clientConnection.TargetHostName);
                 Assert.Equal(expectedHostName, serverConnection.TargetHostName);
             }
         }

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 
 namespace System
@@ -13,6 +13,7 @@ namespace System
         //
         // All public ctors go through here
         //
+        [MemberNotNull(nameof(_string))]
         private void CreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
         {
             DebugAssertInCtor();
@@ -865,6 +866,11 @@ namespace System
 
         internal bool IsBaseOfHelper(Uri uriLink)
         {
+            const UriComponents ComponentsToCompare =
+                UriComponents.AbsoluteUri
+                & ~UriComponents.Fragment
+                & ~UriComponents.UserInfo;
+
             if (!IsAbsoluteUri || UserDrivenParsing)
                 return false;
 
@@ -891,8 +897,8 @@ namespace System
                 return false;
 
             // Canonicalize and test for substring match up to the last path slash
-            string self = GetParts(UriComponents.AbsoluteUri & ~UriComponents.Fragment, UriFormat.SafeUnescaped);
-            string other = uriLink.GetParts(UriComponents.AbsoluteUri & ~UriComponents.Fragment, UriFormat.SafeUnescaped);
+            string self = GetParts(ComponentsToCompare, UriFormat.SafeUnescaped);
+            string other = uriLink.GetParts(ComponentsToCompare, UriFormat.SafeUnescaped);
 
             unsafe
             {
@@ -910,6 +916,7 @@ namespace System
         //
         // Only a ctor time call
         //
+        [MemberNotNull(nameof(_string))]
         private void CreateThisFromUri(Uri otherUri)
         {
             DebugAssertInCtor();

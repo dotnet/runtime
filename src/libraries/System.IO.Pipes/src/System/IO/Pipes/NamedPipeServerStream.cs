@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -60,10 +59,9 @@ namespace System.IO.Pipes
         /// Win32 note: this gets used for dwPipeMode. CreateNamedPipe allows you to specify PIPE_TYPE_BYTE/MESSAGE
         /// and PIPE_READMODE_BYTE/MESSAGE independently, but this sets type and readmode to match.
         /// </param>
-        /// <param name="options">PipeOption enum: None, Asynchronous, or Write-through
+        /// <param name="options">PipeOption enum: None, Asynchronous, Write-through, or FirstPipeInstance
         /// Win32 note: this gets passed in with dwOpenMode to CreateNamedPipe. Asynchronous corresponds to
-        /// FILE_FLAG_OVERLAPPED option. PipeOptions enum doesn't expose FIRST_PIPE_INSTANCE option because
-        /// this sets that automatically based on the number of instances specified.
+        /// FILE_FLAG_OVERLAPPED option.
         /// </param>
         /// <param name="inBufferSize">Incoming buffer size, 0 or higher.
         /// Note: this size is always advisory; OS uses a suggestion.
@@ -103,7 +101,7 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentOutOfRangeException(nameof(transmissionMode), SR.ArgumentOutOfRange_TransmissionModeByteOrMsg);
             }
-            if ((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly)) != 0)
+            if ((options & ~(PipeOptions.WriteThrough | PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly | PipeOptions.FirstPipeInstance)) != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_OptionsInvalid);
             }
@@ -161,7 +159,7 @@ namespace System.IO.Pipes
             return WaitForConnectionAsync(CancellationToken.None);
         }
 
-        public System.IAsyncResult BeginWaitForConnection(AsyncCallback? callback, object? state) =>
+        public IAsyncResult BeginWaitForConnection(AsyncCallback? callback, object? state) =>
             TaskToAsyncResult.Begin(WaitForConnectionAsync(), callback, state);
 
         public void EndWaitForConnection(IAsyncResult asyncResult) =>

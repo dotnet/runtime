@@ -1,0 +1,127 @@
+# Depends on other builds to get runtime packs, and nugets
+# And then runs Wasm.Build.Tests
+parameters:
+  alwaysRun: false
+  isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
+  platforms: []
+  shouldContinueOnError: false
+  extraBuildArgs: ''
+
+jobs:
+
+- ${{ each platform in parameters.platforms }}:
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      buildConfig: Release
+      runtimeFlavor: mono
+      platforms:
+        - ${{ platform }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      variables:
+        # map dependencies variables to local variables
+        - name: alwaysRunVar
+          value: ${{ parameters.alwaysRun }}
+        - name: workloadsTestPreviousVersionsVar
+          value: $[
+            or(
+              eq(variables['Build.SourceBranchName'], 'main'),
+              eq(variables['System.PullRequest.TargetBranch'], 'main'))
+            ]
+        - name: wbtProjectArg
+          ${{ if eq(platform, 'browser_wasm_win') }}:
+            value: '-projects'
+          ${{ else }}:
+            value: '--projects'
+        - name: shouldRunOnDefaultPipelines
+          value: $(shouldRunWasmBuildTestsOnDefaultPipeline)
+
+      jobParameters:
+        dependsOn:
+          - ${{ if eq(platform, 'browser_wasm') }}:
+            - build_browser_wasm_linux_Release_MultiThreaded_BuildOnly
+            - build_browser_wasm_linux_Release_SingleThreaded_BuildOnly
+          - ${{ if eq(platform, 'browser_wasm_win') }}:
+            - build_browser_wasm_windows_Release_MultiThreaded_BuildOnly
+            - build_browser_wasm_windows_Release_SingleThreaded_BuildOnly
+        isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+        testGroup: innerloop
+        nameSuffix: WasmBuildTests
+
+        preBuildSteps:
+          # Download single threaded runtime packs, and tasks needed to build WBT
+          - task: DownloadBuildArtifacts@0
+            displayName: Download built nugets for singlethreaded runtime
+            inputs:
+              buildType: current
+              artifactName: 'BuildArtifacts_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
+              downloadType: single
+              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+
+          - task: CopyFiles@2
+            displayName: Copy single threaded assets
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
+              TargetFolder: '$(Build.SourcesDirectory)/artifacts'
+              CleanTargetFolder: false
+
+          # Download for multi-threaded
+          - task: DownloadBuildArtifacts@0
+            displayName: Download built nugets for multi-threaded runtime
+            inputs:
+              buildType: current
+              artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
+              downloadType: single
+              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+
+          - task: CopyFiles@2
+            displayName: Copy multithreading runtime pack
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
+              Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.*
+              TargetFolder: '$(Build.SourcesDirectory)/artifacts'
+              CleanTargetFolder: false
+
+          # Download WBT
+          - task: DownloadBuildArtifacts@0
+            displayName: Download Wasm.Build.Tests
+            inputs:
+              buildType: current
+              artifactName: WasmBuildTests_$(_hostedOs)_SingleThreaded_BuildOnly
+              downloadType: single
+              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+
+          - task: CopyFiles@2
+            displayName: Copy Wasm.Build.Tests archive
+            inputs:
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/WasmBuildTests_$(_hostedOs)_SingleThreaded_BuildOnly'
+              Contents: helix/**
+              TargetFolder: '$(Build.SourcesDirectory)/artifacts'
+              CleanTargetFolder: false
+
+        # build WBT
+        buildArgs: >-
+          $(wbtProjectArg) $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
+          /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Build.binlog
+          /p:Configuration=$(_BuildConfig)
+          /p:TestUsingWorkloads=true
+          /p:InstallWorkloadForTesting=true
+          /p:WasmSkipMissingRuntimePackBuild=true
+          /p:PreparePackagesForWorkloadInstall=false
+        timeoutInMinutes: 180
+        condition: >-
+          or(
+            eq(variables['alwaysRunVar'], true),
+            eq(variables['isDefaultPipeline'], variables['shouldRunWasmBuildTestsOnDefaultPipeline']))
+
+        # extra steps, run tests
+        postBuildSteps:
+          - template: /eng/pipelines/libraries/helix.yml
+            parameters:
+              creator: dotnet-bot
+              testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
+              extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+              scenarios:
+              - buildwasmapps

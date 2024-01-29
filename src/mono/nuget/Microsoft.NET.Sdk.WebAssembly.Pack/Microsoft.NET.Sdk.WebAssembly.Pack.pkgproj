@@ -7,8 +7,20 @@
 
   <ItemGroup>
     <ProjectReference Include="$(RepoTasksDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+    <ProjectReference Include="$(WasmProjectRoot)host\WasmAppHost.csproj" />
     <PackageFile Include="build\*.props;build\*.targets;build\*.web.config" TargetPath="build" />
   </ItemGroup>
+
+  <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">
+    <ItemGroup>
+      <PackageFile Include="$(SdkTargetsPath)" TargetPath="Sdk" />
+
+      <_WasmAppHostFiles Include="$(WasmAppHostDir)\*" TargetPath="WasmAppHost" />
+      <PackageFile Include="@(_WasmAppHostFiles)" />
+    </ItemGroup>
+
+    <Error Text="Could not find WasmAppHost files in $(WasmAppHostDir)" Condition="@(_WasmAppHostFiles->Count()) == 0" />
+  </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

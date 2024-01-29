@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -83,7 +83,7 @@ namespace Microsoft.Interop
 
         public static SyntaxTokenList StripAccessibilityModifiers(this SyntaxTokenList tokenList)
         {
-            List<SyntaxToken> strippedTokens = new ();
+            List<SyntaxToken> strippedTokens = new();
             for (int i = 0; i < tokenList.Count; i++)
             {
                 if (tokenList[i].Kind() is SyntaxKind.PublicKeyword or SyntaxKind.InternalKeyword or SyntaxKind.ProtectedKeyword or SyntaxKind.PrivateKeyword)
@@ -98,12 +98,37 @@ namespace Microsoft.Interop
         public static SyntaxTokenList AddToModifiers(this SyntaxTokenList modifiers, SyntaxKind modifierToAdd)
         {
             if (modifiers.IndexOf(modifierToAdd) >= 0)
+            {
                 return modifiers;
+            }
 
-            int idx = modifiers.IndexOf(SyntaxKind.PartialKeyword);
-            return idx >= 0
-                ? modifiers.Insert(idx, SyntaxFactory.Token(modifierToAdd))
-                : modifiers.Add(SyntaxFactory.Token(modifierToAdd));
+            // https://github.com/dotnet/csharplang/blob/main/meetings/2018/LDM-2018-04-04.md#ordering-of-ref-and-partial-keywords
+            int idxPartial = modifiers.IndexOf(SyntaxKind.PartialKeyword);
+            int idxRef = modifiers.IndexOf(SyntaxKind.RefKeyword);
+
+            int idxInsert = (idxPartial, idxRef) switch
+            {
+                (-1, -1) => modifiers.Count,
+                (-1, _) => idxRef,
+                (_, -1) => idxPartial,
+                (_, _) => Math.Min(idxPartial, idxRef)
+            };
+
+            return modifiers.Insert(idxInsert, SyntaxFactory.Token(modifierToAdd));
+        }
+
+        public static bool IsInPartialContext(this TypeDeclarationSyntax syntax, [NotNullWhen(false)] out SyntaxToken? nonPartialIdentifier)
+        {
+            for (SyntaxNode? parentNode = syntax; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
+            {
+                if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
+                {
+                    nonPartialIdentifier = typeDecl.Identifier;
+                    return false;
+                }
+            }
+            nonPartialIdentifier = null;
+            return true;
         }
     }
 }

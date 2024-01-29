@@ -1,8 +1,14 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
     <BuildInParallel>false</BuildInParallel>
+    <IsPackable>false</IsPackable>
+    <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
+    <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
+    <ExplicitlyImportCustomILLinkTargets>true</ExplicitlyImportCustomILLinkTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,18 +17,61 @@
     <ProjectReference Include="sfx-ref.proj">
       <OutputItemType Condition="'$(RefOnly)' == 'true'">SharedFrameworkAssembly</OutputItemType>
     </ProjectReference>
+     <!-- The RefOnly condition exists to support building the reference source projects only. -->
+    <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" Condition="'$(RefOnly)' != 'true'" />
+    <ProjectReference Include="sfx-gen.proj" OutputItemType="SharedFrameworkAnalyzerAssembly" />
   </ItemGroup>
 
-  <!-- Support building only the reference assemblies. -->
-  <ItemGroup Condition="'$(RefOnly)' != 'true'">
-    <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
-    <ProjectReference Include="sfx-gen.proj" />
-  </ItemGroup>
+  <Target Name="GetGenerateFrameworkListFileInputs">
+    <Error Text="Shared framework assemblies must be built before the framework list can be generated."
+           Condition="'@(SharedFrameworkAssembly)' == '' or '@(SharedFrameworkAnalyzerAssembly)' == ''" />
+
+    <ItemGroup>
+      <SharedFrameworkAssemblyWithReferenceAssembly Include="@(SharedFrameworkAssembly->WithMetadataValue('IsPrivateAssembly', 'false')->HasMetadata('ReferenceAssembly'))" />
+      <SharedFrameworkAssemblyWithoutReferenceAssembly Include="@(SharedFrameworkAssembly->WithMetadataValue('IsPrivateAssembly', 'false'))"
+                                                       Exclude="@(SharedFrameworkAssemblyWithReferenceAssembly)" />
+
+      <FrameworkListInputFile Include="@(SharedFrameworkAssemblyWithReferenceAssembly->Metadata('ReferenceAssembly'));
+                                       @(SharedFrameworkAssemblyWithoutReferenceAssembly)"
+                              TargetPath="ref/$(NetCoreAppCurrent)" />
+      <FrameworkListInputFile Include="@(SharedFrameworkAnalyzerAssembly)"
+                              TargetPath="%(SharedFrameworkAnalyzerAssembly.GeneratorProjectBaseTargetPath)" />
+    </ItemGroup>
+  </Target>
 
   <!-- Generate the targeting pack's framework list so that out-of-band projects can leverage it. -->
-  <Import Project="frameworklist.targets" />
-  <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)"/>
+  <Target Name="GenerateFrameworkListFile"
+          DependsOnTargets="GetGenerateFrameworkListFileInputs"
+          AfterTargets="Build"
+          Inputs="@(FrameworkListInputFile)"
+          Outputs="$(FrameworkListOutputPath)">
+    <ItemGroup>
+      <FrameworkListRootAttribute Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
+      <FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />
+      <FrameworkListRootAttribute Include="TargetFrameworkVersion" Value="$(NetCoreAppCurrentVersion)" />
+      <FrameworkListRootAttribute Include="FrameworkName" Value="$(MicrosoftNetCoreAppFrameworkName)" />
+    </ItemGroup>
+
+    <CreateFrameworkListFile Files="@(FrameworkListInputFile)"
+                             TargetFile="$(FrameworkListOutputPath)"
+                             TargetFilePrefixes="ref/;runtimes/;analyzers/"
+                             RootAttributes="@(FrameworkListRootAttribute)" />
+  </Target>
+
+  <!-- Copy the intellisense file to the targeting pack directory. -->
+  <Target Name="CopyDocumentationFiles"
+          AfterTargets="Build"
+          Condition="'$(RefOnly)' != 'true'">
+    <ItemGroup>
+      <DocumentationFileToCopy Include="@(SharedFrameworkAssembly->WithMetadataValue('IsPrivateAssembly', 'false')->Metadata('DocFileItem'))" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(DocumentationFileToCopy)"
+          DestinationFolder="$(MicrosoftNetCoreAppRefPackRefDir)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+  </Target>
 
   <Target Name="GetTrimSharedFrameworkAssembliesInputs"
           DependsOnTargets="ResolveProjectReferences">
@@ -49,7 +98,7 @@
       <SharedFrameworkILLinkArgs>$(ILLinkArgs)</SharedFrameworkILLinkArgs>
       <!-- update debug symbols -->
       <SharedFrameworkILLinkArgs>$(SharedFrameworkILLinkArgs) -b true</SharedFrameworkILLinkArgs>
-      <SharedFrameworkILLinkArgs Condition="'@(SharedFrameworkSuppressionsXml)' != ''" >$(SharedFrameworkILLinkArgs) --link-attributes &quot;@(SharedFrameworkSuppressionsXml, '&quot; --link-attributes &quot;')&quot;</SharedFrameworkILLinkArgs>
+      <SharedFrameworkILLinkArgs Condition="'@(SharedFrameworkSuppressionsXml)' != ''" >$(SharedFrameworkILLinkArgs) --link-attributes "@(SharedFrameworkSuppressionsXml, '" --link-attributes "')"</SharedFrameworkILLinkArgs>
     </PropertyGroup>
 
     <ItemGroup>

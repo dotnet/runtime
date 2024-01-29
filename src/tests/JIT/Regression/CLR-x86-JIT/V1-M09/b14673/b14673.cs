@@ -20,11 +20,10 @@ namespace DefaultNamespace
                 Console.WriteLine("Test FAiLED");
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Bug oCbTest = new Bug();
             oCbTest.runTest((3));
-            return 100;
         }
     }
 }

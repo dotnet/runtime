@@ -964,7 +964,7 @@ public:
         if (pTargetMD)
         {
             pTargetMD->GetMethodInfoWithNewSig(strNamespaceOrClassName, strMethodName, strMethodSignature);
-            uModuleId = (UINT64)(TADDR)pTargetMD->GetModule_NoLogging();
+            uModuleId = (UINT64)(TADDR)pTargetMD->GetModule();
         }
 
         //
@@ -2103,11 +2103,8 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
 
-                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
+                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pNDirectTarget));
                 pcsEmit->EmitADD();
-
-                pcsEmit->EmitLDIND_I();
-
                 pcsEmit->EmitLDIND_I();
             }
 #ifdef FEATURE_COMINTEROP
@@ -3316,8 +3313,12 @@ BOOL NDirect::MarshalingRequired(
                 FALLTHROUGH;
 
             case ELEMENT_TYPE_VALUETYPE:
+            case ELEMENT_TYPE_GENERICINST:
             {
                 TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
+                bool isValidGeneric = IsValidForGenericMarshalling(hndArgType.GetMethodTable(), false, runtimeMarshallingEnabled);
+                if(!hndArgType.IsValueType() ||  !isValidGeneric)
+                    return true;
 
                 if (hndArgType.GetMethodTable()->IsInt128OrHasInt128Fields())
                 {
@@ -3881,20 +3882,22 @@ static void CreateStructStub(ILStubState* pss,
     EEClassNativeLayoutInfo const* pNativeLayoutInfo = pMT->GetNativeLayoutInfo();
 
     int numFields = pNativeLayoutInfo->GetNumFields();
-    // Build up marshaling information for each of the method's parameters
-    SIZE_T cbFieldMarshalInfo;
-    if (!ClrSafeInt<SIZE_T>::multiply(sizeof(MarshalInfo), numFields, cbFieldMarshalInfo))
-    {
-        COMPlusThrowHR(COR_E_OVERFLOW);
-    }
 
     CorNativeLinkType nlType = pMT->GetCharSet();
 
     NativeFieldDescriptor const* pFieldDescriptors = pNativeLayoutInfo->GetNativeFieldDescriptors();
 
+    const bool isInlineArray = pMT->GetClass()->IsInlineArray();
+    if (isInlineArray)
+    {
+        _ASSERTE(pNativeLayoutInfo->GetSize() % pFieldDescriptors[0].NativeSize() == 0);
+        numFields = pNativeLayoutInfo->GetSize() / pFieldDescriptors[0].NativeSize();
+    }
+
     for (int i = 0; i < numFields; ++i)
     {
-        NativeFieldDescriptor const& nativeFieldDescriptor = pFieldDescriptors[i];
+        // For inline arrays, we only have one field descriptor that we need to reuse for each field.
+        NativeFieldDescriptor const& nativeFieldDescriptor = isInlineArray ? pFieldDescriptors[0] : pFieldDescriptors[i];
         PTR_FieldDesc pFD = nativeFieldDescriptor.GetFieldDesc();
         SigPointer fieldSig = pFD->GetSigPointer();
         // The first byte in a field signature is always 0x6 per ECMA 335. Skip over this byte to get to the rest of the signature for the MarshalInfo constructor.
@@ -3920,7 +3923,12 @@ static void CreateStructStub(ILStubState* pss,
             DEBUG_ARG(pSigDesc->m_pDebugClassName)
             DEBUG_ARG(-1 /* field */));
 
-        pss->MarshalField(&mlInfo, pFD->GetOffset(), nativeFieldDescriptor.GetExternalOffset(), pFD);
+        // When we have an inline array, we need to calculate the offset based on how many elements we've already seen.
+        // Otherwise, we have a specific field descriptor for the given field that contains the correct offset info.
+        UINT32 managedOffset = isInlineArray ? (i * pFD->GetSize()) : pFD->GetOffset();
+        UINT32 externalOffset = isInlineArray ? (i * nativeFieldDescriptor.NativeSize()) : nativeFieldDescriptor.GetExternalOffset();
+
+        pss->MarshalField(&mlInfo, managedOffset, externalOffset, pFD);
     }
 
     if (pMD->IsDynamicMethod())
@@ -5775,8 +5783,7 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     }
     CONTRACTL_END;
 
-    NDirectWriteableData* pWriteableData = GetWriteableData();
-    pWriteableData->m_pNDirectTarget = pTarget;
+    ndirect.m_pNDirectTarget = pTarget;
 }
 
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)
@@ -5858,7 +5865,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         INDEBUG(Thread *pThread = GetThread());
         {
-            _ASSERTE(pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()
+            _ASSERTE((pThread->GetFrame() != FRAME_TOP && pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
                 || pMD->ShouldSuppressGCTransition());
 
             CONSISTENCY_CHECK(pMD->IsNDirect());

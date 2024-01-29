@@ -8,8 +8,8 @@ using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
-using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
@@ -872,6 +872,18 @@ namespace System.Security.Cryptography
                 padding != RSAEncryptionPadding.Pkcs1)
             {
                 throw PaddingModeNotSupported();
+            }
+
+            // If the hash algorithm is not supported by the platform, such as SHA3, then we don't support it for
+            // RSAOpenSsl, even if OpenSSL itself might support OAEP-SHA3. We use the platform's hashing in some
+            // places for RSA, regardless of what is implementing RSA. If RSAOpenSsl were used on macOS, then
+            // there would be some incongruence between what hashes OpenSSL supports and what macOS support. Signing
+            // for example, always uses the platform's implementation of hashing.
+            if (padding.Mode == RSAEncryptionPaddingMode.Oaep &&
+                padding.OaepHashAlgorithm.Name is string name &&
+                !HashProviderDispenser.HashSupported(name))
+            {
+                throw new PlatformNotSupportedException();
             }
         }
 

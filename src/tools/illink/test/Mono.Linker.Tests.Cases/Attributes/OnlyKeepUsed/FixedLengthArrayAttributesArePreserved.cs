@@ -6,9 +6,6 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[SetupCompileArgument ("/unsafe")]
-
-	// Can't verify because the test contains unsafe code
-	[SkipPeVerify]
 	public class FixedLengthArrayAttributesArePreserved
 	{
 		public static void Main ()

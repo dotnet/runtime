@@ -144,10 +144,10 @@ namespace LibraryImportGenerator.UnitTests
                 """;
 
             await VerifyCS.VerifySourceGeneratorAsync(source,
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterConfigurationNotSupported)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsParameterConfigurationNotSupported)
                     .WithLocation(0)
                     .WithArguments(nameof(MarshalAsAttribute), "i1"),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterConfigurationNotSupported)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsParameterConfigurationNotSupported)
                     .WithLocation(1)
                     .WithArguments(nameof(MarshalAsAttribute), "b2"));
         }
@@ -171,10 +171,10 @@ namespace LibraryImportGenerator.UnitTests
                 """;
 
             await VerifyCS.VerifySourceGeneratorAsync(source,
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsReturnConfigurationNotSupported)
                     .WithLocation(0)
                     .WithArguments(nameof(MarshalAsAttribute), "Method1"),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsReturnConfigurationNotSupported)
                     .WithLocation(1)
                     .WithArguments(nameof(MarshalAsAttribute), "Method2"));
         }
@@ -200,13 +200,13 @@ namespace LibraryImportGenerator.UnitTests
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationValueNotSupported)
                     .WithLocation(0)
                     .WithArguments(1, nameof(UnmanagedType)),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsReturnConfigurationNotSupported)
                     .WithLocation(1)
                     .WithArguments(nameof(MarshalAsAttribute), "Method1"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationValueNotSupported)
                     .WithLocation(2)
                     .WithArguments(0, nameof(UnmanagedType)),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterConfigurationNotSupported)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsParameterConfigurationNotSupported)
                     .WithLocation(3)
                     .WithArguments(nameof(MarshalAsAttribute), "b"));
         }

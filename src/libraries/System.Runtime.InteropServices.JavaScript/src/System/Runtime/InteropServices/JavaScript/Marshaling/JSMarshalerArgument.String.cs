@@ -20,11 +20,15 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-
+#if ENABLE_JS_INTEROP_BY_VALUE
+            value = Marshal.PtrToStringUni(slot.IntPtrValue, slot.Length);
+            Marshal.FreeHGlobal(slot.IntPtrValue);
+#else
             fixed (void* argAsRoot = &slot.IntPtrValue)
             {
                 value = Unsafe.AsRef<string>(argAsRoot);
             }
+#endif
         }
 
         /// <summary>
@@ -42,6 +46,10 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
                 slot.Type = MarshalerType.String;
+#if ENABLE_JS_INTEROP_BY_VALUE
+                slot.IntPtrValue = Marshal.StringToHGlobalUni(value); // alloc, JS side will free
+                slot.Length = value.Length;
+#else
                 // here we treat JSMarshalerArgument.IntPtrValue as root, because it's allocated on stack
                 // or we register the buffer with JSFunctionBinding._RegisterGCRoot
                 // We assume that GC would keep updating on GC move
@@ -52,6 +60,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     var currentRoot = (IntPtr*)Unsafe.AsPointer(ref cpy);
                     argAsRoot[0] = currentRoot[0];
                 }
+#endif
             }
         }
 
@@ -78,7 +87,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 arg.ToManaged(out val);
                 value[i] = val;
             }
+#if !ENABLE_JS_INTEROP_BY_VALUE
             Interop.Runtime.DeregisterGCRoot(slot.IntPtrValue);
+#endif
             Marshal.FreeHGlobal(slot.IntPtrValue);
         }
 
@@ -100,7 +111,9 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.Type = MarshalerType.Array;
             JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);
             Unsafe.InitBlock(payload, 0, (uint)bytes);
-            Interop.Runtime.RegisterGCRoot((IntPtr)payload, bytes, IntPtr.Zero);
+#if !ENABLE_JS_INTEROP_BY_VALUE
+            Interop.Runtime.RegisterGCRoot(payload, bytes, IntPtr.Zero);
+#endif
             for (int i = 0; i < slot.Length; i++)
             {
                 ref JSMarshalerArgument arg = ref payload[i];

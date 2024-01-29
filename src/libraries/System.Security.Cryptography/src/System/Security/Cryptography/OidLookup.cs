@@ -12,8 +12,8 @@ namespace System.Security.Cryptography
         private static readonly ConcurrentDictionary<string, string> s_lateBoundOidToFriendlyName =
             new ConcurrentDictionary<string, string>();
 
-        private static readonly ConcurrentDictionary<string, string?> s_lateBoundFriendlyNameToOid =
-            new ConcurrentDictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, string> s_lateBoundFriendlyNameToOid =
+            new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         //
         // Attempts to map a friendly name to an OID. Returns null if not a known name.
@@ -77,19 +77,13 @@ namespace System.Security.Cryptography
 
             mappedOid = NativeFriendlyNameToOid(friendlyName, oidGroup, fallBackToAllGroups);
 
-            if (shouldUseCache)
+            if (shouldUseCache && mappedOid != null)
             {
                 s_lateBoundFriendlyNameToOid.TryAdd(friendlyName, mappedOid);
 
                 // Don't add the reverse here.  Friendly Name => OID is a case insensitive search,
                 // so the casing provided as input here may not be the 'correct' one.  Just let
                 // ToFriendlyName capture the response and cache it itself.
-
-                // Also, mappedOid could be null here if the lookup failed.  Allowing storing null
-                // means we're able to cache that a lookup failed so we don't repeat it.  It's
-                // theoretically possible, however, the failure could have been intermittent, e.g.
-                // if the call was forced to follow an AD fallback path and the relevant servers
-                // were offline.
             }
 
             return mappedOid;
@@ -206,7 +200,8 @@ namespace System.Security.Cryptography
             AddEntry("1.3.133.16.840.63.0.2", "ECDH_STD_SHA1_KDF");
             AddEntry("1.3.132.1.11.1", "ECDH_STD_SHA256_KDF");
             AddEntry("1.3.132.1.11.2", "ECDH_STD_SHA384_KDF");
-            AddEntry("1.2.840.10045.3.1.7", "ECDSA_P256", new[] { "nistP256", "secP256r1", "x962P256v1", "ECDH_P256" } );
+#pragma warning disable CA1861 // Avoid constant arrays as arguments. Loaded by static constructor
+            AddEntry("1.2.840.10045.3.1.7", "ECDSA_P256", new[] { "nistP256", "secP256r1", "x962P256v1", "ECDH_P256" });
             AddEntry("1.3.132.0.34", "ECDSA_P384", new[] { "nistP384", "secP384r1", "ECDH_P384" });
             AddEntry("1.3.132.0.35", "ECDSA_P521", new[] { "nistP521", "secP521r1", "ECDH_P521" });
             AddEntry("1.2.840.113549.1.9.16.3.5", "ESDH");
@@ -236,6 +231,7 @@ namespace System.Security.Cryptography
             AddEntry("1.2.840.113549.1.1.7", "RSAES_OAEP");
             AddEntry("1.2.840.113549.1.1.10", "RSASSA-PSS");
             AddEntry("2.5.4.8", "S", new[] { "ST" });
+#pragma warning restore CA1861 // Avoid constant arrays as arguments
             AddEntry("1.3.132.0.9", "secP160k1");
             AddEntry("1.3.132.0.8", "secP160r1");
             AddEntry("1.3.132.0.30", "secP160r2");

@@ -46,15 +46,15 @@ public:
     int Run()
     {
         // If the first block is a patchpoint, insert a scratch block.
-        if (compiler->fgFirstBB->bbFlags & BBF_PATCHPOINT)
+        if (compiler->fgFirstBB->HasFlag(BBF_PATCHPOINT))
         {
             compiler->fgEnsureFirstBBisScratch();
         }
 
         int count = 0;
-        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->bbNext))
+        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->Next()))
         {
-            if (block->bbFlags & BBF_PATCHPOINT)
+            if (block->HasFlag(BBF_PATCHPOINT))
             {
                 // We can't OSR from funclets.
                 //
@@ -62,13 +62,13 @@ public:
 
                 // Clear the patchpoint flag.
                 //
-                block->bbFlags &= ~BBF_PATCHPOINT;
+                block->RemoveFlags(BBF_PATCHPOINT);
 
                 JITDUMP("Patchpoint: regular patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformBlock(block);
                 count++;
             }
-            else if (block->bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT)
+            else if (block->HasFlag(BBF_PARTIAL_COMPILATION_PATCHPOINT))
             {
                 // We can't OSR from funclets.
                 // Also, we don't import the IL for these blocks.
@@ -78,11 +78,11 @@ public:
                 // If we're instrumenting, we should not have decided to
                 // put class probes here, as that is driven by looking at IL.
                 //
-                assert((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0);
+                assert(!block->HasFlag(BBF_HAS_HISTOGRAM_PROFILE));
 
                 // Clear the partial comp flag.
                 //
-                block->bbFlags &= ~BBF_PARTIAL_COMPILATION_PATCHPOINT;
+                block->RemoveFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
 
                 JITDUMP("Patchpoint: partial compilation patchpoint in " FMT_BB "\n", block->bbNum);
                 TransformPartialCompilation(block);
@@ -101,13 +101,14 @@ private:
     // Arguments:
     //    jumpKind - jump kind for the new basic block
     //    insertAfter - basic block, after which compiler has to insert the new one.
+    //    jumpDest - jump target for the new basic block. Defaults to nullptr.
     //
     // Return Value:
     //    new basic block.
-    BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter)
+    BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
     {
-        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true);
-        block->bbFlags |= BBF_IMPORTED;
+        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
+        block->SetFlags(BBF_IMPORTED);
         return block;
     }
 
@@ -142,14 +143,13 @@ private:
 
         // Current block now becomes the test block
         BasicBlock* remainderBlock = compiler->fgSplitBlockAtBeginning(block);
-        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_NONE, block);
+        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_ALWAYS, block, block->Next());
 
         // Update flow and flags
-        block->bbJumpKind = BBJ_COND;
-        block->bbJumpDest = remainderBlock;
-        block->bbFlags |= BBF_INTERNAL;
+        block->SetCond(remainderBlock, helperBlock);
+        block->SetFlags(BBF_INTERNAL);
 
-        helperBlock->bbFlags |= BBF_BACKWARD_JUMP;
+        helperBlock->SetFlags(BBF_BACKWARD_JUMP | BBF_NONE_QUIRK);
 
         compiler->fgAddRefPred(helperBlock, block);
         compiler->fgAddRefPred(remainderBlock, helperBlock);
@@ -162,12 +162,11 @@ private:
         //
         // --ppCounter;
         GenTree* ppCounterBefore = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
-        GenTree* ppCounterAfter  = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
         GenTree* one             = compiler->gtNewIconNode(1, TYP_INT);
         GenTree* ppCounterSub    = compiler->gtNewOperNode(GT_SUB, TYP_INT, ppCounterBefore, one);
-        GenTree* ppCounterAsg    = compiler->gtNewAssignNode(ppCounterAfter, ppCounterSub);
+        GenTree* ppCounterUpdate = compiler->gtNewStoreLclVarNode(ppCounterLclNum, ppCounterSub);
 
-        compiler->fgNewStmtAtEnd(block, ppCounterAsg);
+        compiler->fgNewStmtAtEnd(block, ppCounterUpdate);
 
         // if (ppCounter > 0), bypass helper call
         GenTree* ppCounterUpdated = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
@@ -191,7 +190,7 @@ private:
     //  ppCounter = <initial value>
     void TransformEntry(BasicBlock* block)
     {
-        assert((block->bbFlags & BBF_PATCHPOINT) == 0);
+        assert(!block->HasFlag(BBF_PATCHPOINT));
 
         int initialCounterValue = JitConfig.TC_OnStackReplacement_InitialCounter();
 
@@ -201,10 +200,9 @@ private:
         }
 
         GenTree* initialCounterNode = compiler->gtNewIconNode(initialCounterValue, TYP_INT);
-        GenTree* ppCounterRef       = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
-        GenTree* ppCounterAsg       = compiler->gtNewAssignNode(ppCounterRef, initialCounterNode);
+        GenTree* ppCounterStore     = compiler->gtNewStoreLclVarNode(ppCounterLclNum, initialCounterNode);
 
-        compiler->fgNewStmtNearEnd(block, ppCounterAsg);
+        compiler->fgNewStmtNearEnd(block, ppCounterStore);
     }
 
     //------------------------------------------------------------------------
@@ -235,8 +233,7 @@ private:
         }
 
         // Update flow
-        block->bbJumpKind = BBJ_THROW;
-        block->bbJumpDest = nullptr;
+        block->SetKindAndTarget(BBJ_THROW);
 
         // Add helper call
         //

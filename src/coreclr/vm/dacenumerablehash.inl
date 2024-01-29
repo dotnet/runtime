@@ -14,6 +14,7 @@
 // doing this in a DAC-friendly fashion involves some DAC gymnastics. The following couple of macros factor
 // those complexities out.
 #define VALUE_FROM_VOLATILE_ENTRY(_ptr) dac_cast<DPTR(VALUE)>(PTR_TO_MEMBER_TADDR(VolatileEntry, (_ptr), m_sValue))
+#define VALUE_TO_VOLATILE_ENTRY(_ptr) dac_cast<PTR_VolatileEntry>(dac_cast<TADDR>(_ptr))
 
 #ifndef DACCESS_COMPILE
 
@@ -48,6 +49,17 @@ DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::DacEnumerableHashTable(Module *pModu
     m_cEntries = 0;
     PTR_VolatileEntry* pBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets);
     ((size_t*)pBuckets)[SLOT_LENGTH] = cInitialBuckets;
+    ((size_t*)pBuckets)[SLOT_ENDSENTINEL] = InitialEndSentinel();
+
+    TADDR endSentinel = BaseEndSentinel(pBuckets);
+
+    // All buckets are initially empty.
+    // Note: Memory allocated on loader heap is zero filled, and since we need end sentinels, fill them in now
+    for (DWORD i = 0; i < cInitialBuckets; i++)
+    {
+        DWORD dwCurBucket = i + SKIP_SPECIAL_SLOTS;
+        pBuckets[dwCurBucket] = dac_cast<PTR_VolatileEntry>(ComputeEndSentinel(endSentinel, dwCurBucket));
+    }
 
     // publish after setting the length
     VolatileStore(&m_pBuckets, pBuckets);
@@ -174,6 +186,18 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
 
     // Make the new bucket table larger by the scale factor requested by the subclass (but also prime).
     DWORD cNewBuckets = NextLargestPrime(cBuckets * SCALE_FACTOR);
+
+    // If NextLargestPrime is no longer incrementing,
+    // or the cBuckets can't be represented as a DWORD
+    // or the new bucket count can't be represented within and EndSentinel,
+    // or the bucket age has already reached its maximum value,
+    // just don't expand the table
+    if ((cNewBuckets == cBuckets) || 
+        (cBuckets > UINT32_MAX - SKIP_SPECIAL_SLOTS) ||
+        (SKIP_SPECIAL_SLOTS + cBuckets > MaxBucketCountRepresentableWithEndSentinel()) ||
+        (BucketsAgeFromEndSentinel(BaseEndSentinel(curBuckets)) == MaxBucketAge()))
+        return;
+
     // two extra slots - slot [0] contains the length of the table,
     //                   slot [1] will contain the next version of the table if it resizes
     S_SIZE_T cbNewBuckets = (S_SIZE_T(cNewBuckets) + S_SIZE_T(SKIP_SPECIAL_SLOTS)) * S_SIZE_T(sizeof(PTR_VolatileEntry));
@@ -184,13 +208,27 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
 
     // element 0 stores the length of the table
     ((size_t*)pNewBuckets)[SLOT_LENGTH] = cNewBuckets;
+    ((size_t*)pNewBuckets)[SLOT_ENDSENTINEL] = IncrementBaseEndSentinel(BaseEndSentinel(curBuckets));
     // element 1 stores the next version of the table (after length is written)
-    // NOTE: DAC does not call add/grow, so this cast is ok.
-    VolatileStore(&((PTR_VolatileEntry**)curBuckets)[SLOT_NEXT], pNewBuckets);
+
+    TADDR newEndSentinel = BaseEndSentinel(pNewBuckets);
+
+    _ASSERTE(BaseEndSentinel(curBuckets) != BaseEndSentinel(pNewBuckets));
+
+    // It is acceptable to walk a chain and find a sentinel from an older bucket, but not vice versa
+    _ASSERTE(AcceptableEndSentinel(dac_cast<PTR_VolatileEntry>(BaseEndSentinel(curBuckets)), BaseEndSentinel(pNewBuckets)));
+    _ASSERTE(!AcceptableEndSentinel(dac_cast<PTR_VolatileEntry>(BaseEndSentinel(pNewBuckets)), BaseEndSentinel(curBuckets)));
 
     // All buckets are initially empty.
-    // Note: Memory allocated on loader heap is zero filled
-    // memset(pNewBuckets, 0, cNewBuckets * sizeof(PTR_VolatileEntry));
+    // Note: Memory allocated on loader heap is zero filled, and since we need end sentinels, fill them in now
+    for (DWORD i = 0; i < cNewBuckets; i++)
+    {
+        DWORD dwCurBucket = i + SKIP_SPECIAL_SLOTS;
+        pNewBuckets[dwCurBucket] = dac_cast<PTR_VolatileEntry>(ComputeEndSentinel(newEndSentinel, dwCurBucket));
+    }
+
+    // NOTE: DAC does not call add/grow, so this cast is ok.
+    VolatileStore(&((PTR_VolatileEntry**)curBuckets)[SLOT_NEXT], pNewBuckets);
 
     // Run through the old table and transfer all the entries. Be sure not to mess with the integrity of the
     // old table while we are doing this, as there can be concurrent readers!
@@ -203,7 +241,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
         DWORD dwCurBucket = i + SKIP_SPECIAL_SLOTS;
         PTR_VolatileEntry pEntry = curBuckets[dwCurBucket];
 
-        while (pEntry != NULL)
+        while (!IsEndSentinel(pEntry))
         {
             DWORD dwNewBucket = (pEntry->m_iHashValue % cNewBuckets) + SKIP_SPECIAL_SLOTS;
             PTR_VolatileEntry pNextEntry  = pEntry->m_pNextEntry;
@@ -211,13 +249,13 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
             PTR_VolatileEntry pTail = pNewBuckets[dwNewBucket];
 
             // make the pEntry reachable in the new bucket, together with all the chain (that is temporary and ok)
-            if (pTail == NULL)
+            if (IsEndSentinel(pTail))
             {
                 pNewBuckets[dwNewBucket] = pEntry;
             }
             else
             {
-                while (pTail->m_pNextEntry)
+                while (!IsEndSentinel(pTail->m_pNextEntry))
                 {
                     pTail = pTail->m_pNextEntry;
                 }
@@ -229,7 +267,10 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::GrowTable()
             VolatileStore(&curBuckets[dwCurBucket], pNextEntry);
 
             // drop the rest of the bucket after old table starts referring to it
-            VolatileStore(&pEntry->m_pNextEntry, (PTR_VolatileEntry)NULL);
+            // NOTE: this can cause a race condition where a reader thread (which is unlocked relative to this logic)
+            //       can be walking this list, and stop early, failing to walk the rest of the chain. We use an incrementing
+            //       end sentinel to detect that case, and repeat the entire walk.
+            VolatileStore(&pEntry->m_pNextEntry, dac_cast<PTR_VolatileEntry>(ComputeEndSentinel(newEndSentinel, dwNewBucket)));
 
             pEntry = pNextEntry;
         }
@@ -311,9 +352,10 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
 
         // Point at the first entry in the bucket chain that stores entries with the given hash code.
         PTR_VolatileEntry pEntry = VolatileLoadWithoutBarrier(&curBuckets[dwBucket]);
+        TADDR expectedEndSentinel = ComputeEndSentinel(BaseEndSentinel(curBuckets), dwBucket);
 
         // Walk the bucket chain one entry at a time.
-        while (pEntry)
+        while (!IsEndSentinel(pEntry))
         {
             if (pEntry->m_iHashValue == iHash)
             {
@@ -323,6 +365,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
                 // BaseFindNextEntryByHash can pick up the search where it left off.
                 pContext->m_pEntry = dac_cast<TADDR>(pEntry);
                 pContext->m_curBuckets = curBuckets;
+                pContext->m_expectedEndSentinel = dac_cast<TADDR>(expectedEndSentinel);
 
                 // Return the address of the sub-classes' embedded entry structure.
                 return VALUE_FROM_VOLATILE_ENTRY(pEntry);
@@ -330,6 +373,17 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindFirstEntryByHash
 
             // Move to the next entry in the chain.
             pEntry = VolatileLoadWithoutBarrier(&pEntry->m_pNextEntry);
+        }
+
+        if (!AcceptableEndSentinel(pEntry, expectedEndSentinel))
+        {
+            // If we hit this logic, we've managed to hit a case where the linked list was in the process of being
+            // moved to a new set of buckets while we were walking the list, and we walked part of the list of the
+            // bucket in the old hash table (which is fine), and part of the list in the new table, which may not
+            // be the correct bucket to walk. Most notably, the situation that can cause this will cause the list in
+            // the old bucket to be missing items. Restart the lookup, as the linked list is unlikely to still be under
+            // edit a second time.
+            continue;
         }
 
         // in a rare case if resize is in progress, look in the new table as well.
@@ -368,7 +422,7 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
     iHash = pVolatileEntry->m_iHashValue;
 
     // Iterate over the rest ot the bucket chain.
-    while ((pVolatileEntry = VolatileLoadWithoutBarrier(&pVolatileEntry->m_pNextEntry)) != nullptr)
+    while (!IsEndSentinel(pVolatileEntry = VolatileLoadWithoutBarrier(&pVolatileEntry->m_pNextEntry)))
     {
         if (pVolatileEntry->m_iHashValue == iHash)
         {
@@ -377,6 +431,17 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseFindNextEntryByHash(
             pContext->m_pEntry = dac_cast<TADDR>(pVolatileEntry);
             return VALUE_FROM_VOLATILE_ENTRY(pVolatileEntry);
         }
+    }
+
+    if (!AcceptableEndSentinel(pVolatileEntry, pContext->m_expectedEndSentinel))
+    {
+        // If we hit this logic, we've managed to hit a case where the linked list was in the process of being
+        // moved to a new set of buckets while we were walking the list, and we walked part of the list of the
+        // bucket in the old hash table (which is fine), and part of the list in the new table, which may not
+        // be the correct bucket to walk. Most notably, the situation that can cause this will cause the list in
+        // the old bucket to be missing items. Restart the lookup, as the linked list is unlikely to still be under
+        // edit a second time.
+        return BaseFindFirstEntryByHashCore(pContext->m_curBuckets, iHash, pContext);
     }
 
     // check for next table must happen after we looked through the current.
@@ -446,7 +511,7 @@ void DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::EnumMemoryRegions(CLRDataEnumMe
         {
             //+2 to skip "length" and "next" slots
             PTR_VolatileEntry pEntry = curBuckets[i + SKIP_SPECIAL_SLOTS];
-            while (pEntry.IsValid())
+            while (!IsEndSentinel(pEntry) && pEntry.IsValid())
             {
                 pEntry.EnumMem();
 
@@ -513,11 +578,12 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
         }
 
         // If we found an entry in the last step return with it.
-        if (m_pEntry)
+        if (!IsEndSentinel(m_pEntry))
             return VALUE_FROM_VOLATILE_ENTRY(dac_cast<PTR_VolatileEntry>(m_pEntry));
 
         // Otherwise we found the end of a bucket chain. Increment the current bucket and, if there are
         // buckets left to scan go back around again.
+        m_pEntry = NULL;
         m_dwBucket++;
     }
 
@@ -525,4 +591,13 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
     _ASSERTE(GetNext(curBuckets) == NULL);
 
     return NULL;
+}
+
+template <DAC_ENUM_HASH_PARAMS>
+/*static*/ DacEnumerableHashValue DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseValuePtrToHash(DPTR(VALUE) pValue)
+{
+#ifndef DACCESS_COMPILE
+    _ASSERTE(offsetof(VolatileEntry, m_sValue) == 0);
+#endif
+    return VALUE_TO_VOLATILE_ENTRY(pValue)->m_iHashValue;
 }

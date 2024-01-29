@@ -37,10 +37,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             RepoDirProvider = repoDirectoriesProvider;
 
-            Framework = framework ?? RepoDirProvider.Tfm;
+            Framework = framework ?? TestContext.Tfm;
 
             SdkDotnet = new DotNetCli(repoDirectoriesProvider.DotnetSDK);
-            CurrentRid = repoDirectoriesProvider.TargetRID;
+            CurrentRid = TestContext.TargetRID;
 
             BuiltDotnet = new DotNetCli(repoDirectoriesProvider.BuiltDotnet);
 
@@ -165,8 +165,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 buildArgs.Add(framework);
             }
 
-            buildArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
-            buildArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            buildArgs.Add($"/p:TestTargetRid={TestContext.TargetRID}");
+            buildArgs.Add($"/p:MNAVersion={TestContext.MicrosoftNETCoreAppVersion}");
 
             if (outputDirectory != null)
             {
@@ -236,7 +236,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 storeArgs.Add(outputDirectory);
             }
 
-            storeArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            storeArgs.Add($"/p:MNAVersion={TestContext.MicrosoftNETCoreAppVersion}");
             storeArgs.Add($"/p:NetCoreAppCurrent={Framework}");
 
             // Ensure the project's OutputType isn't 'Exe', since that causes issues with 'dotnet store'
@@ -285,6 +285,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 publishArgs.Add("--runtime");
                 publishArgs.Add(runtime);
+
+                if (selfContained == null)
+                {
+                    // This is to prevent bugs caused by SDK defaulting self-contained differently for various configurations.
+                    // We still want to allow selfContained to remain unspecified for simple cases, for example for building libraries.
+                    throw new ArgumentException("If runtime is specified, then the caller also has to specify selfContained value.");
+                }
             }
 
             if (framework != null)
@@ -307,7 +314,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 if (selfContained.Value && runtime == null)
                 {
                     publishArgs.Add("--runtime");
-                    publishArgs.Add(RepoDirProvider.TargetRID);
+                    publishArgs.Add(TestContext.TargetRID);
                 }
             }
 
@@ -322,8 +329,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 publishArgs.Add("/p:PublishSingleFile=true");
             }
 
-            publishArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
-            publishArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            publishArgs.Add($"/p:TestTargetRid={TestContext.TargetRID}");
+            publishArgs.Add($"/p:MNAVersion={TestContext.MicrosoftNETCoreAppVersion}");
 
             foreach (var arg in extraArgs)
             {
@@ -353,7 +360,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
             restoreArgs.Add("--disable-parallel");
 
-            restoreArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            restoreArgs.Add($"/p:MNAVersion={TestContext.MicrosoftNETCoreAppVersion}");
             restoreArgs.Add($"/p:NetCoreAppCurrent={Framework}");
 
             if (extraMSBuildProperties != null)

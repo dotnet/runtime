@@ -444,7 +444,7 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        private object DebuggerDisplayContent => $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, HasValue={HasValueForDebugger}, Value={ValueForDebugger}";
+        private object DebuggerDisplayContent => $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, HasValue = {HasValueForDebugger}, Value = {ValueForDebugger}";
 
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
@@ -1194,7 +1194,7 @@ namespace System.Threading.Tasks.Dataflow
                 get
                 {
                     var displaySource = _owningSource as IDebuggerDisplay;
-                    return $"Block=\"{(displaySource != null ? displaySource.Content : _owningSource)}\"";
+                    return $"Block = \"{(displaySource != null ? displaySource.Content : _owningSource)}\"";
                 }
             }
 

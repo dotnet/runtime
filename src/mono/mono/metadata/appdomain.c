@@ -26,13 +26,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_UTIME_H
-#include <utime.h>
-#else
-#ifdef HAVE_SYS_UTIME_H
-#include <sys/utime.h>
-#endif
-#endif
 
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/object.h>
@@ -56,10 +49,8 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/abi-details.h>
-#include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
-#include <mono/utils/mono-stdlib.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
@@ -778,12 +769,6 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 
 	MonoAssembly *requesting_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)load_Context;
-
-#if HOST_WASI
-	// On WASI, mono_assembly_get_alc isn't yet supported. However it should be possible to make it work.
-	if (!alc)
-		alc = mono_alc_get_default ();
-#endif
 
 	if (!alc)
 		alc = mono_assembly_get_alc (requesting_assembly);

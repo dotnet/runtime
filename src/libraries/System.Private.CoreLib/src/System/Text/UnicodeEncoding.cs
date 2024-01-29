@@ -734,7 +734,7 @@ namespace System.Text
                             // else all < 0x8000 so we can use them
 
                             // We can use these 4 chars.
-                            Unsafe.WriteUnaligned<ulong>(longBytes, *longChars);
+                            Unsafe.WriteUnaligned(longBytes, *longChars);
                             longChars++;
                             longBytes++;
                         }
@@ -978,7 +978,7 @@ namespace System.Text
             Debug.Assert(bytes is not null, "[UnicodeEncoding.GetCharCount]bytes!=null");
             Debug.Assert(count >= 0, "[UnicodeEncoding.GetCharCount]count >=0");
 
-            UnicodeEncoding.Decoder? decoder = (UnicodeEncoding.Decoder?)baseDecoder;
+            Decoder? decoder = (Decoder?)baseDecoder;
 
             byte* byteEnd = bytes + count;
             byte* byteStart = bytes;
@@ -1303,7 +1303,7 @@ namespace System.Text
             Debug.Assert(charCount >= 0, "[UnicodeEncoding.GetChars]charCount >=0");
             Debug.Assert(bytes is not null, "[UnicodeEncoding.GetChars]bytes!=null");
 
-            UnicodeEncoding.Decoder? decoder = (UnicodeEncoding.Decoder?)baseDecoder;
+            Decoder? decoder = (Decoder?)baseDecoder;
 
             // Need last vars
             int lastByte = -1;
@@ -1398,7 +1398,7 @@ namespace System.Text
                         // else all < 0x8000 so we can use them
 
                         // We can use these 4 chars.
-                        Unsafe.WriteUnaligned<ulong>(longChars, *longBytes);
+                        Unsafe.WriteUnaligned(longChars, *longBytes);
                         longBytes++;
                         longChars++;
                     }
@@ -1719,14 +1719,14 @@ namespace System.Text
             return (int)(chars - charStart);
         }
 
-        public override System.Text.Encoder GetEncoder()
+        public override Encoder GetEncoder()
         {
             return new EncoderNLS(this);
         }
 
-        public override System.Text.Decoder GetDecoder()
+        public override Text.Decoder GetDecoder()
         {
-            return new UnicodeEncoding.Decoder(this);
+            return new Decoder(this);
         }
 
         public override byte[] GetPreamble()
@@ -1746,8 +1746,8 @@ namespace System.Text
         public override ReadOnlySpan<byte> Preamble =>
             GetType() != typeof(UnicodeEncoding) ? new ReadOnlySpan<byte>(GetPreamble()) : // in case a derived UnicodeEncoding overrode GetPreamble
             !byteOrderMark ? default :
-            bigEndian ? (ReadOnlySpan<byte>)new byte[2] { 0xfe, 0xff } : // uses C# compiler's optimization for static byte[] data
-            (ReadOnlySpan<byte>)new byte[2] { 0xff, 0xfe };
+            bigEndian ? [0xfe, 0xff] :
+            [0xff, 0xfe];
 
         public override int GetMaxByteCount(int charCount)
         {
@@ -1812,7 +1812,7 @@ namespace System.Text
                    (byteOrderMark ? 4 : 0) + (bigEndian ? 8 : 0);
         }
 
-        private sealed class Decoder : System.Text.DecoderNLS
+        private sealed class Decoder : DecoderNLS
         {
             internal int lastByte = -1;
             internal char lastChar;

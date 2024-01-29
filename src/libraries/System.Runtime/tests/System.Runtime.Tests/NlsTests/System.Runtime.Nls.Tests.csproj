@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
+    <NoWarn>$(NoWarn),SYSLIB0013</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Globalization.UseNls" Value="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Helpers.cs"
+             Link="Helpers.cs" />
+    <Compile Include="..\System\ArrayTests.cs"
+             Link="System\ArrayTests.cs" />
+    <Compile Include="..\System\String.SplitTests.cs"
+             Link="System\String.SplitTests.cs" />
+    <Compile Include="..\System\StringComparerTests.cs"
+             Link="System\StringComparerTests.cs" />
+    <Compile Include="..\System\StringGetHashCodeTests.cs"
+             Link="System\StringGetHashCodeTests.cs" />
+    <Compile Include="..\System\StringSplitExtensions.cs"
+             Link="System\StringSplitExtensions.cs" />
+    <Compile Include="..\System\StringTests.cs"
+             Link="System\StringTests.cs" />
+    <Compile Include="..\System\Text\RuneTests.cs"
+             Link="System\Text\RuneTests.cs" />
+    <Compile Include="..\System\Text\RuneTests.TestData.cs"
+             Link="System\Text\RuneTests.TestData.cs" />
+    <Compile Include="..\System\Text\StringBuilderTests.cs"
+             Link="System\Text\StringBuilderTests.cs" />
+    <Compile Include="..\System\Text\StringBuilderReplaceTests.cs"
+             Link="System\Text\StringBuilderReplaceTests.cs" />
+    <Compile Include="..\System\Uri.CreateStringTests.cs"
+             Link="System\Uri.CreateStringTests.cs" />
+    <Compile Include="..\System\Uri.CreateUriTests.cs"
+             Link="System\Uri.CreateUriTests.cs" />
+    <Compile Include="..\System\Uri.MethodsTests.cs"
+             Link="System\Uri.MethodsTests.cs" />
+    <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
+             Link="Common\System\EnumTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\MockType.cs"
+             Link="Common\System\MockType.cs" />
+    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs"
+             Link="Common\System\StringTests.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
+  </ItemGroup>
+</Project>

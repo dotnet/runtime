@@ -158,7 +158,7 @@ void Phase::PostPhase(PhaseStatus status)
 
         if ((comp->activePhaseChecks & PhaseChecks::CHECK_LOOPS) == PhaseChecks::CHECK_LOOPS)
         {
-            comp->fgDebugCheckLoopTable();
+            comp->fgDebugCheckLoops();
         }
 
         if ((comp->activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
@@ -169,6 +169,11 @@ void Phase::PostPhase(PhaseStatus status)
         if ((comp->activePhaseChecks & PhaseChecks::CHECK_LINKED_LOCALS) == PhaseChecks::CHECK_LINKED_LOCALS)
         {
             comp->fgDebugCheckLinkedLocals();
+        }
+
+        if (comp->m_dfsTree != nullptr)
+        {
+            comp->fgDebugCheckDfsTree();
         }
     }
 #endif // DEBUG

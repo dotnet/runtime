@@ -4,12 +4,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// Default implementation of <see cref="IServiceCollection"/>.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ServiceCollectionDebugView))]
     public class ServiceCollection : IServiceCollection
     {
         private readonly List<ServiceDescriptor> _descriptors = new List<ServiceDescriptor>();
@@ -119,5 +122,36 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static void ThrowReadOnlyException() =>
             throw new InvalidOperationException(SR.ServiceCollectionReadOnly);
+
+        private string DebuggerToString()
+        {
+            string debugText = $"Count = {_descriptors.Count}";
+            if (_isReadOnly)
+            {
+                debugText += $", IsReadOnly = true";
+            }
+            return debugText;
+        }
+
+        private sealed class ServiceCollectionDebugView
+        {
+            private readonly ServiceCollection _services;
+
+            public ServiceCollectionDebugView(ServiceCollection services)
+            {
+                _services = services;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public ServiceDescriptor[] Items
+            {
+                get
+                {
+                    ServiceDescriptor[] items = new ServiceDescriptor[_services.Count];
+                    _services.CopyTo(items, 0);
+                    return items;
+                }
+            }
+        }
     }
 }

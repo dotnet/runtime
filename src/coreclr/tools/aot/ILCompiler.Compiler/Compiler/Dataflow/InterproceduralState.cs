@@ -51,7 +51,7 @@ namespace ILCompiler.Dataflow
         public override int GetHashCode() => base.GetHashCode();
 
         public InterproceduralState Clone()
-            => new(_ilProvider, MethodBodies.Clone(), HoistedLocals.Clone(), lattice);
+            => new(_ilProvider, MethodBodies.DeepCopy(), HoistedLocals.Clone(), lattice);
 
         public void TrackMethod(MethodDesc method)
         {
@@ -67,7 +67,8 @@ namespace ILCompiler.Dataflow
             methodBody = GetInstantiatedMethodIL(methodBody);
 
             // Work around the fact that ValueSet is readonly
-            var methodsList = new List<MethodBodyValue>(MethodBodies);
+            Debug.Assert (!MethodBodies.IsUnknown ());
+            var methodsList = new List<MethodBodyValue>(MethodBodies.GetKnownValues ());
             methodsList.Add(new MethodBodyValue(methodBody));
 
             // For state machine methods, also scan the state machine members.

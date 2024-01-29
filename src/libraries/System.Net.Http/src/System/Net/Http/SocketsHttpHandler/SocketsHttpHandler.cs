@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.IO;
+using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Runtime.Versioning;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
-using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -450,6 +452,34 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="IMeterFactory"/> to create a custom <see cref="Meter"/> for the <see cref="SocketsHttpHandler"/> instance.
+        /// </summary>
+        /// <remarks>
+        /// When <see cref="MeterFactory"/> is set to a non-<see langword="null"/> value, all metrics emitted by the <see cref="SocketsHttpHandler"/> instance
+        /// will be recorded using the <see cref="Meter"/> provided by the <see cref="IMeterFactory"/>.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public IMeterFactory? MeterFactory
+        {
+            get => _settings._meterFactory;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._meterFactory = value;
+            }
+        }
+
+        internal ClientCertificateOption ClientCertificateOptions
+        {
+            get => _settings._clientCertificateOptions;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._clientCertificateOptions = value;
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && !_disposed)
@@ -485,6 +515,10 @@ namespace System.Net.Http
             {
                 handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
             }
+
+            handler = new MetricsHandler(handler, settings._meterFactory, out Meter meter);
+
+            settings._metrics = new SocketsHttpHandlerMetrics(meter);
 
             if (settings._allowAutoRedirect)
             {

@@ -11,7 +11,7 @@ namespace System.Runtime.Intrinsics
 {
     // We mark certain methods with AggressiveInlining to ensure that the JIT will
     // inline them. The JIT would otherwise not inline the method since it, at the
-    // point it tries to determine inline profability, currently cannot determine
+    // point it tries to determine inline profitability, currently cannot determine
     // that most of the code-paths will be optimized away as "dead code".
     //
     // We then manually inline cases (such as certain intrinsic code-paths) that
@@ -57,7 +57,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Abs<T>(Vector256<T> vector)
-            where T : struct
         {
             return Create(
                 Vector128.Abs(vector._lower),
@@ -73,8 +72,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Add<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left + right;
+        public static Vector256<T> Add<T>(Vector256<T> left, Vector256<T> right) => left + right;
 
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -85,7 +83,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> AndNot<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.AndNot(left._lower, right._lower),
@@ -102,8 +99,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<TTo> As<TFrom, TTo>(this Vector256<TFrom> vector)
-            where TFrom : struct
-            where TTo : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<TTo>();
@@ -118,8 +113,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<byte> AsByte<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, byte>();
+        public static Vector256<byte> AsByte<T>(this Vector256<T> vector) => vector.As<T, byte>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Double}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -128,8 +122,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<double> AsDouble<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, double>();
+        public static Vector256<double> AsDouble<T>(this Vector256<T> vector) => vector.As<T, double>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Int16}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -138,8 +131,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<short> AsInt16<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, short>();
+        public static Vector256<short> AsInt16<T>(this Vector256<T> vector) => vector.As<T, short>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Int32}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -148,8 +140,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<int> AsInt32<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, int>();
+        public static Vector256<int> AsInt32<T>(this Vector256<T> vector) => vector.As<T, int>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Int64}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -158,8 +149,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<long> AsInt64<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, long>();
+        public static Vector256<long> AsInt64<T>(this Vector256<T> vector) => vector.As<T, long>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{IntPtr}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -168,8 +158,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nint> AsNInt<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, nint>();
+        public static Vector256<nint> AsNInt<T>(this Vector256<T> vector) => vector.As<T, nint>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{UIntPtr}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -179,8 +168,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nuint> AsNUInt<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, nuint>();
+        public static Vector256<nuint> AsNUInt<T>(this Vector256<T> vector) => vector.As<T, nuint>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{SByte}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -190,8 +178,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<sbyte> AsSByte<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, sbyte>();
+        public static Vector256<sbyte> AsSByte<T>(this Vector256<T> vector) => vector.As<T, sbyte>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Single}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -200,8 +187,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<float> AsSingle<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, float>();
+        public static Vector256<float> AsSingle<T>(this Vector256<T> vector) => vector.As<T, float>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{UInt16}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -211,8 +197,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ushort> AsUInt16<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, ushort>();
+        public static Vector256<ushort> AsUInt16<T>(this Vector256<T> vector) => vector.As<T, ushort>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{UInt32}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -222,8 +207,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<uint> AsUInt32<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, uint>();
+        public static Vector256<uint> AsUInt32<T>(this Vector256<T> vector) => vector.As<T, uint>();
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{UInt64}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -233,8 +217,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ulong> AsUInt64<T>(this Vector256<T> vector)
-            where T : struct => vector.As<T, ulong>();
+        public static Vector256<ulong> AsUInt64<T>(this Vector256<T> vector) => vector.As<T, ulong>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector256{T}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -244,7 +227,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> AsVector256<T>(this Vector<T> value)
-            where T : struct
         {
             Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
@@ -262,7 +244,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> AsVector<T>(this Vector256<T> value)
-            where T : struct
         {
             Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
@@ -279,8 +260,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> BitwiseAnd<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left & right;
+        public static Vector256<T> BitwiseAnd<T>(Vector256<T> left, Vector256<T> right) => left & right;
 
         /// <summary>Computes the bitwise-or of two vectors.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -290,8 +270,20 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> BitwiseOr<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left | right;
+        public static Vector256<T> BitwiseOr<T>(Vector256<T> left, Vector256<T> right) => left | right;
+
+        /// <summary>Computes the ceiling of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its ceiling computed.</param>
+        /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector256<T> Ceiling<T>(Vector256<T> vector)
+        {
+            return Create(
+                Vector128.Ceiling(vector._lower),
+                Vector128.Ceiling(vector._upper)
+            );
+        }
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its ceiling computed.</param>
@@ -299,13 +291,7 @@ namespace System.Runtime.Intrinsics
         /// <seealso cref="MathF.Ceiling(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<float> Ceiling(Vector256<float> vector)
-        {
-            return Create(
-                Vector128.Ceiling(vector._lower),
-                Vector128.Ceiling(vector._upper)
-            );
-        }
+        public static Vector256<float> Ceiling(Vector256<float> vector) => Ceiling<float>(vector);
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its ceiling computed.</param>
@@ -313,13 +299,7 @@ namespace System.Runtime.Intrinsics
         /// <seealso cref="Math.Ceiling(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<double> Ceiling(Vector256<double> vector)
-        {
-            return Create(
-                Vector128.Ceiling(vector._lower),
-                Vector128.Ceiling(vector._upper)
-            );
-        }
+        public static Vector256<double> Ceiling(Vector256<double> vector) => Ceiling<double>(vector);
 
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -331,7 +311,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> ConditionalSelect<T>(Vector256<T> condition, Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.ConditionalSelect(condition._lower, left._lower, right._lower),
@@ -473,11 +452,11 @@ namespace System.Runtime.Intrinsics
 
                 if (Fma.IsSupported)
                 {
-                    return Fma.MultiplyAdd(upper, Vector256.Create(65536.0f), lower);
+                    return Fma.MultiplyAdd(upper, Create(65536.0f), lower);
                 }
                 else
                 {
-                    Vector256<float> result = Avx.Multiply(upper, Vector256.Create(65536.0f));
+                    Vector256<float> result = Avx.Multiply(upper, Create(65536.0f));
                     return Avx.Add(result, lower);
                 }
             }
@@ -527,7 +506,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(this Vector256<T> vector, T[] destination)
-            where T : struct
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
@@ -550,7 +528,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(this Vector256<T> vector, T[] destination, int startIndex)
-            where T : struct
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
@@ -575,7 +552,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(this Vector256<T> vector, Span<T> destination)
-            where T : struct
         {
             if (destination.Length < Vector256<T>.Count)
             {
@@ -593,7 +569,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Create<T>(T value)
-            where T : struct
         {
             Vector128<T> vector = Vector128.Create(value);
             return Create(vector, vector);
@@ -707,7 +682,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Create<T>(T[] values)
-            where T : struct
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
@@ -729,7 +703,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Create<T>(T[] values, int index)
-            where T : struct
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
@@ -749,7 +722,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Create<T>(ReadOnlySpan<T> values)
-            where T : struct
         {
             if (values.Length < Vector256<T>.Count)
             {
@@ -1035,7 +1007,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="lower" /> and <paramref name="upper" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Create<T>(Vector128<T> lower, Vector128<T> upper)
-            where T : struct
         {
             if (Avx.IsSupported)
             {
@@ -1154,8 +1125,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> CreateScalar<T>(T value)
-            where T : struct => Vector128.CreateScalar(value).ToVector256();
+        public static Vector256<T> CreateScalar<T>(T value) => Vector128.CreateScalar(value).ToVector256();
 
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
@@ -1254,7 +1224,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateScalarUnsafe<T>(T value)
-            where T : struct
         {
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
@@ -1363,8 +1332,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Divide<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left / right;
+        public static Vector256<T> Divide<T>(Vector256<T> left, Vector256<T> right) => left / right;
 
         /// <summary>Divides a vector by a scalar to compute the per-element quotient.</summary>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -1373,8 +1341,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Divide<T>(Vector256<T> left, T right)
-            where T : struct => left / right;
+        public static Vector256<T> Divide<T>(Vector256<T> left, T right) => left / right;
 
         /// <summary>Computes the dot product of two vectors.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1385,7 +1352,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Dot<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             // Doing this as Dot(lower) + Dot(upper) is important for floating-point determinism
             // This is because the underlying dpps instruction on x86/x64 will do this equivalently
@@ -1405,7 +1371,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Equals<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.Equals(left._lower, right._lower),
@@ -1421,8 +1386,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EqualsAll<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left == right;
+        public static bool EqualsAll<T>(Vector256<T> left, Vector256<T> right) => left == right;
 
         /// <summary>Compares two vectors to determine if any elements are equal.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -1433,10 +1397,43 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EqualsAny<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.EqualsAny(left._lower, right._lower)
                 || Vector128.EqualsAny(left._upper, right._upper);
+        }
+
+        /// <inheritdoc cref="Vector128.Exp(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Exp(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpDouble<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Exp(vector._lower),
+                    Vector128.Exp(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Exp(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Exp(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpSingle<Vector256<float>, Vector256<uint>, Vector256<double>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Exp(vector._lower),
+                    Vector128.Exp(vector._upper)
+                );
+            }
         }
 
         /// <summary>Extracts the most significant bit from each element in a vector.</summary>
@@ -1448,7 +1445,6 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint ExtractMostSignificantBits<T>(this Vector256<T> vector)
-            where T : struct
         {
             uint result = vector._lower.ExtractMostSignificantBits();
             result |= vector._upper.ExtractMostSignificantBits() << Vector128<T>.Count;
@@ -1458,10 +1454,9 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its floor computed.</param>
         /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
-        /// <seealso cref="MathF.Floor(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<float> Floor(Vector256<float> vector)
+        internal static Vector256<T> Floor<T>(Vector256<T> vector)
         {
             return Create(
                 Vector128.Floor(vector._lower),
@@ -1472,16 +1467,18 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its floor computed.</param>
         /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
+        /// <seealso cref="MathF.Floor(float)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Floor(Vector256<float> vector) => Floor<float>(vector);
+
+        /// <summary>Computes the floor of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its floor computed.</param>
+        /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
         /// <seealso cref="Math.Floor(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<double> Floor(Vector256<double> vector)
-        {
-            return Create(
-                Vector128.Floor(vector._lower),
-                Vector128.Floor(vector._upper)
-            );
-        }
+        public static Vector256<double> Floor(Vector256<double> vector) => Floor<double>(vector);
 
         /// <summary>Gets the element at the specified index.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
@@ -1493,7 +1490,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T GetElement<T>(this Vector256<T> vector, int index)
-            where T : struct
         {
             if ((uint)(index) >= (uint)(Vector256<T>.Count))
             {
@@ -1511,7 +1507,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> GetLower<T>(this Vector256<T> vector)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             return vector._lower;
@@ -1525,7 +1520,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> GetUpper<T>(this Vector256<T> vector)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             return vector._upper;
@@ -1540,7 +1534,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> GreaterThan<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.GreaterThan(left._lower, right._lower),
@@ -1557,7 +1550,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanAll<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.GreaterThanAll(left._lower, right._lower)
                 && Vector128.GreaterThanAll(left._upper, right._upper);
@@ -1572,7 +1564,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanAny<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.GreaterThanAny(left._lower, right._lower)
                 || Vector128.GreaterThanAny(left._upper, right._upper);
@@ -1587,7 +1578,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> GreaterThanOrEqual<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.GreaterThanOrEqual(left._lower, right._lower),
@@ -1604,7 +1594,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanOrEqualAll<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.GreaterThanOrEqualAll(left._lower, right._lower)
                 && Vector128.GreaterThanOrEqualAll(left._upper, right._upper);
@@ -1619,7 +1608,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanOrEqualAny<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.GreaterThanOrEqualAny(left._lower, right._lower)
                 || Vector128.GreaterThanOrEqualAny(left._upper, right._upper);
@@ -1634,7 +1622,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> LessThan<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.LessThan(left._lower, right._lower),
@@ -1651,7 +1638,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanAll<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.LessThanAll(left._lower, right._lower)
                 && Vector128.LessThanAll(left._upper, right._upper);
@@ -1666,7 +1652,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanAny<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.LessThanAny(left._lower, right._lower)
                 || Vector128.LessThanAny(left._upper, right._upper);
@@ -1681,7 +1666,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> LessThanOrEqual<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.LessThanOrEqual(left._lower, right._lower),
@@ -1698,7 +1682,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanOrEqualAll<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.LessThanOrEqualAll(left._lower, right._lower)
                 && Vector128.LessThanOrEqualAll(left._upper, right._upper);
@@ -1713,12 +1696,12 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanOrEqualAny<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Vector128.LessThanOrEqualAny(left._lower, right._lower)
                 || Vector128.LessThanOrEqualAny(left._upper, right._upper);
         }
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The source from which the vector will be loaded.</param>
@@ -1727,8 +1710,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Load<T>(T* source)
-            where T : unmanaged => LoadUnsafe(ref *source);
+        public static Vector256<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1739,7 +1721,6 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> LoadAligned<T>(T* source)
-            where T : unmanaged
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -1760,8 +1741,8 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> LoadAlignedNonTemporal<T>(T* source)
-            where T : unmanaged => LoadAligned(source);
+        public static Vector256<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1770,12 +1751,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> LoadUnsafe<T>(ref T source)
-            where T : struct
+        public static Vector256<T> LoadUnsafe<T>(ref readonly T source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-            ref byte address = ref Unsafe.As<T, byte>(ref source);
-            return Unsafe.ReadUnaligned<Vector256<T>>(ref address);
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
+            return Unsafe.ReadUnaligned<Vector256<T>>(in address);
         }
 
         /// <summary>Loads a vector from the given source and element offset.</summary>
@@ -1787,12 +1767,11 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
-            where T : struct
+        public static Vector256<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-            source = ref Unsafe.Add(ref source, (nint)elementOffset);
-            return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref source));
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
+            return Unsafe.ReadUnaligned<Vector256<T>>(in address);
         }
 
         /// <summary>Loads a vector from the given source and reinterprets it as <see cref="ushort"/>.</summary>
@@ -1810,6 +1789,74 @@ namespace System.Runtime.Intrinsics
         internal static Vector256<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
             LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
 
+        /// <inheritdoc cref="Vector128.Log(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Log(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogDouble<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log(vector._lower),
+                    Vector128.Log(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Log(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogSingle<Vector256<float>, Vector256<int>, Vector256<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log(vector._lower),
+                    Vector128.Log(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log2(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<double> Log2(Vector256<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Double<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log2(vector._lower),
+                    Vector128.Log2(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log2(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Log2(Vector256<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Single<Vector256<float>, Vector256<int>, Vector256<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Log2(vector._lower),
+                    Vector128.Log2(vector._upper)
+                );
+            }
+        }
+
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -1819,7 +1866,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Max<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.Max(left._lower, right._lower),
@@ -1836,7 +1882,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Min<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct
         {
             return Create(
                 Vector128.Min(left._lower, right._lower),
@@ -1852,8 +1897,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Multiply<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left * right;
+        public static Vector256<T> Multiply<T>(Vector256<T> left, Vector256<T> right) => left * right;
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1863,8 +1907,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Multiply<T>(Vector256<T> left, T right)
-            where T : struct => left * right;
+        public static Vector256<T> Multiply<T>(Vector256<T> left, T right) => left * right;
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1874,8 +1917,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Multiply<T>(T left, Vector256<T> right)
-            where T : struct => left * right;
+        public static Vector256<T> Multiply<T>(T left, Vector256<T> right) => left * right;
 
         /// <summary>Narrows two <see cref="Vector256{Double}"/> instances into one <see cref="Vector256{Single}" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
@@ -1986,8 +2028,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Negate<T>(Vector256<T> vector)
-            where T : struct => -vector;
+        public static Vector256<T> Negate<T>(Vector256<T> vector) => -vector;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1997,7 +2038,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> OnesComplement<T>(Vector256<T> vector)
-            where T : struct
         {
             return Create(
                 Vector128.OnesComplement(vector._lower),
@@ -2011,13 +2051,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<byte> ShiftLeft(Vector256<byte> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        internal static Vector256<T> ShiftLeft<T>(Vector256<T> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2025,13 +2059,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<short> ShiftLeft(Vector256<short> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<byte> ShiftLeft(Vector256<byte> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2039,13 +2067,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<int> ShiftLeft(Vector256<int> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<short> ShiftLeft(Vector256<short> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2053,13 +2075,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<long> ShiftLeft(Vector256<long> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<int> ShiftLeft(Vector256<int> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2067,13 +2083,15 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nint> ShiftLeft(Vector256<nint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<long> ShiftLeft(Vector256<long> vector, int shiftCount) => vector << shiftCount;
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<nint> ShiftLeft(Vector256<nint> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2082,13 +2100,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nuint> ShiftLeft(Vector256<nuint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<nuint> ShiftLeft(Vector256<nuint> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2097,13 +2109,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<sbyte> ShiftLeft(Vector256<sbyte> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<sbyte> ShiftLeft(Vector256<sbyte> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2112,13 +2118,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ushort> ShiftLeft(Vector256<ushort> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<ushort> ShiftLeft(Vector256<ushort> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2127,13 +2127,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<uint> ShiftLeft(Vector256<uint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<uint> ShiftLeft(Vector256<uint> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2142,13 +2136,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ulong> ShiftLeft(Vector256<ulong> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftLeft(vector._lower, shiftCount),
-                Vector128.ShiftLeft(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<ulong> ShiftLeft(Vector256<ulong> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2156,13 +2144,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<short> ShiftRightArithmetic(Vector256<short> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
-            );
-        }
+        internal static Vector256<T> ShiftRightArithmetic<T>(Vector256<T> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2170,13 +2152,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<int> ShiftRightArithmetic(Vector256<int> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<short> ShiftRightArithmetic(Vector256<short> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2184,13 +2160,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<long> ShiftRightArithmetic(Vector256<long> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<int> ShiftRightArithmetic(Vector256<int> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2198,13 +2168,15 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nint> ShiftRightArithmetic(Vector256<nint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<long> ShiftRightArithmetic(Vector256<long> vector, int shiftCount) => vector >> shiftCount;
+
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<nint> ShiftRightArithmetic(Vector256<nint> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2213,13 +2185,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<sbyte> ShiftRightArithmetic(Vector256<sbyte> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightArithmetic(vector._lower, shiftCount),
-                Vector128.ShiftRightArithmetic(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<sbyte> ShiftRightArithmetic(Vector256<sbyte> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2227,13 +2193,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<byte> ShiftRightLogical(Vector256<byte> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        internal static Vector256<T> ShiftRightLogical<T>(Vector256<T> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2241,13 +2201,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<short> ShiftRightLogical(Vector256<short> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<byte> ShiftRightLogical(Vector256<byte> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2255,13 +2209,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<int> ShiftRightLogical(Vector256<int> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<short> ShiftRightLogical(Vector256<short> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2269,13 +2217,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<long> ShiftRightLogical(Vector256<long> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<int> ShiftRightLogical(Vector256<int> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2283,13 +2225,15 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nint> ShiftRightLogical(Vector256<nint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<long> ShiftRightLogical(Vector256<long> vector, int shiftCount) => vector >>> shiftCount;
+
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<nint> ShiftRightLogical(Vector256<nint> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2298,13 +2242,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<nuint> ShiftRightLogical(Vector256<nuint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<nuint> ShiftRightLogical(Vector256<nuint> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2313,13 +2251,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<sbyte> ShiftRightLogical(Vector256<sbyte> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<sbyte> ShiftRightLogical(Vector256<sbyte> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2328,13 +2260,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ushort> ShiftRightLogical(Vector256<ushort> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<ushort> ShiftRightLogical(Vector256<ushort> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2343,13 +2269,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<uint> ShiftRightLogical(Vector256<uint> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<uint> ShiftRightLogical(Vector256<uint> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2358,13 +2278,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> vector, int shiftCount)
-        {
-            return Create(
-                Vector128.ShiftRightLogical(vector._lower, shiftCount),
-                Vector128.ShiftRightLogical(vector._upper, shiftCount)
-            );
-        }
+        public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
@@ -2618,7 +2532,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Sqrt<T>(Vector256<T> vector)
-            where T : struct
         {
             return Create(
                 Vector128.Sqrt(vector._lower),
@@ -2626,6 +2539,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The vector that will be stored.</param>
@@ -2634,8 +2548,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Store<T>(this Vector256<T> source, T* destination)
-            where T : unmanaged => source.StoreUnsafe(ref *destination);
+        public static void Store<T>(this Vector256<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2646,7 +2559,6 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAligned<T>(this Vector256<T> source, T* destination)
-            where T : unmanaged
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -2667,8 +2579,8 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StoreAlignedNonTemporal<T>(this Vector256<T> source, T* destination)
-            where T : unmanaged => source.StoreAligned(destination);
+        public static void StoreAlignedNonTemporal<T>(this Vector256<T> source, T* destination) => source.StoreAligned(destination);
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2678,7 +2590,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreUnsafe<T>(this Vector256<T> source, ref T destination)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             ref byte address = ref Unsafe.As<T, byte>(ref destination);
@@ -2695,7 +2606,6 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreUnsafe<T>(this Vector256<T> source, ref T destination, nuint elementOffset)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             destination = ref Unsafe.Add(ref destination, (nint)elementOffset);
@@ -2710,8 +2620,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Subtract<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left - right;
+        public static Vector256<T> Subtract<T>(Vector256<T> left, Vector256<T> right) => left - right;
 
         /// <summary>Computes the sum of all elements in a vector.</summary>
         /// <param name="vector">The vector whose elements will be summed.</param>
@@ -2721,7 +2630,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Sum<T>(Vector256<T> vector)
-            where T : struct
         {
             // Doing this as Sum(lower) + Sum(upper) is important for floating-point determinism
             // This is because the underlying dpps instruction on x86/x64 will do this equivalently
@@ -2740,7 +2648,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ToScalar<T>(this Vector256<T> vector)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             return vector.GetElementUnsafe(0);
@@ -2753,7 +2660,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<T> ToVector512<T>(this Vector256<T> vector)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -2769,7 +2675,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static unsafe Vector512<T> ToVector512Unsafe<T>(this Vector256<T> vector)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -2789,7 +2694,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCopyTo<T>(this Vector256<T> vector, Span<T> destination)
-            where T : struct
         {
             if (destination.Length < Vector256<T>.Count)
             {
@@ -3073,7 +2977,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector256<T> WithElement<T>(this Vector256<T> vector, int index, T value)
-            where T : struct
         {
             if ((uint)(index) >= (uint)(Vector256<T>.Count))
             {
@@ -3094,7 +2997,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> WithLower<T>(this Vector256<T> vector, Vector128<T> value)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -3112,7 +3014,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> WithUpper<T>(this Vector256<T> vector, Vector128<T> value)
-            where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -3129,12 +3030,10 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Xor<T>(Vector256<T> left, Vector256<T> right)
-            where T : struct => left ^ right;
+        public static Vector256<T> Xor<T>(Vector256<T> left, Vector256<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static T GetElementUnsafe<T>(in this Vector256<T> vector, int index)
-            where T : struct
         {
             Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
             ref T address = ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector));
@@ -3143,7 +3042,6 @@ namespace System.Runtime.Intrinsics
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void SetElementUnsafe<T>(in this Vector256<T> vector, int index, T value)
-            where T : struct
         {
             Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
             ref T address = ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector));
@@ -3152,14 +3050,12 @@ namespace System.Runtime.Intrinsics
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void SetLowerUnsafe<T>(in this Vector256<T> vector, Vector128<T> value)
-            where T : struct
         {
             Unsafe.AsRef(in vector._lower) = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void SetUpperUnsafe<T>(in this Vector256<T> vector, Vector128<T> value)
-            where T : struct
         {
             Unsafe.AsRef(in vector._upper) = value;
         }

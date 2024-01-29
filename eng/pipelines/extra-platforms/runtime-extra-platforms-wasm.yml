@@ -16,19 +16,32 @@ jobs:
 
 #
 # ************ Rolling builds: *************
-# - only run eat, and aot tests
-# - rest are covered by runtime, and runtime-staging
+# - only run eat and aot tests
+# - rest are covered by runtime
 #
 - ${{ if eq(parameters.isRollingBuild, true) }}:
-  # AOT Library tests
+  # AOT Library tests - browser_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
       platforms:
         - browser_wasm
         - browser_wasm_win
       nameSuffix: _AOT
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       runAOT: true
       alwaysRun: true
+
+  # AOT Library tests - wasi_wasm
+  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    parameters:
+      platforms:
+        - wasi_wasm
+        - wasi_wasm_win
+      nameSuffix: _AOT
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      runAOT: true
+      alwaysRun: true
+      shouldContinueOnError: true
 
   # High resource AOT Library tests
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -37,7 +50,7 @@ jobs:
         - browser_wasm
         - browser_wasm_win
       nameSuffix: _HighResource_AOT
-      extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
+      extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       buildAOTOnHelix: false
       runAOT: true
       alwaysRun: true
@@ -48,6 +61,7 @@ jobs:
       platforms:
         - browser_wasm_firefox
       browser: firefox
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       ## ff tests are unstable currently
       shouldContinueOnError: true
       alwaysRun: true
@@ -71,6 +85,7 @@ jobs:
       platforms:
         - browser_wasm
       # Don't run for rolling builds, as this is covered
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
@@ -83,6 +98,7 @@ jobs:
       platforms:
         - browser_wasm
       nameSuffix: _NodeJs
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
@@ -101,22 +117,6 @@ jobs:
         - WasmTestOnBrowser
         - WasmTestOnNodeJS
 
-  # Smoke tests only with full threading
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-        #- browser_wasm_win
-      nameSuffix: _Threading_Smoke
-      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
-      shouldRunSmokeOnly: true
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      # Always run for runtime-wasm because browser testing is not on runtime
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      scenarios:
-        - WasmTestOnBrowser
-
   # Library tests with full threading
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
@@ -124,38 +124,16 @@ jobs:
         - browser_wasm
         #- browser_wasm_win
       nameSuffix: _Threading
-      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
+      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       # Always run for runtime-wasm because tests are not run in runtime
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
-      # NOTE - Since threading is experimental, we don't want to block mainline work
-      shouldContinueOnError: true
       scenarios:
-        - normal
         - WasmTestOnBrowser
-        - WasmTestOnNodeJS
+        #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
-  # Library tests with internal threads only
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-        #- browser_wasm_win
-      nameSuffix: _Threading_PerfTracing
-      extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      # Always run for runtime-wasm because tests are not run in runtime
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-
-      # NOTE - Since threading is experimental, we don't want to block mainline work
-      shouldContinueOnError: true
-      scenarios:
-        - normal
-        - WasmTestOnBrowser
-        - WasmTestOnNodeJS
 
   # EAT Library tests - only run on linux
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -163,18 +141,34 @@ jobs:
       platforms:
         - browser_wasm
       nameSuffix: _EAT
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:1
       runAOT: false
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
-  # AOT Library tests
+  # AOT Library tests - browser_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
       platforms:
         - browser_wasm
         - browser_wasm_win
       nameSuffix: _AOT
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       runAOT: true
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
+  # AOT Library tests - wasi_wasm
+  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    parameters:
+      platforms:
+        - wasi_wasm
+        - wasi_wasm_win
+      nameSuffix: _AOT
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      runAOT: true
+      shouldContinueOnError: true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
@@ -186,7 +180,7 @@ jobs:
         - browser_wasm
         - browser_wasm_win
       nameSuffix: _HighResource_AOT
-      extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
+      extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       buildAOTOnHelix: false
       runAOT: true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
@@ -200,7 +194,7 @@ jobs:
         - wasi_wasm
         - wasi_wasm_win
       nameSuffix: '_Smoke'
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
+      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       shouldRunSmokeOnly: true
       # ignore test failures for runtime-extra-platforms, but not when this
       # is run as part of a wasm specific pipeline like runtime-wasm
@@ -209,15 +203,77 @@ jobs:
       scenarios:
         - normal
 
-- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
-  # Wasm.Build.Tests
-  - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+  # Hybrid Globalization tests
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
         - browser_wasm
         - browser_wasm_win
+      nameSuffix: _HybridGlobalization
+      extraBuildArgs: /p:HybridGlobalization=true
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: true
+      scenarios:
+        - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJS
+
+  # Hybrid Globalization AOT tests
+  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+        - browser_wasm_win
+      nameSuffix: _HybridGlobalization_AOT
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /p:HybridGlobalization=true
+      runAOT: true
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: true
+      scenarios:
+        - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJS
+
+- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
+  # Builds only
+  - template: /eng/pipelines/common/templates/wasm-build-only.yml
+    parameters:
+      platforms:
+        - browser_wasm
+        - browser_wasm_win
+      nameSuffix: SingleThreaded
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      condition: ne(variables['wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline'], true)
+      publishArtifactsForWorkload: true
+      publishWBT: true
+
+  - template: /eng/pipelines/common/templates/wasm-build-only.yml
+    parameters:
+      platforms:
+        - browser_wasm
+        - browser_wasm_win
+      nameSuffix: MultiThreaded
+      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      condition: ne(variables['wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline'], true)
+      publishArtifactsForWorkload: true
+      publishWBT: false
+
+  # Browser Wasm.Build.Tests
+  - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+        - browser_wasm_win
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+
+  - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
+    parameters:
+      platforms:
         - wasi_wasm
         - wasi_wasm_win
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
@@ -225,6 +281,7 @@ jobs:
     parameters:
       platforms:
         - browser_wasm
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
@@ -235,6 +292,7 @@ jobs:
       platforms:
         - browser_wasm
         - browser_wasm_win
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
@@ -243,6 +301,7 @@ jobs:
       platforms:
         - browser_wasm_firefox
       browser: firefox
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
@@ -254,7 +313,7 @@ jobs:
       platforms:
         - Browser_wasm
         - Browser_wasm_win
-      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true
+      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       nameSuffix: DebuggerTests_MultiThreaded
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
@@ -273,7 +332,7 @@ jobs:
       platforms:
         - wasi_wasm
         - wasi_wasm_win
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
+      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       # always run for wasm only pipelines
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}

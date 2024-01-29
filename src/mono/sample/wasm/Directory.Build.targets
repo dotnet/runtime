@@ -1,6 +1,6 @@
 <Project>
   <Import Project="../Directory.Build.targets" />
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
 
   <PropertyGroup>
     <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
@@ -9,9 +9,7 @@
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(WasmAppDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
 
     <!-- so that SharedArrayBuffer is enabled -->
-    <_MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</_MonoWasmThreads>
-    <WasmXHarnessArgs Condition="'$(_MonoWasmThreads)' == 'true'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
-    <_ServeHeaders    Condition="'$(_MonoWasmThreads)' == 'true'">$(_ServeHeaders) -h Cross-Origin-Embedder-Policy:require-corp -h Cross-Origin-Opener-Policy:same-origin</_ServeHeaders>
+    <_ServeHeaders    Condition="'$(WasmEnableThreads)' == 'true'">$(_ServeHeaders) -h Cross-Origin-Embedder-Policy:require-corp -h Cross-Origin-Opener-Policy:same-origin</_ServeHeaders>
 
     <!-- For streaming instantiation of WASM module and browser cache -->
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .wasm=application/wasm</_ServeMimeTypes>
@@ -57,20 +55,20 @@
     <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm --module $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --experimental-wasm-eh --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="DebugSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args) --inspect=9222" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --experimental-wasm-eh --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args) --inspect=9222" IgnoreExitCode="true" />
   </Target>
   <Target Name="CheckServe">
     <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithBrowser" DependsOnTargets="BuildSampleInTree;CheckServe">
-    <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 $(_ServeMimeTypes) $(_ServeHeaders)" IgnoreExitCode="true" YieldDuringToolExecution="true" />
+    <Exec Command="$(_Dotnet) serve -S -o -d:bin/$(Configuration)/AppBundle -p:8000 $(_ServeMimeTypes) $(_ServeHeaders)" IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
   <Target Name="RunSampleWithBrowserAndSimpleServer" DependsOnTargets="BuildSampleInTree">
     <Exec Command="$(_Dotnet) build -c $(Configuration) ..\simple-server\HttpServer.csproj" />
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="..\..\..\..\simple-server\bin\$(Configuration)\net6.0\HttpServer" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="$(_Dotnet) run --configuration $(Configuration) --project ..\..\..\..\simple-server\HttpServer.csproj -s &quot;$(SimpleServerURLSuffix)&quot;" />
   </Target>
 
   <Target Name="TriggerGenerateRunScript"

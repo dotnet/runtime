@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.Versioning;
 using System.Threading;
 using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Options;
@@ -16,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Extension methods for configuring an <see cref="IHttpClientBuilder"/>
     /// </summary>
-    public static class HttpClientBuilderExtensions
+    public static partial class HttpClientBuilderExtensions
     {
         /// <summary>
         /// Adds a delegate that will be used to configure a named <see cref="HttpClient"/>.
@@ -221,12 +222,39 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// Adds a delegate that will be used to configure the primary <see cref="HttpMessageHandler"/> for a
+        /// named <see cref="HttpClient"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
+        /// <param name="configureHandler">A delegate that is used to configure a previously set or default primary <see cref="HttpMessageHandler"/>.</param>
+        /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="IServiceProvider"/> argument provided to <paramref name="configureHandler"/> will be
+        /// a reference to a scoped service provider that shares the lifetime of the handler being constructed.
+        /// </para>
+        /// </remarks>
+        public static IHttpClientBuilder ConfigurePrimaryHttpMessageHandler(this IHttpClientBuilder builder, Action<HttpMessageHandler, IServiceProvider> configureHandler)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(configureHandler);
+
+            builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+            {
+                options.HttpMessageHandlerBuilderActions.Add(b => configureHandler(b.PrimaryHandler, b.Services));
+            });
+
+            return builder;
+        }
+
+        /// <summary>
         /// Adds a delegate that will be used to configure message handlers using <see cref="HttpMessageHandlerBuilder"/>
         /// for a named <see cref="HttpClient"/>.
         /// </summary>
         /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
         /// <param name="configureBuilder">A delegate that is used to configure an <see cref="HttpMessageHandlerBuilder"/>.</param>
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
+        [Obsolete("This method has been deprecated. Use ConfigurePrimaryHttpMessageHandler or ConfigureAdditionalHttpMessageHandlers instead.")]
         public static IHttpClientBuilder ConfigureHttpMessageHandlerBuilder(this IHttpClientBuilder builder, Action<HttpMessageHandlerBuilder> configureBuilder)
         {
             ThrowHelper.ThrowIfNull(builder);
@@ -236,6 +264,72 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return builder;
         }
+
+#if NET5_0_OR_GREATER
+        /// <summary>
+        /// Adds or updates <see cref="SocketsHttpHandler"/> as a primary handler for a named <see cref="HttpClient"/>. If provided,
+        /// also adds a delegate that will be used to configure the primary <see cref="SocketsHttpHandler"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
+        /// <param name="configureHandler">Optional delegate that is used to configure the primary <see cref="SocketsHttpHandler"/>.</param>
+        /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
+        /// <remarks>
+        /// <para>
+        /// If a primary handler was already set to be <see cref="SocketsHttpHandler"/> by previously calling, for example,
+        /// <see cref="ConfigurePrimaryHttpMessageHandler(IHttpClientBuilder, Func{HttpMessageHandler})"/> or
+        /// <see cref="UseSocketsHttpHandler(IHttpClientBuilder, Action{ISocketsHttpHandlerBuilder})"/>, then the passed <paramref name="configureHandler"/>
+        /// delegate will be applied to the existing instance. Otherwise, a new instance of <see cref="SocketsHttpHandler"/> will be created.
+        /// </para>
+        /// </remarks>
+        [UnsupportedOSPlatform("browser")]
+        public static IHttpClientBuilder UseSocketsHttpHandler(this IHttpClientBuilder builder, Action<SocketsHttpHandler, IServiceProvider>? configureHandler = null)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+
+            builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+            {
+                options.HttpMessageHandlerBuilderActions.Add(b =>
+                {
+                    if (b.PrimaryHandler is not SocketsHttpHandler handler)
+                    {
+                        handler = new SocketsHttpHandler();
+                    }
+                    configureHandler?.Invoke(handler, b.Services);
+                    b.PrimaryHandler = handler;
+                });
+            });
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Adds or updates <see cref="SocketsHttpHandler"/> as a primary handler for a named <see cref="HttpClient"/>
+        /// and configures it using <see cref="ISocketsHttpHandlerBuilder"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
+        /// <param name="configureBuilder">Delegate that is used to set up the configuration of the the primary <see cref="SocketsHttpHandler"/>
+        /// on <see cref="ISocketsHttpHandlerBuilder"/> that will later be applied on the primary handler during its creation.</param>
+        /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
+        /// <remarks>
+        /// <para>
+        /// If a primary handler was already set to be <see cref="SocketsHttpHandler"/> by previously calling, for example,
+        /// <see cref="ConfigurePrimaryHttpMessageHandler(IHttpClientBuilder, Func{HttpMessageHandler})"/> or
+        /// <see cref="UseSocketsHttpHandler(IHttpClientBuilder, Action{ISocketsHttpHandlerBuilder})"/>, then the configuration set on
+        /// <see cref="ISocketsHttpHandlerBuilder"/> will be applied to the existing instance. Otherwise, a new instance of
+        /// <see cref="SocketsHttpHandler"/> will be created.
+        /// </para>
+        /// </remarks>
+        [UnsupportedOSPlatform("browser")]
+        public static IHttpClientBuilder UseSocketsHttpHandler(this IHttpClientBuilder builder, Action<ISocketsHttpHandlerBuilder> configureBuilder)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+
+            UseSocketsHttpHandler(builder);
+            configureBuilder(new DefaultSocketsHttpHandlerBuilder(builder.Services, builder.Name));
+
+            return builder;
+        }
+#endif
 
         /// <summary>
         /// Configures a binding between the <typeparamref name="TClient" /> type and the named <see cref="HttpClient"/>
@@ -275,6 +369,11 @@ namespace Microsoft.Extensions.DependencyInjection
             this IHttpClientBuilder builder, bool validateSingleType)
             where TClient : class
         {
+            if (builder.Name is null)
+            {
+                throw new InvalidOperationException($"{nameof(HttpClientBuilderExtensions.AddTypedClient)} isn't supported with {nameof(HttpClientFactoryServiceCollectionExtensions.ConfigureHttpClientDefaults)}.");
+            }
+
             ReserveClient(builder, typeof(TClient), builder.Name, validateSingleType);
 
             builder.Services.AddTransient(s => AddTransientHelper<TClient>(s, builder));
@@ -453,12 +552,12 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Sets the <see cref="Func{T, R}"/> which determines whether to redact the HTTP header value before logging.
+        /// Sets the <see cref="Func{T, R}"/> which determines whether to redact the HTTP header value given its corresponding header name before logging.
         /// </summary>
         /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
-        /// <param name="shouldRedactHeaderValue">The <see cref="Func{T, R}"/> which determines whether to redact the HTTP header value before logging.</param>
+        /// <param name="shouldRedactHeaderValue">The <see cref="Func{T, R}"/> which determines whether to redact the HTTP header value given its corresponding header name before logging.</param>
         /// <returns>The <see cref="IHttpClientBuilder"/>.</returns>
-        /// <remarks>The provided <paramref name="shouldRedactHeaderValue"/> predicate will be evaluated for each header value when logging. If the predicate returns <c>true</c> then the header value will be replaced with a marker value <c>*</c> in logs; otherwise the header value will be logged.
+        /// <remarks>The provided <paramref name="shouldRedactHeaderValue"/> predicate will be evaluated for each header name when logging. If the predicate returns <see langword="true"/> then the header value will be replaced with a marker value <c>*</c> in logs; otherwise the header value will be logged.
         /// </remarks>
         public static IHttpClientBuilder RedactLoggedHeaders(this IHttpClientBuilder builder, Func<string, bool> shouldRedactHeaderValue)
         {
@@ -528,6 +627,26 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options => options.HandlerLifetime = handlerLifetime);
+            return builder;
+        }
+
+        /// <summary>
+        /// Adds a delegate that will be used to configure additional message handlers using <see cref="HttpMessageHandlerBuilder"/>
+        /// for a named <see cref="HttpClient"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
+        /// <param name="configureAdditionalHandlers">A delegate that is used to configure a collection of <see cref="DelegatingHandler"/>s.</param>
+        /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
+        public static IHttpClientBuilder ConfigureAdditionalHttpMessageHandlers(this IHttpClientBuilder builder, Action<IList<DelegatingHandler>, IServiceProvider> configureAdditionalHandlers)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(configureAdditionalHandlers);
+
+            builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+            {
+                options.HttpMessageHandlerBuilderActions.Add(b => configureAdditionalHandlers(b.AdditionalHandlers, b.Services));
+            });
+
             return builder;
         }
 

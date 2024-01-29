@@ -364,7 +364,7 @@ namespace System.Runtime.Serialization
         {
             if (SchemaHelper.GetSchemaType(SchemaObjects, typeQName) != null)
             {
-                for (int i = 1;; i++)
+                for (int i = 1; ; i++)
                 {
                     typeQName = new XmlQualifiedName(typeQName.Name + i.ToString(NumberFormatInfo.InvariantInfo), typeQName.Namespace);
                     if (SchemaHelper.GetSchemaType(SchemaObjects, typeQName) == null)
@@ -1259,7 +1259,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void ImportGenericInfo(XmlSchemaType type, DataContract dataContract)
+        private static void ImportGenericInfo(XmlSchemaType type, DataContract dataContract)
         {
             if (type.Annotation == null || type.Annotation.Items == null)
                 return;
@@ -1280,7 +1280,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private GenericInfo ImportGenericInfo(XmlElement typeElement, XmlSchemaType type)
+        private static GenericInfo ImportGenericInfo(XmlElement typeElement, XmlSchemaType type)
         {
             string? name = typeElement.Attributes.GetNamedItem(Globals.GenericNameAttribute)?.Value;
             if (name == null)

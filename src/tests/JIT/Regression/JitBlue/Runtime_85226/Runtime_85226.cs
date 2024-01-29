@@ -16,10 +16,9 @@ using Xunit;
 public class Runtime_85226
 {
     [Fact]
-    public static int Test()
+    public static void Test()
     {
         M1();
-        return 100;
     }
 
     private static void M1()

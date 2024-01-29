@@ -38,7 +38,6 @@
 #endif
 
 #include "mono/metadata/icall-internals.h"
-#include "mono/utils/mono-membar.h"
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
@@ -985,21 +984,12 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoCl
 		return NULL;
 	}
 
-	MonoType *type = targetTypeHandle;
+	MonoType *type = mono_type_get_underlying_type (targetTypeHandle);
 	if (MONO_TYPE_IS_REFERENCE (type) || type->type == MONO_TYPE_VALUETYPE) {
 		mono_error_set_argument (error, "array", "Cannot initialize array of non-primitive type");
 		return NULL;
 	}
-
-	int swizzle = 1;
-	int align;
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-	swizzle = mono_type_size (type, &align);
-#endif
-
-	int dummy;
-	*count = mono_type_size (field_type, &dummy)/mono_type_size (type, &align);
-	return (gpointer)mono_field_get_rva (field_handle, swizzle);
+	return mono_get_span_data_from_field (field_handle, field_type, type, count);
 }
 
 void
@@ -1076,12 +1066,6 @@ int
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalGetHashCode (MonoObjectHandle obj, MonoError* error)
 {
 	return mono_object_hash_internal (MONO_HANDLE_RAW (obj));
-}
-
-int
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalTryGetHashCode (MonoObjectHandle obj, MonoError* error)
-{
-	return mono_object_try_get_hash_internal (MONO_HANDLE_RAW (obj));
 }
 
 MonoObjectHandle
@@ -1907,6 +1891,9 @@ ves_icall_RuntimeTypeHandle_GetMetadataToken (MonoQCallTypeHandle type_handle, M
 {
 	MonoType *type = type_handle.type;
 
+	if (type->type == MONO_TYPE_FNPTR)
+		return MONO_TOKEN_TYPE_DEF; // coreCLR expects 0x02000000 as the metadata token value for function pointers
+
 	MonoClass *mc = mono_class_from_mono_type_internal (type);
 	if (!mono_class_init_internal (mc)) {
 		mono_error_set_for_class_failure (error, mc);
@@ -2010,13 +1997,24 @@ ves_icall_System_Reflection_RuntimePropertyInfo_internal_from_handle_type (MonoP
 	return mono_property_get_object_handle (klass, handle, error);
 }
 
+static MonoType*
+get_generic_argument_type (MonoType* type, unsigned int generic_argument_position)
+{
+	g_assert (type->type == MONO_TYPE_GENERICINST);
+	g_assert (type->data.generic_class->context.class_inst->type_argc > generic_argument_position);
+	return type->data.generic_class->context.class_inst->type_argv [generic_argument_position];
+}
+
 MonoArrayHandle
-ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionFieldHandle field_h, MonoBoolean optional, MonoError *error)
+ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionFieldHandle field_h, MonoBoolean optional, int generic_argument_position, MonoError *error)
 {
 	MonoClassField *field = MONO_HANDLE_GETVAL (field_h, field);
 
 	MonoType *type = mono_field_get_type_checked (field, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
+
+	if (generic_argument_position > -1)
+		type = get_generic_argument_type (type, (unsigned int)generic_argument_position);
 
 	return type_array_from_modifiers (type, optional, error);
 }
@@ -2808,6 +2806,22 @@ ves_icall_RuntimeType_GetPacking (MonoQCallTypeHandle type_handle, guint32 *pack
 	}
 }
 
+gint8
+ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal (MonoQCallTypeHandle type_handle)
+{
+	MonoType *type = type_handle.type;
+	g_assert (type->type == MONO_TYPE_FNPTR);
+	// FIXME: Once we address: https://github.com/dotnet/runtime/issues/90308 this should not be needed anymore
+	return GUINT_TO_INT8 (type->data.method->suppress_gc_transition ? MONO_CALL_UNMANAGED_MD : type->data.method->call_convention);
+}
+
+MonoBoolean
+ves_icall_RuntimeType_IsUnmanagedFunctionPointerInternal (MonoQCallTypeHandle type_handle)
+{
+	MonoType *type = type_handle.type;
+	return type->type == MONO_TYPE_FNPTR && type->data.method->pinvoke;
+}
+
 void
 ves_icall_RuntimeTypeHandle_GetElementType (MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
 {
@@ -2885,6 +2899,36 @@ ves_icall_RuntimeTypeHandle_IsByRefLike (MonoQCallTypeHandle type_handle, MonoEr
 		return FALSE;
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	return !!m_class_is_byreflike (klass);
+}
+
+GPtrArray*
+ves_icall_RuntimeType_FunctionPointerReturnAndParameterTypes (MonoQCallTypeHandle type_handle, MonoError *error)
+{
+	// FIXME: cache - possible on managed side
+
+	MonoType *type = type_handle.type;
+	GPtrArray *res_array = g_ptr_array_new ();
+
+	g_ptr_array_add (res_array, type->data.method->ret);
+
+	for (int i = 0; i < type->data.method->param_count; ++i)
+		g_ptr_array_add (res_array, type->data.method->params[i]);
+
+	return res_array;
+}
+
+MonoArrayHandle
+ves_icall_RuntimeType_GetFunctionPointerTypeModifiers (MonoQCallTypeHandle type_handle, int position, MonoBoolean optional, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	g_assert (type->type == MONO_TYPE_FNPTR);
+	if (position == 0) {
+		return type_array_from_modifiers (type->data.method->ret, optional, error);
+	}
+	else {
+		g_assert (type->data.method->param_count > position - 1);
+		return type_array_from_modifiers (type->data.method->params[position - 1], optional, error);
+	}
 }
 
 MonoBoolean
@@ -2973,15 +3017,15 @@ ves_icall_RuntimeType_GetName (MonoQCallTypeHandle type_handle, MonoObjectHandle
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	// FIXME: this should be escaped in some scenarios with mono_identifier_escape_type_name_chars
 	// Determining exactly when to do so is fairly difficult, so for now we don't bother to avoid regressions
-	const char *klass_name = m_class_get_name (klass);
+	const char *name = type->type == MONO_TYPE_FNPTR ? "" : m_class_get_name (klass);
 
 	if (m_type_is_byref (type)) {
-		char *n = g_strdup_printf ("%s&", klass_name);
+		char *n = g_strdup_printf ("%s&", name);
 		HANDLE_ON_STACK_SET (res, mono_string_new_checked (n, error));
 
 		g_free (n);
 	} else {
-	    HANDLE_ON_STACK_SET (res, mono_string_new_checked (klass_name, error));
+	    HANDLE_ON_STACK_SET (res, mono_string_new_checked (name, error));
 	}
 }
 
@@ -2989,8 +3033,10 @@ void
 ves_icall_RuntimeType_GetNamespace (MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
 {
 	MonoType *type = type_handle.type;
+	if (type->type == MONO_TYPE_FNPTR)
+		return;
+
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
-	
 	MonoClass *elem;
 	while (!m_class_is_enumtype (klass) && 
 		!mono_class_is_nullable (klass) &&
@@ -5085,7 +5131,7 @@ ves_icall_System_RuntimeType_getFullName (MonoQCallTypeHandle type_handle, MonoO
 	if (!name)
 		return;
 
-	if (full_name && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
+	if (full_name && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR || type->type == MONO_TYPE_FNPTR)) {
 		g_free (name);
 		return;
 	}
@@ -5911,9 +5957,9 @@ check_for_invalid_array_type (MonoType *type, MonoError *error)
 	gboolean allowed = TRUE;
 	char *name;
 
-	if (m_type_is_byref (type))
+	if (MONO_TYPE_IS_VOID (type))
 		allowed = FALSE;
-	else if (type->type == MONO_TYPE_TYPEDBYREF)
+	else if (m_type_is_byref (type))
 		allowed = FALSE;
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -6493,7 +6539,7 @@ fail:
 }
 
 MonoArrayHandle
-ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, MonoObjectHandle member, int pos, MonoBoolean optional, MonoError *error)
+ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, MonoObjectHandle member, int position, MonoBoolean optional, int generic_argument_position, MonoError *error)
 {
 	MonoType *type = MONO_HANDLE_GETVAL (rt, type);
 	MonoClass *member_class = mono_handle_class (member);
@@ -6515,10 +6561,13 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 	}
 
 	sig = mono_method_signature_internal (method);
-	if (pos == -1)
+	if (position == -1)
 		type = sig->ret;
 	else
-		type = sig->params [pos];
+		type = sig->params [position];
+
+	if (generic_argument_position > -1)
+		type = get_generic_argument_type (type, (unsigned int)generic_argument_position);
 
 	return type_array_from_modifiers (type, optional, error);
 }
@@ -6538,13 +6587,17 @@ get_property_type (MonoProperty *prop)
 }
 
 MonoArrayHandle
-ves_icall_RuntimePropertyInfo_GetTypeModifiers (MonoReflectionPropertyHandle property, MonoBoolean optional, MonoError *error)
+ves_icall_RuntimePropertyInfo_GetTypeModifiers (MonoReflectionPropertyHandle property, MonoBoolean optional, int generic_argument_position, MonoError *error)
 {
 	MonoProperty *prop = MONO_HANDLE_GETVAL (property, property);
 	MonoType *type = get_property_type (prop);
 
 	if (!type)
 		return NULL_HANDLE_ARRAY;
+
+	if (generic_argument_position > -1)
+		type = get_generic_argument_type (type, (unsigned int)generic_argument_position);
+
 	return type_array_from_modifiers (type, optional, error);
 }
 
@@ -6606,7 +6659,8 @@ ves_icall_MonoCustomAttrs_IsDefinedInternal (MonoObjectHandle obj, MonoReflectio
 	mono_class_init_checked (attr_class, error);
 	return_val_if_nok (error, FALSE);
 
-	MonoCustomAttrInfo *cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
+	// fetching custom attributes defined on the reflection handle should always respect custom attribute visibility
+	MonoCustomAttrInfo *cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error, TRUE);
 	return_val_if_nok (error, FALSE);
 
 	if (!cinfo)
@@ -7123,8 +7177,7 @@ mono_lookup_icall_symbol (MonoMethod *m)
 //
 // mono_create_icall_signatures depends on this order. Handle with care.
 typedef enum ICallSigType {
-	ICALL_SIG_TYPE_bool     = 0x00,
-	ICALL_SIG_TYPE_boolean  = ICALL_SIG_TYPE_bool,
+	ICALL_SIG_TYPE_boolean  = 0x00,
 	ICALL_SIG_TYPE_double   = 0x01,
 	ICALL_SIG_TYPE_float    = 0x02,
 	ICALL_SIG_TYPE_int      = 0x03,
@@ -7202,7 +7255,7 @@ mono_create_icall_signatures (void)
 	typedef gsize G_MAY_ALIAS gsize_a;
 
 	MonoType * const lookup [ ] = {
-		m_class_get_byval_arg (mono_defaults.boolean_class), // ICALL_SIG_TYPE_bool
+		m_class_get_byval_arg (mono_defaults.boolean_class), // ICALL_SIG_TYPE_boolean
 		m_class_get_byval_arg (mono_defaults.double_class),	 // ICALL_SIG_TYPE_double
 		m_class_get_byval_arg (mono_defaults.single_class),  // ICALL_SIG_TYPE_float
 		m_class_get_byval_arg (mono_defaults.int32_class),	 // ICALL_SIG_TYPE_int

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Collections;
 using System.Diagnostics;
-using System.Text;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -58,8 +58,6 @@ namespace System.DirectoryServices.ActiveDirectory
         private bool _SMTPBridgeRetrieved;
         private bool _RPCBridgeRetrieved;
 
-        private const int ERROR_NO_SITENAME = 1919;
-
         public static ActiveDirectorySite FindByName(DirectoryContext context, string siteName)
         {
             // find an existing site
@@ -91,7 +89,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 ADSearcher adSearcher = new ADSearcher(de,
                                                       "(&(objectClass=site)(objectCategory=site)(name=" + Utils.GetEscapedFilterValue(siteName) + "))",
-                                                      new string[] { "distinguishedName" },
+                                                      s_distinguishedName,
                                                       SearchScope.OneLevel,
                                                       false, /* don't need paged search */
                                                       false /* don't need to cache result */);
@@ -196,11 +194,11 @@ namespace System.DirectoryServices.ActiveDirectory
 
             IntPtr ptr = (IntPtr)0;
 
-            int result = UnsafeNativeMethods.DsGetSiteName(null, ref ptr);
+            int result = Interop.Netapi32.DsGetSiteName(null, ref ptr);
             if (result != 0)
             {
                 // computer is not in a site
-                if (result == ERROR_NO_SITENAME)
+                if (result == Interop.Errors.ERROR_NO_SITENAME)
                     throw new ActiveDirectoryObjectNotFoundException(SR.NoCurrentSite, typeof(ActiveDirectorySite), null);
                 else
                     throw ExceptionHelper.GetExceptionFromErrorCode(result);
@@ -709,6 +707,14 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
+        internal static readonly string[] s_distinguishedName = new string[] { "distinguishedName" };
+        private static readonly string[] s_propertiesToLoadArray = new string[] { "fromServer", "distinguishedName", "dNSHostName", "objectCategory" };
+        private static readonly string[] s_cnLocation = new string[] { "cn", "location" };
+        private static readonly string[] s_cnDistinguishedName = new string[] { "cn", "distinguishedName" };
+        private static readonly string[] s_dNSHostName = new string[] { "dNSHostName" };
+        private static readonly string[] s_fromServerDistinguishedName = new string[] { "fromServer", "distinguishedName" };
+        private static readonly string[] s_dNSHostNameDistinguishedName = new string[] { "dNSHostName", "distinguishedName" };
+
         public void Save()
         {
             if (_disposed)
@@ -898,7 +904,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // go through connection objects and find out its fromServer property.
                     ADSearcher adSearcher = new ADSearcher(de,
                                                           "(|(objectCategory=server)(objectCategory=NTDSConnection))",
-                                                          new string[] { "fromServer", "distinguishedName", "dNSHostName", "objectCategory" },
+                                                          s_propertiesToLoadArray,
                                                           SearchScope.Subtree,
                                                           true, /* need paged search */
                                                           true /* need cached result as we need to go back to the first record */);
@@ -989,7 +995,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         str.Append(')');
                     ADSearcher adSearcher = new ADSearcher(serverEntry,
                                                           "(&(objectClass=nTDSConnection)(objectCategory=NTDSConnection)" + str.ToString() + ")",
-                                                          new string[] { "fromServer", "distinguishedName" },
+                                                          s_fromServerDistinguishedName,
                                                           SearchScope.Subtree);
                     SearchResultCollection? conResults = null;
                     try
@@ -1132,7 +1138,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             ADSearcher adSearcher = new ADSearcher(de,
                                                   "(&(objectClass=subnet)(objectCategory=subnet)(siteObject=" + Utils.GetEscapedFilterValue((string)PropertyManager.GetPropertyValue(context, cachedEntry, PropertyManager.DistinguishedName)!) + "))",
-                                                  new string[] { "cn", "location" },
+                                                  s_cnLocation,
                                                   SearchScope.OneLevel
                                                   );
             SearchResultCollection? results = null;
@@ -1176,7 +1182,7 @@ namespace System.DirectoryServices.ActiveDirectory
             de = DirectoryEntryManager.GetDirectoryEntry(context, transportContainer);
             ADSearcher adSearcher = new ADSearcher(de,
                                                   "(&(objectClass=siteLink)(objectCategory=SiteLink)(siteList=" + Utils.GetEscapedFilterValue((string)PropertyManager.GetPropertyValue(context, cachedEntry, PropertyManager.DistinguishedName)!) + "))",
-                                                  new string[] { "cn", "distinguishedName" },
+                                                  s_cnDistinguishedName,
                                                   SearchScope.Subtree);
             SearchResultCollection? results = null;
 
@@ -1244,7 +1250,7 @@ namespace System.DirectoryServices.ActiveDirectory
             de = DirectoryEntryManager.GetDirectoryEntry(context, transportContainer);
             ADSearcher adSearcher = new ADSearcher(de,
                                                   "(&(objectClass=siteLink)(objectCategory=SiteLink)(siteList=" + Utils.GetEscapedFilterValue((string)PropertyManager.GetPropertyValue(context, cachedEntry, PropertyManager.DistinguishedName)!) + "))",
-                                                  new string[] { "cn", "distinguishedName" },
+                                                  s_cnDistinguishedName,
                                                   SearchScope.Subtree);
             SearchResultCollection? results = null;
 
@@ -1359,7 +1365,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             ADSearcher adSearcher = new ADSearcher(cachedEntry,
                                                   "(&(objectClass=server)(objectCategory=server))",
-                                                  new string[] { "dNSHostName" },
+                                                  s_dNSHostName,
                                                   SearchScope.Subtree);
             SearchResultCollection? results = null;
             try
@@ -1427,7 +1433,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DirectoryEntry de = DirectoryEntryManager.GetDirectoryEntry(context, serverContainerDN);
             ADSearcher adSearcher = new ADSearcher(de,
                                                   "(&(objectClass=server)(objectCategory=Server)(bridgeheadTransportList=" + Utils.GetEscapedFilterValue(transportDN) + "))",
-                                                  new string[] { "dNSHostName", "distinguishedName" },
+                                                  s_dNSHostNameDistinguishedName,
                                                   SearchScope.OneLevel);
             SearchResultCollection? results = null;
 

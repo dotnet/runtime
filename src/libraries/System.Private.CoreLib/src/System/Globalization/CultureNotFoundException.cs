@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class CultureNotFoundException : ArgumentException
     {
         private readonly string? _invalidCultureName; // unrecognized culture name
@@ -19,40 +20,40 @@ namespace System.Globalization
         }
 
         public CultureNotFoundException(string? message)
-            : base(message)
+            : base(message ?? DefaultMessage)
         {
         }
 
         public CultureNotFoundException(string? paramName, string? message)
-            : base(message, paramName)
+            : base(message ?? DefaultMessage, paramName)
         {
         }
 
         public CultureNotFoundException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? DefaultMessage, innerException)
         {
         }
 
         public CultureNotFoundException(string? paramName, string? invalidCultureName, string? message)
-            : base(message, paramName)
+            : base(message ?? DefaultMessage, paramName)
         {
             _invalidCultureName = invalidCultureName;
         }
 
         public CultureNotFoundException(string? message, string? invalidCultureName, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? DefaultMessage, innerException)
         {
             _invalidCultureName = invalidCultureName;
         }
 
         public CultureNotFoundException(string? message, int invalidCultureId, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? DefaultMessage, innerException)
         {
             _invalidCultureId = invalidCultureId;
         }
 
         public CultureNotFoundException(string? paramName, int invalidCultureId, string? message)
-            : base(message, paramName)
+            : base(message ?? DefaultMessage, paramName)
         {
             _invalidCultureId = invalidCultureId;
         }

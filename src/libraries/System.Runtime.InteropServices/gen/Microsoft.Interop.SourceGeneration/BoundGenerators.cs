@@ -20,7 +20,7 @@ namespace Microsoft.Interop
     {
         private BoundGenerators() { }
 
-        public static BoundGenerators Create(ImmutableArray<TypePositionInfo> elementTypeInfo, IMarshallingGeneratorFactory generatorFactory, StubCodeContext context, IMarshallingGenerator fallbackGenerator, out ImmutableArray<(TypePositionInfo Info, MarshallingNotSupportedException Exception)> generatorBindingFailures)
+        public static BoundGenerators Create(ImmutableArray<TypePositionInfo> elementTypeInfo, IMarshallingGeneratorResolver generatorResolver, StubCodeContext context, IMarshallingGenerator fallbackGenerator, out ImmutableArray<GeneratorDiagnostic> generatorBindingDiagnostics)
         {
             BoundGenerator defaultBoundGenerator = new BoundGenerator(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), fallbackGenerator);
             BoundGenerators result = new();
@@ -28,7 +28,7 @@ namespace Microsoft.Interop
             ImmutableArray<BoundGenerator>.Builder signatureMarshallers = ImmutableArray.CreateBuilder<BoundGenerator>();
             ImmutableArray<BoundGenerator>.Builder nativeParamMarshallers = ImmutableArray.CreateBuilder<BoundGenerator>();
             ImmutableArray<BoundGenerator>.Builder managedParamMarshallers = ImmutableArray.CreateBuilder<BoundGenerator>();
-            ImmutableArray<(TypePositionInfo Info, MarshallingNotSupportedException Exception)>.Builder bindingFailures = ImmutableArray.CreateBuilder<(TypePositionInfo, MarshallingNotSupportedException)>();
+            ImmutableArray<GeneratorDiagnostic>.Builder generatorDiagnostics = ImmutableArray.CreateBuilder<GeneratorDiagnostic>();
             BoundGenerator managedReturnMarshaller = defaultBoundGenerator;
             BoundGenerator nativeReturnMarshaller = defaultBoundGenerator;
             BoundGenerator managedExceptionMarshaller = defaultBoundGenerator;
@@ -45,7 +45,7 @@ namespace Microsoft.Interop
                     continue;
                 }
 
-                BoundGenerator generator = new BoundGenerator(argType, CreateGenerator(argType, generatorFactory));
+                BoundGenerator generator = new BoundGenerator(argType, CreateGenerator(argType, generatorResolver));
 
                 signatureMarshallers.Add(generator);
                 if (argType.IsManagedReturnPosition)
@@ -84,14 +84,14 @@ namespace Microsoft.Interop
                     };
                 }
 
-                IMarshallingGeneratorFactory exceptionHandlerFactory = new ExtendedInvariantsValidator(nativeReturnMarshaller.Generator.AsNativeType(nativeReturnMarshaller.TypeInfo), generatorFactory);
+                IMarshallingGeneratorResolver exceptionHandlerFactory = new ExtendedInvariantsValidator(nativeReturnMarshaller.Generator.AsNativeType(nativeReturnMarshaller.TypeInfo), generatorResolver);
 
                 // We explicitly don't include exceptionMarshaller in the signatureMarshallers collection
                 // as it needs to be specially emitted.
-                managedExceptionMarshaller = new(managedExceptionInfo, CreateGenerator(managedExceptionInfo, generatorFactory));
+                managedExceptionMarshaller = new(managedExceptionInfo, CreateGenerator(managedExceptionInfo, generatorResolver));
             }
 
-            generatorBindingFailures = bindingFailures.ToImmutable();
+            generatorBindingDiagnostics = generatorDiagnostics.ToImmutable();
 
             return new BoundGenerators()
             {
@@ -153,17 +153,11 @@ namespace Microsoft.Interop
                 return (false, info.NativeIndex);
             }
 
-            IMarshallingGenerator CreateGenerator(TypePositionInfo p, IMarshallingGeneratorFactory factory)
+            IMarshallingGenerator CreateGenerator(TypePositionInfo p, IMarshallingGeneratorResolver factory)
             {
-                try
-                {
-                    return factory.Create(p, context);
-                }
-                catch (MarshallingNotSupportedException e)
-                {
-                    bindingFailures.Add((p, e));
-                    return fallbackGenerator;
-                }
+                ResolvedGenerator generator = factory.Create(p, context);
+                generatorDiagnostics.AddRange(generator.Diagnostics);
+                return generator.IsResolvedWithoutErrors ? generator.Generator : fallbackGenerator;
             }
         }
 
@@ -198,28 +192,32 @@ namespace Microsoft.Interop
 
         public bool HasManagedExceptionMarshaller => ManagedExceptionMarshaller.Generator is not Forwarder;
 
-        private sealed class ExtendedInvariantsValidator : IMarshallingGeneratorFactory
+        private sealed class ExtendedInvariantsValidator : IMarshallingGeneratorResolver
         {
             private readonly ManagedTypeInfo _nativeReturnType;
-            private readonly IMarshallingGeneratorFactory _inner;
+            private readonly IMarshallingGeneratorResolver _inner;
 
-            public ExtendedInvariantsValidator(ManagedTypeInfo nativeReturnType, IMarshallingGeneratorFactory inner)
+            public ExtendedInvariantsValidator(ManagedTypeInfo nativeReturnType, IMarshallingGeneratorResolver inner)
             {
                 _nativeReturnType = nativeReturnType;
                 _inner = inner;
             }
 
-            public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
+            public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
             {
-                IMarshallingGenerator generator = _inner.Create(info, context);
+                ResolvedGenerator generator = _inner.Create(info, context);
+                if (!generator.IsResolvedWithoutErrors)
+                {
+                    return generator;
+                }
                 // Marshallers that share the native return position must have the same native return type.
                 if (info.IsNativeReturnPosition
-                    && generator.AsNativeType(info) != _nativeReturnType)
+                    && generator.Generator.AsNativeType(info) != _nativeReturnType)
                 {
-                    throw new MarshallingNotSupportedException(info, context)
+                    return ResolvedGenerator.NotSupported(new(info, context)
                     {
                         NotSupportedDetails = SR.MarshallerInNativeReturnPositionMustMatchNativeReturnType
-                    };
+                    });
                 }
                 return generator;
             }

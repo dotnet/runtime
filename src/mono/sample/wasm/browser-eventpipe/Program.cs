@@ -121,10 +121,13 @@ namespace Sample
                 b = recursiveFib (N);
                 WasmHelloEventSource.Instance.StopFib(N, b.ToString());
                 iterations++;
+                            Console.WriteLine ("ping1");
                 if (ct.IsCancellationRequested)
                     break;
             }
+            Console.WriteLine ("stopping");
             long expected = fastFib(N);
+            Console.WriteLine ("stopping2");
             if (expected == b)
                 return (double)b;
             else {

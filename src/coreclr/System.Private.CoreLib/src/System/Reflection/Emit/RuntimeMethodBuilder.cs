@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
         private int[]? m_mdMethodFixups;              // The location of all of the token fixups. Null means no fixups.
         private byte[]? m_localSignature;             // Local signature if set explicitly via DefineBody. Null otherwise.
         internal LocalSymInfo? m_localSymInfo;        // keep track debugging local information
-        internal ILGenerator? m_ilGenerator;          // Null if not used.
+        internal RuntimeILGenerator? m_ilGenerator;   // Null if not used.
         private byte[]? m_ubBody;                     // The IL for the method
         private ExceptionHandler[]? m_exceptions; // Exception handlers or null if there are none.
         private const int DefaultMaxStack = 16;
@@ -88,8 +88,8 @@ namespace System.Reflection.Emit
             }
             else if ((attributes & MethodAttributes.Virtual) != 0)
             {
-                // On an interface, the rule is slighlty different
-                if (((attributes & MethodAttributes.Abstract) == 0))
+                // On an interface, the rule is slightly different
+                if ((attributes & MethodAttributes.Abstract) == 0)
                     throw new ArgumentException(SR.Arg_NoStaticVirtual);
             }
 
@@ -122,7 +122,7 @@ namespace System.Reflection.Emit
             m_ubBody = null;
             m_ilGenerator = null;
 
-            // Default is managed IL. Manged IL has bit flag 0x0020 set off
+            // Default is managed IL. Managed IL has bit flag 0x0020 set off
             m_dwMethodImplFlags = MethodImplAttributes.IL;
         }
 
@@ -130,7 +130,7 @@ namespace System.Reflection.Emit
 
         #region Internal Members
 
-        internal void CreateMethodBodyHelper(ILGenerator il)
+        internal void CreateMethodBodyHelper(RuntimeILGenerator il)
         {
             ArgumentNullException.ThrowIfNull(il);
 
@@ -668,7 +668,7 @@ namespace System.Reflection.Emit
             ThrowIfGeneric();
             ThrowIfShouldNotHaveBody();
 
-            return m_ilGenerator ??= new ILGenerator(this, size);
+            return m_ilGenerator ??= new RuntimeILGenerator(this, size);
         }
 
         private void ThrowIfShouldNotHaveBody()
@@ -718,7 +718,7 @@ namespace System.Reflection.Emit
         private void ParseCA(ConstructorInfo con)
         {
             Type? caType = con.DeclaringType;
-            if (caType == typeof(System.Runtime.CompilerServices.MethodImplAttribute))
+            if (caType == typeof(MethodImplAttribute))
             {
                 // dig through the blob looking for the MethodImplAttributes flag
                 // that must be in the MethodCodeType field

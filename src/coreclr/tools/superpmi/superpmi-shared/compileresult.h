@@ -178,19 +178,14 @@ public:
     void recReportFatalError(CorJitResult result);
     void dmpReportFatalError(DWORD key, DWORD value);
 
-    void recRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta);
+    void recRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta);
     void dmpRecordRelocation(DWORD key, const Agnostic_RecordRelocation& value);
-    void repRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta);
+    void repRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta);
     void applyRelocs(RelocContext* rc, unsigned char* block1, ULONG blocksize1, void* originalAddr);
 
     void recProcessName(const char* name);
     void dmpProcessName(DWORD key, DWORD value);
     const char* repProcessName();
-
-    void recAddressMap(void* original_address, void* replay_address, unsigned int size);
-    void dmpAddressMap(DWORDLONG key, const Agnostic_AddressMap& value);
-    void* repAddressMap(void* replay_address);
-    void* searchAddressMap(void* replay_address);
 
     void recReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize);
     void dmpReserveUnwindInfo(DWORD key, const Agnostic_ReserveUnwindInfo& value);

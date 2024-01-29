@@ -3286,7 +3286,7 @@ namespace System.CodeDom.Compiler.Tests
             yield return new object[] { new CodeParameterDeclarationExpression[] { new CodeParameterDeclarationExpression("type1", "name1"), new CodeParameterDeclarationExpression("type2", "name2") }, "Type name1, Type name2" };
             yield return new object[]
             {
-                new CodeParameterDeclarationExpression[] 
+                new CodeParameterDeclarationExpression[]
                 {
                     new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(),
                     new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(),
@@ -3297,14 +3297,14 @@ namespace System.CodeDom.Compiler.Tests
             };
             yield return new object[]
             {
-                new CodeParameterDeclarationExpression[] 
+                new CodeParameterDeclarationExpression[]
                 {
                     new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(),
                     new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(),
                     new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(),
                     new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression(), new CodeParameterDeclarationExpression()
                 },
-                $"{Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             "
+                string.Concat(PlatformDetection.IsNetFramework ? string.Empty : $"            ", $"{Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             , {Environment.NewLine}Type             ")
             };
         }
 

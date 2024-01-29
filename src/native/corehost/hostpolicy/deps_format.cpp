@@ -144,7 +144,7 @@ void deps_json_t::reconcile_libraries_with_targets(
             for (const auto& asset : assets)
             {
                 auto asset_name = asset.name;
-                if (ends_with(asset_name, _X(".ni"), false))
+                if (utils::ends_with(asset_name, _X(".ni"), false))
                 {
                     asset_name = strip_file_ext(asset_name);
                 }
@@ -190,17 +190,17 @@ namespace
     const pal::char_t* s_host_rids[] =
     {
 #if defined(TARGET_WINDOWS)
-        RID_CURRENT_ARCH_LIST("win")
+        RID_CURRENT_ARCH_LIST(HOST_RID_PLATFORM)
 #elif defined(TARGET_OSX)
-        RID_CURRENT_ARCH_LIST("osx")
+        RID_CURRENT_ARCH_LIST(HOST_RID_PLATFORM)
         RID_CURRENT_ARCH_LIST("unix")
 #elif defined(TARGET_ANDROID)
-        RID_CURRENT_ARCH_LIST("linux-bionic")
+        RID_CURRENT_ARCH_LIST(HOST_RID_PLATFORM)
         RID_CURRENT_ARCH_LIST("linux")
         RID_CURRENT_ARCH_LIST("unix")
 #else
         // Covers non-portable RIDs
-        RID_CURRENT_ARCH_LIST(FALLBACK_HOST_OS)
+        RID_CURRENT_ARCH_LIST(HOST_RID_PLATFORM)
 #if defined(TARGET_LINUX_MUSL)
         RID_CURRENT_ARCH_LIST("linux-musl")
         RID_CURRENT_ARCH_LIST("linux")
@@ -213,26 +213,39 @@ namespace
         _X("any"),
     };
 
-    // Returns the RID determined (computed or fallback) for the platform the host is running on.
-    pal::string_t get_current_rid(const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
+    // Returns the RID determined (computed or fallback) for the machine the host is running on.
+    // This RID is discoved at run-time from OS APIs and/or files. It may be distro-specific and/or
+    // version-specific. This usage of the machine RID is for a backwards-compat option that relies
+    // on the computed RID. All other parts of the host use the compile-time RID corresponding to the
+    // platform for which the runtime was built.
+    pal::string_t get_current_machine_rid(const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
     {
-        pal::string_t currentRid = get_current_runtime_id(false /*use_fallback*/);
+        pal::string_t current_rid;
+        if (!try_get_runtime_id_from_env(current_rid))
+        {
+            current_rid = pal::get_current_os_rid_platform();
+            if (!current_rid.empty())
+            {
+                current_rid.append(_X("-"));
+                current_rid.append(get_current_arch_name());
+            }
+        }
 
-        trace::info(_X("HostRID is %s"), currentRid.empty() ? _X("not available") : currentRid.c_str());
+        trace::info(_X("HostRID is %s"), current_rid.empty() ? _X("not available") : current_rid.c_str());
 
         // If the current RID is not present in the RID fallback graph, then the platform
         // is unknown to us. At this point, we will fallback to using the base RIDs and attempt
         // asset lookup using them.
         //
         // We do the same even when the RID is empty.
-        if (currentRid.empty() || (rid_fallback_graph != nullptr && rid_fallback_graph->count(currentRid) == 0))
+        if (current_rid.empty() || (rid_fallback_graph != nullptr && rid_fallback_graph->count(current_rid) == 0))
         {
-            currentRid = pal::get_current_os_fallback_rid() + pal::string_t(_X("-")) + get_current_arch_name();
+            current_rid = pal::get_current_os_fallback_rid() + pal::string_t(_X("-")) + get_current_arch_name();
 
-            trace::info(_X("Falling back to base HostRID: %s"), currentRid.c_str());
+            trace::info(_X("Falling back to base HostRID: %s"), current_rid.c_str());
         }
 
-        return currentRid;
+        return current_rid;
     }
 
     void print_host_rid_list()
@@ -322,7 +335,7 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets)
     pal::string_t host_rid;
     if (m_rid_resolution_options.use_fallback_graph)
     {
-        host_rid = get_current_rid(m_rid_resolution_options.rid_fallback_graph);
+        host_rid = get_current_machine_rid(m_rid_resolution_options.rid_fallback_graph);
     }
     else
     {
@@ -582,7 +595,7 @@ void deps_json_t::load(bool is_framework_dependent, std::function<void(const jso
         runtime_target.GetString() :
         runtime_target[_X("name")].GetString();
 
-    trace::verbose(_X("Loading deps file... [%s] as framework dependent=%d, use_fallback_graph=%d"), m_deps_file.c_str(), is_framework_dependent, m_rid_resolution_options.use_fallback_graph);
+    trace::verbose(_X("Loading deps file... [%s]: is_framework_dependent=%d, use_fallback_graph=%d"), m_deps_file.c_str(), is_framework_dependent, m_rid_resolution_options.use_fallback_graph);
 
     if (is_framework_dependent)
     {

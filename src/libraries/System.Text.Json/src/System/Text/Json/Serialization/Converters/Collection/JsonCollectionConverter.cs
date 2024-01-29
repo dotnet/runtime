@@ -37,13 +37,13 @@ namespace System.Text.Json.Serialization
                 // The contract model was not able to produce a default constructor for two possible reasons:
                 // 1. Either the declared collection type is abstract and cannot be instantiated.
                 // 2. The collection type does not specify a default constructor.
-                if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
+                if (Type.IsAbstract || Type.IsInterface)
                 {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
                 }
                 else
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
+                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(Type, ref reader, ref state);
                 }
             }
 
@@ -79,7 +79,7 @@ namespace System.Text.Json.Serialization
 
                 if (reader.TokenType != JsonTokenType.StartArray)
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                 }
 
                 CreateCollection(ref reader, ref state, options);
@@ -98,7 +98,7 @@ namespace System.Text.Json.Serialization
                         }
 
                         // Obtain the CLR value from the JSON and apply to the object.
-                        TElement? element = elementConverter.Read(ref reader, elementConverter.TypeToConvert, options);
+                        TElement? element = elementConverter.Read(ref reader, elementConverter.Type, options);
                         Add(element!, ref state);
                     }
                 }
@@ -134,17 +134,15 @@ namespace System.Text.Json.Serialization
                     {
                         if (reader.TokenType != JsonTokenType.StartObject)
                         {
-                            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                         }
 
                         state.Current.ObjectState = StackFrameObjectState.StartToken;
                     }
                     else
                     {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                     }
-
-                    state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 }
 
                 // Handle the metadata properties.
@@ -171,7 +169,7 @@ namespace System.Text.Json.Serialization
                     ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
                     Debug.Assert(!IsValueType);
-                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, polymorphicConverter.TypeToConvert, options, ref state, out object? objectResult);
+                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, polymorphicConverter.Type!, options, ref state, out object? objectResult);
                     value = (TCollection)objectResult!;
                     state.ExitPolymorphicConverter(success);
                     return success;
@@ -201,19 +199,20 @@ namespace System.Text.Json.Serialization
                 if (state.Current.ObjectState < StackFrameObjectState.ReadElements)
                 {
                     JsonConverter<TElement> elementConverter = GetElementConverter(elementTypeInfo);
+                    state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
 
                     // Process all elements.
                     while (true)
                     {
                         if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
                         {
-                            state.Current.PropertyState = StackFramePropertyState.ReadValue;
-
-                            if (!SingleValueReadWithReadAhead(elementConverter.RequiresReadAhead, ref reader, ref state))
+                            if (!reader.TryAdvanceWithOptionalReadAhead(elementConverter.RequiresReadAhead))
                             {
                                 value = default;
                                 return false;
                             }
+
+                            state.Current.PropertyState = StackFramePropertyState.ReadValue;
                         }
 
                         if (state.Current.PropertyState < StackFramePropertyState.ReadValueIsEnd)
@@ -247,8 +246,6 @@ namespace System.Text.Json.Serialization
 
                 if (state.Current.ObjectState < StackFrameObjectState.EndToken)
                 {
-                    state.Current.ObjectState = StackFrameObjectState.EndToken;
-
                     // Array payload is nested inside a $values metadata property.
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Values) != 0)
                     {
@@ -258,6 +255,8 @@ namespace System.Text.Json.Serialization
                             return false;
                         }
                     }
+
+                    state.Current.ObjectState = StackFrameObjectState.EndToken;
                 }
 
                 if (state.Current.ObjectState < StackFrameObjectState.EndTokenValidation)

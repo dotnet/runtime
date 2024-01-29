@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Globalization;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
+using System.Security;
 using System.Threading;
 
 namespace System
@@ -20,7 +22,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(type);
 
-            if (type is System.Reflection.Emit.TypeBuilder)
+            if (type is Reflection.Emit.TypeBuilder)
                 throw new NotSupportedException(SR.NotSupported_CreateInstanceWithTypeBuilder);
 
             // If they didn't specify a lookup, then we will provide the default lookup.
@@ -37,7 +39,7 @@ namespace System
             return rt.CreateInstanceImpl(bindingAttr, binder, args, culture);
         }
 
-        [System.Security.DynamicSecurityMethod]
+        [DynamicSecurityMethod]
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstance(string assemblyName, string typeName)
         {
@@ -53,7 +55,7 @@ namespace System
                                           ref stackMark);
         }
 
-        [System.Security.DynamicSecurityMethod]
+        [DynamicSecurityMethod]
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstance(string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
@@ -69,7 +71,7 @@ namespace System
                                           ref stackMark);
         }
 
-        [System.Security.DynamicSecurityMethod]
+        [DynamicSecurityMethod]
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle? CreateInstance(string assemblyName, string typeName, object?[]? activationAttributes)
         {
@@ -132,8 +134,8 @@ namespace System
             return o != null ? new ObjectHandle(o) : null;
         }
 
-        [System.Runtime.CompilerServices.Intrinsic]
-        public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
+        [Intrinsic]
+        public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>()
         {
             return (T)((RuntimeType)typeof(T)).CreateInstanceOfT()!;
         }

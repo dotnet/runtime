@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Microsoft.Extensions.Internal;
 
@@ -11,58 +10,58 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal sealed class CallSiteChain
     {
-        private readonly Dictionary<Type, ChainItemInfo> _callSiteChain;
+        private readonly Dictionary<ServiceIdentifier, ChainItemInfo> _callSiteChain;
 
         public CallSiteChain()
         {
-            _callSiteChain = new Dictionary<Type, ChainItemInfo>();
+            _callSiteChain = new Dictionary<ServiceIdentifier, ChainItemInfo>();
         }
 
-        public void CheckCircularDependency(Type serviceType)
+        public void CheckCircularDependency(ServiceIdentifier serviceIdentifier)
         {
-            if (_callSiteChain.ContainsKey(serviceType))
+            if (_callSiteChain.ContainsKey(serviceIdentifier))
             {
-                throw new InvalidOperationException(CreateCircularDependencyExceptionMessage(serviceType));
+                throw new InvalidOperationException(CreateCircularDependencyExceptionMessage(serviceIdentifier));
             }
         }
 
-        public void Remove(Type serviceType)
+        public void Remove(ServiceIdentifier serviceIdentifier)
         {
-            _callSiteChain.Remove(serviceType);
+            _callSiteChain.Remove(serviceIdentifier);
         }
 
-        public void Add(Type serviceType, Type? implementationType = null)
+        public void Add(ServiceIdentifier serviceIdentifier, Type? implementationType = null)
         {
-            _callSiteChain[serviceType] = new ChainItemInfo(_callSiteChain.Count, implementationType);
+            _callSiteChain[serviceIdentifier] = new ChainItemInfo(_callSiteChain.Count, implementationType);
         }
 
-        private string CreateCircularDependencyExceptionMessage(Type type)
+        private string CreateCircularDependencyExceptionMessage(ServiceIdentifier serviceIdentifier)
         {
             var messageBuilder = new StringBuilder();
-            messageBuilder.Append(SR.Format(SR.CircularDependencyException, TypeNameHelper.GetTypeDisplayName(type)));
+            messageBuilder.Append(SR.Format(SR.CircularDependencyException, TypeNameHelper.GetTypeDisplayName(serviceIdentifier.ServiceType)));
             messageBuilder.AppendLine();
 
-            AppendResolutionPath(messageBuilder, type);
+            AppendResolutionPath(messageBuilder, serviceIdentifier);
 
             return messageBuilder.ToString();
         }
 
-        private void AppendResolutionPath(StringBuilder builder, Type currentlyResolving)
+        private void AppendResolutionPath(StringBuilder builder, ServiceIdentifier currentlyResolving)
         {
-            var ordered = new List<KeyValuePair<Type, ChainItemInfo>>(_callSiteChain);
+            var ordered = new List<KeyValuePair<ServiceIdentifier, ChainItemInfo>>(_callSiteChain);
             ordered.Sort((a, b) => a.Value.Order.CompareTo(b.Value.Order));
 
-            foreach (KeyValuePair<Type, ChainItemInfo> pair in ordered)
+            foreach (KeyValuePair<ServiceIdentifier, ChainItemInfo> pair in ordered)
             {
-                Type serviceType = pair.Key;
+                ServiceIdentifier serviceIdentifier = pair.Key;
                 Type? implementationType = pair.Value.ImplementationType;
-                if (implementationType == null || serviceType == implementationType)
+                if (implementationType == null || serviceIdentifier.ServiceType == implementationType)
                 {
-                    builder.Append(TypeNameHelper.GetTypeDisplayName(serviceType));
+                    builder.Append(TypeNameHelper.GetTypeDisplayName(serviceIdentifier.ServiceType));
                 }
                 else
                 {
-                    builder.Append(TypeNameHelper.GetTypeDisplayName(serviceType))
+                    builder.Append(TypeNameHelper.GetTypeDisplayName(serviceIdentifier.ServiceType))
                            .Append('(')
                            .Append(TypeNameHelper.GetTypeDisplayName(implementationType))
                            .Append(')');
@@ -71,7 +70,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 builder.Append(" -> ");
             }
 
-            builder.Append(TypeNameHelper.GetTypeDisplayName(currentlyResolving));
+            builder.Append(TypeNameHelper.GetTypeDisplayName(currentlyResolving.ServiceType));
         }
 
         private readonly struct ChainItemInfo

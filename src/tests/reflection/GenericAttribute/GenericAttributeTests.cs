@@ -3,10 +3,12 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Assembly assembly = typeof(Class).GetTypeInfo().Assembly;
         Assert(CustomAttributeExtensions.GetCustomAttribute<SingleAttribute<int>>(assembly) != null);
@@ -180,8 +182,6 @@ class Program
 
         AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<Type>) && a.ConstructorArguments.Count == 1 && a.NamedArguments.Count == 0 && a.ConstructorArguments[0].ArgumentType == typeof(Type) &&  ((Type)a.ConstructorArguments[0].Value) == typeof(Class));
         AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<Type>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 1 && a.NamedArguments[0].TypedValue.ArgumentType == typeof(Type) &&  ((Type)a.NamedArguments[0].TypedValue.Value) == typeof(Class.Derive));
-
-        return 100;
     }
 
     static void Assert(bool condition, [CallerLineNumberAttribute]int line = 0)

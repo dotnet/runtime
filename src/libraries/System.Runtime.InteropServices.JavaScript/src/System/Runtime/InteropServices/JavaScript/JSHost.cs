@@ -1,10 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
-using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -49,5 +49,6 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             return JSHostImplementation.ImportAsync(moduleName, moduleUrl, cancellationToken);
         }
+
     }
 }

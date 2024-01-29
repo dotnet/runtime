@@ -119,6 +119,8 @@ namespace ILCompiler
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
             }
+
+            ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type);
         }
 
         private static Instantiation GetInstantiationThatMeetsConstraints(Instantiation definition)

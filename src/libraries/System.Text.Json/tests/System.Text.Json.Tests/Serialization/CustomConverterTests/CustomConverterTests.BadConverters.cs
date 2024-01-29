@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -113,44 +114,60 @@ namespace System.Text.Json.Serialization.Tests
             public ICollection<InvalidTypeConverterEnum> MyEnumValues { get; set; }
         }
 
+        private class InvalidEnumTypeConverterClass
+        {
+            [JsonConverter(typeof(JsonStringEnumConverter<BindingFlags>))]
+            public InvalidTypeConverterEnum MyEnumValues { get; set; }
+        }
+
         private enum InvalidTypeConverterEnum
         {
             Value1,
             Value2,
         }
 
-        [Fact]
-        public static void AttributeOnPropertyFail()
+        [Theory]
+        [InlineData(typeof(InvalidTypeConverterClass),
+            "System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterClass.MyEnumValues",
+            "System.Collections.Generic.ICollection`1[System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterEnum]")]
+        [InlineData(typeof(InvalidEnumTypeConverterClass),
+            "System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidEnumTypeConverterClass.MyEnumValues",
+            "System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterEnum")]
+        public static void AttributeOnPropertyFail(Type type, string propertyName, string propertyTypeName)
         {
+            object value = Activator.CreateInstance(type);
             InvalidOperationException ex;
 
-            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new InvalidTypeConverterClass()));
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, type));
             // Message should be in the form "The converter specified on 'System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterClass.MyEnumValues' is not compatible with the type 'System.Collections.Generic.ICollection`1[System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterEnum]'."
-            Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterClass.MyEnumValues'", ex.Message);
+            Assert.Contains($"'{propertyName}'", ex.Message);
 
-            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<InvalidTypeConverterClass>("{}"));
-            Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterClass.MyEnumValues'", ex.Message);
-            Assert.Contains("'System.Collections.Generic.ICollection`1[System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterEnum]'", ex.Message);
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", type));
+            Assert.Contains($"'{propertyName}'", ex.Message);
+            Assert.Contains($"'{propertyTypeName}'", ex.Message);
         }
 
         [JsonConverter(typeof(JsonStringEnumConverter))]
         private class InvalidTypeConverterClassWithAttribute { }
 
-        [Fact]
-        public static void AttributeOnClassFail()
+        [JsonConverter(typeof(JsonStringEnumConverter<BindingFlags>))]
+        private enum InvalidTypeConverterEnumWithAttribute { }
+
+        [Theory]
+        [InlineData(typeof(InvalidTypeConverterClassWithAttribute), "System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterClassWithAttribute")]
+        [InlineData(typeof(InvalidTypeConverterEnumWithAttribute), "System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterEnumWithAttribute")]
+        public static void AttributeOnClassFail(Type type, string expectedSubStr)
         {
-            const string expectedSubStr = "'System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterClassWithAttribute'";
-
             InvalidOperationException ex;
+            object value = Activator.CreateInstance(type);
 
-            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new InvalidTypeConverterClassWithAttribute()));
-            // Message should be in the form "The converter specified on 'System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterClassWithAttribute' is not compatible with the type 'System.Text.Json.Serialization.Tests.CustomConverterTests+InvalidTypeConverterClassWithAttribute'."
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, type));
 
             int pos = ex.Message.IndexOf(expectedSubStr);
             Assert.True(pos > 0);
             Assert.Contains(expectedSubStr, ex.Message.Substring(pos + expectedSubStr.Length)); // The same string is repeated again.
 
-            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<InvalidTypeConverterClassWithAttribute>("{}"));
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", type));
             pos = ex.Message.IndexOf(expectedSubStr);
             Assert.True(pos > 0);
             Assert.Contains(expectedSubStr, ex.Message.Substring(pos + expectedSubStr.Length));
@@ -283,7 +300,7 @@ namespace System.Text.Json.Serialization.Tests
             try
             {
                 JsonSerializer.Deserialize<Level1>(json, options);
-                Assert.True(false, "Expected exception");
+                Assert.Fail("Expected exception");
             }
             catch (JsonException ex)
             {
@@ -303,7 +320,7 @@ namespace System.Text.Json.Serialization.Tests
             try
             {
                 JsonSerializer.Deserialize<Level1>(json, options);
-                Assert.True(false, "Expected exception");
+                Assert.Fail("Expected exception");
             }
             catch (JsonException ex)
             {
@@ -335,7 +352,7 @@ namespace System.Text.Json.Serialization.Tests
                 l1.Level2.Level3s[0].ReadWriteTooMuch = true;
 
                 JsonSerializer.Serialize(l1, options);
-                Assert.True(false, "Expected exception");
+                Assert.Fail("Expected exception");
             }
             catch (JsonException ex)
             {

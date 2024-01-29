@@ -224,12 +224,12 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         MODE_ANY;
         FORBID_FAULT;
         PRECONDITION(IsStatic());
-        PRECONDITION(GetEnclosingMethodTable()->IsRestored_NoLogging());
+        PRECONDITION(GetEnclosingMethodTable()->IsRestored());
     }
     CONTRACTL_END
 
     _ASSERTE(IsStatic());
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (IsEnCNew())
     {
         EnCFieldDesc * pFD = dac_cast<PTR_EnCFieldDesc>(this);
@@ -254,7 +254,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 #endif // !DACCESS_COMPILE
         return retVal;
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 
     if (IsRVA())
@@ -443,14 +443,14 @@ PTR_VOID FieldDesc::GetAddress(PTR_VOID o)
                            // the field desc is for the EnCHelper, not the new EnC field
 #endif
 
-#if defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if defined(FEATURE_METADATA_UPDATER) && !defined(DACCESS_COMPILE)
     // EnC added fields aren't at a simple offset like normal fields.
     if (IsEnCNew())
     {
         // We'll have to go through some effort to compute the address of this field.
         return ((EnCFieldDesc *)this)->GetAddress(o);
     }
-#endif //  defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
+#endif //  defined(FEATURE_METADATA_UPDATER) && !defined(DACCESS_COMPILE)
     return GetAddressNoThrowNoGC(o);
 }
 
@@ -465,7 +465,7 @@ void *FieldDesc::GetInstanceAddress(OBJECTREF o)
 
     DWORD dwOffset = m_dwOffset; // GetOffset()
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // EnC added fields aren't at a simple offset like normal fields.
     if (dwOffset == FIELD_OFFSET_NEW_ENC) // IsEnCNew()
     {

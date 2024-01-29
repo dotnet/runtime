@@ -156,7 +156,7 @@ namespace Systen.Net.Mail.Tests
                         else if (parts[1].Equals("GSSAPI", StringComparison.OrdinalIgnoreCase))
                         {
                             Debug.Assert(ExpectedGssapiCredential != null);
-                            FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(ExpectedGssapiCredential) { ForceNegotiateVersion = true };
+                            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(ExpectedGssapiCredential) { ForceNegotiateVersion = true };
                             FakeNegotiateServer fakeNegotiateServer = new FakeNegotiateServer(fakeNtlmServer);
 
                             try

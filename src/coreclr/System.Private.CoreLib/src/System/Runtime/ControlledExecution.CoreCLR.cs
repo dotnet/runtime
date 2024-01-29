@@ -21,12 +21,12 @@ namespace System.Runtime
         /// </summary>
         /// <param name="action">The delegate that represents the code to execute.</param>
         /// <param name="cancellationToken">The cancellation token that may be used to abort execution.</param>
-        /// <exception cref="System.PlatformNotSupportedException">The method is not supported on this platform.</exception>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="action"/> argument is null.</exception>
-        /// <exception cref="System.InvalidOperationException">
-        /// The current thread is already running the <see cref="ControlledExecution.Run"/> method.
+        /// <exception cref="PlatformNotSupportedException">The method is not supported on this platform.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="action"/> argument is null.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current thread is already running the <see cref="Run"/> method.
         /// </exception>
-        /// <exception cref="System.OperationCanceledException">The execution was aborted.</exception>
+        /// <exception cref="OperationCanceledException">The execution was aborted.</exception>
         /// <remarks>
         /// <para>This method enables aborting arbitrary managed code in a non-cooperative manner by throwing an exception
         /// in the thread executing that code.  While the exception may be caught by the code, it is re-thrown at the end

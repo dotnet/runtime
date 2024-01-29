@@ -16,17 +16,11 @@ internal sealed class IcallTableGenerator
     public string[]? Cookies { get; private set; }
 
     private List<Icall> _icalls = new List<Icall>();
-    private List<string> _signatures = new List<string>();
+    private readonly HashSet<string> _signatures = new();
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass>();
 
     private TaskLoggingHelper Log { get; set; }
     private readonly Func<string, string> _fixupSymbolName;
-
-    public IcallTableGenerator(Func<string, string> fixupSymbolName, TaskLoggingHelper log)
-    {
-        Log = log;
-        _fixupSymbolName = fixupSymbolName;
-    }
 
     //
     // Given the runtime generated icall table, and a set of assemblies, generate
@@ -34,44 +28,32 @@ internal sealed class IcallTableGenerator
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public IEnumerable<string> Generate(string? runtimeIcallTableFile, IEnumerable<string> assemblies, string? outputPath)
+    public IcallTableGenerator(string? runtimeIcallTableFile, Func<string, string> fixupSymbolName, TaskLoggingHelper log)
     {
-        _icalls.Clear();
-        _signatures.Clear();
-
+        Log = log;
+        _fixupSymbolName = fixupSymbolName;
         if (runtimeIcallTableFile != null)
             ReadTable(runtimeIcallTableFile);
+    }
 
-        var resolver = new PathAssemblyResolver(assemblies);
-        using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
-        foreach (var asmPath in assemblies)
-        {
-            if (!File.Exists(asmPath))
-                throw new LogAsErrorException($"Cannot find assembly {asmPath}");
+    public void ScanAssembly(Assembly asm)
+    {
+        foreach (Type type in asm.GetTypes())
+            ProcessType(type);
+    }
 
-            Log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for icalls");
-            var a = mlc.LoadFromAssemblyPath(asmPath);
-            foreach (var type in a.GetTypes())
-                ProcessType(type);
-        }
-
+    public IEnumerable<string> Generate(string? outputPath)
+    {
         if (outputPath != null)
         {
-            string tmpFileName = Path.GetTempFileName();
-            try
-            {
-                using (var w = File.CreateText(tmpFileName))
-                    EmitTable(w);
+            using TempFileName tmpFileName = new();
+            using (var w = File.CreateText(tmpFileName.Path))
+                EmitTable(w);
 
-                if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
-                    Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{outputPath}'.");
-                else
-                    Log.LogMessage(MessageImportance.Low, $"Icall table in {outputPath} is unchanged.");
-            }
-            finally
-            {
-                File.Delete(tmpFileName);
-            }
+            if (Utils.CopyIfDifferent(tmpFileName.Path, outputPath, useHash: false))
+                Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{outputPath}'.");
+            else
+                Log.LogMessage(MessageImportance.Low, $"Icall table in {outputPath} is unchanged.");
         }
 
         return _signatures;
@@ -230,8 +212,8 @@ internal sealed class IcallTableGenerator
                 throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
             }
 
-            Log.LogMessage(MessageImportance.Low, $"Adding icall signature {signature} for method '{type.FullName}.{method.Name}'");
-            _signatures.Add(signature);
+            if (_signatures.Add(signature))
+                Log.LogMessage(MessageImportance.Low, $"Adding icall signature {signature} for method '{type.FullName}.{method.Name}'");
         }
     }
 

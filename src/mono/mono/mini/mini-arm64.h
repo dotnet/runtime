@@ -180,13 +180,14 @@ typedef struct {
 #define MONO_ARCH_FLOAT32_SUPPORTED 1
 #define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP 1
 #define MONO_ARCH_HAVE_INIT_MRGCTX 1
+#define MONO_ARCH_HAVE_PATCH_JUMP_TRAMPOLINE 1
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-i64:64-i128:128-n32:64-S128"
 
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
 
-#ifdef TARGET_IOS
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 #define MONO_ARCH_REDZONE_SIZE 128
 
@@ -196,7 +197,7 @@ typedef struct {
 
 #endif
 
-#if defined(TARGET_IOS) || defined(TARGET_WATCHOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WATCHOS)
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 
@@ -222,11 +223,13 @@ typedef enum {
 	ArgOnStackR4,
 	/*
 	 * Vtype passed in consecutive int registers.
-	 * ainfo->reg is the firs register,
+	 * ainfo->reg is the first register,
 	 * ainfo->nregs is the number of registers,
 	 * ainfo->size is the size of the structure.
 	 */
 	ArgVtypeInIRegs,
+	/* SIMD arg in NEON register */
+	ArgInSIMDReg,
 	ArgVtypeByRef,
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,

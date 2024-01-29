@@ -65,7 +65,7 @@ jobs:
       - HelixPreCommandLinux: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0;pip3 install --user azure.storage.queue==12.0.0;pip3 install --user urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
       - HelixPostCommandsLinux: 'export PYTHONPATH=$ORIGPYPATH'
     - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), eq(parameters.osSubGroup, '_musl')) }}:
-      - HelixPreCommandMusl: 'export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0;pip3 install --user azure.storage.queue==12.0.0;pip3 install --user urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+      - HelixPreCommandMusl: 'ulimit -n 4096;export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0;pip3 install --user azure.storage.queue==12.0.0;pip3 install --user urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
       - HelixPostCommandsMusl: 'export PYTHONPATH=$ORIGPYPATH'
     - ${{ if eq(parameters.osGroup, 'osx') }}:
       - HelixPreCommandOSX: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.0.0;pip3 install azure.storage.queue==12.0.0;pip3 install urllib3==1.26.15;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
@@ -138,11 +138,11 @@ jobs:
       displayName: Run ci setup script (Linux/MAC)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # copy wasm packs if running on wasm
-    # Using test-main-7.0.js, since we are building with tfm:net7.0
     - script: >-
         mkdir -p $(librariesDownloadDir)/bin/wasm/data &&
         cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-latest $(librariesDownloadDir)/bin/wasm &&
-        cp src/mono/wasm/Wasm.Build.Tests/data/test-main-7.0.js $(librariesDownloadDir)/bin/wasm/data/test-main.js &&
+        cp -r $(librariesDownloadDir)/BrowserWasm/staging/built-nugets $(librariesDownloadDir)/bin/wasm &&
+        cp src/mono/browser/test-main.js $(librariesDownloadDir)/bin/wasm/data/test-main.js &&
         find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
       displayName: "Create wasm directory (Linux)"
       condition: and(succeeded(), eq('${{ parameters.runtimeType }}', 'wasm'))
@@ -186,13 +186,14 @@ jobs:
         PERFLAB_TARGET_FRAMEWORKS: net7.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
 
-    # Zip the workitem directory (for xharness based workitems)
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: '$(WorkItemDirectory)'
-        includeRootFolder: false
-        archiveFile: '$(WorkItemDirectory).zip'
-        verbose: True
+    # Zip the workitem directory (for xharness (mobile) based workitems)
+    - ${{ if or(eq(parameters.runKind, 'android_scenarios'), eq(parameters.runKind, 'ios_scenarios')) }}:
+      - task: ArchiveFiles@2
+        inputs:
+          rootFolderOrFile: '$(WorkItemDirectory)'
+          includeRootFolder: false
+          archiveFile: '$(WorkItemDirectory).zip'
+          verbose: True
 
     # run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
@@ -215,6 +216,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_$(iOSLlvmBuild)'
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_$(iOSLlvmBuild)_$(iOSStripSymbols)_$(hybridGlobalization)'
       continueOnError: true
       condition: always()

@@ -1,18 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: A collection of quick methods for comparing
-**          resource keys (strings)
-**
-**
-===========================================================*/
-
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,6 +8,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Resources
 {
+    /// <summary>
+    /// A collection of quick methods for comparing resource keys (strings).
+    /// </summary>
     internal sealed class FastResourceComparer : IComparer, IEqualityComparer, IComparer<string?>, IEqualityComparer<string?>
     {
         internal static readonly FastResourceComparer Default = new FastResourceComparer();
@@ -28,12 +19,12 @@ namespace System.Resources
         public int GetHashCode(object key)
         {
             string s = (string)key;
-            return FastResourceComparer.HashFunction(s);
+            return HashFunction(s);
         }
 
         public int GetHashCode([DisallowNull] string? key)
         {
-            return FastResourceComparer.HashFunction(key!);
+            return HashFunction(key!);
         }
 
         // This hash function MUST be publicly documented with the resource

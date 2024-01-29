@@ -20,6 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "gcinfo.h"
 #include "gcinfoencoder.h"
+#include "patchpointinfo.h"
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -271,7 +272,7 @@ void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNum
 
     if (spDelta != 0)
     {
-        // generate daddiu SP,SP,-imm
+        // generate addi.d SP,SP,-imm
         genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
     }
 
@@ -330,7 +331,7 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
         GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
         compiler->unwindSaveReg(reg1, spOffset);
 
-        // generate daddiu SP,SP,imm
+        // generate addi.d SP,SP,imm
         genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
     }
     else
@@ -372,11 +373,11 @@ void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, reg
 
     if (spDelta != 0)
     {
-        // ld reg1, offset(SP)
+        // ld.d reg1,SP,offset
         GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
         compiler->unwindSaveReg(reg1, spOffset);
 
-        // generate add SP,SP,imm
+        // generate addi.d SP,SP,imm
         genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
     }
     else
@@ -675,25 +676,15 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
 //                              zero).
 //
 // Here's an example restore sequence:
-//      ld     s7, 88(sp)
-//      ld     s6, 80(sp)
-//      ld     s5, 72(sp)
-//      ld     s4, 64(sp)
-//      ld     s3, 56(sp)
-//      ld     s2, 48(sp)
-//      ld     s1, 40(sp)
-//      ld     s0, 32(sp)
-//
-// For the case of non-zero spDelta, we assume the base of the callee-save registers to restore is at SP, and
-// the last restore adjusts SP by the specified amount. For example:
-//      ld     s7, 56(sp)
-//      ld     s6, 48(sp)
-//      ld     s5, 40(sp)
-//      ld     s4, 32(sp)
-//      ld     s3, 24(sp)
-//      ld     s2, 16(sp)
-//      ld     s1, 88(sp)
-//      ld     s0, 80(sp)
+//      ld.d    s8,sp,#xxx
+//      ld.d    s7,sp,#xxx
+//      ld.d    s6,sp,#xxx
+//      ld.d    s5,sp,#xxx
+//      ld.d    s4,sp,#xxx
+//      ld.d    s3,sp,#xxx
+//      ld.d    s2,sp,#xxx
+//      ld.d    s1,sp,#xxx
+//      ld.d    s0,sp,#xxx
 //
 // Note you call the unwind functions specifying the prolog operation that is being un-done. So, for example, when
 // generating a post-indexed load, you call the unwind function for specifying the corresponding preindexed store.
@@ -754,142 +745,45 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *
  *  Funclets have the following incoming arguments:
  *
- *      catch:          a0 = the exception object that was caught (see GT_CATCH_ARG)
- *      filter:         a0 = the exception object to filter (see GT_CATCH_ARG), a1 = CallerSP of the containing function
- *      finally/fault:  none
+ *     catch:          a0 = the exception object that was caught (see GT_CATCH_ARG)
+ *     filter:         a0 = the exception object to filter (see GT_CATCH_ARG), a1 = CallerSP of the containing function
+ *     finally/fault:  none
  *
  *  Funclets set the following registers on exit:
  *
- *      catch:          v0 = the address at which execution should resume (see BBJ_EHCATCHRET)
- *      filter:         v0 = non-zero if the handler should handle the exception, zero otherwise (see GT_RETFILT)
- *      finally/fault:  none
+ *     catch:          a0 = the address at which execution should resume (see BBJ_EHCATCHRET)
+ *     filter:         a0 = non-zero if the handler should handle the exception, zero otherwise (see GT_RETFILT)
+ *     finally/fault:  none
  *
- *  The LOONGARCH64 funclet prolog sequence is one of the following (Note: #framesz is total funclet frame size,
+ *  The LOONGARCH64 funclet prolog is the following (Note: #framesz is total funclet frame size,
  *  including everything; #outsz is outgoing argument space. #framesz must be a multiple of 16):
  *
- *  Frame type 1:
- *     For #framesz <= 32760 and FP/RA at bottom:
- *     daddiu sp,sp,-#framesz    ; establish the frame (predecrement by #framesz), save FP/RA
- *     sd fp,#outsz(sp)
- *     sd ra,#outsz+8(sp)
- *     sd s0,#xxx-8(sp)          ; save callee-saved registers, as necessary
- *     sd s1,#xxx(sp)
+ *  Frame type liking:
+ *     addi_d sp,sp,-#framesz    ; establish the frame, maybe multi-instruction.
+ *     st.d s0,sp,#outsz         ; save callee-saved registers, as necessary
+ *     st.d s1,sp,#outsz+8
+ *     st.d ra,sp,#outsz+?
+ *     st.d fp,sp,#outsz+?
  *
- *  The funclet frame is thus:
- *
- *      |                       |
- *      |-----------------------|
- *      |  incoming arguments   |
- *      +=======================+ <---- Caller's SP
- *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
- *      |-----------------------|
- *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
- *      |-----------------------|
- *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
- *      |-----------------------|
- *      |      Saved FP, RA     | // 16 bytes
- *      |-----------------------|
- *      |   Outgoing arg space  | // multiple of 8 bytes; if required (i.e., #outsz != 0)
- *      |-----------------------| <---- Ambient SP
- *      |       |               |
- *      ~       | Stack grows   ~
- *      |       | downward      |
- *              V
- *
- *  Frame type 2:
- *     For #framesz <= 32760 and FP/RA at top:
- *     daddiu sp,sp,-#framesz          ; establish the frame
- *     sd s0,xxx(sp)                 ; save callee-saved registers, as necessary
- *     sd s1,xxx+8(sp)
- *     sd s?,xxx+?(sp)
- *     sd fp,xxx+?(sp)              ; save FP/RA.
- *     sd ra,xxx+?(sp)
- *
- *  The funclet frame is thus:
+ *  The funclet frame layout:
  *
  *      |                       |
  *      |-----------------------|
  *      |  incoming arguments   |
  *      +=======================+ <---- Caller's SP
+ *      |      OSR padding      | // If required
+ *      |-----------------------|
  *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
  *      |-----------------------|
- *      |      Saved FP, RA     | // 16 bytes
- *      |-----------------------|
- *      |Callee saved registers | // multiple of 8 bytes
+ *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
  *      |-----------------------|
  *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
- *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
- *      |-----------------------|
- *      |   Outgoing arg space  | // multiple of 8 bytes; if required (i.e., #outsz != 0)
- *      |-----------------------| <---- Ambient SP
- *      |       |               |
- *      ~       | Stack grows   ~
- *      |       | downward      |
- *              V
- *
- *  Frame type 3:
- *     For #framesz > 32760 and FP/RA at bottom:
- *     ; for funclet, #framesz-#outsz will be less than 32760.
- *
- *     daddiu sp,sp,-(#framesz-#FPRA_delta)     ; note maybe 16byte-alignment.
- *     sd fp, pad(sp)                           ; pad is depended on stack-16byte-alignment..
- *     sd ra, pad+8(sp)
- *     sd s0,#xxx(sp)                         ; save callee-saved registers, as necessary,
- *     sd s1,#xxx+8(sp)
- *     daddiu sp,sp,-#outsz                     ; create space for outgoing argument space, maybe 16byte-alignment.
- *
- *  The funclet frame is thus:
- *
- *      |                       |
- *      |-----------------------|
- *      |  incoming arguments   |
- *      +=======================+ <---- Caller's SP
- *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
- *      |-----------------------|
- *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
- *      |-----------------------|
- *      ~  alignment padding    ~
+ *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned
  *      |-----------------------|
  *      |      Saved FP, RA     | // 16 bytes
  *      |-----------------------|
- *      |   Outgoing arg space  | // multiple of 8 bytes
- *      |-----------------------| <---- Ambient SP
- *      |       |               |
- *      ~       | Stack grows   ~
- *      |       | downward      |
- *              V
- *
- *  Frame type 4:
- *     For #framesz > 32760 and FP/RA at top:
- *     daddiu sp,sp,-#framesz+PSP_offset  ; establish the frame, maybe 16byte-alignment.
- *     sd s0,xxx(sp)                      ; save callee-saved registers, as necessary
- *     sd s1,xxx+8(sp)
- *     sd s?,xxx+?(sp)
- *     sd fp,xxx+?(sp)              ; save FP/RA.
- *     sd ra,xxx+?(sp)
- *
- *     daddiu sp,sp,-#PSP_offset    ; establish the frame, maybe 16byte-alignment.
- *
- *  The funclet frame is thus:
- *
- *      |                       |
- *      |-----------------------|
- *      |  incoming arguments   |
- *      +=======================+ <---- Caller's SP
- *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
- *      |-----------------------|
- *      |      Saved FP, RA     | // 16 bytes
- *      |-----------------------|
- *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
- *      |-----------------------|
- *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
+ *      |Callee saved registers | // multiple of 8 bytes, not includting FP/RA
  *      |-----------------------|
  *      |   Outgoing arg space  | // multiple of 8 bytes; if required (i.e., #outsz != 0)
  *      |-----------------------| <---- Ambient SP
@@ -906,10 +800,9 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *     FP,RA registers
  *     9 int callee-saved register s0-s8
  *     8 float callee-saved registers f24-f31
- *     8 saved integer argument registers a0-a7, if varargs function
+ *     8 saved integer argument registers a0-a7, if varargs function support.
  *     1 PSP slot
- *     1 alignment slot, future maybe add gp
- *     == 29 slots * 8 bytes = 232 bytes.
+ *     == 20 slots * 8 bytes = 160 bytes.
  *
  * The outgoing argument size, however, can be very large, if we call a function that takes a large number of
  * arguments (note that we currently use the same outgoing argument space size in the funclet as for the main
@@ -956,28 +849,28 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *          // be a funclet or main function. We won't know any time there is a filter protecting nested EH. To simplify, we just always
  *          // create a main function PSP for any function with a filter.
  *
- *          ld a1, CallerSP_to_PSP_slot_delta(a1)  ; Load the CallerSP of the main function (stored in the PSP of the dynamically containing funclet or function)
- *          sd a1, SP_to_PSP_slot_delta(sp)        ; store the PSP
- *          daddiu fp, a1, Function_CallerSP_to_FP_delta ; re-establish the frame pointer
+ *          ld.d a1,a1, CallerSP_to_PSP_slot_delta  ; Load the CallerSP of the main function (stored in the PSP of the dynamically containing funclet or function)
+ *          st.d a1,sp, SP_to_PSP_slot_delta        ; store the PSP
+ *          addi.d fp, a1, Function_CallerSP_to_FP_delta ; re-establish the frame pointer
  *     }
  *     else
  *     {
  *          // This is NOT a filter funclet. The VM re-establishes the frame pointer on entry.
  *          // TODO-LOONGARCH64-CQ: if VM set a1 to CallerSP on entry, like for filters, we could save an instruction.
  *
- *          daddiu a3, fp, Function_FP_to_CallerSP_delta  ; compute the CallerSP, given the frame pointer. a3 is scratch?
- *          sd a3, SP_to_PSP_slot_delta(sp)         ; store the PSP
+ *          addi.d a3,fp,Function_FP_to_CallerSP_delta  ; compute the CallerSP, given the frame pointer. a3 is scratch?
+ *          st.d   a3,sp,SP_to_PSP_slot_delta           ; store the PSP
  *     }
  *
  *  An example epilog sequence is then:
  *
- *     daddiu sp,sp,#outsz             ; if any outgoing argument space
+ *     addi.d sp,sp,#outsz          ; if any outgoing argument space
  *     ...                          ; restore callee-saved registers
- *     ld s0,#xxx-8(sp)
- *     ld s1,#xxx(sp)
- *     ld fp,#framesz-8(sp)
- *     ld ra,#framesz(sp)
- *     daddiu  sp,sp,#framesz
+ *     ld.d s0,sp,#xxx-8
+ *     ld.d s1,sp,#xxx
+ *     ld.d ra,sp,#xxx+?
+ *     ld.d fp,sp,#xxx+?
+ *     addi.d  sp,sp,#framesz
  *     jr  ra
  *
  */
@@ -991,7 +884,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(block->HasFlag(BBF_FUNCLET_BEG));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
@@ -999,15 +892,9 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     compiler->unwindBegProlog();
 
-    regMaskTP maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
-
-    // Funclets must always save RA and FP, since when we have funclets we must have an FP frame.
-    assert((maskSaveRegsInt & RBM_RA) != 0);
-    assert((maskSaveRegsInt & RBM_FP) != 0);
-
     bool isFilter  = (block->bbCatchTyp == BBCT_FILTER);
-    int  frameSize = genFuncletInfo.fiSpDelta1;
+    int  frameSize = genFuncletInfo.fiSpDelta;
+    assert(frameSize < 0);
 
     regMaskTP maskArgRegsLiveIn;
     if (isFilter)
@@ -1023,62 +910,42 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         maskArgRegsLiveIn = RBM_A0;
     }
 
-#ifdef DEBUG
-    if (compiler->opts.disAsm)
-    {
-        printf("DEBUG: CodeGen::genFuncletProlog, frameType:%d\n\n", genFuncletInfo.fiFrameType);
-    }
-#endif
+    regMaskTP maskSaveRegs  = genFuncletInfo.fiSaveRegs & RBM_CALLEE_SAVED;
+    int       regsSavedSize = (compiler->compCalleeRegsPushed - 2) << 3;
 
-    int offset = 0;
-    if (genFuncletInfo.fiFrameType == 1)
+    int SP_to_CalleeSaved_delta = genFuncletInfo.fiSP_to_CalleeSaved_delta;
+    if ((SP_to_CalleeSaved_delta + regsSavedSize + genFuncletInfo.fiCalleeSavedPadding) <= 2040)
     {
-        // fiFrameType constraints:
-        assert(frameSize < 0);
-        assert(frameSize >= -2048);
+        SP_to_CalleeSaved_delta += genFuncletInfo.fiCalleeSavedPadding;
 
-        assert(genFuncletInfo.fiSP_to_FPRA_save_delta < 2040);
         genStackPointerAdjustment(frameSize, REG_R21, nullptr, /* reportUnwindData */ true);
 
-        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta);
-        compiler->unwindSaveReg(REG_FP, genFuncletInfo.fiSP_to_FPRA_save_delta);
+        genSaveCalleeSavedRegistersHelp(maskSaveRegs, SP_to_CalleeSaved_delta, 0);
+        SP_to_CalleeSaved_delta += regsSavedSize;
 
-        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE,
-                                    genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
-        compiler->unwindSaveReg(REG_RA, genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
+        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, SP_to_CalleeSaved_delta);
+        compiler->unwindSaveReg(REG_RA, SP_to_CalleeSaved_delta);
 
-        maskSaveRegsInt &= ~(RBM_RA | RBM_FP); // We've saved these now
-
-        genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, genFuncletInfo.fiSP_to_PSP_slot_delta + 8,
-                                        0);
-    }
-    else if (genFuncletInfo.fiFrameType == 2)
-    {
-        // fiFrameType constraints:
-        assert(frameSize < -2048);
-
-        offset       = -frameSize - genFuncletInfo.fiSP_to_FPRA_save_delta;
-        int SP_delta = roundUp((UINT)offset, STACK_ALIGN);
-        offset       = SP_delta - offset;
-
-        genStackPointerAdjustment(-SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
-
-        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset);
-        compiler->unwindSaveReg(REG_FP, offset);
-
-        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset + 8);
-        compiler->unwindSaveReg(REG_RA, offset + 8);
-
-        maskSaveRegsInt &= ~(RBM_RA | RBM_FP); // We've saved these now
-
-        offset = frameSize + SP_delta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
-        genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, 0);
-
-        genStackPointerAdjustment(frameSize + SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
+        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, SP_to_CalleeSaved_delta + 8);
+        compiler->unwindSaveReg(REG_FP, SP_to_CalleeSaved_delta + 8);
     }
     else
     {
-        unreached();
+        assert(frameSize < -2040);
+
+        int SP_delta = frameSize + SP_to_CalleeSaved_delta;
+        genStackPointerAdjustment(SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
+
+        genSaveCalleeSavedRegistersHelp(maskSaveRegs, genFuncletInfo.fiCalleeSavedPadding, 0);
+        regsSavedSize += genFuncletInfo.fiCalleeSavedPadding;
+
+        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, regsSavedSize);
+        compiler->unwindSaveReg(REG_RA, regsSavedSize);
+
+        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, regsSavedSize + 8);
+        compiler->unwindSaveReg(REG_FP, regsSavedSize + 8);
+
+        genStackPointerAdjustment(-SP_to_CalleeSaved_delta, REG_R21, nullptr, /* reportUnwindData */ true);
     }
 
     // This is the end of the OS-reported prolog for purposes of unwinding
@@ -1140,84 +1007,47 @@ void CodeGen::genFuncletEpilog()
 
     ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
 
-    bool unwindStarted = false;
-    int  frameSize     = genFuncletInfo.fiSpDelta1;
+    compiler->unwindBegEpilog();
 
-    if (!unwindStarted)
-    {
-        // We can delay this until we know we'll generate an unwindable instruction, if necessary.
-        compiler->unwindBegEpilog();
-        unwindStarted = true;
-    }
-
-    regMaskTP maskRestoreRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskTP maskRestoreRegsInt   = genFuncletInfo.fiSaveRegs & ~maskRestoreRegsFloat;
-
-    // Funclets must always save RA and FP, since when we have funclets we must have an FP frame.
-    assert((maskRestoreRegsInt & RBM_RA) != 0);
-    assert((maskRestoreRegsInt & RBM_FP) != 0);
-
-#ifdef DEBUG
-    if (compiler->opts.disAsm)
-    {
-        printf("DEBUG: CodeGen::genFuncletEpilog, frameType:%d\n\n", genFuncletInfo.fiFrameType);
-    }
-#endif
-
-    regMaskTP regsToRestoreMask = maskRestoreRegsInt | maskRestoreRegsFloat;
-
+    int frameSize = genFuncletInfo.fiSpDelta;
     assert(frameSize < 0);
-    if (genFuncletInfo.fiFrameType == 1)
+
+    regMaskTP regsToRestoreMask = genFuncletInfo.fiSaveRegs & RBM_CALLEE_SAVED;
+    int       regsRestoreSize   = (compiler->compCalleeRegsPushed - 2) << 3;
+
+    int SP_to_CalleeSaved_delta = genFuncletInfo.fiSP_to_CalleeSaved_delta;
+    if ((SP_to_CalleeSaved_delta + regsRestoreSize + genFuncletInfo.fiCalleeSavedPadding) <= 2040)
     {
-        // fiFrameType constraints:
-        assert(frameSize >= -2048);
-        assert(genFuncletInfo.fiSP_to_FPRA_save_delta < 2040);
+        SP_to_CalleeSaved_delta += genFuncletInfo.fiCalleeSavedPadding;
+        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, SP_to_CalleeSaved_delta, 0);
+        SP_to_CalleeSaved_delta += regsRestoreSize;
 
-        regsToRestoreMask &= ~(RBM_RA | RBM_FP); // We restore FP/RA at the end
+        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, SP_to_CalleeSaved_delta);
+        compiler->unwindSaveReg(REG_RA, SP_to_CalleeSaved_delta);
 
-        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, genFuncletInfo.fiSP_to_PSP_slot_delta + 8, 0);
+        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, SP_to_CalleeSaved_delta + 8);
+        compiler->unwindSaveReg(REG_FP, SP_to_CalleeSaved_delta + 8);
 
-        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE,
-                                    genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
-        compiler->unwindSaveReg(REG_RA, genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
-
-        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta);
-        compiler->unwindSaveReg(REG_FP, genFuncletInfo.fiSP_to_FPRA_save_delta);
-
-        // generate daddiu SP,SP,imm
         genStackPointerAdjustment(-frameSize, REG_R21, nullptr, /* reportUnwindData */ true);
-    }
-    else if (genFuncletInfo.fiFrameType == 2)
-    {
-        // fiFrameType constraints:
-        assert(frameSize < -2048);
-
-        int offset   = -frameSize - genFuncletInfo.fiSP_to_FPRA_save_delta;
-        int SP_delta = roundUp((UINT)offset, STACK_ALIGN);
-        offset       = SP_delta - offset;
-
-        // first, generate daddiu SP,SP,imm
-        genStackPointerAdjustment(-frameSize - SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
-
-        int offset2 = frameSize + SP_delta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
-        assert(offset2 < 2040); // can amend.
-
-        regsToRestoreMask &= ~(RBM_RA | RBM_FP); // We restore FP/RA at the end
-        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, offset2, 0);
-
-        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset + 8);
-        compiler->unwindSaveReg(REG_RA, offset + 8);
-
-        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset);
-        compiler->unwindSaveReg(REG_FP, offset);
-
-        // second, generate daddiu SP,SP,imm for remaine space.
-        genStackPointerAdjustment(SP_delta, REG_R21, nullptr, /* reportUnwindData */ true);
     }
     else
     {
-        unreached();
+        assert(frameSize < -2040);
+
+        genStackPointerAdjustment(SP_to_CalleeSaved_delta, REG_R21, nullptr, /* reportUnwindData */ true);
+
+        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, genFuncletInfo.fiCalleeSavedPadding, 0);
+        regsRestoreSize += genFuncletInfo.fiCalleeSavedPadding;
+
+        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, regsRestoreSize);
+        compiler->unwindSaveReg(REG_RA, regsRestoreSize);
+
+        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, regsRestoreSize + 8);
+        compiler->unwindSaveReg(REG_FP, regsRestoreSize + 8);
+
+        genStackPointerAdjustment(-frameSize - SP_to_CalleeSaved_delta, REG_R21, nullptr, /* reportUnwindData */ true);
     }
+
     GetEmitter()->emitIns_R_R_I(INS_jirl, emitActualTypeSize(TYP_I_IMPL), REG_R0, REG_RA, 0);
     compiler->unwindReturn(REG_RA);
 
@@ -1246,61 +1076,62 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     // The frame size and offsets must be finalized
     assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
 
-    genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta();
-
     regMaskTP rsMaskSaveRegs = regSet.rsMaskCalleeSaved;
     assert((rsMaskSaveRegs & RBM_RA) != 0);
     assert((rsMaskSaveRegs & RBM_FP) != 0);
 
     unsigned PSPSize = (compiler->lvaPSPSym != BAD_VAR_NUM) ? 8 : 0;
 
-    unsigned saveRegsCount = genCountBits(rsMaskSaveRegs);
-    assert((saveRegsCount == compiler->compCalleeRegsPushed) || (saveRegsCount == compiler->compCalleeRegsPushed - 1));
+    // Because a method and funclets must have the same caller-relative PSPSym offset,
+    // if there is a PSPSym, we have to pad the funclet frame size for OSR.
+    //
+    unsigned osrPad = 0;
+    if (compiler->opts.IsOSR() && (PSPSize > 0))
+    {
+        osrPad = compiler->info.compPatchpointInfo->TotalFrameSize();
 
-    unsigned saveRegsPlusPSPSize =
-        roundUp((UINT)genTotalFrameSize(), STACK_ALIGN) - compiler->compLclFrameSize + PSPSize;
+        // OSR pad must be already aligned to stack size.
+        assert((osrPad % STACK_ALIGN) == 0);
+    }
 
-    unsigned saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
+    genFuncletInfo.fiCalleeSavedPadding            = 0;
+    genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta() - osrPad;
+
+    unsigned regsSavedSize = genCountBits(rsMaskSaveRegs) << 3;
+    assert(genCountBits(rsMaskSaveRegs) == compiler->compCalleeRegsPushed);
+
+    unsigned saveRegsPlusPSPSize = regsSavedSize + PSPSize;
 
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
     unsigned outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
 
-    unsigned maxFuncletFrameSizeAligned = saveRegsPlusPSPSizeAligned + outgoingArgSpaceAligned;
-    assert((maxFuncletFrameSizeAligned % STACK_ALIGN) == 0);
-
-    int SP_to_FPRA_save_delta = compiler->lvaOutgoingArgSpaceSize;
-
-    unsigned funcletFrameSize        = saveRegsPlusPSPSize + compiler->lvaOutgoingArgSpaceSize;
+    unsigned funcletFrameSize        = osrPad + saveRegsPlusPSPSize + compiler->lvaOutgoingArgSpaceSize;
     unsigned funcletFrameSizeAligned = roundUp(funcletFrameSize, STACK_ALIGN);
-    assert(funcletFrameSizeAligned <= maxFuncletFrameSizeAligned);
 
-    unsigned funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;
-    assert((funcletFrameAlignmentPad == 0) || (funcletFrameAlignmentPad == REGSIZE_BYTES));
-
-    if (maxFuncletFrameSizeAligned <= (2048 - 8))
+    int SP_to_CalleeSaved_delta = compiler->lvaOutgoingArgSpaceSize;
+    if ((SP_to_CalleeSaved_delta + regsSavedSize) >= 2040)
     {
-        genFuncletInfo.fiFrameType = 1;
-        saveRegsPlusPSPSize -= 2 * 8; // FP/RA
-    }
-    else
-    {
-        unsigned saveRegsPlusPSPAlignmentPad = saveRegsPlusPSPSizeAligned - saveRegsPlusPSPSize;
-        assert((saveRegsPlusPSPAlignmentPad == 0) || (saveRegsPlusPSPAlignmentPad == REGSIZE_BYTES));
+        int offset              = funcletFrameSizeAligned - SP_to_CalleeSaved_delta;
+        SP_to_CalleeSaved_delta = AlignUp((UINT)offset, STACK_ALIGN);
 
-        genFuncletInfo.fiFrameType = 2;
-        saveRegsPlusPSPSize -= 2 * 8; // FP/RA
+        genFuncletInfo.fiCalleeSavedPadding = SP_to_CalleeSaved_delta - offset;
     }
 
-    int CallerSP_to_PSP_slot_delta = -(int)saveRegsPlusPSPSize;
-    genFuncletInfo.fiSpDelta1      = -(int)funcletFrameSizeAligned;
-    int SP_to_PSP_slot_delta       = funcletFrameSizeAligned - saveRegsPlusPSPSize;
+    if (compiler->lvaMonAcquired != BAD_VAR_NUM && !compiler->opts.IsOSR())
+    {
+        // We furthermore allocate the "monitor acquired" bool between PSP and
+        // the saved registers because this is part of the EnC header.
+        // Note that OSR methods reuse the monitor bool created by tier 0.
+        osrPad += compiler->lvaLclSize(compiler->lvaMonAcquired);
+    }
 
     /* Now save it for future use */
-    genFuncletInfo.fiSaveRegs              = rsMaskSaveRegs;
-    genFuncletInfo.fiSP_to_FPRA_save_delta = SP_to_FPRA_save_delta;
+    genFuncletInfo.fiSpDelta                 = -(int)funcletFrameSizeAligned;
+    genFuncletInfo.fiSaveRegs                = rsMaskSaveRegs;
+    genFuncletInfo.fiSP_to_CalleeSaved_delta = SP_to_CalleeSaved_delta;
 
-    genFuncletInfo.fiSP_to_PSP_slot_delta       = SP_to_PSP_slot_delta;
-    genFuncletInfo.fiCallerSP_to_PSP_slot_delta = CallerSP_to_PSP_slot_delta;
+    genFuncletInfo.fiSP_to_PSP_slot_delta       = funcletFrameSizeAligned - osrPad - 8;
+    genFuncletInfo.fiCallerSP_to_PSP_slot_delta = -(int)osrPad - 8;
 
 #ifdef DEBUG
     if (verbose)
@@ -1310,23 +1141,22 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         printf("                        Save regs: ");
         dspRegMask(genFuncletInfo.fiSaveRegs);
         printf("\n");
-        printf("    Function CallerSP-to-FP delta: %d\n", genFuncletInfo.fiFunction_CallerSP_to_FP_delta);
-        printf("  SP to FP/RA save location delta: %d\n", genFuncletInfo.fiSP_to_FPRA_save_delta);
-        printf("                       Frame type: %d\n", genFuncletInfo.fiFrameType);
-        printf("                       SP delta 1: %d\n", genFuncletInfo.fiSpDelta1);
-
-        if (compiler->lvaPSPSym != BAD_VAR_NUM)
+        if (compiler->opts.IsOSR())
         {
-            if (CallerSP_to_PSP_slot_delta !=
-                compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)) // for debugging
-            {
-                printf("lvaGetCallerSPRelativeOffset(lvaPSPSym): %d\n",
-                       compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym));
-            }
+            printf("                          OSR Pad: %d\n", osrPad);
         }
+        printf("    Function CallerSP-to-FP delta: %d\n", genFuncletInfo.fiFunction_CallerSP_to_FP_delta);
+        printf("  SP to CalleeSaved location delta: %d\n", genFuncletInfo.fiSP_to_CalleeSaved_delta);
+        printf("                       SP delta: %d\n", genFuncletInfo.fiSpDelta);
     }
+    assert(genFuncletInfo.fiSP_to_CalleeSaved_delta >= 0);
 
-    assert(genFuncletInfo.fiSP_to_FPRA_save_delta >= 0);
+    if (compiler->lvaPSPSym != BAD_VAR_NUM)
+    {
+        assert(genFuncletInfo.fiCallerSP_to_PSP_slot_delta ==
+               compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)); // same offset used in main function and
+                                                                             // funclet!
+    }
 #endif // DEBUG
 }
 
@@ -1365,7 +1195,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     GenTree* lastNode = block->lastNode();
 
@@ -1387,7 +1217,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     {
         SetHasTailCalls(true);
 
-        noway_assert(block->bbJumpKind == BBJ_RETURN);
+        noway_assert(block->KindIs(BBJ_RETURN));
         noway_assert(block->GetFirstLIRNode() != nullptr);
 
         /* figure out what jump we have */
@@ -1511,12 +1341,17 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 
     int SPtoCallerSPdelta = -genCallerSPtoInitialSPdelta();
 
+    if (compiler->opts.IsOSR())
+    {
+        SPtoCallerSPdelta += compiler->info.compPatchpointInfo->TotalFrameSize();
+    }
+
     // We will just use the initReg since it is an available register
     // and we are probably done using it anyway...
     regNumber regTmp = initReg;
     *pInitRegZeroed  = false;
 
-    genInstrWithConstant(INS_addi_d, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta, REG_R21, false);
+    genInstrWithConstant(INS_addi_d, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta, regTmp, false);
     GetEmitter()->emitIns_S_R(INS_st_d, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
 }
 
@@ -1669,6 +1504,8 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
+    assert(block->KindIs(BBJ_CALLFINALLY));
+
     // Generate a call to the finally, like this:
     //      mov  a0,qword ptr [fp + 10H] / sp    // Load a0 with PSPSym, or sp if PSPSym is not used
     //      bl  finally-funclet
@@ -1683,19 +1520,23 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_A0, REG_SPBASE, 0);
     }
-    GetEmitter()->emitIns_J(INS_bl, block->bbJumpDest);
+    GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
 
-    if (block->bbFlags & BBF_RETLESS_CALL)
+    BasicBlock* const nextBlock = block->Next();
+
+    if (block->HasFlag(BBF_RETLESS_CALL))
     {
         // We have a retless call, and the last instruction generated was a call.
         // If the next block is in a different EH region (or is the end of the code
         // block), then we need to generate a breakpoint here (since it will never
         // get executed) to get proper unwind behavior.
 
-        if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
+        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
             instGen(INS_break); // This should never get executed
         }
+
+        return block;
     }
     else
     {
@@ -1704,8 +1545,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
+        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+
         // Now go to where the finally funclet needs to return to.
-        if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
+        if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
             // Fall-through.
             // TODO-LOONGARCH64-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -1715,27 +1558,18 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-            inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
+            inst_JMP(EJ_jmp, finallyContinuation);
         }
 
         GetEmitter()->emitEnableGC();
-    }
 
-    // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbJumpDest - that is already used to point
-    // to the finally block. So just skip past the BBJ_ALWAYS unless the
-    // block is RETLESS.
-    if (!(block->bbFlags & BBF_RETLESS_CALL))
-    {
-        assert(block->isBBCallAlwaysPair());
-        block = block->bbNext;
+        return nextBlock;
     }
-    return block;
 }
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->bbJumpDest, REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->GetTarget(), REG_INTRET);
 }
 
 //  move an immediate value into an integer register
@@ -1806,7 +1640,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             emitAttr size       = emitActualTypeSize(tree);
             double   constValue = tree->AsDblCon()->DconValue();
 
-            // Make sure we use "daddiu reg, zero, 0x00"  only for positive zero (0.0)
+            // Make sure we use "addi.d reg, zero, 0x00"  only for positive zero (0.0)
             // and not for negative zero (-0.0)
             if (*(__int64*)&constValue == 0)
             {
@@ -2131,7 +1965,14 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         }
         else // store into register (i.e move into register)
         {
-            if (dataReg != targetReg)
+            if (data->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                assert(data->AsIntCon()->IconValue() == 0);
+                emitAttr attr = emitActualTypeSize(targetType);
+                // need to load the address from $tp.
+                emit->emitIns_R_R_I(INS_ori, attr, targetReg, REG_TP, 0);
+            }
+            else if (dataReg != targetReg)
             {
                 // Assign into targetReg when dataReg (from op1) is not the same register
                 inst_Mov(targetType, targetReg, dataReg, true, emitActualTypeSize(targetType));
@@ -2867,8 +2708,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 // GC pointers.
 // For this case we'll generate a sequence of loads/stores in the case of struct
 // slots that don't contain GC pointers.  The generated code will look like:
-// ld tempReg, 8(A5)
-// sd tempReg, 8(A6)
+// ld.d tempReg,A5,8
+// st.d tempReg,A6,8
 //
 // In the case of a GC-Pointer we'll call the ByRef write barrier helper
 // who happens to use the same registers as the previous call to maintain
@@ -2876,14 +2717,14 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 // bl CORINFO_HELP_ASSIGN_BYREF
 //
 // So finally an example would look like this:
-// ld tempReg, 8(A5)
-// sd tempReg, 8(A6)
+// ld.d tempReg,A5,8
+// st.d tempReg,A6,8
 // bl CORINFO_HELP_ASSIGN_BYREF
-// ld tempReg, 8(A5)
-// sd tempReg, 8(A6)
+// ld.d tempReg,A5,8
+// st.d tempReg,A6,8
 // bl CORINFO_HELP_ASSIGN_BYREF
-// ld tempReg, 8(A5)
-// sd tempReg, 8(A6)
+// ld.d tempReg,A5,8
+// st.d tempReg,A6,8
 void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
     GenTree*  dstAddr       = cpObjNode->Addr();
@@ -2955,7 +2796,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     if (dstOnStack)
     {
         unsigned i = 0;
-        // Check if two or more remaining slots and use two ld/sd sequence
+        // Check if two or more remaining slots and use two load/store sequence
         while (i < slots - 1)
         {
             emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
@@ -2977,7 +2818,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             i += 2;
         }
 
-        // Use a ld/sd sequence for the last remainder
+        // Use a load/store sequence for the last remainder
         if (i < slots)
         {
             emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
@@ -3004,7 +2845,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         {
             if (!layout->IsGCPtr(i))
             {
-                // Check if the next slot's type is also TYP_GC_NONE and use two ld/sd
+                // Check if the next slot's type is also TYP_GC_NONE and use two load/store
                 if ((i + 1 < slots) && !layout->IsGCPtr(i + 1))
                 {
                     if ((i + 2) == slots)
@@ -3086,11 +2927,11 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->bbJumpKind == BBJ_SWITCH);
+    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->bbJumpSwt->bbsDstTab;
+    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
     unsigned     jmpTabOffs;
     unsigned     jmpTabBase;
 
@@ -3103,7 +2944,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
-        noway_assert(target->bbFlags & BBF_HAS_LABEL);
+        noway_assert(target->HasFlag(BBF_HAS_LABEL));
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
@@ -3908,6 +3749,13 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
         GetEmitter()->emitIns_R_R(ins1, dstSize, tmpReg, tmpReg);
         GetEmitter()->emitIns_R_R(ins2, dstSize, treeNode->GetRegNum(), tmpReg);
 
+        if (dstType == TYP_UINT)
+        {
+            GetEmitter()->emitIns_R_R_I(INS_addu16i_d, EA_PTRSIZE, REG_RA, REG_R0, -32768);
+            GetEmitter()->emitIns_R_R_I(INS_bne, EA_PTRSIZE, treeNode->GetRegNum(), REG_RA, (2 << 2));
+            GetEmitter()->emitIns_R_R_I(INS_ori, dstSize, treeNode->GetRegNum(), REG_R0, 0);
+        }
+
         GetEmitter()->emitIns_I_I(INS_bcnez, EA_PTRSIZE, 3, 2 << 2); // cc=3
         GetEmitter()->emitIns_R_I(INS_beqz, EA_PTRSIZE, treeNode->GetRegNum(), 2 << 2);
 
@@ -4078,29 +3926,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         assert(targetReg != REG_NA);
         assert(tree->TypeGet() != TYP_VOID);
 
-        if (op1->isContainedIntOrIImmed())
-        {
-            op1 = tree->gtOp2;
-            op2 = tree->gtOp1;
-            switch (tree->OperGet())
-            {
-                case GT_LT:
-                    tree->SetOper(GT_GT);
-                    break;
-                case GT_LE:
-                    tree->SetOper(GT_GE);
-                    break;
-                case GT_GT:
-                    tree->SetOper(GT_LT);
-                    break;
-                case GT_GE:
-                    tree->SetOper(GT_LE);
-                    break;
-                default:
-                    break;
-            }
-        }
-
         assert(!op1->isContainedIntOrIImmed());
         assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
 
@@ -4120,6 +3945,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     if (IsUnsigned)
                     {
                         imm = static_cast<uint32_t>(imm);
+
                         emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp1, regOp1, 31, 0);
                     }
                     else
@@ -4316,7 +4142,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 // A GT_JCMP node is created for an integer-comparison's conditional branch.
 void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 {
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
 
     assert(tree->OperIs(GT_JCMP));
     assert(!varTypeIsFloating(tree));
@@ -4355,19 +4181,18 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             {
                 case EA_4BYTE:
                 {
-                    regNumber tmpRegOp1 = REG_R21;
-                    assert(regOp1 != tmpRegOp1);
+                    assert(regOp1 != REG_R21);
                     if (cond.IsUnsigned())
                     {
                         imm = static_cast<uint32_t>(imm);
-                        emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp1, regOp1, 31, 0);
+                        emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, REG_R21, regOp1, 31, 0);
                     }
                     else
                     {
                         imm = static_cast<int32_t>(imm);
-                        emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, tmpRegOp1, regOp1, 0);
+                        emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_R21, regOp1, 0);
                     }
-                    regOp1 = tmpRegOp1;
+                    regOp1 = REG_R21;
                     break;
                 }
                 case EA_8BYTE:
@@ -4388,6 +4213,22 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
             emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
             regs = (int)REG_RA << 5;
+        }
+        else
+        {
+            if (cmpSize == EA_4BYTE)
+            {
+                assert(regOp1 != REG_R21);
+                if (cond.IsUnsigned())
+                {
+                    emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, REG_R21, regOp1, 31, 0);
+                }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_slli_w, EA_8BYTE, REG_R21, regOp1, 0);
+                }
+                regOp1 = REG_R21;
+            }
         }
 
         switch (cond.GetCode())
@@ -4488,7 +4329,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(ins != INS_invalid);
     assert(regs != 0);
 
-    emit->emitIns_J(ins, compiler->compCurBB->bbJumpDest, regs); // 5-bits;
+    emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs); // 5-bits;
 }
 
 //---------------------------------------------------------------------
@@ -4498,8 +4339,9 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 int CodeGenInterface::genSPtoFPdelta() const
 {
     assert(isFramePointerUsed());
+    assert(compiler->compCalleeRegsPushed >= 2);
 
-    int delta = compiler->lvaOutgoingArgSpaceSize;
+    int delta = compiler->lvaOutgoingArgSpaceSize + (compiler->compCalleeRegsPushed << 3) - 8;
 
     assert(delta >= 0);
     return delta;
@@ -4538,9 +4380,7 @@ int CodeGenInterface::genTotalFrameSize() const
 int CodeGenInterface::genCallerSPtoFPdelta() const
 {
     assert(isFramePointerUsed());
-    int callerSPtoFPdelta;
-
-    callerSPtoFPdelta = genCallerSPtoInitialSPdelta() + genSPtoFPdelta();
+    int callerSPtoFPdelta = genCallerSPtoInitialSPdelta() + genSPtoFPdelta();
 
     assert(callerSPtoFPdelta <= 0);
     return callerSPtoFPdelta;
@@ -4553,9 +4393,7 @@ int CodeGenInterface::genCallerSPtoFPdelta() const
 
 int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
-    int callerSPtoSPdelta = 0;
-
-    callerSPtoSPdelta -= genTotalFrameSize();
+    int callerSPtoSPdelta = -genTotalFrameSize();
 
     assert(callerSPtoSPdelta <= 0);
     return callerSPtoSPdelta;
@@ -4729,37 +4567,6 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 }
 
 #endif // FEATURE_SIMD
-
-/*****************************************************************************
- * Unit testing of the LOONGARCH64 emitter: generate a bunch of instructions into the prolog
- * (it's as good a place as any), then use DOTNET_JitLateDisasm=* to see if the late
- * disassembler thinks the instructions as the same as we do.
- */
-
-// Uncomment "#define ALL_LOONGARCH64_EMITTER_UNIT_TESTS" to run all the unit tests here.
-// After adding a unit test, and verifying it works, put it under this #ifdef, so we don't see it run every time.
-//#define ALL_LOONGARCH64_EMITTER_UNIT_TESTS
-
-#if defined(DEBUG)
-void CodeGen::genLoongArch64EmitterUnitTests()
-{
-    if (!verbose)
-    {
-        return;
-    }
-
-    if (!compiler->opts.altJit)
-    {
-        // No point doing this in a "real" JIT.
-        return;
-    }
-
-    // Mark the "fake" instructions in the output.
-    printf("*************** In genLoongArch64EmitterUnitTests()\n");
-
-    printf("*************** End of genLoongArch64EmitterUnitTests()\n");
-}
-#endif // defined(DEBUG)
 
 //------------------------------------------------------------------------
 // genStackPointerConstantAdjustment: add a specified constant value to the stack pointer.
@@ -5067,7 +4874,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_JCC:
         {
-            BasicBlock* tgtBlock = compiler->compCurBB->bbJumpDest;
+            BasicBlock* tgtBlock = compiler->compCurBB->KindIs(BBJ_COND) ? compiler->compCurBB->GetTrueTarget()
+                                                                         : compiler->compCurBB->GetTarget();
 #if !FEATURE_FIXED_OUT_ARGS
             assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
 #endif // !FEATURE_FIXED_OUT_ARGS
@@ -5245,6 +5053,12 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 
     if (!compiler->getNeedsGSSecurityCookie())
     {
+        return;
+    }
+
+    if (compiler->opts.IsOSR() && compiler->info.compPatchpointInfo->HasSecurityCookie())
+    {
+        // Security cookie is on original frame and was initialized there.
         return;
     }
 
@@ -6537,6 +6351,54 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
     genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
 }
 
+//------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
+{
+    GenTree* const dstNode = initBlkNode->Addr();
+    genConsumeReg(dstNode);
+    const regNumber dstReg = dstNode->GetRegNum();
+
+    if (initBlkNode->IsVolatile())
+    {
+        // issue a full memory barrier before a volatile initBlock Operation
+        instGen_MemoryBarrier();
+    }
+
+    const unsigned size = initBlkNode->GetLayout()->GetSize();
+    assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+
+    // The loop is reversed - it makes it smaller.
+    // Although, we zero the first pointer before the loop (the loop doesn't zero it)
+    // it works as a nullcheck, otherwise the first iteration would try to access
+    // "null + potentially large offset" and hit AV.
+    GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_R0, dstReg, 0);
+    if (size > TARGET_POINTER_SIZE)
+    {
+        // Extend liveness of dstReg in case if it gets killed by the store.
+        gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
+
+        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
+
+        // loop begin:
+        // *(dstReg + offsetReg) = 0
+        GetEmitter()->emitIns_R_R_R(INS_stx_d, EA_PTRSIZE, REG_R0, dstReg, offsetReg);
+        // offsetReg = offsetReg - 8
+        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, offsetReg, offsetReg, -8);
+        // if (offsetReg != 0) goto loop;
+        GetEmitter()->emitIns_R_I(INS_bnez, EA_8BYTE, offsetReg, -2 << 2);
+
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+    }
+}
+
 // Generate code for a load from some address + offset
 //   base: tree node which can be either a local address or arbitrary node
 //   offset: distance from the base from which to load
@@ -6638,17 +6500,17 @@ void CodeGen::genCall(GenTreeCall* call)
 #ifdef FEATURE_READYTORUN
         else if (call->IsR2ROrVirtualStubRelativeIndir())
         {
-            assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
-                   ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
+            assert((call->IsR2RRelativeIndir() && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
+                   (call->IsVirtualStubRelativeIndir() && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
 
             regNumber tmpReg = call->GetSingleTempReg();
             // Register where we save call address in should not be overridden by epilog.
-            assert((tmpReg & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == tmpReg);
+            assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(tmpReg));
 
             regNumber callAddrReg =
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
-            GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
+            GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg, 0);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
             call->gtRsvdRegs |= genRegMask(tmpReg);
         }
@@ -6668,15 +6530,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
     genCallInstruction(call);
 
-    // for pinvoke/intrinsic/tailcalls we may have needed to get the address of
-    // a label. In case it is indirect with CFG enabled make sure we do not get
-    // the address after the validation but only after the actual call that
-    // comes after.
-    if (genPendingCallLabel && !call->IsHelperCall(compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
-    {
-        genDefineInlineTempLabel(genPendingCallLabel);
-        genPendingCallLabel = nullptr;
-    }
+    genDefinePendingCallLabel(call);
 
 #ifdef DEBUG
     // We should not have GC pointers in killed registers live around the call.
@@ -6880,13 +6734,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // For fast tailcalls we have already loaded the call target when processing the call node.
             if (!call->IsFastTailCall())
             {
-                GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
-                                          callThroughIndirReg);
+                GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
+                                            callThroughIndirReg, 0);
             }
             else
             {
                 // Register where we save call address in should not be overridden by epilog.
-                assert((targetAddrReg & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == targetAddrReg);
+                assert((genRegMask(targetAddrReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(targetAddrReg));
             }
 
             // We have now generated code loading the target address from the indirection cell into `targetAddrReg`.
@@ -7456,6 +7310,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             genCodeForCpObj(blkOp->AsBlk());
             break;
 
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
+            break;
+
         case GenTreeBlk::BlkOpKindHelper:
             if (isCopyBlk)
             {
@@ -7510,7 +7369,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     //             addressing mode instruction.  Currently we're 'cheating' by producing one or more
     //             instructions to generate the addressing mode so we need to modify lowering to
     //             produce LEAs that are a 1:1 relationship to the LOONGARCH64 architecture.
-    if (lea->Base() && lea->Index())
+    if (lea->HasBase() && lea->HasIndex())
     {
         GenTree* memBase = lea->Base();
         GenTree* index   = lea->Index();
@@ -7555,7 +7414,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             }
         }
     }
-    else if (lea->Base())
+    else if (lea->HasBase())
     {
         GenTree* memBase = lea->Base();
 
@@ -7586,7 +7445,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             emit->emitIns_R_R_R(INS_add_d, size, lea->GetRegNum(), memBase->GetRegNum(), tmpReg);
         }
     }
-    else if (lea->Index())
+    else if (lea->HasIndex())
     {
         // If we encounter a GT_LEA node without a base it means it came out
         // when attempting to optimize an arbitrary arithmetic expression during lower.
@@ -7790,6 +7649,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
 #ifdef DEBUG
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -7802,6 +7662,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -7851,19 +7712,15 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             callType   = emitter::EC_INDIR_R;
             callTarget = REG_DEFAULT_HELPER_CALL_TARGET;
 
-            // ssize_t imm = (4 + 1 + 1) << 2;// 4=li, 1=ld, 1=jirl.
-
-            // instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr);
-            // emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, callTarget, callTarget, 0);
             if (compiler->opts.compReloc)
             {
-                ssize_t imm = (2 + 1) << 2; // , 1=jirl.
+                ssize_t imm = (3 + 1) << 2; // to jirl's next instr.
                 emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
                 GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr);
             }
             else
             {
-                ssize_t imm = (3 + 1) << 2; // , 1=jirl.
+                ssize_t imm = (4 + 1) << 2; // to jirl's next instr.
                 emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
 
                 // GetEmitter()->emitIns_R_I(INS_pcaddu12i, EA_PTRSIZE, callTarget, (ssize_t)pAddr);
@@ -7928,38 +7785,68 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     GetEmitter()->emitIns_I(INS_dbar, EA_4BYTE, INS_BARRIER_FULL);
 }
 
-//-----------------------------------------------------------------------------------
-// genProfilingLeaveCallback: Generate the profiling function leave or tailcall callback.
-// Technically, this is not part of the epilog; it is called when we are generating code for a GT_RETURN node.
-//
-// Arguments:
-//     helper - which helper to call. Either CORINFO_HELP_PROF_FCN_LEAVE or CORINFO_HELP_PROF_FCN_TAILCALL
-//
-// Return Value:
-//     None
-//
-void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FCN_LEAVE*/)
-{
-    assert((helper == CORINFO_HELP_PROF_FCN_LEAVE) || (helper == CORINFO_HELP_PROF_FCN_TAILCALL));
-
-    // Only hook if profiler says it's okay.
-    if (!compiler->compIsProfilerHookNeeded())
-    {
-        return;
-    }
-
-    compiler->info.compProfilerCallback = true;
-
-    // Need to save on to the stack level, since the helper call will pop the argument
-    unsigned saveStackLvl2 = genStackLevel;
-
-    /* Restore the stack level */
-    SetStackLevel(saveStackLvl2);
-}
-
 /*-----------------------------------------------------------------------------
  *
- *  Push/Pop any callee-saved registers we have used
+ * Push/Pop any callee-saved registers we have used
+ * For most frames, generatint liking:
+ *      addi.d  sp, sp, -totalFrameSize
+ *      fst.d f24,sp,off
+ *      ...
+ *      fst.d f31,sp,off+7*8
+ *
+ *      st.d s0,sp,off2
+ *      st.d s1,sp,off2+8
+ *      ...
+ *      st.d s8,sp,off2+8*8
+ *
+ *      st.d ra,sp,off3
+ *      st.d fp,sp,off3+8
+ *
+ * Notes:
+ * 1. FP is always saved, and the first store is FP, RA.
+ * 2. General-purpose registers are 8 bytes, floating-point registers are 8 bytes.
+ * 3. For frames with varargs, not implemented completely and not tested !
+ * 4. We allocate the frame here; no further changes to SP are allowed (except in the body, for localloc).
+ *
+ * For functions with GS and localloc, we change the frame so the frame pointer and RA are saved at the top
+ * of the frame, just under the varargs registers (if any). Note that the funclet frames must follow the same
+ * rule, and both main frame and funclet frames (if any) must put PSPSym in the same offset from Caller-SP.
+ * Since this frame type is relatively rare, we force using it via stress modes, for additional coverage.
+ *
+ * The frames look like the following (simplified to only include components that matter for establishing the
+ * frames). See also Compiler::lvaAssignFrameOffsets().
+ *
+ *
+ * The LoongArch64's frame layout is liking:
+ *
+ *      |                       |
+ *      |-----------------------|
+ *      |  incoming arguments   |
+ *      +=======================+ <---- Caller's SP
+ *      |     Arguments  Or     | // if needed.
+ *      |  Varargs regs space   | // Only for varargs functions; (varargs not implemented for LoongArch64)
+ *      |-----------------------|
+ *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
+ *      |-----------------------|
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
+ *      |-----------------------|
+ *      | locals, temps, etc.   |
+ *      |-----------------------|
+ *      |  possible GS cookie   |
+ *      |-----------------------|
+ *      |      Saved FP         | // 8 bytes
+ *      |-----------------------|
+ *      |      Saved RA         | // 8 bytes
+ *      |-----------------------|
+ *      |Callee saved registers | // not including FP/RA; multiple of 8 bytes
+ *      |-----------------------|
+ *      |   Outgoing arg space  | // multiple of 8 bytes; if required (i.e., #outsz != 0)
+ *      |-----------------------| <---- Ambient SP
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
+ *              V
+ *
  */
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
@@ -7974,11 +7861,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     }
 #endif
 
-    // On LA we push the FP (frame-pointer) here along with all other callee saved registers
-    if (isFramePointerUsed())
-    {
-        rsPushRegs |= RBM_FPBASE;
-    }
+    // We always use the FP (frame-pointer).
+    assert(isFramePointerUsed());
 
     //
     // It may be possible to skip pushing/popping ra for leaf methods. However, such optimization would require
@@ -8000,122 +7884,22 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     // is not worth it.
     //
 
-    rsPushRegs |= RBM_RA; // We must save the return address (in the RA register).
-    regSet.rsMaskCalleeSaved    = rsPushRegs;
-    regMaskTP maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
+    regSet.rsMaskCalleeSaved = rsPushRegs | RBM_FPBASE | RBM_RA;
 
 #ifdef DEBUG
-    if (compiler->compCalleeRegsPushed != genCountBits(rsPushRegs))
+    if (compiler->compCalleeRegsPushed != genCountBits(regSet.rsMaskCalleeSaved))
     {
         printf("Error: unexpected number of callee-saved registers to push. Expected: %d. Got: %d ",
-               compiler->compCalleeRegsPushed, genCountBits(rsPushRegs));
-        dspRegMask(rsPushRegs);
+               compiler->compCalleeRegsPushed, genCountBits(rsPushRegs | RBM_FPBASE | RBM_RA));
+        dspRegMask(rsPushRegs | RBM_FPBASE | RBM_RA);
         printf("\n");
-        assert(compiler->compCalleeRegsPushed == genCountBits(rsPushRegs));
+        assert(compiler->compCalleeRegsPushed == genCountBits(rsPushRegs | RBM_FPBASE | RBM_RA));
     }
-#endif // DEBUG
 
-    // See the document "LOONGARCH64 JIT Frame Layout" and/or "LOONGARCH64 Exception Data" for more details or
-    // requirements and
-    // options. Case numbers in comments here refer to this document. See also Compiler::lvaAssignFrameOffsets()
-    // for pictures of the general frame layouts, and CodeGen::genFuncletProlog() implementations (per architecture)
-    // for pictures of the funclet frame layouts.
-    //
-    // For most frames, generate, e.g.:
-    //      sdc1 f31, off+7*8(sp)
-    //      ...
-    //      sdc1 f24, off(sp)
-    //
-    //      sd s7, off2+7*8(sp)
-    //      ...
-    //      sd s1, off2+8(sp)
-    //      sd s0, off2(sp)
-    //
-    //      sd fp,  0(sp)
-    //      sd ra,  8(sp)
-    //
-    // Notes:
-    // 1. FP is always saved, and the first store is FP, RA.
-    // 2. General-purpose registers are 8 bytes, floating-point registers are 8 bytes, but SIMD/FP registers 16 bytes.
-    //    TODO-LOONGARCH64: supporting SIMD feature !
-    // 3. For frames with varargs, not implemented completely and not tested !
-    // 4. We allocate the frame here; no further changes to SP are allowed (except in the body, for localloc).
-    //
-    // For functions with GS and localloc, we change the frame so the frame pointer and RA are saved at the top
-    // of the frame, just under the varargs registers (if any). Note that the funclet frames must follow the same
-    // rule, and both main frame and funclet frames (if any) must put PSPSym in the same offset from Caller-SP.
-    // Since this frame type is relatively rare, we force using it via stress modes, for additional coverage.
-    //
-    // The frames look like the following (simplified to only include components that matter for establishing the
-    // frames). See also Compiler::lvaAssignFrameOffsets().
-    //
-    //
-    // Frames with FP, RA saved at bottom of frame (above outgoing argument space):
-    //
-    //      |                       |
-    //      |-----------------------|
-    //      |  incoming arguments   |
-    //      +=======================+ <---- Caller's SP
-    //      |     Arguments  Or     | // if needed.
-    //      |  Varargs regs space   | // Only for varargs functions; (varargs not implemented for LoongArch64)
-    //      |-----------------------|
-    //      |Callee saved registers | // not including FP/RA; multiple of 8 bytes
-    //      |-----------------------|
-    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
-    //      |-----------------------|
-    //      | locals, temps, etc.   |
-    //      |-----------------------|
-    //      |  possible GS cookie   |
-    //      |-----------------------|
-    //      |      Saved RA         | // 8 bytes
-    //      |-----------------------|
-    //      |      Saved FP         | // 8 bytes
-    //      |-----------------------|
-    //      |   Outgoing arg space  | // multiple of 8 bytes; if required (i.e., #outsz != 0)
-    //      |-----------------------| <---- Ambient SP
-    //      |       |               |
-    //      ~       | Stack grows   ~
-    //      |       | downward      |
-    //              V
-    //
-    //
-    // Frames with FP, RA saved at top of frame (note: above all callee-saved regs):
-    //
-    //      |                       |
-    //      |-----------------------|
-    //      |  incoming arguments   |
-    //      +=======================+ <---- Caller's SP
-    //      |     Arguments  Or     | // if needed.
-    //      |  Varargs regs space   | // Only for varargs functions; (varargs not implemented for LoongArch64)
-    //      |-----------------------|
-    //      |      Saved RA         | // 8 bytes
-    //      |-----------------------|
-    //      |      Saved FP         | // 8 bytes
-    //      |-----------------------|
-    //      |Callee saved registers | // not including FP/RA; multiple of 8 bytes
-    //      |-----------------------|
-    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
-    //      |-----------------------|
-    //      | locals, temps, etc.   |
-    //      |-----------------------|
-    //      |  possible GS cookie   |
-    //      |-----------------------|
-    //      |   Outgoing arg space  | // multiple of 8 bytes; if required (i.e., #outsz != 0)
-    //      |-----------------------| <---- Ambient SP
-    //      |       |               |
-    //      ~       | Stack grows   ~
-    //      |       | downward      |
-    //              V
-    //
-
-    int totalFrameSize = genTotalFrameSize();
-
-    int offset; // This will be the starting place for saving the callee-saved registers, in increasing order.
-
-#ifdef DEBUG
     if (verbose)
     {
+        regMaskTP maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
+        regMaskTP maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
         printf("Save float regs: ");
         dspRegMask(maskSaveRegsFloat);
         printf("\n");
@@ -8129,100 +7913,80 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     // generate based on various sizes.
     int frameType = 0;
 
-    // The amount to subtract from SP before starting to store the callee-saved registers. It might be folded into the
-    // first save instruction as a "predecrement" amount, if possible.
+    // The amount to add from SP before starting to store the callee-saved registers.
     int calleeSaveSPDelta = 0;
 
-    // By default, we'll establish the frame pointer chain. (Note that currently frames without FP are NYI.)
-    bool establishFramePointer = true;
+    // If we need to generate a GS cookie, we need to make sure the saved frame pointer and return address
+    // (FP and RA) are protected from buffer overrun by the GS cookie. If FP/RA are at the lowest addresses,
+    // then they are safe, since they are lower than any unsafe buffers. And the GS cookie we add will
+    // protect our caller's frame. If we have a localloc, however, that is dynamically placed lower than our
+    // saved FP/RA. In that case, we save FP/RA along with the rest of the callee-saved registers, above
+    // the GS cookie.
+    //
+    // After the frame is allocated, the frame pointer is established, pointing at the saved frame pointer to
+    // create a frame pointer chain.
+    //
 
-    // If we do establish the frame pointer, what is the amount we add to SP to do so?
-    unsigned offsetSpToSavedFp = 0;
+    // This will be the starting place for saving the callee-saved registers, in increasing order.
+    int offset = compiler->lvaOutgoingArgSpaceSize;
 
-    if (isFramePointerUsed())
+    int totalFrameSize = genTotalFrameSize();
+    // The (totalFrameSize <= 2040) condition ensures the offsets of st.d/ld.d.
+    if (totalFrameSize <= 2040)
     {
-        // We need to save both FP and RA.
+        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -totalFrameSize);
+        compiler->unwindAllocStack(totalFrameSize);
 
-        assert((maskSaveRegsInt & RBM_FP) != 0);
-        assert((maskSaveRegsInt & RBM_RA) != 0);
-
-        // If we need to generate a GS cookie, we need to make sure the saved frame pointer and return address
-        // (FP and RA) are protected from buffer overrun by the GS cookie. If FP/RA are at the lowest addresses,
-        // then they are safe, since they are lower than any unsafe buffers. And the GS cookie we add will
-        // protect our caller's frame. If we have a localloc, however, that is dynamically placed lower than our
-        // saved FP/RA. In that case, we save FP/RA along with the rest of the callee-saved registers, above
-        // the GS cookie.
+        // Case #1.
         //
-        // After the frame is allocated, the frame pointer is established, pointing at the saved frame pointer to
-        // create a frame pointer chain.
+        // Generate:
+        //      addi.d sp, sp, -framesz
+        //      st.d callee_saved_registers   ### not including the fp and ra.
+        //      st.d ra,sp,outsz
+        //      st.d fp,sp,outsz+8
         //
+        // After saving callee-saved registers, ra and fp, we establish the frame pointer with:
+        //      addi.d fp, sp, (the offset of saving fp)
+        // We do this *after* saving callee-saved registers, so the prolog/epilog unwind codes mostly match.
 
-        if (totalFrameSize < 2048)
-        {
-            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -totalFrameSize);
-            compiler->unwindAllocStack(totalFrameSize);
+        JITDUMP("Frame type 1. #outsz=%d; #framesz=%d; LclFrameSize=%d\n", unsigned(compiler->lvaOutgoingArgSpaceSize),
+                totalFrameSize, compiler->compLclFrameSize);
 
-            // Case #1.
-            //
-            // Generate:
-            //      daddiu sp, sp, -framesz
-            //      sd fp, outsz(sp)
-            //      sd ra, outsz+8(sp)
-            //
-            // The (totalFrameSize <= 2047) condition ensures the offsets of sd/ld.
-            //
-            // After saving callee-saved registers, we establish the frame pointer with:
-            //      daddiu fp, sp, offset-fp
-            // We do this *after* saving callee-saved registers, so the prolog/epilog unwind codes mostly match.
-
-            JITDUMP("Frame type 1. #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
-                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
-
-            frameType = 1;
-
-            offsetSpToSavedFp = compiler->lvaOutgoingArgSpaceSize;
-
-            GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offsetSpToSavedFp);
-            compiler->unwindSaveReg(REG_FP, offsetSpToSavedFp);
-
-            GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offsetSpToSavedFp + 8);
-            compiler->unwindSaveReg(REG_RA, offsetSpToSavedFp + 8);
-
-            maskSaveRegsInt &= ~(RBM_FP | RBM_RA); // We've already saved FP/RA
-
-            offset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // FP/RA
-        }
-        else
-        {
-            JITDUMP("Frame type 2. #outsz=%d; #framesz=%d; LclFrameSize=%d\n",
-                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compLclFrameSize);
-
-            frameType = 2;
-
-            maskSaveRegsInt &= ~(RBM_FP | RBM_RA); // We've already saved FP/RA
-
-            offset            = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
-            calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
-            offset            = calleeSaveSPDelta - offset;
-        }
+        frameType = 1;
     }
     else
     {
-        // No frame pointer (no chaining).
-        assert((maskSaveRegsInt & RBM_FP) == 0);
-        assert((maskSaveRegsInt & RBM_RA) != 0);
+        JITDUMP("Frame type 2. #outsz=%d; #framesz=%d; LclFrameSize=%d\n", unsigned(compiler->lvaOutgoingArgSpaceSize),
+                totalFrameSize, compiler->compLclFrameSize);
 
-        // Note that there is no pre-indexed save_lrpair unwind code variant, so we can't allocate the frame using
-        // 'sd' if we only have one callee-saved register plus RA to save.
+        frameType = 2;
 
-        NYI("Frame without frame pointer");
-        offset = 0;
+        if ((offset + (compiler->compCalleeRegsPushed << 3)) >= 2040)
+        {
+            offset            = totalFrameSize - compiler->lvaOutgoingArgSpaceSize;
+            calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
+            offset            = calleeSaveSPDelta - offset;
+
+            genStackPointerAdjustment(-calleeSaveSPDelta, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+        }
+        else
+        {
+            genStackPointerAdjustment(-totalFrameSize, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+        }
     }
 
-    assert(frameType != 0);
-
     JITDUMP("    offset=%d, calleeSaveSPDelta=%d\n", offset, calleeSaveSPDelta);
-    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, -calleeSaveSPDelta);
+    genSaveCalleeSavedRegistersHelp(rsPushRegs, offset, 0);
+    offset += (int)(genCountBits(rsPushRegs) << 3);
+
+    GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset);
+    compiler->unwindSaveReg(REG_RA, offset);
+
+    GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset + 8);
+    compiler->unwindSaveReg(REG_FP, offset + 8);
+
+    JITDUMP("    offsetSpToSavedFp=%d\n", offset + 8);
+    genEstablishFramePointer(offset + 8, /* reportUnwindData */ true);
 
     // For varargs, home the incoming arg registers last. Note that there is nothing to unwind here,
     // so we just report "NOP" unwind codes. If there's no more frame setup after this, we don't
@@ -8236,63 +8000,16 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 #ifdef DEBUG
     if (compiler->opts.disAsm)
     {
+        assert(frameType != 0);
         printf("DEBUG: LOONGARCH64, frameType:%d\n\n", frameType);
     }
 #endif
-    if (frameType == 1)
+
+    if (calleeSaveSPDelta != 0)
     {
-        // offsetSpToSavedFp = genSPtoFPdelta();
-    }
-    else if (frameType == 2)
-    {
-        if (compiler->lvaOutgoingArgSpaceSize >= 2040)
-        {
-            offset            = totalFrameSize - calleeSaveSPDelta - compiler->lvaOutgoingArgSpaceSize;
-            calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
-            offset            = calleeSaveSPDelta - offset;
-
-            genStackPointerAdjustment(-calleeSaveSPDelta, initReg, pInitRegZeroed, /* reportUnwindData */ true);
-
-            offsetSpToSavedFp = offset;
-
-            GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset);
-            compiler->unwindSaveReg(REG_FP, offset);
-
-            GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset + 8);
-            compiler->unwindSaveReg(REG_RA, offset + 8);
-
-            genEstablishFramePointer(offset, /* reportUnwindData */ true);
-
-            calleeSaveSPDelta = compiler->lvaOutgoingArgSpaceSize & ~0xf;
-            genStackPointerAdjustment(-calleeSaveSPDelta, initReg, pInitRegZeroed, /* reportUnwindData */ true);
-        }
-        else
-        {
-            calleeSaveSPDelta = totalFrameSize - calleeSaveSPDelta;
-            genStackPointerAdjustment(-calleeSaveSPDelta, initReg, pInitRegZeroed, /* reportUnwindData */ true);
-
-            offset = compiler->lvaOutgoingArgSpaceSize;
-
-            GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset);
-            compiler->unwindSaveReg(REG_FP, offset);
-
-            GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset + 8);
-            compiler->unwindSaveReg(REG_RA, offset + 8);
-
-            genEstablishFramePointer(offset, /* reportUnwindData */ true);
-        }
-
-        establishFramePointer = false;
-    }
-    else
-    {
-        unreached();
-    }
-
-    if (establishFramePointer)
-    {
-        JITDUMP("    offsetSpToSavedFp=%d\n", offsetSpToSavedFp);
-        genEstablishFramePointer(offsetSpToSavedFp, /* reportUnwindData */ true);
+        assert(frameType == 2);
+        calleeSaveSPDelta = totalFrameSize - calleeSaveSPDelta;
+        genStackPointerAdjustment(-calleeSaveSPDelta, initReg, pInitRegZeroed, /* reportUnwindData */ true);
     }
 }
 
@@ -8300,147 +8017,108 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskTP rsRestoreRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP regsToRestoreMask = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
-    if (isFramePointerUsed())
-    {
-        rsRestoreRegs |= RBM_FPBASE;
-    }
+    assert(isFramePointerUsed());
 
-    rsRestoreRegs |= RBM_RA; // We must save/restore the return address.
-
-    regMaskTP regsToRestoreMask = rsRestoreRegs;
+    // This will be the starting place for restoring the callee-saved registers, in decreasing order.
+    int calleeSaveSPOffset = 0;
+    int remainingSPSize    = 0;
 
     int totalFrameSize = genTotalFrameSize();
-
-    int calleeSaveSPOffset = 0; // This will be the starting place for restoring
-                                // the callee-saved registers, in decreasing order.
-    int frameType         = 0;  // An indicator of what type of frame we are popping.
-    int calleeSaveSPDelta = 0;  // Amount to add to SP after callee-saved registers have been restored.
-
-    if (isFramePointerUsed())
+    if (totalFrameSize <= 2040)
     {
-        if (totalFrameSize <= 2047)
+        JITDUMP("Frame type 1. #outsz=%d; #framesz=%d; localloc? %s\n", unsigned(compiler->lvaOutgoingArgSpaceSize),
+                totalFrameSize, dspBool(compiler->compLocallocUsed));
+
+        if (compiler->compLocallocUsed)
         {
+            int SPtoFPdelta = (compiler->compCalleeRegsPushed << 3) - 8 + compiler->lvaOutgoingArgSpaceSize;
+
+            // Restore sp from fp
+            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -SPtoFPdelta);
+            compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
+        }
+        calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize;
+        remainingSPSize    = totalFrameSize;
+    }
+    else
+    {
+        JITDUMP("Frame type 2. #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; "
+                "localloc? %s\n",
+                unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
+                dspBool(compiler->compLocallocUsed));
+
+        if ((compiler->lvaOutgoingArgSpaceSize + (compiler->compCalleeRegsPushed << 3)) > 2047)
+        {
+            calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize & -16;
             if (compiler->compLocallocUsed)
             {
-                int SPtoFPdelta = genSPtoFPdelta();
+                int SPtoFPdelta = (compiler->compCalleeRegsPushed << 3) - 8;
+
                 // Restore sp from fp
                 GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -SPtoFPdelta);
                 compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
             }
-
-            JITDUMP("Frame type 1(save FP/RA at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
-                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
-
-            frameType = 1;
-
-            regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
-
-            calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
+            else
+            {
+                genStackPointerAdjustment(calleeSaveSPOffset, REG_RA, nullptr, /* reportUnwindData */ true);
+            }
+            remainingSPSize    = totalFrameSize - calleeSaveSPOffset;
+            calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize - calleeSaveSPOffset;
         }
         else
         {
-            JITDUMP("Frame type 2(save FP/RA at bottom). #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; "
-                    "localloc? %s\n",
-                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
-                    dspBool(compiler->compLocallocUsed));
-
-            frameType = 2;
-
-            int outSzAligned;
-            if (compiler->lvaOutgoingArgSpaceSize >= 2040)
+            if (compiler->compLocallocUsed)
             {
-                int offset         = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
-                calleeSaveSPDelta  = AlignUp((UINT)offset, STACK_ALIGN);
-                calleeSaveSPOffset = calleeSaveSPDelta - offset;
+                int SPtoFPdelta = (compiler->compCalleeRegsPushed << 3) - 8 + compiler->lvaOutgoingArgSpaceSize;
 
-                int offset2       = totalFrameSize - calleeSaveSPDelta - compiler->lvaOutgoingArgSpaceSize;
-                calleeSaveSPDelta = AlignUp((UINT)offset2, STACK_ALIGN);
-                offset2           = calleeSaveSPDelta - offset2;
-
-                if (compiler->compLocallocUsed)
-                {
-                    // Restore sp from fp
-                    GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -offset2);
-                    compiler->unwindSetFrameReg(REG_FPBASE, offset2);
-                }
-                else
-                {
-                    outSzAligned = compiler->lvaOutgoingArgSpaceSize & ~0xf;
-                    genStackPointerAdjustment(outSzAligned, REG_R21, nullptr, /* reportUnwindData */ true);
-                }
-
-                regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
-
-                GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset2 + 8);
-                compiler->unwindSaveReg(REG_RA, offset2 + 8);
-
-                GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
-                compiler->unwindSaveReg(REG_FP, offset2);
-
-                genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
-
-                calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
-                calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDelta, STACK_ALIGN);
+                // Restore sp from fp
+                GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -SPtoFPdelta);
+                compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
             }
-            else
-            {
-                int offset2 = compiler->lvaOutgoingArgSpaceSize;
-                if (compiler->compLocallocUsed)
-                {
-                    // Restore sp from fp
-                    GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -offset2);
-                    compiler->unwindSetFrameReg(REG_FPBASE, offset2);
-                }
-
-                regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
-
-                GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, offset2 + 8);
-                compiler->unwindSaveReg(REG_RA, offset2 + 8);
-
-                GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
-                compiler->unwindSaveReg(REG_FP, offset2);
-
-                calleeSaveSPOffset = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
-                calleeSaveSPDelta  = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
-                calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPOffset;
-
-                genStackPointerAdjustment(totalFrameSize - calleeSaveSPDelta, REG_R21, nullptr,
-                                          /* reportUnwindData */ true);
-            }
+            calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize;
+            remainingSPSize    = totalFrameSize;
         }
     }
-    else
+
+    JITDUMP("    calleeSaveSPOffset=%d\n", calleeSaveSPOffset);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSPOffset, 0);
+    calleeSaveSPOffset += (compiler->compCalleeRegsPushed - 2) << 3;
+
+    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, calleeSaveSPOffset);
+    compiler->unwindSaveReg(REG_RA, calleeSaveSPOffset);
+
+    GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, calleeSaveSPOffset + 8);
+    compiler->unwindSaveReg(REG_FP, calleeSaveSPOffset + 8);
+
+    if (emitter::isValidUimm11(remainingSPSize))
     {
-        // No frame pointer (no chaining).
-        NYI("Frame without frame pointer");
-        calleeSaveSPOffset = 0;
-    }
-
-    JITDUMP("    calleeSaveSPOffset=%d, calleeSaveSPDelta=%d\n", calleeSaveSPOffset, calleeSaveSPDelta);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSPOffset, calleeSaveSPDelta);
-
-    if (frameType == 1)
-    {
-        calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize;
-
-        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, calleeSaveSPOffset + 8);
-        compiler->unwindSaveReg(REG_RA, calleeSaveSPOffset + 8);
-
-        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, calleeSaveSPOffset);
-        compiler->unwindSaveReg(REG_FP, calleeSaveSPOffset);
-
-        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
-        compiler->unwindAllocStack(totalFrameSize);
-    }
-    else if (frameType == 2)
-    {
-        // had done.
+        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, remainingSPSize);
     }
     else
     {
-        unreached();
+        GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, remainingSPSize);
+        GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, REG_R21);
+    }
+    compiler->unwindAllocStack(remainingSPSize);
+
+    // For OSR, we must also adjust the SP to remove the Tier0 frame.
+    if (compiler->opts.IsOSR())
+    {
+        const int tier0FrameSize = compiler->info.compPatchpointInfo->TotalFrameSize();
+        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes\n", tier0FrameSize);
+
+        if (emitter::isValidUimm11(tier0FrameSize))
+        {
+            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tier0FrameSize);
+        }
+        else
+        {
+            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, tier0FrameSize);
+            GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, REG_R21);
+        }
+        compiler->unwindAllocStack(tier0FrameSize);
     }
 }
 
@@ -8822,7 +8500,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
                 assert(tmpArg <= REG_ARG_LAST);
                 assert(nextReg < MAX_REG_ARG);
-                assert(nextReg != i);
+                assert(nextReg != (unsigned)i);
 
                 regArg[i] = 0;
                 int count = 0;
@@ -8844,7 +8522,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     count++;
                 }
 
-                if (nextReg == i)
+                if (nextReg == (unsigned)i)
                 {
                     GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, (regNumber)tmpArg, 0);
                     regArgMaskLive &= ~genRegMask((regNumber)tmpArg);
@@ -8852,7 +8530,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 }
                 else if (count == 0)
                 {
-                    tmpRegs[0] = i;
+                    tmpRegs[0] = (unsigned)i;
                     regArg[i]  = tmpArg;
                 }
                 else
@@ -8875,14 +8553,14 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     assert(regArgNum >= 0);
                 } while (count >= 0);
 
-                if (nextReg == i)
+                if (nextReg == (unsigned)i)
                 {
                     instruction ins = (regArgMaskIsInt & (1 << regArg[i])) != 0 ? INS_slli_w : INS_ori;
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], REG_R21, 0);
                     regArgNum--;
                     assert(regArgNum >= 0);
                 }
-                else if (tmpRegs[0] != i)
+                else if (tmpRegs[0] != (unsigned)i)
                 {
                     instruction ins = (regArgMaskIsInt & (1 << (i + REG_ARG_FIRST))) != 0 ? INS_slli_w : INS_ori;
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i],
@@ -8945,6 +8623,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                                                           (regNumber)regArg[i]);
                                 regArgNum--;
                                 regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
+                                regArg[j] = 0;
                                 if (regArgNum == 0)
                                 {
                                     break;
@@ -8981,6 +8660,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
     assert(!regArgMaskLive);
 }
 
+#ifdef PROFILING_SUPPORTED
 //-----------------------------------------------------------------------------------
 // genProfilingEnterCallback: Generate the profiling function enter callback.
 //
@@ -8996,10 +8676,60 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
 
-    // Give profiler a chance to back out of hooking this method
     if (!compiler->compIsProfilerHookNeeded())
     {
         return;
     }
+
+    assert(!compiler->compProfilerMethHndIndirected);
+    instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd);
+
+    int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
+    genInstrWithConstant(INS_addi_d, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_CALLER_SP, genFramePointerReg(),
+                         (ssize_t)(-callerSPOffset), REG_PROFILER_ENTER_ARG_CALLER_SP);
+
+    genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
+
+    if ((genRegMask(initReg) & RBM_PROFILER_ENTER_TRASH) != RBM_NONE)
+    {
+        *pInitRegZeroed = false;
+    }
 }
+
+//-----------------------------------------------------------------------------------
+// genProfilingLeaveCallback: Generate the profiling function leave or tailcall callback.
+// Technically, this is not part of the epilog; it is called when we are generating code for a GT_RETURN node.
+//
+// Arguments:
+//     helper - which helper to call. Either CORINFO_HELP_PROF_FCN_LEAVE or CORINFO_HELP_PROF_FCN_TAILCALL
+//
+// Return Value:
+//     None
+//
+void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FCN_LEAVE*/)
+{
+    assert((helper == CORINFO_HELP_PROF_FCN_LEAVE) || (helper == CORINFO_HELP_PROF_FCN_TAILCALL));
+
+    if (!compiler->compIsProfilerHookNeeded())
+    {
+        return;
+    }
+
+    compiler->info.compProfilerCallback = true;
+
+    assert(!compiler->compProfilerMethHndIndirected);
+    instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd);
+
+    gcInfo.gcMarkRegSetNpt(RBM_PROFILER_LEAVE_ARG_FUNC_ID);
+
+    int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
+    genInstrWithConstant(INS_addi_d, EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_CALLER_SP, genFramePointerReg(),
+                         (ssize_t)(-callerSPOffset), REG_PROFILER_LEAVE_ARG_CALLER_SP);
+
+    gcInfo.gcMarkRegSetNpt(RBM_PROFILER_LEAVE_ARG_CALLER_SP);
+
+    genEmitHelperCall(helper, 0, EA_UNKNOWN);
+}
+#endif // PROFILING_SUPPORTED
+
 #endif // TARGET_LOONGARCH64

@@ -342,6 +342,15 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public static void* ConvertToUnmanaged(T? managed) { throw null; }
         public static T? ConvertToManaged(void* unmanaged) { throw null; }
+        public static void Free(void* unmanaged) { }
+    }
+    [System.Flags]
+    public enum ComInterfaceOptions
+    {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        None = 0,
+        ManagedObjectWrapper = 0x1,
+        ComObjectWrapper = 0x2,
     }
     public sealed partial class ComObject : System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
     {
@@ -381,8 +390,9 @@ namespace System.Runtime.InteropServices.Marshalling
     public partial class GeneratedComInterfaceAttribute : System.Attribute
     {
         public GeneratedComInterfaceAttribute() { }
-        public StringMarshalling StringMarshalling { get { throw null; } set { } }
-        public Type? StringMarshallingCustomType { get { throw null; } set { } }
+        public System.Runtime.InteropServices.Marshalling.ComInterfaceOptions Options { get { throw null; } set { } }
+        public System.Runtime.InteropServices.StringMarshalling StringMarshalling { get { throw null; } set { } }
+        public System.Type? StringMarshallingCustomType { get { throw null; } set { } }
     }
     [System.CLSCompliantAttribute(false)]
     public partial interface IComExposedClass
@@ -450,6 +460,23 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         System.Runtime.InteropServices.Marshalling.VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(System.Type type);
     }
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(object), System.Runtime.InteropServices.Marshalling.MarshalMode.Default, typeof(System.Runtime.InteropServices.Marshalling.ComVariantMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(object), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedRef, typeof(System.Runtime.InteropServices.Marshalling.ComVariantMarshaller.RefPropagate))]
+    public static partial class ComVariantMarshaller
+    {
+        public static System.Runtime.InteropServices.Marshalling.ComVariant ConvertToUnmanaged(object? managed) { throw null; }
+        public static object? ConvertToManaged(System.Runtime.InteropServices.Marshalling.ComVariant unmanaged) { throw null; }
+        public static void Free(System.Runtime.InteropServices.Marshalling.ComVariant unmanaged) { }
+
+        public struct RefPropagate
+        {
+            public void FromUnmanaged(System.Runtime.InteropServices.Marshalling.ComVariant unmanaged) { }
+            public void FromManaged(object? managed) { }
+            public System.Runtime.InteropServices.Marshalling.ComVariant ToUnmanaged() { throw null; }
+            public object? ToManaged() { throw null; }
+            public void Free() { }
+        }
+    }
     [System.CLSCompliantAttribute(false)]
     public partial class StrategyBasedComWrappers : System.Runtime.InteropServices.ComWrappers
     {
@@ -474,6 +501,7 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public static void* ConvertToUnmanaged(T? managed) { throw null; }
         public static T? ConvertToManaged(void* unmanaged) { throw null; }
+        public static void Free(void* unmanaged) { }
     }
     [System.CLSCompliantAttribute(false)]
     public readonly partial struct VirtualMethodTableInfo
@@ -1093,7 +1121,7 @@ namespace System.Runtime.InteropServices
         public static object? PtrToStructure(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors| System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type structureType) { throw null; }
         public static T? PtrToStructure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]T>(System.IntPtr ptr) { throw null; }
         public static void PtrToStructure<T>(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure) { }
-        public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv) { throw null; }
+        public static int QueryInterface(System.IntPtr pUnk, in System.Guid iid, out System.IntPtr ppv) { throw null; }
         public static byte ReadByte(System.IntPtr ptr) { throw null; }
         public static byte ReadByte(System.IntPtr ptr, int ofs) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the object might not be available")]
@@ -1320,6 +1348,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Runtime.InteropServices.NFloat CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Runtime.InteropServices.NFloat CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Runtime.InteropServices.NFloat DegreesToRadians(System.Runtime.InteropServices.NFloat degrees) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.NFloat other) { throw null; }
         public static System.Runtime.InteropServices.NFloat Exp(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -1444,6 +1473,8 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat operator -(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator -(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator +(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(string s) { throw null; }
@@ -1451,6 +1482,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Pow(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat RadiansToDegrees(System.Runtime.InteropServices.NFloat radians) { throw null; }
         public static System.Runtime.InteropServices.NFloat ReciprocalEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat ReciprocalSqrtEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat RootN(System.Runtime.InteropServices.NFloat x, int n) { throw null; }
@@ -1505,6 +1537,9 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Truncate(System.Runtime.InteropServices.NFloat x) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Runtime.InteropServices.NFloat result) { throw null; }
@@ -1692,6 +1727,11 @@ namespace System.Runtime.InteropServices
     {
         public VariantWrapper(object? obj) { }
         public object? WrappedObject { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    public sealed class WasmImportLinkageAttribute : Attribute
+    {
+        public WasmImportLinkageAttribute() { }
     }
 }
 namespace System.Runtime.InteropServices.ComTypes
@@ -2481,6 +2521,19 @@ namespace System.Runtime.InteropServices.Marshalling
         public static string? ConvertToManaged(ushort* unmanaged) { throw null; }
         public static void Free(ushort* unmanaged) { throw null; }
         public static ref readonly char GetPinnableReference(string? str) { throw null; }
+    }
+    public struct ComVariant : System.IDisposable
+    {
+        private int _dummyPrimitive;
+
+        public void Dispose() { }
+        public static System.Runtime.InteropServices.Marshalling.ComVariant Create<T>([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T value) { throw null; }
+        public static System.Runtime.InteropServices.Marshalling.ComVariant CreateRaw<T>(System.Runtime.InteropServices.VarEnum vt, T rawValue) where T : unmanaged { throw null; }
+        public static System.Runtime.InteropServices.Marshalling.ComVariant Null { get { throw null; } }
+        public readonly T? As<T>() { throw null; }
+        public readonly System.Runtime.InteropServices.VarEnum VarType { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.UnscopedRefAttribute]
+        public ref T GetRawDataRef<T>() where T : unmanaged { throw null; }
     }
 }
 namespace System.Security

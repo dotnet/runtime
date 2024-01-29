@@ -1,23 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: implementation of the FormattableString
-** class.
-**
-===========================================================*/
-
 using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
     /// <summary>
-    /// A composite format string along with the arguments to be formatted. An instance of this
-    /// type may result from the use of the C# or VB language primitive "interpolated string".
+    /// Represents a composite format string, along with the arguments to be formatted.
     /// </summary>
+    /// <remarks>
+    /// An instance of this type may result from the use of the C# or VB language primitive "interpolated string".
+    /// </remarks>
     public abstract class FormattableString : IFormattable
     {
         /// <summary>

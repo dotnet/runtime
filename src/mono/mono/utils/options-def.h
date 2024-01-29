@@ -62,9 +62,16 @@ DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints 
 DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
 
 #if HOST_BROWSER
+DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", TRUE, "Record interpreter tiering information for automatic PGO")
+#else
+DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", FALSE, "Record interpreter tiering information for automatic PGO")
+#endif
+DEFINE_BOOL(interp_pgo_logging, "interp-pgo-logging", FALSE, "Log messages when interpreter PGO optimizes a method or updates its table")
+DEFINE_BOOL(interp_codegen_timing, "interp-codegen-timing", FALSE, "Measure time spent generating interpreter code and log it periodically")
 
-// the jiterpreter is not yet thread safe due to the need to synchronize function pointers
-//  and wasm modules between threads. before these can be enabled we need to implement all that
+#if HOST_BROWSER
+
+// jiterpreter AOT optimizations aren't thread safe yet
 #ifdef DISABLE_THREADS
 // traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
 DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", TRUE, "JIT interpreter opcode traces into WASM")
@@ -74,7 +81,7 @@ DEFINE_BOOL(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled"
 DEFINE_BOOL(jiterpreter_jit_call_enabled, "jiterpreter-jit-call-enabled", TRUE, "JIT specialized WASM do_jit_call trampolines")
 #else
 // traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
-DEFINE_BOOL_READONLY(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", FALSE, "JIT interpreter opcode traces into WASM")
+DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", TRUE, "JIT interpreter opcode traces into WASM")
 // interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
 DEFINE_BOOL_READONLY(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", FALSE, "JIT specialized WASM interp_entry wrappers")
 // jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
@@ -112,6 +119,8 @@ DEFINE_BOOL(jiterpreter_eliminate_null_checks, "jiterpreter-eliminate-null-check
 DEFINE_BOOL(jiterpreter_backward_branches_enabled, "jiterpreter-backward-branches-enabled", TRUE, "Enable performing backward branches without exiting traces")
 // Attempt to use WASM v128 opcodes to implement SIMD interpreter opcodes
 DEFINE_BOOL(jiterpreter_enable_simd, "jiterpreter-simd-enabled", TRUE, "Attempt to use WebAssembly SIMD support")
+// Since the zero page is unallocated, loading array/string/span lengths from null ptrs will yield zero
+DEFINE_BOOL(jiterpreter_zero_page_optimization, "jiterpreter-zero-page-optimization", TRUE, "Exploit the zero page being unallocated to optimize out null checks")
 // When compiling a jit_call wrapper, bypass sharedvt wrappers if possible by inlining their
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
 DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")
@@ -145,12 +154,23 @@ DEFINE_INT(jiterpreter_interp_entry_queue_flush_threshold, "jiterpreter-interp-e
 // In degenerate cases the jiterpreter could end up generating lots of WASM, so shut off jitting once it reaches this limit
 // Each wasm byte likely maps to multiple bytes of native code, so it's important for this limit not to be too high
 DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 6 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
+DEFINE_INT(jiterpreter_table_size, "jiterpreter-table-size", 6 * 1024, "Size of the jiterpreter trace function table")
+// In real-world scenarios these tables can fill up at this size, but making them bigger causes startup time
+//  to bloat to an unacceptable degree. In practice this is still better than nothing.
+// FIXME: In the future if we find a way to reduce the number of unique tables we can raise this constant
+DEFINE_INT(jiterpreter_aot_table_size, "jiterpreter-aot-table-size", 3 * 1024, "Size of the jiterpreter AOT trampoline function tables")
 #endif // HOST_BROWSER
 
-#ifdef TARGET_WASM
+#if defined(TARGET_WASM) || defined(TARGET_IOS)  || defined(TARGET_TVOS) || defined (TARGET_MACCAT)
 DEFINE_BOOL_READONLY(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", TRUE, "Use a mrgctx for all gshared methods")
 #else
 DEFINE_BOOL(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", FALSE, "Use a mrgctx for all gshared methods")
+#endif
+
+#if defined(TARGET_WASI)
+DEFINE_BOOL_READONLY(llvm_emulate_unwind, "emulate-unwind", TRUE, "")
+#else
+DEFINE_BOOL_READONLY(llvm_emulate_unwind, "emulate-unwind", FALSE, "")
 #endif
 
 /* Cleanup */

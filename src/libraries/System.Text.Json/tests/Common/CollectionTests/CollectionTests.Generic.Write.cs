@@ -384,7 +384,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50721", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public async Task WriteISetTOfISetT()
         {
             ISet<ISet<int>> input = new HashSet<ISet<int>>
@@ -433,7 +432,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50721", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public async Task WriteISetTOfHashSetT()
         {
             ISet<HashSet<int>> input = new HashSet<HashSet<int>>
@@ -449,13 +447,13 @@ namespace System.Text.Json.Serialization.Tests
 
             if (input.First().Contains(1))
             {
-                Assert.Equal(new HashSet<int> { 1, 2 }, input.First());
-                Assert.Equal(new HashSet<int> { 3, 4 }, input.Last());
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, input.First());
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, input.Last());
             }
             else
             {
-                Assert.Equal(new HashSet<int> { 3, 4 }, input.First());
-                Assert.Equal(new HashSet<int> { 1, 2 }, input.Last());
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, input.First());
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, input.Last());
             }
         }
 
@@ -649,13 +647,13 @@ namespace System.Text.Json.Serialization.Tests
 
             if (input.First().Contains(1))
             {
-                Assert.Equal(new HashSet<int> { 1, 2 }, input.First());
-                Assert.Equal(new HashSet<int> { 3, 4 }, input.Last());
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, input.First());
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, input.Last());
             }
             else
             {
-                Assert.Equal(new HashSet<int> { 3, 4 }, input.First());
-                Assert.Equal(new HashSet<int> { 1, 2 }, input.Last());
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, input.First());
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, input.Last());
             }
 
             GenericHashSetWrapper<StringHashSetWrapper> input2 = new GenericHashSetWrapper<StringHashSetWrapper>(new List<StringHashSetWrapper>
@@ -696,7 +694,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50721", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public async Task WriteArrayOfHashSetT()
         {
             HashSet<int>[] input = new HashSet<int>[2];
@@ -707,8 +704,8 @@ namespace System.Text.Json.Serialization.Tests
 
             // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
             input = await Serializer.DeserializeWrapper<HashSet<int>[]>(json);
-            Assert.Equal(new HashSet<int> { 1, 2 }, input.First());
-            Assert.Equal(new HashSet<int> { 3, 4 }, input.Last());
+            AssertExtensions.Equal(new HashSet<int> { 1, 2 }, input.First());
+            AssertExtensions.Equal(new HashSet<int> { 3, 4 }, input.Last());
         }
 
         [Fact]

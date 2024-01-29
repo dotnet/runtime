@@ -23,15 +23,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                         + (ImplicitThisParameter.HasValue ? $", ImplicitThisParameter = {ImplicitThisParameter.Value.ToString().ToLower()}" : "")
                         + (Direction is not null ? $", Direction = {typeof(MarshalDirection).FullName}.{Direction.Value}" : "")
                         + (StringMarshalling is not null ? $", StringMarshalling = {typeof(StringMarshalling).FullName}.{StringMarshalling!.Value}" : "")
-                        + (StringMarshallingCustomType is not null ? $", StringMarshallingCustomType = {StringMarshallingCustomType!.FullName}" : "")
+                        + (StringMarshallingCustomType is not null ? $", StringMarshallingCustomType = typeof({StringMarshallingCustomType!.FullName})" : "")
                         + (SetLastError is not null ? $", SetLastError = {SetLastError.Value.ToString().ToLower()}" : "")
                         + (ExceptionMarshalling is not null ? $", ExceptionMarshalling = {typeof(ExceptionMarshalling).FullName}.{ExceptionMarshalling.Value}" : "")
-                        + (ExceptionMarshallingType is not null ? $", ExceptionMarshallingCustomType = {ExceptionMarshallingType!.FullName}" : "")
+                        + (ExceptionMarshallingType is not null ? $", ExceptionMarshallingCustomType = typeof({ExceptionMarshallingType!.FullName})" : "")
                         + ")]";
 
         public string UnmanagedObjectUnwrapper(Type t) => $"[global::System.Runtime.InteropServices.Marshalling.UnmanagedObjectUnwrapperAttribute<{t.FullName!.Replace('+', '.')}>]";
 
-        public string GeneratedComInterface => "";
+        public string GeneratedComInterface(StringMarshalling? stringMarshalling = null, Type? stringMarshallingCustomType = null) => "";
 
         public string AdditionalUserRequiredInterfaces(string userDefinedInterfaceName) => """
             partial interface INativeAPI : IUnmanagedInterfaceType

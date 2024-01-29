@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 using Internal.Runtime.Augments;
 
@@ -19,7 +19,7 @@ using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Extensions.NonPortable
 {
-    public static class CustomAttributeInstantiator
+    internal static class CustomAttributeInstantiator
     {
         //
         // Turn a CustomAttributeData into a live Attribute object. There's nothing actually non-portable about this one,
@@ -40,11 +40,11 @@ namespace Internal.Reflection.Extensions.NonPortable
             // Find the public constructor that matches the supplied arguments.
             //
             ConstructorInfo? matchingCtor = null;
-            ParameterInfo[]? matchingParameters = null;
+            ReadOnlySpan<ParameterInfo> matchingParameters = default;
             IList<CustomAttributeTypedArgument> constructorArguments = cad.ConstructorArguments;
             foreach (ConstructorInfo ctor in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                ParameterInfo[] parameters = ctor.GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> parameters = ctor.GetParametersAsSpan();
                 if (parameters.Length != constructorArguments.Count)
                     continue;
                 int i;
@@ -68,7 +68,7 @@ namespace Internal.Reflection.Extensions.NonPortable
             //
             // Found the right constructor. Instantiate the Attribute.
             //
-            int arity = matchingParameters!.Length;
+            int arity = matchingParameters.Length;
             object?[] invokeArguments = new object[arity];
             for (int i = 0; i < arity; i++)
             {
@@ -87,7 +87,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 if (namedArgument.IsField)
                 {
                     // Field
-                    for (;;)
+                    for (; ; )
                     {
                         FieldInfo? fieldInfo = walk.GetField(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (fieldInfo != null)
@@ -104,7 +104,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 else
                 {
                     // Property
-                    for (;;)
+                    for (; ; )
                     {
                         PropertyInfo? propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (propertyInfo != null)
@@ -126,8 +126,6 @@ namespace Internal.Reflection.Extensions.NonPortable
         //
         // Convert the argument value reported by Reflection into an actual object.
         //
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The AOT compiler ensures array types required by custom attribute blobs are generated.")]
         private static object? Convert(this CustomAttributeTypedArgument typedArgument)
         {
             Type argumentType = typedArgument.ArgumentType;
@@ -144,8 +142,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 IList<CustomAttributeTypedArgument>? typedElements = (IList<CustomAttributeTypedArgument>?)(typedArgument.Value);
                 if (typedElements == null)
                     return null;
-                Type? elementType = argumentType.GetElementType();
-                Array array = Array.CreateInstance(elementType, typedElements.Count);
+                Array array = Array.CreateInstanceFromArrayType(argumentType, typedElements.Count);
                 for (int i = 0; i < typedElements.Count; i++)
                 {
                     object? elementValue = typedElements[i].Convert();
@@ -153,35 +150,6 @@ namespace Internal.Reflection.Extensions.NonPortable
                 }
                 return array;
             }
-        }
-
-        //
-        // Only public instance fields can be targets of named arguments.
-        //
-        private static bool IsValidNamedArgumentTarget(this FieldInfo fieldInfo)
-        {
-            if ((fieldInfo.Attributes & (FieldAttributes.FieldAccessMask | FieldAttributes.Static | FieldAttributes.Literal)) !=
-                FieldAttributes.Public)
-                return false;
-            return true;
-        }
-
-        //
-        // Only public read/write instance properties can be targets of named arguments.
-        //
-        private static bool IsValidNamedArgumentTarget(this PropertyInfo propertyInfo)
-        {
-            MethodInfo? getter = propertyInfo.GetMethod;
-            MethodInfo? setter = propertyInfo.SetMethod;
-            if (getter == null)
-                return false;
-            if ((getter.Attributes & (MethodAttributes.Static | MethodAttributes.MemberAccessMask)) != MethodAttributes.Public)
-                return false;
-            if (setter == null)
-                return false;
-            if ((setter.Attributes & (MethodAttributes.Static | MethodAttributes.MemberAccessMask)) != MethodAttributes.Public)
-                return false;
-            return true;
         }
     }
 }

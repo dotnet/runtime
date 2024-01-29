@@ -37,6 +37,12 @@ if(CLR_CMAKE_HOST_WIN32)
 
 else(CLR_CMAKE_HOST_WIN32)
 
+    if(NOT DEFINED ENV{ROOTFS_DIR})
+      include_directories(SYSTEM /usr/local/include)
+    elseif (CLR_CMAKE_TARGET_FREEBSD)
+      include_directories(SYSTEM $ENV{ROOTFS_DIR}/usr/local/include)
+    endif()
+
     include(configure.cmake)
 
     # Set the RPATH of createdump so that it can find dependencies without needing to set LD_LIBRARY_PATH
@@ -64,6 +70,7 @@ else(CLR_CMAKE_HOST_WIN32)
         datatarget.cpp
         dumpwriter.cpp
         crashreportwriter.cpp
+        ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
     )
 
 if(CLR_CMAKE_HOST_OSX)
@@ -74,9 +81,6 @@ if(CLR_CMAKE_HOST_OSX)
         dumpwritermacho.cpp
         ${CREATEDUMP_SOURCES}
     )
-    add_executable_clr(createdump
-        main.cpp
-    )
 else()
     add_library_clr(createdump_static
         STATIC
@@ -85,25 +89,25 @@ else()
         dumpwriterelf.cpp
         ${CREATEDUMP_SOURCES}
     )
+endif(CLR_CMAKE_HOST_OSX)
+
     add_executable_clr(createdump
         main.cpp
-        ${PAL_REDEFINES_FILE}
+        createdumppal.cpp
     )
-    add_dependencies(createdump pal_redefines_file)
-endif(CLR_CMAKE_HOST_OSX)
 
     target_link_libraries(createdump
         PRIVATE
         createdump_static
         corguids
         dbgutil
-        # share the PAL in the dac module
-        mscordaccore
-        dl
+        ${CMAKE_DL_LIBS}
     )
 
-    add_dependencies(createdump mscordaccore)
-
 endif(CLR_CMAKE_HOST_WIN32)
+
+if (CLR_CMAKE_HOST_APPLE)
+    adhoc_sign_with_entitlements(createdump "${CLR_ENG_NATIVE_DIR}/createdump-entitlements.plist")
+endif()
 
 install_clr(TARGETS createdump DESTINATIONS . sharedFramework COMPONENT runtime)

@@ -5,12 +5,14 @@
 // and thus one could define a new System.Int32 (as below) and use that instead.
 
 using System;
+using Xunit;
 
 namespace System
 {
-    class ASURT_99893
+    public class ASURT_99893
     {
-	static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 	    Boolean pass=true;
 #pragma warning disable 0436

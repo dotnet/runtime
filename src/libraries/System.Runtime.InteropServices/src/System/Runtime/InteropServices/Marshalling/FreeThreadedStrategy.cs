@@ -12,12 +12,13 @@ namespace System.Runtime.InteropServices.Marshalling
 
         void* IIUnknownStrategy.CreateInstancePointer(void* unknown)
         {
+            Marshal.AddRef((nint)unknown);
             return unknown;
         }
 
         unsafe int IIUnknownStrategy.QueryInterface(void* thisPtr, in Guid handle, out void* ppObj)
         {
-            int hr = Marshal.QueryInterface((nint)thisPtr, ref Unsafe.AsRef(in handle), out nint ppv);
+            int hr = Marshal.QueryInterface((nint)thisPtr, handle, out nint ppv);
             if (hr < 0)
             {
                 ppObj = null;

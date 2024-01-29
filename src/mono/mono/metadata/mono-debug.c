@@ -13,6 +13,7 @@
 #include <config.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
+#include <mono/metadata/bundled-resources-internals.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/appdomain.h>
@@ -757,6 +758,34 @@ mono_debug_il_offset_from_address (MonoMethod *method, MonoDomain *domain, guint
 	return res;
 }
 
+/* returns TRUE if the method is involved in an EnC update and the baseline debug info may not be valid.
+ *   writes the enc debug info, if available to *mdie_out
+ * returns FALSE if the method is part of the baseline image
+ */
+static gboolean
+get_method_enc_debug_info (MonoMethod *method, MonoDebugInformationEnc **mdie_out)
+{
+	g_assert (mdie_out != NULL);
+	*mdie_out = NULL;
+	MonoImage *img = m_class_get_image (method->klass);
+	if (G_UNLIKELY (img->has_updates)) {
+		guint32 idx = mono_metadata_token_index (method->token);
+		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+		if (mdie != NULL) {
+			*mdie_out = mdie;
+			return TRUE;
+		} else {
+			/// an added method without debug info; maybe the delta came in without a PDB delta
+			gboolean added_method = idx >= table_info_get_rows (&img->tables[MONO_TABLE_METHOD]);
+			if (added_method)
+				return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+
+
 /**
  * mono_debug_lookup_source_location:
  * \param address Native offset within the \p method's machine code.
@@ -775,6 +804,23 @@ mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDoma
 
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
 		return NULL;
+
+	MonoDebugInformationEnc *mdie = NULL;
+	if (G_UNLIKELY (get_method_enc_debug_info (method, &mdie))) {
+		if (mdie != NULL) {
+			offset = il_offset_from_address (method, address);
+			if (offset < 0) {
+				mono_debugger_unlock ();
+				return NULL;
+			}
+
+			MonoDebugSourceLocation * ret = mono_ppdb_lookup_location_enc (mdie->ppdb_file, mdie->idx, offset);
+			if (ret)
+				return ret;
+		} else {
+			return NULL;
+		}
+	}
 
 	mono_debugger_lock ();
 	minfo = lookup_method (method);
@@ -839,18 +885,14 @@ mono_debug_lookup_source_location_by_il (MonoMethod *method, guint32 il_offset, 
 MonoDebugSourceLocation *
 mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset)
 {
-	MonoImage* img = m_class_get_image (minfo->method->klass);
-	if (img->has_updates) {
-		guint32 idx = mono_metadata_token_index (minfo->method->token);
-		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+	MonoDebugInformationEnc *mdie = NULL;
+	if (G_UNLIKELY (get_method_enc_debug_info (minfo->method, &mdie))) {
 		if (mdie != NULL) {
 			MonoDebugSourceLocation * ret = mono_ppdb_lookup_location_enc (mdie->ppdb_file, mdie->idx, il_offset);
-			if (ret)
-				return ret;
+			g_assert (ret); // FIXME: when can this be null?
+			return ret;
 		} else {
-			gboolean added_method = idx >= table_info_get_rows (&img->tables[MONO_TABLE_METHOD]);
-			if (added_method)
-				return NULL;
+			return NULL;
 		}
 	}
 
@@ -877,14 +919,14 @@ mono_debug_lookup_locals (MonoMethod *method)
 	MonoDebugMethodInfo *minfo;
 	MonoDebugLocalsInfo *res;
 
-	MonoImage* img = m_class_get_image (method->klass);
-	if (img->has_updates) {
-		int idx = mono_metadata_token_index (method->token);
-		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+	MonoDebugInformationEnc *mdie = NULL;
+	if (G_UNLIKELY (get_method_enc_debug_info (method, &mdie))) {
 		if (mdie != NULL) {
 			res = mono_ppdb_lookup_locals_enc (mdie->ppdb_file->image, mdie->idx);
-			if (res != NULL)
-				return res;
+			g_assert (res != NULL);
+			return res;
+		} else {
+			return NULL;
 		}
 	}
 
@@ -1067,88 +1109,38 @@ mono_is_debugger_attached (void)
 	return is_attached;
 }
 
-/*
- * Bundles
- */
-
-typedef struct _BundledSymfile BundledSymfile;
-
-struct _BundledSymfile {
-	BundledSymfile *next;
-	const char *aname;
-	const mono_byte *raw_contents;
-	int size;
-};
-
-static BundledSymfile *bundled_symfiles = NULL;
-
 /**
  * mono_register_symfile_for_assembly:
+ * Dynamically allocates MonoBundledAssemblyResource to leverage
+ * preferred bundling api mono_bundled_resources_add.
  */
 void
 mono_register_symfile_for_assembly (const char *assembly_name, const mono_byte *raw_contents, int size)
 {
-	BundledSymfile *bsymfile;
-
-	bsymfile = g_new0 (BundledSymfile, 1);
-	bsymfile->aname = assembly_name;
-	bsymfile->raw_contents = raw_contents;
-	bsymfile->size = size;
-	bsymfile->next = bundled_symfiles;
-	bundled_symfiles = bsymfile;
-}
-
-static gboolean
-bsymfile_match (BundledSymfile *bsymfile, const char *assembly_name)
-{
-	if (!strcmp (bsymfile->aname, assembly_name))
-		return TRUE;
-#ifdef ENABLE_WEBCIL
-	const char *p = strstr (assembly_name, ".webcil");
-	/* if assembly_name ends with .webcil, check if aname matches, with a .dll extension instead */
-	if (p && *(p + strlen(".webcil")) == 0) {
-		size_t n = p - assembly_name;
-		if (!strncmp (bsymfile->aname, assembly_name, n)
-			&& !strcmp (bsymfile->aname + n, ".dll"))
-			return TRUE;
-	}
-	p = strstr (assembly_name, MONO_WEBCIL_IN_WASM_EXTENSION);
-	if (p && *(p + strlen(MONO_WEBCIL_IN_WASM_EXTENSION)) == 0) {
-		size_t n = p - assembly_name;
-		if (!strncmp (bsymfile->aname, assembly_name, n)
-			&& !strcmp (bsymfile->aname + n, ".dll"))
-			return TRUE;
-	}
-#endif
-	return FALSE;
+	mono_bundled_resources_add_assembly_symbol_resource (assembly_name, raw_contents, size, NULL, NULL);
 }
 
 static MonoDebugHandle *
 open_symfile_from_bundle (MonoImage *image)
 {
-	BundledSymfile *bsymfile;
+	const uint8_t *data = NULL;
+	uint32_t size = 0;
+	if (!mono_bundled_resources_get_assembly_resource_symbol_values (image->module_name, &data, &size))
+		return NULL;
 
-	for (bsymfile = bundled_symfiles; bsymfile; bsymfile = bsymfile->next) {
-		if (!bsymfile_match (bsymfile, image->module_name))
-			continue;
-
-		return mono_debug_open_image (image, bsymfile->raw_contents, bsymfile->size);
-	}
-
-	return NULL;
+	return mono_debug_open_image (image, data, size);
 }
 
 const mono_byte *
 mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
 {
-	BundledSymfile *bsymfile;
-	for (bsymfile = bundled_symfiles; bsymfile; bsymfile = bsymfile->next) {
-		if (!bsymfile_match (bsymfile, assembly_name))
-			continue;
-		*size = bsymfile->size;
-		return bsymfile->raw_contents;
-	}
-	return NULL;
+	const uint8_t *symbol_data = NULL;
+	uint32_t symbol_size = 0;
+	if (!mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &symbol_data, &symbol_size))
+		return NULL;
+
+	*size = symbol_size;
+	return (mono_byte *)symbol_data;
 }
 
 void
@@ -1176,24 +1168,34 @@ mono_debug_enabled (void)
 	return mono_debug_format != MONO_DEBUG_FORMAT_NONE;
 }
 
+
+//Returns true if the method has updates but doesn't have ppdb information then we should generate the seq points using the coreclr rules
+mono_bool
+mono_debug_generate_enc_seq_points_without_debug_info (MonoDebugMethodInfo *minfo)
+{
+	MonoDebugInformationEnc *mdie = NULL;
+	if (G_UNLIKELY (get_method_enc_debug_info (minfo->method, &mdie))) {
+		if (mdie == NULL)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 void
 mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {
-	MonoImage* img = m_class_get_image (minfo->method->klass);
-	if (img->has_updates) {
-		guint32 idx = mono_metadata_token_index (minfo->method->token);
-		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+	MonoDebugInformationEnc *mdie = NULL;
+	if (G_UNLIKELY (get_method_enc_debug_info (minfo->method, &mdie))) {
 		if (mdie != NULL) {
 			if (mono_ppdb_get_seq_points_enc (minfo, mdie->ppdb_file, mdie->idx, source_file, source_file_list, source_files, seq_points, n_seq_points))
 				return;
-		}
+		} else {
 		/*
 		 * dotnet watch sometimes sends us updated with PPDB deltas, but the baseline
 		 * project has debug info (and we use it for seq points?).  In tht case, just say
 		 * the added method has no sequence points.  N.B. intentionally, comparing idx to
 		 * the baseline tables.  For methods that already existed, use their old seq points.
 		 */
-		if (idx >= table_info_get_rows (&img->tables[MONO_TABLE_METHOD])) {
 			if (source_file)
 				*source_file = NULL;
 			if (source_file_list)

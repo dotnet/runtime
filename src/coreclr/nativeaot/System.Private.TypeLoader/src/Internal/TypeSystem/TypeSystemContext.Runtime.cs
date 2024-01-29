@@ -6,23 +6,22 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Reflection.Runtime.General;
 using System.Runtime.CompilerServices;
 
-using System.Reflection.Runtime.General;
-
+using Internal.Metadata.NativeFormat;
+using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem.NoMetadata;
-using Internal.Metadata.NativeFormat;
-using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
 {
     public abstract partial class TypeSystemContext
     {
-        internal static TemplateLocator TemplateLookup => new TemplateLocator();
+        internal static TemplateLocator TemplateLookup => default;
 
         internal class RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable : LockFreeReaderHashtableOfPointers<RuntimeTypeHandle, RuntimeTypeHandle>
         {
@@ -200,19 +199,9 @@ namespace Internal.TypeSystem
                     TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericParameterCount];
                     Runtime.GenericVariance* runtimeVariance = rtth.ToEETypePtr()->HasGenericVariance ?
                         rtth.ToEETypePtr()->GenericVariance : null;
-                    for (int i = 0; i < genericParameters.Length; i++)
-                    {
-                        GenericVariance variance = runtimeVariance == null ? GenericVariance.None : runtimeVariance[i] switch
-                        {
-                            Runtime.GenericVariance.Contravariant => GenericVariance.Contravariant,
-                            Runtime.GenericVariance.Covariant => GenericVariance.Covariant,
-                            Runtime.GenericVariance.NonVariant or Runtime.GenericVariance.ArrayCovariant => GenericVariance.None,
-                            _ => throw new NotImplementedException()
-                        };
-                        genericParameters[i] = genericParameters[i] = new RuntimeGenericParameterDesc(GenericParameterKind.Type, i, this, variance);
-                    }
+                    ReadOnlySpan<Runtime.GenericVariance> varianceData = new ReadOnlySpan<Runtime.GenericVariance>(runtimeVariance, runtimeVariance == null ? 0 : genericParameters.Length);
 
-                    returnedType = new NoMetadataType(this, rtth, null, new Instantiation(genericParameters), rtth.GetHashCode());
+                    returnedType = new NoMetadataType(this, rtth, genericParameters.Length, varianceData, rtth.GetHashCode());
                 }
             }
             else if (RuntimeAugments.IsGenericType(rtth))

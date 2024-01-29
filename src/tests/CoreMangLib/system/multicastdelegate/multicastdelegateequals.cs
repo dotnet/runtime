@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Security;
+using Xunit;
 
 public class MulticastDelegateEquals
 {
@@ -405,7 +406,8 @@ public class MulticastDelegateEquals
     #endregion
     #endregion
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MulticastDelegateEquals mde = new MulticastDelegateEquals();
 

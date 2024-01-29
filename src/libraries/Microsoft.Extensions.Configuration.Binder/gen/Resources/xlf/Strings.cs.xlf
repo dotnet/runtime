@@ -7,6 +7,16 @@
         <target state="translated">Typ kolekce se nepodporuje: „{0}“.</target>
         <note />
       </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
+        <target state="translated">Pro volání vazby se nevygenerovala logika vazby. Mezi nepodporované vstupní vzory patří obecná volání, předávání zabalených objektů a předávání typů, které nejsou public ani internal.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoTitle">
+        <source>The target type for a binder call could not be determined</source>
+        <target state="translated">Cílový typ volání vazače nelze určit</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
         <target state="translated">Typ klíče slovníku se nepodporuje:„{0}“.</target>
@@ -17,14 +27,19 @@
         <target state="translated">Typ elementu kolekce se nepodporuje: {0}“.</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
-        <source>The project's language version has to be at least 'C# 11'.</source>
-        <target state="translated">Jazyková verze projektu musí být alespoň C# 11</target>
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
+        <source>The project's language version has to be at least 'C# 12'.</source>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
-        <source>Language version is required to be at least C# 11</source>
-        <target state="translated">Verze jazyka musí být alespoň C# 11</target>
+        <source>Language version is required to be at least C# 12</source>
+        <target state="translated">Verze jazyka musí být alespoň C# 12</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="translated">Nelze vytvořit instanci typu „{0}“, protože chybí konstruktor veřejné instance.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
@@ -32,9 +47,9 @@
         <target state="translated">Multidimenzionální pole se nepodporují: {0}“.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NeedPublicParameterlessConstructor">
-        <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="translated">Podporují se pouze objekty s veřejnými konstruktory bez parametrů: „{0}“.</target>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="translated">Nelze vytvořit instanci typu „{0}“, protože má více veřejných parametrizovaných konstruktorů.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">
@@ -60,6 +75,16 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type</source>
         <target state="translated">Negenerovala se logika vazby pro typ</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindMessageFormat">
+        <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
+        <target state="translated">Logika vazby nebyla vygenerována pro volání pořadače s cílovým typem „{0}“. Typy hodnot jsou neplatné vstupy pro konfigurační metody Bind.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindTitle">
+        <source>Value types are invalid inputs to configuration 'Bind' methods</source>
+        <target state="translated">Typy hodnot nejsou platné vstupy pro konfigurační metody „Bind“.</target>
         <note />
       </trans-unit>
     </body>

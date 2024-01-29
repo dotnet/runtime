@@ -17,7 +17,10 @@ namespace Microsoft.Interop
                 EntryPoint = libraryImport.EntryPoint,
                 IsUserDefined = libraryImport.IsUserDefined,
                 SetLastError = libraryImport.SetLastError,
-                StringMarshalling = libraryImport.StringMarshalling
+                StringMarshalling = libraryImport.StringMarshalling,
+                StringMarshallingCustomType = libraryImport.StringMarshallingCustomType is not null
+                    ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(libraryImport.StringMarshallingCustomType)
+                    : null,
             };
     }
 

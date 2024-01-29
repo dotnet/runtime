@@ -14,11 +14,13 @@ namespace System.Text.Json
         private const string SpecialCharacters = ". '/\"[]()\t\n\r\f\b\\\u0085\u2028\u2029";
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_specialCharacters = SearchValues.Create(SpecialCharacters);
+
+        public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text) =>
+            text.ContainsAny(s_specialCharacters);
 #else
-        private static ReadOnlySpan<char> s_specialCharacters => SpecialCharacters.AsSpan();
+        public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text) =>
+            text.IndexOfAny(SpecialCharacters.AsSpan()) >= 0;
 #endif
-        public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text)
-            => text.IndexOfAny(s_specialCharacters) >= 0;
 
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
@@ -142,6 +144,39 @@ namespace System.Text.Json
             value = default;
             return false;
         }
+
+#if NETCOREAPP
+        public static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out Half value)
+        {
+            if (span.Length == 3)
+            {
+                if (span.SequenceEqual(JsonConstants.NaNValue))
+                {
+                    value = Half.NaN;
+                    return true;
+                }
+            }
+            else if (span.Length == 8)
+            {
+                if (span.SequenceEqual(JsonConstants.PositiveInfinityValue))
+                {
+                    value = Half.PositiveInfinity;
+                    return true;
+                }
+            }
+            else if (span.Length == 9)
+            {
+                if (span.SequenceEqual(JsonConstants.NegativeInfinityValue))
+                {
+                    value = Half.NegativeInfinity;
+                    return true;
+                }
+            }
+
+            value = default;
+            return false;
+        }
+#endif
 
         public static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out float value)
         {

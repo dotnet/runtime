@@ -29,11 +29,10 @@ namespace Test
             return;
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool b = false;
             Method1(ref b);
-            return 100;
         }
     }
 }

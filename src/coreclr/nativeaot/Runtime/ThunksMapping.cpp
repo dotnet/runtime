@@ -28,7 +28,8 @@
 
 static_assert((THUNK_SIZE % 4) == 0, "Thunk stubs size not aligned correctly. This will cause runtime failures.");
 
-#define THUNKS_MAP_SIZE 0x8000     // 32 K
+// 32 K or OS page
+#define THUNKS_MAP_SIZE (max(0x8000, OS_PAGE_SIZE))
 
 #ifdef TARGET_ARM
 //*****************************************************************************
@@ -56,7 +57,7 @@ void EncodeThumb2Mov32(uint16_t * pCode, uint32_t value, uint8_t rDestination)
 
 COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ())
 {
-    static_assert((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
+    ASSERT_MSG((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
 
     return THUNKS_MAP_SIZE / OS_PAGE_SIZE;
 }
@@ -93,7 +94,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 {
 #ifdef WIN32
 
-    void * pNewMapping = PalVirtualAlloc(NULL, THUNKS_MAP_SIZE * 2, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_READWRITE);
     if (pNewMapping == NULL)
         return NULL;
 
@@ -107,7 +108,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     // reduce it to RW for the data section. For the stubs section we need to increase to RWX to generate the stubs
     // instructions. After this we go back to RX for the stubs section before the stubs are used and should not be
     // changed anymore.
-    void * pNewMapping = PalVirtualAlloc(NULL, THUNKS_MAP_SIZE * 2, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READ);
+    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_EXECUTE_READ);
     if (pNewMapping == NULL)
         return NULL;
 
@@ -117,7 +118,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     if (!PalVirtualProtect(pDataSection, THUNKS_MAP_SIZE, PAGE_READWRITE) ||
         !PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READWRITE))
     {
-        PalVirtualFree(pNewMapping, 0, MEM_RELEASE);
+        PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
         return NULL;
     }
 
@@ -243,7 +244,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 #else
     if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
     {
-        PalVirtualFree(pNewMapping, 0, MEM_RELEASE);
+        PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
         return NULL;
     }
 #endif
@@ -287,7 +288,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     {
         int thunkDataSize = thunkDataMappingSize * thunkDataMappingCount;
 
-        g_pThunkStubData = (uintptr_t)PalVirtualAlloc(NULL, thunkDataSize, MEM_RESERVE, PAGE_READWRITE);
+        g_pThunkStubData = (uintptr_t)VirtualAlloc(NULL, thunkDataSize, MEM_RESERVE, PAGE_READWRITE);
 
         if (g_pThunkStubData == NULL)
         {
@@ -297,7 +298,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 
     void* pThunkDataBlock = (int8_t*)g_pThunkStubData + nextThunkDataMapping * thunkDataMappingSize;
 
-    if (PalVirtualAlloc(pThunkDataBlock, thunkDataMappingSize, MEM_COMMIT, PAGE_READWRITE) == NULL)
+    if (VirtualAlloc(pThunkDataBlock, thunkDataMappingSize, MEM_COMMIT, PAGE_READWRITE) == NULL)
     {
         return NULL;
     }
@@ -328,6 +329,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     int thunkBlockSize = RhpGetThunkBlockSize();
     int templateSize = thunkBlocksPerMapping * thunkBlockSize;
 
+#ifndef TARGET_APPLE // Apple platforms cannot use the initial template
     if (pThunksTemplateAddress == NULL)
     {
         // First, we use the thunks directly from the thunks template sections in the module until all
@@ -336,12 +338,13 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         pThunkMap = pThunksTemplateAddress;
     }
     else
+#endif
     {
         // We've already used the thunks template in the module for some previous thunks, and we
         // cannot reuse it here. Now we need to create a new mapping of the thunks section in order to have
         // more thunks
 
-        uint8_t* pModuleBase = (uint8_t*)PalGetModuleHandleFromPointer(pThunksTemplateAddress);
+        uint8_t* pModuleBase = (uint8_t*)PalGetModuleHandleFromPointer(RhpGetThunksBase());
         int templateRva = (int)((uint8_t*)RhpGetThunksBase() - pModuleBase);
 
         if (!PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap))
@@ -356,7 +359,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         thunkBlocksPerMapping))
     {
         if (pThunkMap != pThunksTemplateAddress)
-            PalFreeThunksFromTemplate(pThunkMap);
+            PalFreeThunksFromTemplate(pThunkMap, templateSize);
 
         return NULL;
     }

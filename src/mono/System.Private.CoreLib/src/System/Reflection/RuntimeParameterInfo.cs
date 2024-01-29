@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
 using System.Text;
 
 namespace System.Reflection
@@ -25,7 +25,7 @@ namespace System.Reflection
             this.marshalAs = marshalAs;
         }
 
-        internal static void FormatParameters(StringBuilder sb, ParameterInfo[] p, CallingConventions callingConvention)
+        internal static void FormatParameters(StringBuilder sb, ReadOnlySpan<ParameterInfo> p, CallingConventions callingConvention)
         {
             for (int i = 0; i < p.Length; ++i)
             {
@@ -41,7 +41,7 @@ namespace System.Reflection
                 // Why don't we just use "&"?
                 if (t.IsByRef)
                 {
-                    sb.Append(typeName.TrimEnd(new char[] { '&' }));
+                    sb.Append(typeName.TrimEnd('&'));
                     sb.Append(" ByRef");
                 }
                 else
@@ -119,6 +119,7 @@ namespace System.Reflection
             this.PositionImpl = -1; // since parameter positions are zero-based, return type pos is -1
             this.AttrsImpl = ParameterAttributes.Retval;
             this.marshalAs = marshalAs;
+            this.DefaultValueImpl = DBNull.Value;
         }
 
         // ctor for no metadata MethodInfo in the DynamicMethod and RuntimeMethodInfo cases
@@ -393,7 +394,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Type[] GetTypeModifiers(Type type, MemberInfo member, int position, bool optional);
+        internal static extern Type[] GetTypeModifiers(Type type, MemberInfo member, int position, bool optional, int genericArgumentPosition = -1);
 
         internal static ParameterInfo New(ParameterInfo pinfo, Type? type, MemberInfo member, int position)
         {
@@ -421,5 +422,9 @@ namespace System.Reflection
         }
 
         private Type[] GetCustomModifiers(bool optional) => GetTypeModifiers(ParameterType, Member, Position, optional) ?? Type.EmptyTypes;
+
+        internal Type[] GetCustomModifiersFromModifiedType(bool optional, int genericArgumentPosition) => GetTypeModifiers(ParameterType, Member, Position, optional, genericArgumentPosition) ?? Type.EmptyTypes;
+
+        public override Type GetModifiedParameterType() => ModifiedType.Create(ParameterType, this, PositionImpl + 1);
     }
 }

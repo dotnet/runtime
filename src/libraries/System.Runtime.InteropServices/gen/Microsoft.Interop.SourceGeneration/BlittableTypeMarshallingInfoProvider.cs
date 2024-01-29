@@ -38,7 +38,7 @@ namespace Microsoft.Interop
             }
             else
             {
-                return new UnmanagedBlittableMarshallingInfo(type.IsStrictlyBlittable());
+                return new UnmanagedBlittableMarshallingInfo(type.IsStrictlyBlittableInContext(_compilation));
             }
         }
     }

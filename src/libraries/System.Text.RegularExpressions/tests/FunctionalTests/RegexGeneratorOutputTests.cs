@@ -70,7 +70,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>^(?&lt;proto&gt;\\w+)://[^/]+?(?&lt;port&gt;:\\d+)?/</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match if at the beginning of the string.<br/>
                     /// ○ "proto" capture group.<br/>
@@ -431,7 +433,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>href\\s*=\\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\\s]+))</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match the string "href".<br/>
                     /// ○ Match a whitespace character atomically any number of times.<br/>
@@ -515,7 +519,7 @@ namespace System.Text.RegularExpressions.Tests
                                     {
                                         // The pattern has the literal "href" at the beginning of the pattern. Find the next occurrence.
                                         // If it can't be found, there's no match.
-                                        int i = inputSpan.Slice(pos).IndexOf("href");
+                                        int i = inputSpan.Slice(pos).IndexOfAny(Utilities.s_indexOfString_href_Ordinal);
                                         if (i >= 0)
                                         {
                                             base.runtextpos = pos + i;
@@ -702,6 +706,13 @@ namespace System.Text.RegularExpressions.Tests
 
                     }
 
+                    /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
+                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
+                    file static class Utilities
+                    {
+                        /// <summary>Supports searching for the string "href".</summary>
+                        internal static readonly SearchValues<string> s_indexOfString_href_Ordinal = SearchValues.Create(["href"], StringComparison.Ordinal);
+                    }
                 }
                 """
             };
@@ -727,7 +738,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>[A-Za-z]+</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match a character in the set [A-Za-z] atomically at least once.<br/>
                     /// </code>

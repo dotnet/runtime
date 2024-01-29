@@ -7,6 +7,7 @@ using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.Versioning;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -88,7 +89,7 @@ namespace System.Net.Http
                     throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
                 }
 
-                HttpRequestException ex = new HttpRequestException(SR.net_http_ssl_connection_failed, e);
+                HttpRequestException ex = new HttpRequestException(HttpRequestError.SecureConnectionError, SR.net_http_ssl_connection_failed, e);
                 if (request.IsExtendedConnectRequest)
                 {
                     // Extended connect request is negotiating strictly for ALPN = "h2" because HttpClient is unaware of a possible downgrade.
@@ -128,17 +129,37 @@ namespace System.Net.Http
                     ClientAuthenticationOptions = clientAuthenticationOptions
                 }, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
         }
 
-        internal static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
+        internal static Exception CreateWrappedException(Exception exception, string host, int port, CancellationToken cancellationToken)
         {
-            return CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
-                CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :
-                new HttpRequestException($"{error.Message} ({host}:{port})", error, RequestRetryType.RetryOnNextProxy);
+            return CancellationHelper.ShouldWrapInOperationCanceledException(exception, cancellationToken) ?
+                CancellationHelper.CreateOperationCanceledException(exception, cancellationToken) :
+                new HttpRequestException(DeduceError(exception), $"{exception.Message} ({host}:{port})", exception, RequestRetryType.RetryOnNextProxy);
+
+            static HttpRequestError DeduceError(Exception exception)
+            {
+                if (exception is AuthenticationException)
+                {
+                    return HttpRequestError.SecureConnectionError;
+                }
+
+                // Resolving a non-existent hostname often leads to EAI_AGAIN/TryAgain on Linux, indicating a non-authoritative failure, eg. timeout.
+                // Getting EAGAIN/TryAgain from a TCP connect() is not possible on Windows or Mac according to the docs and indicates lack of kernel resources on Linux,
+                // which should be a very rare error in practice. As a result, mapping SocketError.TryAgain to HttpRequestError.NameResolutionError
+                // leads to a more reliable distinction between NameResolutionError and ConnectionError.
+                if (exception is SocketException socketException &&
+                    socketException.SocketErrorCode is SocketError.HostNotFound or SocketError.TryAgain)
+                {
+                    return HttpRequestError.NameResolutionError;
+                }
+
+                return HttpRequestError.ConnectionError;
+            }
         }
     }
 }

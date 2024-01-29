@@ -517,30 +517,19 @@ namespace System
         // Parse also allows a currency symbol, a trailing negative sign, and
         // parentheses in the number.
         //
-        public static decimal Parse(string s)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo);
-        }
+        public static decimal Parse(string s) => Parse(s, NumberStyles.Number, provider: null);
 
-        public static decimal Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static decimal Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        public static decimal Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
-        }
+        public static decimal Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
 
         public static decimal Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static decimal Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
@@ -549,21 +538,15 @@ namespace System
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out decimal result)
-        {
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
+        public static bool TryParse([NotNullWhen(true)] string? s, out decimal result) => TryParse(s, NumberStyles.Number, provider: null, out result);
 
-            return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out decimal result) => TryParse(s, NumberStyles.Number, provider: null, out result);
 
-        public static bool TryParse(ReadOnlySpan<char> s, out decimal result)
-        {
-            return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its signed decimal equivalent.</summary>
+        /// <param name="utf8Text">A span containing the UTF-8 characters representing the number to convert.</param>
+        /// <param name="result">When this method returns, contains the signed decimal value equivalent to the number contained in <paramref name="utf8Text" /> if the conversion succeeded, or zero if the conversion failed. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out decimal result) => TryParse(utf8Text, NumberStyles.Number, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
@@ -574,8 +557,7 @@ namespace System
                 result = 0;
                 return false;
             }
-
-            return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseDecimal(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out decimal result)
@@ -732,10 +714,10 @@ namespace System
             }
             catch (OverflowException)
             {
-                Number.ThrowOverflowException(TypeCode.Byte);
+                Number.ThrowOverflowException<byte>();
                 throw;
             }
-            if (temp != (byte)temp) Number.ThrowOverflowException(TypeCode.Byte);
+            if (temp != (byte)temp) Number.ThrowOverflowException<byte>();
             return (byte)temp;
         }
 
@@ -753,10 +735,10 @@ namespace System
             }
             catch (OverflowException)
             {
-                Number.ThrowOverflowException(TypeCode.SByte);
+                Number.ThrowOverflowException<sbyte>();
                 throw;
             }
-            if (temp != (sbyte)temp) Number.ThrowOverflowException(TypeCode.SByte);
+            if (temp != (sbyte)temp) Number.ThrowOverflowException<sbyte>();
             return (sbyte)temp;
         }
 
@@ -773,10 +755,10 @@ namespace System
             }
             catch (OverflowException)
             {
-                Number.ThrowOverflowException(TypeCode.Int16);
+                Number.ThrowOverflowException<short>();
                 throw;
             }
-            if (temp != (short)temp) Number.ThrowOverflowException(TypeCode.Int16);
+            if (temp != (short)temp) Number.ThrowOverflowException<short>();
             return (short)temp;
         }
 
@@ -848,10 +830,10 @@ namespace System
             }
             catch (OverflowException)
             {
-                Number.ThrowOverflowException(TypeCode.UInt16);
+                Number.ThrowOverflowException<ushort>();
                 throw;
             }
-            if (temp != (ushort)temp) Number.ThrowOverflowException(TypeCode.UInt16);
+            if (temp != (ushort)temp) Number.ThrowOverflowException<ushort>();
             return (ushort)temp;
         }
 
@@ -863,7 +845,7 @@ namespace System
         public static uint ToUInt32(decimal d)
         {
             Truncate(ref d);
-            if ((d.High| d.Mid) == 0)
+            if ((d.High | d.Mid) == 0)
             {
                 uint i = d.Low;
                 if (!IsNegative(d) || i == 0)
@@ -1578,14 +1560,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<decimal>.TryConvertFromSaturating<TOther>(TOther value, out decimal result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<decimal>.TryConvertFromTruncating<TOther>(TOther value, out decimal result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         private static bool TryConvertFrom<TOther>(TOther value, out decimal result)
@@ -1727,14 +1709,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<decimal>.TryConvertToSaturating<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<decimal>.TryConvertToTruncating<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         private static bool TryConvertTo<TOther>(decimal value, [MaybeNullWhen(false)] out TOther result)
@@ -1838,5 +1820,29 @@ namespace System
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out decimal result) => TryParse(s, NumberStyles.Number, provider, out result);
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static decimal Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseDecimal(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out decimal result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseDecimal(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static decimal Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Number, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out decimal result) => TryParse(utf8Text, NumberStyles.Number, provider, out result);
     }
 }

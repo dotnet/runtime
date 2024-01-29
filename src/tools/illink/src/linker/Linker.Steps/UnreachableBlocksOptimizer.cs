@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -92,21 +92,39 @@ namespace Mono.Linker.Steps
 			return true;
 		}
 
-		static bool HasJumpIntoTargetRange (Collection<Instruction> instructions, int firstInstr, int lastInstr, Func<Instruction, int>? mapping = null)
+		static bool HasJumpIntoTargetRange (Collection<Instruction> instructions, int firstInstr, int lastInstr, Func<Instruction, int?>? mapping = null)
 		{
 			foreach (var instr in instructions) {
 				switch (instr.OpCode.FlowControl) {
 				case FlowControl.Branch:
 				case FlowControl.Cond_Branch:
 					if (instr.Operand is Instruction target) {
-						int index = mapping == null ? instructions.IndexOf (target) : mapping (target);
-						if (index >= firstInstr && index <= lastInstr)
-							return true;
+						if (mapping != null && mapping (target) is int index) {
+							if (index >= firstInstr && index <= lastInstr) {
+								return true;
+							}
+						}
+						else {
+							for (int i = firstInstr; i <= lastInstr; i++) {
+								if (instructions[i] == target) {
+									return true;
+								}
+							}
+						}
 					} else {
 						foreach (var rtarget in (Instruction[]) instr.Operand) {
-							int index = mapping == null ? instructions.IndexOf (rtarget) : mapping (rtarget);
-							if (index >= firstInstr && index <= lastInstr)
-								return true;
+							if (mapping != null && mapping (rtarget) is int index) {
+								if (index >= firstInstr && index <= lastInstr) {
+									return true;
+								}
+							}
+							else {
+								for (int i = firstInstr; i <= lastInstr; i++) {
+									if (instructions[i] == rtarget) {
+										return true;
+									}
+								}
+							}
 						}
 					}
 
@@ -1125,8 +1143,20 @@ namespace Mono.Linker.Steps
 							condBranches ??= new Stack<int> ();
 
 							condBranches.Push (GetInstructionIndex (handler.HandlerStart));
-							if (handler.FilterStart != null)
+							if (handler.FilterStart != null) {
 								condBranches.Push (GetInstructionIndex (handler.FilterStart));
+								int filterEnd = GetInstructionIndex (handler.HandlerStart) - 1;
+								if (filterEnd >= 0 && FoldedInstructions[filterEnd].OpCode == OpCodes.Endfilter) {
+									// The endfilter instruction must be at the end of each filter block, even if it's not reachable:
+									//
+									// ECMA 335
+									// I.12.4.2.8.2.5 endfilter:
+									// 1.Shall appear as the lexically last instruction in the filter.
+									// [Note: The endfilter is required even if no control - flow path reaches it.This can happen if, for
+									// example, the filter does a throw.end note]
+									reachable[filterEnd] = true;
+								}
+							}
 						}
 
 						if (condBranches?.Count > 0) {
@@ -1161,6 +1191,15 @@ namespace Mono.Linker.Steps
 				idx = FoldedInstructions.IndexOf (instruction);
 				Debug.Assert (idx >= 0);
 				return idx;
+			}
+
+			int? TryGetInstructionIndex (Instruction instruction)
+			{
+				Debug.Assert (mapping != null);
+				if (mapping.TryGetValue (instruction, out int idx))
+					return idx;
+
+				return null;
 			}
 
 			bool GetOperandsConstantValues (int index, out object? left, out object? right)
@@ -1201,7 +1240,7 @@ namespace Mono.Linker.Steps
 			bool IsJumpTargetRange (int firstInstr, int lastInstr)
 			{
 				Debug.Assert (FoldedInstructions != null);
-				return HasJumpIntoTargetRange (FoldedInstructions, firstInstr, lastInstr, GetInstructionIndex);
+				return HasJumpIntoTargetRange (FoldedInstructions, firstInstr, lastInstr, TryGetInstructionIndex);
 			}
 		}
 
@@ -1544,7 +1583,7 @@ namespace Mono.Linker.Steps
 								return false;
 
 							if (operand is int oint) {
-								if (oint == 1)
+								if (oint != 0)
 									jmpTarget = (Instruction) instr.Operand;
 
 								continue;

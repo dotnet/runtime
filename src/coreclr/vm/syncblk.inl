@@ -270,10 +270,11 @@ FORCEINLINE bool AwareLock::LockState::InterlockedTryLock_Or_RegisterWaiter(Awar
                 return true;
             }
 
-            if (!state.HasAnyWaiters())
+            _ASSERTE(state.HasAnyWaiters() || waiterStarvationStartTimeWasReset);
+            if (!state.HasAnyWaiters() || waiterStarvationStartTimeWasReset)
             {
-                // This was the first waiter, record the waiter starvation start time
-                _ASSERTE(waiterStarvationStartTimeWasReset);
+                // This was the first waiter or the waiter starvation start time was reset. Record the waiter starvation start
+                // time.
                 awareLock->RecordWaiterStarvationStartTime();
             }
             return false;

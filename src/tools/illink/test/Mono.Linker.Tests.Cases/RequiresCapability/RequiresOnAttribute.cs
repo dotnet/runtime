@@ -2,11 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -116,14 +112,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		static int _fieldWithAttributeWhichRequires;
 
 		[ExpectedWarning ("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
-		// https://github.com/dotnet/runtime/issues/83581
-		[ExpectedWarning ("IL2026", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = Tool.Trimmer)] // Trimmer can produce duplicate warnings for property access
-		[ExpectedWarning ("IL2026", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = Tool.Trimmer)] // Trimmer can produce duplicate warnings for property access
 		[ExpectedWarning ("IL3002", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		[ExpectedWarning ("IL3050", "--AttributeWhichRequiresAttribute.ctor--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
-		[ExpectedWarning ("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", ProducedBy = Tool.Trimmer)] // Trimmer can produce duplicate warnings for property access
-		[ExpectedWarning ("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", ProducedBy = Tool.Trimmer)] // Trimmer can produce duplicate warnings for property access
 		[ExpectedWarning ("IL3002", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		[ExpectedWarning ("IL3050", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		[AttributeWhichRequires]

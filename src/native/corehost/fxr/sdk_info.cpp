@@ -40,6 +40,39 @@ bool compare_by_version_ascending_then_hive_depth_descending(const sdk_info &a, 
     return false;
 }
 
+void sdk_info::enumerate_sdk_paths(
+    const pal::string_t& sdk_dir,
+    std::function<bool(const fx_ver_t&, const pal::string_t&)> should_skip_version,
+    std::function<void(const fx_ver_t&, const pal::string_t&, const pal::string_t&)> callback)
+{
+    std::vector<pal::string_t> versions;
+    pal::readdir_onlydirectories(sdk_dir, &versions);
+    for (const pal::string_t& version_str : versions)
+    {
+        // Make sure we filter out any non-version folders.
+        fx_ver_t version;
+        if (!fx_ver_t::parse(version_str, &version, false))
+        {
+            trace::verbose(_X("Ignoring invalid version [%s]"), version_str.c_str());
+            continue;
+        }
+
+        if (should_skip_version(version, version_str))
+            continue;
+
+        // Check for the existence of dotnet.dll
+        pal::string_t sdk_version_dir = sdk_dir;
+        append_path(&sdk_version_dir, version_str.c_str());
+        if (!file_exists_in_dir(sdk_version_dir, SDK_DOTNET_DLL, nullptr))
+        {
+            trace::verbose(_X("Ignoring version [%s] without ") SDK_DOTNET_DLL, version_str.c_str());
+            continue;
+        }
+
+        callback(version, version_str, sdk_version_dir);
+    }
+}
+
 void sdk_info::get_all_sdk_infos(
     const pal::string_t& own_dir,
     std::vector<sdk_info>* sdk_infos)
@@ -51,32 +84,18 @@ void sdk_info::get_all_sdk_infos(
 
     for (pal::string_t dir : hive_dir)
     {
-        auto base_dir = dir;
-        trace::verbose(_X("Gathering SDK locations in [%s]"), base_dir.c_str());
-
-        append_path(&base_dir, _X("sdk"));
-
-        if (pal::directory_exists(base_dir))
-        {
-            std::vector<pal::string_t> versions;
-            pal::readdir_onlydirectories(base_dir, &versions);
-            for (const auto& ver : versions)
+        trace::verbose(_X("Gathering SDK locations in [%s]"), dir.c_str());
+        append_path(&dir, _X("sdk"));
+        enumerate_sdk_paths(
+            dir,
+            [](const fx_ver_t&, const pal::string_t&) { return false; },
+            [&](const fx_ver_t& version, const pal::string_t& version_str, const pal::string_t& full_path)
             {
-                // Make sure we filter out any non-version folders.
-                fx_ver_t parsed;
-                if (fx_ver_t::parse(ver, &parsed, false))
-                {
-                    trace::verbose(_X("Found SDK version [%s]"), ver.c_str());
-
-                    auto full_dir = base_dir;
-                    append_path(&full_dir, ver.c_str());
-
-                    sdk_info info(base_dir, full_dir, parsed, hive_depth);
-
-                    sdk_infos->push_back(info);
-                }
+                trace::verbose(_X("Found SDK version [%s]"), version_str.c_str());
+                sdk_info info(dir, full_path, version, hive_depth);
+                sdk_infos->push_back(info);
             }
-        }
+        );
 
         hive_depth++;
     }

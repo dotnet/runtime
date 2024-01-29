@@ -7,6 +7,8 @@ using ResourceHashesByNameDictionary = System.Collections.Generic.Dictionary<str
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
+#nullable disable
+
 /// <summary>
 /// Defines the structure of a Blazor boot JSON file
 /// </summary>
@@ -15,7 +17,12 @@ public class BootJsonData
     /// <summary>
     /// Gets the name of the assembly with the application entry point
     /// </summary>
+    /// <remarks>
+    /// Deprecated in .NET 8. Use <see cref="mainAssemblyName"/>
+    /// </remarks>
     public string entryAssembly { get; set; }
+
+    public string mainAssemblyName { get; set; }
 
     /// <summary>
     /// Gets the set of resources needed to boot the application. This includes the transitive
@@ -32,27 +39,48 @@ public class BootJsonData
     /// Gets a value that determines whether to enable caching of the <see cref="resources"/>
     /// inside a CacheStorage instance within the browser.
     /// </summary>
-    public bool cacheBootResources { get; set; }
+    public bool? cacheBootResources { get; set; }
 
     /// <summary>
     /// Gets a value that determines if this is a debug build.
     /// </summary>
-    public bool debugBuild { get; set; }
+    public bool? debugBuild { get; set; }
+
+    /// <summary>
+    /// Gets a value that determines what level of debugging is configured.
+    /// </summary>
+    public int debugLevel { get; set; }
 
     /// <summary>
     /// Gets a value that determines if the linker is enabled.
     /// </summary>
-    public bool linkerEnabled { get; set; }
+    public bool? linkerEnabled { get; set; }
 
     /// <summary>
     /// Config files for the application
     /// </summary>
+    /// <remarks>
+    /// Deprecated in .NET 8, use <see cref="appsettings"/>
+    /// </remarks>
     public List<string> config { get; set; }
+
+    /// <summary>
+    /// Config files for the application
+    /// </summary>
+    public List<string> appsettings { get; set; }
 
     /// <summary>
     /// Gets or sets the <see cref="ICUDataMode"/> that determines how icu files are loaded.
     /// </summary>
-    public ICUDataMode icuDataMode { get; set; }
+    /// <remarks>
+    /// Deprecated since .NET 8. Use <see cref="globalizationMode"/> instead.
+    /// </remarks>
+    public GlobalizationMode? icuDataMode { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="GlobalizationMode"/> that determines how icu files are loaded.
+    /// </summary>
+    public string globalizationMode { get; set; }
 
     /// <summary>
     /// Gets or sets a value that determines if the caching startup memory is enabled.
@@ -68,14 +96,56 @@ public class BootJsonData
     /// Gets or sets configuration extensions.
     /// </summary>
     public Dictionary<string, Dictionary<string, object>> extensions { get; set; }
+
+    /// <summary>
+    /// Gets or sets environment variables.
+    /// </summary>
+    public object environmentVariables { get; set; }
+
+    /// <summary>
+    /// Gets or sets diagnostic tracing.
+    /// </summary>
+    public object diagnosticTracing { get; set; }
+
+    /// <summary>
+    /// Gets or sets pthread pool size.
+    /// </summary>
+    public int? pthreadPoolSize { get; set; }
 }
 
 public class ResourcesData
 {
     /// <summary>
+    /// Gets a hash of all resources
+    /// </summary>
+    public string hash { get; set; }
+
+    /// <summary>
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
     /// </summary>
-    public ResourceHashesByNameDictionary runtime { get; set; } = new ResourceHashesByNameDictionary();
+    /// <remarks>
+    /// Deprecated in .NET 8, use <see cref="jsModuleWorker"/>, <see cref="jsModuleNative"/>, <see cref="jsModuleRuntime"/>, <see cref="wasmNative"/>, <see cref="wasmSymbols"/>, <see cref="icu"/>.
+    /// </remarks>
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary runtime { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleRuntime { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary wasmNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary wasmSymbols { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary icu { get; set; }
 
     /// <summary>
     /// "assembly" (.dll) resources
@@ -102,9 +172,16 @@ public class ResourcesData
 
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.
+    /// Used in .NET < 8
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary libraryInitializers { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary modulesAfterConfigLoaded { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary modulesAfterRuntimeReady { get; set; }
 
     /// <summary>
     /// Extensions created by users customizing the initialization process. The format of the file(s)
@@ -119,11 +196,17 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
 
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, ResourceHashesByNameDictionary> vfs { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<string> remoteSources { get; set; }
 }
 
-public enum ICUDataMode : int
+public enum GlobalizationMode : int
 {
     // Note that the numeric values are serialized and used in JS code, so don't change them without also updating the JS code
+    // Note that names are serialized as string and used in JS code
 
     /// <summary>
     /// Load optimized icu data file based on the user's locale
@@ -144,14 +227,19 @@ public enum ICUDataMode : int
     /// Load custom icu file provided by the developer.
     /// </summary>
     Custom = 3,
+
+    /// <summary>
+    /// Use the reduced icudt_hybrid.dat file
+    /// </summary>
+    Hybrid = 4,
 }
 
 [DataContract]
 public class AdditionalAsset
 {
     [DataMember(Name = "hash")]
-    public string Hash { get; set; }
+    public string hash { get; set; }
 
     [DataMember(Name = "behavior")]
-    public string Behavior { get; set; }
+    public string behavior { get; set; }
 }

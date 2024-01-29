@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
 using System.DirectoryServices.Protocols;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -67,6 +69,26 @@ internal static partial class Interop
     {
         static Ldap()
         {
+            Assembly currentAssembly = typeof(Ldap).Assembly;
+
+            // Register callback that tries to load other libraries when the default library "libldap-2.5.so.0" not found
+            AssemblyLoadContext.GetLoadContext(currentAssembly).ResolvingUnmanagedDll += (assembly, ldapName) =>
+            {
+                if (assembly != currentAssembly || ldapName != Libraries.OpenLdap)
+                {
+                    return IntPtr.Zero;
+                }
+
+                // Try load next (libldap-2.6.so.0) or previous (libldap-2.4.so.2) versions
+                if (NativeLibrary.TryLoad("libldap-2.6.so.0", out IntPtr handle) ||
+                    NativeLibrary.TryLoad("libldap-2.4.so.2", out handle))
+                {
+                    return handle;
+                }
+
+                return IntPtr.Zero;
+            };
+
             // OpenLdap must be initialized on a single thread, once this is done it allows concurrent calls
             // By doing so in the static constructor we guarantee this is run before any other methods are called.
 
@@ -77,7 +99,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_initialize", SetLastError = true)]
-        public static partial int ldap_initialize(out IntPtr ld,  [MarshalAs(UnmanagedType.LPUTF8Str)] string uri);
+        public static partial int ldap_initialize(out IntPtr ld, [MarshalAs(UnmanagedType.LPUTF8Str)] string uri);
 
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_unbind_ext_s")]
         public static partial int ldap_unbind_ext_s(IntPtr ld, ref IntPtr serverctrls, ref IntPtr clientctrls);

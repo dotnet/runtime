@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.IO;
-using System.Threading;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.IO;
 using System.Reflection;
+using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Xml.Schema
 {
@@ -832,7 +832,7 @@ namespace System.Xml.Schema
 
             XmlSchema schemaToUpdate = redefineEntry.schemaToUpdate;
             ArrayList includesOfRedefine = new ArrayList();
-            GetIncludedSet(originalSchema, includesOfRedefine);
+            Preprocessor.GetIncludedSet(originalSchema, includesOfRedefine);
             string targetNS = schemaToUpdate.TargetNamespace ?? string.Empty;
 
             XmlSchemaObjectCollection items = redefine.Items;
@@ -951,7 +951,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void GetIncludedSet(XmlSchema schema, ArrayList includesList)
+        private static void GetIncludedSet(XmlSchema schema, ArrayList includesList)
         {
             if (includesList.Contains(schema))
             {

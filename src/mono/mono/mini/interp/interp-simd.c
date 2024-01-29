@@ -8,6 +8,8 @@
 
 #ifdef INTERP_ENABLE_SIMD
 
+gboolean interp_simd_enabled = TRUE;
+
 typedef gint64 v128_i8 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef guint64 v128_u8 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef gint32 v128_i4 __attribute__ ((vector_size (SIZEOF_V128)));
@@ -17,6 +19,7 @@ typedef guint16 v128_u2 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef gint8 v128_i1 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef guint8 v128_u1 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef float v128_r4 __attribute__ ((vector_size (SIZEOF_V128)));
+typedef double v128_r8 __attribute__ ((vector_size (SIZEOF_V128)));
 
 // get_AllBitsSet
 static void
@@ -122,7 +125,30 @@ interp_v128_op_bitwise_inequality (gpointer res, gpointer v1, gpointer v2)
 		*(gint32*)res = 1;
 }
 
-// op_Addition
+// Vector128<float>EqualsFloatingPoint
+static void
+interp_v128_r4_float_equality (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_r4 v1_cast = *(v128_r4*)v1;
+	v128_r4 v2_cast = *(v128_r4*)v2;
+	v128_r4 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
+	memset (&v1_cast, 0xff, SIZEOF_V128);
+
+	*(gint32*)res = memcmp (&v1_cast, &result, SIZEOF_V128) == 0;
+}
+
+static void
+interp_v128_r8_float_equality (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_r8 v1_cast = *(v128_r8*)v1;
+	v128_r8 v2_cast = *(v128_r8*)v2;
+	v128_r8 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
+	memset (&v1_cast, 0xff, SIZEOF_V128);
+
+	*(gint32*)res = memcmp (&v1_cast, &result, SIZEOF_V128) == 0;
+}
+
+// op_Multiply
 static void
 interp_v128_i1_op_multiply (gpointer res, gpointer v1, gpointer v2)
 {
@@ -147,6 +173,7 @@ interp_v128_r4_op_multiply (gpointer res, gpointer v1, gpointer v2)
 	*(v128_r4*)res = *(v128_r4*)v1 * *(v128_r4*)v2;
 }
 
+// op_Division
 static void
 interp_v128_r4_op_division (gpointer res, gpointer v1, gpointer v2)
 {
@@ -188,57 +215,57 @@ interp_v128_i2_op_left_shift (gpointer res, gpointer v1, gpointer s1)
 static void
 interp_v128_i4_op_left_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i4*)res = *(v128_i4*)v1 << *(gint32*)s1;
+	*(v128_i4*)res = *(v128_i4*)v1 << (*(gint32*)s1 & 31);
 }
 
 static void
 interp_v128_i8_op_left_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i8*)res = *(v128_i8*)v1 << *(gint32*)s1;
+	*(v128_i8*)res = *(v128_i8*)v1 << (*(gint32*)s1 & 63);
 }
 
 // op_RightShift
 static void
 interp_v128_i1_op_right_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i1*)res = *(v128_i1*)v1 >> *(gint32*)s1;
+	*(v128_i1*)res = *(v128_i1*)v1 >> (*(gint32*)s1 & 7);
 }
 
 static void
 interp_v128_i2_op_right_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i2*)res = *(v128_i2*)v1 >> *(gint32*)s1;
+	*(v128_i2*)res = *(v128_i2*)v1 >> (*(gint32*)s1 & 15);
 }
 
 static void
 interp_v128_i4_op_right_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_i4*)res = *(v128_i4*)v1 >> *(gint32*)s1;
+	*(v128_i4*)res = *(v128_i4*)v1 >> (*(gint32*)s1 & 31);
 }
 
 // op_UnsignedRightShift
 static void
 interp_v128_i1_op_uright_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_u1*)res = *(v128_u1*)v1 >> *(gint32*)s1;
+	*(v128_u1*)res = *(v128_u1*)v1 >> (*(gint32*)s1 & 7);
 }
 
 static void
 interp_v128_i2_op_uright_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_u2*)res = *(v128_u2*)v1 >> *(gint32*)s1;
+	*(v128_u2*)res = *(v128_u2*)v1 >> (*(gint32*)s1 & 15);
 }
 
 static void
 interp_v128_i4_op_uright_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_u4*)res = *(v128_u4*)v1 >> *(gint32*)s1;
+	*(v128_u4*)res = *(v128_u4*)v1 >> (*(gint32*)s1 & 31);
 }
 
 static void
 interp_v128_i8_op_uright_shift (gpointer res, gpointer v1, gpointer s1)
 {
-	*(v128_u8*)res = *(v128_u8*)v1 >> *(gint32*)s1;
+	*(v128_u8*)res = *(v128_u8*)v1 >> (*(gint32*)s1 & 63);
 }
 
 // op_OnesComplement
@@ -377,9 +404,52 @@ interp_v128_i4_equals (gpointer res, gpointer v1, gpointer v2)
 }
 
 static void
+interp_v128_r4_equals (gpointer res, gpointer v1, gpointer v2)
+{
+	*(v128_r4*)res = *(v128_r4*)v1 == *(v128_r4*)v2;
+}
+
+static void
 interp_v128_i8_equals (gpointer res, gpointer v1, gpointer v2)
 {
 	*(v128_i8*)res = *(v128_i8*)v1 == *(v128_i8*)v2;
+}
+
+// EqualsAny
+static void
+interp_v128_i1_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i1 resv = *(v128_i1*)v1 == *(v128_i1*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i2_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i2 resv = *(v128_i2*)v1 == *(v128_i2*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i4_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i4 resv = *(v128_i4*)v1 == *(v128_i4*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
+}
+
+static void
+interp_v128_i8_equals_any (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_i8 resv = *(v128_i8*)v1 == *(v128_i8*)v2;
+
+	gint64 *resv_cast = (gint64*)&resv;
+	*(gint32*)res = *resv_cast || *(resv_cast + 1);
 }
 
 // CreateScalar
@@ -579,41 +649,275 @@ _interp_wasm_simd_assert_not_reached (v128_t lhs, v128_t rhs) {
 	g_assert_not_reached ();
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_V_P(id, c_intrinsic, wasm_opcode) \
+#define LANE_COUNT(lane_type) (sizeof(v128_t) / sizeof(lane_type))
+
+// ensure the lane is valid by wrapping it (in AOT it would fail to compile)
+#define WRAP_LANE(lane_type, lane_ptr)  \
+	*((unsigned char *)lane_ptr) & (LANE_COUNT(lane_type) - 1)
+
+#define EXTRACT_LANE(result_type, lane_type) \
+	int _lane = WRAP_LANE(lane_type, lane); \
+	*((result_type *)res) = ((lane_type *)vec)[_lane];
+
+#define REPLACE_LANE(lane_type) \
+	int _lane = WRAP_LANE(lane_type, lane); \
+	v128_t temp = *((v128_t *)vec); \
+	((lane_type *)&temp)[_lane] = *(lane_type *)value; \
+	*((v128_t *)res) = temp;
+
+static void
+interp_packedsimd_extractscalar_i1 (gpointer res, gpointer vec, gpointer lane) {
+	EXTRACT_LANE(gint32, gint8);
+}
+
+static void
+interp_packedsimd_extractscalar_u1 (gpointer res, gpointer vec, gpointer lane) {
+	EXTRACT_LANE(gint32, guint8);
+}
+
+static void
+interp_packedsimd_extractscalar_i2 (gpointer res, gpointer vec, gpointer lane) {
+	EXTRACT_LANE(gint32, gint16);
+}
+
+static void
+interp_packedsimd_extractscalar_u2 (gpointer res, gpointer vec, gpointer lane) {
+	EXTRACT_LANE(gint32, guint16);
+}
+
+static void
+interp_packedsimd_extractscalar_i4 (gpointer res, gpointer vec, gpointer lane) {
+	EXTRACT_LANE(gint32, gint32);
+}
+
+static void
+interp_packedsimd_extractscalar_i8 (gpointer res, gpointer vec, gpointer lane) {
+	EXTRACT_LANE(gint64, gint64);
+}
+
+static void
+interp_packedsimd_extractscalar_r4 (gpointer res, gpointer vec, gpointer lane) {
+	EXTRACT_LANE(float, float);
+}
+
+static void
+interp_packedsimd_extractscalar_r8 (gpointer res, gpointer vec, gpointer lane) {
+	EXTRACT_LANE(double, double);
+}
+
+static void
+interp_packedsimd_replacescalar_i1 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+	REPLACE_LANE(gint8);
+}
+
+static void
+interp_packedsimd_replacescalar_i2 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+	REPLACE_LANE(gint16);
+}
+
+static void
+interp_packedsimd_replacescalar_i4 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+	REPLACE_LANE(gint32);
+}
+
+static void
+interp_packedsimd_replacescalar_i8 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+	REPLACE_LANE(gint64);
+}
+
+static void
+interp_packedsimd_replacescalar_r4 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+	REPLACE_LANE(float);
+}
+
+static void
+interp_packedsimd_replacescalar_r8 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+	REPLACE_LANE(double);
+}
+
+static void
+interp_packedsimd_shuffle (gpointer res, gpointer _lower, gpointer _upper, gpointer _indices) {
+	v128_i1 indices = *((v128_i1 *)_indices),
+		lower = *((v128_i1 *)_lower),
+		upper = *((v128_i1 *)_upper),
+		result = { 0 };
+
+	for (int i = 0; i < 16; i++) {
+		int index = indices[i] & 31;
+		if (index > 15)
+			result[i] = upper[index - 16];
+		else
+			result[i] = lower[index];
+	}
+
+	*((v128_i1 *)res) = result;
+}
+
+#define INDIRECT_LOAD(fn) \
+	*(v128_t*)res = fn(*(void **)addr_of_addr);
+
+static void
+interp_packedsimd_load128 (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_v128_load);
+}
+
+static void
+interp_packedsimd_load32_zero (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_v128_load32_zero);
+}
+
+static void
+interp_packedsimd_load64_zero (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_v128_load64_zero);
+}
+
+static void
+interp_packedsimd_load8_splat (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_v128_load8_splat);
+}
+
+static void
+interp_packedsimd_load16_splat (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_v128_load16_splat);
+}
+
+static void
+interp_packedsimd_load32_splat (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_v128_load32_splat);
+}
+
+static void
+interp_packedsimd_load64_splat (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_v128_load64_splat);
+}
+
+static void
+interp_packedsimd_load8x8_s (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_i16x8_load8x8);
+}
+
+static void
+interp_packedsimd_load8x8_u (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_u16x8_load8x8);
+}
+
+static void
+interp_packedsimd_load16x4_s (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_i32x4_load16x4);
+}
+
+static void
+interp_packedsimd_load16x4_u (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_u32x4_load16x4);
+}
+
+static void
+interp_packedsimd_load32x2_s (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_i64x2_load32x2);
+}
+
+static void
+interp_packedsimd_load32x2_u (gpointer res, gpointer addr_of_addr) {
+	INDIRECT_LOAD(wasm_u64x2_load32x2);
+}
+
+static void
+interp_packedsimd_store (gpointer res, gpointer addr_of_addr, gpointer vec) {
+	// HACK: Result is unused because Store has a void return value
+	**(v128_t **)addr_of_addr = *(v128_t *)vec;
+}
+
+#define INDIRECT_STORE_LANE(lane_type) \
+	int _lane = WRAP_LANE(lane_type, lane); \
+	**(lane_type **)addr_of_addr = ((lane_type *)vec)[_lane];
+
+static void
+interp_packedsimd_store8_lane (gpointer res, gpointer addr_of_addr, gpointer vec, gpointer lane) {
+	INDIRECT_STORE_LANE(guint8);
+}
+
+static void
+interp_packedsimd_store16_lane (gpointer res, gpointer addr_of_addr, gpointer vec, gpointer lane) {
+	INDIRECT_STORE_LANE(guint16);
+}
+
+static void
+interp_packedsimd_store32_lane (gpointer res, gpointer addr_of_addr, gpointer vec, gpointer lane) {
+	INDIRECT_STORE_LANE(guint32);
+}
+
+static void
+interp_packedsimd_store64_lane (gpointer res, gpointer addr_of_addr, gpointer vec, gpointer lane) {
+	INDIRECT_STORE_LANE(guint64);
+}
+
+#define INDIRECT_LOAD_LANE(lane_type) \
+	int _lane = WRAP_LANE(lane_type, lane); \
+	/* we need temporary storage to do this since res may be the same as vec, addr_of_addr, or lane */ \
+	lane_type lanes[LANE_COUNT(lane_type)]; \
+	memcpy (lanes, vec, 16); \
+	lanes[_lane] = **(lane_type **)addr_of_addr; \
+	memcpy (res, lanes, 16);
+
+static void
+interp_packedsimd_load8_lane (gpointer res, gpointer addr_of_addr, gpointer vec, gpointer lane) {
+	INDIRECT_LOAD_LANE(guint8);
+}
+
+static void
+interp_packedsimd_load16_lane (gpointer res, gpointer addr_of_addr, gpointer vec, gpointer lane) {
+	INDIRECT_LOAD_LANE(guint16);
+}
+
+static void
+interp_packedsimd_load32_lane (gpointer res, gpointer addr_of_addr, gpointer vec, gpointer lane) {
+	INDIRECT_LOAD_LANE(guint32);
+}
+
+static void
+interp_packedsimd_load64_lane (gpointer res, gpointer addr_of_addr, gpointer vec, gpointer lane) {
+	INDIRECT_LOAD_LANE(guint64);
+}
+
+#define INTERP_WASM_SIMD_INTRINSIC_V_P(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1) { \
 	*((v128_t *)res) = c_intrinsic (v1); \
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_V_V(id, c_intrinsic, wasm_opcode) \
+#define INTERP_WASM_SIMD_INTRINSIC_V_V(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1) { \
 	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1)); \
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_I_V(id, c_intrinsic, wasm_opcode) \
+#define INTERP_WASM_SIMD_INTRINSIC_I_V(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1) { \
 	*((int32_t *)res) = c_intrinsic (*((v128_t *)v1)); \
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_V_VV(id, c_intrinsic, wasm_opcode) \
+#define INTERP_WASM_SIMD_INTRINSIC_V_VV(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1, gpointer v2) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1, gpointer v2) { \
 	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1), *((v128_t *)v2)); \
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_V_VI(id, c_intrinsic, wasm_opcode) \
+#define INTERP_WASM_SIMD_INTRINSIC_V_VI(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1, gpointer v2) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1, gpointer v2) { \
 	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1), *((int *)v2)); \
 }
 
-#define INTERP_WASM_SIMD_INTRINSIC_V_VVV(id, c_intrinsic, wasm_opcode) \
+#define INTERP_WASM_SIMD_INTRINSIC_V_VVV(name, arg1, c_intrinsic, wasm_opcode) \
 static void \
-_mono_interp_simd_ ## id (gpointer res, gpointer v1, gpointer v2, gpointer v3) { \
+_mono_interp_simd_ ## c_intrinsic (gpointer res, gpointer v1, gpointer v2, gpointer v3) { \
 	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1), *((v128_t *)v2), *((v128_t *)v3)); \
 }
+
+#define INTERP_WASM_SIMD_INTRINSIC_V_C1(name, arg1, c_function, wasm_opcode)
+#define INTERP_WASM_SIMD_INTRINSIC_V_C2(name, arg1, c_function, wasm_opcode)
+#define INTERP_WASM_SIMD_INTRINSIC_V_C3(name, arg1, c_function, wasm_opcode)
 
 #include "interp-simd-intrins.def"
 
@@ -623,6 +927,9 @@ _mono_interp_simd_ ## id (gpointer res, gpointer v1, gpointer v2, gpointer v3) {
 #undef INTERP_WASM_SIMD_INTRINSIC_V_VV
 #undef INTERP_WASM_SIMD_INTRINSIC_V_VI
 #undef INTERP_WASM_SIMD_INTRINSIC_V_VVV
+#undef INTERP_WASM_SIMD_INTRINSIC_V_C1
+#undef INTERP_WASM_SIMD_INTRINSIC_V_C2
+#undef INTERP_WASM_SIMD_INTRINSIC_V_C3
 
 // Now generate the wasm opcode tables for the intrinsics
 

@@ -1,0 +1,78 @@
+cmake_minimum_required(VERSION 3.16)
+
+project(%ProjectName%)
+enable_language(OBJC ASM)
+
+set(APP_RESOURCES
+%AppResources%
+)
+
+add_executable(
+    %ProjectName%
+    %MainSource%
+    ${APP_RESOURCES}
+    util.h
+    util.m
+    runtime-librarymode.h
+    runtime-librarymode.m
+)
+
+%Defines%
+
+if(NOT %UseNativeAOTRuntime%)
+    include_directories("%MonoInclude%")
+endif()
+
+set_target_properties(%ProjectName% PROPERTIES
+    MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
+    XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
+    XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING "NO"
+    XCODE_EMIT_EFFECTIVE_PLATFORM_NAME "YES"
+    XCODE_EMBED_FRAMEWORKS "%DYLIB_PATH%"
+    XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/Frameworks"
+    XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
+    XCODE_EMBED_FRAMEWORKS_CODE_SIGN_ON_COPY "YES"
+    RESOURCE "${APP_RESOURCES}"
+)
+
+set(HARDENED_RUNTIME
+%HardenedRuntime%
+)
+
+set(HARDENED_RUNTIME_USE_ENTITLEMENTS_FILE
+%HardenedRuntimeUseEntitlementsFile%
+)
+
+if("${HARDENED_RUNTIME}")
+  set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES")
+  if("${HARDENED_RUNTIME_USE_ENTITLEMENTS_FILE}")
+    set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "app.entitlements")
+    add_custom_command(
+      TARGET %ProjectName% POST_BUILD
+      COMMAND if test \"$CODE_SIGN_IDENTITY\"\; then codesign -fs \"$CODE_SIGN_IDENTITY\" $CODESIGNING_FOLDER_PATH/Contents/Resources/*.dylib\; fi
+      )
+  endif()
+endif()
+
+# FIXME: `XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING` should not be NO
+
+target_link_libraries(
+    %ProjectName%
+    PRIVATE
+    "-framework Foundation"
+    "-framework Security"
+    "-framework UIKit"
+    "-lz"
+    "-lc++"
+    "-liconv"
+    "-licucore"
+    %NativeLibrariesToLink%
+    %APP_LINK_LIBRARIES%
+)
+
+set_target_properties(
+    %ProjectName% 
+    PROPERTIES LINK_FLAGS
+    %EXTRA_LINKER_ARGS%
+)

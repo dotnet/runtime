@@ -1,15 +1,36 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace System.Runtime.InteropServices.JavaScript
 {
     internal static partial class JSHostImplementation
     {
         internal unsafe delegate void ToManagedCallback(JSMarshalerArgument* arguments_buffer);
 
-        public sealed class TaskCallback
+        public sealed class PromiseHolder
         {
+            public readonly nint GCHandle; // could be also virtual GCVHandle
             public ToManagedCallback? Callback;
+            public JSProxyContext ProxyContext;
+            public bool IsDisposed;
+#if FEATURE_WASM_THREADS
+            public ManualResetEventSlim? CallbackReady;
+#endif
+
+            public PromiseHolder(JSProxyContext targetContext)
+            {
+                GCHandle = (IntPtr)InteropServices.GCHandle.Alloc(this, GCHandleType.Normal);
+                ProxyContext = targetContext;
+            }
+
+            public PromiseHolder(JSProxyContext targetContext, nint gcvHandle)
+            {
+                GCHandle = gcvHandle;
+                ProxyContext = targetContext;
+            }
         }
 
         [StructLayout(LayoutKind.Explicit)]

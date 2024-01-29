@@ -1,39 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "common.h"
-#include "eventpipeadapter.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
+#include "PalRedhawk.h"
+
+#include <eventpipe/ep.h>
 
 #ifdef FEATURE_PERFTRACING
-
-#include "gcenv.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "SpinLock.h"
 
 struct EventPipeEventInstanceData;
 
 struct EventPipeSessionInfo;
 
 EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
-    LPCWSTR outputFile,
+    const WCHAR* outputFile,
     EventPipeSerializationFormat format,
     uint32_t circularBufferSizeInMB,
     /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ const void * pProviders,
     uint32_t numProviders)
 {
-    PalDebugBreak();
     return 0;
 }
 
 EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_Disable(uint64_t sessionID)
 {
-    PalDebugBreak();
 }
 
 EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_CreateProvider(
-    LPCWSTR providerName,
+    const WCHAR* providerName,
     EventPipeCallback pCallbackFunc,
     void* pCallbackContext)
 {
@@ -52,9 +47,8 @@ EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_DefineEvent(
     return 0;
 }
 
-EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_GetProvider(LPCWSTR providerName)
+EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_GetProvider(const WCHAR* providerName)
 {
-    PalDebugBreak();
     return 0;
 }
 
@@ -64,7 +58,6 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_DeleteProvider(intptr_t 
 
 EXTERN_C NATIVEAOT_API int __cdecl RhEventPipeInternal_EventActivityIdControl(uint32_t controlCode, GUID *pActivityId)
 {
-    PalDebugBreak();
     return 0;
 }
 
@@ -79,25 +72,21 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_WriteEventData(
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetSessionInfo(uint64_t sessionID, EventPipeSessionInfo *pSessionInfo)
 {
-    PalDebugBreak();
     return FALSE;
 }
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetNextEvent(uint64_t sessionID, EventPipeEventInstanceData *pInstance)
 {
-    PalDebugBreak();
     return FALSE;
 }
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_SignalSession(uint64_t sessionID)
 {
-    PalDebugBreak();
     return FALSE;
 }
 
 EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSignal(uint64_t sessionID, int32_t timeoutMs)
 {
-    PalDebugBreak();
     return FALSE;
 }
 

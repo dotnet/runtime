@@ -9,6 +9,8 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    // There is small set of ObjectDataBuilder in at src/installer/managed/Microsoft.NET.HostModel/ObjectDataBuilder.cs
+    // only for ResourceData.WriteResources
     public struct ObjectDataBuilder
 #if !READYTORUN
         : Internal.Runtime.ITargetBinaryWriter
@@ -291,6 +293,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
                 case RelocType.IMAGE_REL_BASED_HIGHLOW:
                 case RelocType.IMAGE_REL_SECREL:
+                case RelocType.IMAGE_REL_TLSGD:
+                case RelocType.IMAGE_REL_TPOFF:
                 case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                 case RelocType.IMAGE_REL_BASED_ADDR32NB:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
@@ -302,11 +306,23 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
                 case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL:
+                case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12:
+                case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC:
+
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
+
+                //TODO: consider removal of IMAGE_REL_RISCV64_JALR from runtime too
+                case RelocType.IMAGE_REL_BASED_RISCV64_PC:
                     Debug.Assert(delta == 0);
                     // Do not vacate space for this kind of relocation, because
                     // the space is embedded in the instruction.

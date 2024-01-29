@@ -28,6 +28,8 @@ namespace System.Text.Json.SourceGeneration
         IEnumerableOfT,
         Stack,
         Queue,
-        ImmutableEnumerable
+        ImmutableEnumerable,
+        MemoryOfT,
+        ReadOnlyMemoryOfT
     }
 }

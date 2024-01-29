@@ -8,7 +8,7 @@ using Internal.Metadata.NativeFormat;
 
 namespace Internal.StackTraceMetadata
 {
-    class MethodNameFormatter
+    internal class MethodNameFormatter
     {
         /// <summary>
         /// Metadata reader used for the purpose of method name formatting.
@@ -35,10 +35,38 @@ namespace Internal.StackTraceMetadata
             _typeContext = typeContext;
         }
 
-        public static string FormatMethodName(MetadataReader metadataReader, Handle methodHandle)
+        public static string FormatMethodName(MetadataReader metadataReader, Handle owningType, ConstantStringValueHandle name, MethodSignatureHandle signature, ConstantStringArrayHandle genericArguments)
         {
-            MethodNameFormatter formatter = new MethodNameFormatter(metadataReader, SigTypeContext.FromMethod(metadataReader, methodHandle));
-            formatter.EmitMethodName(methodHandle);
+            MethodNameFormatter formatter = new MethodNameFormatter(metadataReader, SigTypeContext.FromMethod(metadataReader, owningType, genericArguments));
+            formatter.EmitTypeName(owningType, namespaceQualified: true);
+            formatter._outputBuilder.Append('.');
+            formatter.EmitString(name);
+
+            if (!genericArguments.IsNull(metadataReader))
+            {
+                var args = metadataReader.GetConstantStringArray(genericArguments);
+                bool first = true;
+                foreach (Handle handle in args.Value)
+                {
+                    if (first)
+                    {
+                        first = false;
+                        formatter._outputBuilder.Append('[');
+                    }
+                    else
+                    {
+                        formatter._outputBuilder.Append(',');
+                    }
+                    formatter.EmitString(handle.ToConstantStringValueHandle(metadataReader));
+                }
+                if (!first)
+                {
+                    formatter._outputBuilder.Append(']');
+                }
+            }
+
+            formatter.EmitMethodParameters(metadataReader.GetMethodSignature(signature));
+
             return formatter._outputBuilder.ToString();
         }
 
@@ -73,99 +101,6 @@ namespace Internal.StackTraceMetadata
             formatter.EmitMethodParameters(methodHandle);
 
             return formatter._outputBuilder.ToString();
-        }
-
-        /// <summary>
-        /// Emit a given method signature to a specified string builder.
-        /// </summary>
-        /// <param name="methodHandle">Method reference or instantiation token</param>
-        private void EmitMethodName(Handle methodHandle)
-        {
-            switch (methodHandle.HandleType)
-            {
-                case HandleType.MemberReference:
-                    EmitMethodReferenceName(methodHandle.ToMemberReferenceHandle(_metadataReader));
-                    break;
-
-                case HandleType.MethodInstantiation:
-                    EmitMethodInstantiationName(methodHandle.ToMethodInstantiationHandle(_metadataReader));
-                    break;
-
-                case HandleType.QualifiedMethod:
-                    EmitMethodDefinitionName(methodHandle.ToQualifiedMethodHandle(_metadataReader));
-                    break;
-
-                default:
-                    Debug.Assert(false);
-                    _outputBuilder.Append("???");
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Emit method reference to the output string builder.
-        /// </summary>
-        /// <param name="memberRefHandle">Member reference handle</param>
-        private void EmitMethodReferenceName(MemberReferenceHandle memberRefHandle)
-        {
-            MemberReference methodRef = _metadataReader.GetMemberReference(memberRefHandle);
-            MethodSignature methodSignature;
-            EmitContainingTypeAndMethodName(methodRef, out methodSignature);
-            EmitMethodParameters(methodSignature);
-        }
-
-        /// <summary>
-        /// Emit generic method instantiation to the output string builder.
-        /// </summary>
-        /// <param name="methodInstHandle">Method instantiation handle</param>
-        private void EmitMethodInstantiationName(MethodInstantiationHandle methodInstHandle)
-        {
-            MethodInstantiation methodInst = _metadataReader.GetMethodInstantiation(methodInstHandle);
-
-            if (methodInst.Method.HandleType == HandleType.MemberReference)
-            {
-                MemberReferenceHandle methodRefHandle = methodInst.Method.ToMemberReferenceHandle(_metadataReader);
-                MemberReference methodRef = methodRefHandle.GetMemberReference(_metadataReader);
-                EmitContainingTypeAndMethodName(methodRef, out MethodSignature methodSignature);
-                EmitGenericArguments(methodInst.GenericTypeArguments);
-                EmitMethodParameters(methodSignature);
-            }
-            else
-            {
-                QualifiedMethodHandle qualifiedMethodHandle = methodInst.Method.ToQualifiedMethodHandle(_metadataReader);
-                QualifiedMethod qualifiedMethod = _metadataReader.GetQualifiedMethod(qualifiedMethodHandle);
-                EmitContainingTypeAndMethodName(qualifiedMethod);
-                EmitGenericArguments(methodInst.GenericTypeArguments);
-                EmitMethodParameters(qualifiedMethod.Method);
-            }
-        }
-
-        private void EmitMethodDefinitionName(QualifiedMethodHandle qualifiedMethodHandle)
-        {
-            QualifiedMethod qualifiedMethod = _metadataReader.GetQualifiedMethod(qualifiedMethodHandle);
-            EmitContainingTypeAndMethodName(qualifiedMethod);
-            EmitMethodParameters(qualifiedMethod.Method);
-        }
-
-        /// <summary>
-        /// Emit containing type and method name and extract the method signature from a method reference.
-        /// </summary>
-        /// <param name="methodRef">Method reference to format</param>
-        /// <param name="methodSignature">Output method signature</param>
-        private void EmitContainingTypeAndMethodName(MemberReference methodRef, out MethodSignature methodSignature)
-        {
-            methodSignature = _metadataReader.GetMethodSignature(methodRef.Signature.ToMethodSignatureHandle(_metadataReader));
-            EmitTypeName(methodRef.Parent, namespaceQualified: true);
-            _outputBuilder.Append('.');
-            EmitString(methodRef.Name);
-        }
-
-        private void EmitContainingTypeAndMethodName(QualifiedMethod qualifiedMethod)
-        {
-            Method method = _metadataReader.GetMethod(qualifiedMethod.Method);
-            EmitTypeName(qualifiedMethod.EnclosingType, namespaceQualified: true);
-            _outputBuilder.Append('.');
-            EmitString(method.Name);
         }
 
         /// <summary>
@@ -306,6 +241,11 @@ namespace Internal.StackTraceMetadata
 
                 case HandleType.FunctionPointerSignature:
                     EmitFunctionPointerTypeName();
+                    break;
+
+                // This is not an actual type, but we don't always bother representing generic arguments on generic methods as types
+                case HandleType.ConstantStringValue:
+                    EmitString(typeHandle.ToConstantStringValueHandle(_metadataReader));
                     break;
 
                 default:
@@ -480,17 +420,6 @@ namespace Internal.StackTraceMetadata
         }
 
         /// <summary>
-        /// Emit angle-bracketed list of type / method generic arguments.
-        /// </summary>
-        /// <param name="genericArguments">Collection of generic argument type handles</param>
-        private void EmitGenericArguments(HandleCollection genericArguments)
-        {
-            _outputBuilder.Append('[');
-            EmitTypeVector(genericArguments);
-            _outputBuilder.Append(']');
-        }
-
-        /// <summary>
         /// Emit a string (represented by a serialized ConstantStringValue) to the output string builder.
         /// </summary>
         /// <param name="stringHandle">Constant string value token (offset within stack trace native metadata)</param>
@@ -588,35 +517,12 @@ namespace Internal.StackTraceMetadata
                 }
             }
 
-            public static SigTypeContext FromMethod(MetadataReader metadataReader, Handle methodHandle)
+            public static SigTypeContext FromMethod(MetadataReader metadataReader, Handle enclosingTypeHandle, ConstantStringArrayHandle methodInst)
             {
-                object typeContext;
-                object methodContext;
-
-                switch (methodHandle.HandleType)
-                {
-                    case HandleType.MemberReference:
-                        typeContext = GetTypeContext(metadataReader, methodHandle);
-                        methodContext = default(HandleCollection);
-                        break;
-
-                    case HandleType.MethodInstantiation:
-                        MethodInstantiation methodInst = methodHandle.ToMethodInstantiationHandle(metadataReader).GetMethodInstantiation(metadataReader);
-                        typeContext = GetTypeContext(metadataReader, methodInst.Method);
-                        methodContext = methodInst.GenericTypeArguments;
-                        break;
-
-                    case HandleType.QualifiedMethod:
-                        QualifiedMethod qualifiedMethod = methodHandle.ToQualifiedMethodHandle(metadataReader).GetQualifiedMethod(metadataReader);
-                        typeContext = GetTypeContext(metadataReader, qualifiedMethod.EnclosingType);
-                        methodContext = qualifiedMethod.Method.GetMethod(metadataReader).GenericParameters;
-                        break;
-                    default:
-                        Debug.Assert(false);
-                        return default(SigTypeContext);
-                }
-
-                return new SigTypeContext(typeContext, methodContext);
+                object methodContext = null;
+                if (!methodInst.IsNull(metadataReader))
+                    methodContext = methodInst.GetConstantStringArray(metadataReader).Value;
+                return new SigTypeContext(GetTypeContext(metadataReader, enclosingTypeHandle), methodContext);
             }
 
             public static SigTypeContext FromMethod(MetadataReader metadataReader, TypeDefinitionHandle enclosingTypeHandle, MethodHandle methodHandle)

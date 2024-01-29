@@ -8,11 +8,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared;
-using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer
@@ -24,6 +21,12 @@ namespace ILLink.RoslynAnalyzer
 		internal const string DynamicallyAccessedMembersAttribute = nameof (DynamicallyAccessedMembersAttribute);
 		public const string attributeArgument = "attributeArgument";
 		public const string FullyQualifiedDynamicallyAccessedMembersAttribute = "System.Diagnostics.CodeAnalysis." + DynamicallyAccessedMembersAttribute;
+		public static Lazy<ImmutableArray<RequiresAnalyzerBase>> RequiresAnalyzers { get; } = new Lazy<ImmutableArray<RequiresAnalyzerBase>> (GetRequiresAnalyzers);
+		static ImmutableArray<RequiresAnalyzerBase> GetRequiresAnalyzers () =>
+			ImmutableArray.Create<RequiresAnalyzerBase> (
+				new RequiresAssemblyFilesAnalyzer (),
+				new RequiresUnreferencedCodeAnalyzer (),
+				new RequiresDynamicCodeAnalyzer ());
 
 		public static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics ()
 		{
@@ -48,6 +51,12 @@ namespace ILLink.RoslynAnalyzer
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnrecognizedTypeNameInTypeGetType));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnrecognizedParameterInMethodCreateInstance));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed));
+
+			foreach (var requiresAnalyzer in RequiresAnalyzers.Value) {
+				foreach (var diagnosticDescriptor in requiresAnalyzer.SupportedDiagnostics)
+					diagDescriptorsArrayBuilder.Add (diagnosticDescriptor);
+			}
+
 			return diagDescriptorsArrayBuilder.ToImmutable ();
 
 			void AddRange (DiagnosticId first, DiagnosticId last)
@@ -63,30 +72,54 @@ namespace ILLink.RoslynAnalyzer
 
 		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => GetSupportedDiagnostics ();
 
+		static Location GetPrimaryLocation (ImmutableArray<Location> locations) => locations.Length > 0 ? locations[0] : Location.None;
+
 		public override void Initialize (AnalysisContext context)
 		{
-			if (!System.Diagnostics.Debugger.IsAttached)
+			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
+
+			if (!Debugger.IsAttached)
 				context.EnableConcurrentExecution ();
-			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.ReportDiagnostics);
+
 			context.RegisterCompilationStartAction (context => {
-				if (!context.Options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer, context.Compilation))
+				var dataFlowAnalyzerContext = DataFlowAnalyzerContext.Create (context.Options, context.Compilation, RequiresAnalyzers.Value);
+				if (!dataFlowAnalyzerContext.AnyAnalyzersEnabled)
 					return;
 
 				context.RegisterOperationBlockAction (context => {
-					if (context.OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
-						return;
-
-
 					foreach (var operationBlock in context.OperationBlocks) {
-						TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, operationBlock);
+						TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, dataFlowAnalyzerContext, operationBlock);
 						trimDataFlowAnalysis.InterproceduralAnalyze ();
-						foreach (var diagnostic in trimDataFlowAnalysis.TrimAnalysisPatterns.CollectDiagnostics ())
+						foreach (var diagnostic in trimDataFlowAnalysis.CollectDiagnostics ())
 							context.ReportDiagnostic (diagnostic);
 					}
 				});
-				context.RegisterSyntaxNodeAction (context => {
-					ProcessGenericParameters (context);
-				}, SyntaxKind.GenericName);
+
+				// Remaining actions are only for DynamicallyAccessedMembers analysis.
+				if (!dataFlowAnalyzerContext.EnableTrimAnalyzer)
+					return;
+
+				// Examine generic instantiations in base types and interface list
+				context.RegisterSymbolAction (context => {
+					var type = (INamedTypeSymbol) context.Symbol;
+					// RUC on type doesn't silence DAM warnings about generic base/interface types.
+					// This knowledge lives in IsInRequiresUnreferencedCodeAttributeScope,
+					// which we still call for consistency here, but it is expected to return false.
+					if (type.IsInRequiresUnreferencedCodeAttributeScope (out _))
+						return;
+
+					var location = GetPrimaryLocation (type.Locations);
+					DiagnosticContext diagnosticContext = new (location);
+
+					if (type.BaseType is INamedTypeSymbol baseType)
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, baseType);
+
+					foreach (var interfaceType in type.Interfaces)
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, interfaceType);
+
+					foreach (var diagnostic in diagnosticContext.Diagnostics)
+						context.ReportDiagnostic (diagnostic);
+				}, SymbolKind.NamedType);
 				context.RegisterSymbolAction (context => {
 					VerifyMemberOnlyApplyToTypesOrStrings (context, context.Symbol);
 					VerifyDamOnPropertyAndAccessorMatch (context, (IMethodSymbol) context.Symbol);
@@ -104,95 +137,22 @@ namespace ILLink.RoslynAnalyzer
 			});
 		}
 
-		static void ProcessGenericParameters (SyntaxNodeAnalysisContext context)
-		{
-			// RUC on the containing symbol normally silences warnings, but when examining a generic base type,
-			// the containing symbol is the declared derived type. RUC on the derived type does not silence
-			// warnings about base type arguments.
-			if (context.ContainingSymbol is not null
-				&& context.ContainingSymbol is not INamedTypeSymbol
-				&& context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
-				return;
-
-			var symbol = context.SemanticModel.GetSymbolInfo (context.Node).Symbol;
-
-			// Avoid unnecessary execution if not NamedType or Method
-			if (symbol is not INamedTypeSymbol && symbol is not IMethodSymbol)
-				return;
-
-			// Members inside nameof or cref comments, commonly used to access the string value of a variable, type, or a memeber,
-			// can generate diagnostics warnings, which can be noisy and unhelpful.
-			// Walking the node heirarchy to check if the member is inside a nameof/cref to not generate diagnostics
-			var parentNode = context.Node;
-			while (parentNode != null) {
-				if (parentNode is InvocationExpressionSyntax invocationExpression &&
-					invocationExpression.Expression is IdentifierNameSyntax ident1 &&
-					ident1.Identifier.ValueText.Equals ("nameof"))
-					return;
-				else if (parentNode is CrefSyntax)
-					return;
-
-				parentNode = parentNode.Parent;
-			}
-
-			ImmutableArray<ITypeParameterSymbol> typeParams = default;
-			ImmutableArray<ITypeSymbol> typeArgs = default;
-			switch (symbol) {
-			case INamedTypeSymbol type:
-				typeParams = type.TypeParameters;
-				typeArgs = type.TypeArguments;
-				break;
-			case IMethodSymbol targetMethod:
-				typeParams = targetMethod.TypeParameters;
-				typeArgs = targetMethod.TypeArguments;
-				break;
-			}
-
-			if (typeParams != null) {
-				Debug.Assert (typeParams.Length == typeArgs.Length);
-
-				for (int i = 0; i < typeParams.Length; i++) {
-					// Syntax like typeof (Foo<>) will have an ErrorType as the type argument.
-					// These uninstantiated generics should not produce warnings.
-					if (typeArgs[i].Kind == SymbolKind.ErrorType)
-						continue;
-					var sourceValue = SingleValueExtensions.FromTypeSymbol (typeArgs[i])!;
-					var targetValue = new GenericParameterValue (typeParams[i]);
-					foreach (var diagnostic in GetDynamicallyAccessedMembersDiagnostics (sourceValue, targetValue, context.Node.GetLocation ()))
-						context.ReportDiagnostic (diagnostic);
-				}
-			}
-		}
-
-		static List<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (SingleValue sourceValue, SingleValue targetValue, Location location)
-		{
-			// The target should always be an annotated value, but the visitor design currently prevents
-			// declaring this in the type system.
-			if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
-				throw new NotImplementedException ();
-
-			var diagnosticContext = new DiagnosticContext (location);
-			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, default (ReflectionAccessAnalyzer));
-			requireDynamicallyAccessedMembersAction.Invoke (sourceValue, targetWithDynamicallyAccessedMembers);
-
-			return diagnosticContext.Diagnostics;
-		}
-
 		static void VerifyMemberOnlyApplyToTypesOrStrings (SymbolAnalysisContext context, ISymbol member)
 		{
+			var location = GetPrimaryLocation (member.Locations);
 			if (member is IFieldSymbol field && field.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !field.Type.IsTypeInterestingForDataflow ())
-				context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnFieldCanOnlyApplyToTypesOrStrings), member.Locations[0], member.GetDisplayName ()));
+				context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnFieldCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName ()));
 			else if (member is IMethodSymbol method) {
 				if (method.GetDynamicallyAccessedMemberTypesOnReturnType () != DynamicallyAccessedMemberTypes.None && !method.ReturnType.IsTypeInterestingForDataflow ())
-					context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings), member.Locations[0], member.GetDisplayName ()));
+					context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName ()));
 				if (method.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !method.ContainingType.IsTypeInterestingForDataflow ())
-					context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods), member.Locations[0]));
+					context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods), location));
 				foreach (var parameter in method.Parameters) {
 					if (parameter.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !parameter.Type.IsTypeInterestingForDataflow ())
-						context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStrings), member.Locations[0], parameter.GetDisplayName (), member.GetDisplayName ()));
+						context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStrings), location, parameter.GetDisplayName (), member.GetDisplayName ()));
 				}
 			} else if (member is IPropertySymbol property && property.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow ()) {
-				context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings), member.Locations[0], member.GetDisplayName ()));
+				context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName ()));
 			}
 		}
 
@@ -213,7 +173,7 @@ namespace ILLink.RoslynAnalyzer
 				(IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements (overrideMethod,
 					baseMethod, overrideMethodReturnAnnotation, baseMethodReturnAnnotation);
 
-				Location attributableSymbolLocation = attributableMethod.Locations[0];
+				Location attributableSymbolLocation = GetPrimaryLocation (attributableMethod.Locations);
 
 				// code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
 				(Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
@@ -223,7 +183,7 @@ namespace ILLink.RoslynAnalyzer
 
 				context.ReportDiagnostic (Diagnostic.Create (
 					DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides),
-					overrideMethod.Locations[0], sourceLocation, DAMArgs?.ToImmutableDictionary (), overrideMethod.GetDisplayName (), baseMethod.GetDisplayName ()));
+					GetPrimaryLocation (overrideMethod.Locations), sourceLocation, DAMArgs?.ToImmutableDictionary (), overrideMethod.GetDisplayName (), baseMethod.GetDisplayName ()));
 			}
 
 			foreach (var overrideParam in overrideMethod.GetMetadataParameters ()) {
@@ -256,7 +216,8 @@ namespace ILLink.RoslynAnalyzer
 
 					(IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements (overrideMethod, baseMethod, methodTypeParameterAnnotation, overriddenMethodTypeParameterAnnotation);
 
-					Location attributableSymbolLocation = attributableMethod.TypeParameters[i].Locations[0];
+					var attributableSymbol = attributableMethod.TypeParameters[i];
+					Location attributableSymbolLocation = GetPrimaryLocation (attributableSymbol.Locations);
 
 					// code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
 					(Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
@@ -266,7 +227,7 @@ namespace ILLink.RoslynAnalyzer
 
 					context.ReportDiagnostic (Diagnostic.Create (
 						DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides),
-						overrideMethod.TypeParameters[i].Locations[0], sourceLocation, DAMArgs?.ToImmutableDictionary (),
+						GetPrimaryLocation (overrideMethod.TypeParameters[i].Locations), sourceLocation, DAMArgs?.ToImmutableDictionary (),
 						overrideMethod.TypeParameters[i].GetDisplayName (), overrideMethod.GetDisplayName (),
 						baseMethod.TypeParameters[i].GetDisplayName (), baseMethod.GetDisplayName ()));
 				}
@@ -275,7 +236,7 @@ namespace ILLink.RoslynAnalyzer
 			if (!overrideMethod.IsStatic && overrideMethod.GetDynamicallyAccessedMemberTypes () != baseMethod.GetDynamicallyAccessedMemberTypes ())
 				context.ReportDiagnostic (Diagnostic.Create (
 					DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchOnImplicitThisBetweenOverrides),
-					overrideMethod.Locations[0],
+					GetPrimaryLocation (overrideMethod.Locations),
 					overrideMethod.GetDisplayName (), baseMethod.GetDisplayName ()));
 		}
 
@@ -300,10 +261,11 @@ namespace ILLink.RoslynAnalyzer
 				// None on parameter of 'set' matches unannotated
 				|| methodSymbol.MethodKind == MethodKind.PropertySet
 				&& methodSymbol.Parameters[methodSymbol.Parameters.Length - 1].GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None) {
+				var associatedSymbol = methodSymbol.AssociatedSymbol!;
 				context.ReportDiagnostic (Diagnostic.Create (
 					DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor),
-					methodSymbol.AssociatedSymbol!.Locations[0],
-					methodSymbol.AssociatedSymbol!.GetDisplayName (),
+					GetPrimaryLocation (associatedSymbol.Locations),
+					associatedSymbol.GetDisplayName (),
 					methodSymbol.GetDisplayName ()
 				));
 				return;

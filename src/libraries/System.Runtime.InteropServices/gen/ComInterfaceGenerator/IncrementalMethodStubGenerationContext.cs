@@ -7,7 +7,7 @@ using System;
 
 namespace Microsoft.Interop
 {
-    internal abstract record GeneratedMethodContextBase(ManagedTypeInfo OriginalDefiningType, SequenceEqualImmutableArray<Diagnostic> Diagnostics);
+    internal abstract record GeneratedMethodContextBase(ManagedTypeInfo OriginalDefiningType, SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
     internal sealed record IncrementalMethodStubGenerationContext(
         SignatureContext SignatureContext,
@@ -17,10 +17,9 @@ namespace Microsoft.Interop
         SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
         VirtualMethodIndexData VtableIndexData,
         MarshallingInfo ExceptionMarshallingInfo,
-        MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> ManagedToUnmanagedGeneratorFactory,
-        MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
+        EnvironmentFlags EnvironmentFlags,
         ManagedTypeInfo TypeKeyOwner,
         ManagedTypeInfo DeclaringType,
-        SequenceEqualImmutableArray<Diagnostic> Diagnostics,
+        SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics,
         MarshallingInfo ManagedThisMarshallingInfo) : GeneratedMethodContextBase(DeclaringType, Diagnostics);
 }

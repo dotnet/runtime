@@ -23,10 +23,6 @@
     <!-- If it's not win/osx/linux-musl, it's a non-portable Linux. Treat as Linux. -->
     <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' != 'win' and '$(JITToolsRidWithoutPlatform)' != 'osx' and '$(JITToolsRidWithoutPlatform)' != 'linux-musl'">linux</JITToolsRidWithoutPlatform>
 
-    <!-- OSX builds have a version -->
-    <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' == 'osx' and '$(JITToolsRidPlatform)' == 'x64'">osx.10.12</JITToolsRidWithoutPlatform>
-    <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' == 'osx' and '$(JITToolsRidPlatform)' == 'arm64'">osx.11.0</JITToolsRidWithoutPlatform>
-
     <!-- There are no x86 packages, so use x64 -->
     <JITToolsRidPlatform Condition="'$(JITToolsRidPlatform)' == 'x86'">x64</JITToolsRidPlatform>
     <JITToolsRidPlatform Condition="'$(JITToolsRidPlatform)' == 'arm' and '$(JITToolsRidWithoutPlatform)' == 'win'">arm64</JITToolsRidPlatform>
@@ -38,15 +34,25 @@
     <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'linux-musl-x64'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
     <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'win-arm64'">$(runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
     <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'win-x64'">$(runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
-    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx.11.0-arm64'">$(runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
-    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx.10.12-x64'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx-arm64'">$(runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx-x64'">$(runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
-    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="runtime.$(JITToolsRid).Microsoft.NETCore.Runtime.JIT.Tools">
-      <Version>$(JITToolsVersion)</Version>
-    </PackageReference>
+    <PackageDownload Condition="'$(DotNetBuildFromSource)' != 'true'" Include="runtime.$(JITToolsRid).Microsoft.NETCore.Runtime.JIT.Tools">
+      <Version>[$(JITToolsVersion)]</Version>
+    </PackageDownload>
   </ItemGroup>
+
+  <Target Name="CopyJitTools" AfterTargets="Build">
+    <ItemGroup>
+      <JitToolsFiles Include="$(NuGetPackageRoot)\runtime.$(JITToolsRid).microsoft.netcore.runtime.jit.tools\$(JITToolsVersion)\runtimes\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(JitToolsFiles)"
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true"
+          DestinationFolder="$(OutputPath)\runtimes\%(RecursiveDir)" />
+  </Target>
 
 </Project>

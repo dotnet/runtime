@@ -35,7 +35,7 @@ namespace Mono.Linker.Dataflow
 		public override int GetHashCode () => HashUtils.Combine (MethodBodies.GetHashCode (), HoistedLocals.GetHashCode ());
 
 		public InterproceduralState Clone ()
-			=> new (MethodBodies.Clone (), HoistedLocals.Clone (), lattice);
+			=> new (MethodBodies.DeepCopy (), HoistedLocals.Clone (), lattice);
 
 		public void TrackMethod (MethodDefinition method)
 		{
@@ -53,7 +53,8 @@ namespace Mono.Linker.Dataflow
 		public void TrackMethod (MethodIL methodIL)
 		{
 			// Work around the fact that ValueSet is readonly
-			var methodsList = new List<MethodIL> (MethodBodies);
+			Debug.Assert (!MethodBodies.IsUnknown ());
+			var methodsList = new List<MethodIL> (MethodBodies.GetKnownValues ());
 			methodsList.Add (methodIL);
 
 			// For state machine methods, also scan the state machine members.

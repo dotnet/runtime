@@ -48,7 +48,7 @@ public:
 
     static int IndexForType(mdToken tk);
 
-    CeeGenTokenMapper() : m_pIImport(0), m_cRefs(1), m_pIMapToken(NULL)  { LIMITED_METHOD_CONTRACT; }
+    CeeGenTokenMapper() : m_pIImport(0), m_cRefs(1) { LIMITED_METHOD_CONTRACT; }
     virtual ~CeeGenTokenMapper() {}
 
 //*****************************************************************************
@@ -66,12 +66,6 @@ public:
         ULONG cRefs = --m_cRefs;
         if (cRefs == 0)
         {
-            if (m_pIMapToken)
-            {
-                m_pIMapToken->Release();
-                m_pIMapToken = NULL;
-            }
-
             delete this;
         }
         return cRefs;
@@ -104,28 +98,6 @@ public:
 //*****************************************************************************
     virtual HRESULT GetMetaData(IMetaDataImport **ppIImport);
 
-//*****************************************************************************
-// Add another token mapper.
-//*****************************************************************************
-    virtual HRESULT AddTokenMapper(IMapToken *pIMapToken)
-    {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FORBID_FAULT;
-
-        // Add the token mapper, if there isn't already one.
-        if (m_pIMapToken == NULL)
-        {
-            m_pIMapToken = pIMapToken;
-            m_pIMapToken->AddRef();
-            return S_OK;
-        }
-        else
-        {
-            _ASSERTE(!"Token mapper already set!");
-            return E_FAIL;
-        }
-    }
-
 protected:
 // m_rgMap is an array indexed by token type.  For each type, an array of
 // tokens is kept, indexed by from rid.  To see if a token has been moved,
@@ -134,8 +106,6 @@ protected:
     TOKENMAP    m_rgMap[MAX_TOKENMAP];
     IMetaDataImport *m_pIImport;
     ULONG       m_cRefs;                // Ref count.
-    IMapToken  *m_pIMapToken;
-
 };
 
 #endif // __CeeGenTokenMapper_h__

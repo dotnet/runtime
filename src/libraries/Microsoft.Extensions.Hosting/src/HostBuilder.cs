@@ -328,6 +328,7 @@ namespace Microsoft.Extensions.Hosting
             });
             services.AddOptions().Configure<HostOptions>(options => { options.Initialize(hostBuilderContext.Configuration); });
             services.AddLogging();
+            services.AddMetrics();
         }
 
         [MemberNotNull(nameof(_appServices))]

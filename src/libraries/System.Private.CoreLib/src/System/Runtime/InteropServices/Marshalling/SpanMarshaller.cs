@@ -108,7 +108,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         public ref struct ManagedToUnmanagedIn
         {
-            // We'll keep the buffer size at a maximum of 200 bytes to avoid overflowing the stack.
+            // We'll keep the buffer size at a maximum of 512 bytes to avoid overflowing the stack.
             public static int BufferSize { get; } = 0x200 / sizeof(TUnmanagedElement);
 
             private Span<T> _managedArray;

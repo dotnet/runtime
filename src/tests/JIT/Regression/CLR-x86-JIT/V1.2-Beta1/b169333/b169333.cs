@@ -23,13 +23,12 @@ public class C : IFoo<A>, IFoo<B>
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         C c = new C();
         IFoo<A> i = c;
         i.Foo(null);
         System.Console.WriteLine("PASSED");
-        return 100;
     }
 }
 

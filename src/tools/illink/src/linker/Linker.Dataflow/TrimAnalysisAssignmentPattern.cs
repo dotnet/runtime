@@ -11,14 +11,14 @@ namespace Mono.Linker.Dataflow
 {
 	public readonly record struct TrimAnalysisAssignmentPattern
 	{
-		public MultiValue Source { init; get; }
-		public MultiValue Target { init; get; }
-		public MessageOrigin Origin { init; get; }
+		public MultiValue Source { get; init; }
+		public MultiValue Target { get; init; }
+		public MessageOrigin Origin { get; init; }
 
 		public TrimAnalysisAssignmentPattern (MultiValue source, MultiValue target, MessageOrigin origin)
 		{
-			Source = source.Clone ();
-			Target = target.Clone ();
+			Source = source.DeepCopy ();
+			Target = target.DeepCopy ();
 			Origin = origin;
 		}
 
@@ -37,8 +37,8 @@ namespace Mono.Linker.Dataflow
 			bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (Origin.Provider, out _);
 			var diagnosticContext = new DiagnosticContext (Origin, diagnosticsEnabled, context);
 
-			foreach (var sourceValue in Source) {
-				foreach (var targetValue in Target) {
+			foreach (var sourceValue in Source.AsEnumerable ()) {
+				foreach (var targetValue in Target.AsEnumerable ()) {
 					if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
 						throw new NotImplementedException ();
 

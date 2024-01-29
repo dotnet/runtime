@@ -30,7 +30,7 @@
 #include "array.h"
 #include "eepolicy.h"
 
-
+#include <minipal/cpuid.h>
 
 
 FCIMPL0(UINT32, SystemNative::GetTickCount)
@@ -48,8 +48,6 @@ FCIMPL0(UINT64, SystemNative::GetTickCount64)
     return ::GetTickCount64();
 }
 FCIMPLEND;
-
-
 
 
 extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode)

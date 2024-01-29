@@ -22,6 +22,9 @@ namespace ComInterfaceGenerator.Tests
         [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "new_utf16_marshalling")]
         public static partial void* NewIUtf16Marshalling();
 
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "new_string_marshalling_override")]
+        public static partial void* NewStringMarshallingOverride();
+
         [GeneratedComClass]
         internal partial class Utf8MarshalledClass : IUTF8Marshalling
         {
@@ -75,7 +78,6 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/85795", TargetFrameworkMonikers.Any)]
         public void RcwToCcw()
         {
             var cw = new StrategyBasedComWrappers();
@@ -106,6 +108,27 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(customUtf16.GetString(), customUtf16ComObject.GetString());
             customUtf16ComObject.SetString("Set from COM object");
             Assert.Equal(customUtf16.GetString(), customUtf16ComObject.GetString());
+        }
+
+        [Fact]
+        public void MarshalAsAndMarshalUsingOverrideStringMarshalling()
+        {
+            var ptr = NewStringMarshallingOverride();
+            var cw = new StrategyBasedComWrappers();
+            var obj = cw.GetOrCreateObjectForComInstance((nint)ptr, CreateObjectFlags.None);
+            var stringMarshallingOverride = (IStringMarshallingOverride)obj;
+            Assert.Equal("Your string: MyUtf8String", stringMarshallingOverride.StringMarshallingUtf8("MyUtf8String"));
+            Assert.Equal("Your string: MyLPWStrString", stringMarshallingOverride.MarshalAsLPWString("MyLPWStrString"));
+            Assert.Equal("Your string: MyUtf16String", stringMarshallingOverride.MarshalUsingUtf16("MyUtf16String"));
+
+            // Make sure the shadowing methods generated for the derived interface also follow the rules
+            var stringMarshallingOverrideDerived = (IStringMarshallingOverrideDerived)obj;
+            Assert.Equal("Your string: MyUtf8String", stringMarshallingOverrideDerived.StringMarshallingUtf8("MyUtf8String"));
+            Assert.Equal("Your string: MyLPWStrString", stringMarshallingOverrideDerived.MarshalAsLPWString("MyLPWStrString"));
+            Assert.Equal("Your string: MyUtf16String", stringMarshallingOverrideDerived.MarshalUsingUtf16("MyUtf16String"));
+            Assert.Equal("Your string 2: MyUtf8String", stringMarshallingOverrideDerived.StringMarshallingUtf8_2("MyUtf8String"));
+            Assert.Equal("Your string 2: MyLPWStrString", stringMarshallingOverrideDerived.MarshalAsLPWString_2("MyLPWStrString"));
+            Assert.Equal("Your string 2: MyUtf16String", stringMarshallingOverrideDerived.MarshalUsingUtf16_2("MyUtf16String"));
         }
     }
 }

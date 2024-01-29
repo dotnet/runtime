@@ -8,13 +8,13 @@ namespace System.Collections.Frozen
     internal sealed class OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue> : OrdinalStringFrozenDictionary<TValue>
     {
         internal OrdinalStringFrozenDictionary_LeftJustifiedSingleChar(
-            Dictionary<string, TValue> source,
             string[] keys,
+            TValue[] values,
             IEqualityComparer<string> comparer,
             int minimumLength,
             int maximumLengthDiff,
             int hashIndex)
-            : base(source, keys, comparer, minimumLength, maximumLengthDiff, hashIndex, 1)
+            : base(keys, values, comparer, minimumLength, maximumLengthDiff, hashIndex, 1)
         {
         }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.IO
@@ -13,7 +14,7 @@ namespace System.IO
      * and STG_E_PATHNOTFOUND (0x80030003).
      */
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DirectoryNotFoundException : IOException
     {
         public DirectoryNotFoundException()
@@ -23,13 +24,13 @@ namespace System.IO
         }
 
         public DirectoryNotFoundException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_DirectoryNotFoundException)
         {
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
         public DirectoryNotFoundException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_DirectoryNotFoundException, innerException)
         {
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }

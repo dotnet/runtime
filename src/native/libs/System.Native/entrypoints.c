@@ -48,6 +48,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetSignalForBreak)
     DllImportEntry(SystemNative_SetSignalForBreak)
     DllImportEntry(SystemNative_GetSystemTimeAsTicks)
+    DllImportEntry(SystemNative_GetDefaultTimeZone)
     DllImportEntry(SystemNative_GetTimeZoneData)
     DllImportEntry(SystemNative_ConvertErrorPlatformToPal)
     DllImportEntry(SystemNative_ConvertErrorPalToPlatform)
@@ -92,6 +93,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_MksTemps)
     DllImportEntry(SystemNative_MMap)
     DllImportEntry(SystemNative_MUnmap)
+    DllImportEntry(SystemNative_MProtect)
     DllImportEntry(SystemNative_MAdvise)
     DllImportEntry(SystemNative_MSync)
     DllImportEntry(SystemNative_SysConf)
@@ -137,7 +139,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetNameInfo)
     DllImportEntry(SystemNative_GetDomainName)
     DllImportEntry(SystemNative_GetHostName)
-    DllImportEntry(SystemNative_GetIPSocketAddressSizes)
+    DllImportEntry(SystemNative_GetSocketAddressSizes)
     DllImportEntry(SystemNative_GetAddressFamily)
     DllImportEntry(SystemNative_SetAddressFamily)
     DllImportEntry(SystemNative_GetPort)
@@ -183,7 +185,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_TryChangeSocketEventRegistration)
     DllImportEntry(SystemNative_WaitForSocketEvents)
     DllImportEntry(SystemNative_PlatformSupportsDualModeIPv4PacketInfo)
-    DllImportEntry(SystemNative_GetPeerUserName)
     DllImportEntry(SystemNative_GetDomainSocketSizes)
     DllImportEntry(SystemNative_GetMaximumAddressSize)
     DllImportEntry(SystemNative_SendFile)
@@ -275,6 +276,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetEnviron)
     DllImportEntry(SystemNative_FreeEnviron)
     DllImportEntry(SystemNative_GetGroupName)
+    DllImportEntry(SystemNative_GetUInt64OSThreadId)
+    DllImportEntry(SystemNative_TryGetUInt32OSThreadId)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

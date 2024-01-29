@@ -535,6 +535,8 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         DomainAssemblyIterator domainAssemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete);
         while (!domainAssemblyIt.end())
         {
+            // Call AssemblyUnloadStarted event
+            domainAssemblyIt->GetAssembly()->StartUnload();
             // Notify the debugger
             domainAssemblyIt->NotifyDebuggerUnload();
             domainAssemblyIt++;
@@ -1214,7 +1216,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     m_pMarshalingData = NULL;
 
     // Set up the IL stub cache
-    m_ILStubCache.Init(m_pHighFrequencyHeap);
+    m_ILStubCache.Init(this);
 
 #ifdef FEATURE_COMINTEROP
     // Init the COM Interop data hash

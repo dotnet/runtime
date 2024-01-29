@@ -184,12 +184,6 @@
 	<Comment> The given assembly name was invalid. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131052">
-	<SymbolicName>FUSION_E_CACHEFILE_FAILED</SymbolicName>
-	<Message>"Failed to add file to AppDomain cache."</Message>
-	<Comment> Failed to add file to AppDomain cache </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131053">
 	<SymbolicName>FUSION_E_APP_DOMAIN_LOCKED</SymbolicName>
 	<Message>"The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest."</Message>
@@ -1603,7 +1597,7 @@
 <HRESULT NumericValue="0x80131603">
 	<SymbolicName>COR_E_TARGET</SymbolicName>
 	<Message>"Attempt to invoke non-static method with a null Object."</Message>
-	<Comment> - If you attempt to invoke a non-static method with a null Object - If you atte</Comment>
+	<Comment>If you attempt to invoke a non-static method with a null Object</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131604">
@@ -2073,40 +2067,10 @@
 	<SymbolicName>CLDB_E_INTERNALERROR</SymbolicName>
 </HRESULT>
 
-<HRESULT NumericValue="0x80132000">
-	<SymbolicName>CLR_E_BIND_ASSEMBLY_VERSION_TOO_LOW</SymbolicName>
-	<Message>"The bound assembly has a version that is lower than that of the request."</Message>
-	<Comment>For AppX binder, indicates that bound assembly has a version lower than that requested, and we will refuse version rollback.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80132001">
-	<SymbolicName>CLR_E_BIND_ASSEMBLY_PUBLIC_KEY_MISMATCH</SymbolicName>
-	<Message>"The assembly version has a public key token that does not match that of the request."</Message>
-	<Comment>For AppX binder, indicates that bound assembly's public key token doesn't match the key in the assembly name.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80132002">
-	<SymbolicName>CLR_E_BIND_IMAGE_UNAVAILABLE</SymbolicName>
-	<Message>"The requested image was not found or is unavailable."</Message>
-	<Comment>Occurs if a request for a native image is made on an BINDER_SPACE::Assembly interface when one is not available.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80132003">
-	<SymbolicName>CLR_E_BIND_UNRECOGNIZED_IDENTITY_FORMAT</SymbolicName>
-	<Message>"The provided identity format is not recognized."</Message>
-	<Comment>If a binder is provided an identity format that it cannot parse, it returns this error.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80132004">
-	<SymbolicName>CLR_E_BIND_ASSEMBLY_NOT_FOUND</SymbolicName>
-	<Message>"A binding for the specified assembly name was not found."</Message>
-	<Comment>Returned by binders that bind based on assembly identity.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80132005">
-	<SymbolicName>CLR_E_BIND_TYPE_NOT_FOUND</SymbolicName>
-	<Message>"A binding for the specified type name was not found."</Message>
-	<Comment>Returned by binders that bind based on type identity.</Comment>
+<HRESULT NumericValue="0x80132006">
+	<SymbolicName>CLR_E_BIND_ARCHITECTURE_MISMATCH</SymbolicName>
+	<Message>"The assembly architecture is not compatible with the current process architecture."</Message>
+	<Comment>Indicates the assembly cannot be loaded because its architecture is not compatible with that of the current process.</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80132009">

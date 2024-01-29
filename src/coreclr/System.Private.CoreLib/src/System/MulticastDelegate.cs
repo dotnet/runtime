@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -43,7 +44,7 @@ namespace System
 
         internal bool InvocationListLogicallyNull()
         {
-            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is System.Reflection.Emit.DynamicResolver);
+            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is DynamicResolver);
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -59,7 +60,7 @@ namespace System
         {
             if (obj == null)
                 return false;
-            if (object.ReferenceEquals(this, obj))
+            if (ReferenceEquals(this, obj))
                 return true;
             if (!InternalEqualTypes(this, obj))
                 return false;
@@ -158,7 +159,7 @@ namespace System
 
         private static bool TrySetSlot(object?[] a, int index, object o)
         {
-            if (a[index] == null && System.Threading.Interlocked.CompareExchange<object?>(ref a[index], o, null) == null)
+            if (a[index] == null && Threading.Interlocked.CompareExchange<object?>(ref a[index], o, null) == null)
                 return true;
 
             // The slot may be already set because we have added and removed the same method before.
@@ -181,7 +182,7 @@ namespace System
         private MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
-            MulticastDelegate result = (MulticastDelegate)InternalAllocLike(this);
+            MulticastDelegate result = InternalAllocLike(this);
 
             // Performance optimization - if this already points to a true multicast delegate,
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
@@ -565,13 +566,13 @@ namespace System
 
         // this should help inlining
         [DoesNotReturn]
-        [System.Diagnostics.DebuggerNonUserCode]
+        [DebuggerNonUserCode]
         private static void ThrowNullThisInDelegateToInstance() =>
             throw new ArgumentException(SR.Arg_DlgtNullInst);
 
 #pragma warning disable IDE0060
-        [System.Diagnostics.DebuggerNonUserCode]
-        [System.Diagnostics.DebuggerStepThrough]
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
         private void CtorClosed(object target, IntPtr methodPtr)
         {
             if (target == null)
@@ -580,24 +581,26 @@ namespace System
             this._methodPtr = methodPtr;
         }
 
-        [System.Diagnostics.DebuggerNonUserCode]
-        [System.Diagnostics.DebuggerStepThrough]
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
         private void CtorClosedStatic(object target, IntPtr methodPtr)
         {
             this._target = target;
             this._methodPtr = methodPtr;
         }
 
-        [System.Diagnostics.DebuggerNonUserCode]
-        [System.Diagnostics.DebuggerStepThrough]
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
         private void CtorRTClosed(object target, IntPtr methodPtr)
         {
+            if (target == null)
+                ThrowNullThisInDelegateToInstance();
             this._target = target;
             this._methodPtr = AdjustTarget(target, methodPtr);
         }
 
-        [System.Diagnostics.DebuggerNonUserCode]
-        [System.Diagnostics.DebuggerStepThrough]
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
         private void CtorOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
             this._target = this;
@@ -605,42 +608,42 @@ namespace System
             this._methodPtrAux = methodPtr;
         }
 
-        [System.Diagnostics.DebuggerNonUserCode]
-        [System.Diagnostics.DebuggerStepThrough]
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
         private void CtorVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
-            this._methodPtrAux = GetCallStub(methodPtr);
+            this.InitializeVirtualCallStub(methodPtr);
         }
 
-        [System.Diagnostics.DebuggerNonUserCode]
-        [System.Diagnostics.DebuggerStepThrough]
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
         private void CtorCollectibleClosedStatic(object target, IntPtr methodPtr, IntPtr gchandle)
         {
             this._target = target;
             this._methodPtr = methodPtr;
-            this._methodBase = System.Runtime.InteropServices.GCHandle.InternalGet(gchandle);
+            this._methodBase = GCHandle.InternalGet(gchandle);
         }
 
-        [System.Diagnostics.DebuggerNonUserCode]
-        [System.Diagnostics.DebuggerStepThrough]
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
         private void CtorCollectibleOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
             this._methodPtrAux = methodPtr;
-            this._methodBase = System.Runtime.InteropServices.GCHandle.InternalGet(gchandle);
+            this._methodBase = GCHandle.InternalGet(gchandle);
         }
 
-        [System.Diagnostics.DebuggerNonUserCode]
-        [System.Diagnostics.DebuggerStepThrough]
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
         private void CtorCollectibleVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
-            this._methodPtrAux = GetCallStub(methodPtr);
-            this._methodBase = System.Runtime.InteropServices.GCHandle.InternalGet(gchandle);
+            this._methodBase = GCHandle.InternalGet(gchandle);
+            this.InitializeVirtualCallStub(methodPtr);
         }
 #pragma warning restore IDE0060
     }

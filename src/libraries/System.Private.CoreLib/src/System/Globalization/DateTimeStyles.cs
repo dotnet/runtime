@@ -1,25 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: Contains valid formats for DateTime recognized by
-** the DateTime class' parsing code.
-**
-**
-===========================================================*/
-
 namespace System.Globalization
 {
+    /// <summary>
+    /// Defines the formatting options that customize string parsing for some date and time parsing methods.
+    /// </summary>
     [Flags]
     public enum DateTimeStyles
     {
         // Bit flag indicating that leading whitespace is allowed. Character values
         // 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, and 0x0020 are considered to be
         // whitespace.
-
 
         None = 0x00000000,
 

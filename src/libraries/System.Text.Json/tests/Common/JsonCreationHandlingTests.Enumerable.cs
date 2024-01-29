@@ -582,7 +582,16 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElement() {}
 
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-        public IList Property { get; } = JsonSerializer.Deserialize<List<JsonElement>>("[1,2,3]");
+        public IList Property { get; } = new List<JsonElement>(ParseJsonArray("[1,2,3]"));
+    }
+
+    private static IEnumerable<JsonElement> ParseJsonArray(string json)
+    {
+        JsonDocument doc = JsonDocument.Parse(json);
+        foreach (JsonElement element in doc.RootElement.EnumerateArray())
+        {
+            yield return element;
+        }
     }
 
     [Fact]
@@ -627,7 +636,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     {
         public ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElementWithoutPopulateAttribute() {}
 
-        public IList Property { get; } = JsonSerializer.Deserialize<List<JsonElement>>("[1,2,3]");
+        public IList Property { get; } = new List<JsonElement>(ParseJsonArray("[1,2,3]"));
     }
 
     [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
@@ -635,7 +644,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     {
         public ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElementWithAttributeOnType() {}
 
-        public IList Property { get; } = JsonSerializer.Deserialize<List<JsonElement>>("[1,2,3]");
+        public IList Property { get; } = new List<JsonElement>(ParseJsonArray("[1,2,3]"));
     }
 
     [Fact]
@@ -672,7 +681,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     internal class ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElement
     {
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-        public IList Property { get; } = JsonSerializer.Deserialize<StructList<JsonElement>>("[1,2,3]");
+        public IList Property { get; } = new StructList<JsonElement>(ParseJsonArray("[1,2,3]"));
     }
 
     [Fact]
@@ -718,13 +727,13 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
 
     internal class ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElementWithoutPopulateAttribute
     {
-        public IList Property { get; } = JsonSerializer.Deserialize<StructList<JsonElement>>("[1,2,3]");
+        public IList Property { get; } = new StructList<JsonElement>(ParseJsonArray("[1,2,3]"));
     }
 
     [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
     internal class ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElementWithAttributeOnType
     {
-        public IList Property { get; } = JsonSerializer.Deserialize<StructList<JsonElement>>("[1,2,3]");
+        public IList Property { get; } = new StructList<JsonElement>(ParseJsonArray("[1,2,3]"));
     }
 
     [Fact]
@@ -1229,7 +1238,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public ClassWithReadOnlyPropertyQueue() {}
 
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-        public Queue Property { get; } = JsonSerializer.Deserialize<Queue>("[1,2,3]");
+        public Queue Property { get; } = new Queue(ParseJsonArray("[1,2,3]").ToArray());
     }
 
     [Fact]
@@ -1274,7 +1283,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     {
         public ClassWithReadOnlyPropertyQueueWithoutPopulateAttribute() {}
 
-        public Queue Property { get; } = JsonSerializer.Deserialize<Queue>("[1,2,3]");
+        public Queue Property { get; } = new Queue(ParseJsonArray("[1,2,3]").ToArray());
     }
 
     [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
@@ -1282,7 +1291,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     {
         public ClassWithReadOnlyPropertyQueueWithAttributeOnType() {}
 
-        public Queue Property { get; } = JsonSerializer.Deserialize<Queue>("[1,2,3]");
+        public Queue Property { get; } = new Queue(ParseJsonArray("[1,2,3]").ToArray());
     }
 
     [Fact]
@@ -1677,7 +1686,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public ClassWithReadOnlyPropertyStack() {}
 
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-        public Stack Property { get; } = JsonSerializer.Deserialize<Stack>("[1,2,3]");
+        public Stack Property { get; } = new Stack(ParseJsonArray("[1,2,3]").ToArray());
     }
 
     [Fact]
@@ -1722,7 +1731,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     {
         public ClassWithReadOnlyPropertyStackWithoutPopulateAttribute() {}
 
-        public Stack Property { get; } = JsonSerializer.Deserialize<Stack>("[1,2,3]");
+        public Stack Property { get; } = new Stack(ParseJsonArray("[1,2,3]").ToArray());
     }
 
     [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
@@ -1730,7 +1739,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     {
         public ClassWithReadOnlyPropertyStackWithAttributeOnType() {}
 
-        public Stack Property { get; } = JsonSerializer.Deserialize<Stack>("[1,2,3]");
+        public Stack Property { get; } = new Stack(ParseJsonArray("[1,2,3]").ToArray());
     }
 
     [Fact]

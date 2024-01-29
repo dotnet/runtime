@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 using System.Text;
 
@@ -38,10 +39,10 @@ namespace Microsoft.DiaSymReader
     /// };
     /// </code>
     /// </remarks>
-    internal interface ISymNGenWriter
+    [GeneratedComInterface]
+    [Guid("D682FD12-43dE-411C-811B-BE8404CEA126")]
+    internal partial interface ISymNGenWriter
     {
-        public static readonly Guid IID = new Guid("D682FD12-43dE-411C-811B-BE8404CEA126");
-
         // Add a new public symbol to the NGEN PDB.
         void AddSymbol([MarshalAs(UnmanagedType.BStr)] string pSymbol,
                         ushort iSection,
@@ -110,21 +111,10 @@ namespace Microsoft.DiaSymReader
     /// };
     /// </remarks>
     /// </code>
-    internal interface ISymNGenWriter2 : ISymNGenWriter
+    [GeneratedComInterface]
+    [Guid("B029E51B-4C55-4fe2-B993-9F7BC1F10DB4")]
+    internal partial interface ISymNGenWriter2 : ISymNGenWriter
     {
-        public readonly static new Guid IID = new Guid("B029E51B-4C55-4fe2-B993-9F7BC1F10DB4");
-
-        // Add a new public symbol to the NGEN PDB.
-        new void AddSymbol([MarshalAs(UnmanagedType.BStr)] string pSymbol,
-                        ushort iSection,
-                        ulong rva);
-
-        // Adds a new section to the NGEN PDB.
-        new void AddSection(ushort iSection,
-                        OMF flags,
-                        int offset,
-                        int cb);
-
         void OpenModW([MarshalAs(UnmanagedType.LPWStr)] string wszModule,
                       [MarshalAs(UnmanagedType.LPWStr)] string wszObjFile,
                       out UIntPtr ppmod);
@@ -143,7 +133,8 @@ namespace Microsoft.DiaSymReader
             uint dwRelocCrc);
 
         void QueryPDBNameExW(
-            [MarshalAs(UnmanagedType.LPWStr)] char[] pdb,
+            [MarshalUsing(CountElementName = nameof(cchMax))]
+            char[] pdb,
             IntPtr cchMax);
     }
 }

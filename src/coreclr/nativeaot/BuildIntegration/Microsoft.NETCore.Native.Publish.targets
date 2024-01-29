@@ -5,6 +5,8 @@
           DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
     <ItemGroup>
       <IlcReference Include="@(_ManagedResolvedAssembliesToPublish)" />
+      <IlcSatelliteAssembly Include="@(_SatelliteAssembliesToPublish)" />
+      <IlcSatelliteAssembly Include="@(IntermediateSatelliteAssembliesWithTargetPath)" />
     </ItemGroup>
   </Target>
 
@@ -47,11 +49,10 @@
     <Error Condition="'$(RuntimeIdentifier)' == ''"
       Text="RuntimeIdentifier is required for native compilation. Try running dotnet publish with the -r option value specified." />
     <Error Condition="'$(GeneratePackageOnBuild)' == 'true'" Text="GeneratePackageOnBuild is not supported for native compilation." />
-    <Error Condition="'$(OutputType)' != 'Library' and '$(NativeLib)' != ''" Text="NativeLib requires OutputType=Library." />
+    <Error Condition="'$(OutputType)' != 'Library' and '$(NativeLib)' != '' and '$(CustomNativeMain)' != 'true'" Text="NativeLib requires OutputType=Library." />
+    <Warning Condition="'$(NativeLib)' != '' and '$(EventSourceSupport)' == 'true' and '$(_SuppressNativeLibEventSourceWarning)' != 'true'" Text="EventSource is not supported or recommended when compiling to a native library. Please go to https://github.com/dotnet/runtime/issues/91762 for more details." />
 
     <Error Condition="'$(PublishTrimmed)' == 'false'" Text="PublishTrimmed is implied by native compilation and cannot be disabled." />
-
-    <Error Condition="'$(PublishAot)' == 'true' and '$(PublishSingleFile)' == 'true'" Text="PublishAot and PublishSingleFile cannot be specified at the same time." />
 
     <!-- Fail with descriptive error message for common unsupported cases. -->
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' == 'Windows_NT' and '$(_targetOS)' != 'win'"
@@ -70,8 +71,8 @@
       Text="Add a PackageReference for '$(_hostPackageName)' to allow cross-compilation for $(_targetArchitecture)" />
 
     <!-- NativeAOT runtime pack assemblies need to be defined to avoid the default CoreCLR implementations being set as compiler inputs -->
-    <Error Condition="'@(PrivateSdkAssemblies)' == ''" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
-    <Error Condition="'@(FrameworkAssemblies)' == ''" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(PrivateSdkAssemblies)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(FrameworkAssemblies)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
 
     <ComputeManagedAssembliesToCompileToNative
       Assemblies="@(_ResolvedCopyLocalPublishAssets)"
@@ -82,6 +83,7 @@
       FrameworkAssemblies="@(FrameworkAssemblies)">
 
       <Output TaskParameter="ManagedAssemblies" ItemName="_ManagedResolvedAssembliesToPublish" />
+      <Output TaskParameter="SatelliteAssemblies" ItemName="_SatelliteAssembliesToPublish" />
       <Output TaskParameter="AssembliesToSkipPublish" ItemName="_AssembliesToSkipPublish" />
     </ComputeManagedAssembliesToCompileToNative>
 
@@ -91,19 +93,36 @@
     <!-- replace apphost with binary we generated during native compilation -->
     <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)" />
     <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)" DestinationFolder="$(PublishDir)" />
+  </Target>
 
+  <Target Name="_CopyAotSymbols" AfterTargets="Publish"
+          Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
     <!-- dotnet CLI produces managed debug symbols, which we will delete and copy native symbols instead -->
     <Delete Files="$(PublishDir)\$(TargetName).pdb" />
 
     <PropertyGroup>
       <_symbolExt Condition="'$(OS)' == 'Windows_NT'">$(NativeSymbolExt)</_symbolExt>
       <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
-    </PropertyGroup>    
+      <_symbolSourcePath>$(NativeOutputPath)$(TargetName)$(_symbolExt)</_symbolSourcePath>
+      <_symbolTargetPath>$(PublishDir)\$(TargetName)$(_symbolExt)</_symbolTargetPath>
+      <!-- If the symbol is a dSYM bundle, it's a folder not a file. -->
+      <_symbolIsFile Condition="'$(NativeSymbolExt)' == '.dSYM'">false</_symbolIsFile>
+      <_symbolIsFile Condition="'$(_symbolIsFile)' == ''">true</_symbolIsFile>
+    </PropertyGroup>
 
-    <!-- replace native symbol file if it exists -->
-    <Delete Files="$(PublishDir)\$(TargetName)$(_symbolExt)" />
-    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(_symbolExt)" DestinationFolder="$(PublishDir)"
-      Condition="Exists('$(NativeOutputPath)$(TargetName)$(_symbolExt)')" />
+    <ItemGroup>
+      <_symbolRecursivePath Include="$(NativeOutputPath)$(TargetName)$(_symbolExt)/**/*" />
+    </ItemGroup>
+
+    <!-- replace native symbol file if it exists. On Mac, the symbol path may be a folder-->
+    <Delete Files="$(_symbolTargetPath)" Condition="'$(_symbolIsFile)' == 'true' and Exists('$(_symbolTargetPath)')" />
+    <Copy SourceFiles="$(_symbolSourcePath)" DestinationFolder="$(PublishDir)"
+      Condition="'$(_symbolIsFile)' == 'true' and Exists('$(_symbolSourcePath)')" />
+
+    <!-- Copy folder otherwise -->
+    <RemoveDir Directories="$(_symbolTargetPath)" Condition="'$(_symbolIsFile)' == 'false' and Exists('$(_symbolTargetPath)')" />
+    <Copy SourceFiles="@(_symbolRecursivePath)" DestinationFolder="$(_symbolTargetPath)/%(RecursiveDir)"
+      Condition="'$(_symbolIsFile)' == 'false' and Exists('$(_symbolSourcePath)')" />
   </Target>
 
 </Project>

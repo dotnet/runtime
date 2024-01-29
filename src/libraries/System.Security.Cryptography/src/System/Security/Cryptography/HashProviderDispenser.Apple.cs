@@ -21,8 +21,49 @@ namespace System.Security.Cryptography
             return new AppleHmacProvider(hashAlgorithmId, key);
         }
 
+        internal static bool HashSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.MD5:
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
+
+        internal static bool KmacSupported(string algorithmId)
+        {
+            _ = algorithmId;
+            return false;
+        }
+
         internal static class OneShotHashProvider
         {
+            public static int KmacData(
+                string algorithmId,
+                ReadOnlySpan<byte> key,
+                ReadOnlySpan<byte> source,
+                Span<byte> destination,
+                ReadOnlySpan<byte> customizationString,
+                bool xof)
+            {
+                _ = algorithmId;
+                _ = key;
+                _ = customizationString;
+                _ = source;
+                _ = destination;
+                _ = xof;
+                Debug.Fail("Platform should have checked if KMAC was available first.");
+                throw new UnreachableException();
+            }
+
             public static unsafe int MacData(
                 string hashAlgorithmId,
                 ReadOnlySpan<byte> key,
@@ -56,6 +97,15 @@ namespace System.Security.Cryptography
 
                     return digestSize;
                 }
+            }
+
+            public static void HashDataXof(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                _ = hashAlgorithmId;
+                _ = source;
+                _ = destination;
+                Debug.Fail("Caller should have checked if platform supported XOFs.");
+                throw new UnreachableException();
             }
 
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)

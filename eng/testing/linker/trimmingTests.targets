@@ -1,4 +1,9 @@
 <Project>
+  <PropertyGroup>
+    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <TestConsoleAppSourceFiles Condition="'@(TestConsoleAppSourceFiles)' == ''" Include="$(MSBuildProjectDirectory)\*.cs" />
 
@@ -54,7 +59,7 @@
       <_additionalProjectReferenceTemp Include="$(AdditionalProjectReferences)" />
       <_additionalProjectReference Include="&lt;ProjectReference Include=&quot;$(LibrariesProjectRoot)%(_additionalProjectReferenceTemp.Identity)\src\%(_additionalProjectReferenceTemp.Identity).csproj&quot; SkipUseReferenceAssembly=&quot;true&quot; /&gt;" />
     </ItemGroup>
-    
+
     <PropertyGroup>
       <_additionalProjectReferencesString>@(_additionalProjectReference, '%0a')</_additionalProjectReferencesString>
     </PropertyGroup>
@@ -66,7 +71,7 @@
     <ItemGroup>
       <_switchesAsItems Include="%(TestConsoleApps.DisabledFeatureSwitches)" Value="false" />
       <_switchesAsItems Include="%(TestConsoleApps.EnabledFeatureSwitches)" Value="true" />
-      
+
       <_propertiesAsItems Include="%(TestConsoleApps.DisabledProperties)" Value="false" />
       <_propertiesAsItems Include="%(TestConsoleApps.EnabledProperties)" Value="true" />
     </ItemGroup>
@@ -84,10 +89,10 @@
                                                  .Replace('{UseMonoRuntime}','$(UseMonoRuntime)')
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
                                                  .Replace('{PublishAot}','$(IsNativeAotTestProject)')
-                                                 .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)')
                                                  .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
                                                  .Replace('{AdditionalProperties}', '$(_additionalPropertiesString)')
-                                                 .Replace('{IlcToolsPath}', '$(CoreCLRILCompilerDir)')
+                                                 .Replace('{ToolsILLinkDir}', '$(ToolsILLinkDir)')
+                                                 .Replace('{IlcToolsPath}', '$(IlcToolsPath)')
                                                  .Replace('{IlcBuildTasksPath}', '$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll')
                                                  .Replace('{IlcSdkPath}', '$(CoreCLRAotSdkDir)')
                                                  .Replace('{IlcFrameworkPath}', '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)')
@@ -98,16 +103,21 @@
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
                                                  .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
                                                  .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
+                                                 .Replace('{BrowserProjectRoot}', '$(BrowserProjectRoot)')
+                                                 .Replace('{WasmProjectRoot}', '$(WasmProjectRoot)')
+                                                 .Replace('{WasiProjectRoot}', '$(WasiProjectRoot)')
                                                  .Replace('{MonoAOTCompilerTasksAssemblyPath}', '$(MonoAOTCompilerTasksAssemblyPath)')
                                                  .Replace('{MonoTargetsTasksAssemblyPath}', '$(MonoTargetsTasksAssemblyPath)')
                                                  .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)')
                                                  .Replace('{ProductVersion}', '$(ProductVersion)')
                                                  .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
+                                                 .Replace('{NetCoreAppToolCurrent}', '$(NetCoreAppToolCurrent)')
                                                  .Replace('{NetCoreAppCurrentVersion}', '$(NetCoreAppCurrentVersion)')
                                                  .Replace('{MicrosoftNetCoreAppFrameworkName}', '$(MicrosoftNetCoreAppFrameworkName)')
                                                  .Replace('{MicrosoftNetCoreAppRefPackDir}', '$(MicrosoftNetCoreAppRefPackDir)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackDir}', '$(MicrosoftNetCoreAppRuntimePackDir)')
+                                                 .Replace('{NativeSanitizersTargets}', '$(RepositoryEngineeringDir)nativeSanitizers.targets')
                                                  .Replace('{AppHostSourcePath}', '$(AppHostSourcePath)')
                                                  .Replace('{SingleFileHostSourcePath}', '$(SingleFileHostSourcePath)'))"
                       Overwrite="true" />
@@ -131,7 +141,7 @@
 
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Publish"
-             Properties="Configuration=$(Configuration);BuildProjectReferences=false" />
+             Properties="Configuration=$(Configuration);BuildProjectReferences=false;TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture)" />
   </Target>
 
   <Target Name="ExecuteApplications"

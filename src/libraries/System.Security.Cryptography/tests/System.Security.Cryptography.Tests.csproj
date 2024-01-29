@@ -5,7 +5,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <NoWarn>$(NoWarn);SYSLIB0021;SYSLIB0026;SYSLIB0027;SYSLIB0028</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -262,14 +261,23 @@
     <Compile Include="HmacSha256Tests.cs" />
     <Compile Include="HmacSha384Tests.cs" />
     <Compile Include="HmacSha512Tests.cs" />
+    <Compile Include="HmacSha3_256Tests.cs" />
+    <Compile Include="HmacSha3_384Tests.cs" />
+    <Compile Include="HmacSha3_512Tests.cs" />
     <Compile Include="HmacTests.cs" />
     <Compile Include="IncrementalHashTests.cs" />
     <Compile Include="InvalidUsageTests.cs" />
     <Compile Include="KeyedHashAlgorithmTests.cs" />
+    <Compile Include="KmacTestDriver.cs" />
+    <Compile Include="Kmac128Tests.cs" />
+    <Compile Include="Kmac256Tests.cs" />
+    <Compile Include="KmacXof128Tests.cs" />
+    <Compile Include="KmacXof256Tests.cs" />
     <Compile Include="Length32Hash.cs" />
     <Compile Include="MD5Tests.cs" />
     <Compile Include="OidTests.cs" />
     <Compile Include="OidCollectionTests.cs" />
+    <Compile Include="OpenSslNamedKeysTests.manual.cs" />
     <Compile Include="PaddingModeTests.cs" />
     <Compile Include="PbeParametersTests.cs" />
     <Compile Include="PemEncodingTests.cs" />
@@ -296,6 +304,12 @@
     <Compile Include="Sha384ManagedTests.cs" />
     <Compile Include="Sha512Tests.cs" />
     <Compile Include="Sha512ManagedTests.cs" />
+    <Compile Include="Sha3_256Tests.cs" />
+    <Compile Include="Sha3_384Tests.cs" />
+    <Compile Include="Sha3_512Tests.cs" />
+    <Compile Include="ShakeTestDriver.cs" />
+    <Compile Include="Shake128Tests.cs" />
+    <Compile Include="Shake256Tests.cs" />
     <Compile Include="SignatureAlgorithmHashTests.cs" />
     <Compile Include="SignatureDescriptionTests.cs" />
     <Compile Include="SimpleHashAlgorithmTest.cs" />
@@ -330,6 +344,11 @@
     <Compile Include="X509Certificates\PfxFormatTests.SingleCertGenerator.cs" />
     <Compile Include="X509Certificates\PfxFormatTests_Collection.cs" />
     <Compile Include="X509Certificates\PfxFormatTests_SingleCert.cs" />
+    <Compile Include="X509Certificates\PfxIterationCountTests.CustomAppContextDataLimit.cs" />
+    <Compile Include="X509Certificates\PfxIterationCountTests.X509Certificate2Collection.cs" />
+    <Compile Include="X509Certificates\PfxIterationCountTests.X509Certificate2.cs" />
+    <Compile Include="X509Certificates\PfxIterationCountTests.X509Certificate.cs" />
+    <Compile Include="X509Certificates\PfxIterationCountTests.cs" />
     <Compile Include="X509Certificates\PfxTests.cs" />
     <Compile Include="X509Certificates\PropsTests.cs" />
     <Compile Include="X509Certificates\PublicKeyTests.cs" />
@@ -374,13 +393,17 @@
     <Compile Include="DefaultECDsaProvider.Windows.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="DefaultECDsaProvider.Unix.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <Compile Include="DefaultECDsaProvider.Browser.cs" />
+    <Compile Include="DefaultECDiffieHellmanProvider.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true' or '$(UseAppleCrypto)' == 'true'">
     <Compile Include="X509Certificates\X509StoreMutableTests.cs" />

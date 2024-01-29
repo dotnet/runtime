@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Text.Json.Tests
@@ -235,7 +236,7 @@ namespace System.Text.Json.Tests
             }
             {
                 var message = new string('>', stringLength);
-                var builder = new StringBuilder();
+                var builder = new StringBuilder(stringLength);
                 for (int i = 0; i < stringLength; i++)
                 {
                     builder.Append("\\u003E");
@@ -302,7 +303,7 @@ namespace System.Text.Json.Tests
             }
             {
                 var message = new string('>', stringLength);
-                var builder = new StringBuilder();
+                var builder = new StringBuilder(stringLength);
                 for (int i = 0; i < stringLength; i++)
                 {
                     builder.Append("\\u003E");
@@ -362,7 +363,7 @@ namespace System.Text.Json.Tests
         public static void GetValueLargeEscapedTest(int stringLength)
         {
             var message = new string('>', stringLength);
-            var builder = new StringBuilder();
+            var builder = new StringBuilder(stringLength);
             for (int i = 0; i < stringLength; i++)
             {
                 builder.Append("\\u003E");
@@ -426,7 +427,7 @@ namespace System.Text.Json.Tests
             }
             catch (OutOfMemoryException)
             {
-                return;
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 

@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Reflection.Metadata;
-
+using System.Threading;
 using Debug = System.Diagnostics.Debug;
 using GenericParameterAttributes = System.Reflection.GenericParameterAttributes;
 
@@ -75,6 +75,16 @@ namespace Internal.TypeSystem.Ecma
                     Debug.Assert(parameter.Parent.Kind == HandleKind.TypeDefinition);
                     return GenericParameterKind.Type;
                 }
+            }
+        }
+
+        public override TypeSystemEntity AssociatedTypeOrMethod
+        {
+            get
+            {
+                GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
+
+                return (TypeSystemEntity)_module.GetObject(parameter.Parent);
             }
         }
 

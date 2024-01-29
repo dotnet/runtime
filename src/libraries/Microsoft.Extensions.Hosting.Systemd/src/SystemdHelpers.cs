@@ -14,16 +14,17 @@ namespace Microsoft.Extensions.Hosting.Systemd
     /// <summary>
     /// Helper methods for systemd Services.
     /// </summary>
-    public static partial class SystemdHelpers
+    public static class SystemdHelpers
     {
-        private static bool? _isSystemdService;
+        private static readonly bool _isSystemdService = GetIsSystemdService();
 
         /// <summary>
         /// Check if the current process is hosted as a systemd Service.
         /// </summary>
-        /// <returns><c>True</c> if the current process is hosted as a systemd Service, otherwise <c>false</c>.</returns>
-        public static bool IsSystemdService()
-            => _isSystemdService ??= GetIsSystemdService();
+        /// <returns>
+        /// <see langword="true" /> if the current process is hosted as a systemd Service; otherwise, <see langword="false" />.
+        /// </returns>
+        public static bool IsSystemdService() => _isSystemdService;
 
         private static bool GetIsSystemdService()
         {

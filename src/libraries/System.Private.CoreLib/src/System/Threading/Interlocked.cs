@@ -49,11 +49,34 @@ namespace System.Threading
         #endregion
 
         #region Exchange
+        /// <summary>Sets a 8-bit signed integer to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static sbyte Exchange(ref sbyte location1, sbyte value) =>
+            (sbyte)Exchange(ref Unsafe.As<sbyte, byte>(ref location1), (byte)value);
+
+        /// <summary>Sets a 16-bit unsigned integer to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static ushort Exchange(ref ushort location1, ushort value) =>
+            (ushort)Exchange(ref Unsafe.As<ushort, short>(ref location1), (short)value);
+
         /// <summary>Sets a 32-bit unsigned integer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static uint Exchange(ref uint location1, uint value) =>
@@ -64,16 +87,36 @@ namespace System.Threading
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static ulong Exchange(ref ulong location1, ulong value) =>
             (ulong)Exchange(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+
+        /// <summary>Sets a single-precision floating point number to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Exchange(ref float location1, float value)
+            => Unsafe.BitCast<int, float>(Exchange(ref Unsafe.As<float, int>(ref location1), Unsafe.BitCast<float, int>(value)));
+
+        /// <summary>Sets a double-precision floating point number to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Exchange(ref double location1, double value)
+            => Unsafe.BitCast<long, double>(Exchange(ref Unsafe.As<double, long>(ref location1), Unsafe.BitCast<double, long>(value)));
 
         /// <summary>Sets a platform-specific handle or pointer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr Exchange(ref IntPtr location1, IntPtr value)
         {
@@ -81,7 +124,7 @@ namespace System.Threading
 #if TARGET_64BIT
             return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value);
 #else
-            return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value);
+            return (IntPtr)Exchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value);
 #endif
 #pragma warning restore CA2020
         }
@@ -91,6 +134,7 @@ namespace System.Threading
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UIntPtr Exchange(ref UIntPtr location1, UIntPtr value)
@@ -98,18 +142,43 @@ namespace System.Threading
 #if TARGET_64BIT
             return (UIntPtr)Interlocked.Exchange(ref Unsafe.As<UIntPtr, long>(ref location1), (long)value);
 #else
-            return (UIntPtr)Interlocked.Exchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value);
+            return (UIntPtr)Exchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value);
 #endif
         }
         #endregion
 
         #region CompareExchange
+        /// <summary>Compares two 8-bit signed integers for equality and, if they are equal, replaces the first value.</summary>
+        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static sbyte CompareExchange(ref sbyte location1, sbyte value, sbyte comparand) =>
+            (sbyte)CompareExchange(ref Unsafe.As<sbyte, byte>(ref location1), (byte)value, (byte)comparand);
+
+        /// <summary>Compares two 16-bit unsigned integers for equality and, if they are equal, replaces the first value.</summary>
+        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static ushort CompareExchange(ref ushort location1, ushort value, ushort comparand) =>
+            (ushort)CompareExchange(ref Unsafe.As<ushort, short>(ref location1), (short)value, (short)comparand);
+
         /// <summary>Compares two 32-bit unsigned integers for equality and, if they are equal, replaces the first value.</summary>
         /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
         /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
         /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static uint CompareExchange(ref uint location1, uint value, uint comparand) =>
@@ -121,10 +190,31 @@ namespace System.Threading
         /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static ulong CompareExchange(ref ulong location1, ulong value, ulong comparand) =>
             (ulong)CompareExchange(ref Unsafe.As<ulong, long>(ref location1), (long)value, (long)comparand);
+
+        /// <summary>Compares two single-precision floating point numbers for equality and, if they are equal, replaces the first value.</summary>
+        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float CompareExchange(ref float location1, float value, float comparand)
+            => Unsafe.BitCast<int, float>(CompareExchange(ref Unsafe.As<float, int>(ref location1), Unsafe.BitCast<float, int>(value), Unsafe.BitCast<float, int>(comparand)));
+
+        /// <summary>Compares two double-precision floating point numbers for equality and, if they are equal, replaces the first value.</summary>
+        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double CompareExchange(ref double location1, double value, double comparand)
+            => Unsafe.BitCast<long, double>(CompareExchange(ref Unsafe.As<double, long>(ref location1), Unsafe.BitCast<double, long>(value), Unsafe.BitCast<double, long>(comparand)));
 
         /// <summary>Compares two platform-specific handles or pointers for equality and, if they are equal, replaces the first one.</summary>
         /// <param name="location1">The destination <see cref="IntPtr"/>, whose value is compared with the value of <paramref name="comparand"/> and possibly replaced by <paramref name="value"/>.</param>
@@ -132,6 +222,7 @@ namespace System.Threading
         /// <param name="comparand">The <see cref="IntPtr"/> that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
         {
@@ -139,7 +230,7 @@ namespace System.Threading
 #if TARGET_64BIT
             return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value, (long)comparand);
 #else
-            return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value, (int)comparand);
+            return (IntPtr)CompareExchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value, (int)comparand);
 #endif
 #pragma warning restore CA2020
         }
@@ -150,6 +241,7 @@ namespace System.Threading
         /// <param name="comparand">The <see cref="UIntPtr"/> that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UIntPtr CompareExchange(ref UIntPtr location1, UIntPtr value, UIntPtr comparand)
@@ -157,7 +249,7 @@ namespace System.Threading
 #if TARGET_64BIT
             return (UIntPtr)Interlocked.CompareExchange(ref Unsafe.As<UIntPtr, long>(ref location1), (long)value, (long)comparand);
 #else
-            return (UIntPtr)Interlocked.CompareExchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value, (int)comparand);
+            return (UIntPtr)CompareExchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value, (int)comparand);
 #endif
         }
         #endregion
@@ -190,8 +282,8 @@ namespace System.Threading
         /// <returns>The loaded value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static ulong Read(ref ulong location) =>
-            CompareExchange(ref location, 0, 0);
+        public static ulong Read(ref readonly ulong location) =>
+            CompareExchange(ref Unsafe.AsRef(in location), 0, 0);
         #endregion
 
         #region And
@@ -324,6 +416,24 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static ulong Or(ref ulong location1, ulong value) =>
             (ulong)Or(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+        #endregion
+
+        #region MemoryBarrier
+        /// <summary>
+        /// Synchronizes memory access as follows:
+        /// The processor that executes the current thread cannot reorder instructions in such a way that memory accesses before
+        /// the call to <see cref="MemoryBarrier"/> execute after memory accesses that follow the call to <see cref="MemoryBarrier"/>.
+        /// </summary>
+        [Intrinsic]
+        public static void MemoryBarrier() => MemoryBarrier();
+
+        /// <summary>
+        /// Synchronizes memory access as follows:
+        /// The processor that executes the current thread cannot reorder instructions in such a way that memory reads before
+        /// the call to <see cref="ReadMemoryBarrier"/> execute after memory accesses that follow the call to <see cref="ReadMemoryBarrier"/>.
+        /// </summary>
+        [Intrinsic]
+        internal static void ReadMemoryBarrier() => ReadMemoryBarrier();
         #endregion
     }
 }

@@ -191,6 +191,7 @@ namespace System.Diagnostics
         public const int METHODS_TO_SKIP = 0;
         public StackTrace() { }
         public StackTrace(bool fNeedFileInfo) { }
+        public StackTrace(System.Collections.Generic.IEnumerable<System.Diagnostics.StackFrame> frames) { }
         public StackTrace(System.Diagnostics.StackFrame frame) { }
         public StackTrace(System.Exception e) { }
         public StackTrace(System.Exception e, bool fNeedFileInfo) { }

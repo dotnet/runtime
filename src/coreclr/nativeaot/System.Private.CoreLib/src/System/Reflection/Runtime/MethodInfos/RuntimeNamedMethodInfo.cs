@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.InteropServices;
 
 using Internal.Reflection.Core.Execution;
 
@@ -19,7 +19,7 @@ namespace System.Reflection.Runtime.MethodInfos
     internal abstract class RuntimeNamedMethodInfo : RuntimeMethodInfo
     {
         protected internal abstract string ComputeToString(RuntimeMethodInfo contextMethod);
-        internal abstract MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant);
+        internal abstract MethodBaseInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant);
         internal abstract RuntimeMethodHandle GetRuntimeMethodHandle(Type[] methodArguments);
     }
 
@@ -133,22 +133,22 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (typeArgument == null)
                     throw new ArgumentNullException();
 
-                if (typeArgument is not RuntimeType)
+                if (typeArgument is not RuntimeType typeArgumentAsRuntimeType)
                     throw new PlatformNotSupportedException(SR.Format(SR.Reflection_CustomReflectionObjectsNotSupported, typeArguments[i]));
 
-                if (typeArgument.IsByRefLike)
+                if (typeArgumentAsRuntimeType.IsByRefLike)
                     throw new BadImageFormatException(SR.CannotUseByRefLikeTypeInInstantiation);
 
-                genericTypeArguments[i] = typeArgument.CastToRuntimeTypeInfo();
+                genericTypeArguments[i] = typeArgumentAsRuntimeType.GetRuntimeTypeInfo();
             }
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
             RuntimeMethodInfo methodInfo = (RuntimeMethodInfo)RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(this, genericTypeArguments);
-            MethodInvoker _ = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any missing metadata exceptions now rather than later.
+            MethodBaseInvoker _ = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any missing metadata exceptions now rather than later.
             return methodInfo;
         }
 
-        public sealed override MethodBase MetadataDefinitionMethod
+        internal sealed override MethodBase MetadataDefinitionMethod
         {
             get
             {
@@ -176,7 +176,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _reflectedType;
+                return _reflectedType.ToType();
             }
         }
 
@@ -292,20 +292,20 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
+        internal sealed override MethodBaseInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
         {
-            MethodInvoker invoker = _common.GetUncachedMethodInvoker(methodArguments, exceptionPertainant, out Exception exception);
+            MethodBaseInvoker invoker = _common.GetUncachedMethodInvoker(methodArguments, exceptionPertainant, out Exception exception);
             if (invoker == null)
                 throw exception;
 
             return invoker;
         }
 
-        protected sealed override MethodInvoker UncachedMethodInvoker
+        protected sealed override MethodBaseInvoker UncachedMethodInvoker
         {
             get
             {
-                MethodInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
+                MethodBaseInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
                 if (invoker != null)
                     return invoker;
 

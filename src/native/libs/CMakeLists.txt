@@ -1,19 +1,6 @@
-cmake_minimum_required(VERSION 3.6.2)
+cmake_minimum_required(VERSION 3.20)
+
 include(CheckCCompilerFlag)
-
-if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    # CMake 3.14.5 contains bug fixes for iOS
-    cmake_minimum_required(VERSION 3.14.5)
-elseif (CLR_CMAKE_TARGET_MACCATALYST)
-    # CMake 3.18.1 properly generates MacCatalyst C compiler
-    cmake_minimum_required(VERSION 3.18.1)
-endif ()
-
-if (WIN32)
-    cmake_policy(SET CMP0091 NEW)
-else ()
-    cmake_policy(SET CMP0042 NEW)
-endif ()
 
 project(CoreFX C)
 
@@ -83,26 +70,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         endif ()
 
         add_definitions(-DDEBUG)
-
-        # obtain settings from running coreclr\enablesanitizers.sh
-        string(FIND "$ENV{DEBUG_SANITIZERS}" "asan" __ASAN_POS)
-        string(FIND "$ENV{DEBUG_SANITIZERS}" "ubsan" __UBSAN_POS)
-        if (${__ASAN_POS} GREATER -1 OR ${__UBSAN_POS} GREATER -1)
-            set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS} -fsanitize=")
-            if (${__ASAN_POS} GREATER -1)
-                set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}address,")
-                message("Address Sanitizer (asan) enabled")
-            endif ()
-            if (${__UBSAN_POS} GREATER -1)
-                set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}undefined")
-                message("Undefined Behavior Sanitizer (ubsan) enabled")
-            endif ()
-
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS}")
-
-            # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
-            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
-        endif ()
     elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
         # Use O1 option when the clang version is smaller than 3.9
         # Otherwise use O3 option in release build
@@ -125,7 +92,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_definitions(-D__APPLE_USE_RFC_3542)
     endif ()
 
-    if (CLR_CMAKE_TARGET_LINUX)
+    if (CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_HAIKU)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
     endif ()
 else ()
@@ -142,7 +109,7 @@ add_subdirectory(System.IO.Compression.Native)
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     include(configure.cmake)
 
-    if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+    if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
         add_subdirectory(System.IO.Ports.Native)
     endif ()
 
@@ -156,7 +123,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-Wno-typedef-redefinition)
         add_compile_options(-Wno-c11-extensions)
         add_compile_options(-Wno-thread-safety-analysis)
-        if (CLR_CMAKE_TARGET_BROWSER)
+        if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             add_compile_options(-Wno-unsafe-buffer-usage)
             add_compile_options(-Wno-cast-function-type-strict)
         endif ()

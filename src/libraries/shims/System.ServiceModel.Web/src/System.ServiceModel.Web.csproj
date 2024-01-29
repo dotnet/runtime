@@ -6,9 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Json\src\System.Runtime.Serialization.Json.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceModel.Syndication\src\System.ServiceModel.Syndication.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.ServiceModel.Syndication.csproj" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

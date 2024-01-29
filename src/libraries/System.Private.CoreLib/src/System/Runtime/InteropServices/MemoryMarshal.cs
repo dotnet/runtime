@@ -22,10 +22,10 @@ namespace System.Runtime.InteropServices
         /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
         /// </summary>
         /// <param name="span">The source slice, of type <typeparamref name="T"/>.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
-        /// <exception cref="System.OverflowException">
+        /// <exception cref="OverflowException">
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -45,10 +45,10 @@ namespace System.Runtime.InteropServices
         /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
         /// </summary>
         /// <param name="span">The source slice, of type <typeparamref name="T"/>.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
-        /// <exception cref="System.OverflowException">
+        /// <exception cref="OverflowException">
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -93,14 +93,14 @@ namespace System.Runtime.InteropServices
         /// for pinning but must never be dereferenced. This is useful for interop with methods that do not accept null pointers for zero-sized buffers.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref T GetNonNullPinnableReference<T>(Span<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef<T>(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
+        internal static unsafe ref T GetNonNullPinnableReference<T>(Span<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
 
         /// <summary>
         /// Returns a reference to the 0th element of the ReadOnlySpan. If the ReadOnlySpan is empty, returns a reference to fake non-null pointer. Such a reference
         /// can be used for pinning but must never be dereferenced. This is useful for interop with methods that do not accept null pointers for zero-sized buffers.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ref T GetNonNullPinnableReference<T>(ReadOnlySpan<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef<T>(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
+        internal static unsafe ref T GetNonNullPinnableReference<T>(ReadOnlySpan<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
 #pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices
         /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
         /// </remarks>
         /// <param name="span">The source slice, of type <typeparamref name="TFrom"/>.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -166,7 +166,7 @@ namespace System.Runtime.InteropServices
         /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
         /// </remarks>
         /// <param name="span">The source slice, of type <typeparamref name="TFrom"/>.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -209,7 +209,7 @@ namespace System.Runtime.InteropServices
             }
 
             return new ReadOnlySpan<TTo>(
-                ref Unsafe.As<TFrom, TTo>(ref MemoryMarshal.GetReference(span)),
+                ref Unsafe.As<TFrom, TTo>(ref GetReference(span)),
                 toLength);
         }
 
@@ -244,7 +244,7 @@ namespace System.Runtime.InteropServices
         /// of the returned span will not be validated for safety, even by span-aware languages.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref T reference, int length) =>
+        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref readonly T reference, int length) =>
             new ReadOnlySpan<T>(ref Unsafe.AsRef(in reference), length);
 
         /// <summary>Creates a new read-only span for a null-terminated string.</summary>
@@ -257,10 +257,10 @@ namespace System.Runtime.InteropServices
             value != null ? new ReadOnlySpan<char>(value, string.wcslen(value)) :
             default;
 
-        /// <summary>Creates a new read-only span for a null-terminated UTF8 string.</summary>
+        /// <summary>Creates a new read-only span for a null-terminated UTF-8 string.</summary>
         /// <param name="value">The pointer to the null-terminated string of bytes.</param>
         /// <returns>A read-only span representing the specified null-terminated string, or an empty span if the pointer is null.</returns>
-        /// <remarks>The returned span does not include the null terminator, nor does it validate the well-formedness of the UTF8 data.</remarks>
+        /// <remarks>The returned span does not include the null terminator, nor does it validate the well-formedness of the UTF-8 data.</remarks>
         /// <exception cref="ArgumentException">The string is longer than <see cref="int.MaxValue"/>.</exception>
         [CLSCompliant(false)]
         public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) =>
@@ -382,8 +382,61 @@ namespace System.Runtime.InteropServices
         /// <returns>An <see cref="IEnumerable{T}"/> view of the given <paramref name="memory" /></returns>
         public static IEnumerable<T> ToEnumerable<T>(ReadOnlyMemory<T> memory)
         {
-            for (int i = 0; i < memory.Length; i++)
-                yield return memory.Span[i];
+            object? obj = memory.GetObjectStartLength(out int index, out int length);
+
+            // If the memory is empty, just return an empty array as the enumerable.
+            if (length is 0 || obj is null)
+            {
+                return Array.Empty<T>();
+            }
+
+            // If the object is a string, we can optimize. If it isn't a slice, just return the string as the
+            // enumerable. Otherwise, return an iterator dedicated to enumerating the object; while we could
+            // use the general one for any ReadOnlyMemory, that will incur a .Span access for every element.
+            if (typeof(T) == typeof(char) && obj is string str)
+            {
+                return (IEnumerable<T>)(object)(index == 0 && length == str.Length ?
+                    str :
+                    FromString(str, index, length));
+
+                static IEnumerable<char> FromString(string s, int offset, int count)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        yield return s[offset + i];
+                    }
+                }
+            }
+
+            // If the object is an array, we can optimize. If it isn't a slice, just return the array as the
+            // enumerable. Otherwise, return an iterator dedicated to enumerating the object.
+            if (RuntimeHelpers.ObjectHasComponentSize(obj)) // Same check as in TryGetArray to confirm that obj is a T[] or a U[] which is blittable to a T[].
+            {
+                T[] array = Unsafe.As<T[]>(obj);
+                index &= ReadOnlyMemory<T>.RemoveFlagsBitMask; // the array may be prepinned, so remove the high bit from the start index in the line below.
+                return index == 0 && length == array.Length ?
+                    array :
+                    FromArray(array, index, length);
+
+                static IEnumerable<T> FromArray(T[] array, int offset, int count)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        yield return array[offset + i];
+                    }
+                }
+            }
+
+            // The ROM<T> wraps a MemoryManager<T>. The best we can do is iterate, accessing .Span on each MoveNext.
+            return FromMemoryManager(memory);
+
+            static IEnumerable<T> FromMemoryManager(ReadOnlyMemory<T> memory)
+            {
+                for (int i = 0; i < memory.Length; i++)
+                {
+                    yield return memory.Span[i];
+                }
+            }
         }
 
         /// <summary>Attempts to get the underlying <see cref="string"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
@@ -455,7 +508,7 @@ namespace System.Runtime.InteropServices
         /// Writes a structure of type T into a span of bytes.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void Write<T>(Span<byte> destination, ref T value)
+        public static unsafe void Write<T>(Span<byte> destination, in T value)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -466,7 +519,7 @@ namespace System.Runtime.InteropServices
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
-            Unsafe.WriteUnaligned<T>(ref GetReference(destination), value);
+            Unsafe.WriteUnaligned(ref GetReference(destination), value);
         }
 
         /// <summary>
@@ -474,7 +527,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool TryWrite<T>(Span<byte> destination, ref T value)
+        public static unsafe bool TryWrite<T>(Span<byte> destination, in T value)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -485,7 +538,7 @@ namespace System.Runtime.InteropServices
             {
                 return false;
             }
-            Unsafe.WriteUnaligned<T>(ref GetReference(destination), value);
+            Unsafe.WriteUnaligned(ref GetReference(destination), value);
             return true;
         }
 
@@ -544,8 +597,8 @@ namespace System.Runtime.InteropServices
         /// that array should not be unpinned while the returned Memory<typeparamref name="T"/> is still in use.
         /// Calling this method on an unpinned array could result in memory corruption.</remarks>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

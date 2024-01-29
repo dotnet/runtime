@@ -4,8 +4,8 @@
 namespace System.Runtime.InteropServices.JavaScript
 {
     // maps to names of System.Runtime.InteropServices.JavaScript.JSMarshalerType
-    // please sync with src\mono\wasm\runtime\marshal.ts
-    internal enum MarshalerType : int
+    // please sync with src\mono\browser\runtime\marshal.ts
+    internal enum MarshalerType : byte
     {
         None = 0,
         Void = 1,
@@ -38,6 +38,9 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !JSIMPORTGENERATOR
         // only on runtime
         JSException,
+        TaskResolved,
+        TaskRejected,
+        TaskPreCreated,
 #endif
     }
 }

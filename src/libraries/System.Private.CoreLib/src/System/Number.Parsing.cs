@@ -7,6 +7,8 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Unicode;
 
 namespace System
 {
@@ -20,7 +22,7 @@ namespace System
     //
     // Numeric strings produced by the Format methods using the Currency,
     // Decimal, Engineering, Fixed point, General, or Number standard formats
-    // (the C, D, E, F, G, and N format specifiers) are guaranteed to be parseable
+    // (the C, D, E, F, G, and N format specifiers) are guaranteed to be parsable
     // by the Parse methods if the NumberStyles.Any style is
     // specified. Note, however, that the Parse methods do not accept
     // NaNs or Infinities.
@@ -45,6 +47,46 @@ namespace System
         static abstract TSelf MultiplyBy16(TSelf value);
     }
 
+    internal interface IBinaryFloatParseAndFormatInfo<TSelf> : IBinaryFloatingPointIeee754<TSelf>, IMinMaxValue<TSelf>
+        where TSelf : unmanaged, IBinaryFloatParseAndFormatInfo<TSelf>
+    {
+        static abstract int NumberBufferLength { get; }
+
+        static abstract ulong ZeroBits { get; }
+        static abstract ulong InfinityBits { get; }
+
+        static abstract ulong NormalMantissaMask { get; }
+        static abstract ulong DenormalMantissaMask { get; }
+
+        static abstract int MinBinaryExponent { get; }
+        static abstract int MaxBinaryExponent { get; }
+
+        static abstract int MinDecimalExponent { get; }
+        static abstract int MaxDecimalExponent { get; }
+
+        static abstract int ExponentBias { get; }
+        static abstract ushort ExponentBits { get; }
+
+        static abstract int OverflowDecimalExponent { get; }
+        static abstract int InfinityExponent { get; }
+
+        static abstract ushort NormalMantissaBits { get; }
+        static abstract ushort DenormalMantissaBits { get; }
+
+        static abstract int MinFastFloatDecimalExponent { get; }
+        static abstract int MaxFastFloatDecimalExponent { get; }
+
+        static abstract int MinExponentRoundToEven { get; }
+        static abstract int MaxExponentRoundToEven { get; }
+
+        static abstract int MaxExponentFastPath { get; }
+        static abstract ulong MaxMantissaFastPath { get; }
+
+        static abstract TSelf BitsToFloat(ulong bits);
+
+        static abstract ulong FloatToBits(TSelf value);
+    }
+
     internal static partial class Number
     {
         private const int Int32Precision = 10;
@@ -54,17 +96,10 @@ namespace System
         private const int Int128Precision = 39;
         private const int UInt128Precision = 39;
 
-        private const int DoubleMaxExponent = 309;
-        private const int DoubleMinExponent = -324;
+        private const int FloatingPointMaxExponent = 309;
+        private const int FloatingPointMinExponent = -324;
 
-        private const int FloatingPointMaxExponent = DoubleMaxExponent;
-        private const int FloatingPointMinExponent = DoubleMinExponent;
-
-        private const int SingleMaxExponent = 39;
-        private const int SingleMinExponent = -45;
-
-        private const int HalfMaxExponent = 5;
-        private const int HalfMinExponent = -8;
+        private const int FloatingPointMaxDenormalMantissaBits = 52;
 
         private static unsafe bool TryNumberBufferToBinaryInteger<TInteger>(ref NumberBuffer number, ref TInteger value)
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
@@ -126,19 +161,21 @@ namespace System
             return true;
         }
 
-        internal static TInteger ParseBinaryInteger<TInteger>(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+        internal static TInteger ParseBinaryInteger<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             ParsingStatus status = TryParseBinaryInteger(value, styles, info, out TInteger result);
 
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException<TInteger>(status, value);
+                ThrowOverflowOrFormatException<TChar, TInteger>(status, value);
             }
             return result;
         }
 
-        private static unsafe bool TryParseNumber(scoped ref char* str, char* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+        private static unsafe bool TryParseNumber<TChar>(scoped ref TChar* str, TChar* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(str != null);
             Debug.Assert(strEnd != null);
@@ -159,39 +196,39 @@ namespace System
 
             number.CheckConsistency();
 
-            string decSep;                  // decimal separator from NumberFormatInfo.
-            string groupSep;                // group separator from NumberFormatInfo.
-            string? currSymbol = null;       // currency symbol from NumberFormatInfo.
+            ReadOnlySpan<TChar> decSep;                                 // decimal separator from NumberFormatInfo.
+            ReadOnlySpan<TChar> groupSep;                               // group separator from NumberFormatInfo.
+            ReadOnlySpan<TChar> currSymbol = ReadOnlySpan<TChar>.Empty; // currency symbol from NumberFormatInfo.
 
             bool parsingCurrency = false;
             if ((styles & NumberStyles.AllowCurrencySymbol) != 0)
             {
-                currSymbol = info.CurrencySymbol;
+                currSymbol = info.CurrencySymbolTChar<TChar>();
 
                 // The idea here is to match the currency separators and on failure match the number separators to keep the perf of VB's IsNumeric fast.
                 // The values of decSep are setup to use the correct relevant separator (currency in the if part and decimal in the else part).
-                decSep = info.CurrencyDecimalSeparator;
-                groupSep = info.CurrencyGroupSeparator;
+                decSep = info.CurrencyDecimalSeparatorTChar<TChar>();
+                groupSep = info.CurrencyGroupSeparatorTChar<TChar>();
                 parsingCurrency = true;
             }
             else
             {
-                decSep = info.NumberDecimalSeparator;
-                groupSep = info.NumberGroupSeparator;
+                decSep = info.NumberDecimalSeparatorTChar<TChar>();
+                groupSep = info.NumberGroupSeparatorTChar<TChar>();
             }
 
             int state = 0;
-            char* p = str;
-            char ch = p < strEnd ? *p : '\0';
-            char* next;
+            TChar* p = str;
+            uint ch = (p < strEnd) ? TChar.CastToUInt32(*p) : '\0';
+            TChar* next;
 
             while (true)
             {
                 // Eat whitespace unless we've found a sign which isn't followed by a currency symbol.
                 // "-Kr 1231.47" is legal but "- 1231.47" is not.
-                if (!IsWhite(ch) || (styles & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && ((state & StateCurrency) == 0 && info.NumberNegativePattern != 2)))
+                if (!IsWhite(ch) || (styles & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && (state & StateCurrency) == 0 && info.NumberNegativePattern != 2))
                 {
-                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || ((next = MatchNegativeSignChars(p, strEnd, info)) != null && (number.IsNegative = true))))
+                    if (((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0 && ((next = MatchChars(p, strEnd, info.PositiveSignTChar<TChar>())) != null || ((next = MatchNegativeSignChars(p, strEnd, info)) != null && (number.IsNegative = true))))
                     {
                         state |= StateSign;
                         p = next - 1;
@@ -201,10 +238,10 @@ namespace System
                         state |= StateSign | StateParens;
                         number.IsNegative = true;
                     }
-                    else if (currSymbol != null && (next = MatchChars(p, strEnd, currSymbol)) != null)
+                    else if (!currSymbol.IsEmpty && (next = MatchChars(p, strEnd, currSymbol)) != null)
                     {
                         state |= StateCurrency;
-                        currSymbol = null;
+                        currSymbol = ReadOnlySpan<TChar>.Empty;
                         // We already found the currency symbol. There should not be more currency symbols. Set
                         // currSymbol to NULL so that we won't search it again in the later code path.
                         p = next - 1;
@@ -214,7 +251,7 @@ namespace System
                         break;
                     }
                 }
-                ch = ++p < strEnd ? *p : '\0';
+                ch = ++p < strEnd ? TChar.CastToUInt32(*p) : '\0';
             }
 
             int digCount = 0;
@@ -232,7 +269,7 @@ namespace System
                     {
                         if (digCount < maxDigCount)
                         {
-                            number.Digits[digCount] = (byte)(ch);
+                            number.Digits[digCount] = (byte)ch;
                             if ((ch != '0') || (number.Kind != NumberBufferKind.Integer))
                             {
                                 digEnd = digCount + 1;
@@ -275,12 +312,12 @@ namespace System
                         number.Scale--;
                     }
                 }
-                else if (((styles & NumberStyles.AllowDecimalPoint) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, decSep)) != null || (parsingCurrency && (state & StateCurrency) == 0) && (next = MatchChars(p, strEnd, info.NumberDecimalSeparator)) != null))
+                else if (((styles & NumberStyles.AllowDecimalPoint) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, decSep)) != null || (parsingCurrency && (state & StateCurrency) == 0 && (next = MatchChars(p, strEnd, info.NumberDecimalSeparatorTChar<TChar>())) != null)))
                 {
                     state |= StateDecimal;
                     p = next - 1;
                 }
-                else if (((styles & NumberStyles.AllowThousands) != 0) && ((state & StateDigits) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, groupSep)) != null || (parsingCurrency && (state & StateCurrency) == 0) && (next = MatchChars(p, strEnd, info.NumberGroupSeparator)) != null))
+                else if (((styles & NumberStyles.AllowThousands) != 0) && ((state & StateDigits) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, groupSep)) != null || (parsingCurrency && (state & StateCurrency) == 0 && (next = MatchChars(p, strEnd, info.NumberGroupSeparatorTChar<TChar>())) != null)))
                 {
                     p = next - 1;
                 }
@@ -288,25 +325,25 @@ namespace System
                 {
                     break;
                 }
-                ch = ++p < strEnd ? *p : '\0';
+                ch = ++p < strEnd ? TChar.CastToUInt32(*p) : '\0';
             }
 
             bool negExp = false;
             number.DigitsCount = digEnd;
-            number.Digits[digEnd] = (byte)('\0');
+            number.Digits[digEnd] = (byte)'\0';
             if ((state & StateDigits) != 0)
             {
                 if ((ch == 'E' || ch == 'e') && ((styles & NumberStyles.AllowExponent) != 0))
                 {
-                    char* temp = p;
-                    ch = ++p < strEnd ? *p : '\0';
-                    if ((next = MatchChars(p, strEnd, info._positiveSign)) != null)
+                    TChar* temp = p;
+                    ch = ++p < strEnd ? TChar.CastToUInt32(*p) : '\0';
+                    if ((next = MatchChars(p, strEnd, info.PositiveSignTChar<TChar>())) != null)
                     {
-                        ch = (p = next) < strEnd ? *p : '\0';
+                        ch = (p = next) < strEnd ? TChar.CastToUInt32(*p) : '\0';
                     }
                     else if ((next = MatchNegativeSignChars(p, strEnd, info)) != null)
                     {
-                        ch = (p = next) < strEnd ? *p : '\0';
+                        ch = (p = next) < strEnd ? TChar.CastToUInt32(*p) : '\0';
                         negExp = true;
                     }
                     if (IsDigit(ch))
@@ -314,14 +351,14 @@ namespace System
                         int exp = 0;
                         do
                         {
-                            exp = exp * 10 + (ch - '0');
-                            ch = ++p < strEnd ? *p : '\0';
+                            exp = (exp * 10) + (int)(ch - '0');
+                            ch = ++p < strEnd ? TChar.CastToUInt32(*p) : '\0';
                             if (exp > 1000)
                             {
                                 exp = 9999;
                                 while (IsDigit(ch))
                                 {
-                                    ch = ++p < strEnd ? *p : '\0';
+                                    ch = ++p < strEnd ? TChar.CastToUInt32(*p) : '\0';
                                 }
                             }
                         } while (IsDigit(ch));
@@ -334,7 +371,7 @@ namespace System
                     else
                     {
                         p = temp;
-                        ch = p < strEnd ? *p : '\0';
+                        ch = p < strEnd ? TChar.CastToUInt32(*p) : '\0';
                     }
                 }
 
@@ -347,7 +384,7 @@ namespace System
                         numberOfTrailingZeros = Math.Min(numberOfTrailingZeros, numberOfFractionalDigits);
                         Debug.Assert(numberOfTrailingZeros >= 0);
                         number.DigitsCount = digEnd - numberOfTrailingZeros;
-                        number.Digits[number.DigitsCount] = (byte)('\0');
+                        number.Digits[number.DigitsCount] = (byte)'\0';
                     }
                 }
 
@@ -355,7 +392,7 @@ namespace System
                 {
                     if (!IsWhite(ch) || (styles & NumberStyles.AllowTrailingWhite) == 0)
                     {
-                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || (((next = MatchNegativeSignChars(p, strEnd, info)) != null) && (number.IsNegative = true))))
+                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSignTChar<TChar>())) != null || (((next = MatchNegativeSignChars(p, strEnd, info)) != null) && (number.IsNegative = true))))
                         {
                             state |= StateSign;
                             p = next - 1;
@@ -364,9 +401,9 @@ namespace System
                         {
                             state &= ~StateParens;
                         }
-                        else if (currSymbol != null && (next = MatchChars(p, strEnd, currSymbol)) != null)
+                        else if (!currSymbol.IsEmpty && (next = MatchChars(p, strEnd, currSymbol)) != null)
                         {
-                            currSymbol = null;
+                            currSymbol = ReadOnlySpan<TChar>.Empty;
                             p = next - 1;
                         }
                         else
@@ -374,7 +411,7 @@ namespace System
                             break;
                         }
                     }
-                    ch = ++p < strEnd ? *p : '\0';
+                    ch = ++p < strEnd ? TChar.CastToUInt32(*p) : '\0';
                 }
                 if ((state & StateParens) == 0)
                 {
@@ -398,7 +435,8 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ParsingStatus TryParseBinaryInteger<TInteger>(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+        internal static ParsingStatus TryParseBinaryInteger<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+            where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             if ((styles & ~NumberStyles.Integer) == 0)
@@ -414,13 +452,14 @@ namespace System
 
             if ((styles & NumberStyles.AllowBinarySpecifier) != 0)
             {
-                return TryParseBinaryIntegerHexOrBinaryNumberStyle<TInteger, BinaryParser<TInteger>>(value, styles, out result);
+                return TryParseBinaryIntegerHexOrBinaryNumberStyle<TChar, TInteger, BinaryParser<TInteger>>(value, styles, out result);
             }
 
             return TryParseBinaryIntegerNumber(value, styles, info, out result);
         }
 
-        private static unsafe ParsingStatus TryParseBinaryIntegerNumber<TInteger>(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+        private static ParsingStatus TryParseBinaryIntegerNumber<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+            where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             result = TInteger.Zero;
@@ -440,16 +479,19 @@ namespace System
         }
 
         /// <summary>Parses int limited to styles that make up NumberStyles.Integer.</summary>
-        internal static ParsingStatus TryParseBinaryIntegerStyle<TInteger>(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+        internal static ParsingStatus TryParseBinaryIntegerStyle<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+            where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
 
             if (value.IsEmpty)
+            {
                 goto FalseExit;
+            }
 
             int index = 0;
-            int num = value[0];
+            uint num = TChar.CastToUInt32(value[0]);
 
             // Skip past any whitespace at the beginning.
             if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
@@ -457,9 +499,12 @@ namespace System
                 do
                 {
                     index++;
+
                     if ((uint)index >= (uint)value.Length)
+                    {
                         goto FalseExit;
-                    num = value[index];
+                    }
+                    num = TChar.CastToUInt32(value[index]);
                 }
                 while (IsWhite(num));
             }
@@ -474,45 +519,63 @@ namespace System
                     {
                         isNegative = true;
                         index++;
+
                         if ((uint)index >= (uint)value.Length)
+                        {
                             goto FalseExit;
-                        num = value[index];
+                        }
+                        num = TChar.CastToUInt32(value[index]);
                     }
                     else if (num == '+')
                     {
                         index++;
+
                         if ((uint)index >= (uint)value.Length)
+                        {
                             goto FalseExit;
-                        num = value[index];
+                        }
+                        num = TChar.CastToUInt32(value[index]);
                     }
                 }
                 else if (info.AllowHyphenDuringParsing && num == '-')
                 {
                     isNegative = true;
                     index++;
+
                     if ((uint)index >= (uint)value.Length)
+                    {
                         goto FalseExit;
-                    num = value[index];
+                    }
+                    num = TChar.CastToUInt32(value[index]);
                 }
                 else
                 {
                     value = value.Slice(index);
                     index = 0;
-                    string positiveSign = info.PositiveSign, negativeSign = info.NegativeSign;
-                    if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
+
+                    ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
+                    ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+
+                    if (!positiveSign.IsEmpty && value.StartsWith(positiveSign))
                     {
                         index += positiveSign.Length;
+
                         if ((uint)index >= (uint)value.Length)
+                        {
                             goto FalseExit;
-                        num = value[index];
+                        }
+                        num = TChar.CastToUInt32(value[index]);
                     }
-                    else if (!string.IsNullOrEmpty(negativeSign) && value.StartsWith(negativeSign))
+                    else if (!negativeSign.IsEmpty && value.StartsWith(negativeSign))
                     {
                         isNegative = true;
                         index += negativeSign.Length;
+
                         if ((uint)index >= (uint)value.Length)
+                        {
                             goto FalseExit;
-                        num = value[index];
+                        }
+                        num = TChar.CastToUInt32(value[index]);
                     }
                 }
             }
@@ -528,9 +591,12 @@ namespace System
                     do
                     {
                         index++;
+
                         if ((uint)index >= (uint)value.Length)
+                        {
                             goto DoneAtEnd;
-                        num = value[index];
+                        }
+                        num = TChar.CastToUInt32(value[index]);
                     } while (num == '0');
 
                     if (!IsDigit(num))
@@ -546,19 +612,29 @@ namespace System
                 // Parse most digits, up to the potential for overflow, which can't happen until after MaxDigitCount - 1 digits.
                 answer = TInteger.CreateTruncating(num - '0'); // first digit
                 index++;
+
                 for (int i = 0; i < TInteger.MaxDigitCount - 2; i++) // next MaxDigitCount - 2 digits can't overflow
                 {
                     if ((uint)index >= (uint)value.Length)
                     {
                         if (!TInteger.IsSigned)
+                        {
                             goto DoneAtEndButPotentialOverflow;
+                        }
                         else
+                        {
                             goto DoneAtEnd;
+                        }
                     }
-                    num = value[index];
+
+                    num = TChar.CastToUInt32(value[index]);
+
                     if (!IsDigit(num))
+                    {
                         goto HasTrailingChars;
+                    }
                     index++;
+
                     answer = TInteger.MultiplyBy10(answer);
                     answer += TInteger.CreateTruncating(num - '0');
                 }
@@ -566,42 +642,60 @@ namespace System
                 if ((uint)index >= (uint)value.Length)
                 {
                     if (!TInteger.IsSigned)
+                    {
                         goto DoneAtEndButPotentialOverflow;
+                    }
                     else
+                    {
                         goto DoneAtEnd;
+                    }
                 }
-                num = value[index];
+
+                num = TChar.CastToUInt32(value[index]);
+
                 if (!IsDigit(num))
+                {
                     goto HasTrailingChars;
+                }
                 index++;
+
                 // Potential overflow now processing the MaxDigitCount digit.
                 if (!TInteger.IsSigned)
                 {
-                    overflow |= (answer > TInteger.MaxValueDiv10) || (answer == TInteger.MaxValueDiv10) && (num > '5');
+                    overflow |= (answer > TInteger.MaxValueDiv10) || ((answer == TInteger.MaxValueDiv10) && (num > '5'));
                 }
                 else
                 {
                     overflow = answer > TInteger.MaxValueDiv10;
                 }
+
                 answer = TInteger.MultiplyBy10(answer);
                 answer += TInteger.CreateTruncating(num - '0');
+
                 if (TInteger.IsSigned)
                 {
                     overflow |= TInteger.IsGreaterThanAsUnsigned(answer, TInteger.MaxValue + (isNegative ? TInteger.One : TInteger.Zero));
                 }
+
                 if ((uint)index >= (uint)value.Length)
+                {
                     goto DoneAtEndButPotentialOverflow;
+                }
 
                 // At this point, we're either overflowing or hitting a formatting error.
                 // Format errors take precedence for compatibility.
-                num = value[index];
+                num = TChar.CastToUInt32(value[index]);
+
                 while (IsDigit(num))
                 {
                     overflow = true;
                     index++;
+
                     if ((uint)index >= (uint)value.Length)
+                    {
                         goto OverflowExit;
-                    num = value[index];
+                    }
+                    num = TChar.CastToUInt32(value[index]);
                 }
                 goto HasTrailingChars;
             }
@@ -612,6 +706,7 @@ namespace System
             {
                 goto OverflowExit;
             }
+
         DoneAtEnd:
             if (!TInteger.IsSigned)
             {
@@ -622,6 +717,7 @@ namespace System
                 result = isNegative ? -answer : answer;
             }
             ParsingStatus status = ParsingStatus.OK;
+
         Exit:
             return status;
 
@@ -629,6 +725,7 @@ namespace System
             result = TInteger.Zero;
             status = ParsingStatus.Failed;
             goto Exit;
+
         OverflowExit:
             result = TInteger.Zero;
             status = ParsingStatus.Overflow;
@@ -639,32 +736,44 @@ namespace System
             if (IsWhite(num))
             {
                 if ((styles & NumberStyles.AllowTrailingWhite) == 0)
+                {
                     goto FalseExit;
+                }
+
                 for (index++; index < value.Length; index++)
                 {
-                    if (!IsWhite(value[index]))
+                    uint ch = TChar.CastToUInt32(value[index]);
+
+                    if (!IsWhite(ch))
+                    {
                         break;
+                    }
                 }
                 if ((uint)index >= (uint)value.Length)
                     goto DoneAtEndButPotentialOverflow;
             }
 
             if (!TrailingZeros(value, index))
+            {
                 goto FalseExit;
-
+            }
             goto DoneAtEndButPotentialOverflow;
         }
 
         /// <summary>Parses <typeparamref name="TInteger"/> limited to styles that make up NumberStyles.HexNumber.</summary>
-        internal static ParsingStatus TryParseBinaryIntegerHexNumberStyle<TInteger>(ReadOnlySpan<char> value, NumberStyles styles, out TInteger result)
-            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger> =>
-            TryParseBinaryIntegerHexOrBinaryNumberStyle<TInteger, HexParser<TInteger>>(value, styles, out result);
+        internal static ParsingStatus TryParseBinaryIntegerHexNumberStyle<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, out TInteger result)
+            where TChar : unmanaged, IUtfChar<TChar>
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
+        {
+            return TryParseBinaryIntegerHexOrBinaryNumberStyle<TChar, TInteger, HexParser<TInteger>>(value, styles, out result);
+        }
 
-        private interface IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
+        private interface IHexOrBinaryParser<TInteger>
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             static abstract NumberStyles AllowedStyles { get; }
-            static abstract bool IsValidChar(int ch);
-            static abstract uint FromChar(int ch);
+            static abstract bool IsValidChar(uint ch);
+            static abstract uint FromChar(uint ch);
             static abstract uint MaxDigitValue { get; }
             static abstract int MaxDigitCount { get; }
             static abstract TInteger ShiftLeftForNextDigit(TInteger value);
@@ -673,8 +782,8 @@ namespace System
         private readonly struct HexParser<TInteger> : IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             public static NumberStyles AllowedStyles => NumberStyles.HexNumber;
-            public static bool IsValidChar(int ch) => HexConverter.IsHexChar(ch);
-            public static uint FromChar(int ch) => (uint)HexConverter.FromChar(ch);
+            public static bool IsValidChar(uint ch) => HexConverter.IsHexChar((int)ch);
+            public static uint FromChar(uint ch) => (uint)HexConverter.FromChar((int)ch);
             public static uint MaxDigitValue => 0xF;
             public static int MaxDigitCount => TInteger.MaxHexDigitCount;
             public static TInteger ShiftLeftForNextDigit(TInteger value) => TInteger.MultiplyBy16(value);
@@ -683,24 +792,27 @@ namespace System
         private readonly struct BinaryParser<TInteger> : IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             public static NumberStyles AllowedStyles => NumberStyles.BinaryNumber;
-            public static bool IsValidChar(int ch) => (uint)(ch - '0') <= 1;
-            public static uint FromChar(int ch) => (uint)(ch - '0');
+            public static bool IsValidChar(uint ch) => (ch - '0') <= 1;
+            public static uint FromChar(uint ch) => ch - '0';
             public static uint MaxDigitValue => 1;
             public static unsafe int MaxDigitCount => sizeof(TInteger) * 8;
             public static TInteger ShiftLeftForNextDigit(TInteger value) => value << 1;
         }
 
-        private static ParsingStatus TryParseBinaryIntegerHexOrBinaryNumberStyle<TInteger, TParser>(ReadOnlySpan<char> value, NumberStyles styles, out TInteger result)
+        private static ParsingStatus TryParseBinaryIntegerHexOrBinaryNumberStyle<TChar, TInteger, TParser>(ReadOnlySpan<TChar> value, NumberStyles styles, out TInteger result)
+            where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
             where TParser : struct, IHexOrBinaryParser<TInteger>
         {
             Debug.Assert((styles & ~TParser.AllowedStyles) == 0, $"Only handles subsets of {TParser.AllowedStyles} format");
 
             if (value.IsEmpty)
+            {
                 goto FalseExit;
+            }
 
             int index = 0;
-            int num = value[0];
+            uint num = TChar.CastToUInt32(value[0]);
 
             // Skip past any whitespace at the beginning.
             if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
@@ -708,9 +820,12 @@ namespace System
                 do
                 {
                     index++;
+
                     if ((uint)index >= (uint)value.Length)
+                    {
                         goto FalseExit;
-                    num = value[index];
+                    }
+                    num = TChar.CastToUInt32(value[index]);
                 }
                 while (IsWhite(num));
             }
@@ -726,47 +841,70 @@ namespace System
                     do
                     {
                         index++;
+
                         if ((uint)index >= (uint)value.Length)
+                        {
                             goto DoneAtEnd;
-                        num = value[index];
+                        }
+                        num = TChar.CastToUInt32(value[index]);
                     } while (num == '0');
+
                     if (!TParser.IsValidChar(num))
+                    {
                         goto HasTrailingChars;
+                    }
                 }
 
                 // Parse up through MaxDigitCount digits, as no overflow is possible
                 answer = TInteger.CreateTruncating(TParser.FromChar(num)); // first digit
                 index++;
+
                 for (int i = 0; i < TParser.MaxDigitCount - 1; i++) // next MaxDigitCount - 1 digits can't overflow
                 {
                     if ((uint)index >= (uint)value.Length)
+                    {
                         goto DoneAtEnd;
-                    num = value[index];
+                    }
+                    num = TChar.CastToUInt32(value[index]);
 
                     uint numValue = TParser.FromChar(num);
+
                     if (numValue > TParser.MaxDigitValue)
+                    {
                         goto HasTrailingChars;
+                    }
                     index++;
+
                     answer = TParser.ShiftLeftForNextDigit(answer);
                     answer += TInteger.CreateTruncating(numValue);
                 }
 
                 // If there's another digit, it's an overflow.
                 if ((uint)index >= (uint)value.Length)
+                {
                     goto DoneAtEnd;
-                num = value[index];
+                }
+
+                num = TChar.CastToUInt32(value[index]);
+
                 if (!TParser.IsValidChar(num))
+                {
                     goto HasTrailingChars;
+                }
 
                 // At this point, we're either overflowing or hitting a formatting error.
                 // Format errors take precedence for compatibility. Read through any remaining digits.
                 do
                 {
                     index++;
+
                     if ((uint)index >= (uint)value.Length)
+                    {
                         goto OverflowExit;
-                    num = value[index];
+                    }
+                    num = TChar.CastToUInt32(value[index]);
                 } while (TParser.IsValidChar(num));
+
                 overflow = true;
                 goto HasTrailingChars;
             }
@@ -777,9 +915,11 @@ namespace System
             {
                 goto OverflowExit;
             }
+
         DoneAtEnd:
             result = answer;
             ParsingStatus status = ParsingStatus.OK;
+
         Exit:
             return status;
 
@@ -787,6 +927,7 @@ namespace System
             result = TInteger.Zero;
             status = ParsingStatus.Failed;
             goto Exit;
+
         OverflowExit:
             result = TInteger.Zero;
             status = ParsingStatus.Overflow;
@@ -797,28 +938,44 @@ namespace System
             if (IsWhite(num))
             {
                 if ((styles & NumberStyles.AllowTrailingWhite) == 0)
+                {
                     goto FalseExit;
+                }
+
                 for (index++; index < value.Length; index++)
                 {
-                    if (!IsWhite(value[index]))
+                    uint ch = TChar.CastToUInt32(value[index]);
+
+                    if (!IsWhite(ch))
+                    {
                         break;
+                    }
                 }
+
                 if ((uint)index >= (uint)value.Length)
+                {
                     goto DoneAtEndButPotentialOverflow;
+                }
             }
 
             if (!TrailingZeros(value, index))
+            {
                 goto FalseExit;
-
+            }
             goto DoneAtEndButPotentialOverflow;
         }
 
-        internal static decimal ParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+        internal static decimal ParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             ParsingStatus status = TryParseDecimal(value, styles, info, out decimal result);
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, value, TypeCode.Decimal);
+                if (status == ParsingStatus.Failed)
+                {
+                    ThrowFormatException(value);
+                }
+                ThrowOverflowException(SR.Overflow_Decimal);
             }
 
             return result;
@@ -871,9 +1028,9 @@ namespace System
             {
                 // multiply by 10
                 ulong tmpLow = (uint)low64 * 10UL;
-                ulong tmp64 = (uint)(low64 >> 32) * 10UL + (tmpLow >> 32);
+                ulong tmp64 = ((uint)(low64 >> 32) * 10UL) + (tmpLow >> 32);
                 low64 = (uint)tmpLow + (tmp64 << 32);
-                high = (uint)(tmp64 >> 32) + high * 10;
+                high = (uint)(tmp64 >> 32) + (high * 10);
 
                 if (c != 0)
                 {
@@ -904,7 +1061,7 @@ namespace System
 
                     while ((c != 0) && hasZeroTail)
                     {
-                        hasZeroTail &= (c == '0');
+                        hasZeroTail &= c == '0';
                         c = *++p;
                     }
 
@@ -944,37 +1101,19 @@ namespace System
             return true;
         }
 
-        internal static double ParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+        internal static TFloat ParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
-            if (!TryParseDouble(value, styles, info, out double result))
+            if (!TryParseFloat(value, styles, info, out TFloat result))
             {
-                ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
+                ThrowFormatException(value);
             }
-
             return result;
         }
 
-        internal static float ParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
-        {
-            if (!TryParseSingle(value, styles, info, out float result))
-            {
-                ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
-            }
-
-            return result;
-        }
-
-        internal static Half ParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
-        {
-            if (!TryParseHalf(value, styles, info, out Half result))
-            {
-                ThrowOverflowOrFormatException(ParsingStatus.Failed, value);
-            }
-
-            return result;
-        }
-
-        internal static unsafe ParsingStatus TryParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
+        internal static ParsingStatus TryParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[DecimalNumberBufferLength]);
 
@@ -993,217 +1132,162 @@ namespace System
             return ParsingStatus.OK;
         }
 
-        internal static bool SpanStartsWith(ReadOnlySpan<char> span, char c) => !span.IsEmpty && span[0] == c;
-
-        internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
+        internal static bool SpanStartsWith<TChar>(ReadOnlySpan<TChar> span, TChar c)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[DoubleNumberBufferLength]);
+            return !span.IsEmpty && (span[0] == c);
+        }
+
+        internal static bool SpanStartsWith<TChar>(ReadOnlySpan<TChar> span, ReadOnlySpan<TChar> value, StringComparison comparisonType)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (typeof(TChar) == typeof(char))
+            {
+                ReadOnlySpan<char> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(span)), span.Length);
+                ReadOnlySpan<char> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(value)), value.Length);
+                return typedSpan.StartsWith(typedValue, comparisonType);
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(byte));
+
+                ReadOnlySpan<byte> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(span)), span.Length);
+                ReadOnlySpan<byte> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(value)), value.Length);
+                return typedSpan.StartsWithUtf8(typedValue, comparisonType);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ReadOnlySpan<TChar> SpanTrim<TChar>(ReadOnlySpan<TChar> span)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (typeof(TChar) == typeof(char))
+            {
+                ReadOnlySpan<char> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(span)), span.Length);
+                ReadOnlySpan<char> result = typedSpan.Trim();
+                return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<char, TChar>(ref MemoryMarshal.GetReference(result)), result.Length);
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(byte));
+
+                ReadOnlySpan<byte> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(span)), span.Length);
+                ReadOnlySpan<byte> result = typedSpan.TrimUtf8();
+                return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<byte, TChar>(ref MemoryMarshal.GetReference(result)), result.Length);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool SpanEqualsOrdinalIgnoreCase<TChar>(ReadOnlySpan<TChar> span, ReadOnlySpan<TChar> value)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (typeof(TChar) == typeof(char))
+            {
+                ReadOnlySpan<char> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(span)), span.Length);
+                ReadOnlySpan<char> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(value)), value.Length);
+                return typedSpan.EqualsOrdinalIgnoreCase(typedValue);
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(byte));
+
+                ReadOnlySpan<byte> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(span)), span.Length);
+                ReadOnlySpan<byte> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(value)), value.Length);
+                return typedSpan.EqualsOrdinalIgnoreCaseUtf8(typedValue);
+            }
+        }
+
+        internal static bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result)
+            where TChar : unmanaged, IUtfChar<TChar>
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
+        {
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[TFloat.NumberBufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
-                ReadOnlySpan<char> valueTrim = value.Trim();
+                ReadOnlySpan<TChar> valueTrim = SpanTrim(value);
 
                 // This code would be simpler if we only had the concept of `InfinitySymbol`, but
                 // we don't so we'll check the existing cases first and then handle `PositiveSign` +
                 // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
 
-                if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
-                {
-                    result = double.PositiveInfinity;
-                }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
-                {
-                    result = double.NegativeInfinity;
-                }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = double.NaN;
-                }
-                else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
-                {
-                    valueTrim = valueTrim.Slice(info.PositiveSign.Length);
+                ReadOnlySpan<TChar> positiveInfinitySymbol = info.PositiveInfinitySymbolTChar<TChar>();
 
-                    if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
-                    {
-                        result = double.PositiveInfinity;
-                    }
-                    else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                    {
-                        result = double.NaN;
-                    }
-                    else
-                    {
-                        result = 0;
-                        return false;
-                    }
-                }
-                else if ((valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) && valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol)) ||
-                        (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol)))
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
                 {
-                    result = double.NaN;
+                    result = TFloat.PositiveInfinity;
+                    return true;
                 }
-                else
+
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, info.NegativeInfinitySymbolTChar<TChar>()))
                 {
-                    result = 0;
-                    return false; // We really failed
+                    result = TFloat.NegativeInfinity;
+                    return true;
                 }
-            }
-            else
-            {
-                result = NumberToDouble(ref number);
+
+                ReadOnlySpan<TChar> nanSymbol = info.NaNSymbolTChar<TChar>();
+
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
+                {
+                    result = TFloat.NaN;
+                    return true;
+                }
+
+                var positiveSign = info.PositiveSignTChar<TChar>();
+
+                if (SpanStartsWith(valueTrim, positiveSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    valueTrim = valueTrim.Slice(positiveSign.Length);
+
+                    if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
+                    {
+                        result = TFloat.PositiveInfinity;
+                        return true;
+                    }
+                    else if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
+                    {
+                        result = TFloat.NaN;
+                        return true;
+                    }
+
+                    result = TFloat.Zero;
+                    return false;
+                }
+
+                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+
+                if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(negativeSign.Length), nanSymbol))
+                    {
+                        result = TFloat.NaN;
+                        return true;
+                    }
+
+                    if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, TChar.CastFrom('-')) && SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(1), nanSymbol))
+                    {
+                        result = TFloat.NaN;
+                        return true;
+                    }
+                }
+
+                result = TFloat.Zero;
+                return false; // We really failed
             }
 
+            result = NumberToFloat<TFloat>(ref number);
             return true;
         }
 
-        internal static unsafe bool TryParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Half result)
-        {
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[HalfNumberBufferLength]);
-
-            if (!TryStringToNumber(value, styles, ref number, info))
-            {
-                ReadOnlySpan<char> valueTrim = value.Trim();
-
-                // This code would be simpler if we only had the concept of `InfinitySymbol`, but
-                // we don't so we'll check the existing cases first and then handle `PositiveSign` +
-                // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
-                //
-                // Additionally, since some cultures ("wo") actually define `PositiveInfinitySymbol`
-                // to include `PositiveSign`, we need to check whether `PositiveInfinitySymbol` fits
-                // that case so that we don't start parsing things like `++infini`.
-
-                if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
-                {
-                    result = Half.PositiveInfinity;
-                }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
-                {
-                    result = Half.NegativeInfinity;
-                }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = Half.NaN;
-                }
-                else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
-                {
-                    valueTrim = valueTrim.Slice(info.PositiveSign.Length);
-
-                    if (!info.PositiveInfinitySymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
-                    {
-                        result = Half.PositiveInfinity;
-                    }
-                    else if (!info.NaNSymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                    {
-                        result = Half.NaN;
-                    }
-                    else
-                    {
-                        result = Half.Zero;
-                        return false;
-                    }
-                }
-                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = Half.NaN;
-                }
-                else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = Half.NaN;
-                }
-                else
-                {
-                    result = Half.Zero;
-                    return false; // We really failed
-                }
-            }
-            else
-            {
-                result = NumberToHalf(ref number);
-            }
-
-            return true;
-        }
-
-        internal static unsafe bool TryParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out float result)
-        {
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[SingleNumberBufferLength]);
-
-            if (!TryStringToNumber(value, styles, ref number, info))
-            {
-                ReadOnlySpan<char> valueTrim = value.Trim();
-
-                // This code would be simpler if we only had the concept of `InfinitySymbol`, but
-                // we don't so we'll check the existing cases first and then handle `PositiveSign` +
-                // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
-                //
-                // Additionally, since some cultures ("wo") actually define `PositiveInfinitySymbol`
-                // to include `PositiveSign`, we need to check whether `PositiveInfinitySymbol` fits
-                // that case so that we don't start parsing things like `++infini`.
-
-                if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
-                {
-                    result = float.PositiveInfinity;
-                }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
-                {
-                    result = float.NegativeInfinity;
-                }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = float.NaN;
-                }
-                else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
-                {
-                    valueTrim = valueTrim.Slice(info.PositiveSign.Length);
-
-                    if (!info.PositiveInfinitySymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
-                    {
-                        result = float.PositiveInfinity;
-                    }
-                    else if (!info.NaNSymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                    {
-                        result = float.NaN;
-                    }
-                    else
-                    {
-                        result = 0;
-                        return false;
-                    }
-                }
-                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = float.NaN;
-                }
-                else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
-                {
-                    result = float.NaN;
-                }
-                else
-                {
-                    result = 0;
-                    return false; // We really failed
-                }
-            }
-            else
-            {
-                result = NumberToSingle(ref number);
-            }
-
-            return true;
-        }
-
-        internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+        internal static unsafe bool TryStringToNumber<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(info != null);
-            fixed (char* stringPointer = &MemoryMarshal.GetReference(value))
+
+            fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {
-                char* p = stringPointer;
+                TChar* p = stringPointer;
+
                 if (!TryParseNumber(ref p, p + value.Length, styles, ref number, info)
                     || ((int)(p - stringPointer) < value.Length && !TrailingZeros(value, (int)(p - stringPointer))))
                 {
@@ -1217,17 +1301,22 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
-        private static bool TrailingZeros(ReadOnlySpan<char> value, int index) =>
+        private static bool TrailingZeros<TChar>(ReadOnlySpan<TChar> value, int index)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
             // For compatibility, we need to allow trailing zeros at the end of a number string
-            value.Slice(index).IndexOfAnyExcept('\0') < 0;
+            return !value.Slice(index).ContainsAnyExcept(TChar.CastFrom('\0'));
+        }
 
-        private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
+        private static bool IsSpaceReplacingChar(uint c) => (c == '\u00a0') || (c == '\u202f');
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe char* MatchNegativeSignChars(char* p, char* pEnd, NumberFormatInfo info)
+        private static unsafe TChar* MatchNegativeSignChars<TChar>(TChar* p, TChar* pEnd, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
-            char* ret = MatchChars(p, pEnd, info.NegativeSign);
-            if (ret == null && info.AllowHyphenDuringParsing && p < pEnd && *p == '-')
+            TChar* ret = MatchChars(p, pEnd, info.NegativeSignTChar<TChar>());
+
+            if ((ret is null) && info.AllowHyphenDuringParsing && (p < pEnd) && (TChar.CastToUInt32(*p) == '-'))
             {
                 ret = p + 1;
             }
@@ -1235,28 +1324,37 @@ namespace System
             return ret;
         }
 
-        private static unsafe char* MatchChars(char* p, char* pEnd, string value)
+        private static unsafe TChar* MatchChars<TChar>(TChar* p, TChar* pEnd, ReadOnlySpan<TChar> value)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(p != null && pEnd != null && p <= pEnd && value != null);
-            fixed (char* stringPointer = value)
+            Debug.Assert((p != null) && (pEnd != null) && (p <= pEnd) && (value != null));
+
+            fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {
-                char* str = stringPointer;
-                if (*str != '\0')
+                TChar* str = stringPointer;
+
+                if (TChar.CastToUInt32(*str) != '\0')
                 {
                     // We only hurt the failure case
                     // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 or 0x202F as a
                     // space character we use 0x20 space character instead to mean the same.
                     while (true)
                     {
-                        char cp = p < pEnd ? *p : '\0';
-                        if (cp != *str && !(IsSpaceReplacingChar(*str) && cp == '\u0020'))
+                        uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
+                        uint val = TChar.CastToUInt32(*str);
+
+                        if ((cp != val) && !(IsSpaceReplacingChar(val) && (cp == '\u0020')))
                         {
                             break;
                         }
+
                         p++;
                         str++;
-                        if (*str == '\0')
+
+                        if (TChar.CastToUInt32(*str) == '\0')
+                        {
                             return p;
+                        }
                     }
                 }
             }
@@ -1264,161 +1362,76 @@ namespace System
             return null;
         }
 
-        private static bool IsWhite(int ch) => ch == 0x20 || (uint)(ch - 0x09) <= (0x0D - 0x09);
-
-        private static bool IsDigit(int ch) => ((uint)ch - '0') <= 9;
-
-        internal enum ParsingStatus
-        {
-            OK,
-            Failed,
-            Overflow
-        }
-
         [DoesNotReturn]
-        internal static void ThrowOverflowOrFormatException(ParsingStatus status, ReadOnlySpan<char> value, TypeCode type = 0) => throw GetException(status, value, type);
-
-        [DoesNotReturn]
-        internal static void ThrowOverflowOrFormatException<TInteger>(ParsingStatus status, ReadOnlySpan<char> value)
-            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
-        {
-            throw GetException<TInteger>(status, value);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowOverflowException(TypeCode type) => throw GetOverflowException(type);
-
-        [DoesNotReturn]
-        internal static void ThrowOverflowOrFormatExceptionInt128(ParsingStatus status) => throw GetExceptionInt128(status);
-
-        [DoesNotReturn]
-        internal static void ThrowOverflowOrFormatExceptionUInt128(ParsingStatus status) => throw GetExceptionUInt128(status);
-
-        private static Exception GetException(ParsingStatus status, ReadOnlySpan<char> value, TypeCode type)
-        {
-            if (status == ParsingStatus.Failed)
-                return new FormatException(SR.Format(SR.Format_InvalidStringWithValue, value.ToString()));
-
-            return GetOverflowException(type);
-        }
-
-        private static Exception GetException<TInteger>(ParsingStatus status, ReadOnlySpan<char> value)
+        internal static void ThrowOverflowOrFormatException<TChar, TInteger>(ParsingStatus status, ReadOnlySpan<TChar> value)
+            where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             if (status == ParsingStatus.Failed)
-                return new FormatException(SR.Format(SR.Format_InvalidStringWithValue, value.ToString()));
-
-            return new OverflowException(TInteger.OverflowMessage);
+            {
+                ThrowFormatException(value);
+            }
+            ThrowOverflowException<TInteger>();
         }
 
-        private static OverflowException GetOverflowException(TypeCode type)
+        [DoesNotReturn]
+        internal static void ThrowFormatException<TChar>(ReadOnlySpan<TChar> value)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
-            string s;
-            switch (type)
+            string errorMessage;
+
+            if (typeof(TChar) == typeof(byte))
             {
-                case TypeCode.SByte:
-                    s = SR.Overflow_SByte;
-                    break;
-                case TypeCode.Byte:
-                    s = SR.Overflow_Byte;
-                    break;
-                case TypeCode.Int16:
-                    s = SR.Overflow_Int16;
-                    break;
-                case TypeCode.UInt16:
-                    s = SR.Overflow_UInt16;
-                    break;
-                case TypeCode.Int32:
-                    s = SR.Overflow_Int32;
-                    break;
-                case TypeCode.UInt32:
-                    s = SR.Overflow_UInt32;
-                    break;
-                case TypeCode.Int64:
-                    s = SR.Overflow_Int64;
-                    break;
-                case TypeCode.UInt64:
-                    s = SR.Overflow_UInt64;
-                    break;
-                default:
-                    Debug.Assert(type == TypeCode.Decimal);
-                    s = SR.Overflow_Decimal;
-                    break;
-            }
-            return new OverflowException(s);
-        }
-
-        private static Exception GetExceptionInt128(ParsingStatus status) =>
-            status == ParsingStatus.Failed ?
-                new FormatException(SR.Format_InvalidString) :
-                new OverflowException(SR.Overflow_Int128);
-
-        private static Exception GetExceptionUInt128(ParsingStatus status) =>
-            status == ParsingStatus.Failed ?
-                new FormatException(SR.Format_InvalidString) :
-                new OverflowException(SR.Overflow_UInt128);
-
-        internal static double NumberToDouble(ref NumberBuffer number)
-        {
-            number.CheckConsistency();
-            double result;
-
-            if ((number.DigitsCount == 0) || (number.Scale < DoubleMinExponent))
-            {
-                result = 0;
-            }
-            else if (number.Scale > DoubleMaxExponent)
-            {
-                result = double.PositiveInfinity;
+                // Decode the UTF8 value into a string we can include in the error message. We're here
+                // because we failed to parse, which also means the bytes might not be valid UTF8,
+                // so fallback to a message that doesn't include the value if the bytes are invalid.
+                // It's possible after we check the bytes for validity that they could be concurrently
+                // mutated, but if that's happening, all bets are off, anyway, and it simply impacts
+                // which exception is thrown.
+                ReadOnlySpan<byte> bytes = MemoryMarshal.Cast<TChar, byte>(value);
+                errorMessage = Utf8.IsValid(bytes) ?
+                    SR.Format(SR.Format_InvalidStringWithValue, Encoding.UTF8.GetString(bytes)) :
+                    SR.Format_InvalidString;
             }
             else
             {
-                ulong bits = NumberToDoubleFloatingPointBits(ref number, in FloatingPointInfo.Double);
-                result = BitConverter.UInt64BitsToDouble(bits);
+                errorMessage = SR.Format(SR.Format_InvalidStringWithValue, value.ToString());
             }
 
-            return number.IsNegative ? -result : result;
+            throw new FormatException(errorMessage);
         }
 
-        internal static Half NumberToHalf(ref NumberBuffer number)
+        [DoesNotReturn]
+        internal static void ThrowOverflowException<TInteger>()
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
+        {
+            throw new OverflowException(TInteger.OverflowMessage);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowOverflowException(string message)
+        {
+            throw new OverflowException(message);
+        }
+
+        internal static TFloat NumberToFloat<TFloat>(ref NumberBuffer number)
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
             number.CheckConsistency();
-            Half result;
+            TFloat result;
 
-            if ((number.DigitsCount == 0) || (number.Scale < HalfMinExponent))
+            if ((number.DigitsCount == 0) || (number.Scale < TFloat.MinDecimalExponent))
             {
-                result = default;
+                result = TFloat.Zero;
             }
-            else if (number.Scale > HalfMaxExponent)
+            else if (number.Scale > TFloat.MaxDecimalExponent)
             {
-                result = Half.PositiveInfinity;
+                result = TFloat.PositiveInfinity;
             }
             else
             {
-                ushort bits = NumberToHalfFloatingPointBits(ref number, in FloatingPointInfo.Half);
-                result = new Half(bits);
-            }
-
-            return number.IsNegative ? Half.Negate(result) : result;
-        }
-
-        internal static float NumberToSingle(ref NumberBuffer number)
-        {
-            number.CheckConsistency();
-            float result;
-
-            if ((number.DigitsCount == 0) || (number.Scale < SingleMinExponent))
-            {
-                result = 0;
-            }
-            else if (number.Scale > SingleMaxExponent)
-            {
-                result = float.PositiveInfinity;
-            }
-            else
-            {
-                uint bits = NumberToSingleFloatingPointBits(ref number, in FloatingPointInfo.Single);
-                result = BitConverter.UInt32BitsToSingle(bits);
+                ulong bits = NumberToFloatingPointBits<TFloat>(ref number);
+                result = TFloat.BitsToFloat(bits);
             }
 
             return number.IsNegative ? -result : result;

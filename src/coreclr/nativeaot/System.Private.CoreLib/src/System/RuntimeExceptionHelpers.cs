@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.Unicode;
-using Internal.DeveloperExperience;
-using Internal.Runtime.Augments;
+using System.Threading;
+
+using Internal.Reflection.Augments;
 
 namespace System
 {
@@ -24,7 +21,7 @@ namespace System
         }
     }
 
-    public class RuntimeExceptionHelpers
+    internal static class RuntimeExceptionHelpers
     {
         //------------------------------------------------------------------------------------------------------------
         // @TODO: this function is related to throwing exceptions out of Rtm. If we did not have to throw
@@ -119,63 +116,28 @@ namespace System
             }
         }
 
-        public enum RhFailFastReason
-        {
-            Unknown = 0,
-            InternalError = 1,                                   // "Runtime internal error"
-            UnhandledException_ExceptionDispatchNotAllowed = 2,  // "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope."
-            UnhandledException_CallerDidNotHandle = 3,           // "Unhandled exception: no handler found in calling method."
-            ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
-            UnhandledException = 5,                              // "Unhandled exception: a managed exception was not handled before reaching unmanaged code"
-            UnhandledExceptionFromPInvoke = 6,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
-        }
-
-        private static string GetStringForFailFastReason(RhFailFastReason reason)
-        {
-            switch (reason)
+        private static string GetStringForFailFastReason(RhFailFastReason reason) => reason switch
             {
-                case RhFailFastReason.InternalError:
-                    return "Runtime internal error";
-                case RhFailFastReason.UnhandledException_ExceptionDispatchNotAllowed:
-                    return "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope.";
-                case RhFailFastReason.UnhandledException_CallerDidNotHandle:
-                    return "Unhandled exception: no handler found in calling method.";
-                case RhFailFastReason.ClassLibDidNotTranslateExceptionID:
-                    return "Unable to translate failure into a classlib-specific exception object.";
-                case RhFailFastReason.UnhandledException:
-                    return "Unhandled exception: a managed exception was not handled before reaching unmanaged code.";
-                case RhFailFastReason.UnhandledExceptionFromPInvoke:
-                    return "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition.";
-                default:
-                    return "Unknown reason.";
-            }
-        }
-
-
-        [DoesNotReturn]
-        public static void FailFast(string message)
-        {
-            FailFast(message, null, RhFailFastReason.Unknown, IntPtr.Zero, IntPtr.Zero);
-        }
-
-        [DoesNotReturn]
-        public static unsafe void FailFast(string message, Exception? exception)
-        {
-            FailFast(message, exception, RhFailFastReason.Unknown, IntPtr.Zero, IntPtr.Zero);
-        }
+                RhFailFastReason.InternalError => "Runtime internal error",
+                RhFailFastReason.UnhandledException => "Unhandled exception: a managed exception was not handled before reaching unmanaged code",
+                RhFailFastReason.UnhandledExceptionFromPInvoke => "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition",
+                RhFailFastReason.EnvironmentFailFast => "Environment.FailFast was called",
+                RhFailFastReason.AssertionFailure => "Assertion failure",
+                _ => "Unknown reason."
+            };
 
         // Used to report exceptions that *logically* go unhandled in the Fx code.  For example, an
         // exception that escapes from a ThreadPool workitem, or from a void-returning async method.
         public static void ReportUnhandledException(Exception exception)
         {
-            FailFast(GetStringForFailFastReason(RhFailFastReason.UnhandledException), exception);
+            FailFast(exception: exception, reason: RhFailFastReason.UnhandledException);
         }
 
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
         // needs to cause the process to exit. It is the classlib's opportunity to customize the
         // termination behavior in whatever way necessary.
-        [RuntimeExport("FailFast")]
-        public static void RuntimeFailFast(RhFailFastReason reason, Exception? exception, IntPtr pExAddress, IntPtr pExContext)
+        [RuntimeExport("RuntimeFailFast")]
+        internal static void RuntimeFailFast(RhFailFastReason reason, Exception? exception, IntPtr pExAddress, IntPtr pExContext)
         {
             if (!SafeToPerformRichExceptionSupport)
                 return;
@@ -184,131 +146,146 @@ namespace System
             // back into the dispatcher.
             try
             {
-                // Avoid complex processing and allocations if we are already in failfast or recursive out of memory.
-                // We do not set InFailFast.Value here, because we want rich diagnostics in the FailFast
-                // call below and reentrancy is not possible for this method (all exceptions are ignored).
-                bool minimalFailFast = InFailFast.Value || (exception == PreallocatedOutOfMemoryException.Instance);
-                string failFastMessage = "";
-
-                if (!minimalFailFast)
-                {
-                    if ((reason == RhFailFastReason.UnhandledException) && (exception != null))
-                    {
-                        Debug.WriteLine("Unhandled Exception: " + exception.ToString());
-                    }
-
-                    failFastMessage = string.Format("Runtime-generated FailFast: ({0}): {1}{2}",
-                        reason.ToString(),  // Explicit call to ToString() to avoid missing metadata exception inside String.Format()
-                        GetStringForFailFastReason(reason),
-                        exception != null ? " [exception object available]" : "");
-                }
-
-                FailFast(failFastMessage, exception, reason, pExAddress, pExContext);
+                FailFast(exception: exception, reason: reason, pExAddress: pExAddress, pExContext: pExContext);
             }
             catch
             {
-                // Returning from this callback will cause the runtime to FailFast without involving the class
-                // library.
+                // Returning from this callback will cause the runtime to FailFast without involving the class library.
             }
         }
 
-        [DoesNotReturn]
-        internal static void FailFast(string message, Exception? exception, RhFailFastReason reason, IntPtr pExAddress, IntPtr pExContext)
-        {
-            // If this a recursive call to FailFast, avoid all unnecessary and complex activity the second time around to avoid the recursion
-            // that got us here the first time (Some judgement is required as to what activity is "unnecessary and complex".)
-            bool minimalFailFast = InFailFast.Value || (exception == PreallocatedOutOfMemoryException.Instance);
-            InFailFast.Value = true;
+        internal const uint EXCEPTION_NONCONTINUABLE = 0x1;
+        internal const uint FAIL_FAST_GENERATE_EXCEPTION_ADDRESS = 0x1;
+        internal const uint STATUS_STACK_BUFFER_OVERRUN = 0xC0000409;
+        internal const uint FAST_FAIL_EXCEPTION_DOTNET_AOT = 0x48;
 
-            if (!minimalFailFast)
+#pragma warning disable 649
+        internal unsafe struct EXCEPTION_RECORD
+        {
+            internal uint ExceptionCode;
+            internal uint ExceptionFlags;
+            internal IntPtr ExceptionRecord;
+            internal IntPtr ExceptionAddress;
+            internal uint NumberParameters;
+#if TARGET_64BIT
+            internal fixed ulong ExceptionInformation[15];
+#else
+            internal fixed uint ExceptionInformation[15];
+#endif
+        }
+#pragma warning restore 649
+
+        private static ulong s_crashingThreadId;
+
+        [DoesNotReturn]
+        internal static unsafe void FailFast(string? message = null, Exception? exception = null, string? errorSource = null,
+            RhFailFastReason reason = RhFailFastReason.EnvironmentFailFast,
+            IntPtr pExAddress = 0, IntPtr pExContext = 0)
+        {
+            IntPtr triageBufferAddress = IntPtr.Zero;
+            int triageBufferSize = 0;
+            int errorCode = 0;
+
+            ulong currentThreadId = Thread.CurrentOSThreadId;
+            ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
+            if (previousThreadId == 0)
             {
-                string prefix;
-                string outputMessage;
-                if (exception != null)
+                CrashInfo crashInfo = new();
+                crashInfo.Open(reason, s_crashingThreadId, message ?? GetStringForFailFastReason(reason));
+
+                bool minimalFailFast = (exception == PreallocatedOutOfMemoryException.Instance);
+                if (!minimalFailFast)
                 {
-                    prefix = "Unhandled Exception: ";
-                    outputMessage = exception.ToString();
+                    Internal.Console.Error.Write(((exception == null) || (reason is RhFailFastReason.EnvironmentFailFast or RhFailFastReason.AssertionFailure)) ?
+                        "Process terminated. " : "Unhandled exception. ");
+
+                    if (errorSource != null)
+                    {
+                        Internal.Console.Error.Write(errorSource);
+                        Internal.Console.Error.WriteLine();
+                    }
+
+                    if (message != null)
+                    {
+                        Internal.Console.Error.Write(message);
+                        Internal.Console.Error.WriteLine();
+                    }
+
+                    if (errorSource == null && message == null && (exception == null || reason is RhFailFastReason.EnvironmentFailFast))
+                    {
+                        Internal.Console.Error.Write(GetStringForFailFastReason(reason));
+                        Internal.Console.Error.WriteLine();
+                    }
+
+                    if (reason is RhFailFastReason.EnvironmentFailFast)
+                    {
+                        Internal.Console.Error.Write(new StackTrace().ToString());
+                    }
+
+                    if ((exception != null) && (reason is not RhFailFastReason.AssertionFailure))
+                    {
+                        Internal.Console.Error.Write(exception.ToString());
+                        Internal.Console.Error.WriteLine();
+                    }
+
+                    if (exception != null)
+                    {
+                        crashInfo.WriteException(exception);
+                    }
+                }
+
+                crashInfo.Close();
+
+                triageBufferAddress = crashInfo.TriageBufferAddress;
+                triageBufferSize = crashInfo.TriageBufferSize;
+
+                // Try to map the failure into a HRESULT that makes sense
+                errorCode = exception != null ? exception.HResult : reason switch
+                {
+                    RhFailFastReason.EnvironmentFailFast => HResults.COR_E_FAILFAST,
+                    RhFailFastReason.InternalError => HResults.COR_E_EXECUTIONENGINE,
+                    // Error code for unhandled exceptions is expected to come from the exception object above
+                    // RhFailFastReason.UnhandledException or
+                    // RhFailFastReason.UnhandledExceptionFromPInvoke
+                    _ => HResults.E_FAIL
+                };
+            }
+            else
+            {
+                if (previousThreadId == currentThreadId)
+                {
+                    // Fatal error while processing another FailFast (recursive call)
+                    errorCode = HResults.COR_E_EXECUTIONENGINE;
                 }
                 else
                 {
-                    prefix = "Process terminated. ";
-                    outputMessage = message;
-                }
-
-
-                Internal.Console.Error.Write(prefix);
-                if (outputMessage != null)
-                    Internal.Console.Error.Write(outputMessage);
-                Internal.Console.Error.Write(Environment.NewLine);
-
-                if (outputMessage != null)
-                {
-                    // Try to save the exception stack trace in a buffer on the stack.  If the exception is too large, we'll truncate it.
-                    const int MaxStack = 2048;
-                    Span<byte> exceptionStack = stackalloc byte[MaxStack];
-
-                    // Ignore output, as this is best-effort
-                    _ = Utf8.FromUtf16(outputMessage, exceptionStack, out _, out int length);
-                    // Fill the rest of the buffer with nulls
-                    if (length < MaxStack)
-                        exceptionStack.Slice(length).Clear();
-
-                    unsafe
-                    {
-                        byte* stackExceptionRecord = stackalloc byte[sizeof(CrashDumpRecord)];
-                        CrashDumpRecord* pExceptionRecord = (CrashDumpRecord*)stackExceptionRecord;
-                        var cookieSpan = new Span<byte>(pExceptionRecord->Cookie, CrashDumpRecord.CookieSize);
-                        // Random 10 bytes to identify the record
-                        ((ReadOnlySpan<byte>)new byte[] { 0x1c, 0x73, 0xd0, 0x2d, 0xda, 0x6b, 0x4c, 0xef, 0xbf, 0xa1 }).CopyTo(cookieSpan);
-                        "NETRUNTIME"u8.CopyTo(cookieSpan.Slice(10));
-                        pExceptionRecord->Type = 1;
-                        pExceptionRecord->Data = (void*)exceptionStack.GetPinnableReference();
-                        pExceptionRecord->Length = length;
-                    }
+                    // The first thread generates the crash info and any other threads are blocked
+                    Thread.Sleep(int.MaxValue);
                 }
             }
+
+            EXCEPTION_RECORD exceptionRecord;
+            // STATUS_STACK_BUFFER_OVERRUN is a "transport" exception code required by Watson to trigger the proper analyzer/provider for bucketing
+            exceptionRecord.ExceptionCode = STATUS_STACK_BUFFER_OVERRUN;
+            exceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE;
+            exceptionRecord.ExceptionRecord = IntPtr.Zero;
+            exceptionRecord.ExceptionAddress = pExAddress;
+            exceptionRecord.NumberParameters = 4;
+            exceptionRecord.ExceptionInformation[0] = FAST_FAIL_EXCEPTION_DOTNET_AOT;
+            exceptionRecord.ExceptionInformation[1] = (uint)errorCode;
+#if TARGET_64BIT
+            exceptionRecord.ExceptionInformation[2] = (ulong)triageBufferAddress;
+#else
+            exceptionRecord.ExceptionInformation[2] = (uint)triageBufferAddress;
+#endif
+            exceptionRecord.ExceptionInformation[3] = (uint)triageBufferSize;
 
 #if TARGET_WINDOWS
-            uint errorCode = 0x80004005; // E_FAIL
-            // To help enable testing to bucket the failures we choose one of the following as errorCode:
-            // * hashcode of EETypePtr if it is an unhandled managed exception
-            // * HRESULT, if available
-            // * RhFailFastReason, if it is one of the known reasons
-            if (exception != null)
-            {
-                if (reason == RhFailFastReason.UnhandledException)
-                    errorCode = (uint)(exception.GetEETypePtr().GetHashCode());
-                else if (exception.HResult != 0)
-                    errorCode = (uint)exception.HResult;
-            }
-            else if (reason != RhFailFastReason.Unknown)
-            {
-                errorCode = (uint)reason + 0x1000; // Add something to avoid common low level exit codes
-            }
-
-            Interop.Kernel32.RaiseFailFastException(errorCode, pExAddress, pExContext);
+            Interop.Kernel32.RaiseFailFastException(new IntPtr(&exceptionRecord), pExContext, pExAddress == IntPtr.Zero ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0);
 #else
+            RuntimeImports.RhCreateCrashDumpIfEnabled(new IntPtr(&exceptionRecord), pExContext);
             Interop.Sys.Abort();
 #endif
-        }
-
-        private unsafe struct CrashDumpRecord
-        {
-            public const int CookieSize = 20;
-            public fixed byte Cookie[CookieSize];
-            public int Type;
-            public void* Data;
-            public int Length;
-        }
-
-        // Use a nested class to avoid running the class constructor of the outer class when
-        // accessing this flag.
-        private static class InFailFast
-        {
-            // This boolean is used to stop runaway FailFast recursions. Though this is technically a concurrently set field, it only gets set during
-            // fatal process shutdowns and it's only purpose is a reasonable-case effort to make a bad situation a little less bad.
-            // Trying to use locks or other concurrent access apis would actually defeat the purpose of making FailFast as robust as possible.
-            public static bool Value;
         }
 
         // This returns "true" once enough of the framework has been initialized to safely perform operations
@@ -318,9 +295,7 @@ namespace System
             get
             {
                 // Reflection needs to work as the exception code calls GetType() and GetType().ToString()
-                if (RuntimeAugments.CallbacksIfAvailable == null)
-                    return false;
-                return true;
+                return ReflectionAugments.IsInitialized;
             }
         }
     }

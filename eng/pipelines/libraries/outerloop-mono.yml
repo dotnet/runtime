@@ -1,13 +1,11 @@
 trigger: none
 
-# Disabled until we get the build clean
-# schedules:
-# - cron: "0 8 * * *" # 8 AM UTC => 12 AM PST
-#   displayName: Outerloop scheduled build
-#   branches:
-#     include:
-#     - main
-#     - release/*.*
+schedules:
+- cron: "0 8 * * 2,4" # 8 AM UTC => 12 AM PST, every Tuesday and Thursday
+  displayName: Outerloop scheduled build
+  branches:
+    include:
+    - main
 
 variables:
   - template: variables.yml
@@ -26,14 +24,14 @@ extends:
             buildConfig: Release
             runtimeFlavor: mono
             platforms:
-            - windows_x86
-            - browser_wasm
-            - ${{ if eq(variables['isRollingBuild'], true) }}:
               - windows_x64
               - linux_x64
-              - linux_arm
-              - linux_musl_x64
               - osx_x64
+              - ${{ if eq(variables['isRollingBuild'], true) }}:
+                - android_x64
+                - linux_arm
+                - linux_musl_x64
+                - windows_x86
             jobParameters:
               testScope: outerloop
               nameSuffix: AllSubsets_Mono
@@ -41,36 +39,33 @@ extends:
               timeoutInMinutes: 180
               includeAllPlatforms: ${{ variables['isRollingBuild'] }}
               # extra steps, run tests
-              extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-              extraStepsParameters:
-                scenarios:
-                - WasmTestOnBrowser
-                testScope: outerloop
-                creator: dotnet-bot
-                testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+              postBuildSteps:
+                - template: /eng/pipelines/libraries/helix.yml
+                  parameters:
+                    testScope: outerloop
+                    creator: dotnet-bot
+                    testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
-        - ${{ if eq(variables['isRollingBuild'], false) }}:
-          - template: /eng/pipelines/common/platform-matrix.yml
-            parameters:
-              jobTemplate: /eng/pipelines/common/global-build-job.yml
-              helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-              buildConfig: Debug
-              runtimeFlavor: mono
-              platforms:
-              - windows_x64
-              - linux_x64
-              - linux_musl_x64
-              - osx_x64
-              - android_arm64
-              jobParameters:
-                testScope: outerloop
-                nameSuffix: AllSubsets_Mono
-                buildArgs: -s mono+host.native+libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true
-                timeoutInMinutes: 180
-                includeAllPlatforms: ${{ variables['isRollingBuild'] }}
-                # extra steps, run tests
-                extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-                extraStepsParameters:
-                  testScope: outerloop
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
+            helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+            buildConfig: Release
+            runtimeFlavor: mono
+            platforms:
+            - browser_wasm
+            jobParameters:
+              testScope: outerloop
+              nameSuffix: AllSubsets_Mono
+              buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+              timeoutInMinutes: 180
+              includeAllPlatforms: ${{ variables['isRollingBuild'] }}
+              # extra steps, run tests
+              postBuildSteps:
+                - template: /eng/pipelines/libraries/helix.yml
+                  parameters:
+                    scenarios:
+                    - normal
+                    testScope: outerloop
+                    creator: dotnet-bot
+                    testRunNamePrefixSuffix: Mono_$(_BuildConfig)

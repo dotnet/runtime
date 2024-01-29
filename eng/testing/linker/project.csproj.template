@@ -1,6 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Needed for PublishTrimmed -->
+    <NetCoreAppToolCurrent>{NetCoreAppToolCurrent}</NetCoreAppToolCurrent>
+    <ToolsILLinkDir>{ToolsILLinkDir}</ToolsILLinkDir>
+  </PropertyGroup>
+
+  <!-- Use live illink bits. It is necessary to both import the package props and override
+       the tasks assembly, because the live package props in the build output do not use
+       the same layout as the NuGet package. -->
+  <!-- This must be done after the usual nuget props imports, to override the implicitly referenced
+       Microsoft.NET.ILLink.Tasks.props from the SDK. -->
+  <Import Project="$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/build/Microsoft.NET.ILLink.Tasks.props" />
+
+  <PropertyGroup>
+    <!-- Don't use SDK's trimming functionality. -->
+    <_RequiresILLinkPack>false</_RequiresILLinkPack>
+    <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <TargetFramework>{TargetFramework}</TargetFramework>
     <OutputType>Exe</OutputType>
     <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
@@ -9,10 +28,14 @@
     <PublishAot>{PublishAot}</PublishAot>
     <AppHostSourcePath>{AppHostSourcePath}</AppHostSourcePath>
     <SingleFileHostSourcePath>{SingleFileHostSourcePath}</SingleFileHostSourcePath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- wasm specific -->
     <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>
     <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
+    <BrowserProjectRoot>{BrowserProjectRoot}</BrowserProjectRoot>
+    <WasmProjectRoot>{WasmProjectRoot}</WasmProjectRoot>
+    <WasiProjectRoot>{WasiProjectRoot}</WasiProjectRoot>
     <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>{MonoTargetsTasksAssemblyPath}</MonoTargetsTasksAssemblyPath>
@@ -52,15 +75,6 @@
     {AdditionalProjectReferences}
   </ItemGroup>
 
-  <!-- Logic to override the default IlLink tasks that come from the SDK and use the one
-  we use in dotnet/runtime repo -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.ILLink.Tasks"
-                      Version="{MicrosoftNETILLinkTasksVersion}"
-                      PrivateAssets="all"
-                      IsImplicitlyDefined="true" />
-  </ItemGroup>
-
   <Target Name="LocateNativeCompiler"
           Condition="'$(PublishAot)' == 'true' and '$(_hostOS)' != 'win'"
           BeforeTargets="SetupOSSpecificProps">
@@ -81,5 +95,7 @@
       <LinkerFlavor Condition="$(_LDFLAGS.Contains('lld'))">lld</LinkerFlavor>
     </PropertyGroup>
   </Target>
+
+  <Import Project="{NativeSanitizersTargets}" />
 
 </Project>

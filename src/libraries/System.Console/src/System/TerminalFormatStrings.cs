@@ -30,6 +30,7 @@ internal sealed class TerminalFormatStrings
     /// <summary>The format string to use for an audible bell.</summary>
     public readonly string? Bell;
     /// <summary>The format string to use to clear the terminal.</summary>
+    /// <remarks>If supported, this includes the format string for first clearing the terminal scrollback buffer.</remarks>
     public readonly string? Clear;
     /// <summary>The format string to use to set the position of the cursor.</summary>
     public readonly string? CursorAddress;
@@ -73,6 +74,10 @@ internal sealed class TerminalFormatStrings
         Reset = db.GetString(TermInfo.WellKnownStrings.OrigPairs) ?? db.GetString(TermInfo.WellKnownStrings.OrigColors);
         Bell = db.GetString(TermInfo.WellKnownStrings.Bell);
         Clear = db.GetString(TermInfo.WellKnownStrings.Clear);
+        if (db.GetExtendedString("E3") is string clearScrollbackBuffer)
+        {
+            Clear += clearScrollbackBuffer; // the E3 command must come after the Clear command
+        }
         Columns = db.GetNumber(TermInfo.WellKnownNumbers.Columns);
         Lines = db.GetNumber(TermInfo.WellKnownNumbers.Lines);
         CursorVisible = db.GetString(TermInfo.WellKnownStrings.CursorVisible);

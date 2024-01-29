@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.IO.Pipelines
 {
-    [DebuggerDisplay("State: {_state}")]
+    [DebuggerDisplay("State = {_state}")]
     internal struct PipeOperationState
     {
         private State _state;

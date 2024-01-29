@@ -16,13 +16,12 @@ public class A
         for (aa = new A[7]; true; n = B[2] + B[2]) ;
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
             Test();
         }
         catch (IndexOutOfRangeException) { }
-        return 100;
     }
 }

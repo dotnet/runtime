@@ -28,8 +28,6 @@
     <Python>%HELIX_PYTHONPATH%</Python>
     <ProductDirectory>%HELIX_CORRELATION_PAYLOAD%</ProductDirectory>
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
-    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
-    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
     <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_replay.py -jit_directory $(ProductDirectory)</WorkItemCommand>
     <WorkItemTimeout>3:15</WorkItemTimeout>
   </PropertyGroup>

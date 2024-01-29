@@ -271,7 +271,7 @@ namespace Runtime_45090
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             TestSkipAllocFrame(new PushReg());
             TestSkipAllocFrame(new SubSp());
@@ -281,8 +281,6 @@ namespace Runtime_45090
             TestSkipAllocFrame(new ProbeBeforeSubSp3());
             TestSkipAllocFrame(new ProbeBeforeSubSp4());
             TestSkipAllocFrame(new ProbeBeforeSubSp5());
-
-            return 100;
         }
     }
 }

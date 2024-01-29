@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using System.Reflection.PortableExecutable;
-using System.Text.Json.Serialization;
 
 public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 {
@@ -67,6 +66,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     ///   - LlvmObjectFile (if using LLVM)
     ///   - LlvmBitcodeFile (if using LLVM-only)
     ///   - ExportsFile (used in LibraryMode only)
+    ///   - MethodTokenFile (when using CollectTrimmingEligibleMethods=true)
     /// </summary>
     [Output]
     public ITaskItem[]? CompiledAssemblies { get; set; }
@@ -153,6 +153,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDwarfDebug { get; set; }
 
     /// <summary>
+    /// Instructs the AOT compiler to print the list of aot compiled methods
+    /// </summary>
+    public bool CollectTrimmingEligibleMethods { get; set; }
+
+    /// <summary>
+    /// Directory to store the aot output when using switch trimming-eligible-methods-outfile
+    /// </summary>
+    public string? TrimmingEligibleMethodsOutputDirectory { get; set; }
+
+    /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
     public string[]? AotProfilePath { get; set; }
@@ -221,6 +231,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? ToolPrefix { get; set; }
 
     /// <summary>
+    /// Prepends a prefix to the name of the assembler (as) tool ran by the AOT compiler.
+    /// </summary>
+    public string? AsPrefix { get; set; }
+
+    /// <summary>
     /// Path to the directory where msym artifacts are stored.
     /// </summary>
     public string? MsymPath { get; set; }
@@ -278,8 +293,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     private List<string> _fileWrites = new();
 
-    private IList<ITaskItem>? _assembliesToCompile;
+    private List<ITaskItem>? _assembliesToCompile;
     private ConcurrentDictionary<string, ITaskItem> compiledAssemblies = new();
+    private BuildPropertiesTable? _propertiesTable;
 
     private MonoAotMode parsedAotMode;
     private MonoAotOutputType parsedOutputType;
@@ -291,6 +307,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private int _totalNumAssemblies;
 
     private readonly Dictionary<string, string> _symbolNameFixups = new();
+    private static readonly char[] s_semicolon = new char[]{ ';' };
 
     private bool ProcessAndValidateArguments()
     {
@@ -396,7 +413,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 throw new LogAsErrorException($"'{nameof(AotModulesTableLanguage)}' must be one of: '{nameof(MonoAotModulesTableLanguage.C)}', '{nameof(MonoAotModulesTableLanguage.ObjC)}'. Received: '{AotModulesTableLanguage}'.");
         }
 
-        if (!string.IsNullOrEmpty(AotModulesTablePath))
+        if (!string.IsNullOrEmpty(AotModulesTablePath) || parsedOutputType == MonoAotOutputType.ObjectFile)
         {
             // AOT modules for static linking, needs the aot modules table
             UseStaticLinking = true;
@@ -436,8 +453,20 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 throw new LogAsErrorException($"Could not find {fullPath} to AOT");
         }
 
+        if (CollectTrimmingEligibleMethods)
+        {
+            if (string.IsNullOrEmpty(TrimmingEligibleMethodsOutputDirectory))
+                throw new LogAsErrorException($"{nameof(TrimmingEligibleMethodsOutputDirectory)} is empty. When {nameof(CollectTrimmingEligibleMethods)} is set to true, the user needs to provide a directory for {nameof(TrimmingEligibleMethodsOutputDirectory)}.");
+
+            if (!Directory.Exists(TrimmingEligibleMethodsOutputDirectory))
+            {
+                Directory.CreateDirectory(TrimmingEligibleMethodsOutputDirectory);
+            }
+        }
+
         return !Log.HasLoggedErrors;
     }
+
 
     public override bool Execute()
     {
@@ -462,6 +491,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     {
         if (!ProcessAndValidateArguments())
             return false;
+
+        string propertiesTableFilePath = Path.Combine(IntermediateOutputPath, "monoAotPropertyValues.txt");
+        _propertiesTable = new BuildPropertiesTable(propertiesTableFilePath);
 
         IEnumerable<ITaskItem> managedAssemblies = FilterOutUnmanagedAssemblies(Assemblies);
         managedAssemblies = EnsureAllAssembliesInTheSameDir(managedAssemblies);
@@ -539,6 +571,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         CheckExportSymbolsFile(_assembliesToCompile);
+        _propertiesTable.Table[nameof(CollectTrimmingEligibleMethods)] = CollectTrimmingEligibleMethods.ToString();
+        _propertiesTable.Save(propertiesTableFilePath, Log);
         CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, _assembliesToCompile).ToArray();
         return !Log.HasLoggedErrors;
     }
@@ -626,7 +660,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     {
         string assembly = assemblyItem.GetMetadata("FullPath");
         string assemblyDir = Path.GetDirectoryName(assembly)!;
-        var aotAssembly = new TaskItem(assembly);
+        var aotAssembly = new TaskItem(assembly, assemblyItem.CloneCustomMetadata());
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
         bool isDedup = Path.GetFileName(assembly) == Path.GetFileName(DedupAssembly);
@@ -635,13 +669,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var a = assemblyItem.GetMetadata("AotArguments");
         if (a != null)
         {
-             aotArgs.AddRange(a.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
+             aotArgs.AddRange(a.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries));
         }
 
         var p = assemblyItem.GetMetadata("ProcessArguments");
         if (p != null)
         {
-            processArgs.AddRange(p.Split(new char[]{ ';' }, StringSplitOptions.RemoveEmptyEntries));
+            processArgs.AddRange(p.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries));
         }
 
         processArgs.Add("--debug");
@@ -700,6 +734,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add($"tool-prefix={ToolPrefix}");
         }
 
+        if (!string.IsNullOrEmpty(AsPrefix))
+        {
+            aotArgs.Add($"as-prefix={AsPrefix}");
+        }
+
         string assemblyFilename = Path.GetFileName(assembly);
 
         if (isDedup)
@@ -709,6 +748,23 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         else if (!string.IsNullOrEmpty (DedupAssembly))
         {
             aotArgs.Add("dedup-skip");
+        }
+
+        if (CollectTrimmingEligibleMethods)
+        {
+            string assemblyName = assemblyFilename.Replace(".", "_");
+            string outputFileName = assemblyName + "_compiled_methods.txt";
+            string outputFilePath;
+            if (string.IsNullOrEmpty(TrimmingEligibleMethodsOutputDirectory))
+            {
+                outputFilePath = outputFileName;
+            }
+            else
+            {
+                outputFilePath = Path.Combine(TrimmingEligibleMethodsOutputDirectory, outputFileName);
+            }
+            aotArgs.Add($"trimming-eligible-methods-outfile={outputFilePath}");
+            aotAssembly.SetMetadata("MethodTokenFile", outputFilePath);
         }
 
         // compute output mode and file names
@@ -805,8 +861,26 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 ProxyFile proxyFile = _cache.NewFile(llvmObjectFile);
                 proxyFiles.Add(proxyFile);
                 aotArgs.Add($"llvm-outfile={proxyFile.TempFile}");
-                aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
+
+                if (UseStaticLinking)
+                {
+                    aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
+                }
             }
+        }
+
+        if (!string.IsNullOrEmpty(TempPath))
+        {
+            aotArgs.Add($"temp-path={TempPath}");
+        }
+        else if (!string.IsNullOrEmpty(IntermediateOutputPath))
+        {
+            string aotTmpPath = Path.Combine(IntermediateOutputPath, assemblyFilename + ".tmp");
+            if (!Directory.Exists(aotTmpPath))
+            {
+                Directory.CreateDirectory(aotTmpPath);
+            }
+            aotArgs.Add($"temp-path={aotTmpPath}");
         }
 
         if (EnableUnmanagedCallersOnlyMethodsExport)
@@ -842,7 +916,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-
         if (AotProfilePath?.Length > 0)
         {
             aotArgs.Add("profile-only");
@@ -866,11 +939,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add(AotArguments);
         }
 
-        if (!string.IsNullOrEmpty(TempPath))
-        {
-            aotArgs.Add($"temp-path={TempPath}");
-        }
-
         if (!string.IsNullOrEmpty(LdName))
         {
             aotArgs.Add($"ld-name={LdName}");
@@ -889,7 +957,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (isDedup)
         {
             foreach (var aItem in _assembliesToCompile!)
-                processArgs.Add(aItem.ItemSpec);
+                processArgs.Add($"\"{aItem.ItemSpec}\"");
         }
         else
         {
@@ -1033,8 +1101,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         Directory.CreateDirectory(Path.GetDirectoryName(outputFile)!);
 
-        string tmpAotModulesTablePath = Path.GetTempFileName();
-        using (var writer = File.CreateText(tmpAotModulesTablePath))
+        using TempFileName tmpAotModulesTablePath = new();
+        using (var writer = File.CreateText(tmpAotModulesTablePath.Path))
         {
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
@@ -1044,7 +1112,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 {
                     writer.WriteLine($"extern void *{symbol};");
                 }
-                writer.WriteLine("void register_aot_modules ()");
+                writer.WriteLine("void register_aot_modules (void);");
+                writer.WriteLine("void register_aot_modules (void)");
                 writer.WriteLine("{");
                 foreach (var symbol in symbols)
                 {
@@ -1080,6 +1149,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     writer.WriteLine($"extern void *{symbol};");
                 }
 
+                writer.WriteLine("void register_aot_modules (void);");
                 writer.WriteLine("void register_aot_modules (void)");
                 writer.WriteLine("{");
                 foreach (var symbol in symbols)
@@ -1095,7 +1165,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        if (Utils.CopyIfDifferent(tmpAotModulesTablePath, outputFile, useHash: false))
+        if (Utils.CopyIfDifferent(tmpAotModulesTablePath.Path, outputFile, useHash: false))
         {
             _fileWrites.Add(outputFile);
             Log.LogMessage(MessageImportance.Low, $"Generated {outputFile}");
@@ -1130,7 +1200,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private void CheckExportSymbolsFile(IList<ITaskItem> assemblies)
+    private void CheckExportSymbolsFile(List<ITaskItem> assemblies)
     {
         if (!EnableUnmanagedCallersOnlyMethodsExport)
             return;
@@ -1145,7 +1215,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
+    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, List<ITaskItem> originalAssemblies)
     {
         List<ITaskItem> outItems = new(originalAssemblies.Count);
         foreach (ITaskItem item in originalAssemblies)
@@ -1207,6 +1277,45 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         public string                       WorkingDir           { get; private set; }
         public ITaskItem                    AOTAssembly          { get; private set; }
         public IList<ProxyFile>             ProxyFiles           { get; private set; }
+    }
+
+    private sealed class BuildPropertiesTable
+    {
+        public Dictionary<string, string> Table { get; private set; }
+
+        public BuildPropertiesTable(string propertiesFilePath)
+        {
+            Table = Read(propertiesFilePath) ?? new();
+        }
+
+        public bool GetBool(string propertyName, bool defaultValue)
+            => bool.TryParse(Table[propertyName], out bool outValue) ? outValue : defaultValue;
+
+        private static Dictionary<string, string>? Read(string propertiesFilePath)
+        {
+            if (!File.Exists(propertiesFilePath))
+                return null;
+
+            string text = File.ReadAllText(propertiesFilePath);
+            if (text.Length == 0)
+                return null;
+
+            try
+            {
+                return JsonSerializer.Deserialize<Dictionary<string, string>>(text);
+            }
+            catch (Exception e)
+            {
+                throw new LogAsErrorException($"Failed to parse properties table from {propertiesFilePath}: {e}");
+            }
+        }
+
+        public void Save(string filePath, TaskLoggingHelper log)
+        {
+            string jsonString = JsonSerializer.Serialize(Table);
+            File.WriteAllText(filePath, jsonString);
+            log.LogMessage(MessageImportance.Low, $"Logged Mono AOT Properties in {filePath}");
+        }
     }
 }
 

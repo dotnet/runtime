@@ -194,18 +194,17 @@ namespace System.Reflection
 
             CheckConsistency(obj);
 
-            ParameterCopyBackAction _ref = default;
             RuntimeType fieldType = (RuntimeType)FieldType;
             if (value is null)
             {
-                if (RuntimeTypeHandle.IsValueType(fieldType))
+                if (fieldType.IsActualValueType)
                 {
-                    fieldType.CheckValue(ref value, copyBack: ref _ref, binder, culture, invokeAttr);
+                    fieldType.CheckValue(ref value, binder, culture, invokeAttr);
                 }
             }
             else if (!ReferenceEquals(value.GetType(), fieldType))
             {
-                fieldType.CheckValue(ref value, copyBack: ref _ref, binder, culture, invokeAttr);
+                fieldType.CheckValue(ref value, binder, culture, invokeAttr);
             }
 
             bool domainInitialized = false;
@@ -257,12 +256,12 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return GetSignature().GetCustomModifiers(1, true);
+            return GetSignature().GetCustomModifiers(0, true);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return GetSignature().GetCustomModifiers(1, false);
+            return GetSignature().GetCustomModifiers(0, false);
         }
 
         internal Signature GetSignature() => new Signature(this, m_declaringType);

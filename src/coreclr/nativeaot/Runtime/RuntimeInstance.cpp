@@ -18,7 +18,6 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
-#include "gcrhinterface.h"
 #include "shash.h"
 #include "TypeManager.h"
 #include "MethodTable.h"
@@ -27,6 +26,7 @@
 #include "CommonMacros.inl"
 #include "slist.inl"
 #include "MethodTable.inl"
+#include "../../inc/clrversion.h"
 
 #ifdef  FEATURE_GC_STRESS
 enum HijackType { htLoop, htCallsite };
@@ -35,22 +35,42 @@ bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
 
 #include "shash.inl"
 
-#ifndef DACCESS_COMPILE
-COOP_PINVOKE_HELPER(uint8_t *, RhSetErrorInfoBuffer, (uint8_t * pNewBuffer))
-{
-    return (uint8_t *) PalSetWerDataBuffer(pNewBuffer);
-}
-#endif // DACCESS_COMPILE
-
+#define MAX_CRASHINFOBUFFER_SIZE 8192
+uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE] = { 0 };
 
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
     return m_pThreadStore;
 }
 
+COOP_PINVOKE_HELPER(uint8_t *, RhGetCrashInfoBuffer, (int32_t* pcbMaxSize))
+{
+    *pcbMaxSize = MAX_CRASHINFOBUFFER_SIZE;
+    return g_CrashInfoBuffer;
+}
+
+#if TARGET_UNIX
+#include "PalCreateDump.h"
+COOP_PINVOKE_HELPER(void, RhCreateCrashDumpIfEnabled, (PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pExContext))
+{
+    PalCreateCrashDumpIfEnabled(pExceptionRecord, pExContext);
+}
+#endif
+
+COOP_PINVOKE_HELPER(uint8_t *, RhGetRuntimeVersion, (int32_t* pcbLength))
+{
+    *pcbLength = sizeof(CLR_PRODUCT_VERSION) - 1;           // don't include the terminating null
+    return (uint8_t*)&CLR_PRODUCT_VERSION;
+}
+
 COOP_PINVOKE_HELPER(uint8_t *, RhFindMethodStartAddress, (void * codeAddr))
 {
-    return dac_cast<uint8_t *>(GetRuntimeInstance()->FindMethodStartAddress(dac_cast<PTR_VOID>(codeAddr)));
+    uint8_t *startAddress = dac_cast<uint8_t *>(GetRuntimeInstance()->FindMethodStartAddress(dac_cast<PTR_VOID>(codeAddr)));
+#if TARGET_ARM
+    return startAddress + 1; // Set the Thumb bit
+#else
+    return startAddress;
+#endif
 }
 
 PTR_UInt8 RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
@@ -275,25 +295,6 @@ RuntimeInstance::TypeManagerList& RuntimeInstance::GetTypeManagerList()
     return m_TypeManagerList;
 }
 
-TypeManager* RuntimeInstance::GetSingleTypeManager()
-{
-    auto head = m_TypeManagerList.GetHead();
-    if (head != NULL && head->m_pNext == NULL)
-    {
-        return head->m_pTypeManager;
-    }
-
-    return NULL;
-}
-
-COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetSingleTypeManager, ())
-{
-    TypeManager* typeManager = GetRuntimeInstance()->GetSingleTypeManager();
-    ASSERT(typeManager != NULL);
-
-    return TypeManagerHandle::Create(typeManager);
-}
-
 // static
 bool RuntimeInstance::Initialize(HANDLE hPalInstance)
 {
@@ -340,11 +341,6 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
     UNREFERENCED_PARAMETER(CallsiteIP);
     return false;
 #endif // FEATURE_GC_STRESS
-}
-
-COOP_PINVOKE_HELPER(uint32_t, RhGetGCDescSize, (MethodTable* pEEType))
-{
-    return RedhawkGCInterface::GetGCDescSize(pEEType);
 }
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH

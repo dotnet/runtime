@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Converters;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Nodes
 {
@@ -50,12 +52,14 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public JsonArray AsArray()
         {
-            if (this is JsonArray jArray)
+            JsonArray? jArray = this as JsonArray;
+
+            if (jArray is null)
             {
-                return jArray;
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonArray));
             }
 
-            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonArray)));
+            return jArray;
         }
 
         /// <summary>
@@ -69,12 +73,14 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public JsonObject AsObject()
         {
-            if (this is JsonObject jObject)
+            JsonObject? jObject = this as JsonObject;
+
+            if (jObject is null)
             {
-                return jObject;
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonObject));
             }
 
-            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonObject)));
+            return jObject;
         }
 
         /// <summary>
@@ -88,12 +94,14 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public JsonValue AsValue()
         {
-            if (this is JsonValue jValue)
+            JsonValue? jValue = this as JsonValue;
+
+            if (jValue is null)
             {
-                return jValue;
+                ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonValue));
             }
 
-            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonValue)));
+            return jValue;
         }
 
         /// <summary>
@@ -124,19 +132,13 @@ namespace System.Text.Json.Nodes
                 return "$";
             }
 
-            var path = new List<string>();
-            GetPath(path, null);
-
-            var sb = new StringBuilder("$");
-            for (int i = path.Count - 1; i >= 0; i--)
-            {
-                sb.Append(path[i]);
-            }
-
-            return sb.ToString();
+            var path = new ValueStringBuilder(stackalloc char[JsonConstants.StackallocCharThreshold]);
+            path.Append('$');
+            GetPath(ref path, null);
+            return path.ToString();
         }
 
-        internal abstract void GetPath(List<string> path, JsonNode? child);
+        internal abstract void GetPath(ref ValueStringBuilder path, JsonNode? child);
 
         /// <summary>
         ///   Gets the root <see cref="JsonNode"/>.
@@ -232,6 +234,98 @@ namespace System.Text.Json.Nodes
             }
         }
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="JsonNode"/>. All children nodes are recursively cloned.
+        /// </summary>
+        /// <returns>A new cloned instance of the current node.</returns>
+        public JsonNode DeepClone() => DeepCloneCore();
+
+        internal abstract JsonNode DeepCloneCore();
+
+        /// <summary>
+        /// Returns <see cref="JsonValueKind"/> of current instance.
+        /// </summary>
+        public JsonValueKind GetValueKind() => GetValueKindCore();
+
+        internal abstract JsonValueKind GetValueKindCore();
+
+        /// <summary>
+        /// Returns property name of the current node from the parent object.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The current parent is not a <see cref="JsonObject"/>.
+        /// </exception>
+        public string GetPropertyName()
+        {
+            JsonObject? parentObject = _parent as JsonObject;
+
+            if (parentObject is null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NodeParentWrongType(nameof(JsonObject));
+            }
+
+            return parentObject.GetPropertyName(this);
+        }
+
+        /// <summary>
+        /// Returns index of the current node from the parent <see cref="JsonArray" />.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The current parent is not a <see cref="JsonArray"/>.
+        /// </exception>
+        public int GetElementIndex()
+        {
+            JsonArray? parentArray = _parent as JsonArray;
+
+            if (parentArray is null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NodeParentWrongType(nameof(JsonArray));
+            }
+
+            return parentArray.GetElementIndex(this);
+        }
+
+        /// <summary>
+        /// Compares the values of two nodes, including the values of all descendant nodes.
+        /// </summary>
+        /// <param name="node1">The <see cref="JsonNode"/> to compare.</param>
+        /// <param name="node2">The <see cref="JsonNode"/> to compare.</param>
+        /// <returns><c>true</c> if the tokens are equal; otherwise <c>false</c>.</returns>
+        public static bool DeepEquals(JsonNode? node1, JsonNode? node2)
+        {
+            if (node1 is null)
+            {
+                return node2 is null;
+            }
+
+            return node1.DeepEqualsCore(node2);
+        }
+
+        internal abstract bool DeepEqualsCore(JsonNode? node);
+
+        /// <summary>
+        /// Replaces this node with a new value.
+        /// </summary>
+        /// <typeparam name="T">The type of value to be replaced.</typeparam>
+        /// <param name="value">Value that replaces this node.</param>
+        [RequiresUnreferencedCode(JsonValue.CreateUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
+        public void ReplaceWith<T>(T value)
+        {
+            JsonNode? node;
+            switch (_parent)
+            {
+                case JsonObject jsonObject:
+                    node = ConvertFromValue(value);
+                    jsonObject.SetItem(GetPropertyName(), node);
+                    return;
+                case JsonArray jsonArray:
+                    node = ConvertFromValue(value);
+                    jsonArray.SetItem(GetElementIndex(), node);
+                    return;
+            }
+        }
+
         internal void AssignParent(JsonNode parent)
         {
             if (Parent != null)
@@ -251,6 +345,34 @@ namespace System.Text.Json.Nodes
             }
 
             Parent = parent;
+        }
+
+        /// <summary>
+        /// Adaptation of the equivalent JsonValue.Create factory method extended
+        /// to support arbitrary <see cref="JsonElement"/> and <see cref="JsonNode"/> values.
+        /// TODO consider making public cf. https://github.com/dotnet/runtime/issues/70427
+        /// </summary>
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        internal static JsonNode? ConvertFromValue<T>(T? value, JsonNodeOptions? options = null)
+        {
+            if (value is null)
+            {
+                return null;
+            }
+
+            if (value is JsonNode node)
+            {
+                return node;
+            }
+
+            if (value is JsonElement element)
+            {
+                return JsonNodeConverter.Create(element, options);
+            }
+
+            var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
+            return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
         }
     }
 }

@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    internal sealed class BodySubstitution
+    public sealed class BodySubstitution
     {
         private object _value;
 

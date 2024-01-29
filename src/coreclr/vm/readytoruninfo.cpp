@@ -94,42 +94,21 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
     LPCUTF8 pszName = NULL;
     LPCUTF8 pszNameSpace = NULL;
-    // Reserve stack space for parsing out the namespace in a name-based lookup
-    // at this scope so the stack space is in scope for all usages in this method.
-    CQuickBytes namespaceBuffer;
 
     //
     // Compute the hashcode of the type (hashcode based on type name and namespace name)
     //
     int dwHashCode = 0;
 
+    _ASSERTE(pName->GetName() != NULL);
+    _ASSERTE(pName->GetNameSpace() != NULL);
+
     if (pName->GetTypeToken() == mdtBaseType || pName->GetTypeModule() == NULL)
     {
         // Name-based lookups (ex: Type.GetType()).
 
         pszName = pName->GetName();
-        pszNameSpace = "";
-        if (pName->GetNameSpace() != NULL)
-        {
-            pszNameSpace = pName->GetNameSpace();
-        }
-        else
-        {
-            LPCUTF8 p;
-
-            if ((p = ns::FindSep(pszName)) != NULL)
-            {
-                SIZE_T d = p - pszName;
-
-                FAULT_NOT_FATAL();
-                pszNameSpace = namespaceBuffer.SetStringNoThrow(pszName, d);
-
-                if (pszNameSpace == NULL)
-                    return FALSE;
-
-                pszName = (p + 1);
-            }
-        }
+        pszNameSpace = pName->GetNameSpace();
 
         _ASSERT(pszNameSpace != NULL);
         dwHashCode ^= ComputeNameHashCode(pszNameSpace, pszName);
@@ -185,7 +164,7 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
                 mdToken mdFoundTypeEncloser;
                 BOOL inputTypeHasEncloser = !pName->GetBucket().IsNull();
-                BOOL foundTypeHasEncloser = GetEnclosingToken(m_pModule->GetMDImport(), cl, &mdFoundTypeEncloser);
+                BOOL foundTypeHasEncloser = GetEnclosingToken(m_pModule->GetMDImport(), m_pModule, cl, &mdFoundTypeEncloser);
                 if (inputTypeHasEncloser != foundTypeHasEncloser)
                     continue;
 
@@ -194,14 +173,14 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
                 {
                     const HashedTypeEntry::TokenTypeEntry& tokenBasedEncloser = pName->GetBucket().GetTokenBasedEntryValue();
 
-                    if (!CompareTypeNameOfTokens(tokenBasedEncloser.m_TypeToken, tokenBasedEncloser.m_pModule->GetMDImport(), mdFoundTypeEncloser, m_pModule->GetMDImport()))
+                    if (!CompareTypeNameOfTokens(tokenBasedEncloser.m_TypeToken, tokenBasedEncloser.m_pModule->GetMDImport(), tokenBasedEncloser.m_pModule, mdFoundTypeEncloser, m_pModule->GetMDImport(), m_pModule))
                         continue;
                 }
             }
             else
             {
                 // Compare type name, namespace name, and enclosing types chain for a match
-                if (!CompareTypeNameOfTokens(pName->GetTypeToken(), pName->GetTypeModule()->GetMDImport(), cl, m_pModule->GetMDImport()))
+                if (!CompareTypeNameOfTokens(pName->GetTypeToken(), pName->GetTypeModule()->GetMDImport(), pName->GetTypeModule(), cl, m_pModule->GetMDImport(), m_pModule))
                     continue;
             }
 
@@ -238,7 +217,7 @@ BOOL ReadyToRunInfo::GetTypeNameFromToken(IMDInternalImport * pImport, mdToken m
     return FALSE;
 }
 
-BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, mdToken mdType, mdToken * pEnclosingToken)
+BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, ModuleBase* pModule, mdToken mdType, mdToken * pEnclosingToken)
 {
     CONTRACTL
     {
@@ -252,7 +231,7 @@ BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, mdToken mdTy
     switch (TypeFromToken(mdType))
     {
     case mdtTypeDef:
-        return SUCCEEDED(pImport->GetNestedClassProps(mdType, pEnclosingToken));
+        return SUCCEEDED(pModule->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(mdType, pEnclosingToken, pImport));
 
     case mdtTypeRef:
         if (SUCCEEDED(pImport->GetResolutionScopeOfTypeRef(mdType, pEnclosingToken)))
@@ -268,7 +247,7 @@ BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, mdToken mdTy
     return FALSE;
 }
 
-BOOL ReadyToRunInfo::CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, mdToken mdToken2, IMDInternalImport * pImport2)
+BOOL ReadyToRunInfo::CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, ModuleBase *pModule1, mdToken mdToken2, IMDInternalImport * pImport2, ModuleBase *pModule2)
 {
     CONTRACTL
     {
@@ -296,7 +275,7 @@ BOOL ReadyToRunInfo::CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport
         if (strcmp(pszName1, pszName2) != 0 || strcmp(pszNameSpace1, pszNameSpace2) != 0)
             return FALSE;
 
-        if ((hasEncloser = GetEnclosingToken(pImport1, mdToken1, &mdToken1)) != GetEnclosingToken(pImport2, mdToken2, &mdToken2))
+        if ((hasEncloser = GetEnclosingToken(pImport1, pModule1, mdToken1, &mdToken1)) != GetEnclosingToken(pImport2, pModule2, mdToken2, &mdToken2))
             return FALSE;
 
     } while (hasEncloser);
@@ -429,7 +408,8 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
     if (r2rLogFile == NULL)
         return;
 
-    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, pPEAssembly->GetPath().GetUTF8());
+    SString assemblyPath{ pPEAssembly->GetPath() };
+    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyPath.GetUTF8());
     fflush(r2rLogFile);
 }
 
@@ -919,6 +899,24 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
             attributesPresenceDataInfoDir->Size);
 
         m_attributesPresence = newFilter;
+    }
+
+    IMAGE_DATA_DIRECTORY *typeGenericInfoMap = m_component.FindSection(ReadyToRunSectionType::TypeGenericInfoMap);
+    if (typeGenericInfoMap != NULL)
+    {
+        pModule->m_pTypeGenericInfoMap = (ReadyToRun_TypeGenericInfoMap*)m_pComposite->GetImage()->GetDirectoryData(typeGenericInfoMap);
+    }
+
+    IMAGE_DATA_DIRECTORY *enclosingTypeMap = m_component.FindSection(ReadyToRunSectionType::EnclosingTypeMap);
+    if (enclosingTypeMap != NULL)
+    {
+        pModule->m_pEnclosingTypeMap = (ReadyToRun_EnclosingTypeMap*)m_pComposite->GetImage()->GetDirectoryData(enclosingTypeMap);
+    }
+
+    IMAGE_DATA_DIRECTORY *methodIsGenericMap = m_component.FindSection(ReadyToRunSectionType::MethodIsGenericMap);
+    if (methodIsGenericMap != NULL)
+    {
+        pModule->m_pMethodIsGenericMap = (ReadyToRun_MethodIsGenericMap*)m_pComposite->GetImage()->GetDirectoryData(methodIsGenericMap);
     }
 }
 
@@ -1771,5 +1769,180 @@ ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInt
     void *mem = pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(NativeManifestModule))));
     return new (mem) NativeManifestModule(pLoaderAllocator, pManifestMetadata, pModule, pamTracker);
 }
-
 #endif // DACCESS_COMPILE
+
+const ReadyToRun_EnclosingTypeMap ReadyToRun_EnclosingTypeMap::EmptyInstance;
+const ReadyToRun_TypeGenericInfoMap ReadyToRun_TypeGenericInfoMap::EmptyInstance;
+const ReadyToRun_MethodIsGenericMap ReadyToRun_MethodIsGenericMap::EmptyInstance;
+
+mdTypeDef ReadyToRun_EnclosingTypeMap::GetEnclosingType(mdTypeDef input, IMDInternalImport* pImport) const
+{
+#ifndef DACCESS_COMPILE
+    uint32_t rid = RidFromToken(input);
+    _ASSERTE(TypeCount <= (uint32_t)ReadyToRunEnclosingTypeMap::MaxTypeCount);
+    if ((rid > TypeCount) || (rid == 0))
+#endif
+    {
+        mdTypeDef enclosingType;
+        HRESULT hr = pImport->GetNestedClassProps(input, &enclosingType);
+
+        if (FAILED(hr))
+        {
+            if (hr == CLDB_E_RECORD_NOTFOUND)
+                return mdTypeDefNil;
+            ThrowHR(hr);
+        }
+
+        return enclosingType;
+    }
+#ifndef DACCESS_COMPILE
+    return TokenFromRid((&TypeCount)[rid], mdtTypeDef);
+#endif
+}
+
+HRESULT ReadyToRun_EnclosingTypeMap::GetEnclosingTypeNoThrow(mdTypeDef input, mdTypeDef *pEnclosingType, IMDInternalImport* pImport) const
+{
+#ifndef DACCESS_COMPILE
+    uint32_t rid = RidFromToken(input);
+    _ASSERTE(TypeCount <= (uint32_t)ReadyToRunEnclosingTypeMap::MaxTypeCount);
+    if ((rid > TypeCount) || (rid == 0))
+#endif
+    {
+        return pImport->GetNestedClassProps(input, pEnclosingType);
+    }
+#ifndef DACCESS_COMPILE
+    *pEnclosingType = TokenFromRid((&TypeCount)[rid], mdtTypeDef);
+
+    if (*pEnclosingType == mdTypeDefNil)
+    {
+        return CLDB_E_RECORD_NOTFOUND;
+    }
+    return  S_OK;
+#endif
+}
+
+ReadyToRunTypeGenericInfo ReadyToRun_TypeGenericInfoMap::GetTypeGenericInfo(mdTypeDef input, bool *foundResult) const
+{
+#ifdef DACCESS_COMPILE
+    *foundResult = false;
+    return (ReadyToRunTypeGenericInfo)0;
+#else
+    uint32_t rid = RidFromToken(input);
+    if ((rid > TypeCount) || (rid == 0))
+    {
+        *foundResult = false;
+        return (ReadyToRunTypeGenericInfo)0;
+    }
+    uint32_t index = rid - 1;
+    uint8_t *pTypeGenericInfo = ((uint8_t*)&TypeCount) + sizeof(uint32_t);
+    uint8_t entry = pTypeGenericInfo[index / 2];
+    if (!(index & 1))
+    {
+        entry >>= 4;
+    }
+    *foundResult = true;
+    return static_cast<ReadyToRunTypeGenericInfo>(entry);
+#endif
+}
+
+bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport* pImport) const
+{
+    bool foundResult;
+    ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, &foundResult);
+    if (!foundResult)
+    {
+        HENUMInternalHolder hEnumTyPars(pImport);
+        hEnumTyPars.EnumInit(mdtGenericParam, input);
+        return (pImport->EnumGetCount(&hEnumTyPars) != 0);
+    }
+    return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
+}
+
+HRESULT ReadyToRun_TypeGenericInfoMap::IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const
+{
+    bool foundResult;
+    bool result;
+    HRESULT hr;
+    ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, &foundResult);
+    if (!foundResult)
+    {
+        HENUMInternalHolder hEnumTyPars(pImport);
+        IfFailRet(hEnumTyPars.EnumInitNoThrow(mdtGenericParam, input));
+        result = (pImport->EnumGetCount(&hEnumTyPars) != 0);
+    }
+    else
+        result = !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
+
+    *pIsGeneric = result;
+    return S_OK;
+}
+
+uint32_t ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport) const
+{
+    bool foundResult;
+    ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, &foundResult);
+    uint32_t count = ((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
+    if (count > 2)
+        foundResult = false;
+
+    if (!foundResult)
+    {
+        HENUMInternalHolder hEnumTyPars(pImport);
+        hEnumTyPars.EnumInit(mdtGenericParam, input);
+        return pImport->EnumGetCount(&hEnumTyPars);
+    }
+    return count;
+}
+
+HRESULT ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCountNoThrow(mdTypeDef input, uint32_t *pCount, IMDInternalImport* pImport) const
+{
+    HRESULT hr;
+    bool foundResult;
+    ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, &foundResult);
+    uint32_t count = ((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
+    if (count > 2)
+        foundResult = false;
+
+    if (!foundResult)
+    {
+        HENUMInternalHolder hEnumTyPars(pImport);
+        IfFailRet(hEnumTyPars.EnumInitNoThrow(mdtGenericParam, input));
+        count = pImport->EnumGetCount(&hEnumTyPars);
+    }
+
+    hr = S_OK;
+    *pCount = count;
+    return hr;
+}
+
+bool ReadyToRun_TypeGenericInfoMap::HasVariance(mdTypeDef input, bool *foundResult) const
+{
+    ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, foundResult);
+    return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::HasVariance);
+}
+
+bool ReadyToRun_TypeGenericInfoMap::HasConstraints(mdTypeDef input, bool *foundResult) const
+{
+    ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, foundResult);
+    return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::HasConstraints);
+}
+
+bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResult) const
+{
+#ifdef DACCESS_COMPILE
+    *foundResult = false;
+    return false;
+#else
+    uint32_t rid = RidFromToken(input);
+    if ((rid > MethodCount) || (rid == 0))
+    {
+        *foundResult = false;
+        return false;
+    }
+
+    uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + sizeof(uint32_t)];
+    chunk >>= 7 - ((rid - 1) % 8);
+    return !!(chunk & 1);
+#endif
+}
+

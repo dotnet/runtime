@@ -23,7 +23,9 @@ namespace ComInterfaceGenerator.Tests
 
             var expected = new Point(42, 63);
 
-            obj.SetPoint(expected);
+            var hr = obj.SetPoint(expected);
+
+            Assert.Equal(0, hr.Value);
 
             Assert.Equal(expected, obj.GetPoint());
         }

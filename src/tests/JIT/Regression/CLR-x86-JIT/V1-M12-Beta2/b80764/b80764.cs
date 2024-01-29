@@ -35,7 +35,7 @@ namespace JitTest
         }
 
         [Fact]
-        public static unsafe int TestEntryPoint()
+        public static unsafe void TestEntryPoint()
         {
             byte* buf1 = stackalloc byte[100], buf2 = null, buf3 = null;
             initbuf(buf1, 1);
@@ -80,7 +80,6 @@ namespace JitTest
             ckbuf(buf2, 2);
             ckbuf(buf3, 3);
             Console.WriteLine("=== TEST ENDED ===");
-            return 100;
         }
     }
 }

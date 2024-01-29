@@ -15,9 +15,6 @@
 #include "finalizerthread.h"
 #include "dbginterface.h"
 
-// from ntstatus.h
-#define STATUS_SUSPEND_COUNT_EXCEEDED    ((NTSTATUS)0xC000004AL)
-
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -357,12 +354,6 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
             {
                 STRESS_LOG1(LF_SYNC, LL_INFO1000, "In Thread::SuspendThread ::SuspendThread returned %x\n", dwSuspendCount);
             }
-
-            // Our callers generally expect that STR_Failure means that
-            // the thread has exited.
-#ifndef TARGET_UNIX
-            _ASSERTE(NtCurrentTeb()->LastStatusValue != STATUS_SUSPEND_COUNT_EXCEEDED);
-#endif // !TARGET_UNIX
 
             str = STR_Failure;
             break;
@@ -962,6 +953,13 @@ BOOL Thread::ReadyForAsyncException()
         STRESS_LOG0(LF_APPDOMAIN, LL_INFO10, "in Thread::ReadyForAbort  AsyncPrevented\n");
         return FALSE;
     }
+
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled && IsAbortPrevented())
+    {
+        return FALSE;
+    }
+#endif // FEATURE_EH_FUNCLETS
 
     REGDISPLAY rd;
 
@@ -2255,7 +2253,16 @@ void Thread::HandleThreadAbort ()
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-        RaiseTheExceptionInternalOnly(exceptObj, FALSE);
+#ifdef FEATURE_EH_FUNCLETS
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            DispatchManagedException(exceptObj);
+        }
+        else
+#endif // FEATURE_EH_FUNCLETS
+        {
+            RaiseTheExceptionInternalOnly(exceptObj, FALSE);
+        }
     }
 
     END_PRESERVE_LAST_ERROR;
@@ -2764,6 +2771,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
     SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
 
+    __asan_handle_no_return();
 #ifdef TARGET_X86
     g_pfnRtlRestoreContext(pCtx, NULL);
 #else
@@ -3931,6 +3939,7 @@ ThrowControlForThread(
                 _ASSERTE(!"Should not reach here");
             }
 #else // FEATURE_EH_FUNCLETS
+            __asan_handle_no_return();
             RtlRestoreContext(pThread->m_OSContext, NULL);
 #endif // !FEATURE_EH_FUNCLETS
             _ASSERTE(!"Should not reach here");
@@ -3953,8 +3962,27 @@ ThrowControlForThread(
 
     STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread Aborting\n");
 
-    // Here we raise an exception.
-    RaiseComPlusException();
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        GCX_COOP();
+
+        EXCEPTION_RECORD exceptionRecord = {0};
+        exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation);
+        exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
+        exceptionRecord.ExceptionFlags = 0;
+
+        OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
+        DispatchManagedException(throwable);
+    }
+    else
+#endif // FEATURE_EH_FUNCLETS
+    {
+        // Here we raise an exception.
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER
+        RaiseComPlusException();
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+    }
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -4259,7 +4287,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
                 // region, SysSweepThreadsForDebug would similarly identify the thread as synced
                 // after it leaves the forbid region.
 
-#if defined(FEATURE_THREAD_ACTIVATION) && defined(TARGET_WINDOWS)
+#if defined(FEATURE_THREAD_ACTIVATION)
                 // Inject an activation that will interrupt the thread and try to bring it to a safe point
                 thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
 #endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
@@ -4396,7 +4424,7 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
                 goto Label_MarkThreadAsSynced;
             }
 
-#if defined(FEATURE_THREAD_ACTIVATION) && defined(TARGET_WINDOWS)
+#if defined(FEATURE_THREAD_ACTIVATION)
             // Inject an activation that will interrupt the thread and try to bring it to a safe point
             thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
 #endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
@@ -6012,7 +6040,7 @@ bool Thread::InjectActivation(ActivationReason reason)
     _ASSERTE(success);
     return true;
 #elif defined(TARGET_UNIX)
-    _ASSERTE((reason == ActivationReason::SuspendForGC) || (reason == ActivationReason::ThreadAbort));
+    _ASSERTE((reason == ActivationReason::SuspendForGC) || (reason == ActivationReason::ThreadAbort) || (reason == ActivationReason::SuspendForDebugger));
 
     static ConfigDWORD injectionEnabled;
     if (injectionEnabled.val(CLRConfig::INTERNAL_ThreadSuspendInjection) == 0)

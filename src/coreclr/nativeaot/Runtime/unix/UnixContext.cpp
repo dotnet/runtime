@@ -10,37 +10,7 @@
 #include "regdisplay.h"
 #include "config.h"
 
-#include <libunwind.h>
-
 #include "UnixContext.h"
-
-// WebAssembly has a slightly different version of LibUnwind that doesn't define unw_get_save_loc
-#if defined(HOST_WASM)
-enum unw_save_loc_type_t
-{
-    UNW_SLT_NONE,       /* register is not saved ("not an l-value") */
-    UNW_SLT_MEMORY,     /* register has been saved in memory */
-    UNW_SLT_REG         /* register has been saved in (another) register */
-};
-typedef enum unw_save_loc_type_t unw_save_loc_type_t;
-
-struct unw_save_loc_t
-{
-    unw_save_loc_type_t type;
-    union
-    {
-        unw_word_t addr;        /* valid if type==UNW_SLT_MEMORY */
-        unw_regnum_t regnum;    /* valid if type==UNW_SLT_REG */
-    }
-    u;
-};
-typedef struct unw_save_loc_t unw_save_loc_t;
-
-int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
-{
-    return -1;
-}
-#endif // _WASM
 
 #ifdef __APPLE__
 
@@ -286,6 +256,8 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 #define MCREG_Lr(mc)        ((mc).arm_lr)
 #define MCREG_R0(mc)        ((mc).arm_r0)
 #define MCREG_R1(mc)        ((mc).arm_r1)
+#define MCREG_R2(mc)        ((mc).arm_r2)
+#define MCREG_R3(mc)        ((mc).arm_r3)
 #define MCREG_R4(mc)        ((mc).arm_r4)
 #define MCREG_R5(mc)        ((mc).arm_r5)
 #define MCREG_R6(mc)        ((mc).arm_r6)
@@ -316,175 +288,6 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 #endif // HAVE_GREGSET_T
 
 #endif // __APPLE__
-
-// Update unw_cursor_t from REGDISPLAY.
-// NOTE: We don't set the IP here since the current use cases for this function
-// don't require it.
-static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *cursor)
-{
-#define ASSIGN_REG(regName1, regName2) \
-    unw_set_reg(cursor, regName1, regDisplay->regName2, 0);
-
-#define ASSIGN_REG_PTR(regName1, regName2) \
-    if (regDisplay->p##regName2 != NULL) \
-        unw_set_reg(cursor, regName1, *(regDisplay->p##regName2), 0);
-
-#if defined(HOST_AMD64)
-    ASSIGN_REG(UNW_REG_SP, SP)
-    ASSIGN_REG_PTR(UNW_X86_64_RBP, Rbp)
-    ASSIGN_REG_PTR(UNW_X86_64_RBX, Rbx)
-    ASSIGN_REG_PTR(UNW_X86_64_R12, R12)
-    ASSIGN_REG_PTR(UNW_X86_64_R13, R13)
-    ASSIGN_REG_PTR(UNW_X86_64_R14, R14)
-    ASSIGN_REG_PTR(UNW_X86_64_R15, R15)
-#elif HOST_ARM
-    ASSIGN_REG(UNW_ARM_SP, SP)
-    ASSIGN_REG_PTR(UNW_ARM_R4, R4)
-    ASSIGN_REG_PTR(UNW_ARM_R5, R5)
-    ASSIGN_REG_PTR(UNW_ARM_R6, R6)
-    ASSIGN_REG_PTR(UNW_ARM_R7, R7)
-    ASSIGN_REG_PTR(UNW_ARM_R8, R8)
-    ASSIGN_REG_PTR(UNW_ARM_R9, R9)
-    ASSIGN_REG_PTR(UNW_ARM_R10, R10)
-    ASSIGN_REG_PTR(UNW_ARM_R11, R11)
-    ASSIGN_REG_PTR(UNW_ARM_R14, LR)
-#elif HOST_ARM64
-    ASSIGN_REG(UNW_ARM64_SP, SP)
-    ASSIGN_REG_PTR(UNW_ARM64_FP, FP)
-    ASSIGN_REG_PTR(UNW_ARM64_X19, X19)
-    ASSIGN_REG_PTR(UNW_ARM64_X20, X20)
-    ASSIGN_REG_PTR(UNW_ARM64_X21, X21)
-    ASSIGN_REG_PTR(UNW_ARM64_X22, X22)
-    ASSIGN_REG_PTR(UNW_ARM64_X23, X23)
-    ASSIGN_REG_PTR(UNW_ARM64_X24, X24)
-    ASSIGN_REG_PTR(UNW_ARM64_X25, X25)
-    ASSIGN_REG_PTR(UNW_ARM64_X26, X26)
-    ASSIGN_REG_PTR(UNW_ARM64_X27, X27)
-    ASSIGN_REG_PTR(UNW_ARM64_X28, X28)
-#elif defined(HOST_X86)
-    ASSIGN_REG(UNW_REG_SP, SP)
-    ASSIGN_REG_PTR(UNW_X86_EBP, Rbp)
-    ASSIGN_REG_PTR(UNW_X86_EBX, Rbx)
-#endif
-
-#undef ASSIGN_REG
-#undef ASSIGN_REG_PTR
-}
-
-// Initialize unw_cursor_t and unw_context_t from REGDISPLAY
-bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* cursor, unw_context_t* unwContext)
-{
-    int st;
-
-    st = unw_getcontext(unwContext);
-    if (st < 0)
-    {
-        return false;
-    }
-
-    // Set the IP here instead of after unwinder initialization. unw_init_local
-    // will do some initialization of internal structures based on the IP value.
-    // We manually index into the unw_context_t's internals for now because there's
-    // no better way to modify it. This whole function will go away in the future
-    // when we are able to read unwind info without initializing an unwind cursor.
-#ifdef HOST_AMD64
-    unwContext->data[16] = regDisplay->IP;
-#elif HOST_ARM
-    ((uint32_t*)(unwContext->data))[15] = regDisplay->IP;
-#elif HOST_ARM64
-    ((uint32_t*)(unwContext->data))[32] = regDisplay->IP;
-#elif HOST_X86
-    ASSERT(false);
-#else
-    #error "InitializeUnwindContextAndCursor is not supported on this arch yet."
-#endif
-
-    st = unw_init_local(cursor, unwContext);
-    if (st < 0)
-    {
-        return false;
-    }
-
-    // Set the unwind context to the specified Windows context.
-    RegDisplayToUnwindCursor(regDisplay, cursor);
-
-    return true;
-}
-
-// Update context pointer for a register from the unw_cursor_t.
-static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, int reg, PTR_UIntNative *contextPointer)
-{
-    unw_save_loc_t saveLoc;
-    unw_get_save_loc(cursor, reg, &saveLoc);
-    if (saveLoc.type == UNW_SLT_MEMORY)
-    {
-        PTR_UIntNative pLoc = (PTR_UIntNative)saveLoc.u.addr;
-        // Filter out fake save locations that point to unwContext
-        if (unwContext == NULL || (pLoc < (PTR_UIntNative)unwContext) || ((PTR_UIntNative)(unwContext + 1) <= pLoc))
-            *contextPointer = (PTR_UIntNative)saveLoc.u.addr;
-    }
-}
-
-#if defined(HOST_AMD64)
-#define GET_CONTEXT_POINTERS                    \
-    GET_CONTEXT_POINTER(UNW_X86_64_RBP, Rbp)	\
-    GET_CONTEXT_POINTER(UNW_X86_64_RBX, Rbx)    \
-    GET_CONTEXT_POINTER(UNW_X86_64_R12, R12)    \
-    GET_CONTEXT_POINTER(UNW_X86_64_R13, R13)    \
-    GET_CONTEXT_POINTER(UNW_X86_64_R14, R14)    \
-    GET_CONTEXT_POINTER(UNW_X86_64_R15, R15)
-#elif defined(HOST_ARM)
-#define GET_CONTEXT_POINTERS                    \
-    GET_CONTEXT_POINTER(UNW_ARM_R4, R4)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R5, R5)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R6, R6)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R7, R7)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R8, R8)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R9, R9)	        \
-    GET_CONTEXT_POINTER(UNW_ARM_R10, R10)       \
-    GET_CONTEXT_POINTER(UNW_ARM_R11, R11)
-#elif defined(HOST_ARM64)
-#define GET_CONTEXT_POINTERS                    \
-    GET_CONTEXT_POINTER(UNW_ARM64_X19, X19)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X20, X20)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X21, X21)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X22, X22)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X23, X23)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X24, X24)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X25, X25)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X26, X26)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X27, X27)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X28, X28)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_FP, FP)
-#elif defined(HOST_X86)
-#define GET_CONTEXT_POINTERS                    \
-    GET_CONTEXT_POINTER(UNW_X86_EBP, Rbp)       \
-    GET_CONTEXT_POINTER(UNW_X86_EBX, Rbx)
-#elif defined (HOST_WASM)
-// No registers
-#define GET_CONTEXT_POINTERS
-#else
-#error unsupported architecture
-#endif
-
-// Update REGDISPLAY from the unw_cursor_t and unw_context_t
-void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, REGDISPLAY *regDisplay)
-{
-#define GET_CONTEXT_POINTER(unwReg, rdReg) GetContextPointer(cursor, unwContext, unwReg, &regDisplay->p##rdReg);
-    GET_CONTEXT_POINTERS
-#undef GET_CONTEXT_POINTER
-
-    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &regDisplay->IP);
-    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &regDisplay->SP);
-
-#if defined(HOST_AMD64)
-    regDisplay->pIP = PTR_PCODE(regDisplay->SP - sizeof(TADDR));
-#endif
-
-#if defined(HOST_ARM) || defined(HOST_ARM64)
-    regDisplay->IP |= 1;
-#endif
-}
 
 #if defined(HOST_AMD64)
 #define ASSIGN_CONTROL_REGS \
@@ -706,6 +509,23 @@ uint64_t GetPC(void* context)
     uint64_t& UNIX_CONTEXT::R14(){ return (uint64_t&)MCREG_R14(ctx.uc_mcontext); }
     uint64_t& UNIX_CONTEXT::R15(){ return (uint64_t&)MCREG_R15(ctx.uc_mcontext); }
     uint64_t& UNIX_CONTEXT::Rip(){ return (uint64_t&)MCREG_Rip(ctx.uc_mcontext); }
+
+#elif defined(TARGET_ARM)
+    uint64_t& UNIX_CONTEXT::Pc(){ return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Sp(){ return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Lr(){ return (uint64_t&)MCREG_Lr(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R0(){ return (uint64_t&)MCREG_R0(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R1(){ return (uint64_t&)MCREG_R1(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R2(){ return (uint64_t&)MCREG_R2(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R3(){ return (uint64_t&)MCREG_R3(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R4(){ return (uint64_t&)MCREG_R4(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R5(){ return (uint64_t&)MCREG_R5(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R6(){ return (uint64_t&)MCREG_R6(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R7(){ return (uint64_t&)MCREG_R7(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R8(){ return (uint64_t&)MCREG_R8(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R9(){ return (uint64_t&)MCREG_R9(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R10(){ return (uint64_t&)MCREG_R10(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R11(){ return (uint64_t&)MCREG_R11(ctx.uc_mcontext); }
 
 #else
     PORTABILITY_ASSERT("UNIX_CONTEXT");

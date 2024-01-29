@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
@@ -15,10 +16,10 @@ using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class AssemblyChecker
+	partial class AssemblyChecker
 	{
 		readonly AssemblyDefinition originalAssembly, linkedAssembly;
-		readonly LinkedTestCaseResult linkedTestCase;
+		readonly TrimmedTestCaseResult linkedTestCase;
 
 		HashSet<string> linkedMembers;
 		readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
@@ -26,7 +27,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
 		bool checkNames;
 
-		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, LinkedTestCaseResult linkedTestCase)
+		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked, TrimmedTestCaseResult linkedTestCase)
 		{
 			this.originalAssembly = original;
 			this.linkedAssembly = linked;
@@ -82,22 +83,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			Assert.IsEmpty (linkedMembers, "Linked output includes unexpected member");
-		}
-
-		static bool IsCompilerGeneratedMemberName (string memberName)
-		{
-			return memberName.Length > 0 && memberName[0] == '<';
-		}
-
-		static bool IsCompilerGeneratedMember (IMemberDefinition member)
-		{
-			if (IsCompilerGeneratedMemberName (member.Name))
-				return true;
-
-			if (member.DeclaringType != null)
-				return IsCompilerGeneratedMember (member.DeclaringType);
-
-			return false;
 		}
 
 		static bool IsBackingField (FieldDefinition field) => field.Name.StartsWith ("<") && field.Name.EndsWith (">k__BackingField");
@@ -248,7 +233,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				VerifyInterfaces (original, linked);
 				VerifyPseudoAttributes (original, linked);
-				VerifyGenericParameters (original, linked);
+				VerifyGenericParameters (original, linked, compilerGenerated: false);
 				VerifyCustomAttributes (original, linked);
 				VerifySecurityAttributes (original, linked);
 
@@ -537,12 +522,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Assert.Fail ($"Method `{src.FullName}' should have been kept");
 
 			VerifyPseudoAttributes (src, linked);
-			VerifyGenericParameters (src, linked);
+			VerifyGenericParameters (src, linked, compilerGenerated);
 			if (!compilerGenerated) {
 				VerifyCustomAttributes (src, linked);
 				VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType);
 			}
-			VerifyParameters (src, linked);
+			VerifyParameters (src, linked, compilerGenerated);
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
 			VerifyMethodBody (src, linked);
@@ -644,13 +629,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			case Code.Ldc_R4:
 				if (instr.Operand is float fvalue)
-					return $"{instr.OpCode.ToString ()} {fvalue.ToString ()}";
+					return $"{instr.OpCode.ToString ()} {fvalue.ToString (CultureInfo.InvariantCulture)}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
 			case Code.Ldc_R8:
 				if (instr.Operand is double dvalue)
-					return $"{instr.OpCode.ToString ()} {dvalue.ToString ()}";
+					return $"{instr.OpCode.ToString ()} {dvalue.ToString (CultureInfo.InvariantCulture)}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
@@ -860,12 +845,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static void VerifyPrivateImplementationDetailsType (ModuleDefinition src, ModuleDefinition linked, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails)
 		{
-			srcImplementationDetails = src.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
+			srcImplementationDetails = src.Types.FirstOrDefault (t => IsPrivateImplementationDetailsType (t));
 
 			if (srcImplementationDetails == null)
 				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the original assembly.  Does your test use initializers?");
 
-			linkedImplementationDetails = linked.Types.FirstOrDefault (t => string.IsNullOrEmpty (t.Namespace) && t.Name.StartsWith ("<PrivateImplementationDetails>"));
+			linkedImplementationDetails = linked.Types.FirstOrDefault (t => IsPrivateImplementationDetailsType (t));
 
 			if (linkedImplementationDetails == null)
 				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the linked assembly");
@@ -949,7 +934,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				foreach (var additionalExpectedAttributesFromFixedField in GetCustomAttributeCtorValues<object> (fixedField, nameof (KeptAttributeOnFixedBufferTypeAttribute)))
 					yield return additionalExpectedAttributesFromFixedField.ToString ();
-
 			}
 		}
 
@@ -1036,7 +1020,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 
 			foreach (var nestedType in src.NestedTypes) {
-				if (nestedType.Name != "<>O")
+				if (!IsDelegateBackingFieldsType (nestedType))
 					continue;
 
 				var linkedNestedType = linked.NestedTypes.FirstOrDefault (t => t.Name == nestedType.Name);
@@ -1056,7 +1040,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked)
+		void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked, bool compilerGenerated)
 		{
 			Assert.AreEqual (src.HasGenericParameters, linked.HasGenericParameters);
 			if (src.HasGenericParameters) {
@@ -1064,7 +1048,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					// TODO: Verify constraints
 					var srcp = src.GenericParameters[i];
 					var lnkp = linked.GenericParameters[i];
-					VerifyCustomAttributes (srcp, lnkp);
+
+					if (!compilerGenerated) {
+						VerifyCustomAttributes (srcp, lnkp);
+					}
 
 					if (checkNames) {
 						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute))) {
@@ -1078,7 +1065,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyParameters (IMethodSignature src, IMethodSignature linked)
+		void VerifyParameters (IMethodSignature src, IMethodSignature linked, bool compilerGenerated)
 		{
 			Assert.AreEqual (src.HasParameters, linked.HasParameters);
 			if (src.HasParameters) {
@@ -1086,7 +1073,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					var srcp = src.Parameters[i];
 					var lnkp = linked.Parameters[i];
 
-					VerifyCustomAttributes (srcp, lnkp);
+					if (!compilerGenerated) {
+						VerifyCustomAttributes (srcp, lnkp);
+					}
 
 					if (checkNames) {
 						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute)))

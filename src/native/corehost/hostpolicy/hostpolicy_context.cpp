@@ -137,7 +137,7 @@ namespace
 
 bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_t &init)
 {
-    const auto &iter = std::find(init.cfg_keys.cbegin(), init.cfg_keys.cend(), _X("System.Host.Resolution.ReadRidGraph"));
+    const auto &iter = std::find(init.cfg_keys.cbegin(), init.cfg_keys.cend(), _X("System.Runtime.Loader.UseRidGraph"));
     if (iter != init.cfg_keys.cend())
     {
         size_t idx = iter - init.cfg_keys.cbegin();
@@ -184,7 +184,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     if (breadcrumbs_enabled)
     {
         pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
-        pal::string_t policy_version = _STRINGIFY(HOST_POLICY_PKG_VER);
+        pal::string_t policy_version = _STRINGIFY(HOST_VERSION);
 
         // Always insert the hostpolicy that the code is running on.
         breadcrumbs.insert(policy_name);
@@ -280,7 +280,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     coreclr_properties.add(common_property::AppContextDepsFiles, app_context_deps_str.c_str());
     coreclr_properties.add(common_property::FxDepsFile, fx_deps_str.c_str());
     coreclr_properties.add(common_property::ProbingDirectories, resolver.get_lookup_probe_directories().c_str());
-    coreclr_properties.add(common_property::RuntimeIdentifier, get_current_runtime_id(true /*use_fallback*/).c_str());
+    coreclr_properties.add(common_property::RuntimeIdentifier, get_runtime_id().c_str());
 
     bool set_app_paths = false;
 
@@ -329,44 +329,6 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         coreclr_properties.add(common_property::StartUpHooks, startup_hooks.c_str());
     }
 
-    // Single-File Bundle Probe
-    if (bundle::info_t::is_single_file_bundle())
-    {
-        // Encode the bundle_probe function pointer as a string, and pass it to the runtime.
-        pal::stringstream_t ptr_stream;
-        ptr_stream << "0x" << std::hex << (size_t)(&bundle_probe);
-
-        if (!coreclr_properties.add(common_property::BundleProbe, ptr_stream.str().c_str()))
-        {
-            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::BundleProbe));
-            return StatusCode::LibHostDuplicateProperty;
-        }
-    }
-
-#if defined(NATIVE_LIBS_EMBEDDED)
-    // PInvoke Override
-    if (bundle::info_t::is_single_file_bundle())
-    {
-        // Encode the pinvoke_override function pointer as a string, and pass it to the runtime.
-        pal::stringstream_t ptr_stream;
-        ptr_stream << "0x" << std::hex << (size_t)(&pinvoke_override);
-
-        if (!coreclr_properties.add(common_property::PInvokeOverride, ptr_stream.str().c_str()))
-        {
-            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::PInvokeOverride));
-            return StatusCode::LibHostDuplicateProperty;
-        }
-    }
-#endif
-
-#if defined(HOSTPOLICY_EMBEDDED)
-    if (!coreclr_properties.add(common_property::HostPolicyEmbedded, _X("true")))
-    {
-        log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::HostPolicyEmbedded));
-        return StatusCode::LibHostDuplicateProperty;
-    }
-#endif
-
     {
         host_contract = { sizeof(host_runtime_contract), this };
         if (bundle::info_t::is_single_file_bundle())
@@ -378,9 +340,9 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         }
 
         host_contract.get_runtime_property = &get_runtime_property;
-        pal::stringstream_t ptr_stream;
-        ptr_stream << "0x" << std::hex << (size_t)(&host_contract);
-        if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), ptr_stream.str().c_str()))
+        pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
+        pal::snwprintf(buffer, ARRAY_SIZE(buffer), _X("0x%zx"), (size_t)(&host_contract));
+        if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), buffer))
         {
             log_duplicate_property_error(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT));
             return StatusCode::LibHostDuplicateProperty;

@@ -30,14 +30,28 @@ public class SingleFileTestRunner : XunitTestFramework
         // The current RemoteExecutor implementation is not compatible with the SingleFileTestRunner.
         Environment.SetEnvironmentVariable("DOTNET_REMOTEEXECUTOR_SUPPORTED", "0");
 
+        // To detect ReadyToRun testing mode, we set a constant in
+        // eng/testing/tests.singlefile.targets, which we use in the following
+        // preprocessor directive. In the case that it is defined, we set an
+        // environment variable that we consume later to implement
+        // PlatformDetection.IsReadyToRunCompiled. This last value is used for the
+        // [ActiveIssue] annotations designed to exclude tests from running.
+
+#if TEST_READY_TO_RUN_COMPILED
+        Environment.SetEnvironmentVariable("TEST_READY_TO_RUN_MODE" ,"1");
+#endif
+
         var diagnosticSink = new ConsoleDiagnosticMessageSink();
         var testsFinished = new TaskCompletionSource();
         var testSink = new TestMessageSink();
+
+#pragma warning disable CS0618 // Delegating*Sink types are marked obsolete
         var summarySink = new DelegatingExecutionSummarySink(testSink,
             () => false,
             (completed, summary) => Console.WriteLine($"Tests run: {summary.Total}, Errors: {summary.Errors}, Failures: {summary.Failed}, Skipped: {summary.Skipped}. Time: {TimeSpan.FromSeconds((double)summary.Time).TotalSeconds}s"));
         var resultsXmlAssembly = new XElement("assembly");
         var resultsSink = new DelegatingXmlCreationSink(summarySink, resultsXmlAssembly);
+#pragma warning restore CS0618
 
         testSink.Execution.TestSkippedEvent += args => { Console.WriteLine($"[SKIP] {args.Message.Test.DisplayName}"); };
         testSink.Execution.TestFailedEvent += args => { Console.WriteLine($"[FAIL] {args.Message.Test.DisplayName}{Environment.NewLine}{Xunit.ExceptionUtility.CombineMessages(args.Message)}{Environment.NewLine}{Xunit.ExceptionUtility.CombineStackTraces(args.Message)}"); };
@@ -72,16 +86,16 @@ public class SingleFileTestRunner : XunitTestFramework
             if (args[i].Equals("-notrait", StringComparison.OrdinalIgnoreCase))
             {
                 var traitKeyValue = args[i + 1].Split("=", StringSplitOptions.TrimEntries);
-                
+
                 if (!noTraits.TryGetValue(traitKeyValue[0], out List<string> values))
                 {
                     noTraits.Add(traitKeyValue[0], values = new List<string>());
                 }
-                
+
                 values.Add(traitKeyValue[1]);
                 i++;
             }
-            
+
             if (args[i].Equals("-xml", StringComparison.OrdinalIgnoreCase))
             {
                 xmlResultFileName = args[i + 1].Trim();
@@ -167,6 +181,8 @@ public class SingleFileTestRunner : XunitTestFramework
     }
 }
 
+// This is about running on desktop FX, which we don't do
+#pragma warning disable xUnit3000
 internal class ConsoleDiagnosticMessageSink : IMessageSink
 {
     public bool OnMessage(IMessageSinkMessage message)
@@ -178,3 +194,4 @@ internal class ConsoleDiagnosticMessageSink : IMessageSink
         return false;
     }
 }
+#pragma warning restore xUnit3000

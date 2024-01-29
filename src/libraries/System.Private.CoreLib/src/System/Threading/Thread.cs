@@ -7,8 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using System.Security.Principal;
 using System.Runtime.Versioning;
+using System.Security.Principal;
 
 namespace System.Threading
 {
@@ -176,7 +176,7 @@ namespace System.Threading
         /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
         /// <exception cref="InvalidOperationException">This thread was created using a <see cref="ThreadStart"/> delegate instead of a <see cref="ParameterizedThreadStart"/> delegate.</exception>
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public void Start(object? parameter) => Start(parameter, captureContext: true);
 
@@ -190,7 +190,7 @@ namespace System.Threading
         /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
         /// </remarks>
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
@@ -221,7 +221,7 @@ namespace System.Threading
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
         /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public void Start() => Start(captureContext: true);
 
@@ -233,7 +233,7 @@ namespace System.Threading
         /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
         /// </remarks>
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public void UnsafeStart() => Start(captureContext: false);
 
@@ -496,12 +496,12 @@ namespace System.Threading
         [SupportedOSPlatform("windows")]
         public void SetApartmentState(ApartmentState state)
         {
-            SetApartmentState(state, throwOnError:true);
+            SetApartmentState(state, throwOnError: true);
         }
 
         public bool TrySetApartmentState(ApartmentState state)
         {
-            return SetApartmentState(state, throwOnError:false);
+            return SetApartmentState(state, throwOnError: false);
         }
 
 #pragma warning disable CA1822 // SetApartmentStateUnchecked should pass `this`

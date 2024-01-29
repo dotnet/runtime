@@ -185,15 +185,6 @@ typedef LPSTR   LPUTF8;
 // given and ANSI String, copy it into a wide buffer.
 // be careful about scoping when using this macro!
 //
-// how to use the below two macros:
-//
-//  ...
-//  LPSTR pszA;
-//  pszA = MyGetAnsiStringRoutine();
-//  MAKE_WIDEPTR_FROMANSI(pwsz, pszA);
-//  MyUseWideStringRoutine(pwsz);
-//  ...
-//
 // similarily for MAKE_ANSIPTR_FROMWIDE.  note that the first param does not
 // have to be declared, and no clean up must be done.
 //
@@ -211,25 +202,6 @@ typedef LPSTR   LPUTF8;
 #define MAKE_TRANSLATIONFAILED ThrowWin32(ERROR_NO_UNICODE_TRANSLATION)
 #endif
 
-// This version throws on conversion errors (ie, no best fit character
-// mapping to characters that look similar, and no use of the default char
-// ('?') when printing out unrepresentable characters.  Use this method for
-// most development in the EE, especially anything like metadata or class
-// names.  See the BESTFIT version if you're printing out info to the console.
-#define MAKE_MULTIBYTE_FROMWIDE(ptrname, widestr, codepage) \
-    int __l##ptrname = (int)u16_strlen(widestr);        \
-    if (__l##ptrname > MAKE_MAX_LENGTH)         \
-        MAKE_TOOLONGACTION;                     \
-    __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
-    CQuickBytes __CQuickBytes##ptrname; \
-    __CQuickBytes##ptrname.AllocThrows(__l##ptrname); \
-    BOOL __b##ptrname; \
-    DWORD __cBytes##ptrname = WszWideCharToMultiByte(codepage, WC_NO_BEST_FIT_CHARS, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, &__b##ptrname); \
-    if (__b##ptrname || (__cBytes##ptrname == 0 && (widestr[0] != W('\0')))) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    LPSTR ptrname = (LPSTR)__CQuickBytes##ptrname.Ptr()
-
 // This version does best fit character mapping and also allows the use
 // of the default char ('?') for any Unicode character that isn't
 // representable.  This is reasonable for writing to the console, but
@@ -246,40 +218,6 @@ typedef LPSTR   LPUTF8;
         MAKE_TRANSLATIONFAILED; \
     } \
     LPSTR ptrname = (LPSTR)__CQuickBytes##ptrname.Ptr()
-
-// Use for anything critical other than output to console, where weird
-// character mappings are unacceptable.
-#define MAKE_ANSIPTR_FROMWIDE(ptrname, widestr) MAKE_MULTIBYTE_FROMWIDE(ptrname, widestr, CP_ACP)
-
-// Use for output to the console.
-#define MAKE_ANSIPTR_FROMWIDE_BESTFIT(ptrname, widestr) MAKE_MULTIBYTE_FROMWIDE_BESTFIT(ptrname, widestr, CP_ACP)
-
-#define MAKE_WIDEPTR_FROMANSI(ptrname, ansistr) \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszMultiByteToWideChar(CP_ACP, 0, ansistr, -1, 0, 0); \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    LPWSTR ptrname = (LPWSTR) __qb##ptrname.AllocThrows((__l##ptrname+1)*sizeof(WCHAR));  \
-    if (WszMultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, ansistr, -1, ptrname, __l##ptrname) == 0) { \
-        MAKE_TRANSLATIONFAILED; \
-    }
-
-#define MAKE_WIDEPTR_FROMANSI_NOTHROW(ptrname, ansistr) \
-    CQuickBytes __qb##ptrname; \
-    LPWSTR ptrname = 0; \
-    int __l##ptrname; \
-    __l##ptrname = WszMultiByteToWideChar(CP_ACP, 0, ansistr, -1, 0, 0); \
-    if (__l##ptrname <= MAKE_MAX_LENGTH) { \
-        ptrname = (LPWSTR) __qb##ptrname.AllocNoThrow((__l##ptrname+1)*sizeof(WCHAR));  \
-        if (ptrname) { \
-            if (WszMultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, ansistr, -1, ptrname, __l##ptrname) != 0) { \
-                ptrname[__l##ptrname] = 0; \
-            } else { \
-                ptrname = 0; \
-            } \
-        } \
-    }
 
 #define MAKE_UTF8PTR_FROMWIDE(ptrname, widestr) CQuickBytes _##ptrname; _##ptrname.ConvertUnicode_Utf8(widestr); LPSTR ptrname = (LPSTR) _##ptrname.Ptr();
 
@@ -312,21 +250,7 @@ typedef LPSTR   LPUTF8;
         } \
     } \
 
-#define MAKE_WIDEPTR_FROMUTF8N(ptrname, utf8str, n8chrs) \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszMultiByteToWideChar(CP_UTF8, 0, utf8str, n8chrs, 0, 0); \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    LPWSTR ptrname = (LPWSTR) __qb##ptrname .AllocThrows((__l##ptrname+1)*sizeof(WCHAR)); \
-    if (0==WszMultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8str, n8chrs, ptrname, __l##ptrname)) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    ptrname[__l##ptrname] = 0;
-
-
 #define MAKE_WIDEPTR_FROMUTF8(ptrname, utf8str) CQuickBytes _##ptrname;  _##ptrname.ConvertUtf8_Unicode(utf8str); LPCWSTR ptrname = (LPCWSTR) _##ptrname.Ptr();
-
 
 #define MAKE_WIDEPTR_FROMUTF8N_NOTHROW(ptrname, utf8str, n8chrs) \
     CQuickBytes __qb##ptrname; \
@@ -346,42 +270,10 @@ typedef LPSTR   LPUTF8;
 
 #define MAKE_WIDEPTR_FROMUTF8_NOTHROW(ptrname, utf8str)   MAKE_WIDEPTR_FROMUTF8N_NOTHROW(ptrname, utf8str, -1)
 
-// This method takes the number of characters
-#define MAKE_MULTIBYTE_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt, codepage)        \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszWideCharToMultiByte(codepage, WC_NO_BEST_FIT_CHARS, widestr, _nCharacters, NULL, 0, NULL, NULL);           \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    ptrname = (LPUTF8) __qb##ptrname .AllocThrows(__l##ptrname+1); \
-    BOOL __b##ptrname; \
-    DWORD _pCnt = WszWideCharToMultiByte(codepage, WC_NO_BEST_FIT_CHARS, widestr, _nCharacters, ptrname, __l##ptrname, NULL, &__b##ptrname);  \
-    if (__b##ptrname || (_pCnt == 0 && _nCharacters > 0)) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    ptrname[__l##ptrname] = 0;
-
-#define MAKE_MULTIBYTE_FROMWIDEN_BESTFIT(ptrname, widestr, _nCharacters, _pCnt, codepage)        \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszWideCharToMultiByte(codepage, 0, widestr, _nCharacters, NULL, 0, NULL, NULL);           \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    ptrname = (LPUTF8) __qb##ptrname .AllocThrows(__l##ptrname+1); \
-    DWORD _pCnt = WszWideCharToMultiByte(codepage, 0, widestr, _nCharacters, ptrname, __l##ptrname, NULL, NULL);  \
-    if (_pCnt == 0 && _nCharacters > 0) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    ptrname[__l##ptrname] = 0;
-
-#define MAKE_ANSIPTR_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt)        \
-       MAKE_MULTIBYTE_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt, CP_ACP)
-
 const SIZE_T MaxSigned32BitDecString = ARRAY_SIZE("-2147483648") - 1;
 const SIZE_T MaxUnsigned32BitDecString = ARRAY_SIZE("4294967295") - 1;
 const SIZE_T MaxIntegerDecHexString = ARRAY_SIZE("-9223372036854775808") - 1;
 
-const SIZE_T Max16BitHexString = ARRAY_SIZE("1234") - 1;
 const SIZE_T Max32BitHexString = ARRAY_SIZE("12345678") - 1;
 const SIZE_T Max64BitHexString = ARRAY_SIZE("1234567812345678") - 1;
 
@@ -409,77 +301,6 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     *str = W('\0');
     return str;
 }
-
-inline
-LPWSTR DuplicateString(
-    LPCWSTR wszString,
-    size_t  cchString)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    LPWSTR wszDup = NULL;
-    if (wszString != NULL)
-    {
-        wszDup = new (nothrow) WCHAR[cchString + 1];
-        if (wszDup != NULL)
-        {
-            wcscpy_s(wszDup, cchString + 1, wszString);
-        }
-    }
-    return wszDup;
-}
-
-inline
-LPWSTR DuplicateString(
-    LPCWSTR wszString)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    if (wszString != NULL)
-    {
-        return DuplicateString(wszString, u16_strlen(wszString));
-    }
-    else
-    {
-        return NULL;
-    }
-}
-
-void DECLSPEC_NORETURN ThrowOutOfMemory();
-
-inline
-LPWSTR DuplicateStringThrowing(
-    LPCWSTR wszString,
-    size_t cchString)
-{
-    STATIC_CONTRACT_THROWS;
-
-    if (wszString == NULL)
-        return NULL;
-
-    LPWSTR wszDup = DuplicateString(wszString, cchString);
-    if (wszDup == NULL)
-        ThrowOutOfMemory();
-
-    return wszDup;
-}
-
-inline
-LPWSTR DuplicateStringThrowing(
-    LPCWSTR wszString)
-{
-    STATIC_CONTRACT_THROWS;
-
-    if (wszString == NULL)
-        return NULL;
-
-    LPWSTR wszDup = DuplicateString(wszString);
-    if (wszDup == NULL)
-        ThrowOutOfMemory();
-
-    return wszDup;
-}
-
 
 //*****************************************************************************
 // Placement new is used to new and object at an exact location.  The pointer
@@ -980,7 +801,6 @@ public:
     static bool GetCPUGroupInfo(PUSHORT total_groups, DWORD* max_procs_per_group);
     //static void PopulateCPUUsageArray(void * infoBuffer, ULONG infoSize);
 
-#if !defined(FEATURE_NATIVEAOT)
 public:
     static BOOL GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP relationship,
 		   SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *slpiex, PDWORD count);
@@ -991,7 +811,6 @@ public:
     static void ChooseCPUGroupAffinity(GROUP_AFFINITY *gf);
     static void ClearCPUGroupAffinity(GROUP_AFFINITY *gf);
     static BOOL GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* group_size);
-#endif
 };
 
 DWORD_PTR GetCurrentProcessCpuMask();
@@ -3459,49 +3278,6 @@ HRESULT Utf2Quick(
     int         iCurLen = 0);           // Initial characters in the array to leave (default 0).
 
 //*****************************************************************************
-//  Extract the movl 64-bit unsigned immediate from an IA64 bundle
-//  (Format X2)
-//*****************************************************************************
-UINT64 GetIA64Imm64(UINT64 * pBundle);
-UINT64 GetIA64Imm64(UINT64 qword0, UINT64 qword1);
-
-//*****************************************************************************
-//  Deposit the movl 64-bit unsigned immediate into an IA64 bundle
-//  (Format X2)
-//*****************************************************************************
-void PutIA64Imm64(UINT64 * pBundle, UINT64 imm64);
-
-//*****************************************************************************
-//  Extract the IP-Relative signed 25-bit immediate from an IA64 bundle
-//  (Formats B1, B2 or B3)
-//  Note that due to branch target alignment requirements
-//       the lowest four bits in the result will always be zero.
-//*****************************************************************************
-INT32 GetIA64Rel25(UINT64 * pBundle, UINT32 slot);
-INT32 GetIA64Rel25(UINT64 qword0, UINT64 qword1, UINT32 slot);
-
-//*****************************************************************************
-//  Deposit the IP-Relative signed 25-bit immediate into an IA64 bundle
-//  (Formats B1, B2 or B3)
-//  Note that due to branch target alignment requirements
-//       the lowest four bits are required to be zero.
-//*****************************************************************************
-void PutIA64Rel25(UINT64 * pBundle, UINT32 slot, INT32 imm25);
-
-//*****************************************************************************
-//  Extract the IP-Relative signed 64-bit immediate from an IA64 bundle
-//  (Formats X3 or X4)
-//*****************************************************************************
-INT64 GetIA64Rel64(UINT64 * pBundle);
-INT64 GetIA64Rel64(UINT64 qword0, UINT64 qword1);
-
-//*****************************************************************************
-//  Deposit the IP-Relative signed 64-bit immediate into a IA64 bundle
-//  (Formats X3 or X4)
-//*****************************************************************************
-void PutIA64Rel64(UINT64 * pBundle, INT64 imm64);
-
-//*****************************************************************************
 //  Extract the 32-bit immediate from movw/movt Thumb2 sequence
 //*****************************************************************************
 UINT32 GetThumb2Mov32(UINT16 * p);
@@ -3632,19 +3408,19 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // stackbase is the unique fiber identifier
-        return NtCurrentTeb()->NtTib.StackBase;
+        return ((NT_TIB*)NtCurrentTeb())->StackBase;
     }
 
     static void* GetStackBase()
     {
         LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->NtTib.StackBase;
+        return ((NT_TIB*)NtCurrentTeb())->StackBase;
     }
 
     static void* GetStackLimit()
     {
         LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->NtTib.StackLimit;
+        return ((NT_TIB*)NtCurrentTeb())->StackLimit;
     }
 
     static void* GetOleReservedPtr()

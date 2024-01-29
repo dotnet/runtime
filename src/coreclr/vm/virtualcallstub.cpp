@@ -1760,15 +1760,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
             if (insertKind != DispatchCache::IK_NONE)
             {
-                // Because the TransparentProxy MT is process-global, we cannot cache targets for
-                // unshared interfaces because there is the possibility of caching a
-                // <token, TPMT, target> entry where target is in AD1, and then matching against
-                // this entry from AD2 which happens to be using the same token, perhaps for a
-                // completely different interface.
-            }
-
-            if (insertKind != DispatchCache::IK_NONE)
-            {
                 VirtualCallStubManager * pMgrForCacheElem = this;
 
                 // If we're calling from shared to unshared, make sure the cache element is

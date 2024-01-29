@@ -1,10 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Testing;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -15,6 +11,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace Microsoft.Interop.UnitTests
@@ -51,6 +51,10 @@ namespace Microsoft.Interop.UnitTests
 
     public static class TestUtils
     {
+        public static string ID(
+            [CallerLineNumber] int lineNumber = 0,
+            [CallerFilePath] string? filePath = null)
+            => TestUtils.GetFileLineName(lineNumber, filePath);
         internal static string GetFileLineName(
             [CallerLineNumber] int lineNumber = 0,
             [CallerFilePath] string? filePath = null)
@@ -298,7 +302,7 @@ namespace Microsoft.Interop.UnitTests
                 int count = Interlocked.Decrement(ref _count);
                 if (count == 0)
                 {
-                   Environment.SetEnvironmentVariable(EnvVarName, null);
+                    Environment.SetEnvironmentVariable(EnvVarName, null);
                 }
             }
         }

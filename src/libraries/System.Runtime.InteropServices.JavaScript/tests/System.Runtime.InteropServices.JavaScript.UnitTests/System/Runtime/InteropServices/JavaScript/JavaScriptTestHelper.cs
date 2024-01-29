@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSExport]
         public static void Optimized1V(int a1)
         {
-            optimizedReached+= a1;
+            optimizedReached += a1;
         }
         [JSImport("invoke1V", "JavaScriptTestHelper")]
         public static partial void invoke1V(int a1);
@@ -85,8 +85,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSExport]
         public static int Optimized2R(int a1, int a2)
         {
-            optimizedReached += a1+ a2;
-            return a1 + a2 +1;
+            optimizedReached += a1 + a2;
+            return a1 + a2 + 1;
         }
         [JSImport("invoke2R", "JavaScriptTestHelper")]
         public static partial int invoke2R(int a1, int a2);
@@ -991,16 +991,33 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("setup", "JavaScriptTestHelper")]
         internal static partial Task Setup();
 
+        [JSImport("INTERNAL.forceDisposeProxies")]
+        internal static partial void ForceDisposeProxies(bool disposeMethods, bool verbose);
+
         static JSObject _module;
         public static async Task InitializeAsync()
         {
             if (_module == null)
             {
-                // Log("JavaScriptTestHelper.mjs importing");
-                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs"); ;
                 await Setup();
-                // Log("JavaScriptTestHelper.mjs imported");
             }
+
+#if FEATURE_WASM_THREADS
+            // are we in the UI thread ?
+            if (Environment.CurrentManagedThreadId == 1)
+#endif
+            {
+                // this gives browser chance to serve UI thread event loop before every test
+                await Task.Yield();
+            }
+        }
+
+        public static Task DisposeAsync()
+        {
+            _module?.Dispose();
+            _module = null;
+            return Task.CompletedTask;
         }
     }
 }
@@ -1010,7 +1027,7 @@ namespace JavaScriptTestHelperNamespace
     public partial class JavaScriptTestHelper
     {
         [System.Runtime.InteropServices.JavaScript.JSExport]
-        public static string EchoString(string message) 
+        public static string EchoString(string message)
         {
             return message + "11";
         }
@@ -1019,7 +1036,7 @@ namespace JavaScriptTestHelperNamespace
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
             public static string EchoString(string message) => message + "12";
-        
+
             private partial class DoubleNestedClass
             {
                 [System.Runtime.InteropServices.JavaScript.JSExport]

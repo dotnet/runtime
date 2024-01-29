@@ -7,7 +7,7 @@
 // This module contains helper functions used to encode and manipulate
 // signatures for scenarios where runtime-specific signatures
 // including specific generic instantiations are persisted,
-// like Ready-To-Run decoding, IBC, and Multi-core JIT recording/playback
+// like Ready-To-Run decoding, and Multi-core JIT recording/playback
 //
 // ===========================================================================
 
@@ -39,7 +39,7 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
     }
     else if (elemType == ELEMENT_TYPE_VAR || elemType == ELEMENT_TYPE_MVAR)
     {
-        // Enable encoding of type variables for NGen signature only. IBC toolchain is not aware of them yet.
+        // Enable encoding of type variables for R2R signature only.
         if (context.externalTokens == ZapSig::NormalTokens)
             elemType = (CorElementType) ELEMENT_TYPE_VAR_ZAPSIG;
     }
@@ -186,20 +186,16 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
     // We may need to emit an out-of-module escape sequence
     //
-    Module *pTypeHandleModule = pMT->GetModule_NoLogging();
+    Module *pTypeHandleModule = pMT->GetModule();
 
     // If the type handle's module is different that the this->pInfoModule
     // we will need to add an out-of-module escape for the type
     //
     DWORD index = 0;
-    mdToken token = pMT->GetCl_NoLogging();
+    mdToken token = pMT->GetCl();
 
     if (pTypeHandleModule != this->context.pInfoModule)
     {
-        // During IBC profiling this calls
-        //     code:Module.EncodeModuleHelper
-        // During ngen this calls
-        //     code:ZapImportTable.EncodeModuleHelper
         // During multicorejit this calls
         //     code:MulticoreJitManager.EncodeModuleHelper
         //
@@ -1210,13 +1206,13 @@ BOOL ZapSig::EncodeMethod(
     }
     CONTRACTL_END;
 
-    TypeHandle ownerType = pMethod->GetMethodTable_NoLogging();
+    TypeHandle ownerType = pMethod->GetMethodTable();
 
     ZapSig::ExternalTokens externalTokens = ZapSig::NormalTokens;
     if (pInfoModule == NULL)
     {
         externalTokens = ZapSig::MulticoreJitTokens;
-        pInfoModule = pMethod->GetModule_NoLogging();
+        pInfoModule = pMethod->GetModule();
     }
 
     ZapSig zapSig(pInfoModule, pEncodeModuleContext, externalTokens,
@@ -1226,7 +1222,7 @@ BOOL ZapSig::EncodeMethod(
     //
     // output the sequence that represents the token for the method
     //
-    mdMethodDef methodToken               = pMethod->GetMemberDef_NoLogging();
+    mdMethodDef methodToken               = pMethod->GetMemberDef();
     DWORD       methodFlags               = 0;
     BOOL        fMethodNeedsInstantiation = pMethod->HasMethodInstantiation() && !pMethod->IsGenericMethodDefinition();
 
@@ -1250,11 +1246,8 @@ BOOL ZapSig::EncodeMethod(
 
         if (pTypeHandleModule != pInfoModule)
         {
-            // During IBC profiling this calls
-            //     code:Module.EncodeModuleHelper
-            // During ngen this calls
-            //     code:ZapImportTable.EncodeModuleHelper)
-            //
+            // During multicorejit this calls
+            //     code:MulticoreJitManager.EncodeModuleHelper
             DWORD index = (*((EncodeModuleCallback) pfnEncodeModule))(pEncodeModuleContext, pTypeHandleModule);
 
             if (index == ENCODE_MODULE_FAILED)

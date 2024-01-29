@@ -38,6 +38,32 @@ namespace System.Net.Http.Json.Functional.Tests
             options.NumberHandling = options.NumberHandling | JsonNumberHandling.WriteAsString;
             return JsonSerializer.Serialize(this, options);
         }
+
+        public static void AssertPersonEquality(Person first, Person second)
+        {
+            Assert.Equal(first.Age, second.Age);
+            Assert.Equal(first.Name, second.Name);
+            Assert.Equal(first.Parent, second.Parent);
+            Assert.Equal(first.PlaceOfBirth, second.PlaceOfBirth);
+        }
+    }
+
+    internal class People
+    {
+        public static int PeopleCount => WomenOfProgramming.Length;
+
+        public static Person[] WomenOfProgramming = new[]
+        {
+            new Person { Name = "Ada Lovelace", Age = 13_140, PlaceOfBirth = "London, England" },
+            new Person { Name = "Jean Bartik", Age = 31_390, PlaceOfBirth = "Alanthus Grove, Missouri, U.S." },
+            new Person { Name = "Grace Hopper", Age = 31_025, PlaceOfBirth = "New York City, New York, U.S." },
+            new Person { Name = "Margaret Hamilton", Age = 31_390, PlaceOfBirth = "Paoli, Indiana, U.S." },
+        };
+
+        public static string Serialize(JsonSerializerOptions options = null)
+        {
+            return JsonSerializer.Serialize(WomenOfProgramming, options);
+        }
     }
 
     internal static class JsonOptions

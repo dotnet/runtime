@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                 }
 
                 if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (reader.TokenType != JsonTokenType.StartObject)
                     {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                     }
 
                     state.Current.ObjectState = StackFrameObjectState.StartToken;
@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Converters
                     ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
                     Debug.Assert(!IsValueType);
-                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, polymorphicConverter.TypeToConvert, options, ref state, out object? objectResult);
+                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, polymorphicConverter.Type!, options, ref state, out object? objectResult);
                     value = (T)objectResult!;
                     state.ExitPolymorphicConverter(success);
                     return success;
@@ -148,23 +148,20 @@ namespace System.Text.Json.Serialization.Converters
                     // Determine the property.
                     if (state.Current.PropertyState == StackFramePropertyState.None)
                     {
-                        state.Current.PropertyState = StackFramePropertyState.ReadName;
-
                         if (!reader.Read())
                         {
-                            // The read-ahead functionality will do the Read().
                             state.Current.ReturnValue = obj;
                             value = default;
                             return false;
                         }
+
+                        state.Current.PropertyState = StackFramePropertyState.ReadName;
                     }
 
                     JsonPropertyInfo jsonPropertyInfo;
 
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
-                        state.Current.PropertyState = StackFramePropertyState.Name;
-
                         JsonTokenType tokenType = reader.TokenType;
                         if (tokenType == JsonTokenType.EndObject)
                         {
@@ -183,6 +180,7 @@ namespace System.Text.Json.Serialization.Converters
                             out bool useExtensionProperty);
 
                         state.Current.UseExtensionProperty = useExtensionProperty;
+                        state.Current.PropertyState = StackFramePropertyState.Name;
                     }
                     else
                     {
@@ -194,7 +192,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         if (!jsonPropertyInfo.CanDeserializeOrPopulate)
                         {
-                            if (!reader.TrySkip())
+                            if (!reader.TrySkipPartial(targetDepth: state.Current.OriginalDepth + 1))
                             {
                                 state.Current.ReturnValue = obj;
                                 value = default;
@@ -211,6 +209,8 @@ namespace System.Text.Json.Serialization.Converters
                             value = default;
                             return false;
                         }
+
+                        state.Current.PropertyState = StackFramePropertyState.ReadValue;
                     }
 
                     if (state.Current.PropertyState < StackFramePropertyState.TryRead)
@@ -258,7 +258,9 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         // This method is using aggressive inlining to avoid extra stack frame for deep object graphs.
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         internal static void PopulatePropertiesFastPath(object obj, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             jsonTypeInfo.OnDeserializing?.Invoke(obj);
@@ -455,7 +457,14 @@ namespace System.Text.Json.Serialization.Converters
             // Skip the property if not found.
             if (!jsonPropertyInfo.CanDeserializeOrPopulate)
             {
-                reader.Skip();
+                // The Utf8JsonReader.Skip() method will fail fast if it detects that we're reading
+                // from a partially read buffer, regardless of whether the next value is available.
+                // This can result in erroneous failures in cases where a custom converter is calling
+                // into a built-in converter (cf. https://github.com/dotnet/runtime/issues/74108).
+                // For this reason we need to call the TrySkip() method instead -- the serializer
+                // should guarantee sufficient read-ahead has been performed for the current object.
+                bool success = reader.TrySkip();
+                Debug.Assert(success, "Serializer should guarantee sufficient read-ahead has been done.");
             }
             else
             {
@@ -478,26 +487,9 @@ namespace System.Text.Json.Serialization.Converters
 
         protected static bool ReadAheadPropertyValue(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonPropertyInfo jsonPropertyInfo)
         {
-            // Returning false below will cause the read-ahead functionality to finish the read.
-            state.Current.PropertyState = StackFramePropertyState.ReadValue;
-
-            if (!state.Current.UseExtensionProperty)
-            {
-                if (!SingleValueReadWithReadAhead(jsonPropertyInfo.EffectiveConverter.RequiresReadAhead, ref reader, ref state))
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                // The actual converter is JsonElement, so force a read-ahead.
-                if (!SingleValueReadWithReadAhead(requiresReadAhead: true, ref reader, ref state))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            // Extension properties can use the JsonElement converter and thus require read-ahead.
+            bool requiresReadAhead = jsonPropertyInfo.EffectiveConverter.RequiresReadAhead || state.Current.UseExtensionProperty;
+            return reader.TryAdvanceWithOptionalReadAhead(requiresReadAhead);
         }
     }
 }

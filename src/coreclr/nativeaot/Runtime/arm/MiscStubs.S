@@ -20,20 +20,20 @@
 //   r5 - is not preserved
 //
 // NOTE: this helper will probe at least one page below the one pointed to by sp.
-#define PROBE_PAGE_SIZE      4096
-#define PROBE_PAGE_SIZE_LOG2 12
+#define PROBE_STEP      4096
+#define PROBE_STEP_LOG2 12
 
 LEAF_ENTRY RhpStackProbe, _TEXT
     PROLOG_PUSH "{r7}"
     PROLOG_STACK_SAVE r7
 
     mov r5, sp                         // r5 points to some byte on the last probed page
-    bfc r5, #0, #PROBE_PAGE_SIZE_LOG2  // r5 points to the **lowest address** on the last probed page
+    bfc r5, #0, #PROBE_STEP_LOG2  // r5 points to the **lowest address** on the last probed page
     mov sp, r5
 
 ProbeLoop:
                                            // Immediate operand for the following instruction can not be greater than 4095.
-    sub sp, #(PROBE_PAGE_SIZE - 4)     // sp points to the **fourth** byte on the **next page** to probe
+    sub sp, #(PROBE_STEP - 4)     // sp points to the **fourth** byte on the **next page** to probe
     ldr r5, [sp, #-4]!                 // sp points to the lowest address on the **last probed** page
     cmp sp, r4
     bhi ProbeLoop                      // If (sp > r4), then we need to probe at least one more page.

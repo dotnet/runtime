@@ -576,7 +576,16 @@ void CompileResult::recSetMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethod
     if (SetMethodAttribs == nullptr)
         SetMethodAttribs = new LightWeightMap<DWORDLONG, DWORD>();
 
-    SetMethodAttribs->Add(CastHandle(ftn), (DWORD)attribs);
+    int index = SetMethodAttribs->GetIndex(CastHandle(ftn));
+    if (index == -1)
+    {
+        SetMethodAttribs->Add(CastHandle(ftn), (DWORD)attribs);
+    }
+    else
+    {
+        DWORD existingAttribs = SetMethodAttribs->GetItem(index);
+        SetMethodAttribs->Update(index, existingAttribs | (DWORD)attribs);
+    }
 }
 void CompileResult::dmpSetMethodAttribs(DWORDLONG key, DWORD value)
 {
@@ -584,9 +593,14 @@ void CompileResult::dmpSetMethodAttribs(DWORDLONG key, DWORD value)
 }
 CorInfoMethodRuntimeFlags CompileResult::repSetMethodAttribs(CORINFO_METHOD_HANDLE ftn)
 {
-    if ((SetMethodAttribs == nullptr) || (SetMethodAttribs->GetIndex(CastHandle(ftn)) == -1))
+    if (SetMethodAttribs == nullptr)
         return (CorInfoMethodRuntimeFlags)0;
-    CorInfoMethodRuntimeFlags result = (CorInfoMethodRuntimeFlags)SetMethodAttribs->Get(CastHandle(ftn));
+
+    int index = SetMethodAttribs->GetIndex(CastHandle(ftn));
+    if (index == -1)
+        return (CorInfoMethodRuntimeFlags)0;
+
+    CorInfoMethodRuntimeFlags result = (CorInfoMethodRuntimeFlags)SetMethodAttribs->GetItem(index);
     return result;
 }
 
@@ -645,9 +659,9 @@ void CompileResult::dmpReportFatalError(DWORD key, DWORD value)
     printf("ReportFatalError key Count-%u, value result-%08X", key, value);
 }
 
-void CompileResult::recRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
+void CompileResult::recRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta)
 {
-    repRecordRelocation(location, target, fRelocType, slotNum, addlDelta);
+    repRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
 const char* relocationTypeToString(uint16_t fRelocType)
@@ -679,11 +693,11 @@ const char* relocationTypeToString(uint16_t fRelocType)
 }
 void CompileResult::dmpRecordRelocation(DWORD key, const Agnostic_RecordRelocation& value)
 {
-    printf("RecordRelocation key %u, value loc-%016" PRIX64 " tgt-%016" PRIX64 " fRelocType-%u(%s) slotNum-%u addlDelta:%d", key,
+    printf("RecordRelocation key %u, value loc-%016" PRIX64 " tgt-%016" PRIX64 " fRelocType-%u(%s) addlDelta:%d", key,
            value.location, value.target, value.fRelocType, relocationTypeToString((uint16_t)value.fRelocType),
-           value.slotNum, (int32_t)value.addlDelta);
+           (int32_t)value.addlDelta);
 }
-void CompileResult::repRecordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
+void CompileResult::repRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta)
 {
     if (RecordRelocation == nullptr)
         RecordRelocation = new DenseLightWeightMap<Agnostic_RecordRelocation>();
@@ -693,10 +707,7 @@ void CompileResult::repRecordRelocation(void* location, void* target, uint16_t f
     value.location   = CastPointer(location);
     value.target     = CastPointer(target);
     value.fRelocType = (DWORD)fRelocType;
-    value.slotNum    = (DWORD)slotNum;
     value.addlDelta  = (DWORD)addlDelta;
-
-    Assert(value.slotNum == 0);
 
     RecordRelocation->Append(value);
 }
@@ -872,7 +883,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
         {
             if (relocType == IMAGE_REL_BASED_DIR64)
             {
-                DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
+                DWORDLONG fixupLocation = tmp.location;
 
                 // Write 64-bits into location
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
@@ -893,7 +904,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
         // Now do all-platform relocations.
         if (tmp.fRelocType == IMAGE_REL_BASED_REL32)
         {
-            DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
+            DWORDLONG fixupLocation = tmp.location;
 
             size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
             if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
@@ -924,23 +935,6 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         {
                             DWORDLONG key   = tmp.target;
                             int       index = rc->mc->GetRelocTypeHint->GetIndex(key);
-                            if (index == -1)
-                            {
-                                // See if the original address is in the replay address map. This happens for
-                                // relocations on static field addresses found via getFieldInfo().
-                                void* origAddr = repAddressMap((void*)tmp.target);
-                                if ((origAddr != (void*)-1) && (origAddr != nullptr))
-                                {
-                                    key   = CastPointer(origAddr);
-                                    index = rc->mc->GetRelocTypeHint->GetIndex(key);
-                                    if (index != -1)
-                                    {
-                                        LogDebug("    Using address map: target %016" PRIX64 ", original target %016" PRIX64,
-                                            tmp.target, key);
-                                    }
-                                }
-                            }
-
                             if (index != -1)
                             {
                                 WORD retVal = (WORD)rc->mc->GetRelocTypeHint->Get(key);
@@ -1120,52 +1114,6 @@ const char* CompileResult::repProcessName()
         return (const char*)ProcessName->GetBuffer(ProcessName->Get((DWORD)0));
     }
     return nullptr;
-}
-
-void CompileResult::recAddressMap(void* originalAddress, void* replayAddress, unsigned int size)
-{
-    if (AddressMap == nullptr)
-        AddressMap = new LightWeightMap<DWORDLONG, Agnostic_AddressMap>();
-
-    Agnostic_AddressMap value;
-
-    value.Address = CastPointer(originalAddress);
-    value.size    = (DWORD)size;
-
-    AddressMap->Add(CastPointer(replayAddress), value);
-}
-void CompileResult::dmpAddressMap(DWORDLONG key, const Agnostic_AddressMap& value)
-{
-    printf("AddressMap key %016" PRIX64 ", value addr-%016" PRIX64 ", size-%u", key, value.Address, value.size);
-}
-void* CompileResult::repAddressMap(void* replayAddress)
-{
-    if (AddressMap == nullptr)
-        return nullptr;
-
-    int index = AddressMap->GetIndex(CastPointer(replayAddress));
-
-    if (index != -1)
-    {
-        Agnostic_AddressMap value;
-        value = AddressMap->Get(CastPointer(replayAddress));
-        return (void*)value.Address;
-    }
-
-    return nullptr;
-}
-void* CompileResult::searchAddressMap(void* newAddress)
-{
-    if (AddressMap == nullptr)
-        return (void*)-1;
-    for (unsigned int i = 0; i < AddressMap->GetCount(); i++)
-    {
-        DWORDLONG           replayAddress = AddressMap->GetRawKeys()[i];
-        Agnostic_AddressMap value         = AddressMap->Get(replayAddress);
-        if ((replayAddress <= CastPointer(newAddress)) && (CastPointer(newAddress) < (replayAddress + value.size)))
-            return (void*)(value.Address + (CastPointer(newAddress) - replayAddress));
-    }
-    return (void*)-1;
 }
 
 void CompileResult::recReserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)

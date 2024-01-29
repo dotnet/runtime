@@ -6,8 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using Internal.Runtime.Augments;
 using Internal.Metadata.NativeFormat;
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -103,93 +103,6 @@ namespace Internal.Runtime.TypeLoader
             for (int moduleIndex = 0; moduleIndex < Modules.Length; moduleIndex++)
             {
                 HandleToModuleIndex.Add(Modules[moduleIndex].Handle, moduleIndex);
-            }
-        }
-    }
-
-    /// <summary>
-    /// This enumerator iterates the module map, possibly adjusting the order to make a given
-    /// module go first in the enumeration.
-    /// </summary>
-    public struct ModuleInfoEnumerator
-    {
-        /// <summary>
-        /// Array of modules to enumerate.
-        /// </summary>
-        private readonly ModuleInfo[] _modules;
-
-        /// <summary>
-        /// Preferred module index in the array, -1 when none (in such case the array is enumerated
-        /// in its natural order).
-        /// </summary>
-        private int _preferredIndex;
-
-        /// <summary>
-        /// Enumeration step index initially set to -1 (so that the first MoveNext increments it to 0).
-        /// </summary>
-        private int _iterationIndex;
-
-        /// <summary>
-        /// Current _modules element that should be returned by Current (updated in MoveNext).
-        /// </summary>
-        private ModuleInfo _currentModule;
-
-        /// <summary>
-        /// Initialize the module enumerator state machine and locate the preferred module index.
-        /// </summary>
-        /// <param name="moduleMap">Module map to enumerate</param>
-        /// <param name="preferredModuleHandle">Optional module handle to enumerate first</param>
-        internal ModuleInfoEnumerator(ModuleMap moduleMap, TypeManagerHandle preferredModuleHandle)
-        {
-            _modules = moduleMap.Modules;
-            _preferredIndex = -1;
-            _iterationIndex = -1;
-            _currentModule = null;
-
-            if (!preferredModuleHandle.IsNull &&
-                !moduleMap.HandleToModuleIndex.TryGetValue(preferredModuleHandle, out _preferredIndex))
-            {
-                Environment.FailFast("Invalid module requested in enumeration: " + preferredModuleHandle.LowLevelToString());
-            }
-        }
-
-        /// <summary>
-        /// Move the enumerator state machine to the next element in the module map.
-        /// </summary>
-        /// <returns>true when [another] module is available, false when the enumeration is finished</returns>
-        public bool MoveNext()
-        {
-            if (_iterationIndex + 1 >= _modules.Length)
-            {
-                _currentModule = null;
-                return false;
-            }
-
-            _iterationIndex++;
-            int moduleIndex = _iterationIndex;
-            if (moduleIndex <= _preferredIndex)
-            {
-                // Transform the index so that the _preferredIndex is returned in first iteration
-                moduleIndex = (moduleIndex == 0 ? _preferredIndex : moduleIndex - 1);
-            }
-
-            _currentModule = _modules[moduleIndex];
-
-            return true;
-        }
-
-        /// <summary>
-        /// Look up the "current" module corresponding to the previous call to MoveNext.
-        /// </summary>
-        public ModuleInfo Current
-        {
-            get
-            {
-                if (_currentModule == null)
-                {
-                    Environment.FailFast("Current module queried in wrong enumerator state");
-                }
-                return _currentModule;
             }
         }
     }

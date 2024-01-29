@@ -1,19 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
-using System.Text;
-using System.Xml;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using ResourceHashesByNameDictionary = System.Collections.Generic.Dictionary<string, string>;
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
@@ -24,6 +15,9 @@ public class ConvertDllsToWebCil : Task
 
     [Required]
     public string OutputPath { get; set; }
+
+    [Required]
+    public string IntermediateOutputPath { get; set; }
 
     [Required]
     public bool IsEnabled { get; set; }
@@ -46,52 +40,66 @@ public class ConvertDllsToWebCil : Task
             return true;
         }
 
+        if (!Directory.Exists(OutputPath))
+            Directory.CreateDirectory(OutputPath);
+
+        string tmpDir = IntermediateOutputPath;
+        if (!Directory.Exists(tmpDir))
+            Directory.CreateDirectory(tmpDir);
+
         for (int i = 0; i < Candidates.Length; i++)
         {
             var candidate = Candidates[i];
-
             var extension = candidate.GetMetadata("Extension");
-            var filePath = candidate.ItemSpec;
 
-            if (!Directory.Exists(OutputPath))
-                Directory.CreateDirectory(OutputPath);
-
-            if (extension == ".dll")
+            if (extension != ".dll")
             {
-                var tmpWebcil = Path.GetTempFileName();
-                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: filePath, outputPath: tmpWebcil, logger: Log);
+                webCilCandidates.Add(candidate);
+                continue;
+            }
+
+            var dllFilePath = candidate.ItemSpec;
+            var webcilFileName = Path.GetFileNameWithoutExtension(dllFilePath) + Utils.WebcilInWasmExtension;
+            string candidatePath = candidate.GetMetadata("AssetTraitName") == "Culture"
+                ? Path.Combine(OutputPath, candidate.GetMetadata("AssetTraitValue"))
+                : OutputPath;
+
+            string finalWebcil = Path.Combine(candidatePath, webcilFileName);
+
+            if (Utils.IsNewerThan(dllFilePath, finalWebcil))
+            {
+                var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
+                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: Log);
                 webcilWriter.ConvertToWebcil();
 
-                string candicatePath = Path.Combine(OutputPath, candidate.GetMetadata("Culture"));
-                if (!Directory.Exists(candicatePath))
-                    Directory.CreateDirectory(candicatePath);
+                if (!Directory.Exists(candidatePath))
+                    Directory.CreateDirectory(candidatePath);
 
-                var finalWebcil = Path.Combine(candicatePath, Path.GetFileNameWithoutExtension(filePath) + Utils.WebcilInWasmExtension);
                 if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
-
-                _fileWrites.Add(finalWebcil);
-
-                var webcilItem = new TaskItem(finalWebcil, candidate.CloneCustomMetadata());
-                webcilItem.SetMetadata("RelativePath", Path.ChangeExtension(candidate.GetMetadata("RelativePath"), Utils.WebcilInWasmExtension));
-                webcilItem.SetMetadata("OriginalItemSpec", finalWebcil);
-
-                if (webcilItem.GetMetadata("AssetTraitName") == "Culture")
-                {
-                    string relatedAsset = webcilItem.GetMetadata("RelatedAsset");
-                    relatedAsset = Path.ChangeExtension(relatedAsset, Utils.WebcilInWasmExtension);
-                    webcilItem.SetMetadata("RelatedAsset", relatedAsset);
-                    Log.LogMessage(MessageImportance.Low, $"Changing related asset of {webcilItem} to {relatedAsset}.");
-                }
-
-                webCilCandidates.Add(webcilItem);
             }
             else
             {
-                webCilCandidates.Add(candidate);
+                Log.LogMessage(MessageImportance.Low, $"Skipping {dllFilePath} as it is older than the output file {finalWebcil}");
             }
+
+            _fileWrites.Add(finalWebcil);
+
+            var webcilItem = new TaskItem(finalWebcil, candidate.CloneCustomMetadata());
+            webcilItem.SetMetadata("RelativePath", Path.ChangeExtension(candidate.GetMetadata("RelativePath"), Utils.WebcilInWasmExtension));
+            webcilItem.SetMetadata("OriginalItemSpec", finalWebcil);
+
+            if (webcilItem.GetMetadata("AssetTraitName") == "Culture")
+            {
+                string relatedAsset = webcilItem.GetMetadata("RelatedAsset");
+                relatedAsset = Path.ChangeExtension(relatedAsset, Utils.WebcilInWasmExtension);
+                webcilItem.SetMetadata("RelatedAsset", relatedAsset);
+                Log.LogMessage(MessageImportance.Low, $"Changing related asset of {webcilItem} to {relatedAsset}.");
+            }
+
+            webCilCandidates.Add(webcilItem);
         }
 
         WebCilCandidates = webCilCandidates.ToArray();

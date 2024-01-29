@@ -65,6 +65,15 @@ namespace System.Xml.Serialization
         }
         internal TypeAttributes TypeAttributes { get { return _typeAttributes; } }
 
+        private static readonly string[] s_typeString = new string[] { "type" };
+        private static readonly string[] s_xmlReaderString = new string[] { "xmlReader" };
+        private static readonly string[] s_objectToSerializeWriterString = new string[] { "objectToSerialize", "writer" };
+        private static readonly string[] s_readerString = new string[] { "reader" };
+        private static readonly Type[] s_typeType = new Type[] { typeof(Type) };
+        private static readonly Type[] s_xmlReaderType = new Type[] { typeof(XmlReader) };
+        private static readonly Type[] s_objectXmlSerializationWriterType = new Type[] { typeof(object), typeof(XmlSerializationWriter) };
+        private static readonly Type[] s_xmlSerializationReaderType = new Type[] { typeof(XmlSerializationReader) };
+
         internal MethodBuilder EnsureMethodBuilder(TypeBuilder typeBuilder, string methodName,
             MethodAttributes attributes, Type? returnType, Type[] parameterTypes)
         {
@@ -228,8 +237,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(bool),
                 "CanSerialize",
-                new Type[] { typeof(Type) },
-                new string[] { "type" },
+                s_typeType,
+                s_typeString,
                 CodeGenerator.PublicOverrideMethodAttributes);
             var uniqueTypes = new HashSet<Type>();
             for (int i = 0; i < types.Length; i++)
@@ -323,8 +332,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(bool),
                 "CanDeserialize",
-                new Type[] { typeof(XmlReader) },
-                new string[] { "xmlReader" },
+                s_xmlReaderType,
+                s_xmlReaderString,
                 CodeGenerator.PublicOverrideMethodAttributes
             );
 
@@ -358,8 +367,8 @@ namespace System.Xml.Serialization
                 ilg.BeginMethod(
                     typeof(void),
                     "Serialize",
-                    new Type[] { typeof(object), typeof(XmlSerializationWriter) },
-                    new string[] { "objectToSerialize", "writer" },
+                    s_objectXmlSerializationWriterType,
+                    s_objectToSerializeWriterString,
                     CodeGenerator.ProtectedOverrideMethodAttributes);
                 MethodInfo writerType_writeMethod = CreatedTypes[writerClass].GetMethod(
                     writeMethod,
@@ -382,8 +391,8 @@ namespace System.Xml.Serialization
                 ilg.BeginMethod(
                     typeof(object),
                     "Deserialize",
-                    new Type[] { typeof(XmlSerializationReader) },
-                    new string[] { "reader" },
+                    s_xmlSerializationReaderType,
+                    s_readerString,
                     CodeGenerator.ProtectedOverrideMethodAttributes);
                 MethodInfo readerType_readMethod = CreatedTypes[readerClass].GetMethod(
                     readMethod,
@@ -436,8 +445,8 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(XmlSerializer),
                 "GetSerializer",
-                new Type[] { typeof(Type) },
-                new string[] { "type" },
+                s_typeType,
+                s_typeString,
                 CodeGenerator.PublicOverrideMethodAttributes);
 
             for (int i = 0; i < xmlMappings.Length; i++)

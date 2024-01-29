@@ -8,20 +8,25 @@
     <IsRoslynComponent>true</IsRoslynComponent>
     <!-- Disable RS2008: Enable analyzer release tracking
          Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
-    <NoWarn>RS2008;$(NoWarn)</NoWarn>
+    <NoWarn>RS2008;RS1038;$(NoWarn)</NoWarn>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_COMINTERFACEGENERATOR</DefineConstants>
+    <StringResourcesPath>../Common/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    <None Include="$(AssemblyName).props" Pack="true" PackagePath="build" />
-    <Compile Include="..\Common\DefaultMarshallingInfoParser.cs" Link="Common\DefaultMarshallingInfoParser.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System\Runtime\InteropServices\Marshalling\ComInterfaceOptions.cs" Link="Production\ComInterfaceOptions.cs" />
     <Compile Include="..\..\tests\Common\ExceptionMarshalling.cs" Link="Common\ExceptionMarshalling.cs" />
+    <Compile Include="$(CommonPath)\Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
+    <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="..\Common\OperationExtensions.cs" Link="Common\OperationExtensions.cs" />
+    <Compile Include="..\Common\ConvertToSourceGeneratedInteropFixer.cs" Link="Common\ConvertToSourceGeneratedInteropFixer.cs" />
+    <Compile Include="..\Common\FixAllContextExtensions.cs" Link="Common\FixAllContextExtensions.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Index.cs" Link="Common\System\Index.cs" />
   </ItemGroup>
 
   <ItemGroup>

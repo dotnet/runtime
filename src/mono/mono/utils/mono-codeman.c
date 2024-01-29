@@ -84,18 +84,18 @@ struct _CodeChunk {
 	CodeChunk *next;
 	int pos;
 	int size;
-	unsigned int reserved: 8;
+	gint reserved: 8;
 	/* this number of bytes is available to resolve addresses far in memory */
-	unsigned int bsize: 24;
+	gint bsize: 24;
 };
 
 struct _MonoCodeManager {
 	CodeChunk *current;
 	CodeChunk *full;
 	CodeChunk *last;
-	int dynamic : 1;
-	int read_only : 1;
-	int no_exec : 1;
+	guint dynamic : 1;
+	guint read_only : 1;
+	guint no_exec : 1;
 };
 
 #define ALIGN_INT(val,alignment) (((val) + (alignment - 1)) & ~(alignment - 1))

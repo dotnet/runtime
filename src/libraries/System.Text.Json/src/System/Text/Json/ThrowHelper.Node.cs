@@ -44,6 +44,18 @@ namespace System.Text.Json
             throw GetNotSupportedException_CollectionIsReadOnly();
         }
 
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_NodeWrongType(string typeName)
+        {
+            throw new InvalidOperationException(SR.Format(SR.NodeWrongType, typeName));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_NodeParentWrongType(string typeName)
+        {
+            throw new InvalidOperationException(SR.Format(SR.NodeParentWrongType, typeName));
+        }
+
         public static NotSupportedException GetNotSupportedException_CollectionIsReadOnly()
         {
             return new NotSupportedException(SR.CollectionIsReadOnly);

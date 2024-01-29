@@ -1,15 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: A wrapper class for the primitive type float.
-**
-**
-===========================================================*/
-
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -21,6 +12,9 @@ using System.Runtime.Versioning;
 
 namespace System
 {
+    /// <summary>
+    /// Represents a single-precision floating-point number.
+    /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -32,7 +26,8 @@ namespace System
           IEquatable<float>,
           IBinaryFloatingPointIeee754<float>,
           IMinMaxValue<float>,
-          IUtf8SpanFormattable
+          IUtf8SpanFormattable,
+          IBinaryFloatParseAndFormatInfo<float>
     {
         private readonly float m_value; // Do not rename (binary serialization)
 
@@ -106,6 +101,12 @@ namespace System
 
         internal const uint MinTrailingSignificand = 0x0000_0000;
         internal const uint MaxTrailingSignificand = 0x007F_FFFF;
+
+        internal const int TrailingSignificandLength = 23;
+        internal const int SignificandLength = TrailingSignificandLength + 1;
+
+        internal const int PositiveInfinityBits = 0x7F80_0000;
+        internal const int SmallestNormalBits = 0x0080_0000;
 
         internal byte BiasedExponent
         {
@@ -195,7 +196,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsNegativeInfinity(float f)
         {
-            return f == float.NegativeInfinity;
+            return f == NegativeInfinity;
         }
 
         /// <summary>Determines whether the specified value is normal.</summary>
@@ -213,7 +214,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsPositiveInfinity(float f)
         {
-            return f == float.PositiveInfinity;
+            return f == PositiveInfinity;
         }
 
         /// <summary>Determines whether the specified value is subnormal.</summary>
@@ -372,53 +373,36 @@ namespace System
         // PositiveInfinity or NegativeInfinity for a number that is too
         // large or too small.
         //
-        public static float Parse(string s)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
-        }
+        public static float Parse(string s) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null);
 
-        public static float Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static float Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        public static float Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
-        }
+        public static float Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
 
         public static float Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static float Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.ParseSingle(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseFloat<char, float>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out float result)
-        {
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
+        public static bool TryParse([NotNullWhen(true)] string? s, out float result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
-            return TryParse((ReadOnlySpan<char>)s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out float result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
-        public static bool TryParse(ReadOnlySpan<char> s, out float result)
-        {
-            return TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
-        }
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its single-precision floating-point number equivalent.</summary>
+        /// <param name="utf8Text">A read-only UTF-8 character span that contains the number to convert.</param>
+        /// <param name="result">When this method returns, contains a single-precision floating-point number equivalent of the numeric value or symbol contained in <paramref name="utf8Text" /> if the conversion succeeded or zero if the conversion failed. The conversion fails if the <paramref name="utf8Text" /> is <see cref="ReadOnlySpan{T}.Empty" /> or is not in a valid format. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out float result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out float result)
         {
@@ -429,19 +413,13 @@ namespace System
                 result = 0;
                 return false;
             }
-
-            return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
-        }
-
-        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out float result)
-        {
-            return Number.TryParseSingle(s, style, info, out result);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         //
@@ -554,15 +532,32 @@ namespace System
         {
             uint bits = BitConverter.SingleToUInt32Bits(value);
 
+            if ((int)bits <= 0)
+            {
+                // Zero and negative values cannot be powers of 2
+                return false;
+            }
+
             byte biasedExponent = ExtractBiasedExponentFromBits(bits);
             uint trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
-            return (value > 0)
-                && (biasedExponent != MinBiasedExponent) && (biasedExponent != MaxBiasedExponent)
-                && (trailingSignificand == MinTrailingSignificand);
+            if (biasedExponent == MinBiasedExponent)
+            {
+                // Subnormal values have 1 bit set when they're powers of 2
+                return uint.PopCount(trailingSignificand) == 1;
+            }
+            else if (biasedExponent == MaxBiasedExponent)
+            {
+                // NaN and Infinite values cannot be powers of 2
+                return false;
+            }
+
+            // Normal values have 0 bits set when they're powers of 2
+            return trailingSignificand == MinTrailingSignificand;
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
         public static float Log2(float value) => MathF.Log2(value);
 
         //
@@ -616,6 +611,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
+        [Intrinsic]
         public static float Exp(float x) => MathF.Exp(x);
 
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
@@ -638,12 +634,15 @@ namespace System
         //
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        [Intrinsic]
         public static float Ceiling(float x) => MathF.Ceiling(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        [Intrinsic]
         public static float Floor(float x) => MathF.Floor(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        [Intrinsic]
         public static float Round(float x) => MathF.Round(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
@@ -656,6 +655,7 @@ namespace System
         public static float Round(float x, int digits, MidpointRounding mode) => MathF.Round(x, digits, mode);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        [Intrinsic]
         public static float Truncate(float x) => MathF.Truncate(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
@@ -799,6 +799,7 @@ namespace System
         static float IFloatingPointIeee754<float>.PositiveInfinity => PositiveInfinity;
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        [Intrinsic]
         public static float Atan2(float y, float x) => MathF.Atan2(y, x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
@@ -811,6 +812,7 @@ namespace System
         public static float BitIncrement(float x) => MathF.BitIncrement(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
         public static float FusedMultiplyAdd(float left, float right, float addend) => MathF.FusedMultiplyAdd(left, right, addend);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
@@ -839,21 +841,27 @@ namespace System
         //
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        [Intrinsic]
         public static float Acosh(float x) => MathF.Acosh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        [Intrinsic]
         public static float Asinh(float x) => MathF.Asinh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        [Intrinsic]
         public static float Atanh(float x) => MathF.Atanh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        [Intrinsic]
         public static float Cosh(float x) => MathF.Cosh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        [Intrinsic]
         public static float Sinh(float x) => MathF.Sinh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        [Intrinsic]
         public static float Tanh(float x) => MathF.Tanh(x);
 
         //
@@ -868,6 +876,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        [Intrinsic]
         public static float Log(float x) => MathF.Log(x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
@@ -877,6 +886,7 @@ namespace System
         public static float LogP1(float x) => MathF.Log(x + 1);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        [Intrinsic]
         public static float Log10(float x) => MathF.Log10(x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
@@ -927,9 +937,11 @@ namespace System
         public static float CopySign(float value, float sign) => MathF.CopySign(value, sign);
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        [Intrinsic]
         public static float Max(float x, float y) => MathF.Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MaxNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `maximumNumber` function
@@ -952,9 +964,11 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        [Intrinsic]
         public static float Min(float x, float y) => MathF.Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MinNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `minimumNumber` function
@@ -993,6 +1007,7 @@ namespace System
         static float INumberBase<float>.Zero => Zero;
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        [Intrinsic]
         public static float Abs(float value) => MathF.Abs(value);
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
@@ -1088,9 +1103,11 @@ namespace System
         static bool INumberBase<float>.IsZero(float value) => (value == 0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MaxMagnitude(float x, float y) => MathF.MaxMagnitude(x, y);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MaxMagnitudeNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
@@ -1116,9 +1133,11 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MinMagnitude(float x, float y) => MathF.MinMagnitude(x, y);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MinMagnitudeNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
@@ -1147,21 +1166,21 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertFromChecked<TOther>(TOther value, out float result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertFromSaturating<TOther>(TOther value, out float result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertFromTruncating<TOther>(TOther value, out float result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         private static bool TryConvertFrom<TOther>(TOther value, out float result)
@@ -1303,14 +1322,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertToSaturating<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<float>.TryConvertToTruncating<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         private static bool TryConvertTo<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
@@ -1409,6 +1428,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        [Intrinsic]
         public static float Pow(float x, float y) => MathF.Pow(x, y);
 
         //
@@ -1416,6 +1436,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        [Intrinsic]
         public static float Cbrt(float x) => MathF.Cbrt(x);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
@@ -1596,6 +1617,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        [Intrinsic]
         public static float Sqrt(float x) => MathF.Sqrt(x);
 
         //
@@ -1627,6 +1649,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        [Intrinsic]
         public static float Acos(float x) => MathF.Acos(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
@@ -1636,6 +1659,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        [Intrinsic]
         public static float Asin(float x) => MathF.Asin(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
@@ -1645,6 +1669,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        [Intrinsic]
         public static float Atan(float x) => MathF.Atan(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
@@ -1654,6 +1679,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        [Intrinsic]
         public static float Cos(float x) => MathF.Cos(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
@@ -1745,7 +1771,26 @@ namespace System
             return result;
         }
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static float DegreesToRadians(float degrees)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (degrees * Pi) / 180.0f;
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static float RadiansToDegrees(float radians)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (radians * 180.0f) / Pi;
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        [Intrinsic]
         public static float Sin(float x) => MathF.Sin(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
@@ -1953,6 +1998,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        [Intrinsic]
         public static float Tan(float x) => MathF.Tan(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
@@ -2058,6 +2104,70 @@ namespace System
         static float IUnaryPlusOperators<float, float>.operator +(float value) => (float)(+value);
 
         //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static float Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseFloat<byte, float>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out float result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static float Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out float result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
+
+        //
+        // IBinaryFloatParseAndFormatInfo
+        //
+
+        static int IBinaryFloatParseAndFormatInfo<float>.NumberBufferLength => Number.SingleNumberBufferLength;
+
+        static ulong IBinaryFloatParseAndFormatInfo<float>.ZeroBits => 0;
+        static ulong IBinaryFloatParseAndFormatInfo<float>.InfinityBits => 0x7F800000;
+
+        static ulong IBinaryFloatParseAndFormatInfo<float>.NormalMantissaMask => (1UL << SignificandLength) - 1;
+        static ulong IBinaryFloatParseAndFormatInfo<float>.DenormalMantissaMask => TrailingSignificandMask;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MinBinaryExponent => 1 - MaxExponent;
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxBinaryExponent => MaxExponent;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MinDecimalExponent => -45;
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxDecimalExponent => 39;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.ExponentBias => ExponentBias;
+        static ushort IBinaryFloatParseAndFormatInfo<float>.ExponentBits => 8;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.OverflowDecimalExponent => (MaxExponent + (2 * SignificandLength)) / 3;
+        static int IBinaryFloatParseAndFormatInfo<float>.InfinityExponent => 0xFF;
+
+        static ushort IBinaryFloatParseAndFormatInfo<float>.NormalMantissaBits => SignificandLength;
+        static ushort IBinaryFloatParseAndFormatInfo<float>.DenormalMantissaBits => TrailingSignificandLength;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MinFastFloatDecimalExponent => -65;
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxFastFloatDecimalExponent => 38;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MinExponentRoundToEven => -17;
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxExponentRoundToEven => 10;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxExponentFastPath => 10;
+        static ulong IBinaryFloatParseAndFormatInfo<float>.MaxMantissaFastPath => 2UL << TrailingSignificandLength;
+
+        static float IBinaryFloatParseAndFormatInfo<float>.BitsToFloat(ulong bits) => BitConverter.UInt32BitsToSingle((uint)(bits));
+
+        static ulong IBinaryFloatParseAndFormatInfo<float>.FloatToBits(float value) => BitConverter.SingleToUInt32Bits(value);
+
+        //
         // Helpers
         //
 
@@ -2133,7 +2243,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float TanForIntervalPiBy4(float  x, bool isReciprocal)
+        private static float TanForIntervalPiBy4(float x, bool isReciprocal)
         {
             // This code is based on `tan_piby4` from amd/aocl-libm-ose
             // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.

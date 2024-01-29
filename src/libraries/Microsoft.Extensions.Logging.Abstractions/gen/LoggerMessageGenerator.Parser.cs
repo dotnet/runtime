@@ -103,6 +103,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             IMethodSymbol logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken)!;
                             Debug.Assert(logMethodSymbol != null, "log method is present.");
                             (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = (-1, null, string.Empty, null, false);
+                            bool suppliedEventId = false;
 
                             foreach (AttributeListSyntax mal in method.AttributeLists)
                             {
@@ -144,11 +145,45 @@ namespace Microsoft.Extensions.Logging.Generators
                                             }
 
                                             ImmutableArray<TypedConstant> items = attributeData.ConstructorArguments;
-                                            Debug.Assert(items.Length == 3);
 
-                                            eventId = items[0].IsNull ? -1 : (int)GetItem(items[0]);
-                                            level = items[1].IsNull ? null : (int?)GetItem(items[1]);
-                                            message = items[2].IsNull ? string.Empty : (string)GetItem(items[2]);
+                                            switch (items.Length)
+                                            {
+                                                case 1:
+                                                    // LoggerMessageAttribute(LogLevel level)
+                                                    // LoggerMessageAttribute(string message)
+                                                    if (items[0].Type.SpecialType == SpecialType.System_String)
+                                                    {
+                                                        message = (string)GetItem(items[0]);
+                                                        level = null;
+                                                    }
+                                                    else
+                                                    {
+                                                        message = string.Empty;
+                                                        level = items[0].IsNull ? null : (int?)GetItem(items[0]);
+                                                    }
+                                                    break;
+
+                                                case 2:
+                                                    // LoggerMessageAttribute(LogLevel level, string message)
+                                                    level = items[0].IsNull ? null : (int?)GetItem(items[0]);
+                                                    message = items[1].IsNull ? string.Empty : (string)GetItem(items[1]);
+                                                    break;
+
+                                                case 3:
+                                                    // LoggerMessageAttribute(int eventId, LogLevel level, string message)
+                                                    if (!items[0].IsNull)
+                                                    {
+                                                        suppliedEventId = true;
+                                                        eventId = (int)GetItem(items[0]);
+                                                    }
+                                                    level = items[1].IsNull ? null : (int?)GetItem(items[1]);
+                                                    message = items[2].IsNull ? string.Empty : (string)GetItem(items[2]);
+                                                    break;
+
+                                                default:
+                                                    Debug.Assert(false, "Unexpected number of arguments in attribute constructor.");
+                                                    break;
+                                            }
                                         }
 
                                         // argument syntax takes parameters. e.g. EventId = 0
@@ -170,6 +205,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                     {
                                                         case "EventId":
                                                             eventId = (int)GetItem(value);
+                                                            suppliedEventId = true;
                                                             break;
                                                         case "Level":
                                                             level = value.IsNull ? null : (int?)GetItem(value);
@@ -193,6 +229,11 @@ namespace Microsoft.Extensions.Logging.Generators
                                     {
                                         // skip further generator execution and let compiler generate the errors
                                         break;
+                                    }
+
+                                    if (!suppliedEventId)
+                                    {
+                                        eventId = GetNonRandomizedHashCode(string.IsNullOrWhiteSpace(eventName) ? logMethodSymbol.Name : eventName);
                                     }
 
                                     var lm = new LoggerMethod
@@ -266,7 +307,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                     }
 
                                     // ensure there are no duplicate event ids.
-                                    if (!eventIds.Add(lm.EventId))
+                                    // We don't check Id duplication for the auto-generated event id.
+                                    if (suppliedEventId && !eventIds.Add(lm.EventId))
                                     {
                                         Diag(DiagnosticDescriptors.ShouldntReuseEventIds, ma.GetLocation(), lm.EventId, classDec.Identifier.Text);
                                     }
@@ -549,6 +591,13 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                 }
 
+                if (results.Count > 0 && _compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
+                {
+                    // we only support C# 8.0 and above
+                    Diag(DiagnosticDescriptors.LoggingUnsupportedLanguageVersion, null, version.ToDisplayString(), LanguageVersion.CSharp8.ToDisplayString());
+                    return Array.Empty<LoggerClass>();
+                }
+
                 return results;
             }
 
@@ -605,7 +654,7 @@ namespace Microsoft.Extensions.Logging.Generators
             /// Finds the template arguments contained in the message string.
             /// </summary>
             /// <returns>A value indicating whether the extraction was successful.</returns>
-            private static bool ExtractTemplates(string? message, IDictionary<string, string> templateMap, List<string> templateList)
+            private static bool ExtractTemplates(string? message, Dictionary<string, string> templateMap, List<string> templateList)
             {
                 if (string.IsNullOrEmpty(message))
                 {
@@ -773,6 +822,20 @@ namespace Microsoft.Extensions.Logging.Generators
             // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
             // but instead is supposed to be taken as a parameter for the template.
             public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
+        }
+
+        /// <summary>
+        /// Returns a non-randomized hash code for the given string.
+        /// We always return a positive value.
+        /// </summary>
+        internal static int GetNonRandomizedHashCode(string s)
+        {
+            uint result = 2166136261u;
+            foreach (char c in s)
+            {
+                result = (c ^ result) * 16777619;
+            }
+            return Math.Abs((int)result);
         }
     }
 }

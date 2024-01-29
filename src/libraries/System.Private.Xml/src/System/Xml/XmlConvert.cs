@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Globalization;
-using System.Xml.Schema;
-using System.Diagnostics;
 using System.Collections;
-using System.Text.RegularExpressions;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -33,7 +33,7 @@ namespace System.Xml
     /// </devdoc>
     public partial class XmlConvert
     {
-        internal static char[] crt = new char[] { '\n', '\r', '\t' };
+        private const string Crt = "\t\n\r";
 
         /// <devdoc>
         ///    <para>
@@ -408,7 +408,7 @@ namespace System.Xml
 
             if (token.StartsWith(' ') ||
                 token.EndsWith(' ') ||
-                token.IndexOfAny(crt) >= 0 ||
+                token.AsSpan().ContainsAny(Crt) ||
                 token.Contains("  "))
             {
                 throw new XmlException(SR.Sch_NotTokenString, token);
@@ -425,7 +425,7 @@ namespace System.Xml
 
             if (token.StartsWith(' ') ||
                 token.EndsWith(' ') ||
-                token.IndexOfAny(crt) >= 0 ||
+                token.AsSpan().ContainsAny(Crt) ||
                 token.Contains("  "))
             {
                 return new XmlException(SR.Sch_NotTokenString, token);
@@ -480,7 +480,7 @@ namespace System.Xml
 
         internal static Exception? TryVerifyNormalizedString(string str)
         {
-            if (str.IndexOfAny(crt) != -1)
+            if (str.AsSpan().ContainsAny(Crt))
             {
                 return new XmlSchemaException(SR.Sch_NotNormalizedString, str);
             }
@@ -1309,7 +1309,7 @@ namespace System.Xml
             {
                 // string.Empty is a valid uri but not "   "
                 s = TrimString(s);
-                if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
+                if (s.Length == 0 || s.Contains("##"))
                 {
                     throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
                 }
@@ -1331,7 +1331,7 @@ namespace System.Xml
             if (s != null && s.Length > 0)
             { //string.Empty is a valid uri but not "   "
                 s = TrimString(s);
-                if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
+                if (s.Length == 0 || s.Contains("##"))
                 {
                     return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
                 }
@@ -1660,7 +1660,7 @@ namespace System.Xml
 
         internal static bool TryFormat(sbyte value, Span<char> destination, out int charsWritten)
         {
-            return value.TryFormat(destination, out  charsWritten, default, CultureInfo.InvariantCulture);
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
         }
 
         internal static bool TryFormat(short value, Span<char> destination, out int charsWritten)

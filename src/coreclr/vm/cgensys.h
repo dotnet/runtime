@@ -22,7 +22,7 @@ class ComPlusCallMethodDesc;
 #include <cgencpu.h>
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 void ResumeAtJit(PT_CONTEXT pContext, LPVOID oldFP);
 #endif
 
@@ -62,10 +62,6 @@ extern "C" void STDCALL ExternalMethodFixupPatchLabel(void);
 
 extern "C" void STDCALL VirtualMethodFixupStub(void);
 extern "C" void STDCALL VirtualMethodFixupPatchLabel(void);
-
-extern "C" void STDCALL TransparentProxyStub(void);
-extern "C" void STDCALL TransparentProxyStub_CrossContext();
-extern "C" void STDCALL TransparentProxyStubPatchLabel(void);
 
 #ifdef FEATURE_READYTORUN
 extern "C" void STDCALL DelayLoad_MethodCall();

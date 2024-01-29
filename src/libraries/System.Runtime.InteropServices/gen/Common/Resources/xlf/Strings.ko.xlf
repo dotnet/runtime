@@ -1,0 +1,1314 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ko" original="../Strings.resx">
+    <body>
+      <trans-unit id="AddGeneratedComClassAddUnsafe">
+        <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</source>
+        <target state="translated">이 유형의 개체를 COM에 전달하고 안전하지 않은 코드를 허용하려면 'GeneratedComClassAttribute'를 추가하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AddGeneratedComClassAttributeDescription">
+        <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
+        <target state="translated">이 유형은 'GeneratedComInterfaceAttribute' 특성이 있는 하나 이상의 유형을 구현합니다. 이 형식을 COM에 전달하고 이 형식의 개체에서 'GeneratedComInterfaceAttribute'가 있는 형식에 대한 COM 인터페이스를 노출하려면 'GeneratedComClassAttribute'를 추가합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AddGeneratedComClassAttributeMessage">
+        <source>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</source>
+        <target state="translated">'{0}' 유형의 개체를 COM에 전달할 수 있도록 'GeneratedComClassAttribute'를 '{0}'에 추가</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AddGeneratedComClassAttributeTitle">
+        <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</source>
+        <target state="translated">이 유형의 개체를 COM에 전달할 수 있도록 'GeneratedComClassAttribute' 추가</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AddMissingCustomTypeMarshallerMembers">
+        <source>Add missing custom type marshaller members</source>
+        <target state="translated">누락된 사용자 지정 형식 마샬러 구성원 추가</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedDescription">
+        <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
+        <target state="translated">예기치 않은 코드 패턴으로 인해 이 인터페이스 또는 메서드에 대한 코드를 생성하는 데 필요한 분석이 실패했습니다. 새 구문 또는 이례적 구문을 사용하는 경우 다른 구문을 사용하는 것이 좋습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedInterfaceMessage">
+        <source>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</source>
+        <target state="translated">'{0}' 인터페이스를 분석하지 못했습니다. ComInterfaceGenerator에서 이 인터페이스에 대한 코드를 생성하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedMethodMessage">
+        <source>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</source>
+        <target state="translated">'{0}' 메서드를 분석하지 못했습니다. ComInterfaceGenerator에서 이 메서드에 대한 코드를 생성하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedTitle">
+        <source>Analysis for COM interface generation has failed.</source>
+        <target state="translated">COM 인터페이스 생성에 대한 분석이 실패했습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ArraySizeMustBeSpecified">
+        <source>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</source>
+        <target state="translated">비관리형에서 관리형으로 배열을 마샬링하려면 'MarshalAsAttribute'에 'SizeParamIndex' 또는 'SizeConst' 필드를 설정하거나 'MarshalUsingAttribute'에 'ConstantElementCount' 또는 'CountElementName' 속성을 설정해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
+        <source>COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</source>
+        <target state="translated">COM 인터페이스 원본을 생성하려면 모든 COM 기본 인터페이스가 유효해야 합니다. 기본 인터페이스의 문제를 수정하여 이 진단을 해결하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BaseInterfaceCannotBeGeneratedMessage">
+        <source>COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</source>
+        <target state="translated">COM 인터페이스 {0}이(가) 오류가 있는 {1}에서 상속됩니다. ComInterfaceGenerator는 {0}에 대한 원본을 생성하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
+        <source>The base COM interface failed to generate source. Code will not be generated for this interface.</source>
+        <target state="translated">베이스 COM 인터페이스에서 소스를 생성하지 못했습니다. 이 인터페이스에 대한 코드가 생성되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
+        <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
+        <target state="translated">기본 인터페이스 형식이 옵션을 지정하지 않았거나, 최소한 동일한 옵션을 지정하지 않은 경우 'GeneratedComInterface'는 'ComInterfaceOptions.ManagedObjectWrapper' 또는 'ComInterfaceOptions.ComObjectWrapper'를 지정할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">지정된 매개 변수를 관리형에서 비관리형으로, 비관리형에서 관리형으로 마샬링해야 하지만 마샬러 유형 '{0}'은(는) 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="translated">마샬러 형식에서 'Span&lt;T&gt;'을 사용하는 'FromManaged' 메서드를 제공하여 '호출자 할당 버퍼로 관리되지 않음' 셰이프를 사용하는 경우 형식은 숫자를 제공하기 위해 정적 'BufferSize' 속성을 제공해야 합니다. 호출자 할당 버퍼의 요소 수</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="translated">마샬러 유형 '{0}'에는 호출자 할당 'Span&lt;{1}&gt;'를 사용하는 FromManaged 메서드가 있으므로 호출자 할당 버퍼의 크기를 지정하려면 정적 읽기 전용 'int' 'BufferSize' 속성이 있어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportDescription">
+        <source>The generated 'DllImportAttribute' will not have a value corresponding to '{0}'.</source>
+        <target state="translated">생성된 'DllImportAttribute'에는 '{0}'에 해당하는 값이 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportMessage">
+        <source>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</source>
+        <target state="translated">'{0}'에는 'DllImportAttribute'에 해당하는 항목이 없으며 전달되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportTitle">
+        <source>Specified 'LibraryImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</source>
+        <target state="translated">지정된 'LibraryImportAttribute' 인수는 'DllImportAttribute'로 전달할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
+        <source>Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</source>
+        <target state="translated">'ComImport' 형식과 소스 생성 COM 형식 간의 캐스팅은 지원되지 않으며 런타임에 실패합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedMessage">
+        <source>Casting between a 'ComImport' type and a source-generated COM type is not supported</source>
+        <target state="translated">'ComImport' 형식과 소스 생성 COM 형식 간 캐스팅은 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedTitle">
+        <source>Casting between a 'ComImport' type and a source-generated COM type is not supported</source>
+        <target state="translated">'ComImport' 형식과 소스 생성 COM 형식 간 캐스팅은 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClassDoesNotImplementAnyGeneratedComInterfacesDescription">
+        <source>A class with 'GeneratedComClassAttribute' must implement at least one interface with 'GeneratedComInterfaceAttribute' or else the generated code with not have an effect.</source>
+        <target state="translated">'GeneratedComClassAttribute'가 있는 클래스는 'GeneratedComInterfaceAttribute'가 있는 하나 이상의 인터페이스를 구현해야 합니다. 그렇지 않으면 생성된 코드가 효과가 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ClassDoesNotImplementAnyGeneratedComInterfacesMessage">
+        <source>Class '{0}' with 'GeneratedComClassAttribute' does not implement any interfaces with 'GeneratedComInterfaceAttribute'. Source will not be generated for '{0}'.</source>
+        <target state="translated">'GeneratedComClassAttribute'가 있는 '{0}' 클래스는 'GeneratedComInterfaceAttribute'가 있는 인터페이스를 구현하지 않습니다. '{0}'에 대해 원본이 생성되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
+        <source>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</source>
+        <target state="translated">컬렉션에 대해 지정된 컬렉션 크기 매개 변수는 정수 형식이어야 합니다. 크기 정보가 중첩된 컬렉션에 적용되는 경우 크기 매개 변수는 정수 요소가 있는 중첩 수준이 한 단계 낮은 컬렉션이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceDescription">
+        <source>.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">'EnableComHosting'을 사용한 .NET COM 호스팅은 기본 제공 COM interop만 지원합니다. 'GeneratedComInterfaceAttribute'와의 소스 생성 COM 상호 운용성을 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceMessage">
+        <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</source>
+        <target state="translated">'EnableComHosting'을 사용한 .NET COM 호스팅은 'GeneratedComInterfaceAttribute'를 사용한 인터페이스를 지원하지 않습니다. 대신 'System.Runtime.InteropServices.ComVisibleAttribute'를 사용하도록 '{0}'에 의해 구현된 모든 COM 노출 인터페이스를 변경합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceTitle">
+        <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</source>
+        <target state="translated">'EnableComHosting'을 사용한 .NET COM 호스팅은 'GeneratedComInterfaceAttribute'를 사용한 인터페이스를 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' 사용법이 권장 사항을 따르지 않습니다. {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' 사용법이 권장 사항을 따르지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
+        <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
+        <target state="translated">관리 정의의 반환 값은 관리되지 않는 COM 메서드를 호출할 때 'out' 매개 변수로 변환됩니다. 반환 값이 관리되지 않는 COM 메서드에서 반환된 HRESULT 코드인 경우 메서드에서 '[PreserveSig]'를 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
+        <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
+        <target state="translated">관리 정의의 반환 값은 관리되지 않는 COM 메서드를 호출할 때 매개 변수 목록 끝에 있는 추가 'out' 매개 변수로 변환됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedDescriptionCom">
+        <source>Source-generated COM will ignore any configuration that is not supported.</source>
+        <target state="translated">소스 생성 COM은 지원되지 않는 구성을 무시합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedDescriptionLibraryImport">
+        <source>Source-generated P/Invokes will ignore any configuration that is not supported.</source>
+        <target state="translated">소스 생성 P/Invoke는 지원되지 않는 구성을 무시합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageCom">
+        <source>The '{0}' configuration is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="translated">'{0}' 구성은 원본 생성 COM에서 지원되지 않습니다. 지정된 구성이 필요한 경우 대신 'ComImport'를 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageLibraryImport">
+        <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">'{0}' 구성은 소스 생성 P/Invoke에서 지원되지 않습니다. 지정된 구성이 필요한 경우 일반 'DllImport'를 대신 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfoCom">
+        <source>The specified marshalling configuration is not supported by source-generated COM. {0}.</source>
+        <target state="translated">지정된 마샬링 구성은 원본 생성 COM에서 지원되지 않습니다. {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfoLibraryImport">
+        <source>The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.</source>
+        <target state="translated">지정된 마샬링 구성은 소스 생성 P/Invoke에서 지원되지 않습니다. {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageParameterCom">
+        <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="translated">매개 변수 '{1}'에 대해 지정된 '{0}' 구성이 원본 생성 COM에서 지원되지 않습니다. 지정된 구성이 필요한 경우 'ComImport’를 대신 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageParameterLibraryImport">
+        <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">매개 변수 '{1}'에 대해 지정된 '{0}' 구성이 소스 생성 P/Invoke에서 지원되지 않습니다. 지정된 구성이 필요한 경우 일반 'DllImport'를 대신 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageReturnCom">
+        <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="translated">메서드 '{1}'의 반환 값에 대해 지정된 '{0}' 구성은 소스 생성 COM에서 지원되지 않습니다. 지정된 구성이 필요한 경우 대신 'ComImport'를 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageReturnLibraryImport">
+        <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">메서드 '{0}'의 반환 값에 대해 지정된 '{1}' 구성은 소스 생성 P/Invoke에서 지원되지 않습니다. 지정된 구성이 필요한 경우 일반 'DllImport'를 대신 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageValueCom">
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="translated">'{1}'에 대해 지정된 값 '{0}'은(는) 원본 생성 COM에서 지원되지 않습니다. 지정된 구성이 필요한 경우 대신 'ComImport'를 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageValueLibraryImport">
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">'{1}'에 대해 지정된 값 '{0}'은(는) 소스 생성 P/Invoke에서 지원되지 않습니다. 지정된 값이 필요한 경우 일반 ‘DllImport’를 대신 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedTitleCom">
+        <source>Specified configuration is not supported by source-generated COM.</source>
+        <target state="translated">지정된 구성은 원본 생성 COM에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedTitleLibraryImport">
+        <source>Specified configuration is not supported by source-generated P/Invokes.</source>
+        <target state="translated">지정된 구성은 소스 생성 P/Invoke에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConstantAndElementCountInfoDisallowed">
+        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
+        <target state="translated">'ConstantElementCount' 또는 'ElementCountInfo' 중 하나만 지정된 'ElementIndirectionDepth'에 대한 'MarshalUsingAttribute'에서 사용할 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ContainingTypeAccessibilityDetails">
+        <source>Containing type '{0}' has accessibility '{1}'.</source>
+        <target state="translated">'{0}' 형식을 포함하는 경우 접근성 '{1}'이(가) 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertComInterfaceMayProduceInvalidCode">
+        <source>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</source>
+        <target state="translated">이 인터페이스를 'GeneratedComInterfaceAttribute'를 사용하도록 변환하면 잘못된 코드가 생성될 수 있으며 추가 작업이 필요할 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode">
+        <source>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</source>
+        <target state="translated">'PreserveSig'가 'false'로 설정된 P/Invoke를 소스 생성 P/Invoke로 자동 변환하면 잘못된 코드가 생성될 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceAddUnsafe">
+        <source>Convert to 'GeneratedComInterface' and allow unsafe code</source>
+        <target state="translated">'GeneratedComInterface'로 변환하고 안전하지 않은 코드 허용</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceDescription">
+        <source>Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
+        <target state="translated">컴파일 시간에 COM 마샬링 코드를 생성하려면 'ComImportAttribute' 대신 'GeneratedComInterfaceAttribute'를 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceMayRequireCustomMarshalling">
+        <source>Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</source>
+        <target state="translated">이 API를 'GeneratedComInterfaceAttribute'로 변환하려면 일부 매개 변수에 대한 사용자 지정 마샬러를 제공하는 추가 코드가 필요합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceMessage">
+        <source>Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
+        <target state="translated">컴파일 시간에 COM 마샬링 코드를 생성하려면 'ComImportAttribute' 대신 'GeneratedComInterfaceAttribute'로 '{0}' 유형을 표시하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToGeneratedComInterfaceTitle">
+        <source>Convert to 'GeneratedComInterface'</source>
+        <target state="translated">'GeneratedComInterface'로 변환</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImport">
+        <source>Convert to 'LibraryImport'</source>
+        <target state="translated">'LibraryImport'로 변환</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportAddUnsafe">
+        <source>Convert to 'LibraryImport' and enable unsafe code</source>
+        <target state="translated">'LibraryImport'로 변환하고 안전하지 않은 코드 활성화</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportDescription">
+        <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">컴파일 타임에 P/Invoke 마샬링 코드를 생성하려면 'DllImportAttribute' 대신 'LibraryImportAttribute'를 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMayRequireCustomMarshalling">
+        <source>Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</source>
+        <target state="translated">이 API를 'LibraryImport'로 변환하려면 일부 매개 변수에 대한 사용자 지정 마샬러를 제공하기 위한 추가 코드가 필요합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMessage">
+        <source>Mark the method '{0}' with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">컴파일 타임에 P/Invoke 마샬링 코드를 생성하려면 'DllImportAttribute' 대신 'LibraryImportAttribute'를 사용하여 '{0}' 메서드를 표시하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportTitle">
+        <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">컴파일 타임에 P/Invoke 마샬링 코드를 생성하려면 'DllImportAttribute' 대신 'LibraryImportAttribute'를 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWithSuffix">
+        <source>Convert to 'LibraryImport' with '{0}' suffix</source>
+        <target state="translated">'{0}' 접미사가 있는 'LibraryImport'로 변환</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWithSuffixAddUnsafe">
+        <source>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</source>
+        <target state="translated">'{0}' 접미사가 있는 'LibraryImport'로 변환하고 안전하지 않은 코드를 활성화합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
+        <source>Marshaller type does not have the required shape</source>
+        <target state="translated">마샬러 형식에 필요한 셰이프가 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CyclicalCountInfo">
+        <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
+        <target state="translated">이 요소는 종속성 주기를 생성하지 않고 컬렉션 크기 정보에 대해 '{0}'에 의존할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateCountInfo">
+        <source>Count information for a given element at a given indirection level can only be specified once</source>
+        <target state="translated">주어진 간접 수준에서 주어진 요소에 대한 개수 정보는 한 번만 지정할 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateMarshallingInfo">
+        <source>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</source>
+        <target state="translated">간접 수준당 요소당 여러 마샬링 특성이 지원되지 않지만 간접 수준 {0}에 대해 중복 정보가 제공되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementMarshallerCannotBeStatefulDescription">
+        <source>A marshaller for an element scenario cannot be stateful.</source>
+        <target state="translated">요소 시나리오의 마샬러는 상태를 저장할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementMarshallerCannotBeStatefulMessage">
+        <source>The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</source>
+        <target state="translated">지정된 마샬러 형식 '{0}'은(는) 상태 저장 마샬러이지만 제공된 마샬 모드 '{1}'에서는 상태 저장 마샬러가 허용되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypesOfReturnTypesMustMatchDescription">
+        <source>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</source>
+        <target state="translated">첫 번째 메서드에서 반환된 범위의 요소 형식은 두 번째 메서드에서 반환된 범위의 요소 형식과 같은 형식이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypesOfReturnTypesMustMatchMessage">
+        <source>The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</source>
+        <target state="translated">'{0}'에서 반환된 범위의 요소 형식은 '{1}'에서 반환된 범위의 요소 형식과 동일한 형식이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustBeNonNullDescription">
+        <source>An entry-point type for marshalling a given type must not be 'null'.</source>
+        <target state="translated">지정된 유형을 마샬링하기 위한 진입점 유형은 'null'이 아니어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustBeNonNullMessage">
+        <source>The entry-point marshaller type for the type '{0}' must be not 'null'</source>
+        <target state="translated">'{0}' 유형의 진입점 마샬러 유형은 'null'이 아니어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
+        <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
+        <target state="translated">지정된 형식을 마샬링하기 위한 진입점 형식에는 이 형식을 관리되는 형식으로 지정하는 'System.Runtime.InteropServices.CustomMarshallerAttribute'가 있어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
+        <source>The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
+        <target state="translated">'{1}' 유형의 진입점 마샬러 유형 '{0}'은(는) 이 유형을 관리 유형으로 지정하는 'System.Runtime.InteropServices.CustomMarshallerAttribute'가 하나 이상 있는 유형이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExtraneousMarshallingInfo">
+        <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
+        <target state="translated">마샬링 정보가 'ElementIndirectionDepth' {0}에 대해 지정되었지만 마샬링 정보는 간접 참조 수준 {1}에만 필요했습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParameterMustMatchReturnTypeDescription">
+        <source>The first parameter of the first method must be the same type as the return types of the second method.</source>
+        <target state="translated">첫 번째 메서드의 첫 번째 매개 변수는 두 번째 메서드의 반환 형식과 같은 형식이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParameterMustMatchReturnTypeMessage">
+        <source>The first parameter of '{0}' must be the same type as the return type of '{1}'</source>
+        <target state="translated">'{0}'의 첫 번째 매개 변수는 '{1}'의 반환 형식과 동일해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParametersMustMatchDescription">
+        <source>The first parameters of the two methods must be the same type.</source>
+        <target state="translated">두 메서드의 첫 번째 매개 변수는 동일한 형식이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParametersMustMatchMessage">
+        <source>The first parameter of '{0}' and '{1}' must be the same type</source>
+        <target state="translated">'{0}' 및 '{1}'의 첫 번째 매개 변수는 동일한 형식이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromUnmanagedOverloadsNotSupportedDescription">
+        <source>Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</source>
+        <target state="translated">일부 셰이프는 오버로드를 구분할 수 없으므로 'FromUnmanaged' 메서드 오버로딩은 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromUnmanagedOverloadsNotSupportedMessage">
+        <source>The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</source>
+        <target state="translated">형식 '{0}'은(는) 사용자 지정 마샬러에서 지원되지 않는 'FromUnmanaged' 메서드를 오버로드합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
+        <target state="translated">'StringMarshalling' 및 'StringMarshallingCustomType'의 구성은 기본 COM 인터페이스와 일치해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="translated">마샬러 형식은 닫힌 제네릭이거나 관리되는 형식과 동일한 수의 제네릭 매개 변수가 있어야 내보낸 코드에서 특정 인스턴스화를 사용할 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
+        <target state="translated">관리 유형 '{1}'에 대한 마샬러 유형 '{0}'은(는) 닫힌 제네릭 유형이어야 하고, 값 마샬러인 경우 관리 유형과 동일한 우선순위를 가져야 하며, 컬렉션 마샬러인 경우 하나의 추가 제네릭 매개 변수가 있어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
+        <source>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</source>
+        <target state="translated">'GetPinnableReference'의 반환 형식('ref'를 고려한 후)은 blittable이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceReturnTypeBlittableMessage">
+        <source>The dereferenced type of the return type of the 'GetPinnableReference' method must be blittable</source>
+        <target state="translated">'GetPinnableReference' 메서드 반환 형식의 역참조 형식은 blittable이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GraphHasCycles">
+        <source>The provided graph has cycles and cannot be topologically sorted.</source>
+        <target state="translated">제공된 그래프에는 주기가 있으며 토폴로지로 정렬할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
+        <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
+        <target state="translated">'{0}' 형식은 네이티브 HRESULT가 아니라 네이티브 서명에서 구조체로 처리됩니다. HRESULT로 처리하려면 메서드에 '[return:MarshalAs(UnmanagedType.Error)]'를 추가하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
+        <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
+        <target state="translated">이 형식은 네이티브 HRESULT가 아니라 네이티브 서명의 구조체로 처리됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
+        <target state="translated">'[In]' 특성은 배열 매개 변수에서만 지원됩니다. 값별 매개 변수는 기본적으로 읽기 전용으로 간주됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
+        <target state="translated">'[Out]' 특성도 사용되지 않는 한 '[In]' 특성은 지원되지 않습니다. Blittable 배열은 '[In]'으로만 마샬링할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeOnlyIsDefault">
+        <source>The '[In]' attribute is not necessary unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
+        <target state="translated">'[In]' 특성은 '[Out]' 특성도 함께 사용되지 않는 한 필요하지 않습니다. '[Out]' 특성이 없는 '[In]' 특성의 동작은 기본 동작과 동일합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeByRefNotSupported">
+        <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
+        <target state="translated">'[In]' 및 '[Out]' 특성은 참조로 전달된 매개 변수에서 지원되지 않습니다. 대신 'in', 'ref' 또는 'out' 키워드를 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeMarshalerNotSupported">
+        <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
+        <target state="translated">이 매개 변수에 제공된 '[In]' 및 '[Out]' 특성은 이 매개 변수에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
+        <target state="translated">'[In]' 및 '[Out]' 특성은 배열 매개 변수에서만 지원됩니다. 매개 변수를 변경 가능하게 만들려면 'ref' 키워드를 사용하는 것이 좋습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributes">
+        <source>[In] and [Out] attributes</source>
+        <target state="translated">[In] 및 [Out] 속성</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InVariantShouldBeRef">
+        <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
+        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
+        <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
+        <target state="translated">이벤트는 COM의 개념이 아니므로 소스 생성 COM 인터페이스의 인스턴스 이벤트에 대해 interop 코드가 생성되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InstanceEventDeclaredInInterfaceMessage">
+        <source>The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
+        <target state="translated">'GeneratedComInterfaceAttribute'가 적용된 '{1}' 인터페이스에서 '{0}' 인스턴스 이벤트가 선언되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InstanceEventDeclaredInInterfaceTitle">
+        <source>Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
+        <target state="translated">'GeneratedComInterfaceAttribute'를 사용하는 형식의 인스턴스 이벤트 선언은 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InstancePropertyDeclaredInInterfaceDescription">
+        <source>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</source>
+        <target state="translated">속성은 COM의 개념이 아니므로 소스 생성 COM 인터페이스의 인스턴스 속성에 대해 interop 코드가 생성되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InstancePropertyDeclaredInInterfaceMessage">
+        <source>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
+        <target state="translated">'GeneratedComInterfaceAttribute'가 적용된 '{1}' 인터페이스에서 '{0}' 인스턴스 속성이 선언되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InstancePropertyDeclaredInInterfaceTitle">
+        <source>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
+        <target state="translated">'GeneratedComInterfaceAttribute'를 사용하는 형식의 인스턴스 속성 선언은 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InterfaceTypeNotSupportedMessage">
+        <source>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' 및 'InterfaceTypeAttribute'는 'ComInterfaceType' 값 '{0}'에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InterfaceTypeNotSupportedTitle">
+        <source>'GeneratedComInterfaceType' does not support the 'ComInterfaceType' value supplied to 'InterfaceTypeAttribute' on the same type.</source>
+        <target state="translated">'GeneratedComInterfaceType'은 동일한 유형의 'InterfaceTypeAttribute'에 제공된 'ComInterfaceType' 값을 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessageCom">
+        <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. COM source generation will ignore method '{0}'.</source>
+        <target state="translated">메서드 '{0}'은(는) 'partial'로 표시되지 않은 '{1}' 형식에 포함되어 있습니다. COM 원본 생성은 '{0}' 메서드를 무시합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessageLibraryImport">
+        <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="translated">메서드 '{0}'은(는) 'partial'로 표시되지 않은 '{1}' 형식에 포함되어 있습니다. P/Invoke 소스 생성은 '{0}' 메서드를 무시합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
+        <source>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </source>
+        <target state="translated">VirtualMethodIndexAttribute를 사용하는 메서드 포함 형식에 UnmanagedObjectUnwrapperAttribute가 없습니다. </target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodDescriptionCom">
+        <source>Methods on interfaces marked with 'GeneratedComInterfaceAttribute' should be non-generic. COM source generation will ignore methods that are generic.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute'로 표시된 인터페이스의 메서드는 제네릭이 아니어야 합니다. COM 원본 생성은 제네릭 메서드를 무시합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodDescriptionLibraryImport">
+        <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
+        <target state="translated">'LibraryImportAttribute'로 표시된 메소드는 'static', 'partial' 및 비제네릭이어야 합니다. P/Invoke 소스 생성은 'static'이 아니거나 'partial'이 아니거나 제네릭인 메서드를 무시합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodSignatureMessageCom">
+        <source>Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute'로 표시된 인터페이스에서 '{0}' 메서드는 제네릭이 아니어야 합니다. COM 원본 생성은 '{0}' 메서드를 무시합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodSignatureMessageLibraryImport">
+        <source>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="translated">'{0}' 메서드는 'LibraryImportAttribute'로 표시된 경우 '정적', '부분적'이어야 하며 일반이 아니어야 합니다. P/Invoke 소스 생성은 '{0}' 메서드를 무시합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
+        <source>Invalid 'CustomMarshallerAttribute' usage</source>
+        <target state="translated">잘못된 'CustomMarshallerAttribute' 사용</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidExceptionMarshallingConfigurationDescription">
+        <source>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' is invalid.</source>
+        <target state="translated">'ExceptionMarshalling' 및 'ExceptionMarshallingCustomType'의 구성이 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidExceptionMarshallingConfigurationMessage">
+        <source>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' on method '{0}' is invalid. {1}</source>
+        <target state="translated">메서드 '{0}'의 'ExceptionMarshalling' 및 'ExceptionMarshallingCustomType'의 구성이 잘못되었습니다. {1}</target>
+        <note>{1} is a message containing additional details about what is not valid</note>
+      </trans-unit>
+      <trans-unit id="InvalidExceptionMarshallingConfigurationMissingCustomType">
+        <source>'ExceptionMarshallingCustomType' must be specified when 'ExceptionMarshalling' is set to 'ExceptionMarshalling.Custom'.</source>
+        <target state="translated">'ExceptionMarshalling'이 'ExceptionMarshalling.Custom'으로 설정된 경우 'ExceptionMarshallingCustomType'을 지정해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidExceptionMarshallingConfigurationNotCustom">
+        <source>'ExceptionMarshalling' should be set to 'ExceptionMarshalling.Custom' when 'ExceptionMarshallingCustomType' is specified.</source>
+        <target state="translated">'ExceptionMarshallingCustomType'이 지정된 경우 'ExceptionMarshalling'은 'ExceptionMarshalling.Custom'으로 설정해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidExceptionMarshallingValue">
+        <source>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</source>
+        <target state="translated">제공된 값은 'ExceptionMarshalling' 열거형의 알려진 플래그가 아닙니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
+        <source>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</source>
+        <target state="translated">'GeneratedComClassAttribute'가 있는 클래스는 'GeneratedComInterfaceAttribute'를 사용하여 인터페이스를 하나 이상 구현하고 'partial'로 표시되어야 하며 제네릭이 아니어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComClassAttributeUsageMissingPartialModifier">
+        <source>Class '{0}' with 'GeneratedComClassAttribute' or one of its containing types is not marked 'partial'.</source>
+        <target state="translated">'GeneratedComClassAttribute'가 있는 클래스 '{0}' 또는 포함된 형식 중 하나가 'partial'로 표시되어 있지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComClassAttributeUsageTitle">
+        <source>Invalid 'GeneratedComClassAttribute' usage</source>
+        <target state="translated">'GeneratedComClassAttribute' 사용이 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
+        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute'로 특성이 지정된 인터페이스에는 'public' 또는 'internal' 접근성이 있어야 하며 부분적이고 제네릭이 아니어야 하며 'System.Runtime.InteropServices.GuidAttribute'를 사용하여 GUID를 지정해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
+        <target state="translated">'{0}' 인터페이스는 'GeneratedComInterfaceAttribute'로 특성이 지정되지만 제네릭입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is not accessible by generated code. The interface and all containing types must have accessibility 'internal' or 'public' for generated code to access it. {1}</source>
+        <target state="translated">인터페이스 '{0}'은(는) 'GeneratedComInterfaceAttribute'로 특성이 지정되었지만 생성된 코드에서 액세스할 수 없습니다. 인터페이스와 포함된 모든 형식에는 액세스하기 위해 생성된 코드에 대한 접근성 'internal' 또는 'public'이 있어야 합니다. {1}</target>
+        <note>{1} is details about which type/containing type is not accessible</note>
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="translated">인터페이스 '{0}'에 'GeneratedComInterfaceAttribute'이(가) 지정되었지만 'System.Runtime.InteropServices.GuidAttribute'이(가) 누락되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageTitle">
+        <source>Invalid 'GeneratedComInterfaceAttribute' usage.</source>
+        <target state="translated">잘못된 'GeneratedComInterfaceAttribute' 사용법입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceUsageMissingPartialModifier">
+        <source>The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</source>
+        <target state="translated">'{0}' 인터페이스 또는 해당 포함된 형식 중 하나에 'partial' 키워드가 없습니다. '{0}'에 대한 코드가 생성되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
+        <source>Invalid 'LibraryImportAttribute' usage</source>
+        <target state="translated">잘못된 'LibraryImportAttribute' 사용</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidManagedTypeTitle">
+        <source>Specified managed type is invalid</source>
+        <target state="translated">지정된 관리 유형이 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidMarshalModeTitle">
+        <source>Invalid 'MarshalMode' value.</source>
+        <target state="translated">'MarshalMode' 값이 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidMarshallerTypeTitle">
+        <source>Specified marshaller type is invalid</source>
+        <target state="translated">지정된 마샬러 유형이 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidNativeMarshallingAttributeUsageTitle">
+        <source>Invalid 'NativeMarshallingAttribute' usage</source>
+        <target state="translated">잘못된 'NativeMarshallingAttribute' 사용</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceDescription">
+        <source>The specified 'ComInterfaceOptions' are invalid.</source>
+        <target state="translated">지정한 'ComInterfaceOptions'가 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidOptionsOnInterfaceMessage">
+        <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
+        <target state="translated">'{0}'에 지정한 'ComInterfaceOptions'가 잘못되었습니다. {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
+        <source>Marshaller type has incompatible method signatures</source>
+        <target state="translated">마샬러 형식에 호환되지 않는 메서드 시그니처가 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationDescription">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
+        <target state="translated">'StringMarshalling' 및 'StringMarshallingCustomType'의 구성이 잘못되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationMessageCom">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</source>
+        <target state="translated">'{0}' 인터페이스의 'StringMarshalling' 및 'StringMarshallingCustomType' 구성이 잘못되었습니다. {1}</target>
+        <note>{1} is a message containing additional details about what is not valid</note>
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationMessageLibraryImport">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
+        <target state="translated">'{0}' 메서드의 'StringMarshalling' 및 'StringMarshallingCustomType' 구성이 잘못되었습니다. {1}</target>
+        <note>{1} is a message containing additional details about what is not valid</note>
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationMissingCustomType">
+        <source>'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.</source>
+        <target state="translated">'StringMarshalling'이 'StringMarshalling.Custom'으로 설정된 경우 'StringMarshallingCustomType'을 지정해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationNotCustom">
+        <source>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</source>
+        <target state="translated">'StringMarshallingCustomType'이 지정된 경우 'StringMarshalling'은 'StringMarshalling.Custom'으로 설정되어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationOnInterfaceMessage">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</source>
+        <target state="translated">'{0}' 인터페이스의 'StringMarshalling' 및 'StringMarshallingCustomType' 구성이 잘못되었습니다. {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationOnMethodMessage">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
+        <target state="translated">'{0}' 메서드의 'StringMarshalling' 및 'StringMarshallingCustomType' 구성이 잘못되었습니다. {1}</target>
+        <note>{1} is a message containing additional details about what is not valid</note>
+      </trans-unit>
+      <trans-unit id="InvalidVirtualMethodIndexAttributeUsage">
+        <source>Invalid 'VirtualMethodIndexAttribute' usage</source>
+        <target state="translated">잘못된 'VirtualMethodIndexAttribute' 사용</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
+        <target state="translated">'LibraryImportAttribute' 사용법이 권장 사항을 따르지 않습니다. {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
+        <target state="translated">'LibraryImportAttribute' 사용법이 권장 사항을 따르지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
+        <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
+        <target state="translated">'GetManagedValuesSource'에서 반환된 'ReadOnlySpan'의 요소 형식은 'GetManagedValuesDestination'에서 반환된 요소 형식과 동일해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionElementTypesMustMatchMessage">
+        <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'</source>
+        <target state="translated">'GetManagedValuesSource'에서 반환된 'ReadOnlySpan'의 요소 형식은 'GetManagedValuesDestination'에서 반환된 요소 형식과 동일해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription">
+        <source>A 'LinearCollection'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a three-parameter constructor taking the managed type as the first parameter, a 'Span&lt;byte&gt;' as the second parameter, and the native size of the element as the third parameter</source>
+        <target state="translated">'CallerAllocatedBuffer' 기능을 지원하는 'LinearCollection' 종류의 네이티브 형식은 관리되는 형식을 첫 번째 매개 변수로 사용하고, 'Span&lt;byte&gt;'을 두 번째 매개 변수로 사용하고, 요소의 네이티브 크기를 세 번째 매개 변수로 사용하는 세 개의 매개 변수 생성자를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</source>
+        <target state="translated">형식 '{0}'은(는) '{1}'에 대한 'CallerAllocatedBuffer' 기능을 사용하여 'In' 마샬링을 지원하지만 '{1}', 'Span&lt;byte&gt;' 및 'int'를 사용하는 3개의 매개 변수 생성자를 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</source>
+        <target state="translated">관리형 컬렉션부터 비관리형까지 마샬링까지 지원하는 연속 컬렉션 마샬러는 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetManagedValuesSource'와 'Span&lt;&gt;'을 반환하는 'GetUnmanagedValuesDestination' 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</source>
+        <target state="translated">형식 '{0}'은(는) '{1}' 마샬 모드를 지원하지만 'Span&lt;&gt;'을 반환하는 'ReadOnlySpan&lt;&gt;' 및 'GetUnmanagedValuesDestination' 메서드를 반환하는 'GetManagedValuesSource'를 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
+        <target state="translated">비관리형부터 관리형까지 마샬링을 지원하는 연속 컬렉션 마샬러는 'int'를 입력하면 'Span&lt;&gt;'을 반환하는 'GetManagedValuesDestination'과 'Int'를 입력하면 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetUnmanagedValuesSource' 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
+        <target state="translated">'{0}' 형식은 '{1}' 마샬 모드를 지원하지만 'int'를 입력하면 'Span&lt;&gt;'을 반환하는 'GetManagedValuesDestination' 메서드 및 ‘int’를 입력하면 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetUnmanagedValuesSource'을 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">지정된 매개 변수를 관리형에서 비관리형으로 마샬링해야 하지만 마샬러 유형 '{0}'은(는) 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</source>
+        <target state="translated">생성기가 특정 마샬러 유형에서 사용할 수 있는 메서드를 결정할 수 있도록 마샬러 형식은 닫힌 제네릭이거나 관리되는 형식과 동일한 수의 제네릭 매개 변수를 가져야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityMessage">
+        <source>The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
+        <target state="translated">진입점 마샬러 유형 '{1}'에 대한 관리 유형 '{0}'은(는) 닫힌 제네릭 유형이어야 하고, 값 마샬러인 경우 관리 유형과 동일한 우선순위를 가져야 하며, 컬렉션 마샬러인 경우 하나의 추가 제네릭 매개 변수가 있어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullDescription">
+        <source>The managed type for a custom marshaller must be non-null.</source>
+        <target state="translated">사용자 지정 마샬러의 관리 형식은 null이 아니어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullMessage">
+        <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
+        <target state="translated">진입점 마샬러 유형 '{0}'의 관리 유형은 'null'이 아니어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameterCom">
+        <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="translated">매개 변수 '{1}'에 대해 지정된 'MarshalAsAttribute' 구성은 소스 생성 COM에서 지원되지 않습니다. 지정된 구성이 필요한 경우 대신 'ComImport'를 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameterLibraryImport">
+        <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">매개 변수 '{1}'에 대해 지정된 'MarshalAsAttribute' 구성은 소스 생성 P/Invokes에서 지원되지 않습니다. 지정된 구성이 필요한 경우 대신 일반 'DllImport'를 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturnCom">
+        <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
+        <target state="translated">메서드 '{1}'의 반환 값에 대해 지정된 'MarshalAsAttribute' 구성은 소스 생성 COM에서 지원되지 않습니다. 지정된 구성이 필요한 경우 대신 'ComImport'를 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturnLibraryImport">
+        <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">메서드 '{1}'의 반환 값에 대해 지정된 'MarshalAsAttribute' 구성은 소스에서 생성된 P/Invokes에서 지원되지 않습니다. 지정된 구성이 필요한 경우 대신 일반 'DllImport'를 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalModeMustBeValidEnumValue">
+        <source>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</source>
+        <target state="translated">'CustomMarshallerAttribute'의 'marshalMode' 인수는 'MarshalMode'의 유효한 열거형 값이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
+        <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
+        <target state="translated">관리 유형 '{1}'에 대한 마샬러 진입점 유형 '{0}'에는 관리 유형보다 1이 더 커야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
+        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
+        <target state="translated">관리되지 않는 반환 값으로 전달되는 값에 대한 모든 마샬러는 관리되지 않는 형식이 동일해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="translated">마샬러 형식은 닫힌 제네릭이거나 관리되는 형식과 동일한 수의 제네릭 매개 변수가 있어야 내보낸 코드에서 특정 인스턴스화를 사용할 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</source>
+        <target state="translated">진입점 마샬러 유형 '{1}'이(가) 가리키는 마샬러 유형 '{0}'은(는) 닫힌 제네릭 유형이거나 관리되는 유형과 같은 우선순위를 가져야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeNonNullDescription">
+        <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</source>
+        <target state="translated">'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute'의 'marshallerType' 매개 변수는 'null'일 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeNonNullMessage">
+        <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</source>
+        <target state="translated">'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute'의 'marshallerType' 매개 변수는 'null'일 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
+        <target state="translated">관리되는 형식 '{0}'의 마샬러 형식 '{1}'은(는) 정적 클래스 또는 구조체여야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStructDescription">
+        <source>A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</source>
+        <target state="translated">마샬러 형식은 상태 비저장 정적 클래스 또는 상태 저장 값 형식이어야 합니다. 비정적 클래스는 사용할 수 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStructMessage">
+        <source>The type '{0}' must be a static class or a value type</source>
+        <target state="translated">'{0}' 형식은 정적 클래스 또는 값 형식이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
+        <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
+        <target state="translated">'System.Runtime.InteropServices.CustomMarshallerAttribute'가 있는 유형은 'null'이 아닌 관리 유형을 지정해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
+        <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</source>
+        <target state="translated">유형 '{0}'은(는) 유형에 적용된 'System.Runtime.InteropServices.CustomMarshallerAttribute'에서 관리되는 유형을 지정하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
+        <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">명시적 마샬링 정보가 없는 마샬링 bool은 지원되지 않습니다. 'MarshalUsingAttribute' 또는 'MarshalAsAttribute'를 지정하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="translated">'StringMarshalling.{0}을(를) 사용한 마샬링 문자는 지원되지 않습니다. 대신 char 형식을 원하는 바이트 표현으로 수동으로 변환하고 소스 생성 P/Invoke에 전달하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
+        <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
+        <target state="translated">'StringMarshalling.Custom'으로 문자를 마샬링하는 것은 지원되지 않습니다. 사용자 지정 형식 마샬러를 사용하려면 'MarshalUsingAttribute'를 지정합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">명시적 마샬링 정보 없이 문자열 또는 char을 마샬링할 수 없습니다. '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' 또는 'MarshalAsAttribute'를 지정합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
+        <source>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</source>
+        <target state="translated">모든 메서드는 가상 메서드 테이블 오프셋에 대한 신뢰할 수 있는 계산을 보장하기 위해 'GeneratedComInterface' 속성 인터페이스 유형의 동일한 부분 정의에서 선언되어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MethodNotDeclaredInAttributedInterfaceMessage">
+        <source>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</source>
+        <target state="translated">메서드 '{0}'은(는) 'GeneratedComInterface' 특성이 있는 정의가 아닌 인터페이스 '{1}'의 다른 부분 정의에서 선언되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
+        <source>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</source>
+        <target state="translated">메소드가 'GeneratedComInterface' 속성과 다른 부분 선언에서 선언되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' 특성 인터페이스는 하나의 다른 'GeneratedComInterfaceAttribute' 특성 인터페이스에서만 파생될 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">인터페이스 '{0}'은(는) 'GeneratedComInterfaceAttribute'가 있는 두 개 이상의 인터페이스에서 파생됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">지정한 인터페이스는 두 개 이상의 'GeneratedComInterfaceAttribute' 특성 인터페이스에서 파생됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OneWrapperMustBeGenerated">
+        <source>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</source>
+        <target state="translated">'ComInterfaceOptions.ManagedObjectWrapper' 또는 'ComInterfaceOptions.ComObjectWrapper'를 지정해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
+        <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="translated">'[Out]' 특성은 배열 매개 변수에서만 지원됩니다. 매개 변수를 변경할 수 있도록 'out' 또는 'ref' 키워드를 사용하는 것이 좋습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutRequiresToManagedDescription">
+        <source>A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</source>
+        <target state="translated">'Out' 방향으로 마샬링을 지원하는 'Value' 또는 'LinearCollection' 종류의 네이티브 형식은 관리 형식을 반환하는 'ToManaged' 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutRequiresToManagedMessage">
+        <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
+        <target state="translated">형식 '{0}'은(는) 'Out' 방향으로 마샬링을 지원하도록 지정하지만 관리 형식을 반환하는 'ToManaged' 메서드를 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PreferExplicitInOutAttributesOnArrays">
+        <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
+        <target state="translated">배열 매개 변수에는 명시적인 '[In]' 및 '[Out]' 특성을 사용하는 것이 좋습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
+        <source>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' 및 'GeneratedComClassAttribute'에는 안전하지 않은 코드가 필요합니다. 프로젝트를 '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'로 업데이트해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksDescriptionLibraryImport">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="translated">LibraryImportAttribute에는 안전하지 않은 코드가 필요합니다. 프로젝트는 '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'로 업데이트해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksMessageCom">
+        <source>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' 및 'GeneratedComClassAttribute'에는 안전하지 않은 코드가 필요합니다. 프로젝트를 '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'로 업데이트해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksMessageLibraryImport">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="translated">LibraryImportAttribute에는 안전하지 않은 코드가 필요합니다. 프로젝트는 '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'로 업데이트해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksTitleCom">
+        <source>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute' 및 'GeneratedComClassAttribute'에는 안전하지 않은 코드가 필요합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksTitleLibraryImport">
+        <source>LibraryImportAttribute requires unsafe code.</source>
+        <target state="translated">LibraryImportAttribute에는 안전하지 않은 코드가 필요합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
+        <source>The return type the two method must be the expected type.</source>
+        <target state="translated">두 메서드가 필요한 형식이어야 하는 반환 형식입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypeMustBeExpectedTypeMessage">
+        <source>The return type of '{0}' must be '{1}'</source>
+        <target state="translated">'{0}'의 반환 형식은 '{1}'이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypesMustMatchDescription">
+        <source>The return types of the two methods must be the same type.</source>
+        <target state="translated">두 메서드의 반환 형식은 같아야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypesMustMatchMessage">
+        <source>The return type of '{0}' must be the same type as the return type of '{1}'</source>
+        <target state="translated">'{0}' 반환 형식은 '{1}' 반환 형식과 같아야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComDescription">
+        <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</source>
+        <target state="translated">'System.Runtime.InteropServices.Marshal'의 COM Interop API는 소스 생성 COM을 지원하지 않으며 런타임에 실패합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComMessage">
+        <source>The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</source>
+        <target state="translated">'{0}' 메서드는 런타임 기반 COM 상호 운용성만 지원하며 '{1}' 유형에서는 작동하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComTitle">
+        <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</source>
+        <target state="translated">'System.Runtime.InteropServices.Marshal'의 COM Interop API는 소스 생성 COM을 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeMarshallingMustBeDisabled">
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">이 형식의 마샬링을 활성화하려면 어셈블리에 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute'를 적용하여 이 프로젝트에서 런타임 마샬링을 비활성화해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
+        <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
+        <target state="translated">메서드를 호출할 때 호출 수신자로 마샬링되는 매개 변수 '{0}'의 크기를 정의해야 하지만 count 매개 변수 '{1}'은(는) 'out' 매개 변수입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue">
+        <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</source>
+        <target state="translated">메서드를 호출할 때 호출 수신자로 마샬링되는 매개 변수 '{0}'의 크기를 정의해야 하지만 반환 값은 컬렉션의 크기로 사용됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeTitle">
+        <source>The size of a collection that is marshalled to the callee must be defined when the method is called.</source>
+        <target state="translated">메서드가 호출될 때 호출 수신자로 마샬링되는 컬렉션의 크기를 정의해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFreeDescription">
+        <source>A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</source>
+        <target state="translated">상태 저장 마샬러에는 'Free'라는 0 매개 변수 반환 인스턴스 메서드가 있어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFreeMessage">
+        <source>The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</source>
+        <target state="translated">형식 '{0}'은(는) 상태 저장 마샬러이며 'Free'라는 이름의 0 매개 변수 무효 반환 인스턴스 메서드가 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromManagedDescription">
+        <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</source>
+        <target state="translated">관리형에서 비관리형으로의 마샬링을 지원하는 상태 저장 마샬러는 관리되는 값을 매개 변수로 사용하고 'void'를 반환하는 'FromManaged' 인스턴스 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromManagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</source>
+        <target state="translated">형식 '{0}'은(는) '{2}'에 대한 '{1}' 마샬 모드를 지원하도록 지정하지만 '{2}’을(를) 값을 매개 변수로 사용하고 'void'를 반환하는 'FromManaged'라는 단일 매개 변수 인스턴스 메서드를 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromUnmanagedDescription">
+        <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</source>
+        <target state="translated">비관리에서 관리로의 마샬링을 지원하는 상태 저장 마샬러는 비관리 값을 매개 변수로 사용하고 'void'를 반환하는 'FromUnmanaged' 인스턴스 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</source>
+        <target state="translated">형식 '{0}'은(는) '{2}'에 대한 '{1}' 마샬 모드를 지원하도록 지정하지만 'unmanaged' 값을 매개변수로 사용하고 'void'를 반환하는 'FromUnmanaged'라는 단일 매개 변수 인스턴스 메서드를 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToManagedDescription">
+        <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</source>
+        <target state="translated">비관리형에서 관리형으로의 마샬링을 지원하는 상태 저장 마샬러는 매개 변수를 사용하지 않고 관리되는 형식을 반환하는 'ToManaged' 인스턴스 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToManagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</source>
+        <target state="translated">형식 '{0}'은(는) '{2}'에 대한 '{1}' 마샬 모드를 지원하도록 지정하지만 {2}을(를) 반환하는 'ToManaged'라는 매개 변수가 없는 인스턴스 메서드를 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToUnmanagedDescription">
+        <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</source>
+        <target state="translated">관리형에서 비관리형으로의 마샬링을 지원하는 상태 저장 마샬러는 매개 변수를 사용하지 않고 '관리되지 않는' 형식을 반환하는 'ToUnmanaged' 인스턴스 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</source>
+        <target state="translated">형식 '{0}'은(는) '{2}'에 대한 '{1}' 마샬 모드를 지원하도록 지정하지만 마샬러에 대한 '관리되지 않는' 형식을 반환하는 'ToUnmanaged'라는 매개 변수가 없는 인스턴스 메서드를 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="translated">마샬러 형식에서 'Span&lt;T&gt;'을 사용하는 'AllocateContainerForUnmanagedElements' 메서드를 제공하여 '호출자 할당 버퍼로 관리되지 않음' 셰이프를 사용하는 경우 형식은 호출자 할당 버퍼의 요소 수를 제공하기 위해 정적 'BufferSize' 속성을 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="translated">마샬러 유형 '{0}'에는 호출자 할당 'Span&lt;{1}&gt;'을 사용하는 'AllocateContainerForUnmanagedElements' 메서드가 있으므로 호출자 할당 버퍼의 크기를 지정하려면 정적 읽기 전용 'int' 'BufferSize' 속성이 있어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
+        <target state="translated">관리형부터 비관리형 마샬링까지 지원하는 연속 컬렉션 마샬러는 관리되는 값을 매개 변수로 입력하면 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetManagedValuesSource'와 비관리형 값을 매개 변수로 입력하면 'Span&lt;&gt;'을 반환하는 'GetUnmanagedValuesDestination' 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
+        <target state="translated">'{0}' 형식은 '{1}' 마샬링 모드를 지원하지만 '{2}' 매개 변수로 사용하고 'ReadOnlySpan&lt;&gt;' 및 'GetUnmanagedValuesDestination' 메서드를 반환하는 'GetManagedValuesSource'를 제공하지 않습니다. 이 메서드는 비관리형 값을 매개 변수를 입력하면 'Span&lt;&gt;'을 반환합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
+        <target state="translated">비관리형부터 관리형 마샬링까지 지원하는 연속 컬렉션 마샬러는 관리되는 값을 입력하면 'Span&lt;&gt;'을 반환하는 'GetManagedValuesDestination'과 관리되지 않는 값을 입력하면 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetUnmanagedValuesSource' 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
+        <target state="translated">'{0}' 형식은 '{1}' 마샬 모드를 지원하지만 '{2}'을(를) 입력하면 'Span&lt;&gt;'을 반환하는 'GetManagedValuesDestination' 메서드 및 관리되지 않는 값과 ‘int’를 입력하면 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetUnmanagedValuesSource'을 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription">
+        <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</source>
+        <target state="translated">관리형 컬렉션부터 비관리형까지 마샬링까지 지원하는 상태 비저장 연속 컬렉션 마샬러는 비관리형 형식을 첫 번째 매개 변수로 사용하고 요소 수를 'int' 매개 변수로 사용하는 'AllocateContainerForManagedElements' 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</source>
+        <target state="translated">'{0}' 형식은 '{2}'에 대해 '{1}' 마샬 모드를 지원하지만 비관리형 형식을 첫 번째 매개 변수로 사용하고 두 번째 매개 변수로 'out int'를 사용하는 이중 변수 'AllocateContainerForManagedElements' 메서드를 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsDescription">
+        <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</source>
+        <target state="translated">관리형부터 비관리형 마샬링까지 지원하는 상태 비저장 연속 컬렉션 마샬러는 비관리형 형식을 첫 번째 매개 변수를 사용하고 요소 수를 'out int' 매개 변수로 사용하는 'AllocateContainerForUnmanagedElements' 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</source>
+        <target state="translated">'{0}' 형식은 '{2}'에 대해 '{1}' 마샬 모드를 지원하지만 '{2}'을 첫 번째 매개 변수로 사용하고 두 번째 매개 변수로 'out int'를 사용하는 이중 변수 'AllocateContainerForUnmanagedElements' 메서드를 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessRequiresConvertToManagedDescription">
+        <source>A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</source>
+        <target state="translated">비관리형 형식부터 관리형 형식까지 마샬링을 지원하는 상태 비저장 값 마샬러는 비관리형 형식을 매개 변수로 사용하고 관리형 형식을 반환하는 'ConvertToManaged' 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessRequiresConvertToManagedMessage">
+        <source>The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</source>
+        <target state="translated">'{0}' 형식은 '{1}' 마샬 모드를 지원하지만 비관리형을 매개 변수로 입력하면 '{2}'을(를) 반환하는 'ConvertToManaged' 메서드를 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessValueInRequiresConvertToUnmanagedDescription">
+        <source>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</source>
+        <target state="translated">관리형부터 비관리형 마샬링까지 지원하는 상태 비저장 값 마샬러는 관리형 값을 매개 변수로 사용하고 '비관리형' 형식의 값을 반환하는 단일 매개 변수 'ConvertToUnmanaged' 메서드를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessValueInRequiresConvertToUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</source>
+        <target state="translated">'{0}' 형식은 '{2}'에 대해 '{1}' 마샬링 모드를 지원하지만 '{2}'을 매개 변수로 입력하면 '비관리형' 형식의 값을 반환하는 단일 매개 변수 'ConvertToUnmanaged' 메서드를 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StringMarshallingCustomTypeNotAccessibleByGeneratedCode">
+        <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
+        <target state="translated">생성된 코드에서 'GeneratedComInterfaceAttribute.StringMarscingingCustomType'으로 지정된 '{0}' 형식에 액세스할 수 없습니다. 형식에는 최소한 'internal' 접근성이 있어야 합니다. {1}</target>
+        <note>{1} is details about which type/containing type is not accessible</note>
+      </trans-unit>
+      <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
+        <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</source>
+        <target state="translated">'ToUnmanaged'의 반환 유형과 'FromUnmanaged'의 매개 변수 유형은 동일해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
+        <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</source>
+        <target state="translated">'ToUnmanaged'의 반환 유형과 'FromUnmanaged'의 매개 변수 유형은 동일해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
+        <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</source>
+        <target state="translated">'ConvertToUnmanaged'의 반환 유형과 'ConvertToManaged'의 매개 변수 유형은 동일해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToUnmanagedFromManagedTypesMustMatchMessage">
+        <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</source>
+        <target state="translated">'ConvertToUnmanaged'의 반환 유형과 'ConvertToManaged'의 매개 변수 유형은 동일해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeAccessibilityDetails">
+        <source>'{0}' has accessibility '{1}'.</source>
+        <target state="translated">'{0}'에는 접근성 '{1}'이(가) 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustBeUnmanagedDescription">
+        <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
+        <target state="translated">사용자 지정 마샬러의 비관리형 형식은 C# 비관리형 형식이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustBeUnmanagedMessage">
+        <source>The return type of '{0}' must be unmanaged</source>
+        <target state="translated">'{0}'의 반환 형식은 비관리형이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
+        <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
+        <target state="translated">고정된 후 정적 'GetPinnableReference' 메서드의 고정된 결과를 기본 컨텍스트로 전달할 수 있도록 'void*'는 유형으로 캐스팅 가능해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
+        <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
+        <target state="translated">관리 유형 '{1}'에 정적 'GetPinnableReference' 메서드가 있으므로 'void*'는 '{0}' 유형으로 캐스팅 가능해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedDescriptionCom">
+        <source>For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</source>
+        <target state="translated">원본 생성 COM에서 지원하지 않는 형식의 경우 결과 함수 포인터는 기본 런타임을 사용하여 지정된 형식을 마샬링합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedDescriptionLibraryImport">
+        <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
+        <target state="translated">소스 생성 P/Invoke에서 지원하지 않는 형식의 경우 결과 P/Invoke는 기본 런타임에 의존하여 지정된 형식을 마샬링합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageParameterCom">
+        <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="translated">형식 '{0}'은(는) 원본 생성 COM에서 지원되지 않습니다. 생성된 원본은 '{1}' 매개 변수의 마샬링을 처리하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageParameterLibraryImport">
+        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="translated">형식 '{0}'은(는) 소스 생성 P/Invoke에서 지원되지 않습니다. 생성된 소스는 '{1}' 매개 변수의 마샬링을 처리하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageParameterWithDetails">
+        <source>{0} The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="translated">{0} 생성된 소스는 '{1}' 매개 변수의 마샬링을 처리하지 않습니다.</target>
+        <note>{0} is a message containing additional details about what is not supported
+{1} is the name of the parameter</note>
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageReturnCom">
+        <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="translated">'{0}' 형식은 원본 생성 COM에서 지원되지 않습니다. 생성된 원본은 '{1}' 메서드의 반환 값 마샬링을 처리하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageReturnLibraryImport">
+        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="translated">형식 '{0}'은(는) 소스 생성 P/Invoke에서 지원되지 않습니다. 생성된 소스는 '{1}' 메서드의 반환 값 마샬링을 처리하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageReturnWithDetails">
+        <source>{0} The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="translated">{0} 생성된 소스는 '{1}' 메서드의 반환 값 마샬링을 처리하지 않습니다.</target>
+        <note>{0} is a message containing additional details about what is not supported
+{1} is the name of the method</note>
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Specified type is not supported by source-generated P/Invokes</source>
+        <target state="translated">지정된 형식은 소스 생성 P/Invoke에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitleCom">
+        <source>Specified type is not supported by source-generated COM</source>
+        <target state="translated">지정된 형식은 원본 생성 COM에서 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">지정된 매개 변수를 비관리에서 관리로 마샬링해야 하지만 마샬러 유형 '{0}'이(가) 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoDescription">
+        <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
+        <target state="translated">불필요한 마샬링 정보가 제공되었습니다. 애플리케이션의 동작을 변경하지 않고 이 마샬링 정보를 제거할 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoTitle">
+        <source>Unnecessary marshalling info was provided and can be removed.</source>
+        <target state="translated">불필요한 마샬링 정보가 제공되었으며 제거할 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'. {2}</source>
+        <target state="translated">불필요한 마샬링 정보 '{0}'이(가) 매개 변수 '{1}'에 제공되었습니다. {2}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'. {2}</source>
+        <target state="translated">불필요한 마샬링 정보 '{0}'이(가) '{1}' 메서드 반환 형식에 제공되었습니다. {2}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">
+        <source>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">'CallerAllocatedBuffer' 기능을 지원하는 '값' 종류의 네이티브 형식은 관리되는 형식과 '관리되지 않는' 형식의 'Span'을 매개 변수로 사용하는 두 개의 매개 변수 생성자를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">형식 '{0}은(는) '{1}에 대한 'CallerAllocatedBuffer' 기능으로 'In' 마샬링을 지원하도록 지정하지만 '{1} 및 '관리되지 않는' 형식의 'Span'을 매개 변수로 사용하는 2개의 매개 변수 생성자는 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInRequiresOneParameterConstructorDescription">
+        <source>A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</source>
+        <target state="translated">'Value' 종류의 네이티브 형식은 관리 형식을 매개 변수로 사용하는 단일 매개 변수 생성자를 제공해야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInRequiresOneParameterConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a one-parameter constructor that takes a '{1}' as a parameter</source>
+        <target state="translated">형식 '{0}'은(는) '{1}'의 'In' 마샬링을 지원하도록 지정하지만 '{1}'을(를) 매개 변수로 사용하는 단일 매개 변수 생성자는 제공하지 않습니다.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

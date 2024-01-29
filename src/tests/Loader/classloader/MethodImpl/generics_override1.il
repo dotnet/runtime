@@ -536,7 +536,7 @@
 } // end of class InvalidOverride
 
 
-.class private auto ansi beforefieldinit Program
+.class public auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method private hidebysig static void Assert(string result, string expected, int32& failCount)
@@ -1011,7 +1011,7 @@
     IL_005e:  ret
   } // end of method Program::Test5
 
-  .method private hidebysig static int32  Main() cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

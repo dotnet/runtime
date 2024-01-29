@@ -30,7 +30,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackTrace()
         {
             InitializeForCurrentThread(METHODS_TO_SKIP, false);
@@ -39,7 +39,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackTrace(bool fNeedFileInfo)
         {
             InitializeForCurrentThread(METHODS_TO_SKIP, fNeedFileInfo);
@@ -49,7 +49,7 @@ namespace System.Diagnostics
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackTrace(int skipFrames)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
@@ -61,7 +61,7 @@ namespace System.Diagnostics
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackTrace(int skipFrames, bool fNeedFileInfo)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
@@ -123,6 +123,20 @@ namespace System.Diagnostics
         {
             _stackFrames = new StackFrame[] { frame };
             _numOfFrames = 1;
+        }
+
+        /// <summary>
+        /// Constructs a stack trace from a set of <see cref="StackFrame"/> objects
+        /// </summary>
+        /// <param name="frames">The set of stack frames that should be present in the stack trace</param>
+        public StackTrace(IEnumerable<StackFrame> frames)
+        {
+            ArgumentNullException.ThrowIfNull(frames);
+
+            List<StackFrame> frameList = new List<StackFrame>(frames);
+
+            _stackFrames = frameList.ToArray();
+            _numOfFrames = frameList.Count;
         }
 
         /// <summary>
@@ -197,10 +211,10 @@ namespace System.Diagnostics
         {
             // Passing a default string for "at" in case SR.UsingResourceKeys() is true
             // as this is a special case and we don't want to have "Word_At" on stack traces.
-            string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
+            string word_At = SR.UsingResourceKeys() ? "at" : SR.Word_At;
             // We also want to pass in a default for inFileLineNumber.
-            string inFileLineNum = SR.GetResourceString(nameof(SR.StackTrace_InFileLineNumber), defaultString: "in {0}:line {1}");
-            string inFileILOffset = SR.GetResourceString(nameof(SR.StackTrace_InFileILOffset), defaultString: "in {0}:token 0x{1:x}+0x{2:x}");
+            string inFileLineNum = SR.UsingResourceKeys() ? "in {0}:line {1}" : SR.StackTrace_InFileLineNumber;
+            string inFileILOffset = SR.UsingResourceKeys() ? "in {0}:token 0x{1:x}+0x{2:x}" : SR.StackTrace_InFileILOffset;
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
             {
@@ -265,17 +279,19 @@ namespace System.Diagnostics
                         sb.Append(']');
                     }
 
-                    ParameterInfo[]? pi = null;
+                    ReadOnlySpan<ParameterInfo> pi = default;
+                    bool appendParameters = true;
                     try
                     {
-                        pi = mb.GetParameters();
+                        pi = mb.GetParametersAsSpan();
                     }
                     catch
                     {
                         // The parameter info cannot be loaded, so we don't
                         // append the parameter list.
+                        appendParameters = false;
                     }
-                    if (pi != null)
+                    if (appendParameters)
                     {
                         // arguments printing
                         sb.Append('(');
@@ -331,7 +347,7 @@ namespace System.Diagnostics
                                 sb.Append(' ');
                                 sb.AppendFormat(CultureInfo.InvariantCulture, inFileILOffset, assemblyName, token, sf.GetILOffset());
                             }
-                            catch (System.InvalidOperationException) {}
+                            catch (InvalidOperationException) { }
                         }
                     }
 
@@ -340,8 +356,7 @@ namespace System.Diagnostics
                     {
                         sb.AppendLine();
                         // Passing default for Exception_EndStackTraceFromPreviousThrow in case SR.UsingResourceKeys is set.
-                        sb.Append(SR.GetResourceString(nameof(SR.Exception_EndStackTraceFromPreviousThrow),
-                            defaultString: "--- End of stack trace from previous location ---"));
+                        sb.Append(SR.UsingResourceKeys() ? "--- End of stack trace from previous location ---" : SR.Exception_EndStackTraceFromPreviousThrow);
                     }
                 }
             }

@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace System.Text.Json
 {
@@ -18,6 +19,59 @@ namespace System.Text.Json
         public static ReadOnlySpan<byte> GetSpan(this scoped ref Utf8JsonReader reader)
         {
             return reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+        }
+
+        /// <summary>
+        /// Attempts to perform a Read() operation and optionally checks that the full JSON value has been buffered.
+        /// The reader will be reset if the operation fails.
+        /// </summary>
+        /// <param name="reader">The reader to advance.</param>
+        /// <param name="requiresReadAhead">If reading a partial payload, read ahead to ensure that the full JSON value has been buffered.</param>
+        /// <returns>True if the the reader has been buffered with all required data.</returns>
+        // AggressiveInlining used since this method is on a hot path and short. The AdvanceWithReadAhead method should not be inlined.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryAdvanceWithOptionalReadAhead(this scoped ref Utf8JsonReader reader, bool requiresReadAhead)
+        {
+            // No read-ahead necessary if we're at the final block of JSON data.
+            bool readAhead = requiresReadAhead && !reader.IsFinalBlock;
+            return readAhead ? TryAdvanceWithReadAhead(ref reader) : reader.Read();
+
+            // The read-ahead method is not inlined
+            static bool TryAdvanceWithReadAhead(scoped ref Utf8JsonReader reader)
+            {
+                // When we're reading ahead we always have to save the state
+                // as we don't know if the next token is a start object or array.
+                Utf8JsonReader restore = reader;
+
+                if (!reader.Read())
+                {
+                    return false;
+                }
+
+                // Perform the actual read-ahead.
+                JsonTokenType tokenType = reader.TokenType;
+                if (tokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+                {
+                    // Attempt to skip to make sure we have all the data we need.
+                    bool complete = reader.TrySkipPartial(targetDepth: reader.CurrentDepth);
+
+                    // We need to restore the state in all cases as we need to be positioned back before
+                    // the current token to either attempt to skip again or to actually read the value.
+                    reader = restore;
+
+                    if (!complete)
+                    {
+                        // Couldn't read to the end of the object, exit out to get more data in the buffer.
+                        return false;
+                    }
+
+                    // Success, requeue the reader to the start token.
+                    reader.ReadWithVerify();
+                    Debug.Assert(tokenType == reader.TokenType);
+                }
+
+                return true;
+            }
         }
 
 #if !NETCOREAPP
@@ -93,11 +147,22 @@ namespace System.Text.Json
         /// <returns></returns>
         public static string Utf8GetString(ReadOnlySpan<byte> bytes)
         {
-            return Encoding.UTF8.GetString(bytes
-#if NETSTANDARD2_0 || NETFRAMEWORK
-                        .ToArray()
+#if NETCOREAPP
+            return Encoding.UTF8.GetString(bytes);
+#else
+            if (bytes.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            unsafe
+            {
+                fixed (byte* bytesPtr = bytes)
+                {
+                    return Encoding.UTF8.GetString(bytesPtr, bytes.Length);
+                }
+            }
 #endif
-                );
         }
 
         /// <summary>
@@ -108,7 +173,7 @@ namespace System.Text.Json
             IEqualityComparer<TKey> comparer)
             where TKey : notnull
         {
-#if NETSTANDARD2_0 || NETFRAMEWORK
+#if !NETCOREAPP
             var dictionary = new Dictionary<TKey, TValue>(comparer);
 
             foreach (KeyValuePair<TKey, TValue> item in collection)
@@ -162,6 +227,20 @@ namespace System.Text.Json
 
             return true;
         }
+#endif
+
+        /// <summary>
+        /// Gets a Regex instance for recognizing integer representations of enums.
+        /// </summary>
+        public static readonly Regex IntegerRegex = CreateIntegerRegex();
+        private const string IntegerRegexPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
+        private const int IntegerRegexTimeoutMs = 200;
+
+#if NETCOREAPP
+        [GeneratedRegex(IntegerRegexPattern, RegexOptions.None, matchTimeoutMilliseconds: IntegerRegexTimeoutMs)]
+        private static partial Regex CreateIntegerRegex();
+#else
+        private static Regex CreateIntegerRegex() => new(IntegerRegexPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(IntegerRegexTimeoutMs));
 #endif
     }
 }

@@ -20,7 +20,7 @@ namespace System.Text
     // object unless specified otherwise.  This class may be used in conjunction with the String
     // class to carry out modifications upon strings.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class StringBuilder : ISerializable
     {
         // A StringBuilder is internally represented as a linked list of blocks each of which holds
@@ -232,7 +232,7 @@ namespace System.Text
             info.AddValue(ThreadIDField, 0);
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         private void AssertInvariants()
         {
             Debug.Assert(m_ChunkOffset + m_ChunkChars.Length >= m_ChunkOffset, "The length of the string is greater than int.MaxValue.");
@@ -534,7 +534,7 @@ namespace System.Text
             /// <summary>
             /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator
             /// </summary>
-            [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] // Only here to make foreach work
+            [EditorBrowsable(EditorBrowsableState.Never)] // Only here to make foreach work
             public ChunkEnumerator GetEnumerator() { return this; }
 
             /// <summary>
@@ -659,34 +659,55 @@ namespace System.Text
                 return this;
             }
 
-            // this is where we can check if the repeatCount will put us over m_MaxCapacity
-            // We are doing the check here to prevent the corruption of the StringBuilder.
-            int newLength = Length + repeatCount;
-            if (newLength > m_MaxCapacity || newLength < repeatCount)
+            char[] chunkChars = m_ChunkChars;
+            int chunkLength = m_ChunkLength;
+
+            // Try to fit the whole repeatCount in the current chunk
+            // Use the same check as Span<T>.Slice for 64-bit so it can be folded
+            // Since repeatCount can't be negative, there's no risk for it to overflow on 32 bit
+            if (((nuint)(uint)chunkLength + (nuint)(uint)repeatCount) <= (nuint)(uint)chunkChars.Length)
+            {
+                chunkChars.AsSpan(chunkLength, repeatCount).Fill(value);
+                m_ChunkLength += repeatCount;
+            }
+            else
+            {
+                AppendWithExpansion(value, repeatCount);
+            }
+
+            AssertInvariants();
+            return this;
+        }
+
+        private void AppendWithExpansion(char value, int repeatCount)
+        {
+            Debug.Assert(repeatCount > 0, "Invalid length; should have been validated by caller.");
+
+            // Check if the repeatCount will put us over m_MaxCapacity
+            if ((uint)(repeatCount + Length) > (uint)m_MaxCapacity)
             {
                 throw new ArgumentOutOfRangeException(nameof(repeatCount), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
             }
 
-            int index = m_ChunkLength;
-            while (repeatCount > 0)
+            char[] chunkChars = m_ChunkChars;
+            int chunkLength = m_ChunkLength;
+
+            // Fill the rest of the current chunk
+            int firstLength = chunkChars.Length - chunkLength;
+            if (firstLength > 0)
             {
-                if (index < m_ChunkChars.Length)
-                {
-                    m_ChunkChars[index++] = value;
-                    --repeatCount;
-                }
-                else
-                {
-                    m_ChunkLength = index;
-                    ExpandByABlock(repeatCount);
-                    Debug.Assert(m_ChunkLength == 0);
-                    index = 0;
-                }
+                chunkChars.AsSpan(chunkLength, firstLength).Fill(value);
+                m_ChunkLength = chunkChars.Length;
             }
 
-            m_ChunkLength = index;
-            AssertInvariants();
-            return this;
+            // Expand the builder to add another chunk
+            int restLength = repeatCount - firstLength;
+            ExpandByABlock(restLength);
+            Debug.Assert(m_ChunkLength == 0, "A new block was not created.");
+
+            // Fill the new chunk with the remaining part of repeatCount
+            m_ChunkChars.AsSpan(0, restLength).Fill(value);
+            m_ChunkLength = restLength;
         }
 
         /// <summary>
@@ -990,10 +1011,19 @@ namespace System.Text
             }
             else
             {
-                Append(value, 1);
+                AppendWithExpansion(value);
             }
 
             return this;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AppendWithExpansion(char value)
+        {
+            ExpandByABlock(1);
+            Debug.Assert(m_ChunkLength == 0, "A new block was not created.");
+            m_ChunkChars[0] = value;
+            m_ChunkLength++;
         }
 
         [CLSCompliant(false)]
@@ -1812,6 +1842,17 @@ namespace System.Text
         public StringBuilder Replace(string oldValue, string? newValue) => Replace(oldValue, newValue, 0, Length);
 
         /// <summary>
+        /// Replaces all instances of one read-only character span with another in this builder.
+        /// </summary>
+        /// <param name="oldValue">The read-only character span to replace.</param>
+        /// <param name="newValue">The read-only character span to replace <paramref name="oldValue"/> with.</param>
+        /// <remarks>
+        /// If <paramref name="newValue"/> is empty, instances of <paramref name="oldValue"/>
+        /// are removed from this builder.
+        /// </remarks>
+        public StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue) => Replace(oldValue, newValue, 0, Length);
+
+        /// <summary>
         /// Determines if the contents of this builder are equal to the contents of another builder.
         /// </summary>
         /// <param name="sb">The other builder.</param>
@@ -1921,6 +1962,23 @@ namespace System.Text
         /// </remarks>
         public StringBuilder Replace(string oldValue, string? newValue, int startIndex, int count)
         {
+            ArgumentException.ThrowIfNullOrEmpty(oldValue);
+            return Replace(oldValue.AsSpan(), newValue.AsSpan(), startIndex, count);
+        }
+
+        /// <summary>
+        /// Replaces all instances of one read-only character span with another in part of this builder.
+        /// </summary>
+        /// <param name="oldValue">The read-only character span to replace.</param>
+        /// <param name="newValue">The read-only character span to replace <paramref name="oldValue"/> with.</param>
+        /// <param name="startIndex">The index to start in this builder.</param>
+        /// <param name="count">The number of characters to read in this builder.</param>
+        /// <remarks>
+        /// If <paramref name="newValue"/> is empty, instances of <paramref name="oldValue"/>
+        /// are removed from this builder.
+        /// </remarks>
+        public StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, int startIndex, int count)
+        {
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
             {
@@ -1930,9 +1988,10 @@ namespace System.Text
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
-            ArgumentException.ThrowIfNullOrEmpty(oldValue);
-
-            newValue ??= string.Empty;
+            if (oldValue.Length == 0)
+            {
+                throw new ArgumentException(SR.Arg_EmptySpan, nameof(oldValue));
+            }
 
             var replacements = new ValueListBuilder<int>(stackalloc int[128]); // A list of replacement positions in a chunk to apply
 
@@ -2195,7 +2254,7 @@ namespace System.Text
         /// <remarks>
         /// This routine is very efficient because it does replacements in bulk.
         /// </remarks>
-        private void ReplaceAllInChunk(ReadOnlySpan<int> replacements, StringBuilder sourceChunk, int removeCount, string value)
+        private void ReplaceAllInChunk(ReadOnlySpan<int> replacements, StringBuilder sourceChunk, int removeCount, ReadOnlySpan<char> value)
         {
             Debug.Assert(!replacements.IsEmpty);
 
@@ -2221,7 +2280,7 @@ namespace System.Text
             while (true)
             {
                 // Copy in the new string for the ith replacement
-                ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, ref value.GetRawStringData(), value.Length);
+                ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, ref MemoryMarshal.GetReference<char>(value), value.Length);
                 int gapStart = replacements[i] + removeCount;
                 i++;
                 if ((uint)i >= replacements.Length)
@@ -2259,7 +2318,7 @@ namespace System.Text
         /// <param name="indexInChunk">The index in <paramref name="chunk"/> at which the substring starts.</param>
         /// <param name="count">The logical count of the substring.</param>
         /// <param name="value">The prefix.</param>
-        private bool StartsWith(StringBuilder chunk, int indexInChunk, int count, string value)
+        private bool StartsWith(StringBuilder chunk, int indexInChunk, int count, ReadOnlySpan<char> value)
         {
             for (int i = 0; i < value.Length; i++)
             {

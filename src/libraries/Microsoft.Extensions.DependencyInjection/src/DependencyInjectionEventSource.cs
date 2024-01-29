@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Linq.Expressions;
@@ -243,20 +244,27 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Append(descriptor.Lifetime);
             builder.Append("\", ");
 
-            if (descriptor.ImplementationType is not null)
+            if (descriptor.HasImplementationType())
             {
                 builder.Append("\"implementationType\": \"");
-                builder.Append(descriptor.ImplementationType);
+                builder.Append(descriptor.GetImplementationType());
             }
-            else if (descriptor.ImplementationFactory is not null)
+            else if (!descriptor.IsKeyedService && descriptor.ImplementationFactory != null)
             {
                 builder.Append("\"implementationFactory\": \"");
                 builder.Append(descriptor.ImplementationFactory.Method);
             }
-            else if (descriptor.ImplementationInstance is not null)
+            else if (descriptor.IsKeyedService && descriptor.KeyedImplementationFactory != null)
             {
+                builder.Append("\"implementationFactory\": \"");
+                builder.Append(descriptor.KeyedImplementationFactory.Method);
+            }
+            else if (descriptor.HasImplementationInstance())
+            {
+                object? instance = descriptor.GetImplementationInstance();
+                Debug.Assert(instance != null, "descriptor.ImplementationInstance != null");
                 builder.Append("\"implementationInstance\": \"");
-                builder.Append(descriptor.ImplementationInstance.GetType());
+                builder.Append(instance.GetType());
                 builder.Append(" (instance)");
             }
             else

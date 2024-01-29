@@ -131,10 +131,9 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> IsCharBitSetAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, Vector256<byte> values)
         {
-            // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
-            Vector256<byte> highNibble = (values.AsInt32() >>> VectorizedIndexShift).AsByte() & Vector256.Create((byte)15);
+            Vector256<byte> shifted = values >>> VectorizedIndexShift;
 
-            Vector256<byte> bitPositions = Avx2.Shuffle(Vector256.Create(0x8040201008040201).AsByte(), highNibble);
+            Vector256<byte> bitPositions = Avx2.Shuffle(Vector256.Create(0x8040201008040201).AsByte(), shifted);
 
             Vector256<byte> index = values & Vector256.Create((byte)VectorizedIndexMask);
             Vector256<byte> bitMaskLower = Avx2.Shuffle(charMapLower, index);
@@ -175,12 +174,9 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IsCharBitSet(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, Vector128<byte> values)
         {
-            // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
-            Vector128<byte> highNibble = Sse2.IsSupported
-                ? (values.AsInt32() >>> VectorizedIndexShift).AsByte() & Vector128.Create((byte)15)
-                : values >>> VectorizedIndexShift;
+            Vector128<byte> shifted = values >>> VectorizedIndexShift;
 
-            Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), highNibble);
+            Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), shifted);
 
             Vector128<byte> index = values & Vector128.Create((byte)VectorizedIndexMask);
             Vector128<byte> bitMask;
@@ -215,116 +211,96 @@ namespace System.Buffers
                 || (searchSpaceLength < 20 && searchSpaceLength < (valuesLength >> 1));
         }
 
-        public static int IndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            IndexOfAny<SpanHelpers.DontNegate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
-
-        public static int IndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            IndexOfAny<SpanHelpers.Negate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
-
-        public static int LastIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            LastIndexOfAny<SpanHelpers.DontNegate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
-
-        public static int LastIndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength) =>
-            LastIndexOfAny<SpanHelpers.Negate<char>>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
-
-        private static int IndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, SpanHelpers.INegator<char>
+        public static int IndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
             // If the search space is relatively short compared to the needle, do a simple O(n * m) search.
             if (ShouldUseSimpleLoop(searchSpaceLength, valuesLength))
             {
-                ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
-                ref char cur = ref searchSpace;
-
-                while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
-                {
-                    char c = cur;
-                    if (TNegator.NegateIfNeeded(Contains(valuesSpan, c)))
-                    {
-                        return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
-                    }
-
-                    cur = ref Unsafe.Add(ref cur, 1);
-                }
-
-                return -1;
+                return IndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.DontNegate>(ref searchSpace, searchSpaceLength, valuesSpan);
             }
 
-            if (typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
-                ? IndexOfAnyAsciiSearcher.TryIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index)
-                : IndexOfAnyAsciiSearcher.TryIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out index))
+            if (IndexOfAnyAsciiSearcher.TryIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index))
             {
                 return index;
             }
 
-            return ProbabilisticIndexOfAny<TNegator>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+            return ProbabilisticIndexOfAny(ref searchSpace, searchSpaceLength, ref values, valuesLength);
         }
 
-        private static int LastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, SpanHelpers.INegator<char>
+        public static int IndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
+        {
+            var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
+
+            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported &&
+                !ShouldUseSimpleLoop(searchSpaceLength, valuesLength) &&
+                IndexOfAnyAsciiSearcher.TryIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out int index))
+            {
+                return index;
+            }
+
+            return IndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.Negate>(ref searchSpace, searchSpaceLength, valuesSpan);
+        }
+
+        public static int LastIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
             // If the search space is relatively short compared to the needle, do a simple O(n * m) search.
             if (ShouldUseSimpleLoop(searchSpaceLength, valuesLength))
             {
-                for (int i = searchSpaceLength - 1; i >= 0; i--)
-                {
-                    char c = Unsafe.Add(ref searchSpace, i);
-                    if (TNegator.NegateIfNeeded(Contains(valuesSpan, c)))
-                    {
-                        return i;
-                    }
-                }
-
-                return -1;
+                return LastIndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.DontNegate>(ref searchSpace, searchSpaceLength, valuesSpan);
             }
 
-            if (typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
-                ? IndexOfAnyAsciiSearcher.TryLastIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index)
-                : IndexOfAnyAsciiSearcher.TryLastIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out index))
+            if (IndexOfAnyAsciiSearcher.TryLastIndexOfAny(ref searchSpace, searchSpaceLength, valuesSpan, out int index))
             {
                 return index;
             }
 
-            return ProbabilisticLastIndexOfAny<TNegator>(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+            return ProbabilisticLastIndexOfAny(ref searchSpace, searchSpaceLength, ref values, valuesLength);
+        }
+
+        public static int LastIndexOfAnyExcept(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
+        {
+            var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
+
+            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported &&
+                !ShouldUseSimpleLoop(searchSpaceLength, valuesLength) &&
+                IndexOfAnyAsciiSearcher.TryLastIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out int index))
+            {
+                return index;
+            }
+
+            return LastIndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.Negate>(ref searchSpace, searchSpaceLength, valuesSpan);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ProbabilisticIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, SpanHelpers.INegator<char>
+        private static int ProbabilisticIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
             var map = new ProbabilisticMap(valuesSpan);
             ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
 
-            return typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
-                ? IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan)
-                : IndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan);
+            return IndexOfAny(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ProbabilisticLastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
-            where TNegator : struct, SpanHelpers.INegator<char>
+        private static int ProbabilisticLastIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
             var map = new ProbabilisticMap(valuesSpan);
             ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
 
-            return typeof(TNegator) == typeof(SpanHelpers.DontNegate<char>)
-                ? LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan)
-                : LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan);
+            return LastIndexOfAny(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAny<TNegator>(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        internal static int IndexOfAny(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
         {
-            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && typeof(TNegator) == typeof(IndexOfAnyAsciiSearcher.DontNegate) && searchSpaceLength >= 16)
+            if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && searchSpaceLength >= 16)
             {
                 return IndexOfAnyVectorized(ref charMap, ref searchSpace, searchSpaceLength, values);
             }
@@ -335,7 +311,7 @@ namespace System.Buffers
             while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
             {
                 int ch = cur;
-                if (TNegator.NegateIfNeeded(Contains(ref charMap, values, ch)))
+                if (Contains(ref charMap, values, ch))
                 {
                     return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
                 }
@@ -347,13 +323,12 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAny<TNegator>(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        internal static int LastIndexOfAny(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
         {
             for (int i = searchSpaceLength - 1; i >= 0; i--)
             {
                 int ch = Unsafe.Add(ref searchSpace, i);
-                if (TNegator.NegateIfNeeded(Contains(ref charMap, values, ch)))
+                if (Contains(ref charMap, values, ch))
                 {
                     return i;
                 }
@@ -390,8 +365,7 @@ namespace System.Buffers
 
                     if (result != Vector256<byte>.Zero)
                     {
-                        // Account for how ContainsMask32CharsAvx2 packed the source chars (Avx2.PackUnsignedSaturate).
-                        result = Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte();
+                        result = PackedSpanHelpers.FixUpPackedVector256Result(result);
 
                         uint mask = result.ExtractMostSignificantBits();
                         do
@@ -468,6 +442,43 @@ namespace System.Buffers
 
                     // Adjust the current vector and do one last iteration.
                     cur = ref lastStartVector;
+                }
+            }
+
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfAnySimpleLoop<TNegator>(ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
+            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        {
+            ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+            ref char cur = ref searchSpace;
+
+            while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+            {
+                char c = cur;
+                if (TNegator.NegateIfNeeded(Contains(values, c)))
+                {
+                    return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
+                }
+
+                cur = ref Unsafe.Add(ref cur, 1);
+            }
+
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LastIndexOfAnySimpleLoop<TNegator>(ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
+            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        {
+            for (int i = searchSpaceLength - 1; i >= 0; i--)
+            {
+                char c = Unsafe.Add(ref searchSpace, i);
+                if (TNegator.NegateIfNeeded(Contains(values, c)))
+                {
+                    return i;
                 }
             }
 

@@ -87,6 +87,18 @@ namespace System.Collections.Immutable
         /// <returns>The new immutable collection.</returns>
         public static ImmutableSortedSet<T> Create<T>(params T[] items)
         {
+            Requires.NotNull(items, nameof(items));
+            return Create((ReadOnlySpan<T>)items);
+        }
+
+        /// <summary>
+        /// Creates a new immutable sorted set that contains the specified array of items.
+        /// </summary>
+        /// <typeparam name="T">The type of items in the immutable set.</typeparam>
+        /// <param name="items">A span that contains the items to prepopulate the set with.</param>
+        /// <returns>A new immutable set that contains the specified items.</returns>
+        public static ImmutableSortedSet<T> Create<T>(ReadOnlySpan<T> items)
+        {
             return ImmutableSortedSet<T>.Empty.Union(items);
         }
 
@@ -98,6 +110,20 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         public static ImmutableSortedSet<T> Create<T>(IComparer<T>? comparer, params T[] items)
+        {
+            Requires.NotNull(items, nameof(items));
+
+            return Create(comparer, (ReadOnlySpan<T>)items);
+        }
+
+        /// <summary>
+        /// Creates a new immutable collection prefilled with the specified items.
+        /// </summary>
+        /// <typeparam name="T">The type of items stored by the collection.</typeparam>
+        /// <param name="comparer">The comparer.</param>
+        /// <param name="items">The items to prepopulate.</param>
+        /// <returns>The new immutable collection.</returns>
+        public static ImmutableSortedSet<T> Create<T>(IComparer<T>? comparer, ReadOnlySpan<T> items)
         {
             return ImmutableSortedSet<T>.Empty.WithComparer(comparer).Union(items);
         }

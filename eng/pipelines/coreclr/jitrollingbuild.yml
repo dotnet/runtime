@@ -13,6 +13,9 @@ trigger:
 # and should not be triggerable from a PR.
 pr: none
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
@@ -33,7 +36,8 @@ extends:
           - windows_x64
           - windows_x86
           - windows_arm64
-          disableComponentGovernance: true # Not a shipping artifact
+          jobParameters:
+            disableComponentGovernance: true # Not a shipping artifact
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -48,4 +52,5 @@ extends:
           - windows_x64
           - windows_x86
           - windows_arm64
-          disableComponentGovernance: true # Not a shipping artifact
+          jobParameters:
+            disableComponentGovernance: true # Not a shipping artifact

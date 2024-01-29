@@ -17,9 +17,10 @@ namespace System
             object[] attrs = CustomAttribute.GetCustomAttributes(element, attributeType, inherit);
             if (attrs == null || attrs.Length == 0)
                 return null;
+            Attribute match = (Attribute)attrs[0];
             if (attrs.Length != 1)
-                throw new AmbiguousMatchException();
-            return (Attribute)(attrs[0]);
+                throw ThrowHelper.GetAmbiguousMatchException(match);
+            return match;
         }
 
         public static Attribute? GetCustomAttribute(Assembly element, Type attributeType) => GetAttr(element, attributeType, true);

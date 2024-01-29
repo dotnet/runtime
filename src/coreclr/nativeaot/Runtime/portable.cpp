@@ -12,7 +12,6 @@
 #include "rhassert.h"
 
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "shash.h"
 #include "varint.h"
 #include "holder.h"
@@ -31,21 +30,26 @@
 #include "MethodTable.inl"
 #include "ObjectLayout.h"
 
-#include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)
 EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
+static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements)
+{
+    Object* pObject = (Object*)RhpGcAlloc(pEEType, uFlags, numElements, nullptr);
+    if (pObject == nullptr)
+    {
+        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
+    }
+
+    return pObject;
+}
+
 struct gc_alloc_context
 {
-    uint8_t*         alloc_ptr;
-    uint8_t*         alloc_limit;
-    __int64        alloc_bytes; //Number of bytes allocated on SOH by this context
-    __int64        alloc_bytes_loh; //Number of bytes allocated on LOH by this context
-    void*          gc_reserved_1;
-    void*          gc_reserved_2;
-    int            alloc_count;
+    uint8_t* alloc_ptr;
+    uint8_t* alloc_limit;
 };
 
 //
@@ -57,27 +61,19 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFast, (MethodTable* pEEType))
 
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context * acontext = pCurThread->GetAllocContext();
-    Object * pObject;
-
-    size_t size = pEEType->get_BaseSize();
+    size_t size = pEEType->GetBaseSize();
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
     ASSERT(alloc_ptr <= acontext->alloc_limit);
     if ((size_t)(acontext->alloc_limit - alloc_ptr) >= size)
     {
         acontext->alloc_ptr = alloc_ptr + size;
-        pObject = (Object *)alloc_ptr;
+        Object* pObject = (Object *)alloc_ptr;
         pObject->set_EEType(pEEType);
         return pObject;
     }
 
-    pObject = (Object *)RhpGcAlloc(pEEType, 0, size, NULL);
-    if (pObject == nullptr)
-    {
-        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
-    }
-
-    return pObject;
+    return AllocateObject(pEEType, 0, 0);
 }
 
 #define GC_ALLOC_FINALIZE    0x1 // TODO: Defined in gc.h
@@ -87,70 +83,44 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFast, (MethodTable* pEEType))
 COOP_PINVOKE_HELPER(Object *, RhpNewFinalizable, (MethodTable* pEEType))
 {
     ASSERT(pEEType->HasFinalizer());
-
-    size_t size = pEEType->get_BaseSize();
-
-    Object * pObject = (Object *)RhpGcAlloc(pEEType, GC_ALLOC_FINALIZE, size, NULL);
-    if (pObject == nullptr)
-    {
-        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
-    }
-
-    return pObject;
+    return AllocateObject(pEEType, GC_ALLOC_FINALIZE, 0);
 }
 
 COOP_PINVOKE_HELPER(Array *, RhpNewArray, (MethodTable * pArrayEEType, int numElements))
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context * acontext = pCurThread->GetAllocContext();
-    Array * pObject;
 
     if (numElements < 0)
     {
         ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
     }
 
-    size_t size;
 #ifndef HOST_64BIT
     // if the element count is <= 0x10000, no overflow is possible because the component size is
     // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
     if (numElements > 0x10000)
     {
-        // Perform the size computation using 64-bit integeres to detect overflow
-        uint64_t size64 = (uint64_t)pArrayEEType->get_BaseSize() + ((uint64_t)numElements * (uint64_t)pArrayEEType->RawGetComponentSize());
-        size64 = (size64 + (sizeof(uintptr_t)-1)) & ~(sizeof(uintptr_t)-1);
-
-        size = (size_t)size64;
-        if (size != size64)
-        {
-            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
-        }
+        // Overflow here should result in an OOM. Let the slow path take care of it.
+        return (Array*)AllocateObject(pArrayEEType, 0, numElements);
     }
-    else
 #endif // !HOST_64BIT
-    {
-        size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
-        size = ALIGN_UP(size, sizeof(uintptr_t));
-    }
+
+    size_t size = (size_t)pArrayEEType->GetBaseSize() + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
+    size = ALIGN_UP(size, sizeof(uintptr_t));
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
     ASSERT(alloc_ptr <= acontext->alloc_limit);
     if ((size_t)(acontext->alloc_limit - alloc_ptr) >= size)
     {
         acontext->alloc_ptr = alloc_ptr + size;
-        pObject = (Array *)alloc_ptr;
+        Array* pObject = (Array*)alloc_ptr;
         pObject->set_EEType(pArrayEEType);
         pObject->InitArrayLength((uint32_t)numElements);
         return pObject;
     }
 
-    pObject = (Array *)RhpGcAlloc(pArrayEEType, 0, size, NULL);
-    if (pObject == nullptr)
-    {
-        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
-    }
-
-    return pObject;
+    return (Array*)AllocateObject(pArrayEEType, 0, numElements);
 }
 
 COOP_PINVOKE_HELPER(String *, RhNewString, (MethodTable * pArrayEEType, int numElements))
@@ -168,37 +138,28 @@ GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 
 COOP_PINVOKE_HELPER(Object *, RhpNewFinalizableAlign8, (MethodTable* pEEType))
 {
-    Object * pObject = nullptr;
-    /* Not reachable as finalizable types are never align8 */ ASSERT_UNCONDITIONALLY("UNREACHABLE");
-    return pObject;
+    return AllocateObject(pEEType, GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8, 0);
 }
 
 #ifndef HOST_64BIT
-COOP_PINVOKE_HELPER(Object *, RhpNewFastAlign8, (MethodTable* pEEType))
+COOP_PINVOKE_HELPER(Object*, RhpNewFastAlign8, (MethodTable* pEEType))
 {
     ASSERT(!pEEType->HasFinalizer());
 
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
-    Object* pObject;
 
-    size_t size = pEEType->get_BaseSize();
+    size_t size = pEEType->GetBaseSize();
     size = (size + (sizeof(uintptr_t) - 1)) & ~(sizeof(uintptr_t) - 1);
 
-    uint8_t* result = acontext->alloc_ptr;
-
-    int requiresPadding = ((uint32_t)result) & 7;
+    uint8_t* alloc_ptr = acontext->alloc_ptr;
+    int requiresPadding = ((uint32_t)alloc_ptr) & 7;
     size_t paddedSize = size;
     if (requiresPadding)
     {
-        if(paddedSize > SIZE_MAX - 12)
-        {
-            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
-        }
         paddedSize += 12;
     }
 
-    uint8_t* alloc_ptr = acontext->alloc_ptr;
     ASSERT(alloc_ptr <= acontext->alloc_limit);
     if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
     {
@@ -207,42 +168,31 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFastAlign8, (MethodTable* pEEType))
         {
             Object* dummy = (Object*)alloc_ptr;
             dummy->set_EEType(g_pFreeObjectEEType);
-            alloc_ptr += 12; // if result + paddedSize was ok, then cant overflow
+            alloc_ptr += 12;
         }
-        pObject = (Object *)alloc_ptr;
+        Object* pObject = (Object *)alloc_ptr;
         pObject->set_EEType(pEEType);
         return pObject;
     }
 
-    pObject = (Object*)RhpGcAlloc(pEEType, GC_ALLOC_ALIGN8, size, NULL);
-    if (pObject == nullptr)
-    {
-        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
-    }
-
-    return pObject;
+    return AllocateObject(pEEType, GC_ALLOC_ALIGN8, 0);
 }
 
 COOP_PINVOKE_HELPER(Object*, RhpNewFastMisalign, (MethodTable* pEEType))
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
-    Object* pObject;
 
-    size_t size = pEEType->get_BaseSize();
-    uint8_t* result = acontext->alloc_ptr;
+    size_t size = pEEType->GetBaseSize();
 
-    int requiresPadding = (((uint32_t)result) & 7) != 4;
+    uint8_t* alloc_ptr = acontext->alloc_ptr;
+    int requiresPadding = (((uint32_t)alloc_ptr) & 7) != 4;
     size_t paddedSize = size;
     if (requiresPadding)
     {
-        if(paddedSize > SIZE_MAX - 12)
-        {
-            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
-        }
         paddedSize += 12;
     }
-    uint8_t* alloc_ptr = acontext->alloc_ptr;
+
     ASSERT(alloc_ptr <= acontext->alloc_limit);
     if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
     {
@@ -251,67 +201,46 @@ COOP_PINVOKE_HELPER(Object*, RhpNewFastMisalign, (MethodTable* pEEType))
         {
             Object* dummy = (Object*)alloc_ptr;
             dummy->set_EEType(g_pFreeObjectEEType);
-            alloc_ptr += 12; // if result + paddedSize was ok, then cant overflow
+            alloc_ptr += 12;
         }
-        pObject = (Object *)alloc_ptr;
+        Object* pObject = (Object *)alloc_ptr;
         pObject->set_EEType(pEEType);
         return pObject;
     }
 
-    pObject = (Object*)RhpGcAlloc(pEEType, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, size, NULL);
-    if (pObject == nullptr)
-    {
-        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
-    }
-
-    return pObject;
+    return AllocateObject(pEEType, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0);
 }
 
-COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (MethodTable * pArrayEEType, int numElements))
+COOP_PINVOKE_HELPER(Array*, RhpNewArrayAlign8, (MethodTable* pArrayEEType, int numElements))
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
-    Array* pObject;
 
     if (numElements < 0)
     {
         ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
     }
 
-    size_t size;
-
-    uint32_t baseSize = pArrayEEType->get_BaseSize();
     // if the element count is <= 0x10000, no overflow is possible because the component size is
     // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
     if (numElements > 0x10000)
     {
-        // Perform the size computation using 64-bit integeres to detect overflow
-        uint64_t size64 = (uint64_t)baseSize + ((uint64_t)numElements * (uint64_t)pArrayEEType->RawGetComponentSize());
-        size64 = (size64 + (sizeof(uintptr_t) - 1)) & ~(sizeof(uintptr_t) - 1);
+        // Overflow here should result in an OOM. Let the slow path take care of it.
+        return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN8, numElements);
+    }
 
-        size = (size_t)size64;
-        if (size != size64)
-        {
-            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
-        }
-    }
-    else
-    {
-        size = (size_t)baseSize + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
-        size = ALIGN_UP(size, sizeof(uintptr_t));
-    }
-    uint8_t* result = acontext->alloc_ptr;
-    int requiresAlignObject = ((uint32_t)result) & 7;
+    uint32_t baseSize = pArrayEEType->GetBaseSize();
+    size_t size = (size_t)baseSize + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
+    size = ALIGN_UP(size, sizeof(uintptr_t));
+
+    uint8_t* alloc_ptr = acontext->alloc_ptr;
+    int requiresAlignObject = ((uint32_t)alloc_ptr) & 7;
     size_t paddedSize = size;
     if (requiresAlignObject)
     {
-        if(paddedSize > SIZE_MAX - 12)
-        {
-            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
-        }
         paddedSize += 12;
     }
-    uint8_t* alloc_ptr = acontext->alloc_ptr;
+
     ASSERT(alloc_ptr <= acontext->alloc_limit);
     if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
     {
@@ -320,21 +249,15 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (MethodTable * pArrayEEType, int
         {
             Object* dummy = (Object*)alloc_ptr;
             dummy->set_EEType(g_pFreeObjectEEType);
-            alloc_ptr += 12; // if result + paddedSize was ok, then cant overflow
+            alloc_ptr += 12;
         }
-        pObject = (Array*)alloc_ptr;
+        Array* pObject = (Array*)alloc_ptr;
         pObject->set_EEType(pArrayEEType);
         pObject->InitArrayLength((uint32_t)numElements);
         return pObject;
     }
 
-    pObject = (Array*)RhpGcAlloc(pArrayEEType, GC_ALLOC_ALIGN8, size, NULL);
-    if (pObject == nullptr)
-    {
-        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
-    }
-
-    return pObject;
+    return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN8, numElements);
 }
 #endif // !HOST_64BIT
 #endif // defined(HOST_ARM) || defined(HOST_WASM)
@@ -394,12 +317,6 @@ void * ReturnFromUniversalTransition_DebugStepTailCall;
 
 #endif // USE_PORTABLE_HELPERS
 
-// @TODO Implement CallDescrThunk
-EXTERN_C void * ReturnFromCallDescrThunk;
-#ifdef USE_PORTABLE_HELPERS
-void * ReturnFromCallDescrThunk;
-#endif
-
 #if defined(USE_PORTABLE_HELPERS)
 //
 // Return address hijacking
@@ -450,6 +367,18 @@ COOP_PINVOKE_HELPER(Object *, RhpCheckedXchg, (Object ** location, Object * valu
     return ret;
 }
 
+COOP_PINVOKE_HELPER(uint8_t, RhpLockCmpXchg8, (uint8_t * location, uint8_t value, uint8_t comparand))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
+}
+
+COOP_PINVOKE_HELPER(int16_t, RhpLockCmpXchg16, (int16_t * location, int16_t value, int16_t comparand))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
+}
+
 COOP_PINVOKE_HELPER(int32_t, RhpLockCmpXchg32, (int32_t * location, int32_t value, int32_t comparand))
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
@@ -462,14 +391,6 @@ COOP_PINVOKE_HELPER(int64_t, RhpLockCmpXchg64, (int64_t * location, int64_t valu
     return PalInterlockedCompareExchange64(location, value, comparand);
 }
 
-#endif // USE_PORTABLE_HELPERS
-
-COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
-{
-    PalMemoryBarrier();
-}
-
-#if defined(USE_PORTABLE_HELPERS)
 EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 {
     return NULL;
@@ -514,11 +435,6 @@ COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
-}
-
-COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
-{
-    ASSERT_UNCONDITIONALLY("NYI");
 }
 
 COOP_PINVOKE_HELPER(void *, RhGetCommonStubAddress, ())

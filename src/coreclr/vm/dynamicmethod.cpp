@@ -112,7 +112,7 @@ void DynamicMethodTable::MakeMethodTable(AllocMemTracker *pamTracker)
     }
     CONTRACTL_END;
 
-    m_pMethodTable = CreateMinimalMethodTable(m_Module, m_pDomain->GetHighFrequencyHeap(), pamTracker);
+    m_pMethodTable = CreateMinimalMethodTable(m_Module, m_pDomain->GetLoaderAllocator(), pamTracker);
 }
 
 void DynamicMethodTable::Destroy()
@@ -1102,6 +1102,17 @@ ChunkAllocator* LCGMethodResolver::GetJitMetaHeap()
 {
     LIMITED_METHOD_CONTRACT;
     return &m_jitMetaHeap;
+}
+
+bool LCGMethodResolver::RequiresAccessCheck()
+{
+    LIMITED_METHOD_CONTRACT;
+    return true;
+}
+
+CORJIT_FLAGS LCGMethodResolver::GetJitFlags()
+{
+    return{};
 }
 
 BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned *pEHSize)

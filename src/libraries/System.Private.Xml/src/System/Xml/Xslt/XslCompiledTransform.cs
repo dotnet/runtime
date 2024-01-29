@@ -406,7 +406,7 @@ namespace System.Xml.Xsl
         {
             if (LocalAppContextSwitches.AllowDefaultResolver)
             {
-                return new XmlUrlResolver();
+                return XmlReaderSettings.GetDefaultPermissiveResolver();
             }
 
             return XmlResolver.ThrowingResolver;

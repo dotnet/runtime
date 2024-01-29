@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class MissingMemberException : MemberAccessException
     {
         public MissingMemberException()
@@ -17,13 +18,13 @@ namespace System
         }
 
         public MissingMemberException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_MissingMemberException)
         {
             HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
         public MissingMemberException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_MissingMemberException, inner)
         {
             HResult = HResults.COR_E_MISSINGMEMBER;
         }

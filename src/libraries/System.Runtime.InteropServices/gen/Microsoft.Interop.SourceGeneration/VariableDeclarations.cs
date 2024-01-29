@@ -1,14 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -62,16 +59,16 @@ namespace Microsoft.Interop
                 // Declare variable for return value
                 if (marshaller.TypeInfo.IsManagedReturnPosition || marshaller.TypeInfo.IsNativeReturnPosition)
                 {
-                    statementsToUpdate.Add(MarshallerHelpers.Declare(
+                    statementsToUpdate.Add(Declare(
                         marshaller.TypeInfo.ManagedType.Syntax,
                         managed,
-                        false));
+                        initializeToDefault));
                 }
 
                 // Declare variable with native type for parameter or return value
                 if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context))
                 {
-                    statementsToUpdate.Add(MarshallerHelpers.Declare(
+                    statementsToUpdate.Add(Declare(
                         marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
                         native,
                         initializeToDefault));
@@ -122,14 +119,14 @@ namespace Microsoft.Interop
                     bool nativeReturnUsesNativeIdentifier = marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context);
 
                     // Always initialize the return value.
-                    statementsToUpdate.Add(MarshallerHelpers.Declare(
+                    statementsToUpdate.Add(Declare(
                         marshaller.TypeInfo.ManagedType.Syntax,
                         managed,
                         initializeToDefault || !nativeReturnUsesNativeIdentifier));
 
                     if (nativeReturnUsesNativeIdentifier)
                     {
-                        statementsToUpdate.Add(MarshallerHelpers.Declare(
+                        statementsToUpdate.Add(Declare(
                             marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
                             native,
                             initializeToDefault: true));
@@ -149,7 +146,7 @@ namespace Microsoft.Interop
                         TypeSyntax localType = marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax;
                         if (boundaryBehavior != ValueBoundaryBehavior.AddressOfNativeIdentifier)
                         {
-                            statementsToUpdate.Add(MarshallerHelpers.Declare(
+                            statementsToUpdate.Add(Declare(
                                 localType,
                                 native,
                                 false));
@@ -160,7 +157,7 @@ namespace Microsoft.Interop
                             // we'll just declare the native identifier as a ref to its type.
                             // The rest of the code we generate will work as expected, and we don't need
                             // to manually propogate back the updated values after the call.
-                            statementsToUpdate.Add(MarshallerHelpers.Declare(
+                            statementsToUpdate.Add(Declare(
                                 RefType(localType),
                                 native,
                                 marshaller.Generator.GenerateNativeByRefInitialization(marshaller.TypeInfo, context)));
@@ -169,7 +166,7 @@ namespace Microsoft.Interop
 
                     if (boundaryBehavior != ValueBoundaryBehavior.ManagedIdentifier)
                     {
-                        statementsToUpdate.Add(MarshallerHelpers.Declare(
+                        statementsToUpdate.Add(Declare(
                             marshaller.TypeInfo.ManagedType.Syntax,
                             managed,
                             initializeToDefault));

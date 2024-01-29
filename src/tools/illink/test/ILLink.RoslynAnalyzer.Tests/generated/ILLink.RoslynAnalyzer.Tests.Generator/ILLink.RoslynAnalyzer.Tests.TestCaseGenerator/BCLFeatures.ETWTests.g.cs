@@ -10,24 +10,6 @@ namespace ILLink.RoslynAnalyzer.Tests.BCLFeatures
 		protected override string TestSuiteName => "BCLFeatures.ETW";
 
 		[Fact]
-		public Task BaseRemovedEventSource ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task BaseRemovedEventSourceEmptyBody ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task BaseRemovedEventSourceNonVoidReturn ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task CustomEventSource ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -35,30 +17,6 @@ namespace ILLink.RoslynAnalyzer.Tests.BCLFeatures
 
 		[Fact]
 		public Task CustomLibraryEventSource ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task Excluded ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task LocalsOfModifiedMethodAreRemoved ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task NonEventWithLog ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task StubbedMethodWithExceptionHandlers ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

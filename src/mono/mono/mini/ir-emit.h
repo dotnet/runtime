@@ -886,7 +886,7 @@ static int ccount = 0;
 		cfg->flags |= MONO_CFG_HAS_CHECK_THIS; \
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0);	\
 		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");		\
-		MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
+		if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
 	} while (0)
 
 /* Emit an explicit null check which doesn't depend on SIGSEGV signal handling */
@@ -897,7 +897,7 @@ static int ccount = 0;
 		} else { \
 			MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE (cfg); \
 		} \
-		MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
+		if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
 	} while (0)
 
 #define MONO_EMIT_NEW_CHECK_THIS(cfg, sreg) do { \
@@ -907,7 +907,7 @@ static int ccount = 0;
 		} else { \
 			MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, sreg); \
 			MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE (cfg); \
-			MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg); \
+			if (COMPILE_LLVM (cfg)) MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, sreg); \
 		} \
 	} while (0)
 
@@ -971,11 +971,12 @@ static int ccount = 0;
 #endif
 
 static inline void
-mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length_offset, int index_reg, const char *ex_name)
+mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length_offset, int index_reg, const char *ex_name, gboolean need_sext)
 {
 	if (!(cfg->opt & MONO_OPT_UNSAFE)) {
 		ex_name = ex_name ? ex_name : "IndexOutOfRangeException";
 		if (!(cfg->opt & MONO_OPT_ABCREM)) {
+			g_assert (!need_sext);
 			MONO_EMIT_NULL_CHECK (cfg, array_reg, FALSE);
 			if (COMPILE_LLVM (cfg))
 				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), GINT_TO_UINT(array_length_offset), (index_reg), TRUE, ex_name);
@@ -988,6 +989,7 @@ mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length
 			ins->sreg2 = index_reg;
 			ins->inst_p0 = (gpointer)ex_name;
 			ins->inst_imm = (array_length_offset);
+			ins->backend.need_sext = need_sext;
 			ins->flags |= MONO_INST_FAULT;
 			MONO_ADD_INS ((cfg)->cbb, ins);
 			(cfg)->flags |= MONO_CFG_NEEDS_DECOMPOSE;
@@ -1002,8 +1004,8 @@ mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length
  * array_length_field is the field in the previous struct with the length
  * index_reg is the vreg holding the index
  */
-#define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg) do { \
-		mini_emit_bounds_check_offset ((cfg), (array_reg), MONO_STRUCT_OFFSET (array_type, array_length_field), (index_reg), NULL); \
+#define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg, need_sext) do { \
+		mini_emit_bounds_check_offset ((cfg), (array_reg), MONO_STRUCT_OFFSET (array_type, array_length_field), (index_reg), NULL, need_sext); \
 	} while (0)
 
 #endif

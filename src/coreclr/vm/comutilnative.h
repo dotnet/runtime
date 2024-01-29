@@ -160,9 +160,6 @@ public:
     static FCDECL1(void,    SetLOHCompactionMode, int newLOHCompactionyMode);
     static FCDECL2(FC_BOOL_RET, RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage);
     static FCDECL0(FC_BOOL_RET, CancelFullGCNotification);
-    static FCDECL1(int,     WaitForFullGCApproach, int millisecondsTimeout);
-    static FCDECL1(int,     WaitForFullGCComplete, int millisecondsTimeout);
-    static FCDECL1(int,     GetGenerationWR, LPVOID handle);
     static FCDECL1(int,     GetGeneration, Object* objUNSAFE);
     static FCDECL0(UINT64,  GetSegmentSize);
     static FCDECL0(int,     GetLastGCPercentTimeInGC);
@@ -175,7 +172,7 @@ public:
     static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
 
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
-    static FCDECL1(INT64,    GetTotalAllocatedBytes, CLR_BOOL precise);
+    static FCDECL0(INT64,    GetTotalAllocatedBytesApproximate);
 
     static FCDECL3(Object*, AllocateNewArray, void* elementTypeHandle, INT32 length, INT32 flags);
 
@@ -189,11 +186,14 @@ public:
     static void EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
     static int  RefreshMemoryLimit();
     static enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
+    static uint64_t GetGenerationBudget(int generation);
 
 private:
     // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
     NOINLINE static void GarbageCollectModeAny(int generation);
 };
+
+extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise();
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
@@ -205,6 +205,10 @@ extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void *pSection, SIZ
 
 extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void *segmentHandle);
 #endif // FEATURE_BASICFREEZE
+
+extern "C" int QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeout);
+
+extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeout);
 
 extern "C" int QCALLTYPE GCInterface_StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC);
 
@@ -220,24 +224,23 @@ extern "C" int  QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo hea
 
 extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, INT64 totalSize);
 
+extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation);
+
 class COMInterlocked
 {
 public:
-        static FCDECL2(INT32, Exchange, INT32 *location, INT32 value);
-        static FCDECL2_IV(INT64,   Exchange64, INT64 *location, INT64 value);
-        static FCDECL3(INT32, CompareExchange,        INT32* location, INT32 value, INT32 comparand);
-        static FCDECL3_IVV(INT64, CompareExchange64,        INT64* location, INT64 value, INT64 comparand);
-        static FCDECL2_IV(float, ExchangeFloat, float *location, float value);
-        static FCDECL2_IV(double, ExchangeDouble, double *location, double value);
-        static FCDECL3_IVV(float, CompareExchangeFloat, float *location, float value, float comparand);
-        static FCDECL3_IVV(double, CompareExchangeDouble, double *location, double value, double comparand);
+        static FCDECL2(FC_UINT8_RET, Exchange8, UINT8 *location, UINT8 value);
+        static FCDECL2(FC_INT16_RET, Exchange16, INT16 *location, INT16 value);
+        static FCDECL2(INT32, Exchange32, INT32 *location, INT32 value);
+        static FCDECL2_IV(INT64, Exchange64, INT64 *location, INT64 value);
+        static FCDECL3(FC_UINT8_RET, CompareExchange8, UINT8* location, UINT8 value, UINT8 comparand);
+        static FCDECL3(FC_INT16_RET, CompareExchange16, INT16* location, INT16 value, INT16 comparand);
+        static FCDECL3(INT32, CompareExchange32, INT32* location, INT32 value, INT32 comparand);
+        static FCDECL3_IVV(INT64, CompareExchange64, INT64* location, INT64 value, INT64 comparand);
         static FCDECL2(LPVOID, ExchangeObject, LPVOID* location, LPVOID value);
         static FCDECL3(LPVOID, CompareExchangeObject, LPVOID* location, LPVOID value, LPVOID comparand);
         static FCDECL2(INT32, ExchangeAdd32, INT32 *location, INT32 value);
         static FCDECL2_IV(INT64, ExchangeAdd64, INT64 *location, INT64 value);
-
-        static FCDECL0(void, FCMemoryBarrier);
-        static FCDECL0(void, FCMemoryBarrierLoad);
 };
 
 extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();

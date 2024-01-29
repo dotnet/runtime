@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -26,11 +22,20 @@ namespace System.Linq.Tests
             Assert.Equal(100, expected);
         }
 
-        [Fact]
-        public void Range_ToArray_ProduceCorrectResult()
+        public static IEnumerable<object[]> Range_ToArray_ProduceCorrectResult_MemberData()
         {
-            var array = Enumerable.Range(1, 100).ToArray();
-            Assert.Equal(100, array.Length);
+            for (int i = 0; i < 64; i++)
+            {
+                yield return new object[] { i };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Range_ToArray_ProduceCorrectResult_MemberData))]
+        public void Range_ToArray_ProduceCorrectResult(int length)
+        {
+            var array = Enumerable.Range(1, length).ToArray();
+            Assert.Equal(length, array.Length);
             for (var i = 0; i < array.Length; i++)
                 Assert.Equal(i + 1, array[i]);
         }
@@ -212,17 +217,58 @@ namespace System.Linq.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, ".NET Core optimizes Enumerable.Range().Last(). Without this optimization, this test takes a long time. See https://github.com/dotnet/corefx/pull/2401.")]
         public void Last()
         {
             Assert.Equal(1000000056, Enumerable.Range(57, 1000000000).Last());
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, ".NET Core optimizes Enumerable.Range().LastOrDefault(). Without this optimization, this test takes a long time. See https://github.com/dotnet/corefx/pull/2401.")]
         public void LastOrDefault()
         {
             Assert.Equal(int.MaxValue - 101, Enumerable.Range(-100, int.MaxValue).LastOrDefault());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        public void IListImplementationIsValid()
+        {
+            Validate(Enumerable.Range(42, 10), new[] { 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 });
+            Validate(Enumerable.Range(42, 10).Skip(3).Take(4), new[] { 45, 46, 47, 48 });
+
+            static void Validate(IEnumerable<int> e, int[] expected)
+            {
+                IList<int> list = Assert.IsAssignableFrom<IList<int>>(e);
+                IReadOnlyList<int> roList = Assert.IsAssignableFrom<IReadOnlyList<int>>(e);
+
+                Assert.Throws<NotSupportedException>(() => list.Add(42));
+                Assert.Throws<NotSupportedException>(() => list.Insert(0, 42));
+                Assert.Throws<NotSupportedException>(() => list.Clear());
+                Assert.Throws<NotSupportedException>(() => list.Remove(42));
+                Assert.Throws<NotSupportedException>(() => list[0] = 42);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list[-1]);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list[expected.Length]);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => roList[-1]);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => roList[expected.Length]);
+
+                Assert.True(list.IsReadOnly);
+                Assert.Equal(expected.Length, list.Count);
+                Assert.Equal(expected.Length, roList.Count);
+
+                Assert.False(list.Contains(expected[0] - 1));
+                Assert.False(list.Contains(expected[^1] + 1));
+                Assert.All(expected, i => Assert.True(list.Contains(i)));
+                Assert.All(expected, i => Assert.Equal(Array.IndexOf(expected, i), list.IndexOf(i)));
+                for (int i = 0; i < expected.Length; i++)
+                {
+                    Assert.Equal(expected[i], list[i]);
+                    Assert.Equal(expected[i], roList[i]);
+                }
+
+                int[] actual = new int[expected.Length + 2];
+                list.CopyTo(actual, 1);
+                Assert.Equal(0, actual[0]);
+                Assert.Equal(0, actual[^1]);
+                AssertExtensions.SequenceEqual(expected, actual.AsSpan(1, expected.Length));
+            }
         }
     }
 }

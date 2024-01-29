@@ -19,6 +19,7 @@ namespace Sample
                 new ReverseChar(),
                 new IndexOfByte(),
                 new IndexOfChar(),
+                new IndexOfString(),
                 new SequenceEqualByte(),
                 new SequenceEqualChar(),
             };
@@ -80,6 +81,22 @@ namespace Sample
             {
                 var span = new Span<byte>(data);
                 span.IndexOf<byte>((byte)random.Next(256));
+            }
+        }
+
+        class IndexOfString : SpanMeasurement
+        {
+            public override string Name => "IndexOf strings";
+
+            string input = "string1";
+            string value = "string2";
+
+            public override void RunStep()
+            {
+                ReadOnlySpan<char> inputSpan = input.AsSpan();
+                ReadOnlySpan<char> valueSpan = value.AsSpan();
+
+                inputSpan.IndexOf(valueSpan, StringComparison.InvariantCulture);
             }
         }
 

@@ -5,6 +5,7 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
 using Internal.Runtime.CompilerHelpers;
 
 using Debug = System.Diagnostics.Debug;
@@ -17,35 +18,35 @@ namespace Internal.Runtime
     /// </summary>
     internal static class ThreadStatics
     {
+        [ThreadStatic]
+        private static object t_inlinedThreadStaticBase;
+
         /// <summary>
         /// This method is called from a ReadyToRun helper to get base address of thread
         /// static storage for the given type.
         /// </summary>
         internal static unsafe object GetThreadStaticBaseForType(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
-            if (typeTlsIndex >= 0)
-                return GetUninlinedThreadStaticBaseForType(pModuleData, typeTlsIndex);
+            if (typeTlsIndex < 0)
+                return t_inlinedThreadStaticBase;
 
-            ref object? threadStorage = ref RuntimeImports.RhGetInlinedThreadStaticStorage();
-            if (threadStorage != null)
-                return threadStorage;
-
-            return GetInlinedThreadStaticBaseSlow(ref threadStorage);
+            return GetUninlinedThreadStaticBaseForType(pModuleData, typeTlsIndex);
         }
 
-        [RuntimeExport("RhpGetInlinedThreadStaticBaseSlow")]
         internal static unsafe object GetInlinedThreadStaticBaseSlow(ref object? threadStorage)
         {
             Debug.Assert(threadStorage == null);
             // Allocate an object that will represent a memory block for all thread static fields
-            TypeManagerHandle typeManager = RuntimeImports.RhGetSingleTypeManager();
+            TypeManagerHandle typeManager = MethodTable.Of<object>()->TypeManager;
             object threadStaticBase = AllocateThreadStaticStorageForType(typeManager, 0);
 
             // register the storage location with the thread for GC reporting.
-            RuntimeImports.RhRegisterInlinedThreadStaticRoot(ref threadStorage);
+            RuntimeImports.RhRegisterInlinedThreadStaticRoot(ref threadStorage, typeManager);
 
             // assign the storage block to the storage variable and return
             threadStorage = threadStaticBase;
+            t_inlinedThreadStaticBase = threadStaticBase;
+
             return threadStaticBase;
         }
 
@@ -55,13 +56,13 @@ namespace Internal.Runtime
             int moduleIndex = pModuleData->ModuleIndex;
             Debug.Assert(moduleIndex >= 0);
 
-            object[][] threadStorage = RuntimeImports.RhGetThreadStaticStorage();
-            if (threadStorage != null && threadStorage.Length > moduleIndex)
+            object[][] perThreadStorage = RuntimeImports.RhGetThreadStaticStorage();
+            if (perThreadStorage != null && perThreadStorage.Length > moduleIndex)
             {
-                object[] moduleStorage = threadStorage[moduleIndex];
-                if (moduleStorage != null && moduleStorage.Length > typeTlsIndex)
+                object[] perModuleStorage = perThreadStorage[moduleIndex];
+                if (perModuleStorage != null && perModuleStorage.Length > typeTlsIndex)
                 {
-                    object threadStaticBase = moduleStorage[typeTlsIndex];
+                    object threadStaticBase = perModuleStorage[typeTlsIndex];
                     if (threadStaticBase != null)
                     {
                         return threadStaticBase;
@@ -136,7 +137,7 @@ namespace Internal.Runtime
                 gcDesc = Internal.Runtime.Augments.RuntimeAugments.TypeLoaderCallbacks.GetThreadStaticGCDescForDynamicType(typeManager, typeTlsIndex);
             }
 
-            return RuntimeImports.RhNewObject(new EETypePtr(gcDesc));
+            return RuntimeImports.RhNewObject((MethodTable*)gcDesc);
         }
     }
 }

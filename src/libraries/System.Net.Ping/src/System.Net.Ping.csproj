@@ -1,14 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetPing_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <IsApplePlatform Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</IsApplePlatform>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\NetworkInformation\IPStatus.cs" />
     <Compile Include="System\Net\NetworkInformation\Ping.cs" />
@@ -22,20 +26,10 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
     <!-- System.Net Common -->
-    <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
-             Link="Common\System\Net\IPAddressParserStatics.cs" />
-    <Compile Include="$(CommonPath)System\Net\SocketAddress.cs"
-             Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.cs" />
-    <Compile Include="$(CommonPath)System\Net\InternalException.cs"
-             Link="Common\System\Net\InternalException.cs" />
-    <!-- System.Net.Internals -->
-    <Compile Include="$(CommonPath)System\Net\Internals\IPAddressExtensions.cs"
-             Link="Common\System\Net\Internals\IPAddressExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs"
-             Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="('$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows')">
     <Compile Include="System\Net\NetworkInformation\IcmpV4MessageConstants.cs" />
     <Compile Include="System\Net\NetworkInformation\IcmpV6MessageConstants.cs" />
@@ -43,8 +37,6 @@
     <!-- System.Net Common -->
     <Compile Include="$(CommonPath)System\Net\RawSocketPermissions.cs"
              Link="Common\System\Net\RawSocketPermissions.cs" />
-    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
-             Link="Common\System\Net\SocketAddressPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Unix.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\UnixCommandLinePing.cs"
@@ -65,16 +57,23 @@
     <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
              Link="Common\System\Text\ValueUtf8Converter.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsApplePlatform)' != 'true'">
     <Compile Include="System\Net\NetworkInformation\Ping.Unix.cs" />
     <Compile Include="System\Net\NetworkInformation\Ping.PingUtility.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsApplePlatform)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\Ping.OSX.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Net\NetworkInformation\Ping.Windows.cs" />
     <!-- System.Net Common -->
+    <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
+                 Link="Common\System\Net\IPAddressParserStatics.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs"
+             Link="Common\System\Net\IPEndPointExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
              Link="Common\System\Net\SocketAddressPal.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Windows.cs"
@@ -96,10 +95,8 @@
              Link="Common\Interop\Windows\WinSock\Interop.WSAStartup.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs"
              Link="Common\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs" />
-    <!-- System.Net.Internals -->
-    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs"
-             Link="Common\System\Net\Sockets\SocketType.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
@@ -114,8 +111,10 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Process" />
   </ItemGroup>
+
 </Project>

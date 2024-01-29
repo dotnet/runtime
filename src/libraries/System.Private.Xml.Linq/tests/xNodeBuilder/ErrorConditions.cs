@@ -277,7 +277,7 @@ namespace CoreXml.Test.XLinq
                         }
                         catch (ArgumentException e)
                         {
-                            CompareParamName(e.ParamName, null, "mismatch");
+                            CompareParamName(e.ParamName, "localName", "mismatch");
                             try
                             {
                                 TestLog.Compare(w.WriteState, WriteState.Error, "Error");
@@ -286,7 +286,7 @@ namespace CoreXml.Test.XLinq
                             catch (ArgumentException ae)
                             {
                                 TestLog.Compare(w.WriteState, WriteState.Error, "Error");
-                                CompareParamName(ae.ParamName, null, "mismatch");
+                                CompareParamName(ae.ParamName, "localName", "mismatch");
                                 return;
                             }
                         }
@@ -480,7 +480,7 @@ namespace CoreXml.Test.XLinq
                         }
                         catch (ArgumentException e)
                         {
-                            CompareParamName(e.ParamName, null, "mismatch");
+                            CompareParamName(e.ParamName, "name", "mismatch");
                             try
                             {
                                 TestLog.Compare(w.WriteState, WriteState.Start, "Error");
@@ -489,7 +489,7 @@ namespace CoreXml.Test.XLinq
                             catch (ArgumentException ae)
                             {
                                 TestLog.Compare(w.WriteState, WriteState.Start, "Error");
-                                CompareParamName(ae.ParamName, null, "mismatch");
+                                CompareParamName(ae.ParamName, "name", "mismatch");
                                 return;
                             }
                         }
@@ -569,7 +569,7 @@ namespace CoreXml.Test.XLinq
                         }
                         catch (ArgumentException e)
                         {
-                            CompareParamName(e.ParamName, null, "mismatch");
+                            CompareParamName(e.ParamName, "name", "mismatch");
                             try
                             {
                                 TestLog.Compare(w.WriteState, WriteState.Error, "Error");
@@ -578,7 +578,7 @@ namespace CoreXml.Test.XLinq
                             catch (ArgumentException ae)
                             {
                                 TestLog.Compare(w.WriteState, WriteState.Error, "Error");
-                                CompareParamName(ae.ParamName, null, "mismatch");
+                                CompareParamName(ae.ParamName, "name", "mismatch");
                                 return;
                             }
                         }
@@ -601,7 +601,7 @@ namespace CoreXml.Test.XLinq
                         }
                         catch (ArgumentException e)
                         {
-                            CompareParamName(e.ParamName, null, "mismatch");
+                            CompareParamName(e.ParamName, "localName", "mismatch");
                             try
                             {
                                 TestLog.Compare(w.WriteState, WriteState.Error, "Error");
@@ -610,7 +610,7 @@ namespace CoreXml.Test.XLinq
                             catch (ArgumentException ae)
                             {
                                 TestLog.Compare(w.WriteState, WriteState.Error, "Error");
-                                CompareParamName(ae.ParamName, null, "mismatch");
+                                CompareParamName(ae.ParamName, "localName", "mismatch");
                                 return;
                             }
                         }
@@ -695,7 +695,7 @@ namespace CoreXml.Test.XLinq
                         }
                         catch (ArgumentException e)
                         {
-                            CompareParamName(e.ParamName, null, "mismatch");
+                            CompareParamName(e.ParamName, "localName", "mismatch");
                             try
                             {
                                 TestLog.Compare(w.WriteState, WriteState.Error, "Error");
@@ -704,7 +704,7 @@ namespace CoreXml.Test.XLinq
                             catch (ArgumentException ae)
                             {
                                 TestLog.Compare(w.WriteState, WriteState.Error, "Error");
-                                CompareParamName(ae.ParamName, null, "mismatch");
+                                CompareParamName(ae.ParamName, "localName", "mismatch");
                                 return;
                             }
                         }

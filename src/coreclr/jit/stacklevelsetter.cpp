@@ -14,9 +14,9 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
     , maxStackLevel(0)
     , memAllocator(compiler->getAllocator(CMK_CallArgs))
     , putArgNumSlots(memAllocator)
+    , throwHelperBlocksUsed(comp->fgUseThrowHelperBlocks() && comp->compUsesThrowHelper)
 #if !FEATURE_FIXED_OUT_ARGS
     , framePointerRequired(compiler->codeGen->isFramePointerRequired())
-    , throwHelperBlocksUsed(comp->fgUseThrowHelperBlocks() && comp->compUsesThrowHelper)
 #endif // !FEATURE_FIXED_OUT_ARGS
 {
     // The constructor reads this value to skip iterations that could set it if it is already set.
@@ -59,8 +59,37 @@ PhaseStatus StackLevelSetter::DoPhase()
     comp->fgSetPtrArgCntMax(maxStackLevel);
     CheckArgCnt();
 
-    // Might want an "other" category for things like this...
-    return PhaseStatus::MODIFIED_NOTHING;
+    // When optimizing, check if there are any unused throw helper blocks,
+    // and if so, remove them.
+    //
+    bool madeChanges = false;
+
+    if (comp->opts.OptimizationEnabled())
+    {
+        for (Compiler::AddCodeDsc* add = comp->fgGetAdditionalCodeDescriptors(); add != nullptr; add = add->acdNext)
+        {
+            if (add->acdUsed)
+            {
+                continue;
+            }
+
+            BasicBlock* const block = add->acdDstBlk;
+            JITDUMP("Throw help block " FMT_BB " is unused\n", block->bbNum);
+            block->RemoveFlags(BBF_DONT_REMOVE);
+            comp->fgRemoveBlock(block, /* unreachable */ true);
+            madeChanges = true;
+        }
+    }
+    else
+    {
+        // Mark all the throw helpers as used to avoid asserts later.
+        for (Compiler::AddCodeDsc* add = comp->fgGetAdditionalCodeDescriptors(); add != nullptr; add = add->acdNext)
+        {
+            add->acdUsed = true;
+        }
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -70,6 +99,9 @@ PhaseStatus StackLevelSetter::DoPhase()
 //   Block starts and ends with an empty outgoing stack.
 //   Nodes in blocks are iterated in the reverse order to memorize GT_PUTARG_STK
 //   and GT_PUTARG_SPLIT stack sizes.
+//
+//   Also note which (if any) throw helper blocks might end up being used by
+//   codegen.
 //
 // Arguments:
 //   block - the block to process.
@@ -89,17 +121,6 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
             SubStackLevel(numSlots);
         }
 
-#if !FEATURE_FIXED_OUT_ARGS
-        // Set throw blocks incoming stack depth for x86.
-        if (throwHelperBlocksUsed && !framePointerRequired)
-        {
-            if (node->OperMayThrow(comp))
-            {
-                SetThrowHelperBlocks(node, block);
-            }
-        }
-#endif // !FEATURE_FIXED_OUT_ARGS
-
         if (node->IsCall())
         {
             GenTreeCall* call                = node->AsCall();
@@ -108,11 +129,41 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
             call->gtArgs.SetStkSizeBytes(usedStackSlotsCount * TARGET_POINTER_SIZE);
 #endif // UNIX_X86_ABI
         }
+
+        if (!throwHelperBlocksUsed)
+        {
+            continue;
+        }
+
+        // When optimizing we want to know what throw helpers might be used
+        // so we can remove the ones that aren't needed.
+        //
+        // If we're not optimizing then the helper requests made in
+        // morph are likely still accurate, so we don't bother checking
+        // if helpers are indeed used.
+        //
+        bool checkForHelpers = comp->opts.OptimizationEnabled();
+
+#if !FEATURE_FIXED_OUT_ARGS
+        // Even if not optimizing, if we have a moving SP frame, a shared helper may
+        // be reached with mixed stack depths and so force this method to use
+        // a frame pointer. Once we see that the method will need a frame
+        // pointer we no longer need to check for this case.
+        //
+        checkForHelpers |= !framePointerRequired;
+#endif
+
+        if (checkForHelpers)
+        {
+            if (((node->gtFlags & GTF_EXCEPT) != 0) && node->OperMayThrow(comp))
+            {
+                SetThrowHelperBlocks(node, block);
+            }
+        }
     }
     assert(currentStackLevel == 0);
 }
 
-#if !FEATURE_FIXED_OUT_ARGS
 //------------------------------------------------------------------------
 // SetThrowHelperBlocks: Set throw helper blocks incoming stack levels targeted
 //                       from the node.
@@ -124,6 +175,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
 // Arguments:
 //   node - the node to process;
 //   block - the source block for the node.
+//
 void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 {
     assert(node->OperMayThrow(comp));
@@ -147,6 +199,39 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
             break;
 
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        case GT_DIV:
+        case GT_UDIV:
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        case GT_MOD:
+        case GT_UMOD:
+#endif
+        {
+            ExceptionSetFlags exSetFlags = node->OperExceptions(comp);
+
+            if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+            {
+                SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
+            }
+            else
+            {
+                // Even if we thought it might divide by zero during morph, now we know it never will.
+                node->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+            }
+
+            if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+            {
+                SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
+            }
+            else
+            {
+                // Even if we thought it might overflow during morph, now we know it never will.
+                node->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+            }
+        }
+        break;
+#endif
+
         default: // Other opers can target throw only due to overflow.
             break;
     }
@@ -167,10 +252,17 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 // Arguments:
 //   kind - the special throw-helper kind;
 //   block - the source block that targets helper.
+//
 void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* block)
 {
     Compiler::AddCodeDsc* add = comp->fgFindExcptnTarget(kind, comp->bbThrowIndex(block));
     assert(add != nullptr);
+
+    // We expect we'll actually need this helper.
+    add->acdUsed = true;
+
+#if !FEATURE_FIXED_OUT_ARGS
+
     if (add->acdStkLvlInit)
     {
         // If different range checks happen at different stack levels,
@@ -217,9 +309,8 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
 #endif // Debug
         add->acdStkLvl = currentStackLevel;
     }
-}
-
 #endif // !FEATURE_FIXED_OUT_ARGS
+}
 
 //------------------------------------------------------------------------
 // PopArgumentsFromCall: Calculate the number of stack arguments that are used by the call.

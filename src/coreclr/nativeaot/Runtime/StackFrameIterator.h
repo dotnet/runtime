@@ -4,7 +4,12 @@
 #ifndef __StackFrameIterator_h__
 #define __StackFrameIterator_h__
 
+#include "CommonMacros.h"
 #include "ICodeManager.h"
+#include "PalRedhawk.h" // NATIVE_CONTEXT
+#include "regdisplay.h"
+
+#include "forward_declarations.h"
 
 struct ExInfo;
 typedef DPTR(ExInfo) PTR_ExInfo;
@@ -22,8 +27,9 @@ struct EHEnum
     EHEnumState m_state;
 };
 
-EXTERN_C FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault);
-EXTERN_C FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke);
+class StackFrameIterator;
+EXTERN_C FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted);
+EXTERN_C FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted);
 
 struct PInvokeTransitionFrame;
 typedef DPTR(PInvokeTransitionFrame) PTR_PInvokeTransitionFrame;
@@ -32,8 +38,8 @@ typedef DPTR(PAL_LIMITED_CONTEXT) PTR_PAL_LIMITED_CONTEXT;
 class StackFrameIterator
 {
     friend class AsmOffsets;
-    friend FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault);
-    friend FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke);
+    friend FC_BOOL_RET FASTCALL RhpSfiInit(StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted);
+    friend FC_BOOL_RET FASTCALL RhpSfiNext(StackFrameIterator* pThis, uint32_t* puExCollideClauseIdx, CLR_BOOL* pfUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted);
 
 public:
     StackFrameIterator() {}
@@ -49,7 +55,7 @@ public:
     PTR_ICodeManager GetCodeManager();
     MethodInfo *     GetMethodInfo();
     bool             IsActiveStackFrame();
-    bool             GetHijackedReturnValueLocation(PTR_RtuObjectRef * pLocation, GCRefKind * pKind);
+    bool             GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocation, GCRefKind * pKind);
     void             SetControlPC(PTR_VOID controlPC);
 
     static bool     IsValidReturnAddress(PTR_VOID pvAddress);
@@ -61,7 +67,7 @@ public:
     // stack that might contain outgoing arguments. We then report every pointer that looks like it might
     // refer to the GC heap as a fixed interior reference.
     bool HasStackRangeToReportConservatively();
-    void GetStackRangeToReportConservatively(PTR_RtuObjectRef * ppLowerBound, PTR_RtuObjectRef * ppUpperBound);
+    void GetStackRangeToReportConservatively(PTR_OBJECTREF * ppLowerBound, PTR_OBJECTREF * ppUpperBound);
 
     // Debugger Hijacked frame looks very much like a usual managed frame except when the
     // frame must be reported conservatively, and when that happens, regular GC reporting should be skipped
@@ -78,10 +84,6 @@ private:
     // dispatch arbitrary managed calls, then handle the stack walk specially.
     // NOTE: This function always publishes a non-NULL conservative stack range lower bound.
     void UnwindUniversalTransitionThunk();
-
-    // If our control PC indicates that we're in the call descr thunk that we use to call an arbitrary managed
-    // function with an arbitrary signature from a normal managed function handle the stack walk specially.
-    void UnwindCallDescrThunk();
 
     void EnterInitialInvalidState(Thread * pThreadToWalk);
 
@@ -115,7 +117,6 @@ private:
         InThrowSiteThunk,
         InFuncletInvokeThunk,
         InFilterFuncletInvokeThunk,
-        InCallDescrThunk,
         InUniversalTransitionThunk,
     };
 
@@ -209,7 +210,7 @@ protected:
     PTR_ICodeManager    m_pCodeManager;
     MethodInfo          m_methodInfo;
     PTR_VOID            m_effectiveSafePointAddress;
-    PTR_RtuObjectRef    m_pHijackedReturnValue;
+    PTR_OBJECTREF       m_pHijackedReturnValue;
     GCRefKind           m_HijackedReturnValueKind;
     PTR_UIntNative      m_pConservativeStackRangeLowerBound;
     PTR_UIntNative      m_pConservativeStackRangeUpperBound;

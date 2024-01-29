@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+
 using Debug = global::System.Diagnostics.Debug;
 
 namespace Internal.Reflection.Execution
@@ -74,7 +75,7 @@ namespace Internal.Reflection.Execution
             {
                 Type actualArg = typeArguments[i];
 
-                if (actualArg.IsSystemVoid() || (actualArg.HasElementType && !actualArg.IsArray))
+                if (actualArg.IsSystemVoid() || (actualArg.HasElementType && !actualArg.IsArray) || actualArg.IsFunctionPointer)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_NeverValidGenericArgument, actualArg));
                 }

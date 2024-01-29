@@ -17,14 +17,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
     public class DotNetBuilder
     {
         private readonly string _path;
-        private readonly RepoDirectoriesProvider _repoDirectories;
 
         public DotNetBuilder(string basePath, string builtDotnet, string name)
         {
             _path = name == null ? basePath : Path.Combine(basePath, name);
             Directory.CreateDirectory(_path);
-
-            _repoDirectories = new RepoDirectoriesProvider(builtDotnet: _path);
 
             // Prepare the dotnet installation mock
 
@@ -51,8 +48,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public DotNetBuilder AddMicrosoftNETCoreAppFrameworkMockHostPolicy(string version)
         {
             // ./shared/Microsoft.NETCore.App/<version> - create a mock of the root framework
-            string netCoreAppPath = Path.Combine(_path, "shared", "Microsoft.NETCore.App", version);
-            Directory.CreateDirectory(netCoreAppPath);
+            string netCoreAppPath = AddFramework(Constants.MicrosoftNETCoreApp, version);
 
             // ./shared/Microsoft.NETCore.App/<version>/hostpolicy.dll - this is a mock, will not actually load CoreCLR
             File.Copy(
@@ -120,14 +116,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public DotNetBuilder AddMicrosoftNETCoreAppFrameworkMockCoreClr(string version, Action<NetCoreAppBuilder> customizer = null)
         {
             // ./shared/Microsoft.NETCore.App/<version> - create a mock of the root framework
-            string netCoreAppPath = Path.Combine(_path, "shared", "Microsoft.NETCore.App", version);
-            Directory.CreateDirectory(netCoreAppPath);
+            string netCoreAppPath = AddFramework(Constants.MicrosoftNETCoreApp, version);
 
-            string currentRid = _repoDirectories.TargetRID;
+            string currentRid = TestContext.TargetRID;
 
-            NetCoreAppBuilder.ForNETCoreApp("Microsoft.NETCore.App", currentRid)
+            NetCoreAppBuilder.ForNETCoreApp(Constants.MicrosoftNETCoreApp, currentRid)
                 .WithStandardRuntimeFallbacks()
-                .WithProject("Microsoft.NETCore.App", version, p => p
+                .WithProject(Constants.MicrosoftNETCoreApp, version, p => p
                     .WithNativeLibraryGroup(null, g => g
                         // ./shared/Microsoft.NETCore.App/<version>/coreclr.dll - this is a mock, will not actually run CoreClr
                         .WithAsset((new NetCoreAppBuilder.RuntimeFileBuilder($"runtimes/{currentRid}/native/{Binaries.CoreClr.FileName}"))
@@ -152,7 +147,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         /// <param name="version">Framework version</param>
         /// <param name="runtimeConfigCustomizer">Customization function for the runtime config</param>
         /// <remarks>
-        /// The added mock framework will only contain a runtime.config.json file.
+        /// The added mock framework will only contain a deps.json and a runtime.config.json file.
         /// </remarks>
         public DotNetBuilder AddFramework(
             string name,
@@ -160,12 +155,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             Action<RuntimeConfig> runtimeConfigCustomizer,
             Action<string> frameworkCustomizer = null)
         {
-            // ./shared/<name>/<version> - create a mock of effectively empty non-root framework
-            string path = Path.Combine(_path, "shared", name, version);
-            Directory.CreateDirectory(path);
+            // ./shared/<name>/<version> - create a mock of the framework
+            string path = AddFramework(name, version);
 
             // ./shared/<name>/<version>/<name>.runtimeconfig.json - runtime config which can be customized
-            RuntimeConfig runtimeConfig = new RuntimeConfig(Path.Combine(path, name + ".runtimeconfig.json"));
+            RuntimeConfig runtimeConfig = new RuntimeConfig(Path.Combine(path, $"{name}.runtimeconfig.json"));
             runtimeConfigCustomizer(runtimeConfig);
             runtimeConfig.Save();
 
@@ -189,6 +183,27 @@ namespace Microsoft.DotNet.CoreSetup.Test
             dotnetRuntimeConfig.Save();
 
             return this;
+        }
+
+        /// <summary>
+        /// Add a minimal mock framework with the specified framework name and version
+        /// </summary>
+        /// <param name="name">Framework name</param>
+        /// <param name="version">Framework version</param>
+        /// <returns>Framework directory</returns>
+        /// <remarks>
+        /// The added mock framework will only contain a deps.json.
+        /// </remarks>
+        private string AddFramework(string name, string version)
+        {
+            // ./shared/<name>/<version> - create a mock of effectively the framework
+            string path = Path.Combine(_path, "shared", name, version);
+            Directory.CreateDirectory(path);
+
+            // ./shared/<name>/<version>/<name>.deps.json - empty file
+            File.WriteAllText(Path.Combine(path, $"{name}.deps.json"), string.Empty);
+
+            return path;
         }
 
         public DotNetCli Build()

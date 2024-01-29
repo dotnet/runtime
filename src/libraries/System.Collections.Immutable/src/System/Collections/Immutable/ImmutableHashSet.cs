@@ -87,6 +87,19 @@ namespace System.Collections.Immutable
         /// <returns>The new immutable collection.</returns>
         public static ImmutableHashSet<T> Create<T>(params T[] items)
         {
+            Requires.NotNull(items, nameof(items));
+
+            return Create((ReadOnlySpan<T>)items);
+        }
+
+        /// <summary>
+        /// Creates a new immutable collection prefilled with the specified items.
+        /// </summary>
+        /// <typeparam name="T">The type of items stored by the collection.</typeparam>
+        /// <param name="items">The items to prepopulate.</param>
+        /// <returns>The new immutable collection.</returns>
+        public static ImmutableHashSet<T> Create<T>(ReadOnlySpan<T> items)
+        {
             return ImmutableHashSet<T>.Empty.Union(items);
         }
 
@@ -98,6 +111,20 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         public static ImmutableHashSet<T> Create<T>(IEqualityComparer<T>? equalityComparer, params T[] items)
+        {
+            Requires.NotNull(items, nameof(items));
+
+            return Create(equalityComparer, (ReadOnlySpan<T>)items);
+        }
+
+        /// <summary>
+        /// Creates a new immutable collection prefilled with the specified items.
+        /// </summary>
+        /// <typeparam name="T">The type of items stored by the collection.</typeparam>
+        /// <param name="equalityComparer">The equality comparer.</param>
+        /// <param name="items">The items to prepopulate.</param>
+        /// <returns>The new immutable collection.</returns>
+        public static ImmutableHashSet<T> Create<T>(IEqualityComparer<T>? equalityComparer, ReadOnlySpan<T> items)
         {
             return ImmutableHashSet<T>.Empty.WithComparer(equalityComparer).Union(items);
         }

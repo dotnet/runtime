@@ -1,64 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -219,12 +160,6 @@
   <data name="TarGnuFormatExpected" xml:space="preserve">
     <value>Entry '{0}' was expected to be in the GNU format, but did not have the expected version data.</value>
   </data>
-  <data name="TarHardLinkTargetNotExists" xml:space="preserve">
-    <value>Cannot create a hard link '{0}' because the specified target file '{1}' does not exist.</value>
-  </data>
-  <data name="TarHardLinkToDirectoryNotAllowed" xml:space="preserve">
-    <value>Cannot create the hard link '{0}' targeting the directory '{1}'.</value>
-  </data>
   <data name="TarInvalidFormat" xml:space="preserve">
     <value>The archive format is invalid: '{0}'</value>
   </data>
@@ -236,9 +171,6 @@
   </data>
   <data name="TarSizeFieldTooLargeForEntryType" xml:space="preserve">
     <value>The value of the size field for the current entry of type '{0}' is greater than the expected length.</value>
-  </data>
-  <data name="TarSymbolicLinkTargetNotExists" xml:space="preserve">
-    <value>Cannot create the symbolic link '{0}' because the specified target '{1}' does not exist.</value>
   </data>
   <data name="TarUnexpectedMetadataEntry" xml:space="preserve">
     <value>A metadata entry of type '{0}' was unexpectedly found after a metadata entry of type '{1}'.</value>
@@ -269,5 +201,8 @@
   </data>
   <data name="TarExtAttrDisallowedValueChar" xml:space="preserve">
     <value>The value of the extended attribute key '{0}' contains a disallowed '{1}' character.</value>
+  </data>
+  <data name="TarStreamSeekabilityUnsupportedCombination" xml:space="preserve">
+    <value>Cannot write the unseekable data stream of entry '{0}' into an unseekable archive stream.</value>
   </data>
 </root>

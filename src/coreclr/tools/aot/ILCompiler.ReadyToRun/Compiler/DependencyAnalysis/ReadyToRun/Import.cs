@@ -19,6 +19,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal readonly MethodDesc CallingMethod;
 
+        public Signature Signature => ImportSignature.Target;
+
         public Import(ImportSectionNode tableNode, Signature importSignature, MethodDesc callingMethod = null)
         {
             Table = tableNode;

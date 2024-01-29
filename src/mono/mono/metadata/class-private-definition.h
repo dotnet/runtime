@@ -83,6 +83,7 @@ struct _MonoClass {
 	guint has_weak_fields : 1; /* class has weak reference fields */
 	guint has_dim_conflicts : 1; /* Class has conflicting default interface methods */
 	guint any_field_has_auto_layout : 1; /* a field in this type's layout uses auto-layout */
+	guint has_deferred_failure : 1;
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;

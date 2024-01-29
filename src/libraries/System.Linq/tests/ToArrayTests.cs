@@ -132,7 +132,10 @@ namespace System.Linq.Tests
         {
             var largeSeq = new FastInfiniteEnumerator<byte>();
             var thrownException = Assert.ThrowsAny<Exception>(() => { largeSeq.ToArray(); });
-            Assert.True(thrownException.GetType() == typeof(OverflowException) || thrownException.GetType() == typeof(OutOfMemoryException));
+            Assert.True(
+                thrownException.GetType() == typeof(OverflowException) ||
+                thrownException.GetType() == typeof(OutOfMemoryException),
+                $"Expected OverflowException or OutOfMemoryException, got {thrownException}");
         }
 
         [Theory]
@@ -358,7 +361,6 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/85146", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void ToArray_Cast()
         {
             Enum0[] source = { Enum0.First, Enum0.Second, Enum0.Third };

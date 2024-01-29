@@ -779,5 +779,8 @@ namespace Internal.TypeSystem
         /// Determine if the type implements <code>IDynamicInterfaceCastable</code>
         /// </summary>
         protected internal abstract bool IsIDynamicInterfaceCastableInterface(DefType type);
+
+        public virtual bool SupportsTypeEquivalence => false;
+        public virtual bool SupportsCOMInterop => false;
     }
 }

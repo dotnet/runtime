@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
@@ -303,7 +303,7 @@ namespace System.Threading.Tasks
         /// </param>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-        [Event(TASKWAITBEGIN_ID, Version = 3, Task = TplEventSource.Tasks.TaskWait, Opcode = EventOpcode.Send,
+        [Event(TASKWAITBEGIN_ID, Version = 3, Task = Tasks.TaskWait, Opcode = EventOpcode.Send,
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks,
          Message = "Beginning wait ({3}) on Task {2}.")]
         public void TaskWaitBegin(
@@ -526,8 +526,6 @@ namespace System.Threading.Tasks
         [Event(24, Keywords = Keywords.Debug)]
         public void DebugFacilityMessage1(string Facility, string Message, string Value1) { WriteEvent(24, Facility, Message, Value1); }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "Guid parameter is safe with WriteEvent")]
         [Event(25, Keywords = Keywords.DebugActivityId)]
         public void SetActivityId(Guid NewId)
         {
@@ -545,7 +543,7 @@ namespace System.Threading.Tasks
         [NonEvent]
         public void IncompleteAsyncMethod(IAsyncStateMachineBox stateMachineBox)
         {
-            System.Diagnostics.Debug.Assert(stateMachineBox != null);
+            Diagnostics.Debug.Assert(stateMachineBox != null);
             if (IsEnabled() && IsEnabled(EventLevel.Warning, Keywords.AsyncMethod))
             {
                 IAsyncStateMachine stateMachine = stateMachineBox.GetStateMachineObject();

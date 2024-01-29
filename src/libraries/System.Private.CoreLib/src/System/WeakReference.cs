@@ -28,7 +28,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class WeakReference : ISerializable
     {
         // If you fix bugs here, please fix them in WeakReference<T> at the same time.
@@ -157,13 +157,22 @@ namespace System
                 if (th == 0)
                     return default;
 
+                object? target;
+
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 if ((th & ComAwareBit) != 0)
-                    return ComAwareWeakReference.GetTarget(th);
+                {
+                    target = ComAwareWeakReference.GetTarget(th);
+
+                    // must keep the instance alive as long as we use the handle.
+                    GC.KeepAlive(this);
+
+                    return target;
+                }
 #endif
 
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
-                object? target = GCHandle.InternalGet(th);
+                target = GCHandle.InternalGet(th);
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -186,6 +195,10 @@ namespace System
                 if ((th & ComAwareBit) != 0 || comInfo != null)
                 {
                     ComAwareWeakReference.SetTarget(ref _taggedHandle, value, comInfo);
+
+                    // must keep the instance alive as long as we use the handle.
+                    GC.KeepAlive(this);
+
                     return;
                 }
 #endif

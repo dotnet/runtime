@@ -8,14 +8,14 @@ namespace System.Runtime.InteropServices
     /// The forward delegates (that wraps native function pointers) points to derived Invoke method of this
     /// class, and the Invoke method would implement the marshalling and making the call
     /// </summary>
-    public abstract class NativeFunctionPointerWrapper
+    internal abstract class NativeFunctionPointerWrapper
     {
         public NativeFunctionPointerWrapper(IntPtr nativeFunctionPointer)
         {
             m_nativeFunctionPointer = nativeFunctionPointer;
         }
 
-        IntPtr m_nativeFunctionPointer;
+        private IntPtr m_nativeFunctionPointer;
 
         public IntPtr NativeFunctionPointer
         {

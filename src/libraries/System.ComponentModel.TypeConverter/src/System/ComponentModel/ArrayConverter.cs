@@ -19,7 +19,7 @@ namespace System.ComponentModel
         {
             if (destinationType == typeof(string) && value is Array)
             {
-                return SR.Format(SR.GetResourceString(nameof(SR.Array), "{0} Array"), value.GetType().Name);
+                return SR.Format(SR.UsingResourceKeys() ? "{0} Array" : SR.Array, value.GetType().Name);
             }
 
             return base.ConvertTo(context, culture, value, destinationType);

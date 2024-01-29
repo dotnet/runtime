@@ -72,19 +72,11 @@ struct BasicBlockLiveness
 //
 void PromotionLiveness::Run()
 {
-    m_structLclToTrackedIndex = new (m_compiler, CMK_Promotion) unsigned[m_aggregates.size()]{};
+    m_structLclToTrackedIndex = new (m_compiler, CMK_Promotion) unsigned[m_compiler->lvaCount]{};
     unsigned trackedIndex     = 0;
-    for (size_t lclNum = 0; lclNum < m_aggregates.size(); lclNum++)
+    for (AggregateInfo* agg : m_aggregates)
     {
-        AggregateInfo* agg = m_aggregates[lclNum];
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
-        m_structLclToTrackedIndex[lclNum] = trackedIndex;
-        // TODO: We need a scalability limit on these, we cannot always track
-        // the remainder and all fields.
+        m_structLclToTrackedIndex[agg->LclNum] = trackedIndex;
         // Remainder.
         trackedIndex++;
         // Fields.
@@ -93,7 +85,7 @@ void PromotionLiveness::Run()
 #ifdef DEBUG
         // Mark the struct local (remainder) and fields as tracked for DISPTREE to properly
         // show last use information.
-        m_compiler->lvaGetDesc((unsigned)lclNum)->lvTrackedWithoutIndex = true;
+        m_compiler->lvaGetDesc(agg->LclNum)->lvTrackedWithoutIndex = true;
         for (size_t i = 0; i < agg->Replacements.size(); i++)
         {
             m_compiler->lvaGetDesc(agg->Replacements[i].LclNum)->lvTrackedWithoutIndex = true;
@@ -191,9 +183,9 @@ void PromotionLiveness::ComputeUseDefSets()
 //   useSet - The use set to mark in.
 //   defSet - The def set to mark in.
 //
-void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep& useSet, BitSetShortLongRep& defSet)
+void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet)
 {
-    AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
     if (agg == nullptr)
     {
         return;
@@ -250,9 +242,8 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep&
             }
 
             bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
-            // TODO-CQ: We could also try to figure out if a use actually touches the remainder, e.g. in some cases
-            // a struct use may consist only of promoted fields and does not actually use the remainder.
-            MarkIndex(baseIndex, isUse, isFullDefOfRemainder, useSet, defSet);
+            bool isUseOfRemainder     = isUse && agg->Unpromoted.Intersects(StructSegments::Segment(offs, offs + size));
+            MarkIndex(baseIndex, isUseOfRemainder, isFullDefOfRemainder, useSet, defSet);
         }
     }
     else
@@ -308,9 +299,9 @@ void PromotionLiveness::InterBlockLiveness()
     {
         changed = false;
 
-        for (BasicBlock* block = m_compiler->fgLastBB; block != nullptr; block = block->bbPrev)
+        for (BasicBlock* block = m_compiler->fgLastBB; block != nullptr; block = block->Prev())
         {
-            m_hasPossibleBackEdge |= block->bbNext && (block->bbNext->bbNum <= block->bbNum);
+            m_hasPossibleBackEdge |= !block->IsLast() && (block->Next()->bbNum <= block->bbNum);
             changed |= PerBlockLiveness(block);
         }
 
@@ -352,15 +343,15 @@ bool PromotionLiveness::PerBlockLiveness(BasicBlock* block)
 
     BasicBlockLiveness& bbInfo = m_bbInfo[block->bbNum];
     BitVecOps::ClearD(m_bvTraits, bbInfo.LiveOut);
-    for (BasicBlock* succ : block->GetAllSuccs(m_compiler))
-    {
+    block->VisitRegularSuccs(m_compiler, [=, &bbInfo](BasicBlock* succ) {
         BitVecOps::UnionD(m_bvTraits, bbInfo.LiveOut, m_bbInfo[succ->bbNum].LiveIn);
         m_hasPossibleBackEdge |= succ->bbNum <= block->bbNum;
-    }
+        return BasicBlockVisit::Continue;
+    });
 
     BitVecOps::LivenessD(m_bvTraits, m_liveIn, bbInfo.VarDef, bbInfo.VarUse, bbInfo.LiveOut);
 
-    if (m_compiler->ehBlockHasExnFlowDsc(block))
+    if (block->HasPotentialEHSuccs(m_compiler))
     {
         BitVecOps::ClearD(m_bvTraits, m_ehLiveVars);
         AddHandlerLiveVars(block, m_ehLiveVars);
@@ -382,119 +373,23 @@ bool PromotionLiveness::PerBlockLiveness(BasicBlock* block)
 //------------------------------------------------------------------------
 // AddHandlerLiveVars:
 //   Find variables that are live-in to handlers reachable by implicit control
-//   flow and add them to a specified bit vector.
+//   flow and return them in the specified bit vector.
 //
 // Parameters:
 //   block      - The block
-//   ehLiveVars - The bit vector to mark in
+//   ehLiveVars - The bit vector to mark in.
 //
 // Remarks:
 //   Similar to Compiler::fgGetHandlerLiveVars used by regular liveness.
 //
 void PromotionLiveness::AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars)
 {
-    assert(m_compiler->ehBlockHasExnFlowDsc(block));
-    EHblkDsc* HBtab = m_compiler->ehGetBlockExnFlowDsc(block);
+    assert(block->HasPotentialEHSuccs(m_compiler));
 
-    do
-    {
-        // Either we enter the filter first or the catch/finally
-        if (HBtab->HasFilter())
-        {
-            BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdFilter->bbNum].LiveIn);
-#if defined(FEATURE_EH_FUNCLETS)
-            // The EH subsystem can trigger a stack walk after the filter
-            // has returned, but before invoking the handler, and the only
-            // IP address reported from this method will be the original
-            // faulting instruction, thus everything in the try body
-            // must report as live any variables live-out of the filter
-            // (which is the same as those live-in to the handler)
-            BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdHndBeg->bbNum].LiveIn);
-#endif // FEATURE_EH_FUNCLETS
-        }
-        else
-        {
-            BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdHndBeg->bbNum].LiveIn);
-        }
-
-        // If we have nested try's edbEnclosing will provide them
-        assert((HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ||
-               (HBtab->ebdEnclosingTryIndex > m_compiler->ehGetIndex(HBtab)));
-
-        unsigned outerIndex = HBtab->ebdEnclosingTryIndex;
-        if (outerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            break;
-        }
-        HBtab = m_compiler->ehGetDsc(outerIndex);
-
-    } while (true);
-
-    // If this block is within a filter, we also need to report as live
-    // any vars live into enclosed finally or fault handlers, since the
-    // filter will run during the first EH pass, and enclosed or enclosing
-    // handlers will run during the second EH pass. So all these handlers
-    // are "exception flow" successors of the filter.
-    //
-    // Note we are relying on ehBlockHasExnFlowDsc to return true
-    // for any filter block that we should examine here.
-    if (block->hasHndIndex())
-    {
-        const unsigned thisHndIndex   = block->getHndIndex();
-        EHblkDsc*      enclosingHBtab = m_compiler->ehGetDsc(thisHndIndex);
-
-        if (enclosingHBtab->InFilterRegionBBRange(block))
-        {
-            assert(enclosingHBtab->HasFilter());
-
-            // Search the EH table for enclosed regions.
-            //
-            // All the enclosed regions will be lower numbered and
-            // immediately prior to and contiguous with the enclosing
-            // region in the EH tab.
-            unsigned index = thisHndIndex;
-
-            while (index > 0)
-            {
-                index--;
-                unsigned enclosingIndex = m_compiler->ehGetEnclosingTryIndex(index);
-                bool     isEnclosed     = false;
-
-                // To verify this is an enclosed region, search up
-                // through the enclosing regions until we find the
-                // region associated with the filter.
-                while (enclosingIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-                {
-                    if (enclosingIndex == thisHndIndex)
-                    {
-                        isEnclosed = true;
-                        break;
-                    }
-
-                    enclosingIndex = m_compiler->ehGetEnclosingTryIndex(enclosingIndex);
-                }
-
-                // If we found an enclosed region, check if the region
-                // is a try fault or try finally, and if so, add any
-                // locals live into the enclosed region's handler into this
-                // block's live-in set.
-                if (isEnclosed)
-                {
-                    EHblkDsc* enclosedHBtab = m_compiler->ehGetDsc(index);
-
-                    if (enclosedHBtab->HasFinallyOrFaultHandler())
-                    {
-                        BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[enclosedHBtab->ebdHndBeg->bbNum].LiveIn);
-                    }
-                }
-                // Once we run across a non-enclosed region, we can stop searching.
-                else
-                {
-                    break;
-                }
-            }
-        }
-    }
+    block->VisitEHSuccs(m_compiler, [=, &ehLiveVars](BasicBlock* succ) {
+        BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[succ->bbNum].LiveIn);
+        return BasicBlockVisit::Continue;
+    });
 }
 
 //------------------------------------------------------------------------
@@ -518,7 +413,7 @@ void PromotionLiveness::FillInLiveness()
 
         BitVecOps::ClearD(m_bvTraits, volatileVars);
 
-        if (m_compiler->ehBlockHasExnFlowDsc(block))
+        if (block->HasPotentialEHSuccs(m_compiler))
         {
             AddHandlerLiveVars(block, volatileVars);
         }
@@ -576,7 +471,7 @@ void PromotionLiveness::FillInLiveness()
 //
 void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTreeLclVarCommon* lcl)
 {
-    AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
     if (agg == nullptr)
     {
         return;
@@ -671,11 +566,9 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
             }
             else
             {
-                // TODO-CQ: We could also try to figure out if a use actually touches the remainder, e.g. in some cases
-                // a struct use may consist only of promoted fields and does not actually use the remainder.
                 BitVecOps::AddElemD(&aggTraits, aggDeaths, 0);
 
-                if (isUse)
+                if (isUse && agg->Unpromoted.Intersects(StructSegments::Segment(offs, offs + size)))
                 {
                     BitVecOps::AddElemD(m_bvTraits, life, baseIndex);
                 }
@@ -689,8 +582,19 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
         if (lcl->OperIs(GT_LCL_ADDR))
         {
             // Retbuf -- these are definitions but we do not know of how much.
-            // We never mark them as dead and we never treat them as killing anything.
-            assert(isDef);
+            // We never treat them as killing anything, but we do store liveness information for them.
+            BitVecTraits aggTraits(1 + (unsigned)agg->Replacements.size(), m_compiler);
+            BitVec       aggDeaths(BitVecOps::MakeEmpty(&aggTraits));
+            // Copy preexisting liveness information.
+            for (size_t i = 0; i <= agg->Replacements.size(); i++)
+            {
+                unsigned varIndex = baseIndex + (unsigned)i;
+                if (!BitVecOps::IsMember(m_bvTraits, life, varIndex))
+                {
+                    BitVecOps::AddElemD(&aggTraits, aggDeaths, (unsigned)i);
+                }
+            }
+            m_aggDeaths.Set(lcl, aggDeaths);
             return;
         }
 
@@ -749,6 +653,24 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
 }
 
 //------------------------------------------------------------------------
+// IsReplacementLiveIn:
+//   Check if a replacement field is live at the start of a basic block.
+//
+// Parameters:
+//   structLcl        - The struct (base) local
+//   replacementIndex - Index of the replacement
+//
+// Returns:
+//   True if the field is in the live-in set.
+//
+bool PromotionLiveness::IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
+{
+    BitVec   liveIn    = m_bbInfo[bb->bbNum].LiveIn;
+    unsigned baseIndex = m_structLclToTrackedIndex[structLcl];
+    return BitVecOps::IsMember(m_bvTraits, liveIn, baseIndex + 1 + replacementIndex);
+}
+
+//------------------------------------------------------------------------
 // IsReplacementLiveOut:
 //   Check if a replacement field is live at the end of a basic block.
 //
@@ -779,14 +701,15 @@ bool PromotionLiveness::IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl,
 //
 StructDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* lcl)
 {
-    assert(lcl->OperIsLocal() && lcl->TypeIs(TYP_STRUCT) && (m_aggregates[lcl->GetLclNum()] != nullptr));
+    assert((lcl->TypeIs(TYP_STRUCT) || (lcl->OperIs(GT_LCL_ADDR) && ((lcl->gtFlags & GTF_VAR_DEF) != 0))) &&
+           (m_aggregates.Lookup(lcl->GetLclNum()) != nullptr));
     BitVec aggDeaths;
     bool   found = m_aggDeaths.Lookup(lcl, &aggDeaths);
     assert(found);
 
     unsigned       lclNum  = lcl->GetLclNum();
-    AggregateInfo* aggInfo = m_aggregates[lclNum];
-    return StructDeaths(aggDeaths, (unsigned)aggInfo->Replacements.size());
+    AggregateInfo* aggInfo = m_aggregates.Lookup(lclNum);
+    return StructDeaths(aggDeaths, aggInfo);
 }
 
 //------------------------------------------------------------------------
@@ -798,7 +721,13 @@ StructDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* lcl
 //
 bool StructDeaths::IsRemainderDying() const
 {
-    BitVecTraits traits(1 + m_numFields, nullptr);
+    if (m_aggregate->UnpromotedMax <= m_aggregate->UnpromotedMin)
+    {
+        // No remainder.
+        return true;
+    }
+
+    BitVecTraits traits(1 + (unsigned)m_aggregate->Replacements.size(), nullptr);
     return BitVecOps::IsMember(&traits, m_deaths, 0);
 }
 
@@ -811,7 +740,9 @@ bool StructDeaths::IsRemainderDying() const
 //
 bool StructDeaths::IsReplacementDying(unsigned index) const
 {
-    BitVecTraits traits(1 + m_numFields, nullptr);
+    assert(index < m_aggregate->Replacements.size());
+
+    BitVecTraits traits(1 + (unsigned)m_aggregate->Replacements.size(), nullptr);
     return BitVecOps::IsMember(&traits, m_deaths, 1 + index);
 }
 
@@ -830,28 +761,22 @@ void PromotionLiveness::DumpVarSet(BitVec set, BitVec allVars)
     printf("{");
 
     const char* sep = "";
-    for (size_t i = 0; i < m_aggregates.size(); i++)
+    for (AggregateInfo* agg : m_aggregates)
     {
-        AggregateInfo* agg = m_aggregates[i];
-        if (agg == nullptr)
-        {
-            continue;
-        }
-
         for (size_t j = 0; j <= agg->Replacements.size(); j++)
         {
-            unsigned index = (unsigned)(m_structLclToTrackedIndex[i] + j);
+            unsigned index = (unsigned)(m_structLclToTrackedIndex[agg->LclNum] + j);
 
             if (BitVecOps::IsMember(m_bvTraits, set, index))
             {
                 if (j == 0)
                 {
-                    printf("%sV%02u(remainder)", sep, (unsigned)i);
+                    printf("%sV%02u(remainder)", sep, agg->LclNum);
                 }
                 else
                 {
                     const Replacement& rep = agg->Replacements[j - 1];
-                    printf("%sV%02u.[%03u..%03u)", sep, (unsigned)i, rep.Offset,
+                    printf("%sV%02u.[%03u..%03u)", sep, agg->LclNum, rep.Offset,
                            rep.Offset + genTypeSize(rep.AccessType));
                 }
                 sep = " ";

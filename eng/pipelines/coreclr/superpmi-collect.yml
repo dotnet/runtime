@@ -15,6 +15,9 @@ trigger:
 # and should not be triggerable from a PR.
 pr: none
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 schedules:
 - cron: "0 17 * * 0"
   displayName: Sun at 9:00 AM (UTC-8:00)
@@ -110,8 +113,8 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
-            collectionType: pmi
-            collectionName: libraries_tests
+            collectionType: crossgen2
+            collectionName: libraries
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -130,8 +133,8 @@ extends:
           jobParameters:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
-            collectionType: crossgen2
-            collectionName: libraries
+            collectionType: run
+            collectionName: realworld
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -214,3 +217,74 @@ extends:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
             SuperPmiCollect: true
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: nativeaot
+            collectionName: smoke_tests
+
+      #
+      # Collection of libraries test run: normal
+      # Libraries Test Run using Release libraries, and Checked CoreCLR
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+          buildConfig: Release
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: superpmi
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testScope: innerloop
+            liveRuntimeBuildConfig: checked
+            dependsOnTestBuildConfiguration: Release
+            dependsOnTestArchitecture: x64
+            coreclrTestGroup: superpmi_collection
+            SuperPmiCollect: true
+            SuperPmiCollectionName: libraries_tests
+
+      #
+      # Collection of libraries test run: no_tiered_compilation
+      # Libraries Test Run using Release libraries, and Checked CoreCLR
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+          buildConfig: Release
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: superpmi
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testScope: innerloop
+            liveRuntimeBuildConfig: checked
+            dependsOnTestBuildConfiguration: Release
+            dependsOnTestArchitecture: x64
+            coreclrTestGroup: superpmi_collection_no_tiered_compilation
+            SuperPmiCollect: true
+            SuperPmiCollectionName: libraries_tests_no_tiered_compilation

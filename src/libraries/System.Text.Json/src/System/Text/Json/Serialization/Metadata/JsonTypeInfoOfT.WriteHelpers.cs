@@ -149,15 +149,16 @@ namespace System.Text.Json.Serialization.Metadata
                             // Note that pending tasks are always awaited, even if an exception has been thrown or the cancellation token has fired.
                             if (state.PendingTask is not null)
                             {
+                                // Exceptions should only be propagated by the resuming converter
+#if NET8_0_OR_GREATER
+                                await state.PendingTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+#else
                                 try
                                 {
                                     await state.PendingTask.ConfigureAwait(false);
                                 }
-                                catch
-                                {
-                                    // Exceptions should only be propagated by the resuming converter
-                                    // TODO https://github.com/dotnet/runtime/issues/22144
-                                }
+                                catch { }
+#endif
                             }
 
                             // Dispose any pending async disposables (currently these can only be completed IAsyncEnumerators).

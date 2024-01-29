@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text.Json.Serialization;
+using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -24,7 +24,7 @@ namespace System.Text.Json.SourceGeneration
     /// When adding new members to the type, please ensure that these properties
     /// are satisfied otherwise we risk breaking incremental caching in the source generator!
     /// </remarks>
-    [DebuggerDisplay("ContextType={ContextType.Name}")]
+    [DebuggerDisplay("ContextType = {ContextType.Name}")]
     public sealed record ContextGenerationSpec
     {
         public required TypeRef ContextType { get; init; }
@@ -35,16 +35,6 @@ namespace System.Text.Json.SourceGeneration
 
         public required ImmutableEquatableArray<string> ContextClassDeclarations { get; init; }
 
-        public required JsonIgnoreCondition DefaultIgnoreCondition { get; init; }
-
-        public required bool IgnoreReadOnlyFields { get; init; }
-
-        public required bool IgnoreReadOnlyProperties { get; init; }
-
-        public required bool IncludeFields { get; init; }
-
-        public required JsonKnownNamingPolicy PropertyNamingPolicy { get; init; }
-
-        public required bool WriteIndented { get; init; }
+        public required SourceGenerationOptionsSpec? GeneratedOptionsSpec { get; init; }
     }
 }

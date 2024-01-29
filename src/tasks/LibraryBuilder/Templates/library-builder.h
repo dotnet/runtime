@@ -5,7 +5,9 @@
 #define __MONO_LIBRARY_BUILDER_H__
 
 #include <stdlib.h>
+#include <string.h>
 
+// Logging
 #if defined(HOST_ANDROID)
 
 #include <android/log.h>
@@ -32,7 +34,14 @@
 
 #error Unsupported Host Platform. Ensure the hosting platform is supported by the LibraryBuilder and the appropriate logging functions are added.
 
-#endif
+#endif // Logging
+
+// Platform specific native functions
+#if defined(HOST_WINDOWS)
+#define STR_CASE_CMP _stricmp
+#else
+#define STR_CASE_CMP strcasecmp
+#endif // Platform specific native functions
 
 void register_aot_modules (void);
 void preload_assemblies_with_exported_symbols ();

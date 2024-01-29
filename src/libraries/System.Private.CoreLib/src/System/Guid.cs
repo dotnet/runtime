@@ -53,33 +53,41 @@ namespace System
         {
             if (b.Length != 16)
             {
-                ThrowArgumentException();
+                ThrowGuidArrayCtorArgumentException();
             }
 
-            if (BitConverter.IsLittleEndian)
+            this = MemoryMarshal.Read<Guid>(b);
+
+            if (!BitConverter.IsLittleEndian)
             {
-                this = MemoryMarshal.Read<Guid>(b);
-                return;
+                _a = BinaryPrimitives.ReverseEndianness(_a);
+                _b = BinaryPrimitives.ReverseEndianness(_b);
+                _c = BinaryPrimitives.ReverseEndianness(_c);
             }
+        }
 
-            // slower path for BigEndian:
-            _k = b[15];  // hoist bounds checks
-            _a = BinaryPrimitives.ReadInt32LittleEndian(b);
-            _b = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(4));
-            _c = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(6));
-            _d = b[8];
-            _e = b[9];
-            _f = b[10];
-            _g = b[11];
-            _h = b[12];
-            _i = b[13];
-            _j = b[14];
-
-            [StackTraceHidden]
-            static void ThrowArgumentException()
+        public Guid(ReadOnlySpan<byte> b, bool bigEndian)
+        {
+            if (b.Length != 16)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
+                ThrowGuidArrayCtorArgumentException();
             }
+
+            this = MemoryMarshal.Read<Guid>(b);
+
+            if (BitConverter.IsLittleEndian == bigEndian)
+            {
+                _a = BinaryPrimitives.ReverseEndianness(_a);
+                _b = BinaryPrimitives.ReverseEndianness(_b);
+                _c = BinaryPrimitives.ReverseEndianness(_c);
+            }
+        }
+
+        [DoesNotReturn]
+        [StackTraceHidden]
+        private static void ThrowGuidArrayCtorArgumentException()
+        {
+            throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), "b");
         }
 
         [CLSCompliant(false)]
@@ -213,7 +221,7 @@ namespace System
                     ParseFailure.Format_GuidBrace => SR.Format_GuidBrace,
                     ParseFailure.Format_GuidComma => SR.Format_GuidComma,
                     ParseFailure.Format_GuidDashes => SR.Format_GuidDashes,
-                    ParseFailure.Format_GuidEndBrace=> SR.Format_GuidEndBrace,
+                    ParseFailure.Format_GuidEndBrace => SR.Format_GuidEndBrace,
                     ParseFailure.Format_GuidHexPrefix => SR.Format_GuidHexPrefix,
                     ParseFailure.Format_GuidInvalidChar => SR.Format_GuidInvalidChar,
                     ParseFailure.Format_GuidInvLen => SR.Format_GuidInvLen,
@@ -466,7 +474,7 @@ namespace System
             // We continue to support these but expect them to be incredibly rare.  As such, we
             // optimize for correctly formed strings where all the digits are valid hex, and only
             // fall back to supporting these other forms if parsing fails.
-            if (guidString.IndexOfAny('X', 'x', '+') >= 0 && TryCompatParsing(guidString, ref result))
+            if (guidString.ContainsAny('X', 'x', '+') && TryCompatParsing(guidString, ref result))
             {
                 return true;
             }
@@ -626,7 +634,7 @@ namespace System
             // Read in the number
             if (!TryParseHex(guidString.Slice(numStart, numLen), out result._b, ref overflow) || overflow)
             {
-                result.SetFailure(overflow ? ParseFailure.Overflow_UInt32: ParseFailure.Format_GuidInvalidChar);
+                result.SetFailure(overflow ? ParseFailure.Overflow_UInt32 : ParseFailure.Format_GuidInvalidChar);
                 return false;
             }
 
@@ -727,27 +735,17 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte DecodeByte(nuint ch1, nuint ch2, ref int invalidIfNegative)
+        private static byte DecodeByte(char ch1, char ch2, ref int invalidIfNegative)
         {
-            // TODO https://github.com/dotnet/runtime/issues/13464:
-            // Replace the Unsafe.Add with HexConverter.FromChar once the bounds checks are eliminated.
-
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
+            Debug.Assert(lookup.Length == 256);
 
-            int h1 = -1;
-            if (ch1 < (nuint)lookup.Length)
-            {
-                h1 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch1);
-            }
-            h1 <<= 4;
+            int upper = (sbyte)lookup[(byte)ch1];
+            int lower = (sbyte)lookup[(byte)ch2];
+            int result = (upper << 4) | lower;
 
-            int h2 = -1;
-            if (ch2 < (nuint)lookup.Length)
-            {
-                h2 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch2);
-            }
-
-            int result = h1 | h2;
+            // Result will be negative if ch1 or/and ch2 are greater than 0xFF
+            result = (ch1 | ch2) >> 8 == 0 ? result : -1;
             invalidIfNegative |= result;
             return (byte)result;
         }
@@ -843,17 +841,41 @@ namespace System
             str[i] == '0' &&
             (str[i + 1] | 0x20) == 'x';
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe ReadOnlySpan<byte> AsBytes(in Guid source) =>
+            new ReadOnlySpan<byte>(Unsafe.AsPointer(ref Unsafe.AsRef(in source)), sizeof(Guid));
+
         // Returns an unsigned byte array containing the GUID.
         public byte[] ToByteArray()
         {
             var g = new byte[16];
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite<Guid>(g, ref Unsafe.AsRef(in this));
+                MemoryMarshal.TryWrite(g, in this);
             }
             else
             {
-                TryWriteBytes(g);
+                // slower path for BigEndian
+                Guid guid = new Guid(AsBytes(this), false);
+                MemoryMarshal.TryWrite(g, in guid);
+            }
+            return g;
+        }
+
+
+        // Returns an unsigned byte array containing the GUID.
+        public byte[] ToByteArray(bool bigEndian)
+        {
+            var g = new byte[16];
+            if (BitConverter.IsLittleEndian != bigEndian)
+            {
+                MemoryMarshal.TryWrite(g, in this);
+            }
+            else
+            {
+                // slower path for Reverse
+                Guid guid = new Guid(AsBytes(this), bigEndian);
+                MemoryMarshal.TryWrite(g, in guid);
             }
             return g;
         }
@@ -861,26 +883,42 @@ namespace System
         // Returns whether bytes are successfully written to given span.
         public bool TryWriteBytes(Span<byte> destination)
         {
-            if (BitConverter.IsLittleEndian)
-            {
-                return MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
-            }
-
-            // slower path for BigEndian
             if (destination.Length < 16)
                 return false;
 
-            destination[15] = _k; // hoist bounds checks
-            BinaryPrimitives.WriteInt32LittleEndian(destination, _a);
-            BinaryPrimitives.WriteInt16LittleEndian(destination.Slice(4), _b);
-            BinaryPrimitives.WriteInt16LittleEndian(destination.Slice(6), _c);
-            destination[8] = _d;
-            destination[9] = _e;
-            destination[10] = _f;
-            destination[11] = _g;
-            destination[12] = _h;
-            destination[13] = _i;
-            destination[14] = _j;
+            if (BitConverter.IsLittleEndian)
+            {
+                MemoryMarshal.TryWrite(destination, in this);
+            }
+            else
+            {
+                // slower path for BigEndian
+                Guid guid = new Guid(AsBytes(this), false);
+                MemoryMarshal.TryWrite(destination, in guid);
+            }
+            return true;
+        }
+
+        // Returns whether bytes are successfully written to given span.
+        public bool TryWriteBytes(Span<byte> destination, bool bigEndian, out int bytesWritten)
+        {
+            if (destination.Length < 16)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            if (BitConverter.IsLittleEndian != bigEndian)
+            {
+                MemoryMarshal.TryWrite(destination, in this);
+            }
+            else
+            {
+                // slower path for Reverse
+                Guid guid = new Guid(AsBytes(this), bigEndian);
+                MemoryMarshal.TryWrite(destination, in guid);
+            }
+            bytesWritten = 16;
             return true;
         }
 
@@ -1405,7 +1443,7 @@ namespace System
 
             if (useDashes)
             {
-                // We divide 16 bytes into 3 x Vector128<byte>:
+                // We divide 32 bytes into 3 x Vector128<byte>:
                 //
                 // ________-____-____-____-____________
                 // xxxxxxxxxxxxxxxx
@@ -1421,14 +1459,28 @@ namespace System
                     Vector128.Create(0x7060504FF030201, 0xF0E0D0C0B0A0908).AsByte());
 
                 // Vector "z" - we need to merge some elements of hexLow with hexHigh and add 4 dashes.
-                Vector128<byte> mid1 = Vector128.Shuffle(hexLow,
-                    Vector128.Create(0x0D0CFF0B0A0908FF, 0xFFFFFFFFFFFF0F0E).AsByte());
-                Vector128<byte> mid2 = Vector128.Shuffle(hexHigh,
-                    Vector128.Create(0xFFFFFFFFFFFFFFFF, 0xFF03020100FFFFFF).AsByte());
-                Vector128<byte> dashesMask = Vector128.Shuffle(Vector128.CreateScalarUnsafe((byte)'-'),
-                    Vector128.Create(0xFFFF00FFFFFFFF00, 0x00FFFFFFFF00FFFF).AsByte());
+                Vector128<byte> vecZ;
+                Vector128<byte> dashesMask = Vector128.Create(0x00002D000000002D, 0x2D000000002D0000).AsByte();
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    // Arm64 allows shuffling values using a 32-byte wide look-up table consisting of two 128-bit registers.
+                    // Each byte in the second arg represents a value between 0 to 31 that acts as an index in the look-up table.
+                    // Now we can create a "z" vector by selecting 12 values starting from the 9th element (index 0x08) and
+                    // leaving gaps for dashes. Thus, the wider look-up table allows combining two shuffles, as used in the
+                    // generic else-case, into a single instruction on Arm64.
+                    Vector128<byte> mid = AdvSimd.Arm64.VectorTableLookup((hexLow, hexHigh),
+                        Vector128.Create(0x0D0CFF0B0A0908FF, 0xFF13121110FF0F0E).AsByte());
+                    vecZ = (mid | dashesMask);
+                }
+                else
+                {
+                    Vector128<byte> mid1 = Vector128.Shuffle(hexLow,
+                        Vector128.Create(0x0D0CFF0B0A0908FF, 0xFFFFFFFFFFFF0F0E).AsByte());
+                    Vector128<byte> mid2 = Vector128.Shuffle(hexHigh,
+                        Vector128.Create(0xFFFFFFFFFFFFFFFF, 0xFF03020100FFFFFF).AsByte());
+                    vecZ = (mid1 | mid2 | dashesMask);
+                }
 
-                Vector128<byte> vecZ = (mid1 | mid2 | dashesMask);
                 return (vecX, vecY, vecZ);
             }
 

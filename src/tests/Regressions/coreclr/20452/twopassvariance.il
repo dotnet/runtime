@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 
 .assembly twopassvariance { }
 
@@ -122,7 +123,7 @@
     }
 }
 
-.class Fooer7
+.class public Fooer7
     implements class IBar<class Base>, class IFoo<class Base>
 {
     .method public specialname rtspecialname instance void .ctor()
@@ -133,8 +134,11 @@
     }
 }
 
-.method static int32 main()
+.method public static int32 main()
 {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
 
     newobj instance void Fooer1::.ctor()

@@ -458,6 +458,84 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("1.2.840.113549.1.9.1", rdns[2].GetSingleElementType().Value);
         }
 
+        [Theory]
+        [InlineData(new [] { "2.5.4.3" }, new [] { "3000" }, "CN=#3000")]
+        [InlineData(new [] { "2.5.4.5" }, new[] { "0603550406" }, "SERIALNUMBER=#0603550406")]
+        [InlineData(new [] { "0.0" }, new[] { "31020500" }, "OID.0.0=#31020500")]
+        [InlineData(new [] { "2.5.4.3" }, new [] { "04023000" }, "CN=#3000")] // OCTET STRING is implicitly stripped
+        [InlineData(new [] { "2.5.4.3" }, new [] { "040404023000" }, "CN=#04023000")] // Only one OCTET STRING is stripped
+        [InlineData(new [] { "2.5.4.3" }, new [] { "0303003000" }, "CN=#0303003000")] // BIT STRING is not implicitly stripped
+        [InlineData(new [] { "2.5.4.8" }, new [] { "0500" }, "S=#0500")]
+        [InlineData(new [] { "2.5.4.8" }, new [] { "0101FF" }, "S=#0101FF")]
+        [InlineData(new [] { "2.5.4.3", "2.5.4.8" }, new [] { "0101FF", "3000" }, "CN=#0101FF, S=#3000")]
+        [InlineData(new [] { "2.5.4.3", "2.5.4.8", "0.0" }, new [] { "0C02504A", "3000", "0C024141" }, "CN=PJ, S=#3000, OID.0.0=AA")]
+        [InlineData(new [] { "2.5.4.3", "2.5.4.8" }, new [] { "0C03233030", "3000" }, "CN=\"#00\", S=#3000")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support an X.509 PAL")]
+        public static void Format_ComponentWithNonStringContent(string[] oids, string[] attributeValues, string expected)
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
+            {
+                for (int i = 0; i < oids.Length; i++)
+                {
+                    using (writer.PushSetOf())
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteObjectIdentifier(oids[i]);
+                        writer.WriteEncodedValue(Convert.FromHexString(attributeValues[i]));
+                    }
+                }
+            }
+
+            X500DistinguishedName distinguishedName = new X500DistinguishedName(writer.Encode());
+            string dnString = distinguishedName.Format(false);
+            Assert.Equal(expected, dnString);
+
+            string decode = distinguishedName.Decode(X500DistinguishedNameFlags.None);
+            Assert.Equal(expected, decode);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support an X.509 PAL")]
+        public static void Format_MultiValueComponentWithNonStringContent()
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
+            {
+                using (writer.PushSetOf())
+                {
+                    WriteRDNComponent(writer, "2.5.4.3", "3000");
+                    WriteRDNComponent(writer, "2.5.4.8", "3100");
+                }
+
+                using (writer.PushSetOf())
+                {
+                    WriteRDNComponent(writer, "2.5.4.5", "0C0430313233");
+                    WriteRDNComponent(writer, "2.5.4.10", "31055050505050");
+                    WriteRDNComponent(writer, "2.5.4.9", "0C075441434F434154");
+                }
+            }
+
+            const string Expected = "CN=#3000 + S=#3100, SERIALNUMBER=0123 + O=#31055050505050 + STREET=TACOCAT";
+            X500DistinguishedName distinguishedName = new X500DistinguishedName(writer.Encode());
+            string dnString = distinguishedName.Format(false);
+            Assert.Equal(Expected, dnString);
+
+            string decode = distinguishedName.Decode(X500DistinguishedNameFlags.None);
+            Assert.Equal(Expected, decode);
+
+            static void WriteRDNComponent(AsnWriter writer, string oid, string value)
+            {
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifier(oid);
+                    writer.WriteEncodedValue(Convert.FromHexString(value));
+                }
+            }
+        }
+
         public static readonly object[][] WhitespaceBeforeCases =
         {
             // Regular space.

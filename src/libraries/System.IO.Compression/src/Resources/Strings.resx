@@ -230,9 +230,6 @@
   <data name="FieldTooBigOffsetToZip64EOCD" xml:space="preserve">
     <value>Offset to Zip64 End Of Central Directory record cannot be held in an Int64.</value>
   </data>
-  <data name="FieldTooBigStartDiskNumber" xml:space="preserve">
-    <value>Start Disk Number cannot be held in an Int64.</value>
-  </data>
   <data name="FieldTooBigUncompressedSize" xml:space="preserve">
     <value>Uncompressed Size cannot be held in an Int64.</value>
   </data>

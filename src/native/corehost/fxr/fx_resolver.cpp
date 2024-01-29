@@ -174,9 +174,6 @@ namespace
 
         if (best_match == fx_ver_t())
         {
-            // This is not strictly necessary, we just need to return version which doesn't exist.
-            // But it's cleaner to return the desider reference then invalid -1.-1.-1 version.
-            best_match = fx_ref.get_fx_version_number();
             trace::verbose(_X("Framework reference didn't resolve to any available version."));
         }
         else if (trace::is_enabled())
@@ -212,7 +209,8 @@ namespace
         pal::string_t selected_fx_version;
         fx_ver_t selected_ver;
 
-        for (pal::string_t dir : hive_dir)
+        pal::string_t deps_file_name = fx_ref.get_fx_name() + _X(".deps.json");
+        for (pal::string_t& dir : hive_dir)
         {
             auto fx_dir = dir;
             trace::verbose(_X("Searching FX directory in [%s]"), fx_dir.c_str());
@@ -236,7 +234,7 @@ namespace
                     fx_ref.get_fx_version().c_str());
 
                 append_path(&fx_dir, fx_ref.get_fx_version().c_str());
-                if (pal::directory_exists(fx_dir))
+                if (file_exists_in_dir(fx_dir, deps_file_name.c_str(), nullptr))
                 {
                     selected_fx_dir = fx_dir;
                     selected_fx_version = fx_ref.get_fx_version();
@@ -259,24 +257,39 @@ namespace
                 }
 
                 fx_ver_t resolved_ver = resolve_framework_reference_from_version_list(version_list, fx_ref);
-
-                pal::string_t resolved_ver_str = resolved_ver.as_str();
-                append_path(&fx_dir, resolved_ver_str.c_str());
-
-                if (pal::directory_exists(fx_dir))
+                while (resolved_ver != fx_ver_t())
                 {
-                    if (selected_ver != fx_ver_t())
-                    {
-                        // Compare the previous hive_dir selection with the current hive_dir to see which one is the better match
-                        resolved_ver = resolve_framework_reference_from_version_list({ resolved_ver, selected_ver }, fx_ref);
-                    }
+                    pal::string_t resolved_ver_str = resolved_ver.as_str();
+                    pal::string_t resolved_fx_dir = fx_dir;
+                    append_path(&resolved_fx_dir, resolved_ver_str.c_str());
 
-                    if (resolved_ver != selected_ver)
+                    // Check that the framework's .deps.json exists. To minimize the file checks done in the most common
+                    // scenario (.deps.json exists), only check after resolving the version and if the .deps.json doesn't
+                    // exist, attempt resolving again without that version.
+                    if (!file_exists_in_dir(resolved_fx_dir, deps_file_name.c_str(), nullptr))
                     {
-                        trace::verbose(_X("Changing Selected FX version from [%s] to [%s]"), selected_fx_dir.c_str(), fx_dir.c_str());
-                        selected_ver = resolved_ver;
-                        selected_fx_dir = fx_dir;
-                        selected_fx_version = resolved_ver_str;
+                        // Remove the version and try resolving again
+                        trace::verbose(_X("Ignoring FX version [%s] without .deps.json"), resolved_ver_str.c_str());
+                        version_list.erase(std::find(version_list.cbegin(), version_list.cend(), resolved_ver));
+                        resolved_ver = resolve_framework_reference_from_version_list(version_list, fx_ref);
+                    }
+                    else
+                    {
+                        if (selected_ver != fx_ver_t())
+                        {
+                            // Compare the previous hive_dir selection with the current hive_dir to see which one is the better match
+                            resolved_ver = resolve_framework_reference_from_version_list({ resolved_ver, selected_ver }, fx_ref);
+                        }
+
+                        if (resolved_ver != selected_ver)
+                        {
+                            trace::verbose(_X("Changing Selected FX version from [%s] to [%s]"), selected_fx_dir.c_str(), resolved_fx_dir.c_str());
+                            selected_ver = resolved_ver;
+                            selected_fx_dir = resolved_fx_dir;
+                            selected_fx_version = resolved_ver_str;
+                        }
+
+                        break;
                     }
                 }
             }

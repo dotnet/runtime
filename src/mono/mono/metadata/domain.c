@@ -22,7 +22,6 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-tls.h>
@@ -45,7 +44,6 @@
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/coree.h>
 #include <mono/metadata/jit-info.h>
 #include <mono/utils/w32subset.h>
 #include "external-only.h"

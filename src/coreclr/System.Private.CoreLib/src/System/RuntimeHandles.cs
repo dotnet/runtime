@@ -82,6 +82,11 @@ namespace System
             m_type = type;
         }
 
+        internal bool IsNullHandle()
+        {
+            return m_type == null;
+        }
+
         internal static bool IsTypeDefinition(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
@@ -312,7 +317,7 @@ namespace System
 
         public ModuleHandle GetModuleHandle()
         {
-            return new ModuleHandle(RuntimeTypeHandle.GetModule(m_type));
+            return new ModuleHandle(GetModule(m_type));
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -350,7 +355,7 @@ namespace System
 
             internal IntroducedMethodEnumerator(RuntimeType type)
             {
-                _handle = RuntimeTypeHandle.GetFirstIntroducedMethod(type);
+                _handle = GetFirstIntroducedMethod(type);
                 _firstCall = true;
             }
 
@@ -362,7 +367,7 @@ namespace System
                 }
                 else if (_handle.Value != IntPtr.Zero)
                 {
-                    RuntimeTypeHandle.GetNextIntroducedMethod(ref _handle);
+                    GetNextIntroducedMethod(ref _handle);
                 }
                 return !(_handle.Value == IntPtr.Zero);
             }
@@ -457,17 +462,11 @@ namespace System
             if (isGenericCOM)
                 return type.TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
 
-            return RuntimeTypeHandle.CanCastTo(type, (RuntimeType)typeof(__ComObject));
+            return CanCastTo(type, (RuntimeType)typeof(__ComObject));
 #else
             return false;
 #endif
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsInterface(RuntimeType type);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsByRefLike(RuntimeType type);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsVisible")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -477,9 +476,6 @@ namespace System
         {
             return _IsVisible(new QCallTypeHandle(ref type));
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsValueType(RuntimeType type);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_ConstructName")]
         private static partial void ConstructName(QCallTypeHandle handle, TypeNameFormatFlags formatFlags, StringHandleOnStack retString);
@@ -803,7 +799,7 @@ namespace System
         public static RuntimeMethodHandle FromIntPtr(IntPtr value)
         {
             var handle = new RuntimeMethodHandleInternal(value);
-            var methodInfo = new RuntimeMethodInfoStub(handle, RuntimeMethodHandle.GetLoaderAllocator(handle));
+            var methodInfo = new RuntimeMethodInfoStub(handle, GetLoaderAllocator(handle));
             return new RuntimeMethodHandle(methodInfo);
         }
 
@@ -860,7 +856,7 @@ namespace System
 
         internal static MethodAttributes GetAttributes(IRuntimeMethodInfo method)
         {
-            MethodAttributes retVal = RuntimeMethodHandle.GetAttributes(method.Value);
+            MethodAttributes retVal = GetAttributes(method.Value);
             GC.KeepAlive(method);
             return retVal;
         }
@@ -885,7 +881,7 @@ namespace System
 
         internal static RuntimeType GetDeclaringType(IRuntimeMethodInfo method)
         {
-            RuntimeType type = RuntimeMethodHandle.GetDeclaringType(method.Value);
+            RuntimeType type = GetDeclaringType(method.Value);
             GC.KeepAlive(method);
             return type;
         }
@@ -897,7 +893,7 @@ namespace System
         {
             Debug.Assert(method != null);
 
-            int slot = RuntimeMethodHandle.GetSlot(method.Value);
+            int slot = GetSlot(method.Value);
             GC.KeepAlive(method);
             return slot;
         }
@@ -910,7 +906,7 @@ namespace System
 
         internal static string GetName(IRuntimeMethodInfo method)
         {
-            string name = RuntimeMethodHandle.GetName(method.Value);
+            string name = GetName(method.Value);
             GC.KeepAlive(method);
             return name;
         }
@@ -965,7 +961,7 @@ namespace System
 
         internal static bool HasMethodInstantiation(IRuntimeMethodInfo method)
         {
-            bool fRet = RuntimeMethodHandle.HasMethodInstantiation(method.Value);
+            bool fRet = HasMethodInstantiation(method.Value);
             GC.KeepAlive(method);
             return fRet;
         }
@@ -981,7 +977,7 @@ namespace System
 
         internal static bool IsGenericMethodDefinition(IRuntimeMethodInfo method)
         {
-            bool fRet = RuntimeMethodHandle.IsGenericMethodDefinition(method.Value);
+            bool fRet = IsGenericMethodDefinition(method.Value);
             GC.KeepAlive(method);
             return fRet;
         }
@@ -1157,7 +1153,7 @@ namespace System
         public static RuntimeFieldHandle FromIntPtr(IntPtr value)
         {
             var handle = new RuntimeFieldHandleInternal(value);
-            var fieldInfo = new RuntimeFieldInfoStub(handle, RuntimeFieldHandle.GetLoaderAllocator(handle));
+            var fieldInfo = new RuntimeFieldInfoStub(handle, GetLoaderAllocator(handle));
             return new RuntimeFieldHandle(fieldInfo);
         }
 
@@ -1275,7 +1271,7 @@ namespace System
         public static bool operator !=(ModuleHandle left, ModuleHandle right) => !left.Equals(right);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IRuntimeMethodInfo GetDynamicMethod(System.Reflection.Emit.DynamicMethod method, RuntimeModule module, string name, byte[] sig, Resolver resolver);
+        internal static extern IRuntimeMethodInfo GetDynamicMethod(Reflection.Emit.DynamicMethod method, RuntimeModule module, string name, byte[] sig, Resolver resolver);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RuntimeModule module);

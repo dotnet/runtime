@@ -462,7 +462,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
 
     IfFailThrow(Init(loadedImage));
 
-    if (m_pOwner->IsFile() && IsNativeMachineFormat() && g_fAllowNativeImages)
+    if (m_pOwner->IsFile() && IsNativeMachineFormat())
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.
@@ -534,7 +534,10 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 
     IfFailThrow(Init(m_Module, true));
 
-    LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %s\n", pOwner->GetPath().GetUTF8()));
+#ifdef LOGGING
+    SString ownerPath{ pOwner->GetPath() };
+    LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %s\n", ownerPath.GetUTF8()));
+#endif // LOGGING
 
 #else
     HANDLE hFile = pOwner->GetFileHandle();
@@ -548,8 +551,11 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         return;
     }
 
+#ifdef LOGGING
+    SString ownerPath{ pOwner->GetPath() };
     LOG((LF_LOADER, LL_INFO1000, "PEImage: image %s (hFile %p) mapped @ %p\n",
-        pOwner->GetPath().GetUTF8(), hFile, (void*)m_LoadedFile));
+        ownerPath.GetUTF8(), hFile, (void*)m_LoadedFile));
+#endif // LOGGING
 
     IfFailThrow(Init((void*)m_LoadedFile));
 
@@ -560,7 +566,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         return;
     }
 
-    if (HasReadyToRunHeader() && g_fAllowNativeImages)
+    if (HasReadyToRunHeader())
     {
         //Do base relocation for PE, if necessary.
         if (!IsNativeMachineFormat())
@@ -616,7 +622,10 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     INT64 offset = pOwner->GetOffset();
     INT64 size = pOwner->GetSize();
 
-    LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", pOwner->GetPath().GetUTF8()));
+#ifdef LOGGING
+    SString ownerPath{ pOwner->GetPath() };
+    LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", ownerPath.GetUTF8()));
+#endif // LOGGING
 
     // If a size is not specified, load the whole file
     if (size == 0)
@@ -862,7 +871,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     return base;
 }
 
-#if TARGET_WINDOWS
+#ifdef TARGET_WINDOWS
 
 // VirtualAlloc2
 typedef PVOID(WINAPI* VirtualAlloc2Fn)(
@@ -900,7 +909,7 @@ static bool HavePlaceholderAPI()
 
     if (pMapViewOfFile3 == NULL)
     {
-        HMODULE hm = LoadLibraryW(_T("kernelbase.dll"));
+        HMODULE hm = WszLoadLibrary(W("kernelbase.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (hm != NULL)
         {
             pVirtualAlloc2 = (VirtualAlloc2Fn)GetProcAddress(hm, "VirtualAlloc2");
@@ -1190,7 +1199,6 @@ NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
     PVOID loadedImage;
 #if TARGET_UNIX
     {
-        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
         HANDLE fileHandle = WszCreateFile(
             fullPath,
             GENERIC_READ,

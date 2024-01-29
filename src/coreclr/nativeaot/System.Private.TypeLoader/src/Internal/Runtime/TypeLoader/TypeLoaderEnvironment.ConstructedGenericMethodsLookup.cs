@@ -6,9 +6,8 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 
-using Internal.Runtime.CompilerServices;
-
 using Internal.NativeFormat;
+using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
@@ -196,9 +195,10 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        public bool TryGetGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out RuntimeTypeHandle[] genericMethodArgumentHandles)
+        public static bool TryGetGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out RuntimeTypeHandle[] genericMethodArgumentHandles)
         {
-            if (!TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out _, out genericMethodArgumentHandles))
+            TypeLoaderEnvironment instance = TypeLoaderEnvironment.InstanceOrNull;
+            if (instance == null || !instance.TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out _, out genericMethodArgumentHandles))
                 if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out _, out _, out genericMethodArgumentHandles))
                     return false;
 
@@ -273,7 +273,7 @@ namespace Internal.Runtime.TypeLoader
 
             if (!TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out dictionaryPointer))
             {
-                using (LockHolder.Hold(_typeLoaderLock))
+                using (_typeLoaderLock.EnterScope())
                 {
                     // Now that we hold the lock, we may find that existing types can now find
                     // their associated RuntimeTypeHandle. Flush the type builder states as a way
@@ -296,7 +296,7 @@ namespace Internal.Runtime.TypeLoader
         {
             result = IntPtr.Zero;
 
-            using (LockHolder.Hold(_dynamicGenericsLock))
+            using (_dynamicGenericsLock.EnterScope())
             {
                 GenericMethodEntry entry;
                 if (!_dynamicGenericMethods.TryGetValue(lookupData, out entry))
@@ -348,7 +348,7 @@ namespace Internal.Runtime.TypeLoader
             methodNameAndSignature = null;
             genericMethodArgumentHandles = null;
 
-            using (LockHolder.Hold(_dynamicGenericsLock))
+            using (_dynamicGenericsLock.EnterScope())
             {
                 GenericMethodEntry entry;
                 if (!_dynamicGenericMethodComponents.TryGetValue(methodDictionary, out entry))
@@ -363,7 +363,7 @@ namespace Internal.Runtime.TypeLoader
                 return true;
             }
         }
-        private unsafe bool TryGetStaticGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out TypeManagerHandle typeManager, out uint nameAndSigOffset, out RuntimeTypeHandle[] genericMethodArgumentHandles)
+        private static unsafe bool TryGetStaticGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out TypeManagerHandle typeManager, out uint nameAndSigOffset, out RuntimeTypeHandle[] genericMethodArgumentHandles)
         {
             // Generic method dictionaries have a header that has the hash code in it. Locate the header
             IntPtr dictionaryHeader = IntPtr.Subtract(methodDictionary, IntPtr.Size);

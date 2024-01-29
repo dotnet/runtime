@@ -51,7 +51,7 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Posts the <paramref name="continuation"/> back to the current context.</summary>
             /// <param name="continuation">The action to invoke asynchronously.</param>
-            /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
             public void OnCompleted(Action continuation)
             {
                 QueueContinuation(continuation, flowContext: true);
@@ -59,7 +59,7 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Posts the <paramref name="continuation"/> back to the current context.</summary>
             /// <param name="continuation">The action to invoke asynchronously.</param>
-            /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
             public void UnsafeOnCompleted(Action continuation)
             {
                 QueueContinuation(continuation, flowContext: false);
@@ -68,7 +68,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>Posts the <paramref name="continuation"/> back to the current context.</summary>
             /// <param name="continuation">The action to invoke asynchronously.</param>
             /// <param name="flowContext">true to flow ExecutionContext; false if flowing is not required.</param>
-            /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
             private static void QueueContinuation(Action continuation, bool flowContext)
             {
                 ArgumentNullException.ThrowIfNull(continuation);

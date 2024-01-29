@@ -50,5 +50,12 @@ namespace System.Runtime.InteropServices
         /// A PowerPC 64-bit (little-endian) processor architecture.
         /// </summary>
         Ppc64le,
+        /// <summary>
+        /// A RiscV 64-bit processor architecture.
+        /// </summary>
+        /// <remarks>
+        /// This value indicates RV64GC set of extensions.
+        /// </remarks>
+        RiscV64,
     }
 }

@@ -1,23 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: Exception class for denoting an object was in a state that
-** made calling a method illegal.
-**
-**
-=============================================================================*/
-
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
+    /// <summary>
+    /// The exception that is thrown when a method call is invalid for the object's current state.
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class InvalidOperationException : SystemException
     {
         public InvalidOperationException()
@@ -27,13 +21,13 @@ namespace System
         }
 
         public InvalidOperationException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_InvalidOperationException)
         {
             HResult = HResults.COR_E_INVALIDOPERATION;
         }
 
         public InvalidOperationException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_InvalidOperationException, innerException)
         {
             HResult = HResults.COR_E_INVALIDOPERATION;
         }

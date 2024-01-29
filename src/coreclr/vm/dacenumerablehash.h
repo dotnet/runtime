@@ -106,6 +106,98 @@ private:
         DacEnumerableHashValue       m_iHashValue;       // The hash value associated with the entry
     };
 
+
+    // End sentinel logic
+    // End sentinels indicate the end of the linked list of VolatileEntrys of each bucket
+    // As the list can be mutated while readers are reading, we use a specific end sentinel
+    // per list to identify the end of the list instead of NULL. We take advantage of the
+    // concept that VolatileEntry values are aligned, and distinguish an end sentinel
+    // from a normal pointer by means of the low bit, and we use an incrementing value
+    // for the rest of the end sentinel so that we can detect when we finish walking
+    // a linked list if we found ourselves walking to the end of the expected list,
+    // to the end of a list on an older bucket (which is OK), or to the end of a list
+    // on a newer bucket. (which will require rewalking the entire list as we may have
+    // missed elements of the list that need to be found. On the newer buckets we may
+    // find an end sentinel for the new bucket list, or an end sentinel for a different
+    // bucket from the current buckets.)
+
+    static bool IsEndSentinel(PTR_VolatileEntry entry)
+    {
+        return IsEndSentinel(dac_cast<TADDR>(entry));
+    }
+
+    static bool IsEndSentinel(TADDR value)
+    {
+        return !!(value & 1);
+    }
+
+    static TADDR InitialEndSentinel()
+    {
+        return 1;
+    }
+
+    static TADDR IncrementBaseEndSentinel(TADDR previousSentinel)
+    {
+        auto result = previousSentinel + 2;
+        _ASSERTE(IsEndSentinel(result));
+        return result;
+    }
+
+    static TADDR ComputeEndSentinel(TADDR baseEndSentinel, DWORD bucketIndex)
+    {
+        return ((TADDR)bucketIndex << 6) | baseEndSentinel;
+    }
+
+    static DWORD BucketIndexFromEndSentinel(TADDR endSentinel)
+    {
+        _ASSERTE(IsEndSentinel(endSentinel));
+        return (DWORD)endSentinel >> 6;
+    }
+
+    static DWORD BucketsAgeFromEndSentinel(TADDR endSentinel)
+    {
+        _ASSERTE(IsEndSentinel(endSentinel));
+        return ((DWORD)endSentinel & 0x3E) >> 1;
+    }
+
+    static DWORD MaxBucketCountRepresentableWithEndSentinel()
+    {
+#ifdef TARGET_64BIT
+        return 0xFFFFFFFF;
+#else
+        return 0x03FFFFFF; // Bucket age and the IsEndSentinel bit take up 6 bits
+#endif
+    }
+
+    static DWORD MaxBucketAge()
+    {
+        return 0x3E >> 1;
+    }
+
+    static bool AcceptableEndSentinel(PTR_VolatileEntry entry, TADDR expectedEndSentinel)
+    {
+        _ASSERTE(expectedEndSentinel != NULL);
+        _ASSERTE(entry != NULL);
+
+        TADDR endSentinelEntry = dac_cast<TADDR>(entry);
+
+        // Exactly matching the end sentinel
+        if (endSentinelEntry == expectedEndSentinel)
+            return true;
+
+        // An end sentinel from an earlier BucketAge is also OK. This can happen when the bucket in the
+        // new set of buckets temporarily has the remnants of a list from the old buckets.
+        if (BucketsAgeFromEndSentinel(endSentinelEntry) < BucketsAgeFromEndSentinel(expectedEndSentinel))
+            return true;
+
+        // If we reach this point, we either have found an end sentinel from a higher age set of buckets
+        // OR we've found the end from the wrong list on the current bucket.
+        _ASSERTE((BucketsAgeFromEndSentinel(endSentinelEntry) > BucketsAgeFromEndSentinel(expectedEndSentinel)) ||
+                 (BucketsAgeFromEndSentinel(endSentinelEntry) == BucketsAgeFromEndSentinel(expectedEndSentinel)));
+
+        return false;
+    }
+
 protected:
     // This opaque structure provides enumeration context when walking the set of entries which share a common
     // hash code. Initialized by BaseFindFirstEntryByHash and read/updated by BaseFindNextEntryByHash.
@@ -116,6 +208,9 @@ protected:
         TADDR   m_pEntry;               // The entry the caller is currently looking at (or NULL to begin
                                         // with). This is a VolatileEntry* and should always be a target address
                                         // not a DAC PTR_.
+        TADDR   m_expectedEndSentinel;  // A marker indicating which bucket list is being walked
+                                        // The algorihm may walk off of one list to another when the list is
+                                        // being updated, and this allows graceful handling of that case.
         DPTR(PTR_VolatileEntry)   m_curBuckets;   // The bucket table we are working with.
     };
 
@@ -178,6 +273,8 @@ protected:
     DPTR(VALUE) BaseFindFirstEntryByHash(DacEnumerableHashValue iHash, LookupContext *pContext);
     DPTR(VALUE) BaseFindNextEntryByHash(LookupContext *pContext);
 
+    static DacEnumerableHashValue BaseValuePtrToHash(DPTR(VALUE) pValue);
+
     PTR_Module GetModule()
     {
         return m_pModule;
@@ -207,24 +304,30 @@ private:
     {
         SUPPORTS_DAC;
 
-        return m_pBuckets;
+        return VolatileLoadWithoutBarrier(&m_pBuckets);
     }
 
     // our bucket table uses two extra slots - slot [0] contains the length of the table,
     //                                         slot [1] will contain the next version of the table if it resizes
     static const int SLOT_LENGTH = 0;
     static const int SLOT_NEXT = 1;
-    // normal slots start at slot #2
-    static const int SKIP_SPECIAL_SLOTS = 2;
+    static const int SLOT_ENDSENTINEL = 2;
+    // normal slots start at slot #3
+    static const int SKIP_SPECIAL_SLOTS = 3;
     
     static DWORD GetLength(DPTR(PTR_VolatileEntry) buckets)
     {
         return (DWORD)dac_cast<TADDR>(buckets[SLOT_LENGTH]);
     }
 
+    static TADDR BaseEndSentinel(DPTR(PTR_VolatileEntry) buckets)
+    {
+        return dac_cast<TADDR>(buckets[SLOT_ENDSENTINEL]);
+    }
+
     static DPTR(PTR_VolatileEntry) GetNext(DPTR(PTR_VolatileEntry) buckets)
     {
-        return dac_cast<DPTR(PTR_VolatileEntry)>(buckets[SLOT_NEXT]);
+        return dac_cast<DPTR(PTR_VolatileEntry)>(VolatileLoadWithoutBarrier(&buckets[SLOT_NEXT]));
     }
 
     // Loader heap provided at construction time. May be NULL (in which case m_pModule must *not* be NULL).

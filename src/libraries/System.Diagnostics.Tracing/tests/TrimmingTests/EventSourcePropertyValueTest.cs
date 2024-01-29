@@ -40,15 +40,37 @@ internal class Program
         }
     }
 
+    [EventSource(Name = EventSourceName)]
+    private class PrimitiveOnlyEventSource : EventSource
+    {
+        public const string EventSourceName = "PrimitiveOnly";
+        public readonly static PrimitiveOnlyEventSource Log = new PrimitiveOnlyEventSource();
+
+        [Event(1)]
+        public void LogBoolInt(bool b1, int i1)
+        {
+            WriteEvent(1, b1, i1);
+        }
+
+        [Event(2)]
+        public void LogStringIntStringInt(string s1, int i1, string s2, int i2)
+        {
+            WriteEvent(2, s1, i1, s2, i2);
+        }
+    }
+
     private class TestEventListener : EventListener
     {
         public ReadOnlyCollection<object> LogDataPayload { get; set; }
 
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            if (eventSource.Name == TestEventSource.EventSourceName)
+            switch (eventSource.Name)
             {
-                EnableEvents(eventSource, EventLevel.Verbose);
+                case TestEventSource.EventSourceName:
+                case PrimitiveOnlyEventSource.EventSourceName:
+                    EnableEvents(eventSource, EventLevel.Verbose);
+                    break;
             }
 
             base.OnEventSourceCreated(eventSource);
@@ -56,11 +78,7 @@ internal class Program
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            if (eventData.EventName == "LogData")
-            {
-                LogDataPayload = eventData.Payload;
-            }
-
+            LogDataPayload = eventData.Payload;
             base.OnEventWritten(eventData);
         }
     }
@@ -79,14 +97,23 @@ internal class Program
             };
             TestEventSource.Log.LogData(testData);
 
-            if (listener.LogDataPayload?.Count == 2 &&
-                (int)listener.LogDataPayload[0] == testData.TestInt &&
-                (int)((IDictionary<string, object>)listener.LogDataPayload[1])["SubInt"] == testData.SubData.SubInt)
+            if (listener.LogDataPayload?.Count != 2 ||
+                (int)listener.LogDataPayload[0] != testData.TestInt ||
+                (int)((IDictionary<string, object>)listener.LogDataPayload[1])["SubInt"] != testData.SubData.SubInt)
             {
-                return 100;
+                return -1;
             }
 
-            return -1;
+            PrimitiveOnlyEventSource.Log.LogStringIntStringInt("a", 1, "b", 2);
+            if (listener.LogDataPayload?.Count != 4 ||
+                (string)listener.LogDataPayload[0] != "a" ||
+                (int)listener.LogDataPayload[1] != 1 ||
+                (string)listener.LogDataPayload[2] != "b" ||
+                (int)listener.LogDataPayload[3] != 2)
+            {
+                return -2;
+            }
         }
+        return 100;
     }
 }

@@ -11,19 +11,18 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of resources within the resource blob in the image.
     /// </summary>
-    internal sealed class ResourceIndexNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ResourceIndexNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
         private ResourceDataNode _resourceDataNode;
 
         public ResourceIndexNode(ResourceDataNode resourceDataNode)
         {
             _resourceDataNode = resourceDataNode;
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__embedded_resourceindex_End", true);
         }
 
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
 
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public override bool IsShareable => false;
 
@@ -53,8 +52,7 @@ namespace ILCompiler.DependencyAnalysis
                 1,
                 new ISymbolDefinitionNode[]
                 {
-                    this,
-                    EndSymbol
+                    this
                 });
         }
 
@@ -76,7 +74,8 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (ResourceIndexData indexData in _resourceDataNode.GetOrCreateIndexData(factory))
             {
-                Vertex asmName = nativeWriter.GetStringConstant(indexData.AssemblyName);
+                string assemblyName = indexData.Assembly.GetName().FullName;
+                Vertex asmName = nativeWriter.GetStringConstant(assemblyName);
                 Vertex resourceName = nativeWriter.GetStringConstant(indexData.ResourceName);
                 Vertex offsetVertex = nativeWriter.GetUnsignedConstant((uint)indexData.NativeOffset);
                 Vertex lengthVertex = nativeWriter.GetUnsignedConstant((uint)indexData.Length);
@@ -85,12 +84,12 @@ namespace ILCompiler.DependencyAnalysis
                 indexVertex = nativeWriter.GetTuple(indexVertex, offsetVertex);
                 indexVertex = nativeWriter.GetTuple(indexVertex, lengthVertex);
 
-                int hashCode = TypeHashingAlgorithms.ComputeNameHashCode(indexData.AssemblyName);
+                int hashCode = TypeHashingAlgorithms.ComputeNameHashCode(assemblyName);
                 indexHashtable.Append((uint)hashCode, indexHashtableSection.Place(indexVertex));
             }
 
             byte[] blob = nativeWriter.Save();
-            _endSymbol.SetSymbolOffset(blob.Length);
+            _size = blob.Length;
             return blob;
         }
 

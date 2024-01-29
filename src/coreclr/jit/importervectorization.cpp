@@ -200,7 +200,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     // Optimization: use a single load when byteLen equals simdSize.
     // For code simplicity we always create nodes for two vectors case.
     const bool useSingleVector = simdSize == byteLen;
-    return gtNewSimdCmpOpAllNode(GT_EQ, TYP_BOOL, useSingleVector ? xor1 : orr, gtNewZeroConNode(simdType), baseType,
+    return gtNewSimdCmpOpAllNode(GT_EQ, TYP_INT, useSingleVector ? xor1 : orr, gtNewZeroConNode(simdType), baseType,
                                  simdSize);
 
     // Codegen example for byteLen=40 and OrdinalIgnoreCase mode with AVX:
@@ -486,7 +486,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
             JITDUMP("unable to compose indirCmp\n");
             return nullptr;
         }
-        assert(indirCmp->TypeIs(TYP_INT, TYP_BOOL));
+        assert(indirCmp->TypeIs(TYP_INT, TYP_UBYTE));
 
         GenTreeColon* lenCheckColon = gtNewColonNode(TYP_INT, indirCmp, gtNewFalse());
 
@@ -616,10 +616,8 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         op2 = impStackTop(0).val;
     }
 
-    if (!(op1->OperIs(GT_CNS_STR) ^ op2->OperIs(GT_CNS_STR)))
+    if (!op1->OperIs(GT_CNS_STR) && !op2->OperIs(GT_CNS_STR))
     {
-        // either op1 or op2 has to be CNS_STR, but not both - that case is optimized
-        // just fine as is.
         return nullptr;
     }
 
@@ -688,12 +686,12 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
                                                  strLenOffset + sizeof(int), cmpMode);
     if (unrolled != nullptr)
     {
-        impAssignTempGen(varStrTmp, varStr, CHECK_SPILL_NONE);
+        impStoreTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK nodes cannot reside on the evaluation stack
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impAssignTempGen(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
@@ -844,14 +842,14 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     {
         if (!spanObj->OperIs(GT_LCL_VAR))
         {
-            impAssignTempGen(spanLclNum, spanObj, CHECK_SPILL_NONE);
+            impStoreTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
         }
 
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impAssignTempGen(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 

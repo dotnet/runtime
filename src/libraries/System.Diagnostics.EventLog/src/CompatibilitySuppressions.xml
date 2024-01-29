@@ -1,8 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0004</DiagnosticId>
-    <Target>System.Diagnostics.EventLog.Messages, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</Target>
+    <Target>System.Diagnostics.EventLog.Messages, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>

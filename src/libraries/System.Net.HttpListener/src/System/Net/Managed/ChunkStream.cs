@@ -32,8 +32,8 @@
 //
 
 using System.Collections;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -304,12 +304,10 @@ namespace System.Net
             return State.Body;
         }
 
-        private static string RemoveChunkExtension(string input)
+        private static ReadOnlySpan<char> RemoveChunkExtension(ReadOnlySpan<char> input)
         {
             int idx = input.IndexOf(';');
-            if (idx == -1)
-                return input;
-            return input.Substring(0, idx);
+            return idx >= 0 ? input.Slice(0, idx) : input;
         }
 
         private State ReadCRLF(byte[] buffer, ref int offset, int size)

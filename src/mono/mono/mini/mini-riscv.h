@@ -62,6 +62,7 @@ extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c, riscv_stdext_d, 
 #define MONO_ARCH_CALLEE_REGS        (0b11110000000000111111110000000000)
 #define MONO_ARCH_CALLEE_SAVED_REGS  (0b00001111111111000000001100000000)
 #define MONO_ARCH_IS_CALLEE_SAVED_REG(reg) (MONO_ARCH_CALLEE_SAVED_REGS & (1 << (reg)))
+#define MONO_ARCH_EXC_ADDR_REG             (RISCV_T1)
 
 /**
  * callee saved regs + sp
@@ -111,7 +112,7 @@ extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c, riscv_stdext_d, 
 
 #endif
 
-#define MONO_ARCH_RGCTX_REG  (RISCV_T6)
+#define MONO_ARCH_RGCTX_REG  (RISCV_T2)
 #define MONO_ARCH_IMT_REG    MONO_ARCH_RGCTX_REG
 #define MONO_ARCH_VTABLE_REG (RISCV_A0)
 
@@ -121,7 +122,9 @@ extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c, riscv_stdext_d, 
 #define MONO_ARCH_CODE_ALIGNMENT  (32)
 
 // TODO: remove following def
-#define MONO_ARCH_EMULATE_MUL_DIV           (1)
+#define MONO_ARCH_EMULATE_MUL_OVF           (1)
+#define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS  (1)
+#define MONO_ARCH_EMULATE_LONG_MUL_OVF_OPTS (1)
 #define MONO_ARCH_EMULATE_FREM              (1)
 
 #ifdef TARGET_RISCV64
@@ -164,7 +167,7 @@ extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c, riscv_stdext_d, 
 #define MONO_ARCH_GSHARED_SUPPORTED     (1)
 #define MONO_ARCH_INTERPRETER_SUPPORTED (1)
 //#define MONO_ARCH_AOT_SUPPORTED         (1)
-//#define MONO_ARCH_LLVM_SUPPORTED        (1)
+#define MONO_ARCH_LLVM_SUPPORTED        (1)
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED  (1)
 #define MONO_ARCH_FLOAT32_SUPPORTED		(1)
 
@@ -200,6 +203,11 @@ typedef struct {
 	} while (0)
 
 struct MonoLMF {
+	/*
+	 * The rsp field points to the stack location where the caller ip is saved.
+	 * If the second lowest bit is set, then this is a MonoLMFExt structure, and
+	 * the other fields are not valid.
+	 */
 	gpointer previous_lmf;
 	gpointer lmf_addr;
 	host_mgreg_t pc;
@@ -225,25 +233,24 @@ typedef struct {
 } CallContext;
 
 typedef enum {
+	ArgNone, // only in void return type
 	ArgInIReg = 0x01,
-	ArgOnStack,
 	ArgInFReg,
 #ifdef TARGET_RISCV64
 	ArgInFRegR4,
 #endif
+	ArgOnStack,
 	ArgOnStackR4,
 	ArgOnStackR8,
-	ArgStructByVal,
-	ArgStructByAddr,
+
 	/*
 	 * Vtype passed in consecutive int registers.
 	 */
+	ArgVtypeInIReg,
 	ArgVtypeByRef,
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,
-	ArgVtypeInIReg,
-	ArgVtypeInMixed,
-	ArgNone // only in void return type
+	ArgVtypeInMixed
 } ArgStorage;
 
 typedef struct {
@@ -284,8 +291,16 @@ enum {
 	MONO_R_RISCV_JALR = 10,
 };
 
+void
+mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow, gboolean preserve_ips);
+
 __attribute__ ((warn_unused_result)) guint8 *
 mono_riscv_emit_imm (guint8 *code, int rd, gsize imm);
+
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_float_imm (guint8 *code,
+                                                                        int rd,
+                                                                        gsize f_imm,
+                                                                        gboolean isSingle);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_float_imm (guint8 *code,
                                                                         int rd,
@@ -295,16 +310,19 @@ __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_float_imm (guint8 *
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_nop (guint8 *code);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_load (
-    guint8 *code, int rd, int rs1, gint32 imm, int length);
+    guint8 *code, int rd, int rs1, target_mgreg_t imm, int length);
+
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_loadu (
+    guint8 *code, int rd, int rs1, target_mgreg_t imm, int length);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_fload (
-    guint8 *code, int rd, int rs1, gint32 imm, gboolean isSingle);
+    guint8 *code, int rd, int rs1, target_mgreg_t imm, gboolean isSingle);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_store (
-    guint8 *code, int rs2, int rs1, gint32 imm, int length);
+    guint8 *code, int rs2, int rs1, target_mgreg_t imm, int length);
 
 __attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_fstore (
-    guint8 *code, int rs2, int rs1, gint32 imm, gboolean isSingle);
+    guint8 *code, int rs2, int rs1, target_mgreg_t imm, gboolean isSingle);
 
 __attribute__ ((__warn_unused_result__)) guint8 *mono_riscv_emit_destroy_frame (guint8 *code);
 

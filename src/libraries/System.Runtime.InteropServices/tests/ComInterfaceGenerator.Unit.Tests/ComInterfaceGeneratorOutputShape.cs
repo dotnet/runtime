@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
+using SourceGenerators.Tests;
 using Xunit;
 
 using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
@@ -39,7 +40,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifySourceGeneratorAsync(source, "INativeAPI");
+            await VerifyGeneratedTypeShapes(source, "INativeAPI");
         }
 
         [Fact]
@@ -65,7 +66,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifySourceGeneratorAsync(source, "I", "J");
+            await VerifyGeneratedTypeShapes(source, "I", "J");
         }
 
         [Fact]
@@ -96,7 +97,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifySourceGeneratorAsync(source, "I", "Empty", "J");
+            await VerifyGeneratedTypeShapes(source, "I", "Empty", "J");
         }
 
         [Fact]
@@ -122,7 +123,111 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifySourceGeneratorAsync(source, "I", "J");
+            await VerifyGeneratedTypeShapes(source, "I", "J");
+        }
+
+        [Fact]
+        public async Task InheritingComInterfacesGenerateShadowingMethodsWithDefaultImplementations()
+        {
+            string source = $$"""
+               using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
+       
+               [GeneratedComInterface]
+               [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+               partial interface I
+               {
+                   void Method();
+                   void Method2();
+               }
+               [GeneratedComInterface]
+               [Guid("734AFCEC-8862-43CB-AB29-5A7954929E23")]
+               partial interface J : I
+               {
+                   void MethodA();
+                   void MethodB();
+               }
+               """;
+
+            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator>(false)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+                CompilationVerifier = VerifyCompilation
+            };
+            await test.RunAsync();
+
+            static void VerifyCompilation(Compilation comp)
+            {
+                var j = comp.GetTypeByMetadataName("J");
+                Assert.NotNull(j);
+
+                var shadowingMethod = Assert.Single(j.GetMembers("Method"));
+                VerifyShadowingMethodShape(shadowingMethod);
+
+                shadowingMethod = Assert.Single(j.GetMembers("Method2"));
+                VerifyShadowingMethodShape(shadowingMethod);
+            }
+        }
+
+        [Fact]
+        public async Task InheritingComInterfacesGenerateShadowingMethodsWithDefaultImplementations_LongInheritanceChain()
+        {
+            string source = $$"""
+               using System.Runtime.InteropServices;
+               using System.Runtime.InteropServices.Marshalling;
+       
+               [GeneratedComInterface]
+               [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+               partial interface I
+               {
+                   void Method();
+               }
+               [GeneratedComInterface]
+               [Guid("734AFCEC-8862-43CB-AB29-5A7954929E23")]
+               partial interface J : I
+               {
+                   void Method2();
+               }
+               [GeneratedComInterface]
+               [Guid("0DB41042-0255-4CDD-B73A-9C5D5F31303D")]
+               partial interface K : J
+               {
+                   void MethodA();
+                   void MethodB();
+               }
+               """;
+
+            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator>(false)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+                CompilationVerifier = VerifyCompilation
+            };
+            await test.RunAsync();
+
+            static void VerifyCompilation(Compilation comp)
+            {
+                var k = comp.GetTypeByMetadataName("K");
+                Assert.NotNull(k);
+
+                var shadowingMethod = Assert.Single(k.GetMembers("Method"));
+                VerifyShadowingMethodShape(shadowingMethod);
+
+                shadowingMethod = Assert.Single(k.GetMembers("Method2"));
+                Assert.False(shadowingMethod.IsAbstract);
+                Assert.True(shadowingMethod.IsVirtual);
+                VerifyShadowingMethodShape(shadowingMethod);
+            }
+        }
+
+        private static void VerifyShadowingMethodShape(ISymbol method)
+        {
+            Assert.False(method.IsAbstract);
+            Assert.True(method.IsVirtual);
+
+            var syntax = Assert.IsType<MethodDeclarationSyntax>(Assert.Single(method.DeclaringSyntaxReferences).GetSyntax());
+            Assert.Contains(syntax.Modifiers, token => token.IsKind(SyntaxKind.NewKeyword));
         }
 
         [Fact]
@@ -161,7 +266,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             static void VerifyCompilation(Compilation comp)
             {
-                Assert.True(comp.GetTypeByMetadataName("Test.IFoo")
+                Assert.True(comp.GetTypeByMetadataName("Test.IDerivedIface")
                     ?.GetMembers()
                     .Where(m => m.Kind == SymbolKind.Method && m.Name == "Bar")
                     .SingleOrDefault()
@@ -170,7 +275,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
-        private static async Task VerifySourceGeneratorAsync(string source, params string[] typeNames)
+        private static async Task VerifyGeneratedTypeShapes(string source, params string[] typeNames)
         {
             GeneratedShapeTest test = new(typeNames)
             {

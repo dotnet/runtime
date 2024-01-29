@@ -12,8 +12,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using Internal.Runtime.CompilerServices;
 using Internal.Runtime;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -741,14 +741,14 @@ namespace System
             return size;
         }
 
-        private static IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize)
+        private static unsafe IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize)
         {
-            return RuntimeImports.RhpRegisterFrozenSegment(sectionAddress, sectionSize);
+            return RuntimeImports.RhRegisterFrozenSegment((void*)sectionAddress, (nuint)sectionSize, (nuint)sectionSize, (nuint)sectionSize);
         }
 
         private static void _UnregisterFrozenSegment(IntPtr segmentHandle)
         {
-            RuntimeImports.RhpUnregisterFrozenSegment(segmentHandle);
+            RuntimeImports.RhUnregisterFrozenSegment(segmentHandle);
         }
 
         public static long GetAllocatedBytesForCurrentThread()
@@ -795,9 +795,6 @@ namespace System
         /// <typeparam name="T">Specifies the type of the array element.</typeparam>
         /// <param name="length">Specifies the length of the array.</param>
         /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
-        /// <remarks>
-        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
-        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
         public static unsafe T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
         {
@@ -819,10 +816,6 @@ namespace System
                 }
 #endif
             }
-            else if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
-            }
 
             // kept outside of the small arrays hot path to have inlining without big size growth
             return AllocateNewUninitializedArray(length, pinned);
@@ -837,7 +830,7 @@ namespace System
                     throw new OverflowException();
 
                 T[]? array = null;
-                RuntimeImports.RhAllocateNewArray(EETypePtr.EETypePtrOf<T[]>().RawValue, (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
+                RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
                 if (array == null)
                     throw new OutOfMemoryException();
 
@@ -851,18 +844,12 @@ namespace System
         /// <typeparam name="T">Specifies the type of the array element.</typeparam>
         /// <param name="length">Specifies the length of the array.</param>
         /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
-        /// <remarks>
-        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
-        /// </remarks>
         public static unsafe T[] AllocateArray<T>(int length, bool pinned = false)
         {
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
 
             if (pinned)
             {
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                    ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
-
                 flags = GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
             }
 
@@ -870,7 +857,7 @@ namespace System
                 throw new OverflowException();
 
             T[]? array = null;
-            RuntimeImports.RhAllocateNewArray(EETypePtr.EETypePtrOf<T[]>().RawValue, (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
+            RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
             if (array == null)
                 throw new OutOfMemoryException();
 
@@ -882,7 +869,6 @@ namespace System
             return new TimeSpan(RuntimeImports.RhGetTotalPauseDuration());
         }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
         public static void RefreshMemoryLimit()
         {
             ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;
@@ -913,6 +899,11 @@ namespace System
                     throw new InvalidOperationException(SR.InvalidOperationException_HardLimitInvalid);
             }
             Debug.Assert(status == RefreshMemoryStatus.Succeeded);
+        }
+
+        internal static long GetGenerationBudget(int generation)
+        {
+            return RuntimeImports.RhGetGenerationBudget(generation);
         }
     }
 }

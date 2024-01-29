@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.ComponentModel;
 using System.Data.ProviderBase;
 using System.Diagnostics;
-using System.ComponentModel;
 
 namespace System.Data.Common
 {

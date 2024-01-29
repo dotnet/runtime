@@ -31,8 +31,6 @@ namespace System.Net
         private readonly Uri _requestUri = null!;
         private string _originVerb = HttpMethod.Get.Method;
 
-        // We allow getting and setting this (to preserve app-compat). But we don't do anything with it
-        // as the underlying System.Net.Http API doesn't support it.
         private int _continueTimeout = DefaultContinueTimeout;
 
         private bool _allowReadStreamBuffering;
@@ -115,6 +113,8 @@ namespace System.Net
             public readonly RemoteCertificateValidationCallback? ServerCertificateValidationCallback;
             public readonly X509CertificateCollection? ClientCertificates;
             public readonly CookieContainer? CookieContainer;
+            public readonly ServicePoint? ServicePoint;
+            public readonly TimeSpan ContinueTimeout;
 
             public HttpClientParameters(HttpWebRequest webRequest, bool async)
             {
@@ -135,6 +135,8 @@ namespace System.Net
                 ServerCertificateValidationCallback = webRequest.ServerCertificateValidationCallback ?? ServicePointManager.ServerCertificateValidationCallback;
                 ClientCertificates = webRequest._clientCertificates;
                 CookieContainer = webRequest._cookieContainer;
+                ServicePoint = webRequest._servicePoint;
+                ContinueTimeout = TimeSpan.FromMilliseconds(webRequest.ContinueTimeout);
             }
 
             public bool Matches(HttpClientParameters requestParameters)
@@ -149,11 +151,13 @@ namespace System.Net
                     && Timeout == requestParameters.Timeout
                     && SslProtocols == requestParameters.SslProtocols
                     && CheckCertificateRevocationList == requestParameters.CheckCertificateRevocationList
+                    && ContinueTimeout == requestParameters.ContinueTimeout
                     && ReferenceEquals(Credentials, requestParameters.Credentials)
                     && ReferenceEquals(Proxy, requestParameters.Proxy)
                     && ReferenceEquals(ServerCertificateValidationCallback, requestParameters.ServerCertificateValidationCallback)
                     && ReferenceEquals(ClientCertificates, requestParameters.ClientCertificates)
-                    && ReferenceEquals(CookieContainer, requestParameters.CookieContainer);
+                    && ReferenceEquals(CookieContainer, requestParameters.CookieContainer)
+                    && ReferenceEquals(ServicePoint, requestParameters.ServicePoint);
             }
 
             public bool AreParametersAcceptableForCaching()
@@ -162,7 +166,8 @@ namespace System.Net
                     && ReferenceEquals(Proxy, DefaultWebProxy)
                     && ServerCertificateValidationCallback == null
                     && ClientCertificates == null
-                    && CookieContainer == null;
+                    && CookieContainer == null
+                    && ServicePoint == null;
             }
         }
 
@@ -450,7 +455,7 @@ namespace System.Net
                 //
                 // if not check if the user is trying to set chunked:
                 //
-                fChunked = (value.IndexOf(ChunkedHeader, StringComparison.OrdinalIgnoreCase) != -1);
+                fChunked = (value.Contains(ChunkedHeader, StringComparison.OrdinalIgnoreCase));
 
                 //
                 // prevent them from adding chunked, or from adding an Encoding without
@@ -587,8 +592,8 @@ namespace System.Net
                     return;
                 }
 
-                fKeepAlive = (value.IndexOf("keep-alive", StringComparison.OrdinalIgnoreCase) != -1);
-                fClose = (value.IndexOf("close", StringComparison.OrdinalIgnoreCase) != -1);
+                fKeepAlive = (value.Contains("keep-alive", StringComparison.OrdinalIgnoreCase));
+                fClose = (value.Contains("close", StringComparison.OrdinalIgnoreCase));
 
                 //
                 // Prevent keep-alive and close from being added
@@ -642,7 +647,7 @@ namespace System.Net
                 // Prevent 100-continues from being added
                 //
 
-                fContinue100 = (value.IndexOf(ContinueHeader, StringComparison.OrdinalIgnoreCase) != -1);
+                fContinue100 = (value.Contains(ContinueHeader, StringComparison.OrdinalIgnoreCase));
 
                 if (fContinue100)
                 {
@@ -1127,7 +1132,7 @@ namespace System.Net
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
 
-            var request = new HttpRequestMessage(new HttpMethod(_originVerb), _requestUri);
+            var request = new HttpRequestMessage(HttpMethod.Parse(_originVerb), _requestUri);
 
             bool disposeRequired = false;
             HttpClient? client = null;
@@ -1176,6 +1181,11 @@ namespace System.Net
                 else
                 {
                     request.Headers.ConnectionClose = true;
+                }
+
+                if (_servicePoint?.Expect100Continue == true)
+                {
+                    request.Headers.ExpectContinue = true;
                 }
 
                 request.Version = ProtocolVersion;
@@ -1598,6 +1608,7 @@ namespace System.Net
                 handler.MaxAutomaticRedirections = parameters.MaximumAutomaticRedirections;
                 handler.MaxResponseHeadersLength = parameters.MaximumResponseHeadersLength;
                 handler.PreAuthenticate = parameters.PreAuthenticate;
+                handler.Expect100ContinueTimeout = parameters.ContinueTimeout;
                 client.Timeout = parameters.Timeout;
 
                 if (parameters.CookieContainer != null)
@@ -1660,6 +1671,21 @@ namespace System.Net
 
                     try
                     {
+                        if (parameters.ServicePoint is { } servicePoint)
+                        {
+                            if (servicePoint.ReceiveBufferSize != -1)
+                            {
+                                socket.ReceiveBufferSize = servicePoint.ReceiveBufferSize;
+                            }
+
+                            if (servicePoint.KeepAlive is { } keepAlive)
+                            {
+                                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, keepAlive.Time);
+                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, keepAlive.Interval);
+                            }
+                        }
+
                         socket.NoDelay = true;
 
                         if (parameters.Async)

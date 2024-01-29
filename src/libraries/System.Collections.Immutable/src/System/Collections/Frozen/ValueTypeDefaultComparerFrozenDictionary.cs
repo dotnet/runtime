@@ -13,7 +13,7 @@ namespace System.Collections.Frozen
     internal sealed class ValueTypeDefaultComparerFrozenDictionary<TKey, TValue> : KeysAndValuesFrozenDictionary<TKey, TValue>, IDictionary<TKey, TValue>
         where TKey : notnull
     {
-        internal ValueTypeDefaultComparerFrozenDictionary(Dictionary<TKey, TValue> source) : base(source)
+        internal ValueTypeDefaultComparerFrozenDictionary(Dictionary<TKey, TValue> source) : base(source, Constants.KeysAreHashCodes<TKey>())
         {
             Debug.Assert(typeof(TKey).IsValueType);
             Debug.Assert(ReferenceEquals(source.Comparer, EqualityComparer<TKey>.Default));

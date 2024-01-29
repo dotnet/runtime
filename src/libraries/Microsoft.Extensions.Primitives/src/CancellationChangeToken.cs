@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.Extensions.Internal;
 
@@ -10,6 +11,7 @@ namespace Microsoft.Extensions.Primitives
     /// <summary>
     /// A <see cref="IChangeToken"/> implementation using <see cref="CancellationToken"/>.
     /// </summary>
+    [DebuggerDisplay("HasChanged = {HasChanged}")]
     public class CancellationChangeToken : IChangeToken
     {
         /// <summary>

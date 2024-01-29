@@ -158,12 +158,10 @@ std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
 #define AddFlag(__name)\
     if (flags & __name) { s += std::string(" ") + std::string(#__name); flags = (CorInfoFlag)((DWORD)flags & ~(DWORD)__name); }
 
-    AddFlag(CORINFO_FLG_PROTECTED);
     AddFlag(CORINFO_FLG_STATIC);
     AddFlag(CORINFO_FLG_FINAL);
     AddFlag(CORINFO_FLG_SYNCH);
     AddFlag(CORINFO_FLG_VIRTUAL);
-    AddFlag(CORINFO_FLG_NATIVE);
     AddFlag(CORINFO_FLG_INTRINSIC_TYPE);
     AddFlag(CORINFO_FLG_ABSTRACT);
     AddFlag(CORINFO_FLG_EnC);
@@ -183,11 +181,9 @@ std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
     AddFlag(CORINFO_FLG_ARRAY);
     AddFlag(CORINFO_FLG_OVERLAPPING_FIELDS);
     AddFlag(CORINFO_FLG_INTERFACE);
-    AddFlag(CORINFO_FLG_CUSTOMLAYOUT);
     AddFlag(CORINFO_FLG_CONTAINS_GC_PTR);
     AddFlag(CORINFO_FLG_DELEGATE);
     AddFlag(CORINFO_FLG_BYREF_LIKE);
-    AddFlag(CORINFO_FLG_VARIANCE);
     AddFlag(CORINFO_FLG_BEFOREFIELDINIT);
     AddFlag(CORINFO_FLG_GENERIC_TYPE_VARIABLE);
     AddFlag(CORINFO_FLG_UNSAFE_VALUECLASS);
@@ -233,44 +229,38 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(DEBUG_EnC);
     AddFlag(DEBUG_INFO);
     AddFlag(MIN_OPT);
-
-    AddFlag(MCJIT_BACKGROUND);
-
-    // x86 only
-    //
-    AddFlagNumeric(PINVOKE_RESTORE_ESP, 8);
-
+    AddFlag(ENABLE_CFG);
     AddFlag(OSR);
     AddFlag(ALT_JIT);
     AddFlag(FROZEN_ALLOC_ALLOWED);
-
     AddFlag(MAKEFINALCODE);
     AddFlag(READYTORUN);
     AddFlag(PROF_ENTERLEAVE);
-
     AddFlag(PROF_NO_PINVOKE_INLINE);
     AddFlag(PREJIT);
     AddFlag(RELOC);
     AddFlag(IL_STUB);
     AddFlag(PROCSPLIT);
     AddFlag(BBINSTR);
+    AddFlag(BBINSTR_IF_LOOPS);
     AddFlag(BBOPT);
     AddFlag(FRAMED);
-    AddFlag(BBINSTR_IF_LOOPS);
     AddFlag(PUBLISH_SECRET_PARAM);
-
-    AddFlag(SAMPLING_JIT_BACKGROUND);
     AddFlag(USE_PINVOKE_HELPERS);
     AddFlag(REVERSE_PINVOKE);
     AddFlag(TRACK_TRANSITIONS);
     AddFlag(TIER0);
     AddFlag(TIER1);
+    AddFlag(NO_INLINING);
 
     // arm32 only
     //
-    AddFlagNumeric(RELATIVE_CODE_RELOCS, 41);
+    AddFlagNumeric(RELATIVE_CODE_RELOCS, 29);
+    AddFlagNumeric(SOFTFP_ABI, 30);
 
-    AddFlag(NO_INLINING);
+    // xarch only
+    //
+    AddFlagNumeric(VECTOR512_THROTTLING, 31);
 
     // "Extra jit flag" support
     //

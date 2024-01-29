@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -21,7 +22,7 @@ namespace Microsoft.Interop.Analyzers
         private const string Category = "Usage";
 
         public static readonly DiagnosticDescriptor MarshallerEntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidNativeMarshallingAttributeUsage,
                 GetResourceString(nameof(SR.InvalidNativeMarshallingAttributeUsageTitle)),
                 GetResourceString(nameof(SR.EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage)),
@@ -31,7 +32,7 @@ namespace Microsoft.Interop.Analyzers
                 description: GetResourceString(nameof(SR.EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription)));
 
         public static readonly DiagnosticDescriptor MarshallerEntryPointTypeMustBeNonNullRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidNativeMarshallingAttributeUsage,
                 GetResourceString(nameof(SR.InvalidNativeMarshallingAttributeUsageTitle)),
                 GetResourceString(nameof(SR.EntryPointTypeMustBeNonNullMessage)),
@@ -41,7 +42,7 @@ namespace Microsoft.Interop.Analyzers
                 description: GetResourceString(nameof(SR.EntryPointTypeMustBeNonNullDescription)));
 
         public static readonly DiagnosticDescriptor GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidNativeMarshallingAttributeUsage,
                 GetResourceString(nameof(SR.InvalidNativeMarshallingAttributeUsageTitle)),
                 GetResourceString(nameof(SR.GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage)),

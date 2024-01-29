@@ -9,11 +9,11 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Runtime.ExceptionServices;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.ExceptionServices;
 
 namespace System.Threading.Tasks
 {
@@ -238,8 +238,12 @@ namespace System.Threading.Tasks
             {
                 // If we've gotten this far, it's time to process the actions.
 
+#if !FEATURE_WASM_THREADS
                 // Web browsers need special treatment that is implemented in TaskReplicator
                 if (OperatingSystem.IsBrowser() ||
+#else
+                if (
+#endif
                     // This is more efficient for a large number of actions, or for enforcing MaxDegreeOfParallelism:
                     (actionsCopy.Length > SMALL_ACTIONCOUNT_LIMIT) ||
                     (parallelOptions.MaxDegreeOfParallelism != -1 && parallelOptions.MaxDegreeOfParallelism < actionsCopy.Length)
@@ -257,7 +261,7 @@ namespace System.Threading.Tasks
                     try
                     {
                         TaskReplicator.Run(
-                            (ref object state, int timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
+                            (ref object state, long timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
                             {
                                 // In this particular case, we do not participate in cooperative multitasking:
                                 replicationDelegateYieldedBeforeCompletion = false;
@@ -881,32 +885,11 @@ namespace System.Threading.Tasks
                 null, null, body, localInit, localFinally);
         }
 
+        private static bool CheckTimeoutReached(long timeoutOccursAt) =>
+            timeoutOccursAt - Environment.TickCount64 <= 0;
 
-        private static bool CheckTimeoutReached(int timeoutOccursAt)
-        {
-            // Note that both, Environment.TickCount and timeoutOccursAt are ints and can overflow and become negative.
-            int currentMillis = Environment.TickCount;
-
-            if (currentMillis < timeoutOccursAt)
-                return false;
-
-            if (0 > timeoutOccursAt && 0 < currentMillis)
-                return false;
-
-            return true;
-        }
-
-
-        private static int ComputeTimeoutPoint(int timeoutLength)
-        {
-            // Environment.TickCount is an int that cycles. We intentionally let the point in time at which the
-            // timeout occurs overflow. It will still stay ahead of Environment.TickCount for the comparisons made
-            // in CheckTimeoutReached(..):
-            unchecked
-            {
-                return Environment.TickCount + timeoutLength;
-            }
-        }
+        private static long ComputeTimeoutPoint(long timeoutLength) =>
+            Environment.TickCount64 + timeoutLength;
 
         /// <summary>
         /// Performs the major work of the 64-bit parallel for loop. It assumes that argument validation has already
@@ -997,7 +980,7 @@ namespace System.Threading.Tasks
                 try
                 {
                     TaskReplicator.Run(
-                        (ref RangeWorker currentWorker, int timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
+                        (ref RangeWorker currentWorker, long timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
                         {
                             // First thing we do upon entering the task is to register as a new "RangeWorker" with the
                             // shared RangeManager instance.
@@ -1055,7 +1038,7 @@ namespace System.Threading.Tasks
                                 }
 
                                 // initialize a loop timer which will help us decide whether we should exit early
-                                int loopTimeout = ComputeTimeoutPoint(timeout);
+                                long loopTimeout = ComputeTimeoutPoint(timeout);
 
                                 // Now perform the loop itself.
                                 do
@@ -2607,7 +2590,7 @@ namespace System.Threading.Tasks
                 try
                 {
                     TaskReplicator.Run(
-                        (ref IEnumerator partitionState, int timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
+                        (ref IEnumerator partitionState, long timeout, out bool replicationDelegateYieldedBeforeCompletion) =>
                         {
                             // We will need to reset this to true if we exit due to a timeout:
                             replicationDelegateYieldedBeforeCompletion = false;
@@ -2643,7 +2626,7 @@ namespace System.Threading.Tasks
                                 }
 
                                 // initialize a loop timer which will help us decide whether we should exit early
-                                int loopTimeout = ComputeTimeoutPoint(timeout);
+                                long loopTimeout = ComputeTimeoutPoint(timeout);
 
                                 if (orderedSource != null)  // Use this path for OrderablePartitioner:
                                 {

@@ -62,7 +62,6 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task UdpConnection_ThrowsException(bool usePreAndPostbufferOverload)
         {
             // Create file to send
@@ -77,16 +76,14 @@ namespace System.Net.Sockets.Tests
 
             client.Connect(listener.LocalEndPoint);
 
-            SocketException ex;
             if (usePreAndPostbufferOverload)
             {
-                ex = await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path, Array.Empty<byte>(), Array.Empty<byte>(), TransmitFileOptions.UseDefaultWorkerThread));
+                await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(client, tempFile.Path, Array.Empty<byte>(), Array.Empty<byte>(), TransmitFileOptions.UseDefaultWorkerThread));
             }
             else
             {
-                ex = await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path));
+                await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(client, tempFile.Path));
             }
-            Assert.Equal(SocketError.NotConnected, ex.SocketErrorCode);
         }
 
         public static IEnumerable<object[]> SendFile_MemberData()
@@ -239,7 +236,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73536", TestPlatforms.iOS | TestPlatforms.tvOS)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/80169", typeof(PlatformDetection), nameof(PlatformDetection.IsOSXLike))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80169", typeof(PlatformDetection), nameof(PlatformDetection.IsApplePlatform))]
         public async Task SendFileGetsCanceledByDispose(bool owning)
         {
             // Aborting sync operations for non-owning handles is not supported on Unix.
@@ -303,7 +300,7 @@ namespace System.Net.Sockets.Tests
 
                     // On OSX, we're unable to unblock the on-going socket operations and
                     // perform an abortive close.
-                    if (!(UsesSync && PlatformDetection.IsOSXLike))
+                    if (!(UsesSync && PlatformDetection.IsApplePlatform))
                     {
                         SocketError? peerSocketError = null;
                         var receiveBuffer = new byte[4096];

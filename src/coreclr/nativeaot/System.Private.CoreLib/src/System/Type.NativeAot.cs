@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 
 using Internal.Reflection.Augments;
-using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -18,51 +19,70 @@ namespace System
 {
     public abstract partial class Type : MemberInfo, IReflect
     {
-        public bool IsInterface => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
-
         [Intrinsic]
         public static unsafe Type? GetTypeFromHandle(RuntimeTypeHandle handle) => handle.IsNull ? null : GetTypeFromMethodTable(handle.ToMethodTable());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Type GetTypeFromMethodTable(MethodTable* pMT)
+        internal static unsafe RuntimeType GetTypeFromMethodTable(MethodTable* pMT)
         {
-            // If we support the writable data section on MethodTables, the runtime type associated with the MethodTable
-            // is cached there. If writable data is not supported, we need to do a lookup in the runtime type
-            // unifier's hash table.
-            if (MethodTable.SupportsWritableData)
-            {
-                ref GCHandle handle = ref Unsafe.AsRef<GCHandle>(pMT->WritableData);
-                if (handle.IsAllocated)
-                {
-                    return Unsafe.As<Type>(handle.Target);
-                }
-                else
-                {
-                    return GetTypeFromMethodTableSlow(pMT, ref handle);
-                }
-            }
-            else
-            {
-                return RuntimeTypeUnifier.GetRuntimeTypeForEEType(new EETypePtr(pMT));
-            }
+            ref RuntimeType? type = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+            return type ?? GetTypeFromMethodTableSlow(pMT);
+        }
+
+        private static class AllocationLockHolder
+        {
+            public static Lock AllocationLock = new Lock(useTrivialWaits: true);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe Type GetTypeFromMethodTableSlow(MethodTable* pMT, ref GCHandle handle)
+        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT)
         {
-            // Note: this is bypassing the "fast" unifier cache (based on a simple IntPtr
-            // identity of MethodTable pointers). There is another unifier behind that cache
-            // that ensures this code is race-free.
-            Type result = RuntimeTypeUnifier.GetRuntimeTypeBypassCache(new EETypePtr(pMT));
-            GCHandle tempHandle = GCHandle.Alloc(result);
-
-            // We don't want to leak a handle if there's a race
-            if (Interlocked.CompareExchange(ref Unsafe.As<GCHandle, IntPtr>(ref handle), (IntPtr)tempHandle, default) != default)
+            // Allocate and set the RuntimeType under a lock - there's no way to free it if there is a race.
+            using (AllocationLockHolder.AllocationLock.EnterScope())
             {
-                tempHandle.Free();
+                ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+                if (runtimeTypeCache != null)
+                    return runtimeTypeCache;
+
+                RuntimeType? type = FrozenObjectHeapManager.Instance.TryAllocateObject<RuntimeType>();
+                if (type == null)
+                    throw new OutOfMemoryException();
+
+                type.DangerousSetUnderlyingEEType(pMT);
+
+                runtimeTypeCache = type;
+
+                return type;
+            }
+        }
+
+        //
+        // This is a port of the desktop CLR's RuntimeType.FormatTypeName() routine. This routine is used by various Reflection ToString() methods
+        // to display the name of a type. Do not use for any other purpose as it inherits some pretty quirky desktop behavior.
+        //
+        internal string FormatTypeNameForReflection()
+        {
+            // Legacy: this doesn't make sense, why use only Name for nested types but otherwise
+            // ToString() which contains namespace.
+            Type rootElementType = this;
+            while (rootElementType.HasElementType)
+                rootElementType = rootElementType.GetElementType()!;
+            if (rootElementType.IsNested)
+            {
+                return Name!;
             }
 
-            return result;
+            // Legacy: why removing "System"? Is it just because C# has keywords for these types?
+            // If so why don't we change it to lower case to match the C# keyword casing?
+            string typeName = ToString();
+            if (typeName.StartsWith("System."))
+            {
+                if (rootElementType.IsPrimitive || rootElementType == typeof(void))
+                {
+                    typeName = typeName.Substring("System.".Length);
+                }
+            }
+            return typeName;
         }
 
         [Intrinsic]

@@ -65,7 +65,7 @@ namespace System
 
         public Version(string version)
         {
-            Version v = Version.Parse(version);
+            Version v = Parse(version);
             _Major = v.Major;
             _Minor = v.Minor;
             _Build = v.Build;
@@ -120,13 +120,13 @@ namespace System
                 return CompareTo(v);
             }
 
-            throw new ArgumentException(SR.Arg_MustBeVersion);
+            throw new ArgumentException(SR.Arg_MustBeVersion, nameof(version));
         }
 
         public int CompareTo(Version? value)
         {
             return
-                object.ReferenceEquals(value, this) ? 0 :
+                ReferenceEquals(value, this) ? 0 :
                 value is null ? 1 :
                 _Major != value._Major ? (_Major > value._Major ? 1 : -1) :
                 _Minor != value._Minor ? (_Minor > value._Minor ? 1 : -1) :
@@ -142,7 +142,7 @@ namespace System
 
         public bool Equals([NotNullWhen(true)] Version? obj)
         {
-            return object.ReferenceEquals(obj, this) ||
+            return ReferenceEquals(obj, this) ||
                 (!(obj is null) &&
                 _Major == obj._Major &&
                 _Minor == obj._Minor &&
@@ -186,14 +186,14 @@ namespace System
             TryFormatCore(destination, fieldCount, out charsWritten);
 
         /// <summary>Tries to format this version instance into a span of bytes.</summary>
-        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF8 bytes.</param>
+        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF-8 bytes.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
         /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>
             TryFormatCore(utf8Destination, DefaultFormatFieldCount, out bytesWritten);
 
         /// <summary>Tries to format this version instance into a span of bytes.</summary>
-        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF8 bytes.</param>
+        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF-8 bytes.</param>
         /// <param name="fieldCount">The number of components to return. This value ranges from 0 to 4.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
         /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>

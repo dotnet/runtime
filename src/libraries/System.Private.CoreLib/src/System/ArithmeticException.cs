@@ -1,24 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: Exception class for bad arithmetic conditions!
-**
-**
-=============================================================================*/
-
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
-    // The ArithmeticException is thrown when overflow or underflow
-    // occurs.
+    /// <summary>
+    /// The exception that is thrown for errors in an arithmetic, casting, or conversion operation.
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArithmeticException : SystemException
     {
         // Creates a new ArithmeticException with its message string set to
@@ -35,13 +28,13 @@ namespace System
         // and its ExceptionInfo reference set to null.
         //
         public ArithmeticException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_ArithmeticException)
         {
             HResult = HResults.COR_E_ARITHMETIC;
         }
 
         public ArithmeticException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_ArithmeticException, innerException)
         {
             HResult = HResults.COR_E_ARITHMETIC;
         }

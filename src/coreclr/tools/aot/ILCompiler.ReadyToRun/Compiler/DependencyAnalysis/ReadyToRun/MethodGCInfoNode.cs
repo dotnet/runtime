@@ -187,7 +187,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     yield return new GCInfoComponent(_methodNode, 0);
                     yield return new GCInfoComponent(_methodNode, _methodNode.Size);
                     // TODO: Is this correct? 
-                    yield return new GCInfoComponent(factory.RuntimeFunctionsGCInfo.StartSymbol, this.OffsetFromBeginningOfArray);
+                    yield return new GCInfoComponent(factory.RuntimeFunctionsGCInfo, this.OffsetFromBeginningOfArray);
                 }
                 else
                 {
@@ -197,7 +197,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         // as that's what CoreCLR does (zapcode.cpp, ZapUnwindData::Save).
                         unwindInfo[0] |= (byte)((UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER) << FlagsShift);
                     }
-                    else if ((targetArch == TargetArchitecture.ARM) || (targetArch == TargetArchitecture.ARM64) || (targetArch == TargetArchitecture.LoongArch64))
+                    else if ((targetArch == TargetArchitecture.ARM) || (targetArch == TargetArchitecture.ARM64) || (targetArch == TargetArchitecture.LoongArch64) || (targetArch == TargetArchitecture.RiscV64))
                     {
                         // Set the 'X' bit to indicate that there is a personality routine associated with this method
                         unwindInfo[2] |= 1 << 4;

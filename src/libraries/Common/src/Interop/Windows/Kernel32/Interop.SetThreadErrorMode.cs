@@ -14,6 +14,7 @@ internal static partial class Interop
             uint dwNewMode,
             out uint lpOldMode);
 
-        internal const uint SEM_FAILCRITICALERRORS = 1;
+        internal const int SEM_FAILCRITICALERRORS = 0x00000001;
+        internal const int SEM_NOOPENFILEERRORBOX = 0x00008000;
     }
 }

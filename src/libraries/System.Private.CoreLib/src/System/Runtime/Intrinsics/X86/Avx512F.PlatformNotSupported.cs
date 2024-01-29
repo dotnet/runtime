@@ -76,6 +76,194 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> AlignRight64(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// __m128i _mm_cmpge_epi32 (__m128i a, __m128i b)
+            ///   VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(5)
+            /// </summary>
+            public static Vector128<int> CompareGreaterThanOrEqual(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmplt_epi32 (__m128i a, __m128i b)
+            ///   VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(1)
+            /// </summary>
+            public static Vector128<int> CompareLessThan(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmple_epi32 (__m128i a, __m128i b)
+            ///   VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(2)
+            /// </summary>
+            public static Vector128<int> CompareLessThanOrEqual(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmpne_epi32 (__m128i a, __m128i b)
+            ///   VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(4)
+            /// </summary>
+            public static Vector128<int> CompareNotEqual(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m256i _mm256_cmpge_epi32 (__m256i a, __m256i b)
+            ///   VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(5)
+            /// </summary>
+            public static Vector256<int> CompareGreaterThanOrEqual(Vector256<int> left, Vector256<int> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmplt_epi32 (__m256i a, __m256i b)
+            ///   VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(1)
+            /// </summary>
+            public static Vector256<int> CompareLessThan(Vector256<int> left, Vector256<int> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmple_epi32 (__m256i a, __m256i b)
+            ///   VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(2)
+            /// </summary>
+            public static Vector256<int> CompareLessThanOrEqual(Vector256<int> left, Vector256<int> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmpne_epi32 (__m256i a, __m256i b)
+            ///   VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(4)
+            /// </summary>
+            public static Vector256<int> CompareNotEqual(Vector256<int> left, Vector256<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_cmpge_epi64 (__m128i a, __m128i b)
+            ///   VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(5)
+            /// </summary>
+            public static Vector128<long> CompareGreaterThanOrEqual(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmplt_epi64 (__m128i a, __m128i b)
+            ///   VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(1)
+            /// </summary>
+            public static Vector128<long> CompareLessThan(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmple_epi64 (__m128i a, __m128i b)
+            ///   VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(2)
+            /// </summary>
+            public static Vector128<long> CompareLessThanOrEqual(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmpne_epi64 (__m128i a, __m128i b)
+            ///   VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(4)
+            /// </summary>
+            public static Vector128<long> CompareNotEqual(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m256i _mm256_cmpge_epi64 (__m256i a, __m256i b)
+            ///   VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(5)
+            /// </summary>
+            public static Vector256<long> CompareGreaterThanOrEqual(Vector256<long> left, Vector256<long> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmplt_epi64 (__m256i a, __m256i b)
+            ///   VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(1)
+            /// </summary>
+            public static Vector256<long> CompareLessThan(Vector256<long> left, Vector256<long> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmple_epi64 (__m256i a, __m256i b)
+            ///   VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(2)
+            /// </summary>
+            public static Vector256<long> CompareLessThanOrEqual(Vector256<long> left, Vector256<long> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmpne_epi64 (__m256i a, __m256i b)
+            ///   VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(4)
+            /// </summary>
+            public static Vector256<long> CompareNotEqual(Vector256<long> left, Vector256<long> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_cmpgt_epu32 (__m128i a, __m128i b)
+            ///   VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(6)
+            /// </summary>
+            public static Vector128<uint> CompareGreaterThan(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmpge_epu32 (__m128i a, __m128i b)
+            ///   VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(5)
+            /// </summary>
+            public static Vector128<uint> CompareGreaterThanOrEqual(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmplt_epu32 (__m128i a, __m128i b)
+            ///   VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(1)
+            /// </summary>
+            public static Vector128<uint> CompareLessThan(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmple_epu32 (__m128i a, __m128i b)
+            ///   VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(2)
+            /// </summary>
+            public static Vector128<uint> CompareLessThanOrEqual(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmpne_epu32 (__m128i a, __m128i b)
+            ///   VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(4)
+            /// </summary>
+            public static Vector128<uint> CompareNotEqual(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m256i _mm256_cmpgt_epu32 (__m256i a, __m256i b)
+            ///   VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(6)
+            /// </summary>
+            public static Vector256<uint> CompareGreaterThan(Vector256<uint> left, Vector256<uint> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmpge_epu32 (__m256i a, __m256i b)
+            ///   VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(5)
+            /// </summary>
+            public static Vector256<uint> CompareGreaterThanOrEqual(Vector256<uint> left, Vector256<uint> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmplt_epu32 (__m256i a, __m256i b)
+            ///   VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(1)
+            /// </summary>
+            public static Vector256<uint> CompareLessThan(Vector256<uint> left, Vector256<uint> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmple_epu32 (__m256i a, __m256i b)
+            ///   VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(2)
+            /// </summary>
+            public static Vector256<uint> CompareLessThanOrEqual(Vector256<uint> left, Vector256<uint> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmpne_epu32 (__m256i a, __m256i b)
+            ///   VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(4)
+            /// </summary>
+            public static Vector256<uint> CompareNotEqual(Vector256<uint> left, Vector256<uint> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_cmpgt_epu64 (__m128i a, __m128i b)
+            ///   VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(6)
+            /// </summary>
+            public static Vector128<ulong> CompareGreaterThan(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmpge_epu64 (__m128i a, __m128i b)
+            ///   VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(5)
+            /// </summary>
+            public static Vector128<ulong> CompareGreaterThanOrEqual(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmplt_epu64 (__m128i a, __m128i b)
+            ///   VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(1)
+            /// </summary>
+            public static Vector128<ulong> CompareLessThan(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmple_epu64 (__m128i a, __m128i b)
+            ///   VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(2)
+            /// </summary>
+            public static Vector128<ulong> CompareLessThanOrEqual(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_cmpne_epu64 (__m128i a, __m128i b)
+            ///   VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(4)
+            /// </summary>
+            public static Vector128<ulong> CompareNotEqual(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m256i _mm256_cmpgt_epu64 (__m256i a, __m256i b)
+            ///   VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(6)
+            /// </summary>
+            public static Vector256<ulong> CompareGreaterThan(Vector256<ulong> left, Vector256<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmpge_epu64 (__m256i a, __m256i b)
+            ///   VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(5)
+            /// </summary>
+            public static Vector256<ulong> CompareGreaterThanOrEqual(Vector256<ulong> left, Vector256<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmplt_epu64 (__m256i a, __m256i b)
+            ///   VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(1)
+            /// </summary>
+            public static Vector256<ulong> CompareLessThan(Vector256<ulong> left, Vector256<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmple_epu64 (__m256i a, __m256i b)
+            ///   VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(2)
+            /// </summary>
+            public static Vector256<ulong> CompareLessThanOrEqual(Vector256<ulong> left, Vector256<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_cmpne_epu64 (__m256i a, __m256i b)
+            ///   VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(4)
+            /// </summary>
+            public static Vector256<ulong> CompareNotEqual(Vector256<ulong> left, Vector256<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// __m128i _mm_cvtepi32_epi8 (__m128i a)
             ///   VPMOVDB xmm1/m32 {k1}{z}, xmm2
             /// </summary>
@@ -1150,6 +1338,11 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<double> Add(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
         /// <summary>
+        /// __m512d _mm512_add_pd (__m512d a, __m512d b)
+        ///   VADDPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Add(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
+        /// <summary>
         /// __m512 _mm512_add_ps (__m512 a, __m512 b)
         ///   VADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
         /// </summary>
@@ -1260,6 +1453,37 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ulong> AndNot(Vector512<ulong> left, Vector512<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m512d _mm512_blendv_pd (__m512d a, __m512d b, __m512d mask)
+        ///   VBLENDMPD zmm1 {k1}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> BlendVariable(Vector512<double> left, Vector512<double> right, Vector512<double> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_blendv_epi32 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMD zmm1 {k1}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> BlendVariable(Vector512<int> left, Vector512<int> right, Vector512<int> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_blendv_epi64 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMQ zmm1 {k1}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> BlendVariable(Vector512<long> left, Vector512<long> right, Vector512<long> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_blendv_ps (__m512 a, __m512 b, __m512 mask)
+        ///   VBLENDMPS zmm1 {k1}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> BlendVariable(Vector512<float> left, Vector512<float> right, Vector512<float> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_blendv_epu32 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMD zmm1 {k1}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> BlendVariable(Vector512<uint> left, Vector512<uint> right, Vector512<uint> mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_blendv_epu64 (__m512i a, __m512i b, __m512i mask)
+        ///   VPBLENDMQ zmm1 {k1}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> BlendVariable(Vector512<ulong> left, Vector512<ulong> right, Vector512<ulong> mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m512i _mm512_broadcastd_epi32 (__m128i a)
         ///   VPBROADCASTD zmm1 {k1}{z}, xmm2/m32
         /// </summary>
@@ -1321,6 +1545,286 @@ namespace System.Runtime.Intrinsics.X86
         ///   VBROADCASTF64x4 zmm1 {k1}{z}, m256
         /// </summary>
         public static unsafe Vector512<double> BroadcastVector256ToVector512(double* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512d _mm512_cmp_pd (__m512d a, __m512d b, const int imm8)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> Compare(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmpeq_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(0)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareEqual(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmpgt_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(14)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareGreaterThan(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmpge_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(13)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareGreaterThanOrEqual(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmplt_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(1)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareLessThan(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmple_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(2)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareLessThanOrEqual(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmpneq_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(4)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareNotEqual(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmpngt_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(10)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareNotGreaterThan(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmpnge_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(9)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareNotGreaterThanOrEqual(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmpnlt_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(5)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareNotLessThan(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmpnle_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(6)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareNotLessThanOrEqual(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmpord_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(7)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareOrdered(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_cmpunord_pd (__m512d a,  __m512d b)
+        ///   VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(3)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<double> CompareUnordered(Vector512<double> left, Vector512<double> right)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_cmp_ps (__m512 a, __m512 b, const int imm8)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> Compare(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmpeq_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(0)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareEqual(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmpgt_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(14)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareGreaterThan(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmpge_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(13)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareGreaterThanOrEqual(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmplt_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(1)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareLessThan(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmple_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(2)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareLessThanOrEqual(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmpneq_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(4)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareNotEqual(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmpngt_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(10)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareNotGreaterThan(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmpnge_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(9)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareNotGreaterThanOrEqual(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmpnlt_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(5)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareNotLessThan(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmpnle_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(6)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareNotLessThanOrEqual(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmpord_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(7)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareOrdered(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_cmpunord_ps (__m512 a,  __m512 b)
+        ///   VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(3)
+        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static Vector512<float> CompareUnordered(Vector512<float> left, Vector512<float> right)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_cmpeq_epi32 (__m512i a, __m512i b)
+        ///   VPCMPEQD k1 {k2}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> CompareEqual(Vector512<int> left, Vector512<int> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpgt_epi32 (__m512i a, __m512i b)
+        ///   VPCMPGTD k1 {k2}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> CompareGreaterThan(Vector512<int> left, Vector512<int> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpge_epi32 (__m512i a, __m512i b)
+        ///   VPCMPD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(5)
+        /// </summary>
+        public static Vector512<int> CompareGreaterThanOrEqual(Vector512<int> left, Vector512<int> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmplt_epi32 (__m512i a, __m512i b)
+        ///   VPCMPD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(1)
+        /// </summary>
+        public static Vector512<int> CompareLessThan(Vector512<int> left, Vector512<int> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmple_epi32 (__m512i a, __m512i b)
+        ///   VPCMPD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(2)
+        /// </summary>
+        public static Vector512<int> CompareLessThanOrEqual(Vector512<int> left, Vector512<int> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpne_epi32 (__m512i a, __m512i b)
+        ///   VPCMPD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(4)
+        /// </summary>
+        public static Vector512<int> CompareNotEqual(Vector512<int> left, Vector512<int> right)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_cmpeq_epi64 (__m512i a, __m512i b)
+        ///   VPCMPEQQ k1 {k2}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> CompareEqual(Vector512<long> left, Vector512<long> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpgt_epi64 (__m512i a, __m512i b)
+        ///   VPCMPGTQ k1 {k2}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> CompareGreaterThan(Vector512<long> left, Vector512<long> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpge_epi64 (__m512i a, __m512i b)
+        ///   VPCMPQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(5)
+        /// </summary>
+        public static Vector512<long> CompareGreaterThanOrEqual(Vector512<long> left, Vector512<long> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmplt_epi64 (__m512i a, __m512i b)
+        ///   VPCMPQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(1)
+        /// </summary>
+        public static Vector512<long> CompareLessThan(Vector512<long> left, Vector512<long> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmple_epi64 (__m512i a, __m512i b)
+        ///   VPCMPQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(2)
+        /// </summary>
+        public static Vector512<long> CompareLessThanOrEqual(Vector512<long> left, Vector512<long> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpne_epi64 (__m512i a, __m512i b)
+        ///   VPCMPQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(4)
+        /// </summary>
+        public static Vector512<long> CompareNotEqual(Vector512<long> left, Vector512<long> right)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_cmpeq_epu32 (__m512i a, __m512i b)
+        ///   VPCMPEQD k1 {k2}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> CompareEqual(Vector512<uint> left, Vector512<uint> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpgt_epu32 (__m512i a, __m512i b)
+        ///   VPCMPUD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(6)
+        /// </summary>
+        public static Vector512<uint> CompareGreaterThan(Vector512<uint> left, Vector512<uint> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpge_epu32 (__m512i a, __m512i b)
+        ///   VPCMPUD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(5)
+        /// </summary>
+        public static Vector512<uint> CompareGreaterThanOrEqual(Vector512<uint> left, Vector512<uint> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmplt_epu32 (__m512i a, __m512i b)
+        ///   VPCMPUD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(1)
+        /// </summary>
+        public static Vector512<uint> CompareLessThan(Vector512<uint> left, Vector512<uint> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmple_epu32 (__m512i a, __m512i b)
+        ///   VPCMPUD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(2)
+        /// </summary>
+        public static Vector512<uint> CompareLessThanOrEqual(Vector512<uint> left, Vector512<uint> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpne_epu32 (__m512i a, __m512i b)
+        ///   VPCMPUD k1 {k2}, zmm2, zmm3/m512/m32bcst, imm8(4)
+        /// </summary>
+        public static Vector512<uint> CompareNotEqual(Vector512<uint> left, Vector512<uint> right)  { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_cmpeq_epu64 (__m512i a, __m512i b)
+        ///   VPCMPEQQ k1 {k2}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> CompareEqual(Vector512<ulong> left, Vector512<ulong> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpgt_epu64 (__m512i a, __m512i b)
+        ///   VPCMPUQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(6)
+        /// </summary>
+        public static Vector512<ulong> CompareGreaterThan(Vector512<ulong> left, Vector512<ulong> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpge_epu64 (__m512i a, __m512i b)
+        ///   VPCMPUQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(5)
+        /// </summary>
+        public static Vector512<ulong> CompareGreaterThanOrEqual(Vector512<ulong> left, Vector512<ulong> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmplt_epu64 (__m512i a, __m512i b)
+        ///   VPCMPUQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(1)
+        /// </summary>
+        public static Vector512<ulong> CompareLessThan(Vector512<ulong> left, Vector512<ulong> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmple_epu64 (__m512i a, __m512i b)
+        ///   VPCMPUQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(2)
+        /// </summary>
+        public static Vector512<ulong> CompareLessThanOrEqual(Vector512<ulong> left, Vector512<ulong> right)  { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_cmpne_epu64 (__m512i a, __m512i b)
+        ///   VPCMPUQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(4)
+        /// </summary>
+        public static Vector512<ulong> CompareNotEqual(Vector512<ulong> left, Vector512<ulong> right)  { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_cvtsi32_ss (__m128 a, int b)

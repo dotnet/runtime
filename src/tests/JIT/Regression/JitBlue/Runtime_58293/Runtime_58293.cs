@@ -51,12 +51,11 @@ public class Runtime_58293
     public static S1[][] s_32 = new S1[][]{new S1[]{new S1(new S0(false), new S0(false), new S0(true))}};
     public static I3[][] s_42;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         s_rt = new C();
         var vr3 = s_32[0][0].F3.F2;
         M33(vr3);
-		return 100;
     }
 
     public static I0[] M33(sbyte arg0)

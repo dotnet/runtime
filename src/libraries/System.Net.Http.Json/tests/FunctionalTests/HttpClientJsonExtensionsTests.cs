@@ -1,8 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Net.Http;
 using System.Net.Test.Common;
 using System.Text.Json;
 using System.Threading;
@@ -115,7 +118,8 @@ namespace System.Net.Http.Json.Functional.Tests
                         Assert.True(response8.StatusCode == HttpStatusCode.OK);
                     }
                 },
-                async server => {
+                async server =>
+                {
                     HttpRequestData request = await server.HandleRequestAsync();
                     ValidateRequest(request, "POST");
                     Person per = JsonSerializer.Deserialize<Person>(request.Body, JsonOptions.DefaultSerializerOptions);
@@ -159,7 +163,8 @@ namespace System.Net.Http.Json.Functional.Tests
                         Assert.True(response8.StatusCode == HttpStatusCode.OK);
                     }
                 },
-                async server => {
+                async server =>
+                {
                     HttpRequestData request = await server.HandleRequestAsync();
                     ValidateRequest(request, "PUT");
 
@@ -210,7 +215,8 @@ namespace System.Net.Http.Json.Functional.Tests
                         Assert.True(response8.StatusCode == HttpStatusCode.OK);
                     }
                 },
-                async server => {
+                async server =>
+                {
                     HttpRequestData request = await server.HandleRequestAsync();
                     ValidateRequest(request, "PATCH");
                     byte[] json = request.Body;
@@ -260,7 +266,8 @@ namespace System.Net.Http.Json.Functional.Tests
                         Assert.IsType<Person>(response).Validate();
                     }
                 },
-                async server => {
+                async server =>
+                {
                     HttpRequestData request = await server.HandleRequestAsync();
                     Assert.Equal("DELETE", request.Method);
 
@@ -288,6 +295,13 @@ namespace System.Net.Http.Json.Functional.Tests
             AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsync(uriString, JsonContext.Default.Person));
             AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsync(uri, JsonContext.Default.Person));
 
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsAsyncEnumerable<Person>(uriString));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsAsyncEnumerable<Person>(uri));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsAsyncEnumerable<Person>(uriString, options: null));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsAsyncEnumerable<Person>(uri, options: null));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsAsyncEnumerable<Person>(uriString, jsonTypeInfo: null));
+            AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.GetFromJsonAsAsyncEnumerable<Person>(uri, jsonTypeInfo: null));
+
             AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.PostAsJsonAsync<Person>(uriString, null));
             AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.PostAsJsonAsync<Person>(uri, null));
             AssertExtensions.Throws<ArgumentNullException>(clientParamName, () => client.PostAsJsonAsync(uriString, null, JsonContext.Default.Person));
@@ -313,6 +327,9 @@ namespace System.Net.Http.Json.Functional.Tests
             AssertExtensions.Throws<ArgumentNullException>(contextParamName, () => client.GetFromJsonAsync(uri, typeof(Person), JsonContext.Default));
             AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.GetFromJsonAsync(uriString, JsonContext.Default.Person));
             AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.GetFromJsonAsync(uri, JsonContext.Default.Person));
+
+            AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.GetFromJsonAsAsyncEnumerable(uriString, JsonContext.Default.Person));
+            AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.GetFromJsonAsAsyncEnumerable(uri, JsonContext.Default.Person));
 
             AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.PostAsJsonAsync(uriString, null, JsonContext.Default.Person));
             AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.PostAsJsonAsync(uri, null, JsonContext.Default.Person));
@@ -347,9 +364,57 @@ namespace System.Net.Http.Json.Functional.Tests
                         per = await client.GetFromJsonAsync<Person>((Uri)null);
                     }
                 },
-                async server => {
+                async server =>
+                {
                     List<HttpHeaderData> headers = new List<HttpHeaderData> { new HttpHeaderData("Content-Type", "application/json") };
                     string json = Person.Create().Serialize();
+
+                    await server.HandleRequestAsync(content: json, headers: headers);
+                });
+        }
+
+        [Fact]
+        public async Task AllowNullRequestUrlAsAsyncEnumerable()
+        {
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
+                {
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        client.BaseAddress = uri;
+
+                        static void AssertPeopleEquality(List<Person> actualPeople)
+                        {
+                            for (int i = 0; i < People.WomenOfProgramming.Length; i++)
+                            {
+                                var expected = People.WomenOfProgramming[i];
+                                var actual = actualPeople[i];
+
+                                Person.AssertPersonEquality(expected, actual);
+                            }
+                        }
+
+                        List<Person> people = new List<Person>();
+                        await foreach (Person? person in client.GetFromJsonAsAsyncEnumerable<Person>((string)null))
+                        {
+                            people.Add(Assert.IsType<Person>(person));
+                        }
+
+                        AssertPeopleEquality(people);
+
+                        people = new List<Person>();
+                        await foreach (Person? person in client.GetFromJsonAsAsyncEnumerable<Person>((Uri)null))
+                        {
+                            people.Add(Assert.IsType<Person>(person));
+                        }
+
+                        AssertPeopleEquality(people);
+                    }
+                },
+                async server =>
+                {
+                    List<HttpHeaderData> headers = new List<HttpHeaderData> { new HttpHeaderData("Content-Type", "application/json") };
+                    string json = People.Serialize();
 
                     await server.HandleRequestAsync(content: json, headers: headers);
                 });
@@ -413,7 +478,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 Exception ex = await Assert.ThrowsAsync<TaskCanceledException>(() =>
                     useDeleteAsync ? client.DeleteFromJsonAsync<string>(uri) : client.GetFromJsonAsync<string>(uri));
 
-#if NETCORE
+#if NETCOREAPP
                 Assert.Contains("HttpClient.Timeout", ex.Message);
                 Assert.IsType<TimeoutException>(ex.InnerException);
 #endif
@@ -441,5 +506,132 @@ namespace System.Net.Http.Json.Functional.Tests
                 }));
             });
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // No Socket support
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GetFromJsonAsAsyncEnumerable_EnforcesTimeout(bool slowHeaders)
+        {
+            TaskCompletionSource<byte> exceptionThrown = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(100) };
+
+                Exception ex = await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                {
+                    await foreach (string? str in client.GetFromJsonAsAsyncEnumerable<string>(uri))
+                    {
+                        _ = str;
+                    }
+                });
+
+#if NETCOREAPP
+                Assert.Contains("HttpClient.Timeout", ex.Message);
+                Assert.IsType<TimeoutException>(ex.InnerException);
+#endif
+
+                exceptionThrown.SetResult(0);
+            },
+            async server =>
+            {
+                // The client may timeout before even connecting the server
+                await Task.WhenAny(exceptionThrown.Task, Task.Run(async () =>
+                {
+                    try
+                    {
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            if (!slowHeaders)
+                            {
+                                await connection.SendPartialResponseHeadersAsync(headers: new[] { new HttpHeaderData("Content-Length", "42") });
+                            }
+
+                            await exceptionThrown.Task;
+                        });
+                    }
+                    catch { }
+                }));
+            });
+        }
+
+        [Fact]
+        public async Task GetFromJsonAsAsyncEnumerable_EnforcesTimeoutOnInitialRequest()
+        {
+            // Using CustomResponseHandler here to effectively skip the Timeout for the initial request.
+            using var client = new HttpClient(new CustomResponseHandler((r, c) =>
+            {
+                string[] values = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+                string json = JsonSerializer.Serialize(values);
+                HttpResponseMessage response = new()
+                {
+                    Content = new StringContent(json)
+                };
+
+                return Task.FromResult(response);
+            }))
+            {
+                Timeout = TimeSpan.FromMilliseconds(1)
+            };
+
+            await foreach (string s in client.GetFromJsonAsAsyncEnumerable<string>("http://dummyUrl"))
+            {
+                // Wait longer than the timeout.
+                await Task.Delay(TimeSpan.FromMilliseconds(10));
+            }
+        }
+
+        [Fact]
+        public async Task GetFromJsonAsAsyncEnumerable_SerializerUsesCamelCase()
+        {
+            using var client = new HttpClient(new CustomResponseHandler((r, c) =>
+            {
+                string json = """[{"value":1},{"value":2}]""";
+                HttpResponseMessage response = new()
+                {
+                    Content = new StringContent(json)
+                };
+                return Task.FromResult(response);
+            }));
+
+            await foreach (var m in client.GetFromJsonAsAsyncEnumerable<TestModel>("http://dummyUrl"))
+            {
+                Assert.True(m.Value > 0);
+            }
+        }
+
+        [Fact]
+        public async Task GetFromJsonAsAsyncEnumerable_CustomSerializerOptions()
+        {
+            using var client = new HttpClient(new CustomResponseHandler((r, c) =>
+            {
+                string json = """[{"Value":1},{"Value":2}]""";
+                HttpResponseMessage response = new()
+                {
+                    Content = new StringContent(json)
+                };
+                return Task.FromResult(response);
+            }));
+            await foreach (var m in client.GetFromJsonAsAsyncEnumerable<TestModel>("http://dummyUrl", JsonSerializerOptions.Default))
+            {
+                Assert.True(m.Value > 0);
+            }
+        }
     }
+}
+
+file sealed class CustomResponseHandler : HttpMessageHandler
+{
+    private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _func;
+
+    public CustomResponseHandler(
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> func) => _func = func;
+
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request, CancellationToken cancellationToken) => _func(request, cancellationToken);
+}
+
+file sealed class TestModel
+{
+    public int Value { get; set; }
 }

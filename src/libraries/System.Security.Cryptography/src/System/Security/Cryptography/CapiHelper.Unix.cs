@@ -37,6 +37,7 @@ namespace System.Security.Cryptography
         /// </summary>
         private static HashAlgorithmName AlgorithmToHashAlgorithmName(HashAlgorithm hashAlgorithm)
         {
+            // CAPI CSP doesn't support SHA-3, so don't add it here.
             return hashAlgorithm switch
             {
                 SHA256 => HashAlgorithmName.SHA256,
@@ -50,6 +51,7 @@ namespace System.Security.Cryptography
 
         private static HashAlgorithmName OidToHashAlgorithmName(string oid)
         {
+            // CAPI CSP doesn't support SHA-3, so don't add it here.
             return oid switch
             {
                 Oids.Sha256 => HashAlgorithmName.SHA256,
@@ -63,6 +65,7 @@ namespace System.Security.Cryptography
 
         private static HashAlgorithmName HashAlgorithmTypeToHashAlgorithmName(Type hashAlgType)
         {
+            // CAPI CSP doesn't support SHA-3, so don't add it here.
             if (typeof(SHA1).IsAssignableFrom(hashAlgType))
                 return HashAlgorithmName.SHA1;
             if (typeof(SHA256).IsAssignableFrom(hashAlgType))

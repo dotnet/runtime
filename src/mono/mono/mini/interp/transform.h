@@ -15,17 +15,6 @@
 // This instruction is protected by a clause
 #define INTERP_INST_FLAG_PROTECTED_NEWOBJ 128
 
-#define INTERP_LOCAL_FLAG_DEAD 1
-#define INTERP_LOCAL_FLAG_EXECUTION_STACK 2
-#define INTERP_LOCAL_FLAG_CALL_ARGS 4
-#define INTERP_LOCAL_FLAG_GLOBAL 8
-#define INTERP_LOCAL_FLAG_NO_CALL_ARGS 16
-
-#define INTERP_LOCAL_FLAG_UNKNOWN_USE 32
-#define INTERP_LOCAL_FLAG_LOCAL_ONLY 64
-// We use this flag to avoid addition of align field in InterpLocal, for now
-#define INTERP_LOCAL_FLAG_SIMD 128
-
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
 typedef struct _InterpCallInfo InterpCallInfo;
@@ -36,20 +25,22 @@ typedef struct
 	unsigned char type;
 	unsigned char flags;
 	/*
-	 * The local associated with the value of this stack entry. Every time we push on
-	 * the stack a new local is created.
+	 * The var associated with the value of this stack entry. Every time we push on
+	 * the stack a new var is created.
 	 */
-	int local;
+	int var;
 	/* The offset from the execution stack start where this is stored. Used by the fast offset allocator */
 	int offset;
 	/* Saves how much stack this is using. It is a multiple of MINT_STACK_SLOT_SIZE*/
 	int size;
 } StackInfo;
 
-#define LOCAL_VALUE_NONE 0
-#define LOCAL_VALUE_LOCAL 1
-#define LOCAL_VALUE_I4 2
-#define LOCAL_VALUE_I8 3
+#define VAR_VALUE_NONE 0
+#define VAR_VALUE_OTHER_VAR 1
+#define VAR_VALUE_I4 2
+#define VAR_VALUE_I8 3
+#define VAR_VALUE_R4 4
+#define VAR_VALUE_NON_NULL 5
 
 // LocalValue contains data to construct an InterpInst that is equivalent with the contents
 // of the stack slot / local / argument.
@@ -58,16 +49,17 @@ typedef struct {
 	int type;
 	// Holds the local index or the actual constant value
 	union {
-		int local;
+		int var;
 		gint32 i;
 		gint64 l;
+		float f;
 	};
 	// The instruction that writes this local.
 	InterpInst *ins;
 	int def_index;
 	// ref count for ins->dreg
 	int ref_count;
-} LocalValue;
+} InterpVarValue;
 
 struct _InterpInst {
 	guint16 opcode;
@@ -130,18 +122,18 @@ struct _InterpBasicBlock {
 	SeqPoint **pred_seq_points;
 	guint num_pred_seq_points;
 
-	int reachable : 1;
+	guint reachable : 1;
 	// This block has special semantics and it shouldn't be optimized away
-	int eh_block : 1;
-	int dead: 1;
+	guint eh_block : 1;
+	guint dead: 1;
 	// If patchpoint is set we will store mapping information between native offset and bblock index within
 	// InterpMethod. In the unoptimized method we will map from native offset to the bb_index while in the
 	// optimized method we will map the bb_index to the corresponding native offset.
-	int patchpoint_data: 1;
-	int emit_patchpoint: 1;
+	guint patchpoint_data: 1;
+	guint emit_patchpoint: 1;
 	// used by jiterpreter
-	int backwards_branch_target: 1;
-	int contains_call_instruction: 1;
+	guint backwards_branch_target: 1;
+	guint contains_call_instruction: 1;
 };
 
 struct _InterpCallInfo {
@@ -176,7 +168,6 @@ typedef struct {
 typedef struct {
 	MonoType *type;
 	int mt;
-	int flags;
 	int indirects;
 	int offset;
 	int size;
@@ -197,7 +188,16 @@ typedef struct {
 		// Only used during super instruction pass.
 		InterpInst *def;
 	};
-} InterpLocal;
+
+	guint dead : 1;
+	guint execution_stack : 1;
+	guint call_args : 1;
+	guint global : 1;
+	guint no_call_args : 1;
+	guint unknown_use : 1;
+	guint local_only : 1;
+	guint simd : 1; // We use this flag to avoid addition of align field in InterpVar, for now
+} InterpVar;
 
 typedef struct
 {
@@ -222,12 +222,16 @@ typedef struct
 	gint32 param_area_offset;
 	gint32 total_locals_size;
 	gint32 max_stack_size;
-	InterpLocal *locals;
+	int dummy_var;
 	int *local_ref_count;
 	unsigned int il_locals_offset;
 	unsigned int il_locals_size;
-	unsigned int locals_size;
-	unsigned int locals_capacity;
+
+	// All vars, used in instructions
+	InterpVar *vars;
+	unsigned int vars_size;
+	unsigned int vars_capacity;
+
 	int n_data_items;
 	int max_data_items;
 	void **data_items;
@@ -256,16 +260,16 @@ typedef struct
 	int inline_depth;
 	int patchpoint_data_n;
 	int *patchpoint_data;
-	int has_localloc : 1;
+	guint has_localloc : 1;
 	// If method compilation fails due to certain limits being exceeded, we disable inlining
 	// and retry compilation.
-	int disable_inlining : 1;
+	guint disable_inlining : 1;
 	// If the current method (inlined_method) has the aggressive inlining attribute, we no longer
 	// bail out of inlining when having to generate certain opcodes (like call, throw).
-	int aggressive_inlining : 1;
-	int optimized : 1;
-	int has_invalid_code : 1;
-	int has_inlined_one_call : 1;
+	guint aggressive_inlining : 1;
+	guint optimized : 1;
+	guint has_invalid_code : 1;
+	guint has_inlined_one_call : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0
@@ -283,6 +287,11 @@ typedef struct
 #define STACK_TYPE_I STACK_TYPE_I4
 #endif
 
+#define interp_ins_set_dummy_dreg(ins,td) do { \
+	if (td->dummy_var < 0) \
+		interp_create_dummy_var (td); \
+	ins->dreg = td->dummy_var; \
+} while (0)
 
 #define interp_ins_set_dreg(ins,dr) do { \
         ins->dreg = dr; \
@@ -372,8 +381,80 @@ mono_jiterp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode);
 void
 mono_interp_print_td_code (TransformData *td);
 
+/* Compilation internal methods */
+
+InterpInst*
+interp_new_ins (TransformData *td, int opcode, int len);
+
+InterpInst*
+interp_insert_ins_bb (TransformData *td, InterpBasicBlock *bb, InterpInst *prev_ins, int opcode);
+
+InterpInst*
+interp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode);
+
+InterpInst*
+interp_first_ins (InterpBasicBlock *bb);
+
+InterpInst*
+interp_next_ins (InterpInst *ins);
+
+InterpInst*
+interp_prev_ins (InterpInst *ins);
+
+void
+interp_clear_ins (InterpInst *ins);
+
+gboolean
+interp_ins_is_nop (InterpInst *ins);
+
+int
+interp_get_ins_length (InterpInst *ins);
+
+void
+interp_dump_ins (InterpInst *ins, gpointer *data_items);
+
+InterpInst*
+interp_get_ldc_i4_from_const (TransformData *td, InterpInst *ins, gint32 ct, int dreg);
+
+gint32 
+interp_get_const_from_ldc_i4 (InterpInst *ins);
+
+int
+interp_get_mov_for_type (int mt, gboolean needs_sext);
+
+gboolean
+interp_is_short_offset (int src_offset, int dest_offset);
+
+InterpBasicBlock*
+interp_alloc_bb (TransformData *td);
+
+void
+interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock *to);
+
+int
+interp_compute_native_offset_estimates (TransformData *td);
+
+void
+interp_optimize_code (TransformData *td);
+
+void
+interp_alloc_offsets (TransformData *td);
+
+int
+interp_alloc_global_var_offset (TransformData *td, int var);
+
+int
+interp_create_var (TransformData *td, MonoType *type);
+
+void
+interp_foreach_ins_var (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int*, gpointer));
+
+void
+interp_foreach_ins_svar (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int*, gpointer));
+
+
 /* Forward definitions for simd methods */
 static gboolean
-interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature);
+interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj);
 
 #endif /* __MONO_MINI_INTERP_TRANSFORM_H__ */

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
 
@@ -45,12 +46,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			=> throw new NotImplementedException ();
 
 		public InterproceduralState<TValue, TValueLattice> Clone ()
-			=> new (Methods.Clone (),
+			=> new (Methods.DeepCopy (),
 			HoistedLocals.Clone (), lattice);
 
 		public void TrackMethod (MethodBodyValue method)
 		{
-			var methodsList = new List<MethodBodyValue> (Methods);
+			Debug.Assert (!Methods.IsUnknown ());
+			var methodsList = new List<MethodBodyValue> (Methods.GetKnownValues ());
 			methodsList.Add (method);
 			Methods = new ValueSet<MethodBodyValue> (methodsList);
 		}

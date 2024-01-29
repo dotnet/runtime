@@ -9,7 +9,7 @@ namespace Test
     public class App
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool param3 = false;
             try
@@ -23,7 +23,6 @@ namespace Test
                     //and here...
                 } while (param3);
             }
-            return 100;
         }
     }
 }

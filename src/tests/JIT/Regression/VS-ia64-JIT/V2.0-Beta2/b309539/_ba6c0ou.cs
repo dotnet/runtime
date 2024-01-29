@@ -55,7 +55,7 @@ public struct AA
 public class App
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         App.m_bFwd6 = false;
 
@@ -84,7 +84,6 @@ public class App
             Console.WriteLine("Exception handled: " + x.ToString());
         }
         Console.WriteLine("Passed.");
-        return 100;
     }
     public static char m_chFwd1;
     public static Array[][] m_axFwd2;

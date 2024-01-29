@@ -1419,9 +1419,9 @@ namespace System.Text.RegularExpressions
         /// A tuple of data about the literal: only one of the Char/String/SetChars fields is relevant.
         /// The Negated value indicates whether the Char/SetChars should be considered exclusionary.
         /// </returns>
-        public StartingLiteralData? FindStartingLiteral(int maxSetCharacters = 5) // 5 is max optimized by IndexOfAny today
+        public StartingLiteralData? FindStartingLiteral(int maxSetCharacters = 5) // 5 is max efficiently optimized by IndexOfAny today
         {
-            Debug.Assert(maxSetCharacters >= 0 && maxSetCharacters <= 128, $"{nameof(maxSetCharacters)} == {maxSetCharacters} should be small enough to be stack allocated.");
+            Debug.Assert(maxSetCharacters is >= 0 and <= 128, $"{nameof(maxSetCharacters)} == {maxSetCharacters} should be small enough to be stack allocated.");
 
             if (FindStartingLiteralNode() is RegexNode node)
             {
@@ -1603,14 +1603,9 @@ namespace System.Text.RegularExpressions
                         prev.Str = prev.Ch.ToString();
                     }
 
-                    if ((optionsAt & RegexOptions.RightToLeft) == 0)
-                    {
-                        prev.Str = (at.Kind == RegexNodeKind.One) ? $"{prev.Str}{at.Ch}" : prev.Str + at.Str;
-                    }
-                    else
-                    {
-                        prev.Str = (at.Kind == RegexNodeKind.One) ? $"{at.Ch}{prev.Str}" : at.Str + prev.Str;
-                    }
+                    prev.Str = (optionsAt & RegexOptions.RightToLeft) == 0 ?
+                        ((at.Kind == RegexNodeKind.One) ? $"{prev.Str}{at.Ch}" : prev.Str + at.Str) :
+                        ((at.Kind == RegexNodeKind.One) ? $"{at.Ch}{prev.Str}" : at.Str + prev.Str);
                 }
                 else if (at.Kind == RegexNodeKind.Empty)
                 {
@@ -2512,8 +2507,16 @@ namespace System.Text.RegularExpressions
         /// <param name="exclusiveChildBound">The exclusive upper bound on the child index to iterate to.</param>
         /// <param name="nodesConsumed">How many nodes make up the sequence, if any.</param>
         /// <param name="caseInsensitiveString">The string to use for an ordinal case-insensitive comparison, if any.</param>
+        /// <param name="consumeZeroWidthNodes">
+        /// Defaults to false. When false, the consumer needs the semantics of matching the produced string to fully represent
+        /// the semantics of all the consumed nodes, which means nodes can be consumed iff they produce text that's represented
+        /// by the resulting string. When true, the resulting string needs to fully represent all valid matches at that position,
+        /// but it can have false positives, which means the resulting string doesn't need to fully represent all zero-width nodes
+        /// consumed. true is only valid when used as part of a search to determine where to try a full match, not as part of
+        /// actual matching logic.
+        /// </param>
         /// <returns>true if a sequence was found; otherwise, false.</returns>
-        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString)
+        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false)
         {
             Debug.Assert(Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {Kind}");
 
@@ -2571,6 +2574,31 @@ namespace System.Text.RegularExpressions
                     }
 
                     vsb.Append((char)(twoChars[0] | 0x20), child.Kind is RegexNodeKind.Set ? 1 : child.M);
+                }
+                else if (child.Kind is RegexNodeKind.Empty)
+                {
+                    // Skip over empty nodes, as they're pure nops. They would ideally have been optimized away,
+                    // but can still remain in some situations.
+                }
+                else if (consumeZeroWidthNodes &&
+                         // anchors
+                         child.Kind is RegexNodeKind.Beginning or
+                                       RegexNodeKind.Bol or
+                                       RegexNodeKind.Start or
+                                       // boundaries
+                                       RegexNodeKind.Boundary or
+                                       RegexNodeKind.ECMABoundary or
+                                       RegexNodeKind.NonBoundary or
+                                       RegexNodeKind.NonECMABoundary or
+                                       // lookarounds
+                                       RegexNodeKind.NegativeLookaround or
+                                       RegexNodeKind.PositiveLookaround or
+                                       // logic
+                                       RegexNodeKind.UpdateBumpalong)
+                {
+                    // Skip over zero-width nodes that might be reasonable at the beginning of or within a substring.
+                    // We can only do these if consumeZeroWidthNodes is true, as otherwise we'd be producing a string that
+                    // may not fully represent the semantics of this portion of the pattern.
                 }
                 else
                 {
@@ -2893,7 +2921,12 @@ namespace System.Text.RegularExpressions
                     sb.Append(' ').Append($"index = {M}");
                     break;
                 case RegexNodeKind.Multi:
-                    sb.Append(" \"").Append(Str).Append('"');
+                    sb.Append(" \"");
+                    foreach (char c in Str!)
+                    {
+                        sb.Append(RegexCharClass.DescribeChar(c));
+                    }
+                    sb.Append('"');
                     break;
                 case RegexNodeKind.Set:
                 case RegexNodeKind.Setloop:

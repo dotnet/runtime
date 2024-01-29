@@ -28,6 +28,9 @@ extern "C" void QCALLTYPE LogThreadPoolIOEnqueue(_In_z_ void* nativeOverlapped, 
 extern "C" void QCALLTYPE LogThreadPoolIODequeue(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ short ClrInstanceID);
 extern "C" void QCALLTYPE LogThreadPoolWorkingThreadCount(_In_z_ uint count, _In_z_ short ClrInstanceID);
 extern "C" void QCALLTYPE LogThreadPoolIOPack(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ short ClrInstanceID);
+extern "C" void QCALLTYPE LogContentionLockCreated(void* LockID, void* AssociatedObjectID, uint16_t ClrInstanceID);
+extern "C" void QCALLTYPE LogContentionStart(uint8_t ContentionFlags, uint16_t ClrInstanceID, void* LockID, void* AssociatedObjectID, uint64_t LockOwnerThreadID);
+extern "C" void QCALLTYPE LogContentionStop(uint8_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs);
 #endif // defined(FEATURE_PERFTRACING)
 
 #endif //_NATIVEEVENTSOURCE_H_

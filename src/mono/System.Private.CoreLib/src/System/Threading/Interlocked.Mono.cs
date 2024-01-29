@@ -1,13 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
     public static partial class Interlocked
     {
+        [Intrinsic]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern byte CompareExchange(ref byte location1, byte value, byte comparand);
+
+        [Intrinsic]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern short CompareExchange(ref short location1, short value, short comparand);
+
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int CompareExchange(ref int location1, int value, int comparand);
@@ -37,9 +45,6 @@ namespace System.Threading
             return result;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern float CompareExchange(ref float location1, float value, float comparand);
-
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int Decrement(ref int location);
@@ -58,6 +63,14 @@ namespace System.Threading
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern byte Exchange(ref byte location1, byte value);
+
+        [Intrinsic]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern short Exchange(ref short location1, short value);
+
+        [Intrinsic]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int Exchange(ref int location1, int value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -72,25 +85,15 @@ namespace System.Threading
             return result;
         }
 
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern float Exchange(ref float location1, float value);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long CompareExchange(ref long location1, long value, long comparand);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern double CompareExchange(ref double location1, double value, double comparand);
 
         [return: NotNullIfNotNull(nameof(location1))]
         [Intrinsic]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class?
         {
-            unsafe
-            {
-                if (Unsafe.AsPointer(ref location1) == null)
-                    throw new NullReferenceException();
-            }
+            if (Unsafe.IsNullRef(ref location1))
+                throw new NullReferenceException();
             // Besides avoiding coop handles for efficiency,
             // and correctness, this also appears needed to
             // avoid an assertion failure in the runtime, related to
@@ -110,19 +113,12 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long Exchange(ref long location1, long value);
 
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern double Exchange(ref double location1, double value);
-
         [return: NotNullIfNotNull(nameof(location1))]
         [Intrinsic]
         public static T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value) where T : class?
         {
-            unsafe
-            {
-                if (Unsafe.AsPointer(ref location1) == null)
-                    throw new NullReferenceException();
-            }
+            if (Unsafe.IsNullRef(ref location1))
+                throw new NullReferenceException();
             // See CompareExchange(T) for comments.
             //
             // This is not entirely convincing due to lack of volatile.
@@ -144,11 +140,6 @@ namespace System.Threading
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long Add(ref long location1, long value);
-
-        [Intrinsic]
-        public static void MemoryBarrier()
-        {
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void MemoryBarrierProcessWide();

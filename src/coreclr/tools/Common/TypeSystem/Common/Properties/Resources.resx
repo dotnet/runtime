@@ -165,12 +165,6 @@
   <data name="InvalidProgramCallVirtFinalize" xml:space="preserve">
     <value>Callvirt of '{0}' not supported</value>
   </data>
-  <data name="InvalidProgramCallAbstractMethod" xml:space="preserve">
-    <value>Direct call to abstract method '{0}' not allowed</value>
-  </data>
-  <data name="InvalidProgramCallVirtStatic" xml:space="preserve">
-    <value>Callvirt of static method '{0}' not allowed</value>
-  </data>
   <data name="InvalidProgramNonStaticMethod" xml:space="preserve">
     <value>UnmanagedCallersOnly attribute specified on non-static method '{0}'</value>
   </data>
@@ -186,10 +180,10 @@
   <data name="BadImageFormatGeneric" xml:space="preserve">
     <value>The format of a DLL or executable being loaded is invalid</value>
   </data>
-  <data name="BadImageFormatSpecific" xml:space="preserve">
-    <value>The format of a DLL or executable being loaded is invalid with {0}</value>
-  </data>
   <data name="MarshalDirectiveGeneric" xml:space="preserve">
     <value>Marshaling directives are invalid</value>
+  </data>
+  <data name="AmbiguousMatchUnsafeAccessor" xml:space="preserve">
+    <value>Ambiguity in binding of UnsafeAccessorAttribute.</value>
   </data>
 </root>

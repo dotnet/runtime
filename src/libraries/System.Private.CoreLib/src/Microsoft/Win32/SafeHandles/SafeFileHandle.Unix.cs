@@ -88,9 +88,10 @@ namespace Microsoft.Win32.SafeHandles
         }
 #pragma warning restore CA1822
 
-        private static SafeFileHandle Open(string path, Interop.Sys.OpenFlags flags, int mode,
+        private static SafeFileHandle Open(string path, Interop.Sys.OpenFlags flags, int mode, bool failForSymlink, out bool wasSymlink,
                                            Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException)
         {
+            wasSymlink = false;
             Debug.Assert(path != null);
             SafeFileHandle handle = Interop.Sys.Open(path, flags, mode);
             handle._path = path;
@@ -99,6 +100,12 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
                 handle.Dispose();
+
+                if (failForSymlink && error.Error == Interop.Error.ELOOP)
+                {
+                    wasSymlink = true;
+                    return handle;
+                }
 
                 if (createOpenException?.Invoke(error, flags, path) is Exception ex)
                 {
@@ -169,7 +176,7 @@ namespace Microsoft.Win32.SafeHandles
         // This information is retrieved from the 'stat' syscall that must be performed to ensure the path is not a directory.
         internal static SafeFileHandle OpenReadOnly(string fullPath, FileOptions options, out long fileLength, out UnixFileMode filePermissions)
         {
-            SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultCreateMode, out fileLength, out filePermissions, null);
+            SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultCreateMode, out fileLength, out filePermissions, false, out _, null);
             Debug.Assert(fileLength >= 0);
             return handle;
         }
@@ -177,22 +184,35 @@ namespace Microsoft.Win32.SafeHandles
         internal static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode = null,
                                             Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
         {
-            return Open(fullPath, mode, access, share, options, preallocationSize, unixCreateMode ?? DefaultCreateMode, out _, out _, createOpenException);
+            return Open(fullPath, mode, access, share, options, preallocationSize, unixCreateMode ?? DefaultCreateMode, out _, out _, false, out _, createOpenException);
+        }
+
+        internal static SafeFileHandle? OpenNoFollowSymlink(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, out bool wasSymlink, UnixFileMode? unixCreateMode = null,
+                                            Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
+        {
+            return Open(fullPath, mode, access, share, options, preallocationSize, unixCreateMode ?? DefaultCreateMode, out _, out _, true, out wasSymlink, createOpenException);
         }
 
         private static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode openPermissions,
-                                            out long fileLength, out UnixFileMode filePermissions,
+                                            out long fileLength, out UnixFileMode filePermissions, bool failForSymlink, out bool wasSymlink,
                                             Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
         {
             // Translate the arguments into arguments for an open call.
-            Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, access, share, options);
+            Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, access, share, options, failForSymlink);
 
             SafeFileHandle? safeFileHandle = null;
             try
             {
                 while (true)
                 {
-                    safeFileHandle = Open(fullPath, openFlags, (int)openPermissions, createOpenException);
+                    safeFileHandle = Open(fullPath, openFlags, (int)openPermissions, failForSymlink, out wasSymlink, createOpenException);
+
+                    if (failForSymlink && wasSymlink)
+                    {
+                        fileLength = default;
+                        filePermissions = default;
+                        return safeFileHandle;
+                    }
 
                     // When Init return false, the path has changed to another file entry, and
                     // we need to re-open the path to reflect that.
@@ -219,11 +239,16 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="access">The FileAccess provided to the stream's constructor</param>
         /// <param name="share">The FileShare provided to the stream's constructor</param>
         /// <param name="options">The FileOptions provided to the stream's constructor</param>
+        /// <param name="failForSymlink">Whether to cause ELOOP error when opening a symlink</param>
         /// <returns>The flags value to be passed to the open system call.</returns>
-        private static Interop.Sys.OpenFlags PreOpenConfigurationFromOptions(FileMode mode, FileAccess access, FileShare share, FileOptions options)
+        private static Interop.Sys.OpenFlags PreOpenConfigurationFromOptions(FileMode mode, FileAccess access, FileShare share, FileOptions options, bool failForSymlink)
         {
             // Translate FileMode.  Most of the values map cleanly to one or more options for open.
             Interop.Sys.OpenFlags flags = default;
+            if (failForSymlink)
+            {
+                flags |= Interop.Sys.OpenFlags.O_NOFOLLOW;
+            }
             switch (mode)
             {
                 default:

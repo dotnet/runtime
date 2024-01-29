@@ -1,14 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <DefineConstants>$(DefineConstants);INCLUDE_EXPECTATIONS;SUPPORTS_DEFAULT_INTERFACE_METHODS</DefineConstants>
-    <WarningLevel>0</WarningLevel>
-    <AnalysisLevel>0</AnalysisLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Forwarder.cs" />
     <Compile Remove="CppCLI\Dependencies\CallCppCLIFromManaged.cs" />
@@ -16,6 +7,7 @@
     <Compile Remove="LinkXml\Dependencies\CanPreserveAnExportedType_Forwarder.cs" />
     <Compile Remove="LinkXml\Dependencies\UsedNonRequiredExportedTypeIsKept_fwd.cs" />
     <Compile Remove="LinkXml\Dependencies\UsedNonRequiredExportedTypeIsKeptWhenRooted_fwd.cs" />
+    <Compile Remove="References\Dependencies\CustomMarkHandlerSaveAssembly.cs" />
     <Compile Remove="TypeForwarding\Dependencies\AnotherLibraryForwarder.cs" />
     <Compile Remove="TypeForwarding\Dependencies\AssemblyReferenceIsRemovedWhenUnused_Library.cs" />
     <Compile Remove="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
@@ -54,9 +46,6 @@
     <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="TestFramework\Dependencies\ILAssemblySample.il" />
   </ItemGroup>
   <ItemGroup>
@@ -64,12 +53,13 @@
     <Folder Include="BCLFeatures\" />
     <Folder Include="BCLFeatures\ETW\" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="LinkXml\CanPreserveExcludedFeatureCom.xml" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Security.Permissions" Version="$(SystemSecurityPermissionsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="TopLevelStatements/**/*" />
   </ItemGroup>
 
 </Project>

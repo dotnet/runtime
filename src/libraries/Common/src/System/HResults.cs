@@ -50,6 +50,7 @@ namespace System
         internal const int COR_E_ENTRYPOINTNOTFOUND = unchecked((int)0x80131523);
         internal const int COR_E_EXCEPTION = unchecked((int)0x80131500);
         internal const int COR_E_EXECUTIONENGINE = unchecked((int)0x80131506);
+        internal const int COR_E_FAILFAST = unchecked((int)0x80131623);
         internal const int COR_E_FIELDACCESS = unchecked((int)0x80131507);
         internal const int COR_E_FILELOAD = unchecked((int)0x80131621);
         internal const int COR_E_FILENOTFOUND = unchecked((int)0x80070002);
@@ -125,7 +126,6 @@ namespace System
         internal const int STG_E_PATHNOTFOUND = unchecked((int)0x80030003);
         internal const int CTL_E_PATHNOTFOUND = unchecked((int)0x800A004C);
         internal const int CTL_E_FILENOTFOUND = unchecked((int)0x800A0035);
-        internal const int FUSION_E_CACHEFILE_FAILED = unchecked((int)0x80131052);
         internal const int FUSION_E_INVALID_NAME = unchecked((int)0x80131047);
         internal const int FUSION_E_PRIVATE_ASM_DISALLOWED = unchecked((int)0x80131044);
         internal const int FUSION_E_REF_DEF_MISMATCH = unchecked((int)0x80131040);

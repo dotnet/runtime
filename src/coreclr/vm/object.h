@@ -116,14 +116,14 @@ struct RCW;
     (((size) + PTRALIGNCONST) & (~PTRALIGNCONST))
 #endif //!PtrAlign
 
-// code:Object is the respesentation of an managed object on the GC heap.
+// code:Object is the representation of an managed object on the GC heap.
 //
 // See  code:#ObjectModel for some important subclasses of code:Object
 //
 // The only fields mandated by all objects are
 //
 //     * a pointer to the code:MethodTable at offset 0
-//     * a poiner to a code:ObjHeader at a negative offset. This is often zero.  It holds information that
+//     * a pointer to a code:ObjHeader at a negative offset. This is often zero.  It holds information that
 //         any addition information that we might need to attach to arbitrary objects.
 //
 class Object
@@ -740,39 +740,6 @@ public:
 
 #define OFFSETOF__PtrArray__m_Array_              ARRAYBASE_SIZE
 
-/* Corresponds to the managed Span<T> and ReadOnlySpan<T> types.
-   This should only ever be passed from the managed to the unmanaged world byref,
-   as any copies of this struct made within the unmanaged world will not observe
-   potential GC relocations of the source data. */
-template < class KIND >
-class Span
-{
-private:
-    /* Keep fields below in sync with managed Span / ReadOnlySpan layout. */
-    KIND* _reference;
-    unsigned int _length;
-
-public:
-    // !! CAUTION !!
-    // Caller must take care not to reassign returned reference if this span corresponds
-    // to a managed ReadOnlySpan<T>. If KIND is a reference type, caller must use a
-    // helper like SetObjectReference instead of assigning values directly to the
-    // reference location.
-    KIND& GetAt(SIZE_T index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        _ASSERTE(index < GetLength());
-        return _reference[index];
-    }
-
-    // Gets the length (in elements) of this span.
-    __inline SIZE_T GetLength() const
-    {
-        return _length;
-    }
-};
-
 /* a TypedByRef is a structure that is used to implement VB's BYREF variants.
    it is basically a tuple of an address of some data along with a TypeHandle
    that indicates the type of the address */
@@ -1201,10 +1168,7 @@ class ReflectModuleBaseObject : public Object
     //  classlib class definition of this object.
     OBJECTREF          m_runtimeType;
     OBJECTREF          m_runtimeAssembly;
-    void*              m_ReflectClass;  // Pointer to the ReflectClass structure
     Module*            m_pData;         // Pointer to the Module
-    void*              m_pGlobals;      // Global values....
-    void*              m_pGlobalsFlds;  // Global Fields....
 
   protected:
     ReflectModuleBaseObject() {LIMITED_METHOD_CONTRACT;}
@@ -1375,12 +1339,6 @@ public:
 
     void SetInternal(Thread *it);
     void ClearInternal();
-
-    INT32 GetManagedThreadId()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ManagedThreadId;
-    }
 
     void SetManagedThreadId(INT32 id)
     {

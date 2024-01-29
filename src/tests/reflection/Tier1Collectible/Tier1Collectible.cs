@@ -6,13 +6,13 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public static class Program
 {
-    private static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
-        const int Pass = 100, Fail = 1;
-
         PromoteToTier1AndRun(() =>
         {
             CollectibleTestIteration();
@@ -20,8 +20,6 @@ public static class Program
             GC.WaitForPendingFinalizers();
             GC.WaitForPendingFinalizers();
         });
-
-        return Pass;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

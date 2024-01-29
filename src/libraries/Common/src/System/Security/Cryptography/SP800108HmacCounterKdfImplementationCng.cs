@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
-
+using Microsoft.Win32.SafeHandles;
 using BCryptBuffer = Interop.BCrypt.BCryptBuffer;
 using CngBufferDescriptors = Interop.BCrypt.CngBufferDescriptors;
 using NTSTATUS = Interop.BCrypt.NTSTATUS;
@@ -193,7 +192,7 @@ namespace System.Security.Cryptography
 
         private static int GetHashBlockSize(string hashAlgorithmName)
         {
-            // Block sizes per NIST FIPS pub 180-4.
+            // Block sizes per NIST FIPS pub 180-4 and FIPS 202.
             switch (hashAlgorithmName)
             {
                 case HashAlgorithmNames.SHA1:
@@ -202,6 +201,12 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
                     return 1024 / 8;
+                case HashAlgorithmNames.SHA3_256:
+                    return 1088 / 8;
+                case HashAlgorithmNames.SHA3_384:
+                    return 832 / 8;
+                case HashAlgorithmNames.SHA3_512:
+                    return 576 / 8;
                 default:
                     Debug.Fail($"Unexpected hash algorithm '{hashAlgorithmName}'");
                     throw new CryptographicException();

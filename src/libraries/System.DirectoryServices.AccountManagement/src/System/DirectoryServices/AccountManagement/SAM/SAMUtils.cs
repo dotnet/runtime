@@ -3,11 +3,11 @@
 
 using System;
 using System.Diagnostics;
+using System.DirectoryServices;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.DirectoryServices;
-using System.Text;
 using System.Security.Principal;
+using System.Text;
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -17,6 +17,8 @@ namespace System.DirectoryServices.AccountManagement
         {
             return string.Equals(de.SchemaClassName, classToCompare, StringComparison.OrdinalIgnoreCase);
         }
+
+        internal static readonly char[] s_dot = new char[] { '.' };
 
         internal static bool GetOSVersion(DirectoryEntry computerDE, out int versionMajor, out int versionMinor)
         {
@@ -56,7 +58,7 @@ namespace System.DirectoryServices.AccountManagement
             //
             // We'll split the string into its period-separated components, and parse
             // each component into an int.
-            string[] versionComponents = version.Split(new char[] { '.' });
+            string[] versionComponents = version.Split(s_dot);
 
             Debug.Assert(versionComponents.Length >= 1);    // since version was a non-empty string
 

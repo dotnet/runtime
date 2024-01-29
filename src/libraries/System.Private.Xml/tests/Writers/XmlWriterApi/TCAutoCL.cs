@@ -38,7 +38,7 @@ namespace System.Xml.XmlWriterApiTests
                 w.Dispose();
             }
             CError.WriteLine("Conformance level = Document did not take effect");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -74,7 +74,7 @@ namespace System.Xml.XmlWriterApiTests
                 w.Dispose();
             }
             CError.WriteLine("Conformance level = Document did not take effect");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -102,7 +102,7 @@ namespace System.Xml.XmlWriterApiTests
                 w.Dispose();
             }
             CError.WriteLine("Conformance level = Document did not take effect");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]

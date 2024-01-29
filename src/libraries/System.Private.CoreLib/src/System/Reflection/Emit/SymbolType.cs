@@ -286,7 +286,7 @@ namespace System.Reflection.Emit
         public override int GetArrayRank()
         {
             if (!IsArray)
-                throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+                throw new ArgumentException(SR.Argument_HasToBeArrayClass);
 
             return _rank;
         }
@@ -350,7 +350,7 @@ namespace System.Reflection.Emit
 
         public override string? Namespace => _baseType.Namespace;
 
-        public override Type BaseType => typeof(System.Array);
+        public override Type BaseType => typeof(Array);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,

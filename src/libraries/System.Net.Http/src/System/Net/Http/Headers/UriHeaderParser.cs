@@ -64,7 +64,7 @@ namespace System.Net.Http.Headers
             {
                 int possibleUtf8Pos = input.AsSpan().IndexOfAnyExceptInRange((char)0, (char)127);
                 if (possibleUtf8Pos >= 0 &&
-                    input.AsSpan(possibleUtf8Pos).IndexOfAnyExceptInRange((char)0, (char)255) < 0)
+                    !input.AsSpan(possibleUtf8Pos).ContainsAnyExceptInRange((char)0, (char)255))
                 {
                     Span<byte> rawBytes = input.Length <= 256 ? stackalloc byte[input.Length] : new byte[input.Length];
                     for (int i = 0; i < input.Length; i++)

@@ -473,7 +473,6 @@ namespace System.Media.Test
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx aborts a worker thread and never signals operation completion")]
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -510,7 +509,6 @@ namespace System.Media.Test
             Assert.Null(ea.UserState);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx hangs")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         [MemberData(nameof(Play_String_TestData))]
         [OuterLoop]

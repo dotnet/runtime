@@ -7,9 +7,16 @@ using System.Text;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using Xunit;
 using TypeEquivalenceTypes;
+
+[TypeIdentifier("MyScope", "MyTypeId")]
+public struct EquivalentValueType
+{
+    public int A;
+}
 
 public class Simple
 {
@@ -268,7 +275,26 @@ public class Simple
         Console.WriteLine($"-- {typeof(ValueTypeWithInstanceMethod).Name}");
     }
 
-    public static int Main()
+    private static void TestCastsOptimizations()
+    {
+        string otherTypeName = $"{typeof(EquivalentValueType).FullName},{typeof(EmptyType).Assembly.GetName().Name}";
+        Type otherEquivalentValueType = Type.GetType(otherTypeName);
+
+        // ensure that an instance of otherEquivalentValueType can cast to EquivalentValueType
+        object otherEquivalentValueTypeInstance = Activator.CreateInstance(otherEquivalentValueType);
+        Assert.True(otherEquivalentValueTypeInstance is EquivalentValueType);
+        EquivalentValueType inst = (EquivalentValueType)otherEquivalentValueTypeInstance;
+    }
+
+    private static void TestsExactTypeOptimizations()
+    {
+        TestsExactTypeOptimizationsHelper.s_arrayInstance = new TestValueType[1];
+        Thread.Yield();
+        Assert.True(typeof(TestValueType[]) == TestsExactTypeOptimizationsHelper.s_arrayInstance.GetType());
+    }
+
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -286,6 +312,8 @@ public class Simple
             TestGenericInterfaceEquivalence();
             TestTypeEquivalenceWithTypePunning();
             TestLoadingValueTypesWithMethod();
+            TestCastsOptimizations();
+            TestsExactTypeOptimizations();
         }
         catch (Exception e)
         {

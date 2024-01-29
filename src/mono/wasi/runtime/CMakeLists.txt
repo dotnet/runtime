@@ -1,14 +1,13 @@
-cmake_minimum_required(VERSION 3.14.5)
+cmake_minimum_required(VERSION 3.20)
 
 project(mono-wasi-runtime C)
 
 option(DISABLE_THREADS "defined if the build does NOT support multithreading" ON)
-option(DISABLE_WASM_USER_THREADS "defined if the build does not allow user threads to be created in a multithreaded build" OFF)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
-add_executable(dotnet driver.c main.c pinvoke.c stubs.c synthetic-pthread.c)
+add_executable(dotnet ../../browser/runtime/runtime.c ../../browser/runtime/pinvoke.c driver.c main.c stubs.c synthetic-pthread.c)
 
-target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/include/wasm)
+target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ../../wasm/runtime ${MONO_OBJ_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/include/wasm)
 target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/wasi-default.rsp @${NATIVE_BIN_DIR}/src/wasi-compile.rsp -DGEN_PINVOKE=1)
 
 set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_WASICC_FLAGS})
@@ -27,6 +26,7 @@ target_link_libraries(dotnet
     ${MONO_ARTIFACTS_DIR}/libmono-ee-interp.a
     ${MONO_ARTIFACTS_DIR}/libmonosgen-2.0.a
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
+    ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
     ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a

@@ -44,6 +44,10 @@ namespace Microsoft.Extensions.Logging
     public partial interface ILogger<out TCategoryName> : Microsoft.Extensions.Logging.ILogger
     {
     }
+    public interface ILoggingBuilder
+    {
+        Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
+    }
     public partial interface ISupportExternalScope
     {
         void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider);
@@ -125,6 +129,9 @@ namespace Microsoft.Extensions.Logging
     {
         public LoggerMessageAttribute() { }
         public LoggerMessageAttribute(int eventId, Microsoft.Extensions.Logging.LogLevel level, string message) { }
+        public LoggerMessageAttribute(Microsoft.Extensions.Logging.LogLevel level) { }
+        public LoggerMessageAttribute(Microsoft.Extensions.Logging.LogLevel level, string message) { }
+        public LoggerMessageAttribute(string message) { }
         public int EventId { get { throw null; } set { } }
         public string? EventName { get { throw null; } set { } }
         public Microsoft.Extensions.Logging.LogLevel Level { get { throw null; } set { } }

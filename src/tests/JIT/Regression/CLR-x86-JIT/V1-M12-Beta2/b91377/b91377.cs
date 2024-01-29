@@ -12,7 +12,7 @@ public class BB
         return new byte[][, ,] { }[0][Math.Sign(1), Math.Sign(1), Math.Min(0, 0)];
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
@@ -24,6 +24,5 @@ public class BB
         }
         catch (Exception x) { }
         Console.WriteLine("Passed.");
-        return 100;
     }
 }

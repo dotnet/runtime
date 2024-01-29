@@ -37,6 +37,11 @@ namespace ILCompiler
             return _supportedInstructionSets.HasInstructionSet(instructionSet);
         }
 
+        public bool IsInstructionSetOptimisticallySupported(InstructionSet instructionSet)
+        {
+            return _optimisticInstructionSets.HasInstructionSet(instructionSet);
+        }
+
         public bool IsInstructionSetExplicitlyUnsupported(InstructionSet instructionSet)
         {
             return _unsupportedInstructionSets.HasInstructionSet(instructionSet);
@@ -96,24 +101,47 @@ namespace ILCompiler
         {
             if ((_targetArchitecture == TargetArchitecture.X64) || (_targetArchitecture == TargetArchitecture.X86))
             {
-                Debug.Assert(InstructionSet.X64_AVX2 == InstructionSet.X86_AVX2);
-                Debug.Assert(InstructionSet.X64_SSE2 == InstructionSet.X86_SSE2);
-                if (IsInstructionSetSupported(InstructionSet.X86_AVX2))
+                Debug.Assert(InstructionSet.X64_VectorT128 == InstructionSet.X86_VectorT128);
+                Debug.Assert(InstructionSet.X64_VectorT256 == InstructionSet.X86_VectorT256);
+                Debug.Assert(InstructionSet.X64_VectorT512 == InstructionSet.X86_VectorT512);
+
+                // TODO-XArch: Add support for 512-bit Vector<T>
+                Debug.Assert(!IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT512));
+
+                if (IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT256))
+                {
+                    Debug.Assert(!IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT128));
                     return SimdVectorLength.Vector256Bit;
-                else if (IsInstructionSetExplicitlyUnsupported(InstructionSet.X86_AVX2) && IsInstructionSetSupported(InstructionSet.X64_SSE2))
+                }
+                else if (IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT128))
+                {
                     return SimdVectorLength.Vector128Bit;
+                }
                 else
+                {
                     return SimdVectorLength.None;
+                }
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                return SimdVectorLength.Vector128Bit;
+                if (IsInstructionSetOptimisticallySupported(InstructionSet.ARM64_VectorT128))
+                {
+                    return SimdVectorLength.Vector128Bit;
+                }
+                else
+                {
+                    return SimdVectorLength.None;
+                }
             }
             else if (_targetArchitecture == TargetArchitecture.ARM)
             {
                 return SimdVectorLength.None;
             }
             else if (_targetArchitecture == TargetArchitecture.LoongArch64)
+            {
+                return SimdVectorLength.None;
+            }
+            else if (_targetArchitecture == TargetArchitecture.RiscV64)
             {
                 return SimdVectorLength.None;
             }
@@ -183,14 +211,32 @@ namespace ILCompiler
             return s_nonSpecifiableInstructionSets[architecture];
         }
 
-        private readonly SortedSet<string> _supportedInstructionSets = new SortedSet<string>();
-        private readonly SortedSet<string> _unsupportedInstructionSets = new SortedSet<string>();
+        private readonly SortedSet<string> _supportedInstructionSets;
+        private readonly SortedSet<string> _unsupportedInstructionSets;
         private readonly TargetArchitecture _architecture;
+
+        public TargetArchitecture Architecture => _architecture;
 
         public InstructionSetSupportBuilder(TargetArchitecture architecture)
         {
+            _supportedInstructionSets = new SortedSet<string>();
+            _unsupportedInstructionSets = new SortedSet<string>();
             _architecture = architecture;
         }
+
+        public InstructionSetSupportBuilder(InstructionSetSupportBuilder other)
+        {
+            _supportedInstructionSets = new SortedSet<string>(other._supportedInstructionSets);
+            _unsupportedInstructionSets = new SortedSet<string>(other._unsupportedInstructionSets);
+            _architecture = other._architecture;
+        }
+
+        public override string ToString()
+            => (_supportedInstructionSets.Count > 0 ? "+" : "")
+               + string.Join(",+", _supportedInstructionSets)
+               + (_supportedInstructionSets.Count > 0 && _unsupportedInstructionSets.Count > 0 ? "," : "")
+               + (_unsupportedInstructionSets.Count > 0 ? "-" : "")
+               + string.Join(",-", _unsupportedInstructionSets);
 
         /// <summary>
         /// Add a supported instruction set to the specified list.
@@ -245,9 +291,11 @@ namespace ILCompiler
         /// Seal modifications to instruction set support
         /// </summary>
         /// <returns>returns "false" if instruction set isn't valid on this architecture</returns>
-        public bool ComputeInstructionSetFlags(out InstructionSetFlags supportedInstructionSets,
-                                                              out InstructionSetFlags unsupportedInstructionSets,
-                                                              Action<string, string> invalidInstructionSetImplication)
+        public bool ComputeInstructionSetFlags(int maxVectorTBitWidth,
+                                               bool skipAddingVectorT,
+                                               out InstructionSetFlags supportedInstructionSets,
+                                               out InstructionSetFlags unsupportedInstructionSets,
+                                               Action<string, string> invalidInstructionSetImplication)
         {
             supportedInstructionSets = new InstructionSetFlags();
             unsupportedInstructionSets = new InstructionSetFlags();
@@ -285,6 +333,58 @@ namespace ILCompiler
                         invalidInstructionSetImplication(supported, unsupported);
                         return false;
                     }
+                }
+            }
+
+            if (skipAddingVectorT)
+            {
+                // For partial AOT scenarios, we need to skip adding Vector<T>
+                // in the supported set so it doesn't cause the entire image
+                // to be thrown away due to the host machine supporting a larger
+                // size.
+
+                return true;
+            }
+
+            switch (_architecture)
+            {
+                case TargetArchitecture.X64:
+                case TargetArchitecture.X86:
+                {
+                    Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
+                    Debug.Assert(InstructionSet.X86_AVX2 == InstructionSet.X64_AVX2);
+                    Debug.Assert(InstructionSet.X86_AVX512F == InstructionSet.X64_AVX512F);
+
+                    Debug.Assert(InstructionSet.X86_VectorT128 == InstructionSet.X64_VectorT128);
+                    Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);
+                    Debug.Assert(InstructionSet.X86_VectorT512 == InstructionSet.X64_VectorT512);
+
+                    // We only want one size supported for Vector<T> and we want the other sizes explicitly
+                    // unsupported to ensure we throw away the given methods if runtime picks a larger size
+
+                    Debug.Assert(supportedInstructionSets.HasInstructionSet(InstructionSet.X86_SSE2));
+                    Debug.Assert((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 128));
+                    supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT128);
+
+                    if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX2))
+                    {
+                        if ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256))
+                        {
+                            supportedInstructionSets.RemoveInstructionSet(InstructionSet.X86_VectorT128);
+                            supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT256);
+                        }
+
+                        // TODO-XArch: Add support for 512-bit Vector<T>
+                    }
+                    break;
+                }
+
+                case TargetArchitecture.ARM64:
+                {
+                    Debug.Assert(supportedInstructionSets.HasInstructionSet(InstructionSet.ARM64_AdvSimd));
+                    Debug.Assert((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 128));
+                    supportedInstructionSets.AddInstructionSet(InstructionSet.ARM64_VectorT128);
+                    break;
                 }
             }
 

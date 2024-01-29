@@ -4,12 +4,13 @@
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
     <!-- By default, build the NetCoreAppCurrent vertical only. -->
     <BuildTargetFramework Condition="'$(BuildAllConfigurations)' != 'true'">$(NetCoreAppCurrent)</BuildTargetFramework>
+     <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
+    <ExplicitlyImportCustomILLinkTargets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">true</ExplicitlyImportCustomILLinkTargets>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="oob-src.proj" OutputItemType="OOBAssembly" />
-    <ProjectReference Include="shims.proj" OutputItemType="SharedFrameworkAssembly" />
 
     <ProjectReference Include="apicompat\ApiCompat.proj"
                       Condition="'$(DotNetBuildFromSource)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
@@ -24,15 +25,7 @@
     <ProjectReference Remove="@(ProjectReference)" />
     <ProjectReference Include="sfx-ref.proj" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="oob-ref.proj" />
-    <ProjectReference Include="shims.proj" OutputItemType="SharedFrameworkAssembly" />
   </ItemGroup>
-
-  <ImportGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
-    <!-- Re-generate the targeting pack's framework list to include shims. -->
-    <Import Project="frameworklist.targets" />
-    <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
-    <Import Project="$(RepositoryEngineeringDir)illink.targets" />
-  </ImportGroup>
 
   <Target Name="GetTrimOOBAssembliesInputs"
           DependsOnTargets="ResolveProjectReferences">
@@ -62,7 +55,7 @@
       <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
       <!-- Unnecessary suppressions - disable for now since we didn't clean the runtime yet -->
       <OOBILLinkArgs>$(ILLinkArgs) --nowarn IL2121</OOBILLinkArgs>
-      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes &quot;@(OOBLibrarySuppressionsXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</OOBILLinkArgs>
+      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes "@(OOBLibrarySuppressionsXml->'%(FullPath)', '" --link-attributes "')"</OOBILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(OOBAssembliesTrimDir)" />

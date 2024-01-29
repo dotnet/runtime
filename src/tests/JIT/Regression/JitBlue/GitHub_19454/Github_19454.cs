@@ -30,11 +30,10 @@ public struct MyReader
 public class GitHub_19454
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         MyReader r = new MyReader();
         r.ReadBytesInner(0);
-        return 100;
     }
 }
 

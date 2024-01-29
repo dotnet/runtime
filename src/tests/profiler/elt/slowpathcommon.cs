@@ -369,6 +369,8 @@ namespace SlowPathELTTests
 
             Console.WriteLine($"DoubleRetFunc returned {DoubleRetFunc()}");
 
+            Console.WriteLine($"FloatRetFunc returned {FloatRetFunc()}");
+
             Console.WriteLine($"IntegerSseStructFunc returned {IntegerSseStructFunc()}");
 
             Console.WriteLine($"SseIntegerStructFunc returned {SseIntegerStructFunc()}");
@@ -378,6 +380,19 @@ namespace SlowPathELTTests
             Console.WriteLine($"SseMixedStructFunc returned {SseMixedStructFunc()}");
 
             Console.WriteLine($"MixedMixedStructFunc returned {MixedMixedStructFunc()}");
+
+            var s1 = new MixedStruct(1, 1);
+            var s2 = new MixedStruct(2, 2);
+            var s3 = new MixedStruct(3, 3);
+            var s4 = new MixedStruct(4, 4);
+            var s5 = new MixedStruct(5, 5);
+            var s6 = new MixedStruct(6, 6);
+            var s7 = new MixedStruct(7, 7);
+            var s8 = new MixedStruct(8, 8);
+            var s9 = new MixedStruct(9, 9);
+            Console.WriteLine($"IntManyMixedStructFunc returned {IntManyMixedStructFunc(11, s1, s2, s3, s4, s5, s6, s7, s8, s9)}");
+
+            Console.WriteLine($"DoubleManyMixedStructFunc returned {DoubleManyMixedStructFunc(11.0, s1, s2, s3, s4, s5, s6, s7, s8, s9)}");
 
             return 100;
         }
@@ -520,6 +535,12 @@ namespace SlowPathELTTests
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static float FloatRetFunc()
+        {
+            return 13.0f;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static IntegerSseStruct IntegerSseStructFunc()
         {
             return new IntegerSseStruct(1, 2, 3.5);
@@ -547,6 +568,20 @@ namespace SlowPathELTTests
         public static MixedMixedStruct MixedMixedStructFunc()
         {
             return new MixedMixedStruct(1.2f, 3, 5, 6.7f);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static MixedStruct IntManyMixedStructFunc(int i, MixedStruct s1, MixedStruct s2, MixedStruct s3, MixedStruct s4, MixedStruct s5, MixedStruct s6, MixedStruct s7, MixedStruct s8, MixedStruct s9)
+        {
+            Console.WriteLine($"i={i} s1=({s1}) s2=({s2}) s3=({s3}) s4=({s4}) s5=({s5}) s6=({s6}) s7=({s7}) s8=({s8}) s9=({s9})");
+            return s1;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static MixedStruct DoubleManyMixedStructFunc(double d, MixedStruct s1, MixedStruct s2, MixedStruct s3, MixedStruct s4, MixedStruct s5, MixedStruct s6, MixedStruct s7, MixedStruct s8, MixedStruct s9)
+        {
+            Console.WriteLine($"d={d} s1=({s1}) s2=({s2}) s3=({s3}) s4=({s4}) s5=({s5}) s6=({s6}) s7=({s7}) s8=({s8}) s9=({s9})");
+            return s1;
         }
     }
 }

@@ -7,6 +7,8 @@
 #include "pal.h"
 #include "trace.h"
 #include <type_traits>
+#include <runtime_version.h>
+#include <minipal/utils.h>
 
 #if defined(_WIN32)
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=798306")
@@ -45,8 +47,12 @@
 
 #define DOTNET_ROOT_ENV_VAR _X("DOTNET_ROOT")
 
-bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
-bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
+#define SDK_DOTNET_DLL _X("dotnet.dll")
+
+#define _TEXT(x) #x
+#define _QUOTE(x) _TEXT(x)
+
+#define HOST_VERSION _QUOTE(RuntimeProductVersion)
 
 namespace utils
 {
@@ -78,7 +84,7 @@ pal::string_t strip_file_ext(const pal::string_t& path);
 pal::string_t get_filename(const pal::string_t& path);
 pal::string_t get_filename_without_ext(const pal::string_t& path);
 void append_path(pal::string_t* path1, const pal::char_t* path2);
-bool library_exists_in_dir(const pal::string_t& lib_dir, const pal::string_t& lib_name, pal::string_t* p_lib_path);
+bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path);
 bool coreclr_exists_in_dir(const pal::string_t& candidate);
 void remove_trailing_dir_separator(pal::string_t* dir);
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl);
@@ -88,7 +94,7 @@ pal::architecture get_current_arch();
 const pal::char_t* get_arch_name(pal::architecture arch);
 const pal::char_t* get_current_arch_name();
 
-pal::string_t get_current_runtime_id(bool use_fallback);
+pal::string_t get_runtime_id();
 bool try_get_runtime_id_from_env(pal::string_t& out_rid);
 
 bool multilevel_lookup_enabled();
@@ -109,6 +115,8 @@ pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t& fxr_path);
 // Get a download URL for a specific framework and version
 // If no framework is specified, a download URL for the runtime is returned
 pal::string_t get_download_url(const pal::char_t* framework_name = nullptr, const pal::char_t* framework_version = nullptr);
+
+pal::string_t get_host_version_description();
 
 pal::string_t to_lower(const pal::char_t* in);
 pal::string_t to_upper(const pal::char_t* in);

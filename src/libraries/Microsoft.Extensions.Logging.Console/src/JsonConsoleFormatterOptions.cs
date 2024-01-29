@@ -21,31 +21,9 @@ namespace Microsoft.Extensions.Logging.Console
         /// </summary>
         public JsonWriterOptions JsonWriterOptions { get; set; }
 
-        internal override void Configure(IConfiguration configuration)
-        {
-            base.Configure(configuration);
-
-            if (configuration.GetSection(nameof(JsonWriterOptions)) is IConfigurationSection jsonWriterOptionsConfig)
-            {
-                JsonWriterOptions jsonWriterOptions = JsonWriterOptions;
-
-                if (ConsoleLoggerOptions.ParseBool(jsonWriterOptionsConfig, nameof(JsonWriterOptions.Indented), out bool indented))
-                {
-                    jsonWriterOptions.Indented = indented;
-                }
-
-                if (ConsoleLoggerOptions.ParseInt(jsonWriterOptionsConfig, nameof(JsonWriterOptions.MaxDepth), out int maxDepth))
-                {
-                    jsonWriterOptions.MaxDepth = maxDepth;
-                }
-
-                if (ConsoleLoggerOptions.ParseBool(jsonWriterOptionsConfig, nameof(JsonWriterOptions.SkipValidation), out bool skipValidation))
-                {
-                    jsonWriterOptions.SkipValidation = skipValidation;
-                }
-
-                JsonWriterOptions = jsonWriterOptions;
-            }
-        }
+#pragma warning disable SYSLIB1100
+#pragma warning disable SYSLIB1101
+        internal override void Configure(IConfiguration configuration) => configuration.Bind(this);
+#pragma warning restore
     }
 }

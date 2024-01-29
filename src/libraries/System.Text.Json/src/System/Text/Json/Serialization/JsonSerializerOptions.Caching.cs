@@ -8,8 +8,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -19,12 +19,19 @@ namespace System.Text.Json
         /// Encapsulates all cached metadata referenced by the current <see cref="JsonSerializerOptions" /> instance.
         /// Context can be shared across multiple equivalent options instances.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal CachingContext CacheContext
         {
             get
             {
                 Debug.Assert(IsReadOnly);
-                return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
+                return _cachingContext ?? GetOrCreate();
+
+                CachingContext GetOrCreate()
+                {
+                    CachingContext ctx = TrackedCachingContexts.GetOrCreate(this);
+                    return Interlocked.CompareExchange(ref _cachingContext, ctx, null) ?? ctx;
+                }
             }
         }
 
@@ -178,27 +185,13 @@ namespace System.Text.Json
         }
 
         // Caches the resolved JsonTypeInfo<object> for faster access during root-level object type serialization.
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonTypeInfo ObjectTypeInfo
         {
             get
             {
                 Debug.Assert(IsReadOnly);
-                return _objectTypeInfo ??= GetObjectTypeInfo(this);
-
-                static JsonTypeInfo GetObjectTypeInfo(JsonSerializerOptions options)
-                {
-                    JsonTypeInfo? typeInfo = options.GetTypeInfoInternal(JsonTypeInfo.ObjectType, ensureNotNull: null);
-                    if (typeInfo is null)
-                    {
-                        // If the user-supplied resolver does not provide a JsonTypeInfo<object>,
-                        // use a placeholder value to drive root-level boxed value serialization.
-                        var converter = new ObjectConverterSlim();
-                        typeInfo = new JsonTypeInfo<object>(converter, options);
-                        typeInfo.EnsureConfigured();
-                    }
-
-                    return typeInfo;
-                }
+                return _objectTypeInfo ??= GetTypeInfoInternal(JsonTypeInfo.ObjectType);
             }
         }
 
@@ -518,6 +511,8 @@ namespace System.Text.Json
                     left._includeFields == right._includeFields &&
                     left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
                     left._writeIndented == right._writeIndented &&
+                    left._indentCharacter == right._indentCharacter &&
+                    left._indentSize == right._indentSize &&
                     left._typeInfoResolver == right._typeInfoResolver &&
                     CompareLists(left._converters, right._converters);
 
@@ -572,6 +567,8 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._includeFields);
                 AddHashCode(ref hc, options._propertyNameCaseInsensitive);
                 AddHashCode(ref hc, options._writeIndented);
+                AddHashCode(ref hc, options._indentCharacter);
+                AddHashCode(ref hc, options._indentSize);
                 AddHashCode(ref hc, options._typeInfoResolver);
                 AddListHashCode(ref hc, options._converters);
 

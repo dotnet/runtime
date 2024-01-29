@@ -673,7 +673,13 @@ handle_signal_exception (gpointer obj)
 	MonoContext ctx;
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
+
+	MONO_ENTER_GC_UNSAFE_UNBALANCED;
+
 	mono_handle_exception (&ctx, obj);
+
+	MONO_EXIT_GC_UNSAFE_UNBALANCED;
+
 	mono_restore_context (&ctx);
 }
 

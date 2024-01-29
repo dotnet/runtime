@@ -442,6 +442,10 @@ private:
 //    true if statement computation was forwarded.
 //    caller is responsible for removing the now-dead statement.
 //
+// Remarks:
+//    This requires locals to be linked (fgNodeThreading == AllLocals) and
+//    liveness information to be up-to-date (specifically GTF_VAR_DEATH).
+//
 bool Compiler::fgForwardSubStatement(Statement* stmt)
 {
     // Is this tree a def of a single use, unaliased local?
@@ -466,10 +470,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         JITDUMP(" pinned local\n");
         return false;
     }
-
-    // Cannot forward sub without liveness information.
-    //
-    assert(fgDidEarlyLiveness);
 
     // And local is unalised
     //
@@ -521,7 +521,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Bail if sub node has mismatched types.
     // Might be able to tolerate these by retyping.
     //
-    if (defNode->TypeGet() != fwdSubNode->TypeGet())
+    if (genActualType(defNode->TypeGet()) != genActualType(fwdSubNode->TypeGet()))
     {
         JITDUMP(" mismatched types (store)\n");
         return false;
@@ -652,6 +652,14 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     // if the next tree can't change the value of fwdSubNode or be impacted by fwdSubNode effects
     //
+    if (((fsv.GetFlags() & GTF_ASG) != 0) && fgForwardSubHasStoreInterference(stmt, nextStmt, fsv.GetNode()))
+    {
+        // We execute a store before the substitution local; that
+        // store could interfere with some of the locals in the source of
+        // the candidate def.
+        JITDUMP(" cannot reorder with potential interfering store\n");
+        return false;
+    }
     if (((fwdSubNode->gtFlags & GTF_CALL) != 0) && ((fsv.GetFlags() & GTF_ALL_EFFECT) != 0))
     {
         JITDUMP(" cannot reorder call with any side effect\n");
@@ -869,6 +877,69 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     DISPSTMT(nextStmt);
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// fgForwardSubHasStoreInterference: Check if a forward sub candidate
+// interferes with stores in the statement it may be substituted into.
+//
+// Arguments:
+//    defStmt     - The statement with the def
+//    nextStmt    - The statement that is being substituted into
+//    nextStmtUse - Use of the local being substituted in the next statement
+//
+// Returns:
+//   True if there is interference.
+//
+// Remarks:
+//   We expect the caller to have checked for GTF_ASG before doing the precise
+//   check here.
+//
+bool Compiler::fgForwardSubHasStoreInterference(Statement* defStmt, Statement* nextStmt, GenTree* nextStmtUse)
+{
+    assert(defStmt->GetRootNode()->OperIsLocalStore());
+    assert(nextStmtUse->OperIsLocalRead());
+
+    GenTreeLclVarCommon* defNode = defStmt->GetRootNode()->AsLclVarCommon();
+
+    for (GenTreeLclVarCommon* defStmtLcl : defStmt->LocalsTreeList())
+    {
+        if (defStmtLcl == defNode)
+        {
+            break;
+        }
+
+        unsigned   defStmtLclNum       = defStmtLcl->GetLclNum();
+        LclVarDsc* defStmtLclDsc       = lvaGetDesc(defStmtLclNum);
+        unsigned   defStmtParentLclNum = BAD_VAR_NUM;
+        if (defStmtLclDsc->lvIsStructField)
+        {
+            defStmtParentLclNum = defStmtLclDsc->lvParentLcl;
+        }
+
+        for (GenTreeLclVarCommon* useStmtLcl : nextStmt->LocalsTreeList())
+        {
+            if (useStmtLcl == nextStmtUse)
+            {
+                break;
+            }
+
+            if (!useStmtLcl->OperIsLocalStore())
+            {
+                continue;
+            }
+
+            // If the next statement has a store earlier than the use and that
+            // store affects a local on the RHS of the forward sub candidate,
+            // then we have interference.
+            if ((useStmtLcl->GetLclNum() == defStmtLclNum) || (useStmtLcl->GetLclNum() == defStmtParentLclNum))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------

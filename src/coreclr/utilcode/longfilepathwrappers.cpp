@@ -618,7 +618,7 @@ HRESULT LongFile::NormalizePath(SString & path)
     if (fullpath.BeginsWith(SL(UNCPathPrefix)) && prefixLen != prefix.GetCount() - (COUNT_T)u16_strlen(UNCPATHPREFIX))
     {
         //Remove the leading '\\' from the UNC path to be replaced with UNCExtendedPathPrefix
-        fullpath.Replace(fullpath.Begin(), (COUNT_T)u16_strlen(UNCPATHPREFIX), UNCExtendedPathPrefix);
+        fullpath.Replace(fullpath.Begin(), (COUNT_T)u16_strlen(UNCPATHPREFIX), SL(UNCExtendedPathPrefix));
         path.CloseBuffer();
         path.Set(fullpath);
     }

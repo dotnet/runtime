@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
 using System.Collections;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace System.Xml.Serialization
 {
@@ -200,7 +200,7 @@ namespace System.Xml.Serialization
             return model;
         }
 
-        private void CheckSupportedMember(TypeDesc? typeDesc, MemberInfo member, Type type)
+        private static void CheckSupportedMember(TypeDesc? typeDesc, MemberInfo member, Type type)
         {
             if (typeDesc == null)
                 return;

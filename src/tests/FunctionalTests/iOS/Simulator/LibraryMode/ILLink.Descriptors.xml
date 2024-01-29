@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="iOS.Simulator.LibraryMode.Test">
+    <type fullname="ClassLibrary">
+      <method name="SayHello" />
+    </type>
+  </assembly>
+</linker>

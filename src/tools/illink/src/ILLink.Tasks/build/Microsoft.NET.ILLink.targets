@@ -38,12 +38,20 @@ Copyright (c) .NET Foundation. All rights reserved.
     <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
     <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
     <BuiltInComInteropSupport Condition="'$(BuiltInComInteropSupport)' == ''">false</BuiltInComInteropSupport>
+    <!-- GeneratedComInterface/ComImport interop requires built-in COM -->
+    <EnableGeneratedComInterfaceComImportInterop Condition="'$(BuiltInComInteropSupport)' == 'false'">false</EnableGeneratedComInterfaceComImportInterop>
+    <EnableGeneratedComInterfaceComImportInterop Condition="'$(EnableGeneratedComInterfaceComImportInterop)' == ''">false</EnableGeneratedComInterfaceComImportInterop>
     <AutoreleasePoolSupport Condition="'$(AutoreleasePoolSupport)' == ''">false</AutoreleasePoolSupport>
     <EnableCppCLIHostActivation Condition="'$(EnableCppCLIHostActivation)' == ''">false</EnableCppCLIHostActivation>
     <!-- C++/CLI activation requires native hosting -->
     <_EnableConsumingManagedCodeFromNativeHosting Condition="'$(EnableCppCLIHostActivation)' == 'true'">true</_EnableConsumingManagedCodeFromNativeHosting>
     <_EnableConsumingManagedCodeFromNativeHosting Condition="'$(_EnableConsumingManagedCodeFromNativeHosting)' == ''">false</_EnableConsumingManagedCodeFromNativeHosting>
     <VerifyDependencyInjectionOpenGenericServiceTrimmability Condition="'$(VerifyDependencyInjectionOpenGenericServiceTrimmability)' == ''">true</VerifyDependencyInjectionOpenGenericServiceTrimmability>
+    <JsonSerializerIsReflectionEnabledByDefault Condition="'$(JsonSerializerIsReflectionEnabledByDefault)' == ''">false</JsonSerializerIsReflectionEnabledByDefault>
+    <!-- Linux Bionic doesn't ship GSSAPI, so enable managed implementation -->
+    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux-bionic'))">true</_UseManagedNtlm>
+    <!-- Trim managed NTLM on Linux when it's not explicitly requested -->
+    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux'))">false</_UseManagedNtlm>
   </PropertyGroup>
 
 
@@ -188,9 +196,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- The defaults currently root non-framework assemblies, which
          is a no-op for portable apps. If we later support more ways
          to customize the behavior we can allow linking portable apps
-         in some cases. If we're not running ILLink because e.g. this
-         is a NativeAOT app, value of SelfContained doesn't matter. -->
-    <NETSdkError Condition="'$(RunILLink)' != 'false' And '$(SelfContained)' != 'true'" ResourceName="ILLinkNotSupportedError" />
+         in some cases. -->
+    <NETSdkError Condition="'$(SelfContained)' != 'true'" ResourceName="ILLinkNotSupportedError" />
 
     <Warning Condition="'$(SuppressILLinkExplicitPackageReferenceWarning)' != 'true' And
                         '%(PackageReference.Identity)' == 'Microsoft.NET.ILLink.Tasks' And '%(PackageReference.IsImplicitlyDefined)' != 'true'"
@@ -217,7 +224,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <PropertyGroup>
       <ILLinkTreatWarningsAsErrors Condition=" '$(ILLinkTreatWarningsAsErrors)' == '' ">$(TreatWarningsAsErrors)</ILLinkTreatWarningsAsErrors>
-      <_ExtraTrimmerArgs>--skip-unresolved true $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
       <TrimmerSingleWarn Condition=" '$(TrimmerSingleWarn)' == '' ">true</TrimmerSingleWarn>
     </PropertyGroup>
 

@@ -2,19 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Xml;
-using System.Xml.Schema;
+using System.Buffers;
 using System.Collections;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Text;
-using System.Globalization;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Buffers;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Security;
+using System.Text;
+using System.Xml;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -1085,10 +1085,10 @@ namespace System.Xml
         }
 
         public static bool IsWhitespace(ReadOnlySpan<char> chars) =>
-            chars.IndexOfAnyExcept(s_whitespaceChars) < 0;
+            !chars.ContainsAnyExcept(s_whitespaceChars);
 
         public static bool IsWhitespace(ReadOnlySpan<byte> bytes) =>
-            bytes.IndexOfAnyExcept(s_whitespaceBytes) < 0;
+            !bytes.ContainsAnyExcept(s_whitespaceBytes);
 
         public static bool IsWhitespace(char ch) =>
             ch is <= ' ' and (' ' or '\t' or '\r' or '\n');

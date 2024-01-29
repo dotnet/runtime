@@ -9,13 +9,13 @@ using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices.ObjectiveC;
 using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 
-using Internal.Runtime;
-using Internal.Runtime.Augments;
+using Internal.Reflection.Augments;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -98,7 +98,7 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 return null;
             }
-            return (byte *)CoTaskMemAllocAndZeroMemory(checked((sb.Capacity + 2) * Marshal.SystemMaxDBCSCharSize));
+            return (byte*)CoTaskMemAllocAndZeroMemory(checked((sb.Capacity + 2) * Marshal.SystemMaxDBCSCharSize));
         }
 
         public static unsafe char* AllocMemoryForUnicodeStringBuilder(StringBuilder sb)
@@ -107,7 +107,7 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 return null;
             }
-            return (char *)CoTaskMemAllocAndZeroMemory(checked((sb.Capacity + 2) * 2));
+            return (char*)CoTaskMemAllocAndZeroMemory(checked((sb.Capacity + 2) * 2));
         }
 
         public static unsafe byte* AllocMemoryForAnsiCharArray(char[] chArray)
@@ -299,7 +299,7 @@ namespace Internal.Runtime.CompilerHelpers
                 dllImportSearchPath = pCell->DllImportSearchPathAndCookie & ~InteropDataConstants.HasDllImportSearchPath;
             }
 
-            Assembly callingAssembly = RuntimeAugments.Callbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
+            Assembly callingAssembly = ReflectionAugments.ReflectionCoreCallbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
 
             // First check if there's a NativeLibrary callback and call it to attempt the resolution
             IntPtr hModule = NativeLibrary.LoadLibraryCallbackStub(moduleName, callingAssembly, hasDllImportSearchPath, dllImportSearchPath);
@@ -488,10 +488,10 @@ namespace Internal.Runtime.CompilerHelpers
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "This API will be called from compiler generated code only.")]
-        internal static int AsAnyGetNativeSize(object o)
+        internal static unsafe int AsAnyGetNativeSize(object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.GetEETypePtr().IsArray ||
+            if (o.GetMethodTable()->IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -504,10 +504,10 @@ namespace Internal.Runtime.CompilerHelpers
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "This API will be called from compiler generated code only.")]
-        internal static void AsAnyMarshalManagedToNative(object o, IntPtr address)
+        internal static unsafe void AsAnyMarshalManagedToNative(object o, IntPtr address)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.GetEETypePtr().IsArray ||
+            if (o.GetMethodTable()->IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -517,10 +517,10 @@ namespace Internal.Runtime.CompilerHelpers
             Marshal.StructureToPtr(o, address, fDeleteOld: false);
         }
 
-        internal static void AsAnyMarshalNativeToManaged(IntPtr address, object o)
+        internal static unsafe void AsAnyMarshalNativeToManaged(IntPtr address, object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.GetEETypePtr().IsArray ||
+            if (o.GetMethodTable()->IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -532,10 +532,10 @@ namespace Internal.Runtime.CompilerHelpers
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "This API will be called from compiler generated code only.")]
-        internal static void AsAnyCleanupNative(IntPtr address, object o)
+        internal static unsafe void AsAnyCleanupNative(IntPtr address, object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.GetEETypePtr().IsArray ||
+            if (o.GetMethodTable()->IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -576,8 +576,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
 #if TARGET_WINDOWS
 #pragma warning disable CA1416
-            Variant* data = (Variant*)pDstNativeVariant;
-            data->Clear();
+            ComVariant* data = (ComVariant*)pDstNativeVariant;
+            data->Dispose();
 #pragma warning restore CA1416
 #else
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
@@ -591,7 +591,7 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new ApplicationException();
             }
 
-            if (!RuntimeImports.AreTypesAssignable(pMarshallerType.ToEETypePtr(), EETypePtr.EETypePtrOf<ICustomMarshaler>()))
+            if (!RuntimeImports.AreTypesAssignable(pMarshallerType.ToMethodTable(), MethodTable.Of<ICustomMarshaler>()))
             {
                 throw new ApplicationException();
             }
@@ -602,7 +602,7 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new ApplicationException();
             }
 
-            if (!RuntimeImports.AreTypesAssignable(marshaller.GetEETypePtr(), EETypePtr.EETypePtrOf<ICustomMarshaler>()))
+            if (!RuntimeImports.AreTypesAssignable(marshaller.GetMethodTable(), MethodTable.Of<ICustomMarshaler>()))
             {
                 throw new ApplicationException();
             }
@@ -615,7 +615,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             public IntPtr Handle;
             public IntPtr ModuleName;
-            public EETypePtr CallingAssemblyType;
+            public MethodTable* CallingAssemblyType;
             public uint DllImportSearchPathAndCookie;
         }
 

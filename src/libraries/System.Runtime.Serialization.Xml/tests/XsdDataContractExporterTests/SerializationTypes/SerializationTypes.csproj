@@ -6,10 +6,15 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>UseSeparateAssemblyNamespace;HideTypesWithoutSerializableAttribute</DefineConstants>
     <NoWarn>$(NoWarn);169;414</NoWarn>
+    <!--
+      This assembly does not have any P/Invokes and there are tests that depend on the specific number of enum types in this assembly.
+      Disable LibraryImportGenerator to avoid including any of the polyfill sources in this assembly.
+    -->
+    <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="14.3.0">
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>

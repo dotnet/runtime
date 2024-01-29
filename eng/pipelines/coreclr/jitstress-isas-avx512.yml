@@ -8,6 +8,9 @@ pr:
     - main
   paths:
     include:
+    - src/coreclr/jit/hwintrinsiccodegenxarch.cpp
+    - src/coreclr/jit/hwintrinsiclistxarch.h
+    - src/coreclr/jit/hwintrinsicxarch.cpp
     - src/coreclr/jit/instrsxarch.h
     - src/coreclr/jit/emitxarch.cpp
     - src/coreclr/jit/emitxarch.h
@@ -19,6 +22,9 @@ schedules:
     include:
     - main
   always: true
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml

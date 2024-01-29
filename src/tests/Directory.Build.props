@@ -2,6 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
+    <InstallV8ForTests>false</InstallV8ForTests>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
@@ -19,6 +20,7 @@
 
   <PropertyGroup>
     <AltJitArch>$(__AltJitArch)</AltJitArch>
+    <EnableNativeSanitizers Condition="'$(__EnableNativeSanitizers)' != ''">$(__EnableNativeSanitizers)</EnableNativeSanitizers>
   </PropertyGroup>
 
   <!-- Output paths -->
@@ -81,7 +83,7 @@
     <RunWithAndroid Condition="'$(TargetOS)' == 'android'">true</RunWithAndroid>
 
     <RunWithiOS>false</RunWithiOS>
-    <RunWithiOS Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</RunWithiOS>
+    <RunWithiOS Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">true</RunWithiOS>
 
     <MonoAot>false</MonoAot>
     <MonoAot Condition="'$(__MonoAot)' == '1'">true</MonoAot>
@@ -92,11 +94,6 @@
     <RuntimeVariant Condition="'$(__MonoFullAot)' == '1'">llvmfullaot</RuntimeVariant>
 
     <MonoBinDir>$(__MonoBinDir)</MonoBinDir>
-  </PropertyGroup>
-
-  <!-- Language settings -->
-  <PropertyGroup>
-    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <!-- Setup Default symbol and optimization for Configuration -->
@@ -128,7 +125,15 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <!-- Disable some C# warnings for the tests. -->
     <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008,8981</NoWarn>
+    <!--
+      Disable xunit warnings that aren't relevant with our custom runner.
+      xUnit1028: Use supported test return types. We support test methods that return int where 100 is passing and everything else is failure.
+      xUnit1031: Don't use task blocking operations. Our runner doesn't set up a synchronization context, so we can use the blocking operations without issue.
+      -->
+    <NoWarn>$(NoWarn);xUnit1028;xUnit1031</NoWarn>
     <RunAnalyzers>false</RunAnalyzers>
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <SkipSigning Condition="'$(CrossGen)' == 'true'">true</SkipSigning>
     <AssemblyKey>Test</AssemblyKey>
@@ -148,7 +153,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'freebsd' AND '$(TargetOS)' != 'linux' AND '$(TargetOS)' != 'netbsd' AND '$(TargetOS)' != 'osx' AND '$(TargetOS)' != 'maccatalyst' AND '$(TargetOS)' != 'illumos' AND '$(TargetOS)' != 'solaris'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.fsproj'">F#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
@@ -205,10 +209,21 @@
     <ImportProjectExtensionTargets>false</ImportProjectExtensionTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'ios' Or '$(TargetOS)' == 'tvos'">
-    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
-    <PublishTrimmed>true</PublishTrimmed>
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">
+    <EnableAggressiveTrimming Condition="'$(OutputType)' == 'Exe'">true</EnableAggressiveTrimming>
+    <PublishTrimmed Condition="'$(OutputType)' == 'Exe'">true</PublishTrimmed>
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
+    <_targetOS>$(TargetOS)</_targetOS>
+    <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
+    <NativeLib>static</NativeLib>
+    <CustomNativeMain>true</CustomNativeMain>
+    <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
+    <_IsiOSLikePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsiOSLikePlatform>
+    <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
+    <HybridGlobalization Condition="'$(_IsApplePlatform)' == 'true'">true</HybridGlobalization>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />

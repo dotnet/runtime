@@ -45,7 +45,12 @@ namespace Internal.Runtime
     // This list should be kept in sync with the runtime version at
     // https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h
     //
-    public enum ReadyToRunSectionType
+#if SYSTEM_PRIVATE_CORELIB
+    internal
+#else
+    public
+#endif
+    enum ReadyToRunSectionType
     {
         //
         // CoreCLR ReadyToRun sections
@@ -71,6 +76,9 @@ namespace Internal.Runtime
         ManifestAssemblyMvids = 118, // Added in 5.3
         CrossModuleInlineInfo = 119, // Added in 6.3
         HotColdMap = 120, // Added in 8.0
+        MethodIsGenericMap = 121, // Added in V9.0
+        EnclosingTypeMap = 122, // Added in V9.0
+        TypeGenericInfoMap = 123, // Added in V9.0
 
         //
         // NativeAOT ReadyToRun sections

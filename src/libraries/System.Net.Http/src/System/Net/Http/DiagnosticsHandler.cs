@@ -78,7 +78,6 @@ namespace System.Net.Http
         {
             if (IsEnabled())
             {
-                ArgumentNullException.ThrowIfNull(request);
                 return SendAsyncCore(request, async, cancellationToken);
             }
             else

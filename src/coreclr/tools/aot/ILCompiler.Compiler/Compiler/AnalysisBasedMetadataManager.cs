@@ -19,7 +19,7 @@ namespace ILCompiler
     /// <summary>
     /// A metadata manager that knows the full set of metadata ahead of time.
     /// </summary>
-    public sealed class AnalysisBasedMetadataManager : GeneratingMetadataManager, ICompilationRootProvider
+    public sealed class AnalysisBasedMetadataManager : MetadataManager, ICompilationRootProvider
     {
         private readonly List<ModuleDesc> _modulesWithMetadata;
         private readonly List<MetadataType> _typesWithRootedCctorContext;
@@ -136,7 +136,7 @@ namespace ILCompiler
             out List<MetadataMapping<MetadataType>> typeMappings,
             out List<MetadataMapping<MethodDesc>> methodMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
-            out List<MetadataMapping<MethodDesc>> stackTraceMapping)
+            out List<StackTraceMapping> stackTraceMapping)
         {
             ComputeMetadata(new Policy(_blockingPolicy, this), factory,
                 out metadataBlob,

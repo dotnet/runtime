@@ -93,19 +93,6 @@ ep_thread_init (void)
 		EP_UNREACHABLE ("Failed to allocate threads list.");
 }
 
-void
-ep_thread_fini (void)
-{
-	// If threads are still included in list (depending on runtime shutdown order),
-	// don't clean up since TLS destructor migh callback freeing items, no new
-	// threads should however not be added to list at this stage.
-	if (dn_list_empty (_ep_threads)) {
-		dn_list_free (_ep_threads);
-		_ep_threads = NULL;
-		ep_rt_spin_lock_free (&_ep_threads_lock);
-	}
-}
-
 bool
 ep_thread_register (EventPipeThread *thread)
 {
@@ -243,7 +230,6 @@ ep_thread_get_session_state (
 
 	ep_thread_requires_lock_held (thread);
 
-	EP_ASSERT (thread->session_state [ep_session_get_index (session)] != NULL);
 	return thread->session_state [ep_session_get_index (session)];
 }
 

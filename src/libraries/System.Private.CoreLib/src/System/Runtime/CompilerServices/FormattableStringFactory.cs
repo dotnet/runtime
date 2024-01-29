@@ -1,21 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: implementation of the FormattableStringFactory
-** class.
-**
-===========================================================*/
-
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// A factory type used by compilers to create instances of the type <see cref="FormattableString"/>.
+    /// Provides a static method to create a <see cref="FormattableString" /> object from a composite format string and its arguments.
     /// </summary>
     public static class FormattableStringFactory
     {

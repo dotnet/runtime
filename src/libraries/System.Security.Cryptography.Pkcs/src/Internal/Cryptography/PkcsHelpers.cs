@@ -69,6 +69,17 @@ namespace Internal.Cryptography
                 case Oids.Sha512:
                 case Oids.RsaPkcs1Sha512 when forVerification:
                     return HashAlgorithmName.SHA512;
+#if NET8_0_OR_GREATER
+                case Oids.Sha3_256:
+                case Oids.RsaPkcs1Sha3_256 when forVerification:
+                    return HashAlgorithmName.SHA3_256;
+                case Oids.Sha3_384:
+                case Oids.RsaPkcs1Sha3_384 when forVerification:
+                    return HashAlgorithmName.SHA3_384;
+                case Oids.Sha3_512:
+                case Oids.RsaPkcs1Sha3_512 when forVerification:
+                    return HashAlgorithmName.SHA3_512;
+#endif
                 default:
                     throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, oidValue);
             }
@@ -86,6 +97,14 @@ namespace Internal.Cryptography
                 return Oids.Sha384;
             if (algName == HashAlgorithmName.SHA512)
                 return Oids.Sha512;
+#if NET8_0_OR_GREATER
+            if (algName == HashAlgorithmName.SHA3_256)
+                return Oids.Sha3_256;
+            if (algName == HashAlgorithmName.SHA3_384)
+                return Oids.Sha3_384;
+            if (algName == HashAlgorithmName.SHA3_512)
+                return Oids.Sha3_512;
+#endif
 
             throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm, algName.Name);
         }
@@ -345,7 +364,12 @@ namespace Internal.Cryptography
             return ToUpperHexString(serialBytes);
         }
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET5_0_OR_GREATER
+        private static string ToUpperHexString(ReadOnlySpan<byte> ba)
+        {
+            return Convert.ToHexString(ba);
+        }
+#elif NETCOREAPP || NETSTANDARD2_1
         private static string ToUpperHexString(ReadOnlySpan<byte> ba)
         {
             return HexConverter.ToString(ba, HexConverter.Casing.Upper);
@@ -642,7 +666,7 @@ namespace Internal.Cryptography
                     return false;
                 }
 
-                ReadOnlySpan<byte> pSpecifiedDefaultParameters = new byte[] { 0x04, 0x00 };
+                ReadOnlySpan<byte> pSpecifiedDefaultParameters = [0x04, 0x00];
 
                 if (oaepParameters.PSourceFunc.Parameters != null &&
                     !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(pSpecifiedDefaultParameters))

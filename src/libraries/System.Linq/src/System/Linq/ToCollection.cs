@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Linq
 {
@@ -9,24 +11,58 @@ namespace System.Linq
     {
         public static TSource[] ToArray<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return source is IIListProvider<TSource> arrayProvider
-                ? arrayProvider.ToArray()
-                : EnumerableHelpers.ToArray(source);
+            if (source is IIListProvider<TSource> arrayProvider)
+            {
+                return arrayProvider.ToArray();
+            }
+
+            if (source is ICollection<TSource> collection)
+            {
+                int count = collection.Count;
+                if (count != 0)
+                {
+                    var result = new TSource[count];
+                    collection.CopyTo(result, 0);
+                    return result;
+                }
+
+                return [];
+            }
+
+            return EnumerableToArray(source);
+
+            [MethodImpl(MethodImplOptions.NoInlining)] // avoid large stack allocation impacting other paths
+            static TSource[] EnumerableToArray(IEnumerable<TSource> source)
+            {
+                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TSource> builder = new(scratch);
+
+                builder.AddNonICollectionRangeInlined(source);
+                TSource[] result = builder.ToArray();
+
+                builder.Dispose();
+                return result;
+            }
         }
 
         public static List<TSource> ToList<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return source is IIListProvider<TSource> listProvider ? listProvider.ToList() : new List<TSource>(source);
+            if (source is IIListProvider<TSource> listProvider)
+            {
+                return listProvider.ToList();
+            }
+
+            return new List<TSource>(source);
         }
 
         /// <summary>
@@ -97,33 +133,32 @@ namespace System.Linq
 
         public static Dictionary<TKey, TSource> ToDictionary<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (keySelector == null)
+            if (keySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
-            int capacity = 0;
-            if (source is ICollection<TSource> collection)
+            if (source.TryGetNonEnumeratedCount(out int capacity))
             {
-                capacity = collection.Count;
                 if (capacity == 0)
                 {
                     return new Dictionary<TKey, TSource>(comparer);
                 }
 
-                if (collection is TSource[] array)
+                if (source is TSource[] array)
                 {
-                    return ToDictionary(array, keySelector, comparer);
+                    return SpanToDictionary(array, keySelector, comparer);
                 }
 
-                if (collection is List<TSource> list)
+                if (source is List<TSource> list)
                 {
-                    return ToDictionary(list, keySelector, comparer);
+                    ReadOnlySpan<TSource> span = CollectionsMarshal.AsSpan(list);
+                    return SpanToDictionary(span, keySelector, comparer);
                 }
             }
 
@@ -136,25 +171,13 @@ namespace System.Linq
             return d;
         }
 
-        private static Dictionary<TKey, TSource> ToDictionary<TSource, TKey>(TSource[] source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
+        private static Dictionary<TKey, TSource> SpanToDictionary<TSource, TKey>(ReadOnlySpan<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
         {
             Dictionary<TKey, TSource> d = new Dictionary<TKey, TSource>(source.Length, comparer);
-            for (int i = 0; i < source.Length; i++)
-            {
-                d.Add(keySelector(source[i]), source[i]);
-            }
-
-            return d;
-        }
-
-        private static Dictionary<TKey, TSource> ToDictionary<TSource, TKey>(List<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
-        {
-            Dictionary<TKey, TSource> d = new Dictionary<TKey, TSource>(source.Count, comparer);
             foreach (TSource element in source)
             {
                 d.Add(keySelector(element), element);
             }
-
             return d;
         }
 
@@ -163,38 +186,37 @@ namespace System.Linq
 
         public static Dictionary<TKey, TElement> ToDictionary<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (keySelector == null)
+            if (keySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
-            if (elementSelector == null)
+            if (elementSelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementSelector);
             }
 
-            int capacity = 0;
-            if (source is ICollection<TSource> collection)
+            if (source.TryGetNonEnumeratedCount(out int capacity))
             {
-                capacity = collection.Count;
                 if (capacity == 0)
                 {
                     return new Dictionary<TKey, TElement>(comparer);
                 }
 
-                if (collection is TSource[] array)
+                if (source is TSource[] array)
                 {
-                    return ToDictionary(array, keySelector, elementSelector, comparer);
+                    return SpanToDictionary(array, keySelector, elementSelector, comparer);
                 }
 
-                if (collection is List<TSource> list)
+                if (source is List<TSource> list)
                 {
-                    return ToDictionary(list, keySelector, elementSelector, comparer);
+                    ReadOnlySpan<TSource> span = CollectionsMarshal.AsSpan(list);
+                    return SpanToDictionary(span, keySelector, elementSelector, comparer);
                 }
             }
 
@@ -207,25 +229,13 @@ namespace System.Linq
             return d;
         }
 
-        private static Dictionary<TKey, TElement> ToDictionary<TSource, TKey, TElement>(TSource[] source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
+        private static Dictionary<TKey, TElement> SpanToDictionary<TSource, TKey, TElement>(ReadOnlySpan<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
         {
             Dictionary<TKey, TElement> d = new Dictionary<TKey, TElement>(source.Length, comparer);
-            for (int i = 0; i < source.Length; i++)
-            {
-                d.Add(keySelector(source[i]), elementSelector(source[i]));
-            }
-
-            return d;
-        }
-
-        private static Dictionary<TKey, TElement> ToDictionary<TSource, TKey, TElement>(List<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
-        {
-            Dictionary<TKey, TElement> d = new Dictionary<TKey, TElement>(source.Count, comparer);
             foreach (TSource element in source)
             {
                 d.Add(keySelector(element), elementSelector(element));
             }
-
             return d;
         }
 
@@ -233,7 +243,7 @@ namespace System.Linq
 
         public static HashSet<TSource> ToHashSet<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -250,18 +260,6 @@ namespace System.Linq
         {
             var result = new TSource[set.Count];
             set.CopyTo(result);
-            return result;
-        }
-
-        private static List<TSource> HashSetToList<TSource>(HashSet<TSource> set)
-        {
-            var result = new List<TSource>(set.Count);
-
-            foreach (TSource item in set)
-            {
-                result.Add(item);
-            }
-
             return result;
         }
     }

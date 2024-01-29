@@ -3,15 +3,8 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-using System.Runtime.InteropServices.ObjectiveC;
-using System.Text;
-using System.Threading.Tasks;
 using SharedTypes.ComInterfaces;
 using static System.Runtime.InteropServices.ComWrappers;
 
@@ -55,7 +48,7 @@ namespace NativeExports.ComInterfaceGenerator
                 if (obj is ImplementingObject)
                 {
                     ComInterfaceEntry* comInterfaceEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ImplementingObject), sizeof(ComInterfaceEntry));
-                    comInterfaceEntry->IID = new Guid(IGetAndSetInt._guid);
+                    comInterfaceEntry->IID = new Guid(IGetAndSetInt.IID);
                     comInterfaceEntry->Vtable = (nint)s_comInterface1VTable;
                     count = 1;
                     return comInterfaceEntry;

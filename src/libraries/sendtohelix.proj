@@ -46,12 +46,17 @@
         Creator=$(Creator);
         HelixAccessToken=$(HelixAccessToken);
         HelixTargetQueues=$(HelixTargetQueues);
-        BuildTargetFramework=$(BuildTargetFramework)
+        BuildTargetFramework=$(BuildTargetFramework);
+        Scenarios=$(_Scenarios);
+        SuperPmiCollect=$(_SuperPmiCollect);
+        SuperPmiCollectionType=$(_SuperPmiCollectionType);
+        SuperPmiCollectionName=$(_SuperPmiCollectionName)
       </_PropertiesToPass>
       <_DebuggerHosts Condition="'$(_DebuggerHosts)' == ''">$(DebuggerHost)</_DebuggerHosts>
       <_DebuggerHosts Condition="'$(_DebuggerHosts)' == ''">chrome</_DebuggerHosts>
     </PropertyGroup>
 
+    <Message Condition="'$(_SuperPmiCollect)' == 'true'" Importance="High" Text="Doing SuperPMI collection: $(_SuperPmiCollectionType) $(_SuperPmiCollectionName)" />
     <Message Condition="'$(_Scenarios)' != ''" Importance="High" Text="Using _Scenarios: $(_Scenarios)" />
     <Message Condition="'$(_DebuggerHosts)' != ''" Importance="High" Text="Using _DebuggerHosts: $(_DebuggerHosts)" />
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
@@ -62,7 +67,7 @@
     <Message Condition="'$(TestArchiveRuntimeFile)' != ''" Importance="High" Text="TestArchiveRuntimeFile: $(TestArchiveRuntimeFile)" />
 
     <!-- Re-invoke MSBuild on this project to create the correlation payload -->
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" Properties="Scenarios=$(_Scenarios)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" Properties="$(_PropertiesToPass)" />
 
     <PropertyGroup>
       <PerScenarioProjectFile>$(MSBuildThisFileDirectory)sendtohelixhelp.proj</PerScenarioProjectFile>
@@ -195,6 +200,34 @@
           SkipUnchangedFiles="true" />
   </Target>
 
+  <Target Name="PrepareSuperPmiCollectCorrelationPayload"
+          Condition="'$(SuperPmiCollect)' == 'true'">
+    <!-- Copy Files needed for SuperPMI collection into a directory that will be added to the single, compressed file used as the correlation payload by Helix. -->
+    <Message Importance="High" Text="Preparing SuperPMI collection payload directory" />
+
+    <ItemGroup>
+      <!-- We need superpmi.py and its dependencies; this is an over-approximation. The HelixCorrelationPayload directory is CoreRootDirectory, so copy the scripts there. -->
+      <_SuperPmiScriptsFiles Include="$(RepoRoot)src\coreclr\scripts\*.py" />
+    </ItemGroup>
+
+    <Message Importance="High" Text="Copying $(RepoRoot)src\coreclr\scripts\*.py to $(NetCoreAppCurrentTestHostPath)spmi_scripts" />
+    <MakeDir Directories="$(NetCoreAppCurrentTestHostPath)spmi_scripts" />
+    <Copy SourceFiles="@(_SuperPmiScriptsFiles)" DestinationFolder="$(NetCoreAppCurrentTestHostPath)spmi_scripts" />
+
+    <!-- Copy the runtime build into the correlation payload. The normal libraries test run takes the pieces of the runtime needed and puts them into the
+         "testhost" directory structure (using the "build libs.pretest" build step). This doesn't include the SuperPMI shim or tools, and is also in a directory
+         structure we don't don't control. So copy the whole runtime build to a directory we control. We probably only need a few things
+         (superpmi, mcs, superpmi-shim-collector, clrjit), but it's easier to just copy everything.
+    -->
+
+    <Message Importance="High" Text="Copying Runtime binaries from $(ArtifactsDir)transport/coreclr to $(NetCoreAppCurrentTestHostPath)coreclr" />
+    <MakeDir Directories="$(NetCoreAppCurrentTestHostPath)coreclr" />
+    <ItemGroup>
+      <SuperPMICoreClrFiles Include="$(ArtifactsDir)transport\coreclr\**\*.*"/>
+    </ItemGroup>
+    <Copy SourceFiles="@(SuperPMICoreClrFiles)" DestinationFolder="$(NetCoreAppCurrentTestHostPath)coreclr\%(RecursiveDir)" />
+  </Target>
+
   <Target Name="CompressRuntimeDirectory"
           DependsOnTargets="IncludeDumpDocsInTesthost;_CollectRuntimeInputs"
           Inputs="@(_RuntimeInput);@(TestArchiveRuntimeDependency)"
@@ -218,7 +251,7 @@
     There's no actual work here; this target just causes its dependent targets to be run.
   -->
   <Target Name="PrepareCorrelationPayloadDirectory"
-          DependsOnTargets="CreateAllScenarioTestEnvFiles;CompressRuntimeDirectory" >
+          DependsOnTargets="CreateAllScenarioTestEnvFiles;PrepareSuperPmiCollectCorrelationPayload;CompressRuntimeDirectory" >
     <Message Importance="High" Text="Correlation directory prepared" />
   </Target>
 

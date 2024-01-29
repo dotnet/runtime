@@ -31,8 +31,7 @@ namespace Microsoft.Extensions.Logging.Debug
         /// <inheritdoc />
         public bool IsEnabled(LogLevel logLevel)
         {
-            // If the filter is null, everything is enabled
-            // unless the debugger is not attached
+            // Everything is enabled unless the debugger is not attached
             return Debugger.IsAttached && logLevel != LogLevel.None;
         }
 
@@ -53,7 +52,7 @@ namespace Microsoft.Extensions.Logging.Debug
                 return;
             }
 
-            message = $"{ logLevel }: {message}";
+            message = $"{logLevel}: {message}";
 
             if (exception != null)
             {

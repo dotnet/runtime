@@ -2,12 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -104,8 +100,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		private class DerivedWithoutRequires : ClassWithRequires
 		{
 			// This method contains implicit call to ClassWithRequires.ctor()
-			[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public DerivedWithoutRequires () { }
 
 			public static void StaticMethodInInheritedClass () { }
@@ -313,8 +309,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public class DerivedNestedClass : ClassWithRequires
 			{
 				// This method contains implicit call to ClassWithRequires.ctor()
-				[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-				[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL2026")]
+				[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				public DerivedNestedClass () { }
 
 				public static void NestedStaticMethod () { }
@@ -498,8 +494,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// These should not be reported https://github.com/mono/linker/issues/2218
 			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Trimmer)]
 			public static event EventHandler Event;
 		}
@@ -535,24 +529,18 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
 			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
-			// https://github.com/dotnet/linker/issues/2533
-			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnType.Method()", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnType.Method()")]
+			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)")]
 			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method(Int32)", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()")]
 			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method()", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()")]
 			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
-			// https://github.com/dotnet/linker/issues/2533
-			// NativeAOT has a correct override resolution and in this case the method is not an override - so it should warn
-			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method(Int32)", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method(Int32)")]
 			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method(Int32)", ProducedBy = Tool.NativeAot)]
-			// ILLink incorrectly skips warnings for derived method, under the assumption that
-			// it will be covered by the base method. But in this case the base method
-			// is unannotated (and the mismatch produces no warning because the derived
-			// type has RUC).
-			// https://github.com/dotnet/linker/issues/2533
-			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()")]
+			[ExpectedWarning ("IL3050", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()", ProducedBy = Tool.NativeAot)]
 			static void TestDAMAccess ()
 			{
 				// Warns because BaseWithoutRequiresOnType.Method has Requires on the method
@@ -623,8 +611,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2109", "ReflectionAccessOnCtor.DerivedWithoutRequires", "ReflectionAccessOnCtor.BaseWithRequires")]
 			class DerivedWithoutRequires : BaseWithRequires
 			{
-				[ExpectedWarning ("IL2026", "--BaseWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)] // The body has direct call to the base.ctor()
-				[ExpectedWarning ("IL3050", "--BaseWithRequires--", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL2026", "--BaseWithRequires--")] // The body has direct call to the base.ctor()
+				[ExpectedWarning ("IL3050", "--BaseWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				public DerivedWithoutRequires () { }
 			}
 
@@ -814,6 +802,27 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				instance.GetType ().GetMethod ("RUCMethod");
 			}
 
+			[RequiresUnreferencedCode ("--GenericTypeWithRequires--")]
+			[RequiresDynamicCode ("--GenericTypeWithRequires--")]
+			class GenericTypeWithRequires<T>
+			{
+				public static int NonGenericField;
+			}
+
+			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--")]
+			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.NativeAot)]
+			static void TestDAMAccessOnOpenGeneric ()
+			{
+				typeof (GenericTypeWithRequires<>).RequiresPublicFields ();
+			}
+
+			[ExpectedWarning ("IL2026", "NonGenericField", "--GenericTypeWithRequires--")]
+			[ExpectedWarning ("IL3050", "NonGenericField", "--GenericTypeWithRequires--", ProducedBy = Tool.NativeAot)]
+			static void TestDAMAccessOnInstantiatedGeneric ()
+			{
+				typeof (GenericTypeWithRequires<int>).RequiresPublicFields ();
+			}
+
 			[ExpectedWarning ("IL2026", "--TestDAMOnTypeAccessInRUCScope--")]
 			public static void Test ()
 			{
@@ -822,6 +831,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				TestDynamicDependencyAccess ();
 				TestDAMOnTypeAccess (null);
 				TestDAMOnTypeAccessInRUCScope ();
+				TestDAMAccessOnOpenGeneric ();
+				TestDAMAccessOnInstantiatedGeneric ();
 			}
 		}
 
@@ -837,10 +848,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				// These should be reported only in TestDirectReflectionAccess
 				// https://github.com/mono/linker/issues/2218
 				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
 				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
 				public static event EventHandler StaticEvent;
 			}
@@ -1167,7 +1174,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				[ExpectedWarning ("IL2091")]
 				public class ClassWithWarning : RequiresAll<T>
 				{
-					[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+					[ExpectedWarning ("IL2091")]
 					public ClassWithWarning ()
 					{
 					}

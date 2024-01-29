@@ -22,6 +22,7 @@ namespace System.Reflection.Emit
     public readonly partial struct OpCode : System.IEquatable<System.Reflection.Emit.OpCode>
     {
         private readonly int _dummyPrimitive;
+        public int EvaluationStackDelta { get { throw null; } }
         public System.Reflection.Emit.FlowControl FlowControl { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Reflection.Emit.OpCodeType OpCodeType { get { throw null; } }

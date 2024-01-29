@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 
@@ -92,6 +93,20 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     /// </summary>
     private readonly MsQuicSafeHandle? _parent;
 
+    /// <summary>
+    /// Additional, dependent object to be disposed only after the safe handle gets released.
+    /// </summary>
+    private IDisposable? _disposable;
+
+    public IDisposable Disposable
+    {
+        set
+        {
+            Debug.Assert(_disposable is null);
+            _disposable = value;
+        }
+    }
+
     public unsafe MsQuicContextSafeHandle(QUIC_HANDLE* handle, GCHandle context, SafeHandleType safeHandleType, MsQuicSafeHandle? parent = null)
         : base(handle, safeHandleType)
     {
@@ -108,7 +123,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
         }
     }
 
-    protected override bool ReleaseHandle()
+    protected override unsafe bool ReleaseHandle()
     {
         base.ReleaseHandle();
         if (_context.IsAllocated)
@@ -123,6 +138,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
                 NetEventSource.Info(this, $"{this} {_parent} ref count decremented");
             }
         }
+        _disposable?.Dispose();
         return true;
     }
 }

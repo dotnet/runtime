@@ -4,7 +4,7 @@
 .macro NESTED_ENTRY Name, Section, Handler
     LEAF_ENTRY \Name, \Section
     .ifnc \Handler, NoHandler
-        .cfi_personality 0x1c, C_FUNC(\Handler) // 0x1c == DW_EH_PE_pcrel | DW_EH_PE_sdata8
+        .cfi_personality 0x1B, C_FUNC(\Handler) // 0x1B == DW_EH_PE_pcrel | DW_EH_PE_sdata4
     .endif
 .endm
 
@@ -43,11 +43,12 @@ C_FUNC(\Name\()_End):
 
 .macro PROLOG_STACK_ALLOC Size
     addi sp, sp, -\Size
+    .cfi_adjust_cfa_offset \Size
 .endm
 
 .macro EPILOG_STACK_FREE Size
     addi sp, sp, \Size
-    .cfi_def_cfa sp,-\Size
+    .cfi_adjust_cfa_offset -\Size
 .endm
 
 .macro EPILOG_STACK_RESTORE
@@ -64,7 +65,7 @@ C_FUNC(\Name\()_End):
     sd \reg1, \ofs(sp)
     sd \reg2, (\ofs+8)(sp)
     .cfi_rel_offset \reg1, \ofs
-    .cfi_rel_offset \reg1, \ofs + 8
+    .cfi_rel_offset \reg2, \ofs + 8
     .if (\__def_cfa_save ==  1)
         addi fp, sp, 0
         .cfi_def_cfa_register fp
@@ -73,11 +74,11 @@ C_FUNC(\Name\()_End):
 
 .macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
     addi sp, sp, -\ssize
+    .cfi_adjust_cfa_offset \ssize
 
     sd \reg1, 0(sp)
     sd \reg2, 8(sp)
 
-    .cfi_adjust_cfa_offset -\ssize
     .cfi_rel_offset \reg1, 0
     .cfi_rel_offset \reg2, 8
     .if (\__def_cfa_save ==  1)
@@ -89,7 +90,6 @@ C_FUNC(\Name\()_End):
 .macro EPILOG_RESTORE_REG reg, ofs
     ld  \reg, (\ofs)(sp)
     .cfi_restore \reg
-    .cfi_def_cfa_register sp
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
@@ -106,7 +106,7 @@ C_FUNC(\Name\()_End):
     .cfi_restore \reg1
 
     addi  sp, sp, \ssize
-    .cfi_def_cfa sp,-\ssize
+    .cfi_adjust_cfa_offset -\ssize
 .endm
 
 .macro EPILOG_RETURN
@@ -256,7 +256,11 @@ C_FUNC(\Name\()_End):
 
     __PWTB_FloatArgumentRegisters = \extraLocals
 
-    .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
+    // Note, stack (see __PWTB_StackAlloc variable) must be 16 byte aligned,
+    // SIZEOF__FloatArgumentRegisters (0x40) is 16 byte aligned, that mean initial
+    // __PWTB_FloatArgumentRegisters value must be not 16 byte aligned and
+    // after add (120 + 64) provide 16 byte aligned result.
+    .if ((__PWTB_FloatArgumentRegisters % 16) == 0)
         __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
     .endif
 
@@ -322,4 +326,20 @@ C_FUNC(\Name\()_End):
 .macro GenerateRedirectedHandledJITCaseStub reason
 // TODO RISCV NYI
     sw  ra, 0(zero)
+.endm
+
+//-----------------------------------------------------------------------------
+// Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
+// out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
+// before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
+// is misaligned.
+//
+.macro  CHECK_STACK_ALIGNMENT
+
+#ifdef _DEBUG
+        andi    t4, sp, 0xf
+        beq     t4, zero, 0f
+        EMIT_BREAKPOINT
+0:
+#endif
 .endm

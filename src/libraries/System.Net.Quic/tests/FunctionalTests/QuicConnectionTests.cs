@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,18 +11,23 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicConnectionTests : QuicTestBase
     {
         const int ExpectedErrorCode = 1234;
+        public static IEnumerable<object[]> LocalAddresses = Configuration.Sockets.LocalAddresses();
 
         public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
-        public async Task TestConnect()
+        [Theory]
+        [MemberData(nameof(LocalAddresses))]
+        public async Task TestConnect(IPAddress address)
         {
-            await using QuicListener listener = await CreateQuicListener();
+            await using QuicListener listener = await CreateQuicListener(address);
+            Assert.Equal(address, listener.LocalEndPoint.Address);
 
             var options = CreateQuicClientOptions(listener.LocalEndPoint);
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(options);
@@ -32,7 +39,11 @@ namespace System.Net.Quic.Tests
 
             Assert.Equal(listener.LocalEndPoint, serverConnection.LocalEndPoint);
             Assert.Equal(listener.LocalEndPoint, clientConnection.RemoteEndPoint);
-            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+            if (PlatformDetection.IsWindows && address.IsIPv6LinkLocal)
+            {
+                // https://github.com/microsoft/msquic/issues/3813
+                Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+            }
             Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, clientConnection.TargetHostName);
@@ -76,7 +87,6 @@ namespace System.Net.Quic.Tests
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => connectTask);
 
                     // Subsequent attempts should fail
-                    // TODO: Which exception is correct?
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await serverConnection.AcceptInboundStreamAsync());
                     await Assert.ThrowsAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
                 });
@@ -105,13 +115,53 @@ namespace System.Net.Quic.Tests
                     sync.Release();
 
                     // Pending ops should fail
-                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => acceptTask);
-                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => connectTask);
+                    await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask);
+                    await Assert.ThrowsAsync<ObjectDisposedException>(async () => await connectTask);
 
                     // Subsequent attempts should fail
-                    // TODO: Should these be QuicOperationAbortedException, to match above? Or vice-versa?
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await serverConnection.AcceptInboundStreamAsync());
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await OpenAndUseStreamAsync(serverConnection));
+                });
+        }
+
+        [Fact]
+        public async Task DisposeAfterCloseCanceled()
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+                    await Assert.ThrowsAsync<OperationCanceledException>(async () => await clientConnection.CloseAsync(ExpectedErrorCode, cts.Token));
+                    await clientConnection.DisposeAsync();
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                    await serverConnection.DisposeAsync();
+                });
+        }
+
+        [Fact]
+        public async Task DisposeAfterCloseTaskStored()
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    var cts = new CancellationTokenSource();
+                    var task = clientConnection.CloseAsync(0).AsTask();
+                    await clientConnection.DisposeAsync();
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                    await serverConnection.DisposeAsync();
                 });
         }
 
@@ -300,6 +350,21 @@ namespace System.Net.Quic.Tests
                 _ => Task.CompletedTask);
         }
 
+        [Fact]
+        public async Task AcceptStreamAsync_ConnectionDisposed_Throws()
+        {
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
+
+            // One task issues before the disposal.
+            ValueTask<QuicStream> acceptTask1 = serverConnection.AcceptInboundStreamAsync();
+            await serverConnection.DisposeAsync();
+            // Another task issued after the disposal.
+            ValueTask<QuicStream> acceptTask2 = serverConnection.AcceptInboundStreamAsync();
+
+            var accept1Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask1);
+            var accept2Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask2);
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -366,6 +431,49 @@ namespace System.Net.Quic.Tests
                     await using var stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
                     await stream.WriteAsync(new byte[1] { data }, completeWrites: true);
                 }).WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ConnectAsync_InvalidName_ThrowsSocketException(bool sameTargetHost)
+        {
+            string name = $"{Guid.NewGuid().ToString("N")}.microsoft.com.";
+            var options = new QuicClientConnectionOptions()
+            {
+                DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
+                DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
+                RemoteEndPoint = new DnsEndPoint(name, 10000),
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(sameTargetHost ? name : "localhost")
+            };
+
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(() => QuicConnection.ConnectAsync(options).AsTask());
+            Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
+        }
+
+        [Fact]
+        public void ConnectAsync_MissingName_ThrowsInvalidArgument()
+        {
+            var options = new QuicClientConnectionOptions()
+            {
+                DefaultStreamErrorCode = DefaultStreamErrorCodeClient,
+                DefaultCloseErrorCode = DefaultCloseErrorCodeClient,
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+            };
+
+            Assert.Throws<ArgumentNullException>(() => QuicConnection.ConnectAsync(options));
+        }
+
+        [Fact]
+        public void ConnectAsync_MissingDefaults_ThrowsInvalidArgument()
+        {
+            var options = new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = new DnsEndPoint("localhost", 10000),
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+            };
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => QuicConnection.ConnectAsync(options));
         }
     }
 }

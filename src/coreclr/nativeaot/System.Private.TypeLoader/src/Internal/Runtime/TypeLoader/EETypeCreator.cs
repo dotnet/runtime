@@ -3,12 +3,11 @@
 
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Internal.Runtime.Augments;
-using System.Collections.Generic;
-
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
@@ -320,12 +319,9 @@ namespace Internal.Runtime.TypeLoader
                     *((void**)((byte*)pEEType + cbSealedVirtualSlotsTypeOffset)) = pTemplateEEType->GetSealedVirtualTable();
                 }
 
-                if (MethodTable.SupportsWritableData)
-                {
-                    writableDataPtr = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
-                    MemoryHelpers.Memset(writableDataPtr, WritableData.GetSize(IntPtr.Size), 0);
-                    pEEType->WritableData = (void*)writableDataPtr;
-                }
+                writableDataPtr = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
+                MemoryHelpers.Memset(writableDataPtr, WritableData.GetSize(IntPtr.Size), 0);
+                pEEType->WritableData = (void*)writableDataPtr;
 
                 pEEType->DynamicTemplateType = pTemplateEEType;
 
@@ -369,7 +365,7 @@ namespace Internal.Runtime.TypeLoader
                 if (state.GcDataSize != 0)
                 {
                     // Statics are allocated on GC heap
-                    object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
+                    object obj = RuntimeAugments.RawNewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
                     gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
 
                     pEEType->DynamicGcStaticsData = gcStaticData;
@@ -526,17 +522,17 @@ namespace Internal.Runtime.TypeLoader
             int numSeries = 0;
             int i = 0;
 
-            bool first = true;
+            int first = -1;
             int last = 0;
             short numPtrs = 0;
             while (i < bitfield.Count)
             {
                 if (bitfield[i])
                 {
-                    if (first)
+                    if (first == -1)
                     {
-                        baseOffset += i;
-                        first = false;
+                        first = i;
+                        baseOffset += first;
                     }
                     else if (gcdesc != null)
                     {
@@ -565,7 +561,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (numSeries > 0)
                 {
-                    *ptr-- = (short)((bitfield.Count - last + baseOffset - 2) * IntPtr.Size);
+                    *ptr-- = (short)((first + bitfield.Count - last) * IntPtr.Size);
                     *ptr-- = numPtrs;
 
                     *(void**)gcdesc = (void*)-numSeries;

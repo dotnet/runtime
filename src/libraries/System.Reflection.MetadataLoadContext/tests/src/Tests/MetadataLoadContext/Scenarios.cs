@@ -58,7 +58,7 @@ namespace System.Reflection.Tests
                     }
                 }
 
-                Assert.True(false, "Did not find a core assembly.");
+                Assert.Fail("Did not find a core assembly.");
             }
         }
 

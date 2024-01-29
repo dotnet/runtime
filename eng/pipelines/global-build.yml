@@ -172,8 +172,6 @@ extends:
           - SourceBuild_linux_x64
           jobParameters:
             nameSuffix: PortableSourceBuild
-            extraStepsParameters:
-              name: SourceBuildPackages
             timeoutInMinutes: 95
             condition:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)

@@ -54,7 +54,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (!(char.IsDigit(c)
                     || char.IsWhiteSpace(c)
-                    || AdditionalPhoneNumberCharacters.IndexOf(c) != -1))
+                    || AdditionalPhoneNumberCharacters.Contains(c)))
                 {
                     return false;
                 }

@@ -63,11 +63,15 @@ StackWalkAction StackWalkFunctions(Thread * thread, PSTACKWALKFRAMESCALLBACK pCa
 #define StackWalkFunctions(thread, callBack, userdata) thread->StackWalkFrames(METHODSONLY, (callBack),(userData))
 */
 
+namespace AsmOffsetsAsserts
+{
+    class AsmOffsets;
+};
 
 class CrawlFrame
 {
 public:
-
+    friend class AsmOffsetsAsserts::AsmOffsets;
 #ifdef TARGET_X86
     friend StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data);
 #endif // TARGET_X86
@@ -567,6 +571,7 @@ private:
 
 class StackFrameIterator
 {
+    friend class AsmOffsetsAsserts::AsmOffsets;
 public:
     // This constructor is for the usage pattern of creating an uninitialized StackFrameIterator and then
     // calling Init() on it.
@@ -604,6 +609,36 @@ public:
     // advance to the next frame according to the stackwalk flags
     StackWalkAction Next(void);
 
+#ifdef FEATURE_EH_FUNCLETS
+    void ResetNextExInfoForSP(TADDR SP);
+
+    ExInfo* GetNextExInfo()
+    {
+        return m_pNextExInfo;
+    }
+
+    void SetAdjustedControlPC(TADDR pc)
+    {
+        m_AdjustedControlPC = pc;
+    }
+
+    void UpdateIsRuntimeWrappedExceptions()
+    {
+        CONTRACTL
+        {
+            MODE_ANY;
+            GC_TRIGGERS;
+            NOTHROW;
+        }
+        CONTRACTL_END
+
+#if defined(FEATURE_EH_FUNCLETS) && !defined(DACCESS_COMPILE)
+        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptions();
+#endif // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE
+    }
+
+#endif // FEATURE_EH_FUNCLETS
+
     enum FrameState
     {
         SFITER_UNINITIALIZED,               // uninitialized
@@ -626,6 +661,24 @@ public:
 #endif // _DEBUG
 
 private:
+
+    // For the new exception handling that uses managed code to dispatch the
+    // exceptions, we need to force the stack walker to report GC references
+    // in the exception handling code frames, since they are alive. This is
+    // different from the old exception handling where no frames below the
+    // funclets upto the parent frame are alive.
+    enum class ForceGCReportingStage : BYTE
+    {
+        Off = 0,
+        // The stack walker has hit a funclet, we are looking for the first managed 
+        // frame that would be one of the managed exception handling code frames
+        LookForManagedFrame = 1,
+        // The stack walker has already hit a managed exception handling code frame,
+        // we are looking for a marker frame which indicates the native caller of
+        // the managed exception handling code
+        LookForMarkerFrame = 2
+    };
+
     // This is a helper for the two constructors.
     void CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 flags);
 
@@ -672,6 +725,7 @@ private:
 
         if (!ResetOnlyIntermediaryState)
         {
+            m_fFuncletNotSeen = false;
             m_sfFuncletParent = StackFrame();
             m_fProcessNonFilterFunclet = false;
         }
@@ -692,7 +746,6 @@ private:
     // This is the real starting explicit frame.  If m_pStartFrame is NULL,
     // then this is equal to m_pThread->GetFrame().  Otherwise this is equal to m_pStartFrame.
     INDEBUG(PTR_Frame m_pRealStartFrame);
-
     ULONG32               m_flags;          // StackWalkFrames flags.
     ICodeManagerFlags     m_codeManFlags;
     ExecutionManager::ScanFlag m_scanFlag;
@@ -717,11 +770,21 @@ private:
     StackFrame    m_sfIntermediaryFuncletParent;
     bool          m_fProcessIntermediaryNonFilterFunclet;
     bool          m_fDidFuncletReportGCReferences;
+    bool          m_isRuntimeWrappedExceptions;
 #endif // FEATURE_EH_FUNCLETS
-
+    // State of forcing of GC reference reporting for managed exception handling methods (RhExThrow, RhDispatchEx etc)
+    ForceGCReportingStage m_forceReportingWhileSkipping;
+    // The stack walk has moved past the first ExInfo location on the stack
+    bool          m_movedPastFirstExInfo;
+    // Indicates that no funclet was seen during the current stack walk yet
+    bool          m_fFuncletNotSeen;
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     LPVOID m_pvResumableFrameTargetSP;
 #endif // RECORD_RESUMABLE_FRAME_SP
+#ifdef FEATURE_EH_FUNCLETS
+    ExInfo* m_pNextExInfo;
+    TADDR m_AdjustedControlPC;
+#endif // FEATURE_EH_FUNCLETS
 };
 
 void SetUpRegdisplayForStackWalk(Thread * pThread, T_CONTEXT * pContext, REGDISPLAY * pRegdisplay);

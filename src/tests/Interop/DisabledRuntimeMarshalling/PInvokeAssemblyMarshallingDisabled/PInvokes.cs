@@ -9,6 +9,7 @@ using static DisabledRuntimeMarshallingNative;
 
 namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingDisabled;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class PInvokes
 {
 
@@ -65,7 +66,7 @@ public class PInvokes
     public static void Varargs_NotSupported()
     {
         AssertThrowsCorrectException(() => DisabledRuntimeMarshallingNative.CallWithVarargs(__arglist(1, 2, 3)));
-        
+
         static void AssertThrowsCorrectException(Action testCode)
         {
             try
@@ -84,9 +85,9 @@ public class PInvokes
             }
             catch (Exception ex)
             {
-                Assert.False(true, $"Expected either a MarshalDirectiveException, InvalidProgramException, or ExecutionEngineException, but received a '{ex.GetType().FullName}' exception: '{ex.ToString()}'");
+                Assert.Fail($"Expected either a MarshalDirectiveException, InvalidProgramException, or ExecutionEngineException, but received a '{ex.GetType().FullName}' exception: '{ex.ToString()}'");
             }
-            Assert.False(true, $"Expected either a MarshalDirectiveException, InvalidProgramException, or ExecutionEngineException, but received no exception.");
+            Assert.Fail($"Expected either a MarshalDirectiveException, InvalidProgramException, or ExecutionEngineException, but received no exception.");
         }
     }
 
@@ -104,7 +105,8 @@ public class PInvokes
     public static void NoBooleanNormalization()
     {
         byte byteVal = 42;
-        Assert.Equal(byteVal, Unsafe.As<bool, byte>(ref Unsafe.AsRef(DisabledRuntimeMarshallingNative.GetByteAsBool(byteVal))));
+        bool boolVal = DisabledRuntimeMarshallingNative.GetByteAsBool(byteVal);
+        Assert.Equal(byteVal, Unsafe.As<bool, byte>(ref Unsafe.AsRef(in boolVal)));
     }
 
     [Fact]
@@ -120,7 +122,7 @@ public class PInvokes
         char c = '\u2705';
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithWCharAndShort(s, c), s, c));
 
-        Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBoolWithVariantBool_FailureExpected(new StructWithShortAndBool(s, b), s, b));
+        Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBoolWithVariantBool(new StructWithShortAndBool(s, b), s, b));
     }
 
     [Fact]
@@ -151,8 +153,9 @@ public class PInvokes
 
     [Fact]
     [SkipOnMono("Blocking this on CoreCLR should be good enough.")]
-    public static void Int128_NotSupported()
+    public static void UInt128_Int128_NotSupported()
     {
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithInt128(default(Int128)));
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithUInt128(default(UInt128)));
     }
 }

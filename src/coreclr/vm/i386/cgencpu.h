@@ -372,13 +372,6 @@ inline void emitJumpInd(LPBYTE pBuffer, LPVOID target)
 }
 
 //------------------------------------------------------------------------
-inline PCODE isJump(PCODE pCode)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return *PTR_BYTE(pCode) == X86_INSTR_JMP_REL32;
-}
-
-//------------------------------------------------------------------------
 //  Given the same pBuffer that was used by emitJump this method
 //  decodes the instructions and returns the jump target
 inline PCODE decodeJump(PCODE pCode)
@@ -400,14 +393,6 @@ inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target
 {
     WRAPPER_NO_CONTRACT;
     emitJump(pBufferRX, pBufferRW, target);
-}
-
-//------------------------------------------------------------------------
-inline PCODE isBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return isJump(pBuffer);
 }
 
 //------------------------------------------------------------------------
@@ -505,9 +490,5 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 // #define JIT_GetSharedNonGCStaticBase
 // #define JIT_GetSharedGCStaticBaseNoCtor
 // #define JIT_GetSharedNonGCStaticBaseNoCtor
-
-#ifndef TARGET_UNIX
-#define JIT_NewCrossContext         JIT_NewCrossContext
-#endif // TARGET_UNIX
 
 #endif // __cgenx86_h__

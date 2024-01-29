@@ -8,15 +8,10 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ArrayOfFrozenObjectsNode : DehydratableObjectNode, ISymbolDefinitionNode
+    public class ArrayOfFrozenObjectsNode : DehydratableObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private readonly ObjectAndOffsetSymbolNode _endSymbol;
-        public ISymbolNode EndSymbol => _endSymbol;
-
-        public ArrayOfFrozenObjectsNode()
-        {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__FrozenSegmentEnd", true);
-        }
+        private int? _size;
+        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
             => sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenSegmentStart");
@@ -36,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
             var builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
-            foreach (EmbeddedObjectNode node in factory.MetadataManager.GetFrozenObjects())
+            foreach (FrozenObjectNode node in factory.MetadataManager.GetFrozenObjects())
             {
                 AlignNextObject(ref builder, factory);
 
@@ -51,18 +46,14 @@ namespace ILCompiler.DependencyAnalysis
                     builder.EmitZeros(minimumObjectSize - objectSize);
                 }
 
-                if (node is ISymbolDefinitionNode)
-                {
-                    builder.AddSymbol((ISymbolDefinitionNode)node);
-                }
+                builder.AddSymbol(node);
             }
 
             // Terminate with a null pointer as expected by the GC
             AlignNextObject(ref builder, factory);
             builder.EmitZeroPointer();
 
-            _endSymbol.SetSymbolOffset(builder.CountBytes);
-            builder.AddSymbol(_endSymbol);
+            _size = builder.CountBytes;
 
             return builder.ToObjectData();
         }

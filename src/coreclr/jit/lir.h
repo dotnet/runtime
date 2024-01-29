@@ -74,7 +74,7 @@ public:
         bool IsDummyUse() const;
 
         void ReplaceWith(GenTree* replacement);
-        unsigned ReplaceWithLclVar(Compiler* compiler, unsigned lclNum = BAD_VAR_NUM, GenTree** assign = nullptr);
+        unsigned ReplaceWithLclVar(Compiler* compiler, unsigned lclNum = BAD_VAR_NUM, GenTree** pStore = nullptr);
     };
 
     //------------------------------------------------------------------------
@@ -310,6 +310,9 @@ public:
     static Range SeqTree(Compiler* compiler, GenTree* tree);
 
     static void InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range);
+
+    static GenTree* LastNode(GenTree* node1, GenTree* node2);
+    static GenTree* LastNode(GenTree** nodes, size_t numNodes);
 };
 
 inline void GenTree::SetUnusedValue()

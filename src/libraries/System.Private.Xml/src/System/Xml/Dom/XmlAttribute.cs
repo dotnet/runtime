@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml.Schema;
-using System.Xml.XPath;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Xml.Schema;
+using System.Xml.XPath;
 
 namespace System.Xml
 {
@@ -83,6 +83,7 @@ namespace System.Xml
         }
 
         // Gets or sets the namespace prefix of this node.
+        [AllowNull]
         public override string Prefix
         {
             get { return _name.Prefix; }

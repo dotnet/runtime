@@ -34,6 +34,6 @@ namespace Microsoft.Diagnostics.NETCore.Client
         /// </summary>
         public Guid RuntimeInstanceCookie { get; }
 
-        internal string DebuggerDisplay => FormattableString.Invariant($"PID={ProcessId}, Cookie={RuntimeInstanceCookie}");
+        internal string DebuggerDisplay => FormattableString.Invariant($"PID = {ProcessId}, Cookie = {RuntimeInstanceCookie}");
     }
 }

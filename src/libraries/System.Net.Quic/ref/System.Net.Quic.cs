@@ -41,7 +41,10 @@ namespace System.Net.Quic
         internal QuicConnectionOptions() { }
         public long DefaultCloseErrorCode { get { throw null; } set { } }
         public long DefaultStreamErrorCode { get { throw null; } set { } }
+        public System.TimeSpan HandshakeTimeout { get { throw null; } set { } }
         public System.TimeSpan IdleTimeout { get { throw null; } set { } }
+        public System.Net.Quic.QuicReceiveWindowSizes InitialReceiveWindowSizes { get { throw null; } set { } }
+        public System.TimeSpan KeepAliveInterval { get { throw null; } set { } }
         public int MaxInboundBidirectionalStreams { get { throw null; } set { } }
         public int MaxInboundUnidirectionalStreams { get { throw null; } set { } }
     }
@@ -51,22 +54,21 @@ namespace System.Net.Quic
         InternalError = 1,
         ConnectionAborted = 2,
         StreamAborted = 3,
-        AddressInUse = 4,
-        InvalidAddress = 5,
         ConnectionTimeout = 6,
-        HostUnreachable = 7,
         ConnectionRefused = 8,
         VersionNegotiationError = 9,
         ConnectionIdle = 10,
-        ProtocolError = 11,
         OperationAborted = 12,
         AlpnInUse = 13,
+        TransportError = 14,
+        CallbackError = 15,
     }
     public sealed partial class QuicException : System.IO.IOException
     {
         public QuicException(System.Net.Quic.QuicError error, long? applicationErrorCode, string message) { }
         public long? ApplicationErrorCode { get { throw null; } }
         public System.Net.Quic.QuicError QuicError { get { throw null; } }
+        public long? TransportErrorCode { get { throw null; } }
     }
     public sealed partial class QuicListener : System.IAsyncDisposable
     {
@@ -85,6 +87,14 @@ namespace System.Net.Quic
         public System.Func<System.Net.Quic.QuicConnection, System.Net.Security.SslClientHelloInfo, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.Net.Quic.QuicServerConnectionOptions>> ConnectionOptionsCallback { get { throw null; } set { } }
         public int ListenBacklog { get { throw null; } set { } }
         public System.Net.IPEndPoint ListenEndPoint { get { throw null; } set { } }
+    }
+    public sealed partial class QuicReceiveWindowSizes
+    {
+        public QuicReceiveWindowSizes() { }
+        public int Connection { get { throw null; } set { } }
+        public int LocallyInitiatedBidirectionalStream { get { throw null; } set { } }
+        public int RemotelyInitiatedBidirectionalStream { get { throw null; } set { } }
+        public int UnidirectionalStream { get { throw null; } set { } }
     }
     public sealed partial class QuicServerConnectionOptions : System.Net.Quic.QuicConnectionOptions
     {

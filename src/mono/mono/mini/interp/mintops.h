@@ -23,6 +23,7 @@ typedef enum
 	MintOpMethodToken,
 	MintOpFieldToken,
 	MintOpClassToken,
+	MintOpVTableToken,
 	MintOpTwoShorts,
 	MintOpTwoInts,
 	MintOpShortAndInt,
@@ -230,14 +231,33 @@ typedef enum {
 #define MINT_IS_STIND(op) ((op) >= MINT_STIND_I1 && (op) <= MINT_STIND_REF)
 #define MINT_IS_LDIND_OFFSET(op) ((op) >= MINT_LDIND_OFFSET_I1 && (op) <= MINT_LDIND_OFFSET_I8)
 #define MINT_IS_SIMD_CREATE(op) ((op) >= MINT_SIMD_V128_I1_CREATE && (op) <= MINT_SIMD_V128_I8_CREATE)
+#define MINT_IS_RETURN(op) (((op) >= MINT_RET && (op) <= MINT_RET_U2) || (op) == MINT_RET_I4_IMM || (op) == MINT_RET_I8_IMM)
 
 // TODO Add more
-#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDPTR)
+#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_LDC_R4 || op == MINT_LDC_R8 || op == MINT_LDPTR || op == MINT_BOX)
 
 #define MINT_CALL_ARGS 2
 #define MINT_CALL_ARGS_SREG -2
 
 #define MINT_MOV_PAIRS_MAX 4
+
+typedef enum {
+	MINT_ICALLSIG_V_V = 0,
+	MINT_ICALLSIG_V_P,
+	MINT_ICALLSIG_P_V,
+	MINT_ICALLSIG_P_P,
+	MINT_ICALLSIG_PP_V,
+	MINT_ICALLSIG_PP_P,
+	MINT_ICALLSIG_PPP_V,
+	MINT_ICALLSIG_PPP_P,
+	MINT_ICALLSIG_PPPP_V,
+	MINT_ICALLSIG_PPPP_P,
+	MINT_ICALLSIG_PPPPP_V,
+	MINT_ICALLSIG_PPPPP_P,
+	MINT_ICALLSIG_PPPPPP_V,
+	MINT_ICALLSIG_PPPPPP_P,
+	MINT_ICALLSIG_MAX
+} MintICallSig;
 
 extern unsigned char const mono_interp_oplen[];
 extern int const mono_interp_op_dregs [];

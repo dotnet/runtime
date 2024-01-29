@@ -57,14 +57,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Theory]
-        [InlineData("SHA256")]
-        [InlineData("SHA384")]
-        [InlineData("SHA512")]
-        public static void SignatureAlgorithm_StableNotSame(string hashAlgorithmName)
+        [MemberData(nameof(SignatureDigestAlgorithms))]
+        public static void SignatureAlgorithm_StableNotSame(HashAlgorithmName hashAlgorithm)
         {
             using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp256r1Data.KeyParameters))
             {
-                HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
                 var generator = X509SignatureGenerator.CreateForECDsa(ecdsa);
 
                 byte[] sigAlg = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
@@ -93,18 +90,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Theory]
-        [InlineData("SHA256")]
-        [InlineData("SHA384")]
-        [InlineData("SHA512")]
-        public static void SignatureAlgorithm_Encoding(string hashAlgorithmName)
+        [MemberData(nameof(SignatureDigestAlgorithms))]
+        public static void SignatureAlgorithm_Encoding(HashAlgorithmName hashAlgorithm)
         {
             string expectedAlgOid;
 
-            switch (hashAlgorithmName)
+            switch (hashAlgorithm.Name)
             {
-                case "SHA1":
-                    expectedAlgOid = "06072A8648CE3D0401";
-                    break;
                 case "SHA256":
                     expectedAlgOid = "06082A8648CE3D040302";
                     break;
@@ -114,8 +106,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 case "SHA512":
                     expectedAlgOid = "06082A8648CE3D040304";
                     break;
+                case "SHA3-256":
+                    expectedAlgOid = "060960864801650304030A";
+                    break;
+                case "SHA3-384":
+                    expectedAlgOid = "060960864801650304030B";
+                    break;
+                case "SHA3-512":
+                    expectedAlgOid = "060960864801650304030C";
+                    break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(hashAlgorithmName));
+                    throw new ArgumentOutOfRangeException(nameof(hashAlgorithm));
             }
 
             EccTestData testData = EccTestData.Secp521r1Data;
@@ -125,7 +126,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             using (ECDsa ecdsa = ECDsa.Create(testData.KeyParameters))
             {
                 var generator = X509SignatureGenerator.CreateForECDsa(ecdsa);
-                byte[] sigAlg = generator.GetSignatureAlgorithmIdentifier(new HashAlgorithmName(hashAlgorithmName));
+                byte[] sigAlg = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
 
                 Assert.Equal(expectedHex, sigAlg.ByteArrayToHex());
             }
@@ -134,6 +135,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         public static IEnumerable<object[]> GetApplicableTestData()
         {
             return EccTestData.EnumerateApplicableTests().Select(x => new object[] { x });
+        }
+
+        public static IEnumerable<object[]> SignatureDigestAlgorithms
+        {
+            get
+            {
+                yield return new object[] { HashAlgorithmName.SHA256 };
+                yield return new object[] { HashAlgorithmName.SHA384 };
+                yield return new object[] { HashAlgorithmName.SHA512 };
+                yield return new object[] { HashAlgorithmName.SHA3_256 };
+                yield return new object[] { HashAlgorithmName.SHA3_384 };
+                yield return new object[] { HashAlgorithmName.SHA3_512 };
+            }
         }
     }
 }

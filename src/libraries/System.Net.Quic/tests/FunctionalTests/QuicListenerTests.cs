@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicListenerTests : QuicTestBase
     {
         public QuicListenerTests(ITestOutputHelper output) : base(output) { }
@@ -74,6 +74,15 @@ namespace System.Net.Quic.Tests
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
         }
 
+        [Fact]
+        public void ListenAsync_MissingAlpn_Throws()
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ApplicationProtocols = null;
+
+            Assert.Throws<ArgumentNullException>(() => QuicListener.ListenAsync(listenerOptions));
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -87,15 +96,51 @@ namespace System.Net.Quic.Tests
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
 
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
-            Exception exception = await Assert.ThrowsAsync<Exception>(async () => await listener.AcceptConnectionAsync());
-            Assert.Equal(expectedMessage, exception.Message);
+
+            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await listener.AcceptConnectionAsync());
+            Assert.NotNull(exception.InnerException);
+            Assert.Equal(expectedMessage, exception.InnerException.Message);
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask());
+        }
+
+        [Fact]
+        public async Task AcceptConnectionAsync_ThrowingCallbackOde_KeepRunning()
+        {
+            bool firstRun = true;
+
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            // Throw an exception, which should throw the same from accept.
+            listenerOptions.ConnectionOptionsCallback = (_, _, _) =>
+            {
+                if (firstRun)
+                {
+                    firstRun = false;
+                    throw new ObjectDisposedException("failed");
+                }
+
+                return ValueTask.FromResult(CreateQuicServerOptions());
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
+
+            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await listener.AcceptConnectionAsync().AsTask().WaitAsync(PassingTestTimeout));
+            Assert.IsType<ObjectDisposedException>(exception.InnerException);
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(PassingTestTimeout));
+
+            // Throwing ODE in callback should keep Listener running
+            connectTask = CreateQuicConnection(listener.LocalEndPoint);
+            await using QuicConnection serverConnection = await listener.AcceptConnectionAsync().AsTask().WaitAsync(PassingTestTimeout);
+            await using QuicConnection clientConnection = await connectTask.AsTask().WaitAsync(PassingTestTimeout);
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
         [OuterLoop("Exercises several seconds long timeout.")]
-        public async Task AcceptConnectionAsync_SlowOptionsCallback_TimesOut(bool useCancellationToken)
+        public async Task AcceptConnectionAsync_SlowOptionsCallback_TimesOut(bool useCancellationToken, bool clientShorterTimeout)
         {
             QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
             // Stall the options callback to force the timeout.
@@ -113,13 +158,60 @@ namespace System.Net.Quic.Tests
             };
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
 
-            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
-            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await listener.AcceptConnectionAsync());
-            Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.HandshakeTimeout), exception.Message);
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.HandshakeTimeout = clientShorterTimeout ? TimeSpan.FromSeconds(2) : TimeSpan.FromSeconds(20);
 
-            // Connect attempt should be stopped with "UserCanceled".
-            var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
+
+            if (clientShorterTimeout)
+            {
+                // Client gave up earlier than server and aborts the handshake, server should get UserCanceled
+                // TLS alert
+                var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
+                Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+
+                var exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await connectTask);
+                Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, clientOptions.HandshakeTimeout), exception.Message);
+            }
+            else
+            {
+                // handshake timed out on server side, expect ConnectionTimeout
+                Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await listener.AcceptConnectionAsync());
+                Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.HandshakeTimeout), exception.Message);
+
+                // Server aborts the handshake while client is still waiting, so UserCanceled alert is expected
+                var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
+                Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+            }
+        }
+
+        [Fact]
+        [OuterLoop("Exercises several seconds long timeout.")]
+        public async Task AcceptConnectionAsync_ClientCancels_FiresOptionCallbackCancellationToken()
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ConnectionOptionsCallback = async (connection, hello, cancellationToken) =>
+            {
+                // default timeout for callback is 10s, wait for 5s for cancellation from client
+                // terminating the connection mid-handshake
+                var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.Delay(TimeSpan.FromSeconds(5), cancellationToken));
+                Assert.True(cancellationToken.IsCancellationRequested);
+                Assert.Equal(cancellationToken, oce.CancellationToken);
+                ExceptionDispatchInfo.Throw(oce);
+                return null; // unreached;
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.HandshakeTimeout = TimeSpan.FromSeconds(0.1);
+
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
+
+            var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
             Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+
+            var exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await connectTask);
+            Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, clientOptions.HandshakeTimeout), exception.Message);
         }
 
         [Fact]
@@ -153,10 +245,8 @@ namespace System.Net.Quic.Tests
             await listener.DisposeAsync();
             serverDisposed.SetResult();
 
-            var accept1Exception = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await acceptTask1);
-            var accept2Exception = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await acceptTask2);
-
-            Assert.Equal(accept1Exception, accept2Exception);
+            var accept1Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask1);
+            var accept2Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask2);
 
             // Connect attempt should be stopped with "UserCanceled".
             var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
@@ -310,7 +400,8 @@ namespace System.Net.Quic.Tests
             s.Bind(new IPEndPoint(IPAddress.Any, 0));
 
             // Try to create a listener on the same port.
-            await AssertThrowsQuicExceptionAsync(QuicError.AddressInUse, async () => await CreateQuicListener((IPEndPoint)s.LocalEndPoint));
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(() => CreateQuicListener((IPEndPoint)s.LocalEndPoint).AsTask());
+            Assert.Equal(SocketError.AddressAlreadyInUse, ((SocketException)ex).SocketErrorCode);
         }
 
         [Fact]
@@ -371,6 +462,106 @@ namespace System.Net.Quic.Tests
                     var connection = await CreateQuicConnection(endpoint);
                     await connection.DisposeAsync();
                 }).WaitAsync(TimeSpan.FromSeconds(5)));
+        }
+
+        [Fact]
+        public async Task Listener_AlpnNarrowingDown_Success()
+        {
+            using CancellationTokenSource testTimeoutCts = new CancellationTokenSource(PassingTestTimeout);
+            CancellationToken timeoutToken = testTimeoutCts.Token;
+
+            var listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>()
+                {
+                    new SslApplicationProtocol("foo"),
+                    new SslApplicationProtocol("bar"),
+                    new SslApplicationProtocol("test"),
+                },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    // Narrowing down alpn list to more specific.
+                    var options = CreateQuicServerOptions();
+                    options.ServerAuthenticationOptions.ApplicationProtocols = new()
+                    {
+                        new SslApplicationProtocol("bar"),
+                        new SslApplicationProtocol("test"),
+                    };
+                    return ValueTask.FromResult(options);
+                }
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            // Successful connection with bar ALPN
+            QuicClientConnectionOptions clientOptions1 = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions1.ClientAuthenticationOptions.ApplicationProtocols = new()
+            {
+                new SslApplicationProtocol("foo"),
+                new SslApplicationProtocol("bar"),
+            };
+            ValueTask<QuicConnection> connectTask1 = CreateQuicConnection(clientOptions1);
+            await using QuicConnection serverConnection1 = await listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken);
+            await using QuicConnection clientConnection1 = await connectTask1.AsTask().WaitAsync(timeoutToken);
+
+            Assert.Equal(new SslApplicationProtocol("bar"), clientConnection1.NegotiatedApplicationProtocol);
+
+            // Successful connection with test ALPN
+            QuicClientConnectionOptions clientOptions2 = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions2.ClientAuthenticationOptions.ApplicationProtocols = new()
+            {
+                new SslApplicationProtocol("foo"),
+                new SslApplicationProtocol("test"),
+            };
+            ValueTask<QuicConnection> connectTask2 = CreateQuicConnection(clientOptions2);
+            await using QuicConnection serverConnection2 = await listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken);
+            await using QuicConnection clientConnection2 = await connectTask2.AsTask().WaitAsync(timeoutToken);
+
+            Assert.Equal(new SslApplicationProtocol("test"), clientConnection2.NegotiatedApplicationProtocol);
+        }
+
+        [Theory]
+        [InlineData("foo")]
+        [InlineData("not_existing")]
+        public async Task Listener_AlpnNarrowingDown_Failure(string alpn)
+        {
+            using CancellationTokenSource testTimeoutCts = new CancellationTokenSource(PassingTestTimeout);
+            CancellationToken timeoutToken = testTimeoutCts.Token;
+
+            var listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>()
+                {
+                    new SslApplicationProtocol("foo"),
+                    new SslApplicationProtocol("bar"),
+                    new SslApplicationProtocol("test"),
+                },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    // Narrowing down alpn list to more specific.
+                    var options = CreateQuicServerOptions();
+                    options.ServerAuthenticationOptions.ApplicationProtocols = new()
+                    {
+                        new SslApplicationProtocol("bar"),
+                        new SslApplicationProtocol("test"),
+                    };
+                    return ValueTask.FromResult(options);
+                }
+            };
+            bool isAlpnPresentOnInitialAlpnList = listenerOptions.ApplicationProtocols.Contains(new SslApplicationProtocol(alpn)); // If the ALPN is not present on initial list, AcceptConnectionAsync will not throw AuthenticationException.
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.ClientAuthenticationOptions.ApplicationProtocols = new()
+            {
+                new SslApplicationProtocol(alpn),
+            };
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
+            if (isAlpnPresentOnInitialAlpnList)
+            {
+                await Assert.ThrowsAsync<AuthenticationException>(() => listener.AcceptConnectionAsync().AsTask().WaitAsync(timeoutToken));
+            }
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(timeoutToken));
         }
     }
 }

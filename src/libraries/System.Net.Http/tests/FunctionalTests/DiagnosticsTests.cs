@@ -663,10 +663,10 @@ namespace System.Net.Http.Functional.Tests
                     using (HttpClientHandler handler = CreateHttpClientHandler(useVersion))
                     using (HttpClient client = CreateHttpClient(handler, useVersion))
                     {
-                        // Set a https proxy.
+                        // Set a ftp proxy.
                         // Forces a synchronous exception for SocketsHttpHandler.
-                        // SocketsHttpHandler only allow http scheme for proxies.
-                        handler.Proxy = new WebProxy($"https://foo.bar", false);
+                        // SocketsHttpHandler only allow http & https & socks scheme for proxies.
+                        handler.Proxy = new WebProxy($"ftp://foo.bar", false);
                         var request = new HttpRequestMessage(HttpMethod.Get, InvalidUri)
                         {
                             Version = Version.Parse(useVersion)

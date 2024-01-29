@@ -110,6 +110,7 @@ namespace Internal.TypeSystem
                     LayoutAbiStable = true,
                     IsAutoLayoutOrHasAutoLayoutFields = false,
                     IsInt128OrHasInt128Fields = false,
+                    IsVectorTOrHasVectorTFields = false,
                 };
 
                 if (numInstanceFields > 0)
@@ -211,7 +212,7 @@ namespace Internal.TypeSystem
                 }
 
                 ref StaticsBlock block = ref GetStaticsBlockForField(ref result, field);
-                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout: false, context.Target.DefaultPackingSize, out bool _, out bool _, out bool _);
+                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout: false, context.Target.DefaultPackingSize, out bool _, out bool _, out bool _, out bool _);
 
                 block.Size = LayoutInt.AlignUp(block.Size, sizeAndAlignment.Alignment, context.Target);
                 result.Offsets[index] = new FieldAndOffset(field, block.Size);
@@ -303,18 +304,27 @@ namespace Internal.TypeSystem
             int fieldOrdinal = 0;
             bool layoutAbiStable = true;
             bool hasAutoLayoutField = false;
-            bool hasInt128Field = type.BaseType == null ? false : type.BaseType.IsInt128OrHasInt128Fields;
+            bool hasInt128Field = false;
+            bool hasVectorTField = false;
+
+            if (type.BaseType is not null)
+            {
+                hasInt128Field = type.BaseType.IsInt128OrHasInt128Fields;
+                hasVectorTField = type.BaseType.IsVectorTOrHasVectorTFields;
+            }
 
             foreach (var fieldAndOffset in layoutMetadata.Offsets)
             {
                 TypeDesc fieldType = fieldAndOffset.Field.FieldType;
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType.UnderlyingType, hasLayout: true, packingSize, out bool fieldLayoutAbiStable, out bool fieldHasAutoLayout, out bool fieldHasInt128Field);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType.UnderlyingType, hasLayout: true, packingSize, out bool fieldLayoutAbiStable, out bool fieldHasAutoLayout, out bool fieldHasInt128Field, out bool fieldHasVectorTField);
                 if (!fieldLayoutAbiStable)
                     layoutAbiStable = false;
                 if (fieldHasAutoLayout)
                     hasAutoLayoutField = true;
                 if (fieldHasInt128Field)
                     hasInt128Field = true;
+                if (fieldHasVectorTField)
+                    hasVectorTField = true;
 
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
@@ -367,6 +377,7 @@ namespace Internal.TypeSystem
             {
                 IsAutoLayoutOrHasAutoLayoutFields = hasAutoLayoutField,
                 IsInt128OrHasInt128Fields = hasInt128Field,
+                IsVectorTOrHasVectorTFields = hasVectorTField,
             };
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             computedLayout.FieldSize = instanceSizeAndAlignment.Size;
@@ -402,20 +413,29 @@ namespace Internal.TypeSystem
             int packingSize = ComputePackingSize(type, layoutMetadata);
             bool layoutAbiStable = true;
             bool hasAutoLayoutField = false;
-            bool hasInt128Field = type.BaseType == null ? false : type.BaseType.IsInt128OrHasInt128Fields;
+            bool hasInt128Field = false;
+            bool hasVectorTField = false;
+
+            if (type.BaseType is not null)
+            {
+                hasInt128Field = type.BaseType.IsInt128OrHasInt128Fields;
+                hasVectorTField = type.BaseType.IsVectorTOrHasVectorTFields;
+            }
 
             foreach (var field in type.GetFields())
             {
                 if (field.IsStatic)
                     continue;
 
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType.UnderlyingType, hasLayout: true, packingSize, out bool fieldLayoutAbiStable, out bool fieldHasAutoLayout, out bool fieldHasInt128Field);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType.UnderlyingType, hasLayout: true, packingSize, out bool fieldLayoutAbiStable, out bool fieldHasAutoLayout, out bool fieldHasInt128Field, out bool fieldHasVectorTField);
                 if (!fieldLayoutAbiStable)
                     layoutAbiStable = false;
                 if (fieldHasAutoLayout)
                     hasAutoLayoutField = true;
                 if (fieldHasInt128Field)
                     hasInt128Field = true;
+                if (fieldHasVectorTField)
+                    hasVectorTField = true;
 
                 largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
 
@@ -443,6 +463,7 @@ namespace Internal.TypeSystem
             {
                 IsAutoLayoutOrHasAutoLayoutFields = hasAutoLayoutField,
                 IsInt128OrHasInt128Fields = hasInt128Field,
+                IsVectorTOrHasVectorTFields = hasVectorTField,
             };
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             computedLayout.FieldSize = instanceSizeAndAlignment.Size;
@@ -477,8 +498,8 @@ namespace Internal.TypeSystem
                 long size = instanceByteSizeAndAlignment.Size.AsInt;
                 size *= repeat;
 
-                // limit the max size of array instance to 1MiB
-                const int maxSize = 1024 * 1024;
+                // limit the max size of array instance to FIELD_OFFSET_LAST_REAL_OFFSET for compatibility with coreclr
+                const int maxSize = ((1 << 27) - 1) - 6;
                 if (size > maxSize)
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, type);
@@ -517,6 +538,7 @@ namespace Internal.TypeSystem
             int instanceGCPointerFieldsCount = 0;
             int[] instanceNonGCPointerFieldsCount = new int[maxLog2Size + 1];
             bool hasInt128Field = false;
+            bool hasVectorTField = false;
 
             foreach (var field in type.GetFields())
             {
@@ -531,6 +553,8 @@ namespace Internal.TypeSystem
                     instanceValueClassFieldCount++;
                     if (((DefType)fieldType).IsInt128OrHasInt128Fields)
                         hasInt128Field = true;
+                    if (((DefType)fieldType).IsVectorTOrHasVectorTFields)
+                        hasVectorTField = true;
                 }
                 else if (fieldType.IsGCPointer)
                 {
@@ -540,7 +564,7 @@ namespace Internal.TypeSystem
                 {
                     Debug.Assert(fieldType.IsPrimitive || fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsEnum || fieldType.IsByRef);
 
-                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout, packingSize, out bool _, out bool _, out bool _);
+                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout, packingSize, out bool _, out bool _, out bool _, out bool _);
                     instanceNonGCPointerFieldsCount[CalculateLog2(fieldSizeAndAlignment.Size.AsInt)]++;
                 }
             }
@@ -577,7 +601,7 @@ namespace Internal.TypeSystem
 
                 TypeDesc fieldType = field.FieldType;
 
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout, packingSize, out bool fieldLayoutAbiStable, out bool _, out bool _);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, hasLayout, packingSize, out bool fieldLayoutAbiStable, out bool _, out bool _, out bool _);
                 if (!fieldLayoutAbiStable)
                     layoutAbiStable = false;
 
@@ -621,7 +645,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && context.Target.PointerSize == 4 && context.Target.GetObjectAlignment(largestAlignmentRequired).AsInt > 4 && context.Target.PointerSize == 4;
+            bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && context.Target.PointerSize == 4 && context.Target.GetObjectAlignment(largestAlignmentRequired).AsInt > 4;
 
             // For types inheriting from another type, field offsets continue on from where they left off
             // Base alignment is not always required, it's only applied when there's a version bubble boundary
@@ -747,7 +771,7 @@ namespace Internal.TypeSystem
             for (int i = 0; i < instanceValueClassFieldsArr.Length; i++)
             {
                 // Align the cumulative field offset to the indeterminate value
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(instanceValueClassFieldsArr[i].FieldType, hasLayout, packingSize, out bool fieldLayoutAbiStable, out bool _, out bool _);
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(instanceValueClassFieldsArr[i].FieldType, hasLayout, packingSize, out bool fieldLayoutAbiStable, out bool _, out bool _, out bool _);
                 if (!fieldLayoutAbiStable)
                     layoutAbiStable = false;
 
@@ -804,6 +828,7 @@ namespace Internal.TypeSystem
             {
                 IsAutoLayoutOrHasAutoLayoutFields = true,
                 IsInt128OrHasInt128Fields = hasInt128Field,
+                IsVectorTOrHasVectorTFields = hasVectorTField,
             };
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             computedLayout.FieldSize = instanceSizeAndAlignment.Size;
@@ -817,7 +842,7 @@ namespace Internal.TypeSystem
 
         private static void PlaceInstanceField(FieldDesc field, bool hasLayout, int packingSize, FieldAndOffset[] offsets, ref LayoutInt instanceFieldPos, ref int fieldOrdinal, LayoutInt offsetBias)
         {
-            var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, hasLayout, packingSize, out bool _, out bool _, out bool _);
+            var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, hasLayout, packingSize, out bool _, out bool _, out bool _, out bool _);
 
             instanceFieldPos = AlignUpInstanceFieldOffset(instanceFieldPos, fieldSizeAndAlignment.Alignment, field.Context.Target);
             offsets[fieldOrdinal] = new FieldAndOffset(field, instanceFieldPos + offsetBias);
@@ -877,12 +902,13 @@ namespace Internal.TypeSystem
             return cumulativeInstanceFieldPos;
         }
 
-        private static SizeAndAlignment ComputeFieldSizeAndAlignment(TypeDesc fieldType, bool hasLayout, int packingSize, out bool layoutAbiStable, out bool fieldTypeHasAutoLayout, out bool fieldTypeHasInt128Field)
+        private static SizeAndAlignment ComputeFieldSizeAndAlignment(TypeDesc fieldType, bool hasLayout, int packingSize, out bool layoutAbiStable, out bool fieldTypeHasAutoLayout, out bool fieldTypeHasInt128Field, out bool fieldTypeHasVectorTField)
         {
             SizeAndAlignment result;
             layoutAbiStable = true;
             fieldTypeHasAutoLayout = true;
             fieldTypeHasInt128Field = false;
+            fieldTypeHasVectorTField = false;
 
             if (fieldType.IsDefType)
             {
@@ -894,6 +920,7 @@ namespace Internal.TypeSystem
                     layoutAbiStable = defType.LayoutAbiStable;
                     fieldTypeHasAutoLayout = defType.IsAutoLayoutOrHasAutoLayoutFields;
                     fieldTypeHasInt128Field = defType.IsInt128OrHasInt128Fields;
+                    fieldTypeHasVectorTField = defType.IsVectorTOrHasVectorTFields;
                 }
                 else
                 {

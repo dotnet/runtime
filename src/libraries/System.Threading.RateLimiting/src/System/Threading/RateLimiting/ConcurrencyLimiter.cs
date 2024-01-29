@@ -132,6 +132,8 @@ namespace System.Threading.RateLimiting
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
             }
 
+            using var disposer = default(RequestRegistration.Disposer);
+
             // Perf: Check SemaphoreSlim implementation instead of locking
             lock (Lock)
             {
@@ -152,7 +154,7 @@ namespace System.Threading.RateLimiting
                             RequestRegistration oldestRequest = _queue.DequeueHead();
                             _queueCount -= oldestRequest.Count;
                             Debug.Assert(_queueCount >= 0);
-                            if (!oldestRequest.Tcs.TrySetResult(FailedLease))
+                            if (!oldestRequest.TrySetResult(FailedLease))
                             {
                                 // Updating queue count is handled by the cancellation code
                                 _queueCount += oldestRequest.Count;
@@ -161,7 +163,7 @@ namespace System.Threading.RateLimiting
                             {
                                 Interlocked.Increment(ref _failedLeasesCount);
                             }
-                            oldestRequest.CancellationTokenRegistration.Dispose();
+                            disposer.Add(oldestRequest);
                         }
                         while (_options.QueueLimit - _queueCount < permitCount);
                     }
@@ -173,22 +175,12 @@ namespace System.Threading.RateLimiting
                     }
                 }
 
-                CancelQueueState tcs = new CancelQueueState(permitCount, this, cancellationToken);
-                CancellationTokenRegistration ctr = default;
-                if (cancellationToken.CanBeCanceled)
-                {
-                    ctr = cancellationToken.Register(static obj =>
-                    {
-                        ((CancelQueueState)obj!).TrySetCanceled();
-                    }, tcs);
-                }
-
-                RequestRegistration request = new RequestRegistration(permitCount, tcs, ctr);
+                var request = new RequestRegistration(permitCount, this, cancellationToken);
                 _queue.EnqueueTail(request);
                 _queueCount += permitCount;
                 Debug.Assert(_queueCount <= _options.QueueLimit);
 
-                return new ValueTask<RateLimitLease>(request.Tcs.Task);
+                return new ValueTask<RateLimitLease>(request.Task);
             }
         }
 
@@ -224,8 +216,15 @@ namespace System.Threading.RateLimiting
             return false;
         }
 
+#if DEBUG
+        // for unit testing
+        internal event Action? ReleasePreHook;
+        internal event Action? ReleasePostHook;
+#endif
+
         private void Release(int releaseCount)
         {
+            using var disposer = default(RequestRegistration.Disposer);
             lock (Lock)
             {
                 if (_disposed)
@@ -236,6 +235,10 @@ namespace System.Threading.RateLimiting
                 _permitCount += releaseCount;
                 Debug.Assert(_permitCount <= _options.PermitLimit);
 
+#if DEBUG
+                ReleasePreHook?.Invoke();
+#endif
+
                 while (_queue.Count > 0)
                 {
                     RequestRegistration nextPendingRequest =
@@ -245,15 +248,21 @@ namespace System.Threading.RateLimiting
 
                     // Request was handled already, either via cancellation or being kicked from the queue due to a newer request being queued.
                     // We just need to remove the item and let the next queued item be considered for completion.
-                    if (nextPendingRequest.Tcs.Task.IsCompleted)
+                    if (nextPendingRequest.Task.IsCompleted)
                     {
                         nextPendingRequest =
                             _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
                             ? _queue.DequeueHead()
                             : _queue.DequeueTail();
-                        nextPendingRequest.CancellationTokenRegistration.Dispose();
+                        disposer.Add(nextPendingRequest);
+                        continue;
                     }
-                    else if (_permitCount >= nextPendingRequest.Count)
+
+#if DEBUG
+                    ReleasePostHook?.Invoke();
+#endif
+
+                    if (_permitCount >= nextPendingRequest.Count)
                     {
                         nextPendingRequest =
                             _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
@@ -266,7 +275,7 @@ namespace System.Threading.RateLimiting
 
                         ConcurrencyLease lease = nextPendingRequest.Count == 0 ? SuccessfulLease : new ConcurrencyLease(true, this, nextPendingRequest.Count);
                         // Check if request was canceled
-                        if (!nextPendingRequest.Tcs.TrySetResult(lease))
+                        if (!nextPendingRequest.TrySetResult(lease))
                         {
                             // Queued item was canceled so add count back
                             _permitCount += nextPendingRequest.Count;
@@ -277,7 +286,7 @@ namespace System.Threading.RateLimiting
                         {
                             Interlocked.Increment(ref _successfulLeasesCount);
                         }
-                        nextPendingRequest.CancellationTokenRegistration.Dispose();
+                        disposer.Add(nextPendingRequest);
                         Debug.Assert(_queueCount >= 0);
                     }
                     else
@@ -289,12 +298,12 @@ namespace System.Threading.RateLimiting
                 if (_permitCount == _options.PermitLimit)
                 {
                     Debug.Assert(_idleSince is null);
-                    Debug.Assert(_queueCount == 0);
                     _idleSince = Stopwatch.GetTimestamp();
                 }
             }
         }
 
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             if (!disposing)
@@ -302,6 +311,7 @@ namespace System.Threading.RateLimiting
                 return;
             }
 
+            using var disposer = default(RequestRegistration.Disposer);
             lock (Lock)
             {
                 if (_disposed)
@@ -314,12 +324,13 @@ namespace System.Threading.RateLimiting
                     RequestRegistration next = _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
                         ? _queue.DequeueHead()
                         : _queue.DequeueTail();
-                    next.CancellationTokenRegistration.Dispose();
-                    next.Tcs.TrySetResult(FailedLease);
+                    disposer.Add(next);
+                    next.TrySetResult(FailedLease);
                 }
             }
         }
 
+        /// <inheritdoc/>
         protected override ValueTask DisposeAsyncCore()
         {
             Dispose(true);
@@ -383,49 +394,68 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private readonly struct RequestRegistration
+        private sealed class RequestRegistration : TaskCompletionSource<RateLimitLease>
         {
-            public RequestRegistration(int requestedCount, TaskCompletionSource<RateLimitLease> tcs,
-                CancellationTokenRegistration cancellationTokenRegistration)
+            private readonly CancellationToken _cancellationToken;
+            private CancellationTokenRegistration _cancellationTokenRegistration;
+
+            // this field is used only by the disposal mechanics and never shared between threads
+            private RequestRegistration? _next;
+
+            public RequestRegistration(int permitCount, ConcurrencyLimiter limiter, CancellationToken cancellationToken)
+                : base(limiter, TaskCreationOptions.RunContinuationsAsynchronously)
             {
-                Count = requestedCount;
-                // Perf: Use AsyncOperation<TResult> instead
-                Tcs = tcs;
-                CancellationTokenRegistration = cancellationTokenRegistration;
+                Count = permitCount;
+                _cancellationToken = cancellationToken;
+
+                // RequestRegistration objects are created while the limiter lock is held
+                // if cancellationToken fires before or while the lock is held, UnsafeRegister
+                // is going to invoke the callback synchronously, but this does not create
+                // a deadlock because lock are reentrant
+                if (cancellationToken.CanBeCanceled)
+#if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
+                    _cancellationTokenRegistration = cancellationToken.UnsafeRegister(Cancel, this);
+#else
+                    _cancellationTokenRegistration = cancellationToken.Register(Cancel, this);
+#endif
             }
 
             public int Count { get; }
 
-            public TaskCompletionSource<RateLimitLease> Tcs { get; }
-
-            public CancellationTokenRegistration CancellationTokenRegistration { get; }
-        }
-
-        private sealed class CancelQueueState : TaskCompletionSource<RateLimitLease>
-        {
-            private readonly int _permitCount;
-            private readonly ConcurrencyLimiter _limiter;
-            private readonly CancellationToken _cancellationToken;
-
-            public CancelQueueState(int permitCount, ConcurrencyLimiter limiter, CancellationToken cancellationToken)
-                : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            private static void Cancel(object? state)
             {
-                _permitCount = permitCount;
-                _limiter = limiter;
-                _cancellationToken = cancellationToken;
+                if (state is RequestRegistration registration && registration.TrySetCanceled(registration._cancellationToken))
+                {
+                    var limiter = (ConcurrencyLimiter)registration.Task.AsyncState!;
+                    lock (limiter.Lock)
+                    {
+                        limiter._queueCount -= registration.Count;
+                    }
+                }
             }
 
-            public new bool TrySetCanceled()
+            /// <summary>
+            /// Collects registrations to dispose outside the limiter lock to avoid deadlock.
+            /// </summary>
+            public struct Disposer : IDisposable
             {
-                if (TrySetCanceled(_cancellationToken))
+                private RequestRegistration? _next;
+
+                public void Add(RequestRegistration request)
                 {
-                    lock (_limiter.Lock)
-                    {
-                        _limiter._queueCount -= _permitCount;
-                    }
-                    return true;
+                    request._next = _next;
+                    _next = request;
                 }
-                return false;
+
+                public void Dispose()
+                {
+                    for (var current = _next; current is not null; current = current._next)
+                    {
+                        current._cancellationTokenRegistration.Dispose();
+                    }
+
+                    _next = null;
+                }
             }
         }
     }

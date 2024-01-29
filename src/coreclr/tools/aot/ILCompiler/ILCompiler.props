@@ -12,10 +12,9 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
-    <ServerGarbageCollection>true</ServerGarbageCollection>
-    <TieredCompilation>false</TieredCompilation>
-    <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
+
+  <Import Project="../AotCompilerCommon.props" />
 
   <PropertyGroup>
     <SelfContained>true</SelfContained>
@@ -32,10 +31,6 @@
     <!-- If it's not win/osx/freebsd/linux-musl, it's a non-portable Linux. Treat as Linux. -->
     <ObjWriterRidWithoutPlatform Condition="'$(ObjWriterRidWithoutPlatform)' != 'win' and '$(ObjWriterRidWithoutPlatform)' != 'osx' and '$(ObjWriterRidWithoutPlatform)' != 'linux-musl' and '$(ObjWriterRidWithoutPlatform)' != 'freebsd'">linux</ObjWriterRidWithoutPlatform>
 
-    <!-- OSX builds have a version -->
-    <ObjWriterRidWithoutPlatform Condition="'$(ObjWriterRidWithoutPlatform)' == 'osx' and '$(ObjWriterRidPlatform)' == 'x64'">osx.10.12</ObjWriterRidWithoutPlatform>
-    <ObjWriterRidWithoutPlatform Condition="'$(ObjWriterRidWithoutPlatform)' == 'osx' and '$(ObjWriterRidPlatform)' == 'arm64'">osx.11.0</ObjWriterRidWithoutPlatform>
-
     <ObjWriterRid Condition="'$(ObjWriterRid)' == ''">$(ObjWriterRidWithoutPlatform)-$(ObjWriterRidPlatform)</ObjWriterRid>
 
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-arm64'">$(runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
@@ -44,15 +39,15 @@
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-musl-x64'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'win-arm64'">$(runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'win-x64'">$(runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'osx.11.0-arm64'">$(runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
-    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'osx.10.12-x64'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'osx-arm64'">$(runtimeosxarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'osx-x64'">$(runtimeosxx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'freebsd-x64'">$(runtimefreebsdx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'freebsd-arm64'">$(runtimefreebsdarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
 
     <!-- CoreDisTools are used in debugging visualizers. -->
     <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release' and '$(CrossHostArch)' == ''">true</IncludeCoreDisTools>
     <!-- source-build doesn't use ObjWriter for the ILCompiler.  the end-user will end up pulling Microsoft-built bits for NativeAOT anyway.  -->
-    <IncludeObjWriter Condition="'$(DotNetBuildFromSource)' != 'true'">true</IncludeObjWriter>
+    <IncludeObjWriter Condition="'$(DotNetBuildFromSource)' != 'true' and '$(ObjWriterVersion)' != ''">true</IncludeObjWriter>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
@@ -101,18 +96,9 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetOSComponent>unix</TargetOSComponent>
-    <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
-    <TargetOSComponent Condition="'$(TargetOS)' == 'osx' and '$(TargetArchitecture)' == 'arm64'">unix_osx</TargetOSComponent>
-
     <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' == ''">$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
     <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</TargetArchitectureForSharedLibraries>
     <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitectureForSharedLibraries)'=='armel'">arm</TargetArchitectureForSharedLibraries>
-
-    <TargetArchitectureForLocalJitBuild Condition="'$(TargetArchitectureForLocalJitBuild)' == ''">$(TargetArchitecture)</TargetArchitectureForLocalJitBuild>
-    <TargetArchitectureForLocalJitBuild Condition="'$(TargetArchitecture)'=='armel'">arm</TargetArchitectureForLocalJitBuild>
-
-    <TargetSpec>$(TargetOSComponent)_$(TargetArchitectureForLocalJitBuild)_$(TargetArchitectureForSharedLibraries)</TargetSpec>
 
     <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(LibSuffix)</JitInterfaceLibraryName>
     <!-- This will be provided when using the liveBuild, and unset otherwise. -->

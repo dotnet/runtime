@@ -20,22 +20,37 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj">
+      <Private>True</Private>
+    </ProjectReference>
     <!-- Make sure the test data gets built -->
     <ProjectReference Include="CoreTestAssembly\CoreTestAssembly.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="ILTestAssembly\ILTestAssembly.ilproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="TypeEquivalenceAssembly\TypeEquivalenceAssembly1.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="TypeEquivalenceAssembly\TypeEquivalenceAssembly2.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -63,6 +78,7 @@
     <Compile Include="SyntheticVirtualOverrideTests.cs" />
     <Compile Include="SyntheticVirtualOverrideTests.DiagnosticName.cs" />
     <Compile Include="TestMetadataFieldLayoutAlgorithm.cs" />
+    <Compile Include="TypeEquivalenceTests.cs" />
     <Compile Include="TypeNameParsingTests.cs" />
     <Compile Include="UniversalGenericFieldLayoutTests.cs" />
     <Compile Include="ValueTypeShapeCharacteristicsTests.cs" />

@@ -20,13 +20,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     public record JsonSourceGeneratorResult
     {
         public Compilation NewCompilation { get; set; }
-        public SourceGenerationSpec? SourceGenModel { get; set; }
+        public ImmutableArray<ContextGenerationSpec> ContextGenerationSpecs { get; set; }
         public ImmutableArray<Diagnostic> Diagnostics { get; set; }
 
         public IEnumerable<TypeGenerationSpec> AllGeneratedTypes
-            => SourceGenModel is { } model
-                ? model.ContextGenerationSpecs.SelectMany(ctx => ctx.GeneratedTypes)
-                : Array.Empty<TypeGenerationSpec>();
+            => ContextGenerationSpecs.SelectMany(ctx => ctx.GeneratedTypes);
 
         public void AssertContainsType(string fullyQualifiedName)
             => Assert.Contains(
@@ -34,14 +32,19 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     spec => spec.TypeRef.FullyQualifiedName == fullyQualifiedName);
     }
 
-    public class CompilationHelper
+    public static class CompilationHelper
     {
-        private static readonly CSharpParseOptions s_parseOptions =
-            new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse);
+        private readonly static CSharpParseOptions s_defaultParseOptions = CreateParseOptions();
 
-#if ROSLYN4_0_OR_GREATER
-        private static readonly GeneratorDriverOptions s_generatorDriverOptions = new GeneratorDriverOptions(disabledOutputs: IncrementalGeneratorOutputKind.None, trackIncrementalGeneratorSteps: true);
-#endif
+        public static CSharpParseOptions CreateParseOptions(
+            LanguageVersion? version = null,
+            DocumentationMode? documentationMode = null)
+        {
+            return new CSharpParseOptions(
+                kind: SourceCodeKind.Regular,
+                languageVersion: version ?? LanguageVersion.CSharp9, // C# 9 is the minimum supported lang version by the source generator.
+                documentationMode: documentationMode ?? DocumentationMode.Parse);
+        }
 
 #if NETCOREAPP
         private static readonly Assembly systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
@@ -52,10 +55,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             MetadataReference[] additionalReferences = null,
             string assemblyName = "TestAssembly",
             bool includeSTJ = true,
-            Func<CSharpParseOptions, CSharpParseOptions> configureParseOptions = null)
+            CSharpParseOptions? parseOptions = null)
         {
 
-            List<MetadataReference> references = new List<MetadataReference> {
+            List<MetadataReference> references = new() {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Type).Assembly.Location),
@@ -64,6 +67,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 MetadataReference.CreateFromFile(typeof(JavaScriptEncoder).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(GeneratedCodeAttribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(ReadOnlySpan<>).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
 #if NETCOREAPP
                 MetadataReference.CreateFromFile(typeof(LinkedList<>).Assembly.Location),
                 MetadataReference.CreateFromFile(systemRuntimeAssembly.Location),
@@ -86,51 +90,71 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
             }
 
-            var parseOptions = configureParseOptions?.Invoke(s_parseOptions) ?? s_parseOptions;
+            parseOptions ??= s_defaultParseOptions;
+            SyntaxTree[] syntaxTrees = new[]
+            {
+                CSharpSyntaxTree.ParseText(source, parseOptions),
+#if !NETCOREAPP
+                CSharpSyntaxTree.ParseText(NetfxPolyfillAttributes, parseOptions),
+#endif
+            };
+
             return CSharpCompilation.Create(
                 assemblyName,
-                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, parseOptions) },
-                references: references.ToArray(),
+                syntaxTrees: syntaxTrees,
+                references: references,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
         }
 
-        public static SyntaxTree ParseSource(string source)
-            => CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview));
+        public static SyntaxTree ParseSource(string source, CSharpParseOptions? options = null)
+            => CSharpSyntaxTree.ParseText(source, options ?? s_defaultParseOptions);
 
-        public static CSharpGeneratorDriver CreateJsonSourceGeneratorDriver(JsonSourceGenerator? generator = null)
+        public static CSharpGeneratorDriver CreateJsonSourceGeneratorDriver(Compilation compilation, JsonSourceGenerator? generator = null)
         {
             generator ??= new();
+            CSharpParseOptions parseOptions = compilation.SyntaxTrees
+                .OfType<CSharpSyntaxTree>()
+                .Select(tree => tree.Options)
+                .FirstOrDefault() ?? s_defaultParseOptions;
+
             return
 #if ROSLYN4_0_OR_GREATER
                 CSharpGeneratorDriver.Create(
                     generators: new ISourceGenerator[] { generator.AsSourceGenerator() },
-                    parseOptions: s_parseOptions,
+                    parseOptions: parseOptions,
                     driverOptions: new GeneratorDriverOptions(
                         disabledOutputs: IncrementalGeneratorOutputKind.None,
                         trackIncrementalGeneratorSteps: true));
 #else
                 CSharpGeneratorDriver.Create(
                     generators: new ISourceGenerator[] { generator },
-                    parseOptions: s_parseOptions);
+                    parseOptions: parseOptions);
 #endif
         }
 
-        public static JsonSourceGeneratorResult RunJsonSourceGenerator(Compilation compilation)
+        public static JsonSourceGeneratorResult RunJsonSourceGenerator(Compilation compilation, bool disableDiagnosticValidation = false)
         {
-            SourceGenerationSpec? generatedSpec = null;
+            var generatedSpecs = ImmutableArray<ContextGenerationSpec>.Empty;
             var generator = new JsonSourceGenerator
             {
-                OnSourceEmitting = spec => generatedSpec = spec
+                OnSourceEmitting = specs => generatedSpecs = specs
             };
 
-            CSharpGeneratorDriver driver = CreateJsonSourceGeneratorDriver(generator);
+            CSharpGeneratorDriver driver = CreateJsonSourceGeneratorDriver(compilation, generator);
             driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out ImmutableArray<Diagnostic> diagnostics);
+
+            if (!disableDiagnosticValidation)
+            {
+                outCompilation.GetDiagnostics().AssertMaxSeverity(DiagnosticSeverity.Info);
+                diagnostics.AssertMaxSeverity(DiagnosticSeverity.Info);
+            }
+
             return new()
             {
                 NewCompilation = outCompilation,
                 Diagnostics = diagnostics,
-                SourceGenModel = generatedSpec,
+                ContextGenerationSpecs = generatedSpecs,
             };
         }
 
@@ -144,6 +168,24 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             }
             return ms.ToArray();
         }
+
+#if !NETCOREAPP
+        private const string NetfxPolyfillAttributes = """
+            namespace System.Runtime.CompilerServices
+            {
+                internal static class IsExternalInit { }
+
+                [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+                internal sealed class RequiredMemberAttribute : Attribute { }
+
+                [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
+                internal sealed class CompilerFeatureRequiredAttribute : Attribute
+                {
+                    public CompilerFeatureRequiredAttribute(string featureName) { }
+                }
+            }
+            """;
+#endif
 
         public static Compilation CreateReferencedLocationCompilation()
         {
@@ -185,7 +227,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            return CreateCompilation(source);
+            return CreateCompilation(source, assemblyName: "CampaignSummaryAssembly");
         }
 
         public static Compilation CreateActiveOrUpcomingEventCompilation()
@@ -230,9 +272,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateRepeatedLocationsCompilation()
         {
             string source = """
-                using System;
-                using System.Collections;
-                using System.Collections.Generic;
                 using System.Text.Json.Serialization;
 
                 namespace JsonSourceGeneration
@@ -280,57 +319,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
-        public static Compilation CreateRepeatedLocationsWithResolutionCompilation()
-        {
-            string source = """
-                using System;
-                using System.Collections;
-                using System.Collections.Generic;
-                using System.Text.Json.Serialization;
-
-                [assembly: JsonSerializable(typeof(Fake.Location))]
-                [assembly: JsonSerializable(typeof(HelloWorld.Location), TypeInfoPropertyName = ""RepeatedLocation"")]
-
-                namespace Fake
-                {
-                    public class Location
-                    {
-                        public int FakeId { get; set; }
-                        public string FakeAddress1 { get; set; }
-                        public string FakeAddress2 { get; set; }
-                        public string FakeCity { get; set; }
-                        public string FakeState { get; set; }
-                        public string FakePostalCode { get; set; }
-                        public string FakeName { get; set; }
-                        public string FakePhoneNumber { get; set; }
-                        public string FakeCountry { get; set; }
-                    }
-                }
-
-                namespace HelloWorld
-                {                
-                    public class Location
-                    {
-                        public int Id { get; set; }
-                        public string Address1 { get; set; }
-                        public string Address2 { get; set; }
-                        public string City { get; set; }
-                        public string State { get; set; }
-                        public string PostalCode { get; set; }
-                        public string Name { get; set; }
-                        public string PhoneNumber { get; set; }
-                        public string Country { get; set; }
-                    }
-                }
-                """;
-
-            return CreateCompilation(source);
-        }
-
         public static Compilation CreateCompilationWithInitOnlyProperties()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -361,7 +352,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithConstructorInitOnlyProperties()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -389,7 +379,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithMixedInitOnlyProperties()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -415,10 +404,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+#if ROSLYN4_4_OR_GREATER
         public static Compilation CreateCompilationWithRequiredProperties()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -441,13 +430,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            return CreateCompilation(source);
+            CSharpParseOptions parseOptions = CreateParseOptions(LanguageVersion.CSharp11);
+            return CreateCompilation(source, parseOptions: parseOptions);
         }
+#endif
 
         public static Compilation CreateCompilationWithRecordPositionalParameters()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
@@ -478,13 +468,21 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithInaccessibleJsonIncludeProperties()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace HelloWorld
                 {                
                     public class Location
                     {
+                        [JsonInclude]
+                        public int publicField = 1;
+                        [JsonInclude]
+                        internal int internalField = 2;
+                        [JsonInclude]
+                        private int privateField = 4;
+                        [JsonInclude]
+                        protected int protectedField = 8;
+
                         [JsonInclude]
                         public int Id { get; private set; }
                         [JsonInclude]
@@ -495,6 +493,16 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public string PhoneNumber { internal get; set; }
                         [JsonInclude]
                         public string Country { private get; set; }
+                        [JsonInclude]
+                        internal string InternalProperty { get; set; }
+                        [JsonInclude]
+                        protected string ProtectedProperty { get; set; }
+                        [JsonInclude]
+                        internal string InternalPropertyWithPrivateGetter { private get; set; }
+                        [JsonInclude]
+                        internal string InternalPropertyWithPrivateSetter { get; private set; }
+
+                        public int GetPrivateField() => privateField;
                     }
 
                     [JsonSerializable(typeof(Location))]
@@ -586,40 +594,259 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
-        internal static void CheckDiagnosticMessages(
-            DiagnosticSeverity level,
-            ImmutableArray<Diagnostic> diagnostics,
-            (Location Location, string Message)[] expectedDiags,
-            bool sort = true)
+        public static Compilation CreatePolymorphicClassOnFastPathContext()
         {
-            ((string FileName, TextSpan, LinePositionSpan), string)[] actualDiags = diagnostics
-                .Where(diagnostic => diagnostic.Severity == level)
-                .Select(diagnostic => (GetLocationNormalForm(diagnostic.Location), diagnostic.GetMessage()))
-                .ToArray();
+            string source = """
+                using System.Text.Json.Serialization;
 
-            if (CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase))
-            {
-                ((string FileName, TextSpan, LinePositionSpan), string Message)[] expectedDiagsNormalized = expectedDiags
-                    .Select(diag => (GetLocationNormalForm(diag.Location), diag.Message))
-                    .ToArray();
-
-                if (sort)
+                namespace HelloWorld
                 {
-                    // Can't depend on reflection order when generating type metadata.
-                    Array.Sort(actualDiags);
-                    Array.Sort(expectedDiagsNormalized);
+                    [JsonSerializable(typeof(MyBaseClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(MyDerivedClass), "derived")]
+                    public class MyBaseClass
+                    {
+                    }
+
+                    public class MyDerivedClass : MyBaseClass
+                    {
+                    }
                 }
+                """;
 
-                Assert.Equal(expectedDiagsNormalized, actualDiags);
-            }
-            else
-            {
-                // for non-English runs, just compare the number of messages are the same
-                Assert.Equal(expectedDiags.Length, actualDiags.Length);
-            }
-
-            static (string FileName, TextSpan, LinePositionSpan) GetLocationNormalForm(Location location)
-                => (location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
+            return CreateCompilation(source);
         }
+
+        public static Compilation CreateTypesAnnotatedWithJsonStringEnumConverter()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyClass))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class MyClass
+                    {
+                        public Enum1 Enum1Prop { get; set; }
+
+                        [JsonConverter(typeof(JsonStringEnumConverter))]
+                        public Enum2 Enum2Prop { get; set; }
+                    }
+
+                    [JsonConverter(typeof(JsonStringEnumConverter))]
+                    public enum Enum1 { A, B, C };
+                    
+                    public enum Enum2 { A, B, C };
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateTypesWithInvalidJsonConverterAttributeType()
+        {
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyClass))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class MyClass
+                    {
+                        [JsonConverter(null)]
+                        public int Value1 { get; set; }
+
+                        [JsonConverter(typeof(int))]
+                        public int Value2 { get; set; }
+
+                        [JsonConverter(typeof(InacessibleConverter))]
+                        public int Value3 { get; set; }
+                    }
+
+                    public class InacessibleConverter : JsonConverter<int>
+                    {
+                        private InacessibleConverter()
+                        { }
+
+                        public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                        {
+                            throw new NotImplementedException();
+                        }
+
+                        public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+                        {
+                            throw new NotImplementedException();
+                        }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateCompilationWithDerivedJsonConverterAttributeAnnotations()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(ClassWithConverterDeclaration))]
+                    [JsonSerializable(typeof(ClassWithPropertyConverterDeclaration))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [MyJsonConverter]
+                    public class ClassWithConverterDeclaration
+                    {
+                    }
+
+                    public partial class ClassWithPropertyConverterDeclaration : JsonSerializerContext
+                    {
+                        [MyJsonConverter]
+                        public int Value { get; set; }
+                    }
+
+                    public class MyJsonConverterAttribute : JsonConverterAttribute
+                    {
+                        public override JsonConverter? CreateConverter(Type typeToConvert) => null;
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateContextWithUnboundGenericTypeDeclarations()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(List<>))]
+                    [JsonSerializable(typeof(Dictionary<,>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateContextWithErrorTypeDeclarations()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(BogusType))]
+                    [JsonSerializable(typeof(BogusType<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateCompilationWithJsonConstructorAttributeAnnotations()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {                
+                    public class ClassWithPublicCtor
+                    {
+                        [JsonConstructor]
+                        public ClassWithPublicCtor() { }
+                    }
+
+                    public class ClassWithInternalCtor
+                    {
+                        [JsonConstructor]
+                        internal ClassWithInternalCtor() { }
+                    }
+
+                    public class ClassWithProtectedCtor
+                    {
+                        [JsonConstructor]
+                        protected ClassWithProtectedCtor() { }
+                    }
+
+                    public class ClassWithPrivateCtor
+                    {
+                        [JsonConstructor]
+                        private ClassWithPrivateCtor() { }
+                    }
+
+                    [JsonSerializable(typeof(ClassWithPublicCtor))]
+                    [JsonSerializable(typeof(ClassWithInternalCtor))]
+                    [JsonSerializable(typeof(ClassWithProtectedCtor))]
+                    [JsonSerializable(typeof(ClassWithPrivateCtor))]
+                    public partial class MyJsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        internal static void AssertEqualDiagnosticMessages(
+            IEnumerable<DiagnosticData> expectedDiags,
+            IEnumerable<Diagnostic> actualDiags)
+        {
+            HashSet<DiagnosticData> expectedSet = new(expectedDiags);
+            HashSet<DiagnosticData> actualSet = new(actualDiags.Select(d => new DiagnosticData(d.Severity, d.Location, d.GetMessage())));
+            AssertExtensions.Equal(expectedSet, actualSet);
+        }
+
+        internal static Location? GetLocation(this AttributeData attributeData)
+        {
+            SyntaxReference? reference = attributeData.ApplicationSyntaxReference;
+            return reference?.SyntaxTree.GetLocation(reference.Span);
+        }
+
+        internal static void AssertMaxSeverity(this IEnumerable<Diagnostic> diagnostics, DiagnosticSeverity maxSeverity)
+        {
+            Assert.Empty(diagnostics.Where(diagnostic => diagnostic.Severity > maxSeverity));
+        }
+    }
+
+    public record struct DiagnosticData(
+        DiagnosticSeverity Severity,
+        string FilePath,
+        LinePositionSpan LinePositionSpan,
+        string Message)
+    {
+        public DiagnosticData(DiagnosticSeverity severity, Location location, string message)
+            : this(severity, location.SourceTree?.FilePath ?? "", location.GetLineSpan().Span, TrimCultureSensitiveMessage(message))
+        {
+        }
+
+        // for non-English runs, trim the message content since it might be translated.
+        private static string TrimCultureSensitiveMessage(string message) => s_IsEnglishCulture ? message : "";
+        private readonly static bool s_IsEnglishCulture = CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        public override string ToString() => $"{Severity}, {Message}, {FilePath}@{LinePositionSpan}";
     }
 }

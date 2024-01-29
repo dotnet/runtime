@@ -10,7 +10,7 @@ namespace DefaultNamespace
     public class AA
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             uint[] local5 = new uint[7];
             int local6 = 18;
@@ -27,7 +27,6 @@ namespace DefaultNamespace
                     }
                 }
             }
-            return 100;
         }
     }
 }

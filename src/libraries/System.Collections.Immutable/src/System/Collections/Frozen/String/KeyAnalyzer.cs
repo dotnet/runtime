@@ -37,7 +37,7 @@ namespace System.Collections.Frozen
             AnalysisResults results;
             if (minLength == 0 || !TryUseSubstring(uniqueStrings, ignoreCase, minLength, maxLength, out results))
             {
-                results = CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, 0, 0, static (s, _, _) => s.AsSpan());
+                results = CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, 0, 0, isSubstring: false, static (s, _, _) => s.AsSpan());
             }
 
             return results;
@@ -46,35 +46,38 @@ namespace System.Collections.Frozen
         /// <summary>Try to find the minimal unique substring index/length to use for comparisons.</summary>
         private static bool TryUseSubstring(ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, out AnalysisResults results)
         {
-            const double SufficientUniquenessFactor = 0.95; // 95% is good enough
-            const int MaxSubstringLengthLimit = 8; // arbitrary small-ish limit... t's not worth the increase in algorithmic complexity to analyze longer substrings
+            const int MaxSubstringLengthLimit = 8; // arbitrary small-ish limit... it's not worth the increase in algorithmic complexity to analyze longer substrings
+            int uniqueStringsLength = uniqueStrings.Length;
 
-            SubstringComparer leftComparer = ignoreCase ? new LeftJustifiedCaseInsensitiveSubstringComparer() : new LeftJustifiedSubstringComparer();
-            HashSet<string> leftSet = new HashSet<string>(
+            // Sufficient uniqueness factor of 95% is good enough.
+            // Instead of ensuring that 95% of data is good, we stop when we know that at least 5% is bad.
+            int acceptableNonUniqueCount = uniqueStringsLength / 20;
+
+            SubstringComparer comparer = ignoreCase ? new JustifiedCaseInsensitiveSubstringComparer() : new JustifiedSubstringComparer();
+            HashSet<string> set = new HashSet<string>(
 #if NET6_0_OR_GREATER
-                uniqueStrings.Length,
+                uniqueStringsLength,
 #endif
-                leftComparer);
+                comparer);
 
-            HashSet<string>? rightSet = null;
-            SubstringComparer? rightComparer = null;
-
-            // For each substring length...
+            // For each substring length...preferring the shortest length that provides
+            // enough uniqueness
             int maxSubstringLength = Math.Min(minLength, MaxSubstringLengthLimit);
             for (int count = 1; count <= maxSubstringLength; count++)
             {
-                leftComparer.Count = count;
+                comparer.IsLeft = true;
+                comparer.Count = count;
 
-                // For each index, get a uniqueness factor for the left-justified substrings.
+                // For each index from, get a uniqueness factor for the left-justified substrings.
                 // If any is above our threshold, we're done.
                 for (int index = 0; index <= minLength - count; index++)
                 {
-                    leftComparer.Index = index;
-                    double factor = GetUniquenessFactor(leftSet, uniqueStrings);
-                    if (factor >= SufficientUniquenessFactor)
+                    comparer.Index = index;
+
+                    if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                     {
                         results = CreateAnalysisResults(
-                            uniqueStrings, ignoreCase, minLength, maxLength, index, count,
+                            uniqueStrings, ignoreCase, minLength, maxLength, index, count, isSubstring: true,
                             static (string s, int index, int count) => s.AsSpan(index, count));
                         return true;
                     }
@@ -86,31 +89,19 @@ namespace System.Collections.Frozen
                 // right-justified substrings, and so we also check right-justification.
                 if (minLength != maxLength)
                 {
-                    // Lazily-initialize the right-comparer/set state, as it's often not needed.
-                    if (rightComparer is null)
-                    {
-                        rightComparer = ignoreCase ? new RightJustifiedCaseInsensitiveSubstringComparer() : new RightJustifiedSubstringComparer();
-                        rightSet = new HashSet<string>(
-#if NET6_0_OR_GREATER
-                            uniqueStrings.Length,
-#endif
-                            rightComparer);
-                    }
-                    rightComparer.Count = count;
-                    Debug.Assert(rightSet is not null);
+                    // toggle the direction and re-use the comparer and hashset (HasSufficientUniquenessFactor clears it)
+                    comparer.IsLeft = false;
 
                     // For each index, get a uniqueness factor for the right-justified substrings.
                     // If any is above our threshold, we're done.
                     for (int index = 0; index <= minLength - count; index++)
                     {
-                        // Get a uniqueness factor for the right-justified substrings.
-                        // If it's above our threshold, we're done.
-                        rightComparer.Index = -index - count;
-                        double factor = GetUniquenessFactor(rightSet, uniqueStrings);
-                        if (factor >= SufficientUniquenessFactor)
+                        comparer.Index = -index - count;
+
+                        if (HasSufficientUniquenessFactor(set, uniqueStrings, acceptableNonUniqueCount))
                         {
                             results = CreateAnalysisResults(
-                                uniqueStrings, ignoreCase, minLength, maxLength, rightComparer.Index, count,
+                                uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count, isSubstring: true,
                                 static (string s, int index, int count) => s.AsSpan(s.Length + index, count));
                             return true;
                         }
@@ -124,7 +115,7 @@ namespace System.Collections.Frozen
         }
 
         private static AnalysisResults CreateAnalysisResults(
-            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, GetSpan getSubstringSpan)
+            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, bool isSubstring, GetSpan getSubstringSpan)
         {
             // Start off by assuming all strings are ASCII
             bool allAsciiIfIgnoreCase = true;
@@ -134,11 +125,11 @@ namespace System.Collections.Frozen
             // substrings are ASCII, so we check each.
             if (ignoreCase)
             {
-                // Further, if the ASCII substrings don't contain any letters, then we can
+                // Further, if the ASCII keys (in their entirety) don't contain any letters, then we can
                 // actually perform the comparison as case-sensitive even if case-insensitive
                 // was requested, as there's nothing that would compare equally to the substring
                 // other than the substring itself.
-                bool canSwitchIgnoreCaseToCaseSensitive = ignoreCase;
+                bool canSwitchIgnoreCaseHashToCaseSensitive = !isSubstring;
 
                 foreach (string s in uniqueStrings)
                 {
@@ -149,20 +140,20 @@ namespace System.Collections.Frozen
                     if (!IsAllAscii(substring))
                     {
                         allAsciiIfIgnoreCase = false;
-                        canSwitchIgnoreCaseToCaseSensitive = false;
+                        canSwitchIgnoreCaseHashToCaseSensitive = false;
                         break;
                     }
 
                     // All substrings so far are still ASCII only.  If this one contains any ASCII
                     // letters, mark that we can't switch to case-sensitive.
-                    if (canSwitchIgnoreCaseToCaseSensitive && ContainsAnyLetters(substring))
+                    if (canSwitchIgnoreCaseHashToCaseSensitive && ContainsAnyLetters(substring))
                     {
-                        canSwitchIgnoreCaseToCaseSensitive = false;
+                        canSwitchIgnoreCaseHashToCaseSensitive = false;
                     }
                 }
 
                 // If we can switch to case-sensitive, do so.
-                if (canSwitchIgnoreCaseToCaseSensitive)
+                if (canSwitchIgnoreCaseHashToCaseSensitive)
                 {
                     ignoreCase = false;
                 }
@@ -216,12 +207,12 @@ namespace System.Collections.Frozen
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_asciiLetters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 #endif
-        private static bool ContainsAnyLetters(ReadOnlySpan<char> s)
+        internal static bool ContainsAnyLetters(ReadOnlySpan<char> s)
         {
             Debug.Assert(IsAllAscii(s));
 
 #if NET8_0_OR_GREATER
-            return s.IndexOfAny(s_asciiLetters) >= 0;
+            return s.ContainsAny(s_asciiLetters);
 #else
             foreach (char c in s)
             {
@@ -235,15 +226,19 @@ namespace System.Collections.Frozen
 #endif
         }
 
-        private static double GetUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings)
+        internal static bool HasSufficientUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings, int acceptableNonUniqueCount)
         {
             set.Clear();
+
             foreach (string s in uniqueStrings)
             {
-                set.Add(s);
+                if (!set.Add(s) && --acceptableNonUniqueCount < 0)
+                {
+                    return false;
+                }
             }
 
-            return set.Count / (double)uniqueStrings.Length;
+            return true;
         }
 
         internal readonly struct AnalysisResults
@@ -273,32 +268,21 @@ namespace System.Collections.Frozen
         {
             public int Index;
             public int Count;
+            public bool IsLeft;
             public abstract bool Equals(string? x, string? y);
             public abstract int GetHashCode(string s);
         }
 
-        private sealed class LeftJustifiedSubstringComparer : SubstringComparer
+        private sealed class JustifiedSubstringComparer : SubstringComparer
         {
-            public override bool Equals(string? x, string? y) => x.AsSpan(Index, Count).SequenceEqual(y.AsSpan(Index, Count));
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(s.AsSpan(Index, Count));
+            public override bool Equals(string? x, string? y) => x.AsSpan(IsLeft ? Index : (x!.Length + Index), Count).SequenceEqual(y.AsSpan(IsLeft ? Index : (y!.Length + Index), Count));
+            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(s.AsSpan(IsLeft ? Index : (s.Length + Index), Count));
         }
 
-        private sealed class LeftJustifiedCaseInsensitiveSubstringComparer : SubstringComparer
+        private sealed class JustifiedCaseInsensitiveSubstringComparer : SubstringComparer
         {
-            public override bool Equals(string? x, string? y) => x.AsSpan(Index, Count).Equals(y.AsSpan(Index, Count), StringComparison.OrdinalIgnoreCase);
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.AsSpan(Index, Count));
-        }
-
-        private sealed class RightJustifiedSubstringComparer : SubstringComparer
-        {
-            public override bool Equals(string? x, string? y) => x.AsSpan(x!.Length + Index, Count).SequenceEqual(y.AsSpan(y!.Length + Index, Count));
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(s.AsSpan(s.Length + Index, Count));
-        }
-
-        private sealed class RightJustifiedCaseInsensitiveSubstringComparer : SubstringComparer
-        {
-            public override bool Equals(string? x, string? y) => x.AsSpan(x!.Length + Index, Count).Equals(y.AsSpan(y!.Length + Index, Count), StringComparison.OrdinalIgnoreCase);
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.AsSpan(s.Length + Index, Count));
+            public override bool Equals(string? x, string? y) => x.AsSpan(IsLeft ? Index : (x!.Length + Index), Count).Equals(y.AsSpan(IsLeft ? Index : (y!.Length + Index), Count), StringComparison.OrdinalIgnoreCase);
+            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.AsSpan(IsLeft ? Index : (s.Length + Index), Count));
         }
     }
 }

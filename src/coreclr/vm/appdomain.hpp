@@ -901,7 +901,6 @@ class BaseDomain
     friend class Assembly;
     friend class AssemblySpec;
     friend class AppDomain;
-    friend class AppDomainNative;
 
     VPTR_BASE_VTABLE_CLASS(BaseDomain)
     VPTR_UNIQUE(VPTR_UNIQUE_BaseDomain)
@@ -1066,12 +1065,6 @@ public:
     }
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
-    OBJECTHANDLE CreateVariableHandle(OBJECTREF object, UINT type)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateVariableHandle(m_handleStore, object, type);
-    }
-
     OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
     {
         WRAPPER_NO_CONTRACT;
@@ -1221,18 +1214,14 @@ public:
 private:
     TypeIDMap m_typeIDMap;
 
-#ifdef HOST_WINDOWS
     // MethodTable to `typeIndex` map. `typeIndex` is embedded in the code during codegen.
     // During execution corresponding thread static data blocks are stored in `t_NonGCThreadStaticBlocks`
     // and `t_GCThreadStaticBlocks` array at the `typeIndex`.
     TypeIDMap m_NonGCThreadStaticBlockTypeIDMap;
     TypeIDMap m_GCThreadStaticBlockTypeIDMap;
 
-#endif // HOST_WINDOWS
-
 public:
 
-#ifdef HOST_WINDOWS
     void InitThreadStaticBlockTypeMap();
 
     UINT32 GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT);
@@ -1240,7 +1229,6 @@ public:
 
     PTR_MethodTable LookupNonGCThreadStaticBlockType(UINT32 id);
     PTR_MethodTable LookupGCThreadStaticBlockType(UINT32 id);
-#endif
 
     UINT32 GetTypeID(PTR_MethodTable pMT);
     UINT32 LookupTypeID(PTR_MethodTable pMT);
@@ -1507,7 +1495,6 @@ const DWORD DefaultADID = 1;
 class AppDomain : public BaseDomain
 {
     friend class SystemDomain;
-    friend class AppDomainNative;
     friend class AssemblyNative;
     friend class AssemblySpec;
     friend class ClassLoader;
@@ -1869,7 +1856,7 @@ public:
     BOOL IsCached(AssemblySpec *pSpec);
 #endif // DACCESS_COMPILE
 
-    BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pPEAssembly, BOOL fAllowFailure = FALSE);
+    BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pPEAssembly);
     BOOL RemoveFileFromCache(PEAssembly *pPEAssembly);
 
     BOOL AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly);
@@ -2161,7 +2148,7 @@ public:
     void AddMemoryPressure();
     void RemoveMemoryPressure();
 
-    Assembly *GetRootAssembly()
+    PTR_Assembly GetRootAssembly()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pRootAssembly;
@@ -2341,7 +2328,6 @@ typedef VPTR(class SystemDomain) PTR_SystemDomain;
 
 class SystemDomain : public BaseDomain
 {
-    friend class AppDomainNative;
     friend class ClrDataAccess;
 
     VPTR_VTABLE_CLASS(SystemDomain, BaseDomain)
@@ -2399,7 +2385,7 @@ public:
     //****************************************************************************************
     //
     // Global Static to get the one and only system domain
-    static SystemDomain * System()
+    static PTR_SystemDomain System()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -2456,12 +2442,24 @@ public:
     }
     static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
     {
-        WRAPPER_NO_CONTRACT;
-        if (m_FrozenObjectHeapManager == NULL)
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        if (VolatileLoad(&m_FrozenObjectHeapManager) == nullptr)
         {
             LazyInitFrozenObjectsHeap();
         }
-        return m_FrozenObjectHeapManager;
+        return VolatileLoad(&m_FrozenObjectHeapManager);
+    }
+    static FrozenObjectHeapManager* GetFrozenObjectHeapManagerNoThrow()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return VolatileLoad(&m_FrozenObjectHeapManager);
     }
 #endif // DACCESS_COMPILE
 

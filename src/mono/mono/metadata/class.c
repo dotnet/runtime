@@ -418,6 +418,24 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		mono_type_name_check_byref (type, str);
 
 		break;
+	case MONO_TYPE_FNPTR: {
+		MonoTypeNameFormat nested_format;
+
+		nested_format = format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED ?
+			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
+
+		mono_type_get_name_recurse (type->data.method->ret, str, FALSE, nested_format);
+
+		g_string_append_c (str, '(');
+		for (int i = 0; i < type->data.method->param_count; ++i) {
+			mono_type_get_name_recurse (type->data.method->params[i], str, FALSE, nested_format);
+			if (i != type->data.method->param_count - 1)
+				g_string_append (str, ", ");
+		}
+		g_string_append_c (str, ')');
+
+		break;
+	}
 	default:
 		klass = mono_class_from_mono_type_internal (type);
 		if (m_class_get_nested_in (klass)) {
@@ -2479,7 +2497,9 @@ mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoTyp
 				continue;
 
 			if (type) {
-				MonoType *field_type = mono_metadata_get_corresponding_field_from_generic_type_definition (field)->type;
+				MonoClassField *gfield = mono_metadata_get_corresponding_field_from_generic_type_definition (field);
+				g_assert (gfield != NULL);
+				MonoType *field_type = gfield->type;
 				if (!mono_metadata_type_equal_full (type, field_type, TRUE))
 					continue;
 			}
@@ -4080,7 +4100,7 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 			return;
 		}
 
-		if (m_class_is_array_special_interface (klass) && m_class_get_rank (oklass) == 1) {
+		if (m_class_is_array_special_interface (klass) && m_class_get_rank (oklass) == 1 && m_class_get_byval_arg (oklass)->type == MONO_TYPE_SZARRAY) {
 			if (mono_class_is_gtd (klass)) {
 				/* klass is an array special gtd like
 				 * IList`1<>, and oklass is X[] for some X.
@@ -5943,36 +5963,11 @@ mono_class_has_failure (const MonoClass *klass)
 	return m_class_has_failure ((MonoClass*)klass) != 0;
 }
 
-
-/**
- * mono_class_set_type_load_failure:
- * \param klass class in which the failure was detected
- * \param fmt \c printf -style error message string.
- *
- * Collect detected failure informaion in the class for later processing.
- * The error is stored as a MonoErrorBoxed as with mono_error_set_type_load_class()
- * Note that only the first failure is kept.
- *
- * LOCKING: Acquires the loader lock.
- *
- * \returns FALSE if a failure was already set on the class, or TRUE otherwise.
- */
 gboolean
-mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
+mono_class_has_deferred_failure (const MonoClass *klass)
 {
-	ERROR_DECL (prepare_error);
-	va_list args;
-
-	if (mono_class_has_failure (klass))
-		return FALSE;
-
-	va_start (args, fmt);
-	mono_error_vset_type_load_class (prepare_error, klass, fmt, args);
-	va_end (args);
-
-	MonoErrorBoxed *box = mono_error_box (prepare_error, m_class_get_image (klass));
-	mono_error_cleanup (prepare_error);
-	return mono_class_set_failure (klass, box);
+	g_assert (klass != NULL);
+	return m_class_has_deferred_failure ((MonoClass*)klass) != 0;
 }
 
 /**
@@ -6910,4 +6905,78 @@ mono_class_has_default_constructor (MonoClass *klass, gboolean public_only)
 			return TRUE;
 	}
 	return FALSE;
+}
+
+/**
+ * mono_class_set_deferred_type_load_failure:
+ * \param klass class in which the failure was detected
+ * \param fmt \c printf -style error message string.
+ *
+ * Sets a deferred failure in the class and prints a warning message. 
+ * The deferred failure allows the runtime to attempt setting up the class layout at runtime.
+ *
+ * LOCKING: Acquires the loader lock.
+ *
+ * \returns FALSE
+ */
+gboolean
+mono_class_set_deferred_type_load_failure (MonoClass *klass, const char * fmt, ...)
+{
+	if (!mono_class_has_deferred_failure (klass)) {
+		va_list args;
+
+		va_start (args, fmt);
+		g_warning ("Warning: %s", fmt, args);
+		va_end (args);
+
+		mono_class_set_deferred_failure (klass);
+	}
+
+	return FALSE;
+}
+
+/**
+ * mono_class_set_type_load_failure:
+ * \param klass class in which the failure was detected
+ * \param fmt \c printf -style error message string.
+ *
+ * Collect detected failure informaion in the class for later processing.
+ * The error is stored as a MonoErrorBoxed as with mono_error_set_type_load_class()
+ * Note that only the first failure is kept.
+ *
+ * LOCKING: Acquires the loader lock.
+ *
+ * \returns TRUE
+ */
+gboolean
+mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
+{
+	if (!mono_class_has_failure (klass)) {
+		ERROR_DECL (prepare_error);
+		va_list args;
+
+		va_start (args, fmt);
+		mono_error_vset_type_load_class (prepare_error, klass, fmt, args);
+		va_end (args);
+
+		MonoErrorBoxed *box = mono_error_box (prepare_error, m_class_get_image (klass));
+		mono_error_cleanup (prepare_error);
+		mono_class_set_failure (klass, box);
+	}
+
+	return TRUE;
+}
+
+void mono_set_failure_type (MonoFailureType failure_type) {
+	switch (failure_type) {
+		case MONO_CLASS_LOADER_IMMEDIATE_FAILURE:
+			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
+			break;
+		case MONO_CLASS_LOADER_DEFERRED_FAILURE:
+			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback = mono_class_set_deferred_type_load_failure;
+			break;
+		default:
+			g_assert_not_reached();
+			break;
+	}
 }

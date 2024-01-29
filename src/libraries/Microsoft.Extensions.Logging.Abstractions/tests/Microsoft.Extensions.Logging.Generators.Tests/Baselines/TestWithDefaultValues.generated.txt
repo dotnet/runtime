@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             {
                 logger.Log(
                     level,
-                    new global::Microsoft.Extensions.Logging.EventId(-1, nameof(M0)),
+                    new global::Microsoft.Extensions.Logging.EventId(316638712, nameof(M0)),
                     new __M0Struct(),
                     null,
                     __M0Struct.Format);

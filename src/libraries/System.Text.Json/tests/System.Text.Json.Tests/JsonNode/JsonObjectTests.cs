@@ -291,7 +291,7 @@ namespace System.Text.Json.Nodes.Tests
             const string Json = "{\"myProperty\":42}";
 
             var options = new JsonSerializerOptions();
-            options.PropertyNamingPolicy = new SimpleSnakeCasePolicy();
+            options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
 
             JsonObject obj = JsonSerializer.Deserialize<JsonObject>(Json, options);
             string json = obj.ToJsonString();
@@ -968,6 +968,226 @@ namespace System.Text.Json.Nodes.Tests
                 Assert.Equal(0, (int)jObj["prop0"]);
                 Assert.Equal(1, (int)jObj["prop1"]);
             });
+        }
+
+        [Fact]
+        public static void DeepClone()
+        {
+            var array = new JsonArray();
+            array.Add(5);
+            array.Add(7);
+            var nestedJsonObj = new JsonObject()
+            {
+                { "Ten", 10 },
+                { "Name", "xyz"}
+            };
+
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["Two"] = 2;
+            jObject["String"] = "ABC";
+            jObject["True"] = true;
+            jObject["False"] = false;
+            jObject["Null"] = null;
+            jObject["value"] = JsonValue.Create(10);
+            jObject["array"] = array;
+            jObject["object"] = nestedJsonObj;
+
+            var clone = jObject.DeepClone().AsObject();
+
+            JsonNodeTests.AssertDeepEqual(jObject, clone);
+
+            Assert.Equal(jObject.Count, clone.Count);
+            Assert.Equal(1, clone["One"].GetValue<int>());
+            Assert.Equal(2, clone["Two"].GetValue<int>());
+            Assert.Equal("ABC", clone["String"].GetValue<string>());
+            Assert.True(clone["True"].GetValue<bool>());
+            Assert.False(clone["False"].GetValue<bool>());
+            Assert.Null(clone["Null"]);
+            Assert.Equal(10, clone["value"].GetValue<int>());
+
+            JsonArray clonedArray = clone["array"].AsArray();
+            Assert.Equal(array.Count, clonedArray.Count);
+            Assert.Equal(5, clonedArray[0].GetValue<int>());
+            Assert.Equal(7, clonedArray[1].GetValue<int>());
+
+            JsonObject clonedNestedJObject = clone["object"].AsObject();
+            Assert.Equal(nestedJsonObj.Count, clonedNestedJObject.Count);
+            Assert.Equal(10, clonedNestedJObject["Ten"].GetValue<int>());
+            Assert.Equal("xyz", clonedNestedJObject["Name"].GetValue<string>());
+
+            string originalJson = jObject.ToJsonString();
+            string clonedJson = clone.ToJsonString();
+
+            Assert.Equal(originalJson, clonedJson);
+        }
+
+        [Fact]
+        public static void DeepClone_FromElement()
+        {
+            JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}");
+            JsonObject jObject = JsonObject.Create(document.RootElement);
+            var clone = jObject.DeepClone().AsObject();
+
+            JsonNodeTests.AssertDeepEqual(jObject, clone);
+            Assert.Equal(1, clone["One"].GetValue<int>());
+            Assert.Equal("abc", clone["String"].GetValue<string>());
+        }
+
+        [Fact]
+        public static void DeepEquals()
+        {
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["array"] = new JsonArray() { "a", "b" };
+
+            var sameJObject = new JsonObject();
+            sameJObject["One"] = 1;
+            sameJObject["array"] = new JsonArray() { "a", "b" };
+
+            JsonNodeTests.AssertDeepEqual(jObject, sameJObject);
+            JsonNodeTests.AssertNotDeepEqual(jObject, null);
+
+            var diffJObject = new JsonObject();
+            diffJObject["One"] = 3;
+
+            JsonNodeTests.AssertNotDeepEqual(diffJObject, jObject);
+        }
+
+        [Fact]
+        public static void DeepEquals_JsonObject_With_JsonValuePOCO()
+        {
+            var jObject = new JsonObject();
+            jObject["Id"] = 1;
+            jObject["Name"] = "First";
+            var nestedObject = new JsonObject();
+            nestedObject["Id"] = 2;
+            nestedObject["Name"] = "Last";
+            nestedObject["NestedObject"] = null;
+            jObject["NestedObject"] = nestedObject;
+
+            var poco = new SimpleClass()
+            {
+                Id = 1,
+                Name = "First",
+                NestedObject = new SimpleClass()
+                {
+                    Id = 2,
+                    Name = "Last",
+                }
+            };
+
+            JsonNodeTests.AssertDeepEqual(jObject, JsonValue.Create(poco));
+
+            var diffPoco = new SimpleClass()
+            {
+                Id = 1,
+                Name = "First",
+                NestedObject = new SimpleClass()
+                {
+                    Id = 3,
+                    Name = "Last",
+                }
+            };
+
+            JsonNodeTests.AssertNotDeepEqual(jObject, JsonValue.Create(diffPoco));
+        }
+
+        [Fact]
+        public static void DeepEquals_JsonObject_With_Dictionary()
+        {
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["array"] = new JsonArray() { "a", "b" };
+            jObject["obj"] = new JsonObject();
+
+            var dictionary = new Dictionary<string, object>()
+            {
+                { "One", 1 },
+                { "array", new string[] { "a", "b" } },
+                { "obj", new { } }
+            };
+
+            JsonNodeTests.AssertDeepEqual(jObject, JsonValue.Create(dictionary));
+
+            var diffDictionary = new Dictionary<string, object>()
+            {
+                { "One", 1 },
+                { "array", new string[] { "a", "d" } },
+                { "obj", new { } }
+            };
+
+            JsonNodeTests.AssertNotDeepEqual(jObject, JsonValue.Create(diffDictionary));
+        }
+
+        private class SimpleClass
+        {
+            public int Id { get; set; }
+
+            public string Name { get; set; }
+
+            public SimpleClass NestedObject { get; set; }
+        }
+
+        [Fact]
+        public static void DeepEqualFromElement()
+        {
+            using JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}");
+            JsonObject jObject = JsonObject.Create(document.RootElement);
+
+            using JsonDocument document2 = JsonDocument.Parse("{\"One\":     1, \"String\":     \"abc\"}   ");
+            JsonObject jObject2 = JsonObject.Create(document2.RootElement);
+            JsonNodeTests.AssertDeepEqual(jObject, jObject2);
+
+            using JsonDocument document3 = JsonDocument.Parse("{\"One\": 3, \"String\": \"abc\"}");
+            JsonObject jObject3 = JsonObject.Create(document3.RootElement);
+            JsonNodeTests.AssertNotDeepEqual(jObject, jObject3);
+
+            using JsonDocument document4 = JsonDocument.Parse("{\"One\":     1, \"String\":     \"abc2\"}   ");
+            JsonObject jObject4 = JsonObject.Create(document4.RootElement);
+            JsonNodeTests.AssertNotDeepEqual(jObject, jObject4);
+        }
+
+        [Fact]
+        public static void UpdateClonedObjectNotAffectOriginal()
+        {
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["Two"] = 2;
+
+            var clone = jObject.DeepClone().AsObject();
+            clone["One"] = 3;
+
+            Assert.Equal(1, jObject["One"].GetValue<int>());
+        }
+
+        [Fact]
+        public static void GetValueKind()
+        {
+            Assert.Equal(JsonValueKind.Object, new JsonObject().GetValueKind());
+        }
+
+        [Fact]
+        public static void GetPropertyName()
+        {
+            var jObject = new JsonObject();
+            var jValue = JsonValue.Create(10);
+            jObject.Add("value", jValue);
+
+            Assert.Equal("value", jValue.GetPropertyName());
+            Assert.Equal("value", jObject["value"].GetPropertyName());
+        }
+
+        [Fact]
+        public static void ReplaceWith()
+        {
+            var jObject = new JsonObject();
+            var jValue = JsonValue.Create(10);
+            jObject["value"] = jValue;
+            jObject["value"].ReplaceWith(5);
+
+            Assert.Null(jValue.Parent);
+            Assert.Equal("{\"value\":5}", jObject.ToJsonString());
         }
     }
 }

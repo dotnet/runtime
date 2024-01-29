@@ -5,8 +5,6 @@ namespace System.Text.Json
 {
     internal static partial class JsonConstants
     {
-        public const string GlobalNamespaceValue = "<global namespace>";
-
         public const string SystemTextJsonSourceGenerationName = "System.Text.Json.SourceGeneration";
 
         public const string IJsonOnSerializedFullName = "System.Text.Json.Serialization.IJsonOnSerialized";

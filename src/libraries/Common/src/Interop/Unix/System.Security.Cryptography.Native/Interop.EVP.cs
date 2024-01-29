@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -25,11 +24,20 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestFinalEx")]
         internal static partial int EvpDigestFinalEx(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestFinalXOF")]
+        private static unsafe partial int EvpDigestFinalXOF(SafeEvpMdCtxHandle ctx, Span<byte> md, uint len);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestCurrentXOF")]
+        private static unsafe partial int EvpDigestCurrentXOF(SafeEvpMdCtxHandle ctx, Span<byte> md, uint len);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestCurrent")]
         internal static partial int EvpDigestCurrent(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestOneShot")]
         internal static unsafe partial int EvpDigestOneShot(IntPtr type, byte* source, int sourceSize, byte* md, uint* mdSize);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestXOFOneShot")]
+        private static unsafe partial int EvpDigestXOFOneShot(IntPtr type, ReadOnlySpan<byte> source, int sourceSize, Span<byte> md, uint len);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdSize")]
         internal static partial int EvpMdSize(IntPtr md);
@@ -39,13 +47,13 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pbkdf2")]
         private static unsafe partial int Pbkdf2(
-            byte* pPassword,
+            ReadOnlySpan<byte> pPassword,
             int passwordLength,
-            byte* pSalt,
+            ReadOnlySpan<byte> pSalt,
             int saltLength,
             int iterations,
             IntPtr digestEvp,
-            byte* pDestination,
+            Span<byte> pDestination,
             int destinationLength);
 
         internal static unsafe int Pbkdf2(
@@ -55,20 +63,30 @@ internal static partial class Interop
             IntPtr digestEvp,
             Span<byte> destination)
         {
-            fixed (byte* pPassword = password)
-            fixed (byte* pSalt = salt)
-            fixed (byte* pDestination = destination)
-            {
-                return Pbkdf2(
-                    pPassword,
-                    password.Length,
-                    pSalt,
-                    salt.Length,
-                    iterations,
-                    digestEvp,
-                    pDestination,
-                    destination.Length);
-            }
+            return Pbkdf2(
+                password,
+                password.Length,
+                salt,
+                salt.Length,
+                iterations,
+                digestEvp,
+                destination,
+                destination.Length);
+        }
+
+        internal static unsafe int EvpDigestFinalXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            return EvpDigestFinalXOF(ctx, destination, (uint)destination.Length);
+        }
+
+        internal static unsafe int EvpDigestCurrentXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            return EvpDigestCurrentXOF(ctx, destination, (uint)destination.Length);
+        }
+
+        internal static unsafe int EvpDigestXOFOneShot(IntPtr type, ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            return EvpDigestXOFOneShot(type, source, source.Length, destination, (uint)destination.Length);
         }
 
         internal static readonly int EVP_MAX_MD_SIZE = GetMaxMdSize();

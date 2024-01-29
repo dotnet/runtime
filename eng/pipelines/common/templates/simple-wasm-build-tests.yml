@@ -1,0 +1,52 @@
+# run Wasm.Build.Tests with a single threading runtime
+parameters:
+  alwaysRun: false
+  isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
+  platforms: []
+  shouldContinueOnError: false
+  extraBuildArgs: ''
+
+jobs:
+
+#
+# Build the whole product using Mono and run Wasm.Build.Tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    variables:
+      # map dependencies variables to local variables
+      - name: alwaysRunVar
+        value: ${{ parameters.alwaysRun }}
+      - name: workloadsTestPreviousVersionsVar
+        value: $[
+          or(
+            eq(variables['Build.SourceBranchName'], 'main'),
+            eq(variables['System.PullRequest.TargetBranch'], 'main'))
+          ]
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: WasmBuildTests
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar) ${{ parameters.extraBuildArgs }}
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(variables['alwaysRunVar'], true),
+          eq(variables['isDefaultPipeline'], variables['shouldRunWasmBuildTestsOnDefaultPipeline']))
+      # extra steps, run tests
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
+            extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+            scenarios:
+            - buildwasmapps
+
