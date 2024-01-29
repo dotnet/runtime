@@ -84,6 +84,12 @@ export type MonoConfigInternal = MonoConfig & {
     exitAfterSnapshot?: number
     loadAllSatelliteResources?: boolean
     runtimeId?: number
+
+    // related to config hash
+    preferredIcuAsset: string | null,
+    resourcesHash: string | undefined,
+    GitHash: string | undefined,
+    ProductVersion: string | undefined,
 };
 
 export type RunArguments = {

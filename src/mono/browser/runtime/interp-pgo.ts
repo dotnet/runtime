@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "./globals";
+import { Module, loaderHelpers } from "./globals";
 import { getCacheKey, cleanupCache, getCacheEntry, storeCacheEntry } from "./snapshot";
 import { mono_log_info, mono_log_error } from "./logging";
 import { localHeapViewU8 } from "./memory";
@@ -10,6 +10,10 @@ import cwraps from "./cwraps";
 export const tablePrefix = "https://dotnet.generated.invalid/interp_pgo";
 
 export async function interp_pgo_save_data() {
+    if (!loaderHelpers.is_runtime_running()) {
+        mono_log_info("Skipped saveing interp_pgo table (already exited)");
+        return;
+    }
     const cacheKey = await getCacheKey(tablePrefix);
     if (!cacheKey) {
         mono_log_error("Failed to save interp_pgo table (No cache key)");

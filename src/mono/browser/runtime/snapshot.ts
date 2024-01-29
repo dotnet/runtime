@@ -5,6 +5,7 @@ import ProductVersion from "consts:productVersion";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
+import { MonoConfigInternal } from "./types/internal";
 
 export const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
 
@@ -174,10 +175,10 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     if (!runtimeHelpers.subtle) {
         return null;
     }
-    const inputs = Object.assign({}, runtimeHelpers.config) as any;
+    const inputs = Object.assign({}, runtimeHelpers.config) as MonoConfigInternal;
 
     // Now we remove assets collection from the hash.
-    inputs.resourcesHash = inputs.resources.hash;
+    inputs.resourcesHash = inputs.resources!.hash;
     delete inputs.assets;
     delete inputs.resources;
     // some things are calculated at runtime, so we need to add them to the hash
@@ -199,6 +200,7 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.enableDownloadRetry;
     delete inputs.exitAfterSnapshot;
     delete inputs.extensions;
+    delete inputs.runtimeId;
 
     inputs.GitHash = loaderHelpers.gitHash;
     inputs.ProductVersion = ProductVersion;
