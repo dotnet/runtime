@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Sdk;
@@ -15,6 +16,198 @@ using Xunit.Sdk;
 
 namespace System.Numerics.Tensors.Tests
 {
+    public class ConvertTests
+    {
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        public void ConvertTruncatingAndSaturating()
+        {
+            MethodInfo convertTruncatingImpl = typeof(ConvertTests).GetMethod(nameof(ConvertTruncatingImpl), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+            Assert.NotNull(convertTruncatingImpl);
+
+            MethodInfo convertSaturatingImpl = typeof(ConvertTests).GetMethod(nameof(ConvertSaturatingImpl), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+            Assert.NotNull(convertSaturatingImpl);
+
+            Type[] types =
+            [
+                typeof(sbyte), typeof(byte),
+                typeof(short), typeof(ushort), typeof(char),
+                typeof(int), typeof(uint),
+                typeof(long), typeof(ulong),
+                typeof(nint), typeof(nuint),
+                typeof(Half), typeof(float), typeof(double), typeof(NFloat),
+                typeof(Int128), typeof(UInt128),
+            ];
+
+            foreach (Type from in types)
+            {
+                foreach (Type to in types)
+                {
+                    convertTruncatingImpl.MakeGenericMethod(from, to).Invoke(null, null);
+                    convertSaturatingImpl.MakeGenericMethod(from, to).Invoke(null, null);
+                }
+            }
+        }
+
+        [Fact]
+        public void ConvertChecked()
+        {
+            // Conversions that never overflow. This isn't an exhaustive list; just a sampling.
+            ConvertCheckedImpl<byte, byte>();
+            ConvertCheckedImpl<byte, ushort>();
+            ConvertCheckedImpl<byte, short>();
+            ConvertCheckedImpl<byte, uint>();
+            ConvertCheckedImpl<byte, int>();
+            ConvertCheckedImpl<byte, ulong>();
+            ConvertCheckedImpl<byte, long>();
+            ConvertCheckedImpl<byte, float>();
+            ConvertCheckedImpl<Half, Half>();
+            ConvertCheckedImpl<Half, float>();
+            ConvertCheckedImpl<Half, double>();
+            ConvertCheckedImpl<float, double>();
+            ConvertCheckedImpl<double, float>();
+
+            // Conversions that may overflow. This isn't an exhaustive list; just a sampling.
+            ConvertCheckedImpl<float, int>(42f, float.MaxValue);
+            ConvertCheckedImpl<long, int>(42, int.MaxValue + 1L);
+        }
+
+        private static void ConvertTruncatingImpl<TFrom, TTo>()
+            where TFrom : unmanaged, INumber<TFrom>
+            where TTo : unmanaged, INumber<TTo>
+        {
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertTruncating<TFrom, TTo>(new TFrom[3], new TTo[2]));
+
+            foreach (int tensorLength in Helpers.TensorLengthsIncluding0)
+            {
+                using BoundedMemory<TFrom> source = BoundedMemory.Allocate<TFrom>(tensorLength);
+                using BoundedMemory<TTo> destination = BoundedMemory.Allocate<TTo>(tensorLength);
+
+                Random rand = new(42);
+                Span<TFrom> sourceSpan = source.Span;
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    sourceSpan[i] = TFrom.CreateTruncating(new Int128(
+                        (ulong)rand.NextInt64(long.MinValue, long.MaxValue),
+                        (ulong)rand.NextInt64(long.MinValue, long.MaxValue)));
+                }
+
+                TensorPrimitives.ConvertTruncating<TFrom, TTo>(source.Span, destination.Span);
+
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    if (!IsEqualWithTolerance(TTo.CreateTruncating(source.Span[i]), destination.Span[i]))
+                    {
+                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Actual: {destination.Span[i]}. Expected: {TTo.CreateTruncating(source.Span[i])}.");
+                    }
+                }
+            };
+        }
+
+        private static void ConvertSaturatingImpl<TFrom, TTo>()
+            where TFrom : unmanaged, INumber<TFrom>
+            where TTo : unmanaged, INumber<TTo>
+        {
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertSaturating<TFrom, TTo>(new TFrom[3], new TTo[2]));
+
+            foreach (int tensorLength in Helpers.TensorLengthsIncluding0)
+            {
+                using BoundedMemory<TFrom> source = BoundedMemory.Allocate<TFrom>(tensorLength);
+                using BoundedMemory<TTo> destination = BoundedMemory.Allocate<TTo>(tensorLength);
+
+                Random rand = new(42);
+                Span<TFrom> sourceSpan = source.Span;
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    sourceSpan[i] = TFrom.CreateTruncating(new Int128(
+                        (ulong)rand.NextInt64(long.MinValue, long.MaxValue),
+                        (ulong)rand.NextInt64(long.MinValue, long.MaxValue)));
+                }
+
+                TensorPrimitives.ConvertSaturating<TFrom, TTo>(source.Span, destination.Span);
+
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    if (!IsEqualWithTolerance(TTo.CreateSaturating(source.Span[i]), destination.Span[i]))
+                    {
+                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Actual: {destination.Span[i]}. Expected: {TTo.CreateSaturating(source.Span[i])}.");
+                    }
+                }
+            };
+        }
+
+        private static void ConvertCheckedImpl<TFrom, TTo>()
+            where TFrom : unmanaged, INumber<TFrom>
+            where TTo : unmanaged, INumber<TTo>
+        {
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertChecked<TFrom, TTo>(new TFrom[3], new TTo[2]));
+
+            foreach (int tensorLength in Helpers.TensorLengthsIncluding0)
+            {
+                using BoundedMemory<TFrom> source = BoundedMemory.Allocate<TFrom>(tensorLength);
+                using BoundedMemory<TTo> destination = BoundedMemory.Allocate<TTo>(tensorLength);
+
+                Random rand = new(42);
+                Span<TFrom> sourceSpan = source.Span;
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    sourceSpan[i] = TFrom.CreateTruncating(new Int128(
+                        (ulong)rand.NextInt64(long.MinValue, long.MaxValue),
+                        (ulong)rand.NextInt64(long.MinValue, long.MaxValue)));
+                }
+
+                TensorPrimitives.ConvertChecked<TFrom, TTo>(source.Span, destination.Span);
+
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    if (!IsEqualWithTolerance(TTo.CreateChecked(source.Span[i]), destination.Span[i]))
+                    {
+                        throw new XunitException($"{typeof(TFrom).Name} => {typeof(TTo).Name}. Input: {source.Span[i]}. Actual: {destination.Span[i]}. Expected: {TTo.CreateChecked(source.Span[i])}.");
+                    }
+                }
+            };
+        }
+
+        private static void ConvertCheckedImpl<TFrom, TTo>(TFrom valid, TFrom invalid)
+            where TFrom : unmanaged, INumber<TFrom>
+            where TTo : unmanaged, INumber<TTo>
+        {
+            foreach (int tensorLength in Helpers.TensorLengths)
+            {
+                using BoundedMemory<TFrom> source = BoundedMemory.Allocate<TFrom>(tensorLength);
+                using BoundedMemory<TTo> destination = BoundedMemory.Allocate<TTo>(tensorLength);
+
+                // Test with valid
+                source.Span.Fill(valid);
+                TensorPrimitives.ConvertChecked<TFrom, TTo>(source.Span, destination.Span);
+                foreach (TTo result in destination.Span)
+                {
+                    Assert.True(IsEqualWithTolerance(TTo.CreateChecked(valid), result));
+                }
+
+                // Test with at least one invalid
+                foreach (int invalidPosition in new[] { 0, tensorLength / 2, tensorLength - 1 })
+                {
+                    source.Span.Fill(valid);
+                    source.Span[invalidPosition] = invalid;
+                    Assert.Throws<OverflowException>(() => TensorPrimitives.ConvertChecked<TFrom, TTo>(source.Span, destination.Span));
+                }
+            };
+        }
+
+        private static bool IsEqualWithTolerance<T>(T expected, T actual, T? tolerance = null) where T : unmanaged, INumber<T>
+        {
+            tolerance ??= T.CreateTruncating(0.0001);
+
+            T diff = T.Abs(expected - actual);
+            if (diff > tolerance && diff > T.Max(T.Abs(expected), T.Abs(actual)) * tolerance)
+            {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
     public class DoubleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<double> { }
     public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float> { }
     public class HalfGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<Half>

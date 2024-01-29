@@ -114,7 +114,7 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
 
 #ifndef DACCESS_COMPILE
 
-TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(TypeKey *pTypeKey,
+TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(const TypeKey *pTypeKey,
                                                           LoadTypesFlag fLoadTypes/*=LoadTypes*/,
                                                           ClassLoadLevel level/*=CLASS_LOADED*/)
 {
@@ -157,7 +157,7 @@ TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(TypeKey *pTypeKey,
 /* static */
 TypeHandle
 ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
-    TypeKey         *pTypeKey,
+    const TypeKey         *pTypeKey,
     AllocMemTracker *pamTracker)
 {
     CONTRACT(TypeHandle)

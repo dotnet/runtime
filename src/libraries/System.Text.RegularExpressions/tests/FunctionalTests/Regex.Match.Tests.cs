@@ -88,7 +88,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 // Zero-width negative lookahead assertion
                 yield return (@"abc(?!XXX)\w+", "abcXXXdef", RegexOptions.None, 0, 9, false, string.Empty);
-                yield return (@"(?!(b)b)\1", "ba", RegexOptions.None, 0, 2, false, string.Empty);
+                yield return (@"(?!(b)b)\1", "ba", RegexOptions.None, 0, 2, false, string.Empty);  // negative assertion should not capture
                 yield return (@"(?:(?!(b)b)\1a)+", "babababa", RegexOptions.None, 0, 8, false, string.Empty);
                 yield return (@"(?:(?!(b)b)\1a)*", "babababa", RegexOptions.None, 0, 8, true, string.Empty);
                 yield return (@"(.*?)a(?!(a+)b\2c)\2(.*)", "baaabaac", RegexOptions.None, 0, 8, false, string.Empty);
@@ -126,6 +126,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"123(?<!$) abcdef", "123 abcdef", RegexOptions.None, 0, 10, true, "123 abcdef");
                 yield return (@"(abc)\w(?<!(?(1)e|d))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
                 yield return (@"(abc)\w(?<!(?(cd)e|d))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
+                yield return (@"(?<!(b)a)\1", "bb", RegexOptions.None, 0, 2, false, string.Empty); // negative assertion should not capture
 
                 // Nonbacktracking subexpression: Actual - "[^0-9]+(?>[0-9]+)3"
                 // The last 3 causes the match to fail, since the non backtracking subexpression does not give up the last digit it matched

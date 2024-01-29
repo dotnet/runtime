@@ -47,18 +47,6 @@
         <Command>$(Python) test.py sod -1-scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem> -->
-    <HelixWorkItem Include="Device Startup - Android Mono HelloWorld">
-      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)helloandroid;copy %HELIX_CORRELATION_PAYLOAD%\HelloAndroid.apk .;$(Python) pre.py --apk-name HelloAndroid.apk</PreCommands>
-      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroid.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot;</Command>
-      <PostCommands>$(Python) post.py</PostCommands>
-    </HelixWorkItem>
-    <HelixWorkItem Include="Device Startup - Android Mono HelloWorld NoAnimation">
-      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)helloandroid;copy %HELIX_CORRELATION_PAYLOAD%\HelloAndroid.apk .;$(Python) pre.py --apk-name HelloAndroid.apk</PreCommands>
-      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroid.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot; --disable-animations</Command>
-      <PostCommands>$(Python) post.py</PostCommands>
-    </HelixWorkItem>
     <!-- <HelixWorkItem Include="Mobile Benchmark - Android Benchmarks.Droid Benchmark Run"> Disabled per https://github.com/dotnet/performance/issues/3655
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
         <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)bdnandroid;copy %HELIX_CORRELATION_PAYLOAD%\MonoBenchmarksDroid.apk .;$(Python) pre.py -1-apk-name MonoBenchmarksDroid.apk</PreCommands>
