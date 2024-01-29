@@ -54,15 +54,6 @@ namespace System
         // V1ToStringUnescape = 0x7FFF
     }
 
-    // This is used to control when host names are converted to idn names and
-    // vice versa
-    internal enum UriIdnScope
-    {
-        None,                   // Never use Idn
-        AllExceptIntranet,      // Use Idn in Internet and not intranet
-        All                     // Internet and intranet
-    }
-
     internal enum ParsingError
     {
         // looks good

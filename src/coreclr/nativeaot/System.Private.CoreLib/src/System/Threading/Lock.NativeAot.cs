@@ -92,6 +92,18 @@ namespace System.Threading
             _recursionCount = previousRecursionCount;
         }
 
+        private static bool IsFullyInitialized
+        {
+            get
+            {
+                // If NativeRuntimeEventSource is already being class-constructed by this thread earlier in the stack, Log can
+                // be null. This property is used to avoid going down the wait path in that case to avoid null checks in several
+                // other places.
+                Debug.Assert((StaticsInitializationStage)s_staticsInitializationStage == StaticsInitializationStage.Complete);
+                return NativeRuntimeEventSource.Log != null;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private TryLockResult LazyInitializeOrEnter()
         {
@@ -101,6 +113,10 @@ namespace System.Threading
                 case StaticsInitializationStage.Complete:
                     if (_spinCount == SpinCountNotInitialized)
                     {
+                        if (!IsFullyInitialized)
+                        {
+                            goto case StaticsInitializationStage.Started;
+                        }
                         _spinCount = s_maxSpinCount;
                     }
                     return TryLockResult.Spin;
@@ -121,7 +137,7 @@ namespace System.Threading
                         }
 
                         stage = (StaticsInitializationStage)Volatile.Read(ref s_staticsInitializationStage);
-                        if (stage == StaticsInitializationStage.Complete)
+                        if (stage == StaticsInitializationStage.Complete && IsFullyInitialized)
                         {
                             goto case StaticsInitializationStage.Complete;
                         }
@@ -166,14 +182,17 @@ namespace System.Threading
                     return true;
             }
 
+            bool isFullyInitialized;
             try
             {
                 s_isSingleProcessor = Environment.IsSingleProcessor;
                 s_maxSpinCount = DetermineMaxSpinCount();
                 s_minSpinCount = DetermineMinSpinCount();
 
-                // Also initialize some types that are used later to prevent potential class construction cycles
-                NativeRuntimeEventSource.Log.IsEnabled();
+                // Also initialize some types that are used later to prevent potential class construction cycles. If
+                // NativeRuntimeEventSource is already being class-constructed by this thread earlier in the stack, Log can be
+                // null. Avoid going down the wait path in that case to avoid null checks in several other places.
+                isFullyInitialized = NativeRuntimeEventSource.Log != null;
             }
             catch
             {
@@ -182,7 +201,7 @@ namespace System.Threading
             }
 
             Volatile.Write(ref s_staticsInitializationStage, (int)StaticsInitializationStage.Complete);
-            return true;
+            return isFullyInitialized;
         }
 
         // Returns false until the static variable is lazy-initialized

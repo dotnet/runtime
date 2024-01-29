@@ -250,6 +250,12 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong And(ref ulong location1, ulong value) { throw null; }
         public static double CompareExchange(ref double location1, double value, double comparand) { throw null; }
+        public static byte CompareExchange(ref byte location1, byte value, byte comparand) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static sbyte CompareExchange(ref sbyte location1, sbyte value, sbyte comparand) { throw null; }
+        public static short CompareExchange(ref short location1, short value, short comparand) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort CompareExchange(ref ushort location1, ushort value, ushort comparand) { throw null; }
         public static int CompareExchange(ref int location1, int value, int comparand) { throw null; }
         public static long CompareExchange(ref long location1, long value, long comparand) { throw null; }
         public static System.IntPtr CompareExchange(ref System.IntPtr location1, System.IntPtr value, System.IntPtr comparand) { throw null; }
@@ -271,6 +277,12 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong Decrement(ref ulong location) { throw null; }
         public static double Exchange(ref double location1, double value) { throw null; }
+        public static byte Exchange(ref byte location1, byte value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static sbyte Exchange(ref sbyte location1, sbyte value) { throw null; }
+        public static short Exchange(ref short location1, short value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort Exchange(ref ushort location1, ushort value) { throw null; }
         public static int Exchange(ref int location1, int value) { throw null; }
         public static long Exchange(ref long location1, long value) { throw null; }
         public static System.IntPtr Exchange(ref System.IntPtr location1, System.IntPtr value) { throw null; }

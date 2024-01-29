@@ -125,7 +125,7 @@ LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
         // for the universal thunk target is to be placed in sp-8
         // and the universal thunk target address is to be placed in sp-4
         str         r12, [sp, #-8]
-        ldr         r12, =C_FUNC(RhpCidResolve)
+        PREPARE_EXTERNAL_VAR RhpCidResolve, r12
         str         r12, [sp, #-4]
 
         // jump to universal transition thunk

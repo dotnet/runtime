@@ -331,16 +331,6 @@ mono_wasm_assembly_load (const char *name)
 	return res;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoAssembly*
-mono_wasm_get_corlib (void)
-{
-	MonoAssembly* result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_image_get_assembly (mono_get_corlib());
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
 EMSCRIPTEN_KEEPALIVE MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
