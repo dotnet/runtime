@@ -187,6 +187,25 @@ namespace System.Reflection.Metadata.Tests.Metadata
             Assert.Null(underlyingType.UnderlyingType);
         }
 
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(int*))]
+        [InlineData(typeof(int***))]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(int[,]))]
+        [InlineData(typeof(int[,,,]))]
+        [InlineData(typeof(List<int>))]
+        [InlineData(typeof(Dictionary<int, string>))]
+        public void GetType_Roundtrip(Type type)
+        {
+            TypeName typeName = TypeNameParser.Parse(type.FullName.AsSpan(), allowFullyQualifiedName: true);
+
+            Type afterRoundtrip = typeName.GetType(throwOnError: true);
+
+            Assert.NotNull(afterRoundtrip);
+            Assert.Equal(type, afterRoundtrip);
+        }
+
         internal sealed class NonAsciiNotAllowed : TypeNameParserOptions
         {
             public override void ValidateIdentifier(string candidate)

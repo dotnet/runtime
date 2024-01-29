@@ -430,6 +430,71 @@ namespace System.Reflection.Metadata
             => _genericArguments is not null
                 ? (TypeName[])_genericArguments.Clone() // we return a copy on purpose, to not allow for mutations. TODO: consider returning a ROS
                 : Array.Empty<TypeName>(); // TODO: should we throw (Levi's parser throws InvalidOperationException in such case), Type.GetGenericArguments just returns an empty array
+
+#if NET8_0_OR_GREATER
+        [RequiresUnreferencedCode("The type might be removed")]
+        [RequiresDynamicCode("Required by MakeArrayType")]
+#endif
+        public Type? GetType(bool throwOnError = true)
+        {
+            if (UnderlyingType is null)
+            {
+                Type? type;
+                if (AssemblyName is null)
+                {
+#pragma warning disable IL2057 // Unrecognized value passed to the parameter of method. It's not possible to guarantee the availability of the target type.
+                    type = Type.GetType(Name, throwOnError);
+#pragma warning restore IL2057 // Unrecognized value passed to the parameter of method. It's not possible to guarantee the availability of the target type.
+                }
+                else
+                {
+                    Assembly assembly = Assembly.Load(AssemblyName);
+                    type = assembly.GetType(Name, throwOnError);
+                }
+
+                if (IsElementalType || type is null)
+                {
+                    return type;
+                }
+
+                TypeName[] genericArgs = GetGenericArguments();
+                Type[] genericTypes = new Type[genericArgs.Length];
+                for (int i = 0; i < genericArgs.Length; i++)
+                {
+                    Type? genericArg = genericArgs[i].GetType(throwOnError);
+                    if (genericArg is null)
+                    {
+                        return null;
+                    }
+                    genericTypes[i] = genericArg;
+                }
+
+#pragma warning disable IL2055 // Either the type on which the MakeGenericType is called can't be statically determined, or the type parameters to be used for generic arguments can't be statically determined.
+                return type.MakeGenericType(genericTypes);
+#pragma warning restore IL2055 // Either the type on which the MakeGenericType is called can't be statically determined, or the type parameters to be used for generic arguments can't be statically determined.
+            }
+
+            Type? underlyingType = UnderlyingType.GetType(throwOnError);
+            if (underlyingType is null)
+            {
+                return null;
+            }
+
+            if (IsManagedPointerType)
+            {
+                return underlyingType.MakeByRefType();
+            }
+            else if (IsUnmanagedPointerType)
+            {
+                return underlyingType.MakePointerType();
+            }
+            else if (IsSzArrayType)
+            {
+                return underlyingType.MakeArrayType();
+            }
+
+            return underlyingType.MakeArrayType(rank: GetArrayRank());
+        }
     }
 
     public class TypeNameParserOptions
