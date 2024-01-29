@@ -405,7 +405,10 @@ internal sealed class Xcode
                     continue;
 
                 string libName = Path.GetFileNameWithoutExtension(lib);
-                if(libName.StartsWith("libSystem.Globalization", StringComparison.OrdinalIgnoreCase) && hybridGlobalization)
+                if((libName.StartsWith("libSystem.Globalization", StringComparison.OrdinalIgnoreCase) ||
+                    libName.StartsWith("libicudata", StringComparison.OrdinalIgnoreCase) ||
+                    libName.StartsWith("libicui18n", StringComparison.OrdinalIgnoreCase) ||
+                    libName.StartsWith("libicuuc", StringComparison.OrdinalIgnoreCase)) && hybridGlobalization)
                     continue;
                 else if (libName.StartsWith("libSystem.HybridGlobalization", StringComparison.OrdinalIgnoreCase) && !hybridGlobalization)
                     continue;
@@ -536,7 +539,10 @@ internal sealed class Xcode
             foreach (string aFile in Directory.GetFiles(workspace, "*.a"))
             {
                 string aFileName = Path.GetFileNameWithoutExtension(aFile);
-                if(aFileName.StartsWith("libSystem.Globalization", StringComparison.OrdinalIgnoreCase) && hybridGlobalization)
+                if((libName.StartsWith("libSystem.Globalization", StringComparison.OrdinalIgnoreCase) ||
+                    libName.StartsWith("libicudata", StringComparison.OrdinalIgnoreCase) ||
+                    libName.StartsWith("libicui18n", StringComparison.OrdinalIgnoreCase) ||
+                    libName.StartsWith("libicuuc", StringComparison.OrdinalIgnoreCase)) && hybridGlobalization)
                     continue;
                 else if (aFileName.StartsWith("libSystem.HybridGlobalization", StringComparison.OrdinalIgnoreCase) && !hybridGlobalization)
                     continue;
@@ -546,8 +552,14 @@ internal sealed class Xcode
                 aFileName = aFileName.StartsWith("lib") ? aFileName.Remove(0, 3) : "lib" + aFileName;
                 pinvokeOverrides.AppendLine($"        \"{aFileName}\",");
             }
-
-            pinvokeOverrides.AppendLine($"        \"System.Globalization.Native\",");
+            if (hybridGlobalization)
+            {
+                pinvokeOverrides.AppendLine($"        \"System.HybridGlobalization.Native\",");
+            }
+            else
+            {
+                pinvokeOverrides.AppendLine($"        \"System.Globalization.Native\",");
+            }
 
             File.WriteAllText(Path.Combine(binDir, "runtime.m"),
                 Utils.GetEmbeddedResource("runtime.m")

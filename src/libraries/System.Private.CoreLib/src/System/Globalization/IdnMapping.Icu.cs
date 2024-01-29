@@ -52,6 +52,11 @@ namespace System.Globalization
             char[] outputHeap = new char[actualLength];
             fixed (char* pOutputHeap = &outputHeap[0])
             {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    actualLength = Interop.Globalization.ToAsciiNative(flags, unicode, count, pOutputHeap, actualLength);
+                else
+#endif
                 actualLength = Interop.Globalization.ToAscii(flags, unicode, count, pOutputHeap, actualLength);
                 if (actualLength == 0 || actualLength > outputHeap.Length)
                 {
