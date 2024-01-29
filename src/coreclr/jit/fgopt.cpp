@@ -928,17 +928,6 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         return false;
     }
 
-    // Don't allow removing an empty loop pre-header.
-    // We can compact a pre-header `bNext` into an empty `block` since BBF_COMPACT_UPD propagates
-    // BBF_LOOP_PREHEADER to `block`.
-    if (optLoopsRequirePreHeaders)
-    {
-        if (block->HasFlag(BBF_LOOP_PREHEADER) && (bNext->countOfInEdges() != 1))
-        {
-            return false;
-        }
-    }
-
     // Don't compact the first block if it was specially created as a scratch block.
     if (fgBBisScratch(block))
     {
@@ -1017,15 +1006,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     {
         JITDUMP("Second block has %u other incoming edges\n", bNext->countOfInEdges());
         assert(block->isEmpty());
-
-        // When loops require pre-headers, `block` cannot be a pre-header.
-        // We should have screened this out in fgCanCompactBlocks().
-        //
-        // When pre-headers are not required, then if `block` was a pre-header,
-        // it no longer is.
-        //
-        assert(!optLoopsRequirePreHeaders || !block->HasFlag(BBF_LOOP_PREHEADER));
-        block->RemoveFlags(BBF_LOOP_PREHEADER);
 
         // Retarget all the other edges incident on bNext. Do this
         // in two passes as we can't both walk and modify the pred list.
@@ -1748,15 +1728,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             {
                 // We're not allowed to remove this block due to reasons related to the EH table.
                 break;
-            }
-
-            // Don't delete empty loop pre-headers.
-            if (optLoopsRequirePreHeaders)
-            {
-                if (block->HasFlag(BBF_LOOP_PREHEADER))
-                {
-                    break;
-                }
             }
 
             /* special case if this is the only BB */
