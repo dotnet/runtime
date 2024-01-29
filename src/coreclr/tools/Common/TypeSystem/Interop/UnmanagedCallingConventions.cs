@@ -240,6 +240,7 @@ namespace Internal.TypeSystem
                     UnmanagedCallingConventions.Stdcall => "CallConvStdcall",
                     UnmanagedCallingConventions.Fastcall => "CallConvFastcall",
                     UnmanagedCallingConventions.Thiscall => "CallConvThiscall",
+                    UnmanagedCallingConventions.Swift => "CallConvSwift",
                     _ => throw new InvalidProgramException()
                 });
             }
