@@ -14915,36 +14915,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => true;
 
             public T Invoke(T x) => T.RotateRight(x, _amount);
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector128<T> Invoke(Vector128<T> x)
-            {
-                if (sizeof(T) == 1) return (Vector128.ShiftRightLogical(x.AsByte(), _amount & 7) | (Vector128.ShiftLeft(x.AsByte(), (8 - _amount) & 7))).As<byte, T>();
-                if (sizeof(T) == 2) return (Vector128.ShiftRightLogical(x.AsUInt16(), _amount & 15) | (Vector128.ShiftLeft(x.AsUInt16(), (16 - _amount) & 15))).As<ushort, T>();
-                if (sizeof(T) == 4) return (Vector128.ShiftRightLogical(x.AsUInt32(), _amount) | (Vector128.ShiftLeft(x.AsUInt32(), 32 - _amount))).As<uint, T>();
-                if (sizeof(T) == 8) return (Vector128.ShiftRightLogical(x.AsUInt64(), _amount) | (Vector128.ShiftLeft(x.AsUInt64(), 64 - _amount))).As<ulong, T>();
-                throw new NotSupportedException();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector256<T> Invoke(Vector256<T> x)
-            {
-                if (sizeof(T) == 1) return (Vector256.ShiftRightLogical(x.AsByte(), _amount & 7) | (Vector256.ShiftLeft(x.AsByte(), (8 - _amount) & 7))).As<byte, T>();
-                if (sizeof(T) == 2) return (Vector256.ShiftRightLogical(x.AsUInt16(), _amount & 15) | (Vector256.ShiftLeft(x.AsUInt16(), (16 - _amount) & 15))).As<ushort, T>();
-                if (sizeof(T) == 4) return (Vector256.ShiftRightLogical(x.AsUInt32(), _amount) | (Vector256.ShiftLeft(x.AsUInt32(), 32 - _amount))).As<uint, T>();
-                if (sizeof(T) == 8) return (Vector256.ShiftRightLogical(x.AsUInt64(), _amount) | (Vector256.ShiftLeft(x.AsUInt64(), 64 - _amount))).As<ulong, T>();
-                throw new NotSupportedException();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector512<T> Invoke(Vector512<T> x)
-            {
-                if (sizeof(T) == 1) return (Vector512.ShiftRightLogical(x.AsByte(), _amount & 7) | (Vector512.ShiftLeft(x.AsByte(), (8 - _amount) & 7))).As<byte, T>();
-                if (sizeof(T) == 2) return (Vector512.ShiftRightLogical(x.AsUInt16(), _amount & 15) | (Vector512.ShiftLeft(x.AsUInt16(), (16 - _amount) & 15))).As<ushort, T>();
-                if (sizeof(T) == 4) return (Vector512.ShiftRightLogical(x.AsUInt32(), _amount) | (Vector512.ShiftLeft(x.AsUInt32(), 32 - _amount))).As<uint, T>();
-                if (sizeof(T) == 8) return (Vector512.ShiftRightLogical(x.AsUInt64(), _amount) | (Vector512.ShiftLeft(x.AsUInt64(), 64 - _amount))).As<ulong, T>();
-                throw new NotSupportedException();
-            }
+            public Vector128<T> Invoke(Vector128<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
+            public Vector256<T> Invoke(Vector256<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
+            public Vector512<T> Invoke(Vector512<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
         }
 
         /// <summary>T.ScaleB(x, n)</summary>
@@ -14956,7 +14929,6 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public T Invoke(T x) => T.ScaleB(x, _n);
-
             public Vector128<T> Invoke(Vector128<T> x) => x * Vector128.Create(_pow2n);
             public Vector256<T> Invoke(Vector256<T> x) => x * Vector256.Create(_pow2n);
             public Vector512<T> Invoke(Vector512<T> x) => x * Vector512.Create(_pow2n);
