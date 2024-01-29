@@ -444,7 +444,7 @@ namespace TaskCoverage
                 Assert.False(twa.IsCompleted);
                 t2.SetResult(2);
                 Assert.True(twa.IsCompletedSuccessfully);
-                Assert.Equal([1, 2], twa.Result);
+                Assert.Equal(new int[] { 1, 2 }, twa.Result);
             }
 
             // Non-generic, second completes first
@@ -471,7 +471,7 @@ namespace TaskCoverage
                 Assert.False(twa.IsCompleted);
                 t1.SetResult(1);
                 Assert.True(twa.IsCompletedSuccessfully);
-                Assert.Equal([1, 2], twa.Result);
+                Assert.Equal(new int[] { 1, 2 }, twa.Result);
             }
         }
 
