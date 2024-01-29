@@ -605,11 +605,15 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BOUNDS_CHECK:
         {
             GenTreeBoundsChk* node = tree->AsBoundsChk();
+            if (genActualType(node->GetArrayLength()) == TYP_INT)
+            {
+                buildInternalIntRegisterDefForNode(tree);
+            }
             if (genActualType(node->GetIndex()) == TYP_INT)
             {
                 buildInternalIntRegisterDefForNode(tree);
-                buildInternalRegisterUses();
             }
+            buildInternalRegisterUses();
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
             srcCount = BuildOperandUses(node->GetIndex());
@@ -880,6 +884,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be overridden by epilog sequence.
             ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
+            if (compiler->getNeedsGSSecurityCookie())
+            {
+                ctrlExprCandidates &= ~(genRegMask(REG_GSCOOKIE_TMP_0) | genRegMask(REG_GSCOOKIE_TMP_1));
+            }
             assert(ctrlExprCandidates != RBM_NONE);
         }
     }
@@ -1246,6 +1254,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 }
             }
             break;
+
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for tempReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                break;
 
             case GenTreeBlk::BlkOpKindHelper:
                 assert(!src->isContained());

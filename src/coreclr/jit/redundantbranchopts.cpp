@@ -19,12 +19,12 @@ PhaseStatus Compiler::optRedundantBranches()
     }
 #endif // DEBUG
 
-    class OptRedundantBranchesDomTreeVisitor : public NewDomTreeVisitor<OptRedundantBranchesDomTreeVisitor>
+    class OptRedundantBranchesDomTreeVisitor : public DomTreeVisitor<OptRedundantBranchesDomTreeVisitor>
     {
     public:
         bool madeChanges;
 
-        OptRedundantBranchesDomTreeVisitor(Compiler* compiler) : NewDomTreeVisitor(compiler), madeChanges(false)
+        OptRedundantBranchesDomTreeVisitor(Compiler* compiler) : DomTreeVisitor(compiler), madeChanges(false)
         {
         }
 
@@ -154,6 +154,174 @@ struct RelopImplicationRule
     bool   reverse;
 };
 
+enum RelopResult
+{
+    Unknown,
+    AlwaysFalse,
+    AlwaysTrue
+};
+
+//------------------------------------------------------------------------
+// IsCmp2ImpliedByCmp1: given two constant range checks:
+//
+//   if (X oper1 bound1)
+//   {
+//        if (X oper2 bound2)
+//        {
+//
+// determine if the second range check is implied by the dominating first one.
+//
+// Arguments:
+//   oper1  - the first comparison operator
+//   bound1 - the first constant bound
+//   oper2  - the second comparison operator
+//   bound2 - the second constant bound
+//
+// Returns:
+//   Unknown     - the second check is not implied by the first one
+//   AlwaysFalse - the second check is implied by the first one and is always false
+//   AlwaysTrue  - the second check is implied by the first one and is always true
+//
+RelopResult IsCmp2ImpliedByCmp1(genTreeOps oper1, target_ssize_t bound1, genTreeOps oper2, target_ssize_t bound2)
+{
+    struct IntegralRange
+    {
+        target_ssize_t startIncl; // inclusive
+        target_ssize_t endIncl;   // inclusive
+
+        bool Intersects(const IntegralRange other) const
+        {
+            return (startIncl <= other.endIncl) && (other.startIncl <= endIncl);
+        }
+
+        bool Contains(const IntegralRange other) const
+        {
+            return (startIncl <= other.startIncl) && (other.endIncl <= endIncl);
+        }
+    };
+
+    constexpr target_ssize_t minValue = TARGET_POINTER_SIZE == 4 ? INT32_MIN : INT64_MIN;
+    constexpr target_ssize_t maxValue = TARGET_POINTER_SIZE == 4 ? INT32_MAX : INT64_MAX;
+
+    // Start with the widest possible ranges
+    IntegralRange range1 = {minValue, maxValue};
+    IntegralRange range2 = {minValue, maxValue};
+
+    // Update ranges based on inputs
+    auto setRange = [](genTreeOps oper, target_ssize_t bound, IntegralRange* range) -> bool {
+        switch (oper)
+        {
+            case GT_LT:
+                // x < cns -> [minValue, cns - 1]
+                if (bound == minValue)
+                {
+                    // overflows
+                    return false;
+                }
+                range->endIncl = bound - 1;
+                return true;
+
+            case GT_LE:
+                // x <= cns -> [minValue, cns]
+                range->endIncl = bound;
+                return true;
+
+            case GT_GT:
+                // x > cns -> [cns + 1, maxValue]
+                if (bound == maxValue)
+                {
+                    // overflows
+                    return false;
+                }
+                range->startIncl = bound + 1;
+                return true;
+
+            case GT_GE:
+                // x >= cns -> [cns, maxValue]
+                range->startIncl = bound;
+                return true;
+
+            case GT_EQ:
+            case GT_NE:
+                // x == cns -> [cns, cns]
+                // NE is special-cased below
+                range->startIncl = bound;
+                range->endIncl   = bound;
+                return true;
+
+            default:
+                // unsupported operator
+                return false;
+        }
+    };
+
+    if (setRange(oper1, bound1, &range1) && setRange(oper2, bound2, &range2))
+    {
+        // Special handling of GT_NE:
+        if ((oper1 == GT_NE) || (oper2 == GT_NE))
+        {
+            // if (x != 100)
+            //    if (x != 100) // always true
+            if (oper1 == oper2)
+            {
+                return bound1 == bound2 ? RelopResult::AlwaysTrue : RelopResult::Unknown;
+            }
+
+            // if (x == 100)
+            //    if (x != 100) // always false
+            //
+            // if (x == 100)
+            //    if (x != 101) // always true
+            if (oper1 == GT_EQ)
+            {
+                return bound1 == bound2 ? RelopResult::AlwaysFalse : RelopResult::AlwaysTrue;
+            }
+
+            // if (x > 100)
+            //    if (x != 10) // always true
+            if ((oper2 == GT_NE) && !range1.Intersects(range2))
+            {
+                return AlwaysTrue;
+            }
+
+            return RelopResult::Unknown;
+        }
+
+        // If ranges never intersect, then the 2nd range is never "true"
+        if (!range1.Intersects(range2))
+        {
+            // E.g.:
+            //
+            // range1: [100 .. SSIZE_T_MAX]
+            // range2: [SSIZE_T_MIN ..  10]
+            //
+            // or in other words:
+            //
+            // if (x >= 100)
+            //    if (x <= 10) // always false
+            //
+            return RelopResult::AlwaysFalse;
+        }
+
+        // If range1 is a subset of range2, then the 2nd range is always "true"
+        if (range2.Contains(range1))
+        {
+            // E.g.:
+            //
+            // range1: [100 .. SSIZE_T_MAX]
+            // range2: [10  .. SSIZE_T_MAX]
+            //
+            // or in other words:
+            //
+            // if (x >= 100)
+            //    if (x >= 10) // always true
+            //
+            return RelopResult::AlwaysTrue;
+        }
+    }
+    return RelopResult::Unknown;
+}
+
 //------------------------------------------------------------------------
 // s_implicationRules: rule table for unrelated relops
 //
@@ -259,8 +427,6 @@ static const RelopImplicationRule s_implicationRules[] =
 // We don't get all the cases here we could. Still to do:
 // * two unsigned compares, same operands
 // * mixture of signed/unsigned compares, same operands
-// * mixture of compares, one operand same, other operands different constants
-//   x > 1 ==> x >= 0
 //
 void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 {
@@ -336,6 +502,68 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
                     JITDUMP("Can infer %s from [%s] dominating %s\n", ValueNumStore::VNFuncName(treeFunc),
                             rii->canInferFromTrue ? "true" : "false", ValueNumStore::VNFuncName(domFunc));
+                    return;
+                }
+            }
+        }
+
+        // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
+        // We assume cns1 and cns2 are always on the RHS of the compare.
+        if ((treeApp.m_args[0] == domApp.m_args[0]) && vnStore->IsVNConstant(treeApp.m_args[1]) &&
+            vnStore->IsVNConstant(domApp.m_args[1]) && varTypeIsIntOrI(vnStore->TypeOfVN(treeApp.m_args[1])) &&
+            vnStore->TypeOfVN(domApp.m_args[0]) == vnStore->TypeOfVN(treeApp.m_args[1]) &&
+            vnStore->TypeOfVN(domApp.m_args[1]) == vnStore->TypeOfVN(treeApp.m_args[1]))
+        {
+            // We currently don't handle VNF_relop_UN funcs here
+            if (ValueNumStore::VNFuncIsSignedComparison(domApp.m_func) &&
+                ValueNumStore::VNFuncIsSignedComparison(treeApp.m_func))
+            {
+                // Dominating "X relop CNS"
+                const genTreeOps     domOper = static_cast<genTreeOps>(domApp.m_func);
+                const target_ssize_t domCns  = vnStore->CoercedConstantValue<target_ssize_t>(domApp.m_args[1]);
+
+                // Dominated "X relop CNS"
+                const genTreeOps     treeOper = static_cast<genTreeOps>(treeApp.m_func);
+                const target_ssize_t treeCns  = vnStore->CoercedConstantValue<target_ssize_t>(treeApp.m_args[1]);
+
+                // Example:
+                //
+                // void Test(int x)
+                // {
+                //     if (x > 100)
+                //         if (x > 10)
+                //             Console.WriteLine("Taken!");
+                // }
+                //
+
+                // Corresponding BB layout:
+                //
+                // BB1:
+                //   if (x <= 100)
+                //       goto BB4
+                //
+                // BB2:
+                //   // x is known to be > 100 here
+                //   if (x <= 10) // never true
+                //       goto BB4
+                //
+                // BB3:
+                //   Console.WriteLine("Taken!");
+                //
+                // BB4:
+                //   return;
+
+                // Check whether the dominating compare being "false" implies the dominated compare is known
+                // to be either "true" or "false".
+                RelopResult treeOperStatus =
+                    IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+                if (treeOperStatus != RelopResult::Unknown)
+                {
+                    rii->canInfer          = true;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
+                    rii->canInferFromTrue  = false;
+                    rii->canInferFromFalse = true;
+                    rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue;
                     return;
                 }
             }
@@ -777,42 +1005,6 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     {
         JITDUMP(FMT_BB " is first block of try-region; no threading\n", block->bbNum);
         return false;
-    }
-
-    if (optLoopTableValid)
-    {
-        // If block is a loop header, skip jump threading.
-        //
-        // This is an artificial limitation to ensure that subsequent loop table valididity
-        // checking can pass. We do not expect a loop entry to have multiple non-loop predecessors.
-        //
-        // This only blocks jump threading in a small number of cases.
-        // Revisit once we can ensure that loop headers are not critical blocks.
-        //
-        // Likewise we can't properly update the loop table if we thread the entry block.
-        // Not clear how much impact this has.
-        //
-        for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
-        {
-            const LoopDsc& loop = optLoopTable[loopNum];
-
-            if (loop.lpIsRemoved())
-            {
-                continue;
-            }
-
-            if (block == loop.lpHead)
-            {
-                JITDUMP(FMT_BB " is the header for " FMT_LP "; no threading\n", block->bbNum, loopNum);
-                return false;
-            }
-
-            if (block == loop.lpEntry)
-            {
-                JITDUMP(FMT_BB " is the entry for " FMT_LP "; no threading\n", block->bbNum, loopNum);
-                return false;
-            }
-        }
     }
 
     // Verify that dom block dominates all of block's predecessors.
@@ -1846,10 +2038,18 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
+        if (!prevTree->OperIs(GT_STORE_LCL_VAR))
+        {
+            JITDUMP(" -- prev tree not STORE_LCL_VAR\n");
+            break;
+        }
+
+        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
+
         // If prevTree has side effects, bail, unless it is in the immediately preceding statement.
         // We'll handle exceptional side effects with VNs below.
         //
-        if ((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0)
+        if (((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0) || ((prevTreeData->gtFlags & GTF_ASG) != 0))
         {
             if (prevStmt->GetNextStmt() != stmt)
             {
@@ -1861,28 +2061,11 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             sideEffect = true;
         }
 
-        if (!prevTree->OperIs(GT_STORE_LCL_VAR))
-        {
-            JITDUMP(" -- prev tree not STORE_LCL_VAR\n");
-            break;
-        }
-
-        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
-
         // If we are seeing PHIs we have run out of interesting stmts.
         //
         if (prevTreeData->OperIs(GT_PHI))
         {
             JITDUMP(" -- prev tree is a phi\n");
-            break;
-        }
-
-        // Bail if value has an embedded assignment. We could handle this
-        // if we generalized the interference check we run below.
-        //
-        if ((prevTreeData->gtFlags & GTF_ASG) != 0)
-        {
-            JITDUMP(" -- prev tree RHS has embedded assignment\n");
             break;
         }
 
@@ -1956,7 +2139,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
-            if (gtHasRef(prevTreeData, definedLocals[i]))
+            if (gtTreeHasLocalRead(prevTreeData, definedLocals[i]))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
                 interferes = true;
@@ -1966,6 +2149,12 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         if (interferes)
         {
+            break;
+        }
+
+        if (gtMayHaveStoreInterference(prevTreeData, tree))
+        {
+            JITDUMP(" -- prev tree has an embedded store that interferes with [%06u]\n", dspTreeID(tree));
             break;
         }
 
@@ -1999,7 +2188,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             // replacing.
             for (Statement* cur = prevStmt->GetNextStmt(); cur != stmt; cur = cur->GetNextStmt())
             {
-                if (gtHasRef(cur->GetRootNode(), prevTreeLclNum))
+                if (gtTreeHasLocalRead(cur->GetRootNode(), prevTreeLclNum))
                 {
                     JITDUMP("-- prev tree has GTF_GLOB_REF and " FMT_STMT " has an interfering use\n", cur->GetID());
                     hasExtraUses = true;

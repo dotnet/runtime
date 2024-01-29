@@ -13,28 +13,28 @@ namespace System.Linq
 
         protected OrderedEnumerable(IEnumerable<TElement> source) => _source = source;
 
-        private int[] SortedMap(Buffer<TElement> buffer) => GetEnumerableSorter().Sort(buffer._items, buffer._count);
+        private int[] SortedMap(TElement[] buffer) => GetEnumerableSorter().Sort(buffer, buffer.Length);
 
-        private int[] SortedMap(Buffer<TElement> buffer, int minIdx, int maxIdx) =>
-            GetEnumerableSorter().Sort(buffer._items, buffer._count, minIdx, maxIdx);
+        private int[] SortedMap(TElement[] buffer, int minIdx, int maxIdx) =>
+            GetEnumerableSorter().Sort(buffer, buffer.Length, minIdx, maxIdx);
 
         public virtual IEnumerator<TElement> GetEnumerator()
         {
-            Buffer<TElement> buffer = new Buffer<TElement>(_source);
-            if (buffer._count > 0)
+            TElement[] buffer = _source.ToArray();
+            if (buffer.Length > 0)
             {
                 int[] map = SortedMap(buffer);
-                for (int i = 0; i < buffer._count; i++)
+                for (int i = 0; i < buffer.Length; i++)
                 {
-                    yield return buffer._items[map[i]];
+                    yield return buffer[map[i]];
                 }
             }
         }
 
         internal IEnumerator<TElement> GetEnumerator(int minIdx, int maxIdx)
         {
-            Buffer<TElement> buffer = new Buffer<TElement>(_source);
-            int count = buffer._count;
+            TElement[] buffer = _source.ToArray();
+            int count = buffer.Length;
             if (count > minIdx)
             {
                 if (count <= maxIdx)
@@ -44,14 +44,14 @@ namespace System.Linq
 
                 if (minIdx == maxIdx)
                 {
-                    yield return GetEnumerableSorter().ElementAt(buffer._items, count, minIdx);
+                    yield return GetEnumerableSorter().ElementAt(buffer, count, minIdx);
                 }
                 else
                 {
                     int[] map = SortedMap(buffer, minIdx, maxIdx);
                     while (minIdx <= maxIdx)
                     {
-                        yield return buffer._items[map[minIdx]];
+                        yield return buffer[map[minIdx]];
                         ++minIdx;
                     }
                 }
@@ -103,7 +103,7 @@ namespace System.Linq
         }
     }
 
-    internal sealed class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
+    internal sealed partial class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
     {
         private readonly OrderedEnumerable<TElement>? _parent;
         private readonly Func<TElement, TKey> _keySelector;
@@ -184,13 +184,13 @@ namespace System.Linq
 
         public override IEnumerator<TElement> GetEnumerator()
         {
-            var buffer = new Buffer<TElement>(_source);
-            if (buffer._count > 0)
+            TElement[] buffer = _source.ToArray();
+            if (buffer.Length > 0)
             {
-                Sort(buffer._items.AsSpan(0, buffer._count), _descending);
-                for (int i = 0; i < buffer._count; i++)
+                Sort(buffer, _descending);
+                for (int i = 0; i < buffer.Length; i++)
                 {
-                    yield return buffer._items[i];
+                    yield return buffer[i];
                 }
             }
         }

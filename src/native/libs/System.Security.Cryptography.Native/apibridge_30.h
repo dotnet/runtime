@@ -6,6 +6,9 @@
 #pragma once
 #include "pal_types.h"
 
+typedef struct evp_mac_st EVP_MAC;
+typedef struct evp_mac_ctx_st EVP_MAC_CTX;
+
 int local_EVP_PKEY_CTX_set_rsa_keygen_bits(EVP_PKEY_CTX* ctx, int bits);
 int local_EVP_PKEY_CTX_set_rsa_oaep_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int local_EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX* ctx, int pad_mode);

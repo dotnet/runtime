@@ -301,6 +301,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void Unbox_Nullable(ref byte destination, MethodTable* toTypeHnd, object? obj);
+
         // Given an object reference, returns its MethodTable*.
         //
         // WARNING: The caller has to ensure that MethodTable* does not get unloaded. The most robust way
@@ -444,8 +447,7 @@ namespace System.Runtime.CompilerServices
         public uint BaseSize;
 
         // See additional native members in methodtable.h, not needed here yet.
-        // 0x8: m_wFlags2 (additional flags)
-        // 0xA: m_wToken (class token if it fits in 16 bits)
+        // 0x8: m_dwFlags2 (additional flags and token in upper 24 bits)
         // 0xC: m_wNumVirtuals
 
         /// <summary>
@@ -464,8 +466,8 @@ namespace System.Runtime.CompilerServices
         public MethodTable* ParentMethodTable;
 
         // Additional conditional fields (see methodtable.h).
-        // m_pLoaderModule
-        // m_pWriteableData
+        // m_pModule
+        // m_pAuxiliaryData
         // union {
         //   m_pEEClass (pointer to the EE class)
         //   m_pCanonMT (pointer to the canonical method table)
@@ -480,7 +482,7 @@ namespace System.Runtime.CompilerServices
         public void* ElementType;
 
         /// <summary>
-        /// This interface map is a union with a multipurpose slot, so should be checked before use.
+        /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero.
         /// </summary>
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;

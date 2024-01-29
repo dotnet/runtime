@@ -219,9 +219,9 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     private static bool IsInputNewerThanOutput(string inFile, string outFile)
         => File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile);
 
-    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
+    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, ITaskItem[] originalAssemblies)
     {
-        List<ITaskItem> outItems = new(originalAssemblies.Count);
+        List<ITaskItem> outItems = new(originalAssemblies.Length);
         foreach (ITaskItem item in originalAssemblies)
         {
             if (dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))

@@ -1,12 +1,12 @@
 # Build WebAssembly
 
-If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](../../../docs/workflow/building/libraries/webassembly-instructions.md). Emscripten that is needed to build the project will be provisioned automatically, unless `EMSDK_PATH` variable is set or emscripten is already present in `src\mono\wasm\emsdk` directory.
+If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](../../../docs/workflow/building/libraries/webassembly-instructions.md). Emscripten that is needed to build the project will be provisioned automatically, unless `EMSDK_PATH` variable is set or emscripten is already present in `src\mono\browser\emsdk` directory.
 
 ### Windows
 
 Windows build [requirements](../../../docs/workflow/requirements/windows-requirements.md)
 
-**Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/wasm/emsdk` directory should be manually deleted and then a rebuild attempted.
+**Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/browser/emsdk` directory should be manually deleted and then a rebuild attempted.
 
 ## Building
 
@@ -244,7 +244,7 @@ Two things to keep in mind:
 
 The steps below will download the `vsts-npm-auth` tool from https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm
 
-In folder `src\mono\wasm\runtime\`
+In folder `src\mono\browser\runtime\`
 
 ```sh
 rm -rf node_modules

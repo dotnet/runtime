@@ -49,6 +49,8 @@ namespace System.Runtime.InteropServices.JavaScript
             lock (ctx)
             {
                 PromiseHolder holder = ctx.GetPromiseHolder(slot.GCHandle);
+                // we want to run the continuations on the original thread which called the JSImport, so RunContinuationsAsynchronously, rather than ExecuteSynchronously
+                // TODO TaskCreationOptions.RunContinuationsAsynchronously
                 TaskCompletionSource tcs = new TaskCompletionSource(holder);
                 ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
                 {
@@ -98,6 +100,8 @@ namespace System.Runtime.InteropServices.JavaScript
             lock (ctx)
             {
                 var holder = ctx.GetPromiseHolder(slot.GCHandle);
+                // we want to run the continuations on the original thread which called the JSImport, so RunContinuationsAsynchronously, rather than ExecuteSynchronously
+                // TODO TaskCreationOptions.RunContinuationsAsynchronously
                 TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
                 ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
                 {
@@ -363,10 +367,6 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             holder.AssertNotDisposed();
 
-#if FEATURE_WASM_THREADS
-            JSObject.AssertThreadAffinity(holder);
-#endif
-
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
             ref JSMarshalerArgument res = ref args[1];
@@ -399,16 +399,13 @@ namespace System.Runtime.InteropServices.JavaScript
             JSFunctionBinding.ResolveOrRejectPromise(args);
 #else
             // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
+            JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
 #endif
         }
 
         private static void ResolveVoidPromise(JSObject holder)
         {
             holder.AssertNotDisposed();
-#if FEATURE_WASM_THREADS
-            JSObject.AssertThreadAffinity(holder);
-#endif
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
@@ -441,16 +438,13 @@ namespace System.Runtime.InteropServices.JavaScript
             JSFunctionBinding.ResolveOrRejectPromise(args);
 #else
             // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
+            JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
 #endif
         }
 
         private static void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
         {
             holder.AssertNotDisposed();
-#if FEATURE_WASM_THREADS
-            JSObject.AssertThreadAffinity(holder);
-#endif
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
@@ -484,7 +478,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSFunctionBinding.ResolveOrRejectPromise(args);
 #else
             // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
+            JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
 #endif
         }
     }

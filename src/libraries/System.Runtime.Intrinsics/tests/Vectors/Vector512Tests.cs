@@ -9,6 +9,28 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 {
     public sealed class Vector512Tests
     {
+        /// <summary>Verifies that two <see cref="Vector512{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        internal static void AssertEqual(Vector512<float> expected, Vector512<float> actual, Vector512<float> variance)
+        {
+            Vector256Tests.AssertEqual(expected.GetLower(), actual.GetLower(), variance.GetLower());
+            Vector256Tests.AssertEqual(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
+        }
+
+        /// <summary>Verifies that two <see cref="Vector512{Double}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        internal static void AssertEqual(Vector512<double> expected, Vector512<double> actual, Vector512<double> variance)
+        {
+            Vector256Tests.AssertEqual(expected.GetLower(), actual.GetLower(), variance.GetLower());
+            Vector256Tests.AssertEqual(expected.GetUpper(), actual.GetUpper(), variance.GetUpper());
+        }
+
         [Fact]
         public unsafe void Vector512IsHardwareAcceleratedTest()
         {
@@ -5110,6 +5132,56 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             MethodInfo methodInfo = typeof(Vector512<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
             Assert.False((bool)methodInfo.Invoke(null, null));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.ExpDouble), MemberType = typeof(VectorTestMemberData))]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/97176")]
+        public void ExpDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector512<double> actualResult = Vector512.Exp(Vector512.Create(value));
+            AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.ExpSingle), MemberType = typeof(VectorTestMemberData))]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/97176")]
+        public void ExpSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector512<float> actualResult = Vector512.Exp(Vector512.Create(value));
+            AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.LogDouble), MemberType = typeof(VectorTestMemberData))]
+        public void LogDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector512<double> actualResult = Vector512.Log(Vector512.Create(value));
+            AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.LogSingle), MemberType = typeof(VectorTestMemberData))]
+        public void LogSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector512<float> actualResult = Vector512.Log(Vector512.Create(value));
+            AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.Log2Double), MemberType = typeof(VectorTestMemberData))]
+        public void Log2DoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector512<double> actualResult = Vector512.Log2(Vector512.Create(value));
+            AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.Log2Single), MemberType = typeof(VectorTestMemberData))]
+        public void Log2SingleTest(float value, float expectedResult, float variance)
+        {
+            Vector512<float> actualResult = Vector512.Log2(Vector512.Create(value));
+            AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
         }
     }
 }

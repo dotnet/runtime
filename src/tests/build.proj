@@ -115,10 +115,15 @@
       <TestAssemblies Include="%(TestAssemblyPaths.Identity)" Condition="Exists(%(TestAssemblyPaths.Identity))" />
       <TestDirsWithDuplicates Include="$([System.IO.Path]::GetDirectoryName('%(TestAssemblies.Identity)'))" />
     </ItemGroup>
+      
+    <Error 
+      Text="No tests found for Mono AOT compilation. Make sure that the desired test cases are not excluded from AOT compilation."
+      Condition="!Exists(%(TestAssemblies.Identity))" />
+
     <RemoveDuplicates Inputs="@(TestDirsWithDuplicates)">
       <Output TaskParameter="Filtered" ItemName="TestDirs" />
     </RemoveDuplicates>
-    <ItemGroup>
+    <ItemGroup>  
       <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/**/*.dll" Exclude="@(NoMonoAotAssemblyPaths)" />
       <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll;$(CORE_ROOT)/Microsoft.CodeAnalysis.VisualBasic.dll" />
       <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestsAndAssociatedAssemblies);@(CoreRootDlls)" />

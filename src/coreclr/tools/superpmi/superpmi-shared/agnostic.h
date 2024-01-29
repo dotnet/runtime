@@ -533,6 +533,22 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
     DWORD                         offsetOfGCDataPointer;
 };
 
+struct Agnostic_GetThreadStaticInfo_NativeAOT
+{
+    DWORD offsetOfThreadLocalStoragePointer;
+    Agnostic_CORINFO_CONST_LOOKUP tlsRootObject;
+    Agnostic_CORINFO_CONST_LOOKUP tlsIndexObject;
+    Agnostic_CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+    Agnostic_CORINFO_CONST_LOOKUP tlsGetAddrFtnPtr;
+};
+
+struct Agnostic_GetClassCtorInitializationInfo
+{
+    Agnostic_CORINFO_CONST_LOOKUP addr;
+    Agnostic_CORINFO_CONST_LOOKUP targetAddr;
+    int                           size;
+};
+
 struct Agnostic_GetThreadLocalFieldInfo
 {
     DWORD staticBlockIndex;
@@ -702,12 +718,6 @@ struct allocGCInfoDetails
 {
     size_t size;
     void*  retval;
-};
-
-struct Agnostic_AddressMap
-{
-    DWORDLONG Address;
-    DWORD     size;
 };
 
 struct Agnostic_AllocGCInfo
