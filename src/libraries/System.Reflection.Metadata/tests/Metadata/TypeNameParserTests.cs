@@ -142,30 +142,35 @@ namespace System.Reflection.Metadata.Tests.Metadata
         {
             yield return new object[]
             {
-                "TypeName*", "TypeName", false, -1, false, true
+                "TypeName*", "TypeName", false, false, -1, false, true
             };
             yield return new object[]
             {
-                "TypeName&", "TypeName", false, -1, true, false
+                "TypeName&", "TypeName", false, false, -1, true, false
             };
             yield return new object[]
             {
-                "TypeName[]", "TypeName", true, 1, false, false
+                "TypeName[]", "TypeName", true, true, 1, false, false
             };
             yield return new object[]
             {
-                "TypeName[,,,]", "TypeName", true, 4, false, false
+                "TypeName[*]", "TypeName", true, false, 1, false, false
+            };
+            yield return new object[]
+            {
+                "TypeName[,,,]", "TypeName", true, false, 4, false, false
             };
         }
 
         [Theory]
         [MemberData(nameof(DecoratorsAreSupported_Arguments))]
-        public void DecoratorsAreSupported(string input, string typeNameWithoutDecorators, bool isArray, int arrayRank, bool isByRef, bool isPointer)
+        public void DecoratorsAreSupported(string input, string typeNameWithoutDecorators, bool isArray, bool isSzArray, int arrayRank, bool isByRef, bool isPointer)
         {
             TypeName parsed = TypeNameParser.Parse(input.AsSpan(), allowFullyQualifiedName: true);
 
             Assert.Equal(input, parsed.Name);
             Assert.Equal(isArray, parsed.IsArray);
+            Assert.Equal(isSzArray, parsed.IsSzArrayType);
             if (isArray) Assert.Equal(arrayRank, parsed.GetArrayRank());
             Assert.Equal(isByRef, parsed.IsManagedPointerType);
             Assert.Equal(isPointer, parsed.IsUnmanagedPointerType);
@@ -176,6 +181,7 @@ namespace System.Reflection.Metadata.Tests.Metadata
             Assert.Equal(typeNameWithoutDecorators, underlyingType.Name);
             Assert.True(underlyingType.IsElementalType);
             Assert.False(underlyingType.IsArray);
+            Assert.False(underlyingType.IsSzArrayType);
             Assert.False(underlyingType.IsManagedPointerType);
             Assert.False(underlyingType.IsUnmanagedPointerType);
             Assert.Null(underlyingType.UnderlyingType);

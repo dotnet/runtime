@@ -140,7 +140,8 @@ namespace System.Reflection.Metadata
                     {
                         TypeName.ByRef => "&",
                         TypeName.Pointer => "*",
-                        1 => "[]",
+                        TypeName.SZArray => "[]",
+                        1 => "[*]",
                         _ => ArrayRankToString(parsedModifier)
                     }; ;
                     typeName += trimmedModifier;
@@ -256,10 +257,7 @@ namespace System.Reflection.Metadata
                 if (TryStripFirstCharAndTrailingSpaces(ref input, ']'))
                 {
                     // End of array marker
-                    rankOrModifier = rank;
-                    //return (rank == 1 && !hasSeenAsterisk)
-                    //    ? TypeIdDecorator.SzArray
-                    //    : TypeIdDecorator.MdArray(rank));
+                    rankOrModifier = rank == 1 && !hasSeenAsterisk ? TypeName.SZArray : rank;
                     return true;
                 }
 
@@ -294,7 +292,7 @@ namespace System.Reflection.Metadata
             return string.Create(2 + arrayRank - 1, arrayRank, (buffer, rank) =>
             {
                 buffer[0] = '[';
-                for (int i = 1; i < arrayRank; i++)
+                for (int i = 1; i < rank; i++)
                     buffer[i] = ',';
                 buffer[^1] = ']';
             });
@@ -311,6 +309,7 @@ namespace System.Reflection.Metadata
 
     public sealed class TypeName
     {
+        internal const int SZArray = -1;
         internal const int Pointer = -2;
         internal const int ByRef = -3;
 
@@ -347,7 +346,7 @@ namespace System.Reflection.Metadata
         /// Returns true if this type represents any kind of array, regardless of the array's
         /// rank or its bounds.
         /// </summary>
-        public bool IsArray => _rankOrModifier > 0;
+        public bool IsArray => _rankOrModifier == SZArray || _rankOrModifier > 0;
 
         /// <summary>
         /// Returns true if this type represents a constructed generic type (e.g., "List&lt;int&gt;").
@@ -372,22 +371,27 @@ namespace System.Reflection.Metadata
         public bool IsElementalType => UnderlyingType is null && !IsConstructedGenericType;
 
         /// <summary>
-        /// Returns true if this type represents a variable-bound array; that is, an array of rank greater
-        /// than 1 (e.g., "int[,]") or a single-dimensional array which isn't necessarily zero-indexed.
-        /// </summary>
-        public bool IsVariableBoundArrayType => _rankOrModifier > 1;
-
-        /// <summary>
         /// Returns true if this is a managed pointer type (e.g., "ref int").
         /// Managed pointer types are sometimes called byref types (<seealso cref="Type.IsByRef"/>)
         /// </summary>
         public bool IsManagedPointerType => _rankOrModifier == ByRef; // name inconsistent with Type.IsByRef
 
         /// <summary>
+        /// Returns true if this type represents a single-dimensional, zero-indexed array (e.g., "int[]").
+        /// </summary>
+        public bool IsSzArrayType => _rankOrModifier == SZArray; // name could be more user-friendly
+
+        /// <summary>
         /// Returns true if this type represents an unmanaged pointer (e.g., "int*" or "void*").
         /// Unmanaged pointer types are often just called pointers (<seealso cref="Type.IsPointer"/>)
         /// </summary>
         public bool IsUnmanagedPointerType => _rankOrModifier == Pointer;// name inconsistent with Type.IsPointer
+
+        /// <summary>
+        /// Returns true if this type represents a variable-bound array; that is, an array of rank greater
+        /// than 1 (e.g., "int[,]") or a single-dimensional array which isn't necessarily zero-indexed.
+        /// </summary>
+        public bool IsVariableBoundArrayType => _rankOrModifier > 1;
 
         /// <summary>
         /// The name of this type, including namespace, but without the assembly name; e.g., "System.Int32".
@@ -406,9 +410,12 @@ namespace System.Reflection.Metadata
         public TypeName? UnderlyingType { get; }
 
         public int GetArrayRank()
-            => _rankOrModifier > 0
-                ? _rankOrModifier
-                : throw new ArgumentException("SR.Argument_HasToBeArrayClass"); // TODO: use actual resource (used by Type.GetArrayRank)
+            => _rankOrModifier switch
+            {
+                SZArray => 1,
+                _ when _rankOrModifier > 0 => _rankOrModifier,
+                _ => throw new ArgumentException("SR.Argument_HasToBeArrayClass") // TODO: use actual resource (used by Type.GetArrayRank)
+            };
 
         /// <summary>
         /// If this <see cref="TypeName"/> represents a constructed generic type, returns an array

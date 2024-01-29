@@ -2416,6 +2416,7 @@ namespace System.Reflection.Metadata
         public bool IsConstructedGenericType { get { throw null; } }
         public bool IsElementalType { get { throw null; } }
         public bool IsManagedPointerType { get { throw null; } }
+        public bool IsSzArrayType { get { throw null; } }
         public bool IsUnmanagedPointerType { get { throw null; } }
         public bool IsVariableBoundArrayType { get { throw null; } }
         public string Name { get { throw null; } }
