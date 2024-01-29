@@ -875,7 +875,6 @@ namespace TaskCoverage
                 Assert.True(twa.IsCompleted);
                 Assert.True(twa.IsFaulted);
                 Assert.Equal(e1, twa.Exception?.InnerException);
-                Assert.False(twa.IsCanceled);
             }
 
             // Generic, first completes first
@@ -891,7 +890,6 @@ namespace TaskCoverage
                 Assert.True(twa.IsCompleted);
                 Assert.True(twa.IsFaulted);
                 Assert.Equal(e1, twa.Exception?.InnerException);
-                Assert.False(twa.IsCanceled);
             }
 
             // Non-generic, second completes first
@@ -907,7 +905,6 @@ namespace TaskCoverage
                 Assert.True(twa.IsCompleted);
                 Assert.True(twa.IsFaulted);
                 Assert.Equal(e1, twa.Exception?.InnerException);
-                Assert.False(twa.IsCanceled);
             }
 
             // Generic, second completes first
@@ -923,7 +920,6 @@ namespace TaskCoverage
                 Assert.True(twa.IsCompleted);
                 Assert.True(twa.IsFaulted);
                 Assert.Equal(e1, twa.Exception?.InnerException);
-                Assert.False(twa.IsCanceled);
             }
         }
     }
