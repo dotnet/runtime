@@ -1988,9 +1988,6 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
         GC_NOTRIGGER;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // will return TypeHandle() if index is out of range
         SUPPORTS_DAC;
-#ifndef DACCESS_COMPILE
-        //        POSTCONDITION(RETVAL.IsNull() || RETVAL.IsRestored() || RETVAL.GetMethodTable()->IsRestoring());
-#endif
         MODE_ANY;
     }
     CONTRACT_END

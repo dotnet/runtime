@@ -31,9 +31,6 @@ BOOL TypeHandle::Verify()
     if (IsNull())
         return(TRUE);
 
-    if (!IsRestored())
-        return TRUE;
-
     if (IsArray())
     {
         GetArrayElementTypeHandle().Verify();
@@ -1012,20 +1009,6 @@ BOOL TypeHandle::IsFnPtrType() const
 
     return (IsTypeDesc() &&
             (GetSignatureCorElementType() == ELEMENT_TYPE_FNPTR));
-}
-
-BOOL TypeHandle::IsRestored() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (!IsTypeDesc())
-    {
-        return AsMethodTable()->IsRestored();
-    }
-    else
-    {
-        return TRUE;
-    }
 }
 
 void TypeHandle::CheckRestore() const

@@ -904,13 +904,6 @@ public:
 
     void CheckRestore();
 
-    inline BOOL IsRestored()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return TRUE;
-    }
-
     //-------------------------------------------------------------------
     // LOAD LEVEL
     //
@@ -934,7 +927,6 @@ public:
         CONTRACTL_END;
 
         PRECONDITION(!HasApproxParent());
-        PRECONDITION(IsRestored());
 
         InterlockedAnd((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, ~MethodTableAuxiliaryData::enum_flag_IsNotFullyLoaded);
     }
@@ -993,7 +985,6 @@ public:
         CONTRACTL_END;
 
         PRECONDITION(!HasApproxParent());
-        PRECONDITION(IsRestored());
 
         InterlockedOr((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, MethodTableAuxiliaryData::enum_flag_DependenciesLoaded);
     }
@@ -2360,7 +2351,7 @@ public:
     OBJECTREF Allocate();
 
     // This flavor of Allocate is more efficient, but can only be used
-    // if IsRestored(), CheckInstanceActivated(), IsClassInited() are known to be true.
+    // if CheckInstanceActivated(), IsClassInited() are known to be true.
     // A sufficient condition is that another instance of the exact same type already
     // exists in the same appdomain. It's currently called only from Delegate.Combine
     // via COMDelegate::InternalAllocLike.

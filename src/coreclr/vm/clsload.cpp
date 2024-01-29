@@ -1328,7 +1328,6 @@ ClassLoader::LoadTypeHandleThrowing(
 #ifndef DACCESS_COMPILE
     // Replace AvailableClasses Module entry with found TypeHandle
     if (!typeHnd.IsNull() &&
-        typeHnd.IsRestored() &&
         foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
         (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
         (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
@@ -2059,7 +2058,6 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
 
         POSTCONDITION(CheckPointer(RETVAL, NameHandle::OKToLoad(typeDefOrRef, tokenNotToLoad) && (fNotFoundAction == ThrowIfNotFound) ? NULL_NOT_OK : NULL_OK));
-        POSTCONDITION(level <= CLASS_LOAD_APPROXPARENTS || RETVAL.IsNull() || RETVAL.IsRestored());
         SUPPORTS_DAC;
     }
     CONTRACT_END;

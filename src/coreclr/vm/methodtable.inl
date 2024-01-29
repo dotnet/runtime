@@ -1229,7 +1229,6 @@ inline OBJECTREF MethodTable::AllocateNoChecks()
     // we know an instance of this class already exists in the same appdomain
     // therefore, some checks become redundant.
     // this currently only happens for Delegate.Combine
-    CONSISTENCY_CHECK(IsRestored());
 
     CONSISTENCY_CHECK(CheckInstanceActivated());
 

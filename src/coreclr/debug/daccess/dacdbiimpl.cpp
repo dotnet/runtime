@@ -1490,15 +1490,10 @@ void DacDbiInterfaceImpl::GetTypeHandles(VMPTR_TypeHandle  vmThExact,
     // If we can't find the class, return the proper HR to the right side. Note: if the class is not a value class and
     // the class is also not restored, then we must pretend that the class is still not loaded. We are gonna let
     // unrestored value classes slide, though, and special case access to the class's parent below.
-    if ((pThApprox->IsNull()) || ((!pThApprox->IsValueType()) && (!pThApprox->IsRestored())))
+    if (pThApprox->IsNull())
     {
         LOG((LF_CORDB, LL_INFO10000, "D::GASCI: class isn't loaded.\n"));
         ThrowHR(CORDBG_E_CLASS_NOT_LOADED);
-    }
-    // If the exact type handle is not restored ignore it.
-    if (!pThExact->IsNull() && !pThExact->IsRestored())
-    {
-        *pThExact = TypeHandle();
     }
  }  // DacDbiInterfaceImpl::GetTypeHandles
 

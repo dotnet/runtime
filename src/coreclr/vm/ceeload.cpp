@@ -1939,8 +1939,7 @@ void Module::FreeClassTables()
     while (typeDefIter.Next())
     {
         MethodTable * pMT = typeDefIter.GetElement();
-
-        if (pMT != NULL && pMT->IsRestored())
+        if (pMT != NULL)
         {
             pMT->GetClass()->Destruct(pMT);
         }
@@ -1957,9 +1956,6 @@ void Module::FreeClassTables()
             while (m_pAvailableParamTypes->FindNext(&it, &pEntry))
             {
                 TypeHandle th = pEntry->GetTypeHandle();
-
-                if (!th.IsRestored())
-                    continue;
 
                 // We need to call destruct on instances of EEClass whose "canonical" dependent lives in this table
                 // There is nothing interesting to destruct on array EEClass
@@ -3573,8 +3569,7 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
         while (typeDefIter.Next())
         {
             MethodTable * pMT = typeDefIter.GetElement();
-
-            if (pMT != NULL && pMT->IsRestored())
+            if (pMT != NULL)
             {
                 result = TypeHandle(pMT).NotifyDebuggerLoad(pDomain, attaching) || result;
             }
@@ -3599,8 +3594,7 @@ void Module::NotifyDebuggerUnload(AppDomain *pDomain)
     while (typeDefIter.Next())
     {
         MethodTable * pMT = typeDefIter.GetElement();
-
-        if (pMT != NULL && pMT->IsRestored())
+        if (pMT != NULL)
         {
             TypeHandle(pMT).NotifyDebuggerUnload(pDomain);
         }

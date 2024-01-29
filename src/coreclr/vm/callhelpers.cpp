@@ -357,7 +357,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 {
                     TypeHandle th = m_methodSig.GetLastTypeHandleThrowing(ClassLoader::DontLoadTypes);
                     CONSISTENCY_CHECK(th.CheckFullyLoaded());
-                    CONSISTENCY_CHECK(th.IsRestored());
                 }
             }
             m_methodSig.Reset();

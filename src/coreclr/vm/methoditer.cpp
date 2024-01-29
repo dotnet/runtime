@@ -108,9 +108,6 @@ ADVANCE_TYPE:
 
         MethodTable *pMT = th.AsMethodTable();
 
-        if (!pMT->IsRestored())
-            goto ADVANCE_TYPE;
-
         // Check the class token
         if (pMT->GetTypeDefRid() != m_mainMD->GetMethodTable()->GetTypeDefRid())
             goto ADVANCE_TYPE;

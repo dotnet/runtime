@@ -494,8 +494,6 @@ public:
     // Is type that has a type parameter (ARRAY, SZARRAY, BYREF, PTR)
     BOOL HasTypeParam() const;
 
-    BOOL IsRestored() const;
-
     void CheckRestore() const;
     BOOL IsExternallyVisible() const;
 

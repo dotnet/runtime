@@ -1254,10 +1254,6 @@ VOID ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * p
     }
 
     TypeHandle th = TypeHandle::FromTAddr((TADDR) thAsAddr);
-    if (!th.IsRestored())
-    {
-        return;
-    }
 
     // Check to see if we've already logged this type.  If so, bail immediately.
     // Otherwise, mark that it's getting logged (by adding it to the hash), and fall
