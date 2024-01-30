@@ -564,7 +564,7 @@ type APIType = {
      */
     getHeapF64: (offset: NativePointer) => number;
     /**
-     * Short term view of the WASM linear memory. Don't store the reference, don't use after await.
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
      */
     localHeapViewI8: () => Int8Array;
     /**
