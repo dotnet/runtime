@@ -1,7 +1,5 @@
-.\" *********************************** start of \input{common.tex}
-.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 11:06:25 2023
+.\" Manual page created with latex2man on Thu Aug 16 09:44:45 MDT 2007
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_SET\\_REG" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "UNW\\_SET\\_REG" "3" "16 August 2007" "Programming Library " "Programming Library "
 .SH NAME
 unw_set_reg
 \-\- set register contents 
@@ -41,22 +39,22 @@ in the stack frame identified by cursor cp
 to the 
 value passed in val\&.
 .PP
-The register numbering is target dependent and described in separate 
-manual pages (e.g., libunwind\-ia64(3libunwind) for the IA\-64 target). 
+The register numbering is target\-dependent and described in separate 
+manual pages (e.g., libunwind\-ia64(3) for the IA\-64 target). 
 Furthermore, the exact set of accessible registers may depend on the 
 type of frame that cp
 is referring to. For ordinary stack 
 frames, it is normally possible to access only the preserved 
 (``callee\-saved\&'') registers and frame\-related registers (such as the 
-stack pointer). However, for signal frames (see 
-unw_is_signal_frame(3libunwind)),
+stack\-pointer). However, for signal frames (see 
+unw_is_signal_frame(3)),
 it is usually possible to access 
 all registers. 
 .PP
 Note that unw_set_reg()
 can only write the contents of 
 registers whose values fit in a single word. See 
-unw_set_fpreg(3libunwind)
+unw_set_fpreg(3)
 for a way to write registers which do not 
 fit this constraint. 
 .PP
@@ -65,7 +63,7 @@ fit this constraint.
 .PP
 On successful completion, unw_set_reg()
 returns 0. 
-Otherwise the negative value of one of the error codes below is 
+Otherwise the negative value of one of the error\-codes below is 
 returned. 
 .PP
 .SH THREAD AND SIGNAL SAFETY
@@ -96,17 +94,17 @@ the access_mem(),
 access_reg(),
 and 
 access_fpreg()
-callbacks (see 
-unw_create_addr_space(3libunwind)).
+call\-backs (see 
+unw_create_addr_space(3)).
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3libunwind),
-libunwind\-ia64(3libunwind),
-unw_get_reg(3libunwind),
-unw_is_signal_frame(3libunwind),
-unw_set_fpreg(3libunwind)
+libunwind(3),
+libunwind\-ia64(3),
+unw_get_reg(3),
+unw_is_signal_frame(3),
+unw_set_fpreg(3)
 .PP
 .SH AUTHOR
 

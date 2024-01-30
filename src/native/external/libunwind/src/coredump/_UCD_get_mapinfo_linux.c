@@ -74,7 +74,7 @@ static const size_t mapinfo_offset = sizeof (core_nt_file_hdr_t);
  * various segments loaded into memory from ELF files with the ELF file from
  * which those segments were loaded.
  *
- * This function links the file names mapped in the CORE/NT_FILE note with
+ * This function links the file namess mapped in the CORE/NT_FILE note with
  * the program headers in the core file through the UCD_info file table.
  *
  * Any file names that end in the string "(deleted)" are ignored.
@@ -130,12 +130,12 @@ _handle_nt_file_note (uint8_t *desc, void *arg)
  * Note interpretation requires both name and type.
  */
 static int
-_handle_pt_note_segment (uint32_t  n_namesz UNUSED,
-                         uint32_t  n_descsz UNUSED,
-                         uint32_t  n_type,
-                         char     *name,
-                         uint8_t  *desc,
-                         void     *arg)
+_handle_pt_note_segment (uint32_t  n_namesz,
+						 uint32_t  n_descsz,
+						 uint32_t  n_type,
+						 char     *name,
+						 uint8_t  *desc,
+						 void     *arg)
 {
 #ifdef NT_FILE
   if (n_type == NT_FILE && strcmp (name, "CORE") == 0)

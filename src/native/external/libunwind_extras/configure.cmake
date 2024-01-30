@@ -1,6 +1,5 @@
 include(CheckCSourceCompiles)
 include(CheckIncludeFiles)
-include(CheckFunctionExists)
 
 if(CLR_CMAKE_HOST_WIN32)
     # Our posix abstraction layer will provide these headers
@@ -37,8 +36,6 @@ check_include_files(link.h HAVE_LINK_H)
 check_include_files(sys/link.h HAVE_SYS_LINK_H)
 
 check_include_files(atomic_ops.h HAVE_ATOMIC_OPS_H)
-
-check_function_exists(pipe2 HAVE_PIPE2)
 
 check_c_source_compiles("
 int main(int argc, char **argv)

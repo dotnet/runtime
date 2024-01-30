@@ -27,11 +27,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include "_UCD_internal.h"
 
 int
-_UCD_access_reg (unw_addr_space_t  as UNUSED,
-                 unw_regnum_t      regnum,
-                 unw_word_t       *valp,
-                 int               write,
-                 void             *arg)
+_UCD_access_reg (unw_addr_space_t as,
+                                unw_regnum_t regnum, unw_word_t *valp,
+                                int write, void *arg)
 {
   struct UCD_info *ui = arg;
 
@@ -52,6 +50,9 @@ _UCD_access_reg (unw_addr_space_t  as UNUSED,
     goto badreg;
 #elif defined(UNW_TARGET_SH)
   if (regnum > UNW_SH_PR)
+    goto badreg;
+#elif defined(UNW_TARGET_TILEGX)
+  if (regnum > UNW_TILEGX_CFA)
     goto badreg;
 #elif defined(UNW_TARGET_IA64) || defined(UNW_TARGET_HPPA) || defined(UNW_TARGET_PPC32) || defined(UNW_TARGET_PPC64)
   if (regnum >= ARRAY_SIZE(ui->prstatus->pr_reg))

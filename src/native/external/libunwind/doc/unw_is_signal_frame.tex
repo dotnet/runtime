@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3libunwind}{unw\_is\_signal\_frame}{David Mosberger-Tang}{Programming Library}{unw\_is\_signal\_frame}unw\_is\_signal\_frame -- check if current frame is a signal frame
+\begin{Name}{3}{unw\_is\_signal\_frame}{David Mosberger-Tang}{Programming Library}{unw\_is\_signal\_frame}unw\_is\_signal\_frame -- check if current frame is a signal frame
 \end{Name}
 
 \section{Synopsis}
@@ -17,15 +17,12 @@
 \section{Description}
 
 The \Func{unw\_is\_signal\_frame}() routine returns a positive value
-if the current frame identified by \Var{cp} is a signal frame,
-also known as a signal trampoline,
-and a value of 0 otherwise.
-For the purpose of this discussion,
-a signal frame is a frame that was created in response to a potentially
-asynchronous interruption.
-For UNIX and UNIX-like platforms,
-such frames are normally created by the kernel when delivering a signal.
-In a kernel environment, a signal frame might, for example, correspond
+if the current frame identified by \Var{cp} is a signal frame, and a
+value of 0 otherwise.  For the purpose of this discussion, a signal
+frame is a frame that was created in response to a potentially
+asynchronous interruption.  For UNIX and UNIX-like platforms, such
+frames are normally created by the kernel when delivering a signal.
+In a kernel-environment, a signal frame might, for example, correspond
 to a frame created in response to a device interrupt.
 
 Signal frames are somewhat unusual because the asynchronous nature of
@@ -36,12 +33,12 @@ that are normally treated as scratch (``caller-saved'') registers.
 
 On successful completion, \Func{unw\_is\_signal\_frame}() returns a
 positive value if the current frame is a signal frame, or 0 if it is
-not.  Otherwise, a negative value of one of the error codes below is
+not.  Otherwise, a negative value of one of the error-codes below is
 returned.
 
 \section{Thread and Signal Safety}
 
-\Func{unw\_is\_signal\_frame}() is thread safe as well as safe to use
+\Func{unw\_is\_signal\_frame}() is thread-safe as well as safe to use
 from a signal handler.
 
 \section{Errors}
@@ -53,11 +50,11 @@ from a signal handler.
 
 \section{See Also}
 
-\SeeAlso{libunwind}(3libunwind),
-\SeeAlso{unw\_get\_reg}(3libunwind),
-\SeeAlso{unw\_set\_reg}(3libunwind),
-\SeeAlso{unw\_get\_fpreg}(3libunwind),
-\SeeAlso{unw\_set\_fpreg}(3libunwind)
+\SeeAlso{libunwind(3)},
+\SeeAlso{unw\_get\_reg(3)},
+\SeeAlso{unw\_set\_reg(3)},
+\SeeAlso{unw\_get\_fpreg(3)},
+\SeeAlso{unw\_set\_fpreg(3)}
 
 \section{Author}
 

@@ -37,7 +37,7 @@ get_mem(size_t sz)
 {
   void *res;
 
-  res = mi_mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+  res = mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
   if (res == MAP_FAILED)
     return (NULL);
   return (res);
@@ -46,7 +46,7 @@ get_mem(size_t sz)
 static void
 free_mem(void *ptr, size_t sz)
 {
-  mi_munmap(ptr, sz);
+  munmap(ptr, sz);
 }
 
 static int
@@ -136,12 +136,8 @@ tdep_get_elf_image (struct elf_image *ei, pid_t pid, unw_word_t ip,
      if (path)
        {
          strncpy(path, kv->kve_path, pathlen);
-         path[pathlen - 1] = '\0';
        }
-     if (ei)
-       ret = elf_map_image (ei, kv->kve_path);
-     else
-       ret = strlen (kv->kve_path) >= pathlen ? -UNW_ENOMEM : UNW_ESUCCESS;
+     ret = elf_map_image (ei, kv->kve_path);
      break;
   }
   free_mem(buf, len1);

@@ -39,8 +39,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <string.h>
 #include <libunwind.h>
 
-#define panic(...)				\
-	{ fprintf (stderr, __VA_ARGS__); exit (-1); }
+#define panic(args...)				\
+	{ fprintf (stderr, args); exit (-1); }
 
 int verbose;
 
@@ -63,19 +63,14 @@ do_backtrace (void)
       unw_get_reg (&cursor, UNW_REG_SP, &sp);
       buf[0] = '\0';
       if (unw_get_proc_name (&cursor, name, sizeof (name), &off) == 0)
-        {
-          if (off)
-            snprintf (buf, sizeof (buf), "<%s+0x%lx>", name, (long) off);
-          else
-            snprintf (buf, sizeof (buf), "<%s>", name);
-        }
+	{
+	  if (off)
+	    snprintf (buf, sizeof (buf), "<%s+0x%lx>", name, (long) off);
+	  else
+	    snprintf (buf, sizeof (buf), "<%s>", name);
+	}
       if (verbose)
-        printf ("%016lx %-32s (sp=%016lx)\n", (long) ip, buf, (long) sp);
-
-      char filename[128];
-      unw_word_t file_offset;
-      if (unw_get_elf_filename (&cursor,filename, sizeof (filename), &file_offset) == UNW_ESUCCESS)
-            printf (" [%s+0x%lx]\n", filename, (long) file_offset);
+	printf ("%016lx %-32s (sp=%016lx)\n", (long) ip, buf, (long) sp);
 
       ret = unw_step (&cursor);
       if (ret < 0)

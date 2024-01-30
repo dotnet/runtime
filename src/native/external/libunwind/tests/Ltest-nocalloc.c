@@ -56,8 +56,10 @@ calloc(size_t n, size_t s)
 
   if (in_unwind) {
     num_callocs++;
+    return NULL;
+  } else {
+    return func(n, s);
   }
-  return func(n, s);
 }
 
 void *
@@ -70,8 +72,10 @@ malloc(size_t s)
 
   if (in_unwind) {
     num_mallocs++;
+    return NULL;
+  } else {
+    return func(s);
   }
-  return func(s);
 }
 
 static void

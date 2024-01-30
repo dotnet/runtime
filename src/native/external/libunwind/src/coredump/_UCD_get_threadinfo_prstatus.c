@@ -1,19 +1,19 @@
 /**
- * Extract threadinfo from a coredump (supported targets)
+ * Extract threadinfo from a coredump (targets with NT_PRSTATUS)
  */
 /*
  This file is part of libunwind.
-
+ 
  Permission is hereby granted, free of charge, to any person obtaining a copy of
  this software and associated documentation files (the "Software"), to deal in
  the Software without restriction, including without limitation the rights to
  use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
  of the Software, and to permit persons to whom the Software is furnished to do
  so, subject to the following conditions:
-
+ 
  The above copyright notice and this permission notice shall be included in all
  copies or substantial portions of the Software.
-
+ 
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,22 +35,13 @@
  * Accumulate a count of the number of thread notes
  *
  * This _UCD_elf_visit_notes() callback just increments a count for each
- * thread status note seen.
+ * NT_PRSTATUS note seen.
  */
 static int
-_count_thread_notes(uint32_t  n_namesz UNUSED,
-                    uint32_t  n_descsz UNUSED,
-                    uint32_t  n_type,
-                    char     *name UNUSED,
-                    uint8_t  *desc UNUSED,
-                    void     *arg)
+_count_thread_notes(uint32_t n_namesz, uint32_t n_descsz, uint32_t n_type, char *name, uint8_t *desc, void *arg)
 {
   size_t *thread_count = (size_t *)arg;
-#if defined(HAVE_PROCFS_STATUS)
-  if (0 == strcmp(name, QNX_NOTE_NAME) && n_type == QNT_CORE_STATUS)
-#else
   if (n_type == NT_PRSTATUS)
-#endif /* defined(HAVE_PROCFS_STATUS) */
   {
     ++*thread_count;
   }
@@ -61,55 +52,25 @@ _count_thread_notes(uint32_t  n_namesz UNUSED,
 /**
  * Save a thread note to the unwind-coredump context
  *
- * This _UCD_elf_visit_notes() callback just copies the actual data structure(s)
- * from any notes seen into an array of such structures and increments the count.
- *
- * Some targets have multiple notes for each thread that MUST always come in the
- * right order (eg. NT_PRSTATUS followed by NT_FPREGSET for Linux and the BSDs).
- * The count only gets incremented on the first note for the thread so the
- * remaining notes need to have their zero-based index adjusted.
+ * This _UCD_elf_visit_notes() callback just copies the actual data structure
+ * from any NT_PRSTATUS note seen into an array of such structures and
+ * increments the count.
  */
 static int
-_save_thread_notes(uint32_t  n_namesz UNUSED,
-                   uint32_t  n_descsz UNUSED,
-                   uint32_t  n_type,
-                   char     *name UNUSED,
-                   uint8_t  *desc,
-                   void     *arg)
+_save_thread_notes(uint32_t n_namesz, uint32_t n_descsz, uint32_t n_type, char *name, uint8_t *desc, void *arg)
 {
   struct UCD_info *ui = (struct UCD_info *)arg;
-#if defined(HAVE_PROCFS_STATUS)
-  if (0 == strcmp(name, QNX_NOTE_NAME))
-    {
-      switch (n_type)
-	    {
-        case QNT_CORE_STATUS:
-          ++ui->n_threads;
-          memcpy(&ui->threads[ui->n_threads-1].prstatus.thread, desc, (size_t)n_descsz);
-          break;
-        case QNT_CORE_GREG:
-          memcpy(&ui->threads[ui->n_threads-1].prstatus.greg, desc, (size_t)n_descsz);
-          break;
-        case QNT_CORE_FPREG:
-          memcpy(&ui->threads[ui->n_threads-1].prstatus.fpreg, desc, (size_t)n_descsz);
-          break;
-        default:
-          break;
-		}
-    }
-#else
   if (n_type == NT_PRSTATUS)
-    {
-      memcpy(&ui->threads[ui->n_threads].prstatus, desc, sizeof(UCD_proc_status_t));
-      ++ui->n_threads;
-    }
-#endif
-#ifdef HAVE_ELF_FPREGSET_T
+  {
+    memcpy(&ui->threads[ui->n_threads].prstatus, desc, sizeof(UCD_proc_status_t));
+    ++ui->n_threads;
+  }
   if (n_type == NT_FPREGSET)
-    {
-      memcpy(&ui->threads[ui->n_threads-1].fpregset, desc, sizeof(elf_fpregset_t));
-    }
+  {
+#ifdef HAVE_ELF_FPREGSET_T
+    memcpy(&ui->threads[ui->n_threads-1].fpregset, desc, sizeof(elf_fpregset_t));
 #endif
+  }
   return UNW_ESUCCESS;
 }
 
@@ -121,7 +82,7 @@ _save_thread_notes(uint32_t  n_namesz UNUSED,
  * and the process information is described by a note in the core file of type
  * NT_PRSTATUS.  In fact, on Linux, the state of a thread is described by a
  * CPU-dependent group of notes but right now we're only going to care about the
- * one process-status note.  This statement is also true for the BSDs.
+ * one process-status note.  This statement is also true for FreeBSD.
  *
  * Depending on how the core file is created, there may be one PT_NOTE segment
  * with multiple NT_PRSTATUS notes in it, or multiple PT_NOTE segments.  Just to

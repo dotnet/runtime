@@ -490,9 +490,7 @@ fetch_proc_info (struct dwarf_cursor *c, unw_word_t ip)
 }
 
 static int
-parse_dynamic (struct dwarf_cursor  *c UNUSED,
-			   unw_word_t            ip UNUSED,
-               dwarf_state_record_t *sr UNUSED)
+parse_dynamic (struct dwarf_cursor *c, unw_word_t ip, dwarf_state_record_t *sr)
 {
   Debug (1, "Not yet implemented\n");
   return -UNW_ENOINFO;
@@ -522,10 +520,8 @@ setup_fde (struct dwarf_cursor *c, dwarf_state_record_t *sr)
   for (i = 0; i < DWARF_NUM_PRESERVED_REGS + 2; ++i)
     set_reg (sr, i, DWARF_WHERE_SAME, 0);
 
-#if !defined(UNW_TARGET_ARM) && !(defined(UNW_TARGET_MIPS) && _MIPS_SIM == _ABI64)
   // SP defaults to CFA (but is overridable)
   set_reg (sr, TDEP_DWARF_SP, DWARF_WHERE_CFA, 0);
-#endif
 
   struct dwarf_cie_info *dci = c->pi.unwind_info;
   sr->rs_current.ret_addr_column  = dci->ret_addr_column;
@@ -575,14 +571,14 @@ dwarf_flush_rs_cache (struct dwarf_rs_cache *cache)
     cache->log_size = DWARF_DEFAULT_LOG_UNW_CACHE_SIZE;
   } else {
     if (cache->hash && cache->hash != cache->default_hash)
-      mi_munmap(cache->hash, DWARF_UNW_HASH_SIZE(cache->prev_log_size)
-                              * sizeof (cache->hash[0]));
+      munmap(cache->hash, DWARF_UNW_HASH_SIZE(cache->prev_log_size)
+                           * sizeof (cache->hash[0]));
     if (cache->buckets && cache->buckets != cache->default_buckets)
-      mi_munmap(cache->buckets, DWARF_UNW_CACHE_SIZE(cache->prev_log_size)
-                              * sizeof (cache->buckets[0]));
+      munmap(cache->buckets, DWARF_UNW_CACHE_SIZE(cache->prev_log_size)
+	                      * sizeof (cache->buckets[0]));
     if (cache->links && cache->links != cache->default_links)
-      mi_munmap(cache->links, DWARF_UNW_CACHE_SIZE(cache->prev_log_size)
-                              * sizeof (cache->links[0]));
+      munmap(cache->links, DWARF_UNW_CACHE_SIZE(cache->prev_log_size)
+	                      * sizeof (cache->links[0]));
     GET_MEMORY(cache->hash, DWARF_UNW_HASH_SIZE(cache->log_size)
                              * sizeof (cache->hash[0]));
     GET_MEMORY(cache->buckets, DWARF_UNW_CACHE_SIZE(cache->log_size)
@@ -965,6 +961,7 @@ apply_reg_state (struct dwarf_cursor *c, struct dwarf_reg_state *rs)
   if (DWARF_IS_NULL_LOC (c->loc[rs->ret_addr_column]))
     {
       c->ip = 0;
+      ret = 0;
     }
   else
   {
@@ -985,8 +982,8 @@ apply_reg_state (struct dwarf_cursor *c, struct dwarf_reg_state *rs)
       }
 #endif
     c->ip = ip;
+    ret = 1;
   }
-  ret = (c->ip != 0) ? 1 : 0;
 
   /* XXX: check for ip to be code_aligned */
   if (c->ip == prev_ip && c->cfa == prev_cfa)
@@ -1098,9 +1095,9 @@ dwarf_make_proc_info (struct dwarf_cursor *c)
 }
 
 static int
-dwarf_reg_states_dynamic_iterate(struct dwarf_cursor     *c UNUSED,
-                                 unw_reg_states_callback  cb UNUSED,
-                                 void                    *token UNUSED)
+dwarf_reg_states_dynamic_iterate(struct dwarf_cursor *c,
+				 unw_reg_states_callback cb,
+				 void *token)
 {
   Debug (1, "Not yet implemented\n");
   return -UNW_ENOINFO;

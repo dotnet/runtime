@@ -1,7 +1,7 @@
 .\" *********************************** start of \input{common.tex}
 .\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 12:09:48 2023
+.\" Manual page created with latex2man on Thu Jan  5 15:33:00 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,7 +12,7 @@
 
 .fi
 ..
-.TH "UNW\\_BACKTRACE" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "UNW\\_BACKTRACE" "3" "05 January 2023" "Programming Library " "Programming Library "
 .SH NAME
 unw_backtrace
 \-\- return backtrace for the calling program 
@@ -91,8 +91,8 @@ stored.
 .SH SEE ALSO
 
 .PP
-libunwind(3libunwind),
-unw_step(3libunwind)
+libunwind(3),
+unw_step(3)
 .PP
 .SH AUTHOR
 

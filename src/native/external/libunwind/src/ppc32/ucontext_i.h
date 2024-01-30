@@ -44,8 +44,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 //#define MQ_IDX                36
 #define LINK_IDX        36
 
-#define _UC_MCONTEXT_GPR(x) ( ((void *)&dmy_ctxt.uc_mcontext.uc_regs->gregs[x] - (void *)&dmy_ctxt) )
-#define _UC_MCONTEXT_FPR(x) ( ((void *)&dmy_ctxt.uc_mcontext.uc_regs->fpregs.fpregs[x] - (void *)&dmy_ctxt) )
+#define _UC_MCONTEXT_GPR(x) ( (void *)&dmy_ctxt.uc_mcontext.gregs[x] - (void *)&dmy_ctxt) )
+#define _UC_MCONTEXT_FPR(x) ( ((void *)&dmy_ctxt.uc_mcontext.fpregs[x] - (void *)&dmy_ctxt) )
 
 /* These are dummy structures used only for obtaining the offsets of the
    various structure members. */

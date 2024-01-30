@@ -43,6 +43,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 static alignas(MAX_ALIGN) char sos_memory[SOS_MEMORY_SIZE];
 static _Atomic size_t sos_memory_freepos = 0;
+static size_t pg_size;
 
 HIDDEN void *
 sos_alloc (size_t size)
@@ -93,7 +94,7 @@ expand (struct mempool *pool)
   GET_MEMORY (mem, size);
   if (!mem)
     {
-      size = UNW_ALIGN(pool->obj_size, unw_page_size);
+      size = UNW_ALIGN(pool->obj_size, pg_size);
       GET_MEMORY (mem, size);
       if (!mem)
         {
@@ -108,6 +109,9 @@ expand (struct mempool *pool)
 HIDDEN void
 mempool_init (struct mempool *pool, size_t obj_size, size_t reserve)
 {
+  if (pg_size == 0)
+    pg_size = getpagesize ();
+
   memset (pool, 0, sizeof (*pool));
 
   lock_init (&pool->lock);
@@ -117,14 +121,14 @@ mempool_init (struct mempool *pool, size_t obj_size, size_t reserve)
 
   if (!reserve)
     {
-      reserve = unw_page_size / obj_size / 4;
+      reserve = pg_size / obj_size / 4;
       if (!reserve)
         reserve = 16;
     }
 
   pool->obj_size = obj_size;
   pool->reserve = reserve;
-  pool->chunk_size = UNW_ALIGN(2*reserve*obj_size, unw_page_size);
+  pool->chunk_size = UNW_ALIGN(2*reserve*obj_size, pg_size);
 
   expand (pool);
 }

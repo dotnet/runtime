@@ -1,7 +1,5 @@
-.\" *********************************** start of \input{common.tex}
-.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 11:41:44 2023
+.\" Manual page created with latex2man on Thu Aug 16 09:44:45 MDT 2007
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_INIT\\_REMOTE" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "UNW\\_INIT\\_REMOTE" "3" "16 August 2007" "Programming Library " "Programming Library "
 .SH NAME
 unw_init_remote
 \-\- initialize cursor for remote unwinding 
@@ -44,18 +42,18 @@ unw_local_addr_space
 address space created with unw_create_addr_space().
 .PP
 The arg
-opaque pointer tells the address space exactly what entity 
+void\-pointer tells the address space exactly what entity 
 should be unwound. For example, if unw_local_addr_space
 is 
 passed in as,
 then arg
 needs to be a pointer to a context 
 structure containing the machine\-state of the initial stack frame. 
-However, other address spaces may instead expect a process ID, a 
-thread ID, or a pointer to an arbitrary structure which identifies the 
-stack frame chain to be unwound. In other words, the interpretation 
+However, other address\-spaces may instead expect a process\-id, a 
+thread\-id, or a pointer to an arbitrary structure which identifies the 
+stack\-frame chain to be unwound. In other words, the interpretation 
 of arg
-is entirely dependent on the address space in use; 
+is entirely dependent on the address\-space in use; 
 libunwind
 never interprets the argument in any way on its own. 
 .PP
@@ -80,7 +78,7 @@ returned.
 
 .PP
 unw_init_remote()
-is thread safe. If the local address space 
+is thread\-safe. If the local address\-space 
 is passed in argument as,
 this routine is also safe to use from 
 a signal handler. 
@@ -110,9 +108,9 @@ wasn\&'t accessible.
 .SH SEE ALSO
 
 .PP
-libunwind(3libunwind),
-unw_create_addr_space(3libunwind),
-unw_init_local(3libunwind)
+libunwind(3),
+unw_create_addr_space(3),
+unw_init_local(3)
 .PP
 .SH AUTHOR
 

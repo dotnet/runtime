@@ -49,8 +49,7 @@ static void
 do_backtrace (void)
 {
   char name[128], off[32];
-  char filename[256];
-  unw_word_t ip, offset, file_offset;
+  unw_word_t ip, offset;
   unw_cursor_t cursor;
   unw_context_t uc;
   int ret, count = 0;
@@ -64,17 +63,12 @@ do_backtrace (void)
       name[0] = '\0';
       off[0] = '\0';
       if (unw_get_proc_name (&cursor, name, sizeof (name), &offset) == 0
-          && offset > 0)
-        snprintf (off, sizeof (off), "+0x%lx", (long) offset);
+	  && offset > 0)
+	snprintf (off, sizeof (off), "+0x%lx", (long) offset);
       if (verbose)
-        printf ("  [%lx] <%s%s>\n", (long) ip, name, off);
-
-      if (unw_get_elf_filename (&cursor, filename, sizeof (filename), &file_offset) == 0)
-        if (verbose)
-          printf ("  [%s+0x%lx]\n", filename, (long) file_offset);
-
+	printf ("  [%lx] <%s%s>\n", (long) ip, name, off);
       if (++count > 32)
-        panic ("FAILURE: didn't reach beginning of unwind-chain\n");
+	panic ("FAILURE: didn't reach beginning of unwind-chain\n");
     }
   while ((ret = unw_step (&cursor)) > 0);
 

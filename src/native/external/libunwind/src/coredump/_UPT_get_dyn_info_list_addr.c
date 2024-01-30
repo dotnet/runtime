@@ -79,10 +79,8 @@ get_list_addr (unw_addr_space_t as, unw_word_t *dil_addr, void *arg,
        DWARF2 unwind info.  */
 
 static inline int
-get_list_addr (unw_addr_space_t  as UNUSED,
-               unw_word_t       *dil_addr UNUSED,
-               void             *arg UNUSED,
-               int              *countp)
+get_list_addr (unw_addr_space_t as, unw_word_t *dil_addr, void *arg,
+               int *countp)
 {
 # warning Implement get_list_addr(), please.
   *countp = 0;

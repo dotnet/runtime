@@ -15,7 +15,6 @@ Makefile.in
 
 INSTALL
 aclocal.m4
-m4/
 autom4te.cache/
 aux
 config.log
@@ -78,12 +77,7 @@ tests/[GL]ia64-test-readonly
 tests/[GL]ia64-test-stack
 tests/ia64-test-dyn1
 tests/ia64-test-sig
-tests/ppc64-test-altivec
-tests/ppc64-test-plt
 tests/[GL]x64-test-dwarf-expressions
 tests/x64-unwind-badjmp-signal-frame
-tests/[GL]arm64-test-sve-signal
-tests/aarch64-test-plt
-tests/aarch64-test-frame-record
 tests/*.log
 tests/*.trs

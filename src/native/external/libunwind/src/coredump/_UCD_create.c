@@ -54,8 +54,6 @@ _UCD_create(const char *filename)
 #define elf_header64 elf_header.h64
   bool _64bits;
 
-  mi_init ();
-
   struct UCD_info *ui = memset(malloc(sizeof(*ui)), 0, sizeof(*ui));
   ui->edi.di_cache.format = -1;
   ui->edi.di_debug.format = -1;
@@ -244,7 +242,7 @@ void _UCD_select_thread(struct UCD_info *ui, int n)
 pid_t _UCD_get_pid(struct UCD_info *ui)
 {
 #if defined(HAVE_PROCFS_STATUS)
-  return ui->prstatus->thread.pid;
+  return ui->prstatus->pid;
 #else
   return ui->prstatus->pr_pid;
 #endif
@@ -253,7 +251,7 @@ pid_t _UCD_get_pid(struct UCD_info *ui)
 int _UCD_get_cursig(struct UCD_info *ui)
 {
 #if defined(HAVE_PROCFS_STATUS)
-  return ui->prstatus->thread.info.si_signo;
+  return 0;
 #else
   return ui->prstatus->pr_cursig;
 #endif

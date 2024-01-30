@@ -28,10 +28,4 @@ long         sysconf(int name);
 
 #define _SC_PAGESIZE 11
 
-#define STDIN_FILENO   0
-#define STDOUT_FILENO  1
-#define STDERR_FILENO  2
-
-#define S_ISREG(x) 0
-
 #endif // _MSC_VER
