@@ -68,6 +68,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     value = message,
                 })),
                 executionContextId = context.Id
+
             });
             SendEvent(sessionId, "Runtime.consoleAPICalled", o, token);
         }
@@ -147,6 +148,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "Debugger.scriptParsed":
                     {
+                        if (args["url"]?.ToString()?.Equals("") == true)
+                            return true;
                         if (args["url"]?.ToString()?.Contains("/_framework/") == true) //is from dotnet runtime framework
                         {
                             if (Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
