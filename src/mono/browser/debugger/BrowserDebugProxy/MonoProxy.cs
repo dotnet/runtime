@@ -68,7 +68,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     value = message,
                 })),
                 executionContextId = context.Id
-
             });
             SendEvent(sessionId, "Runtime.consoleAPICalled", o, token);
         }
