@@ -54,6 +54,7 @@ MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
+
 #define IS_IMM32(val) ((((guint64)val) >> 32) == 0)
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
@@ -1997,7 +1998,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					ins->opcode = OP_REGOFFSET;
 					ins->inst_basereg = cfg->frame_reg;
 					ins->inst_offset = ainfo->offset + ARGS_OFFSET;
-					offset += sizeof (target_mgreg_t);;
+					offset += sizeof (target_mgreg_t);
 
 					cfg->arch.swift_error_var = ins;
 					cfg->used_int_regs |= (size_t)(1 << AMD64_R12);
@@ -2340,6 +2341,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		ainfo = cinfo->args + i;
 
 		in = call->args [i];
+
 		if (sig->hasthis && i == 0)
 			t = mono_get_object_type ();
 		else
