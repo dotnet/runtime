@@ -538,7 +538,6 @@ namespace System.Reflection.Emit
                             MetadataSignatureHelper.GetFieldSignature(field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
                         break;
                     case ConstructorInfo ctor:
-                        ctor = (ConstructorInfo)GetOriginalMemberIfConstructedType(ctor);
                         memberHandle = AddMemberReference(ctor.Name, GetTypeHandle(memberInfo.DeclaringType!), MetadataSignatureHelper.GetConstructorSignature(ctor.GetParameters(), this));
                         break;
                     case MethodInfo method:

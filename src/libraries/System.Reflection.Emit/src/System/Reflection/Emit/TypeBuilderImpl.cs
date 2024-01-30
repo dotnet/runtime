@@ -168,11 +168,6 @@ namespace System.Reflection.Emit
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder")]
         private void ValidateAllAbstractMethodsAreImplemented()
         {
-            if (_interfaces != null)
-            {
-                CheckInterfaces(_interfaces.ToArray());
-            }
-
             if (_typeParent != null && _typeParent.IsAbstract)
             {
                 foreach (MethodInfo method in _typeParent.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
@@ -188,62 +183,6 @@ namespace System.Reflection.Emit
                     }
                 }
             }
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder. The interface methods should be available at this point")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:DynamicallyAccessedMembers", Justification =
-            "Somehow #pragma warning disable IL2075 doesn't suppress anymore, related to https://github.com/dotnet/runtime/issues/96646")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder")]
-        private void CheckInterfaces(Type[] _interfaces)
-        {
-            foreach (Type interfaceType in _interfaces)
-            {
-                Type ifaceType = interfaceType;
-                if (interfaceType.IsConstructedGenericType &&
-                    IsConstructedFromTypeBuilder(interfaceType.GetGenericTypeDefinition(), interfaceType.GetGenericArguments()))
-                {
-                    ifaceType = interfaceType.GetGenericTypeDefinition();
-                }
-                MethodInfo[] interfaceMethods = ifaceType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                for (int i = 0; i < interfaceMethods.Length; i++)
-                {
-                    MethodInfo interfaceMethod = interfaceMethods[i];
-                    if (!interfaceMethod.IsAbstract)
-                    {
-                        continue;
-                    }
-
-                    Type[] parameterTypes = interfaceMethod.ContainsGenericParameters ?
-                        GetParameterTypesMatchGeneric(interfaceMethod.GetParameters(), interfaceType.GetGenericArguments()) : GetParameterTypes(interfaceMethod.GetParameters());
-                    MethodInfo? implementedMethod = GetMethodImpl(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, parameterTypes, null);
-
-                    if ((implementedMethod == null || implementedMethod.IsAbstract) && !FoundInInterfaceMapping(interfaceMethod))
-                    {
-                        throw new TypeLoadException(SR.Format(SR.TypeLoad_MissingMethod, interfaceMethod.Name, FullName));
-                    }
-                }
-
-                // Check parent interfaces too
-                CheckInterfaces(ifaceType.GetInterfaces());
-            }
-        }
-
-        private static bool IsConstructedFromTypeBuilder(Type constructedType, Type[] genericArgs)
-        {
-            if (constructedType is TypeBuilderImpl)
-            {
-                return true;
-            }
-
-            foreach (Type arg in genericArgs)
-            {
-                if (arg is TypeBuilderImpl or GenericTypeParameterBuilderImpl)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private bool FoundInInterfaceMapping(MethodInfo abstractMethod)
@@ -1011,12 +950,10 @@ namespace System.Reflection.Emit
                 BindingFlags fieldFlags = GetBindingFlags(fieldInfo);
                 if (name.Equals(fieldInfo.Name, compare) && (bindingFlags & fieldFlags) == fieldFlags)
                 {
-                    if (match != null)
+                    if (match != null && ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
                     {
-                        if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
-                        {
-                            throw new AmbiguousMatchException(SR.Format(SR.AmbiguousMatch_MemberInfo, fieldInfo.DeclaringType, fieldInfo.Name));
-                        }
+                        // TypeBuilder doesn't validate for duplicates when fields are defined, throw if duplicates found.
+                        throw new AmbiguousMatchException(SR.Format(SR.AmbiguousMatch_MemberInfo, fieldInfo.DeclaringType, fieldInfo.Name));
                     }
 
                     match = fieldInfo;
@@ -1138,21 +1075,6 @@ namespace System.Reflection.Emit
             {
                 parameterTypes[i] = parameterInfos[i].ParameterType;
             }
-            return parameterTypes;
-        }
-
-        private static Type[] GetParameterTypesMatchGeneric(ParameterInfo[] parameters, Type[] genericArguments)
-        {
-            Type[] parameterTypes = new Type[parameters.Length];
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                parameterTypes[i] = parameters[i].ParameterType;
-                if (parameterTypes[i].IsGenericParameter)
-                {
-                    parameterTypes[i] = genericArguments[parameterTypes[i].GenericParameterPosition];
-                }
-            }
-
             return parameterTypes;
         }
 

@@ -451,28 +451,19 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void CreateType_ValidateAllAbstractMethodsAreImplemented()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeNotImplementedIfaceMethod);
-            typeNotImplementedIfaceMethod.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder _);
             ModuleBuilder module = ab.GetDynamicModule("MyModule");
-            TypeBuilder partiallyImplementedType = module.DefineType("Type2", TypeAttributes.Public);
-            partiallyImplementedType.AddInterfaceImplementation(typeof(InterfaceDerivedFromOtherInterface));
-            partiallyImplementedType.DefineMethod("M2", MethodAttributes.Public, typeof(string), [typeof(int)]).GetILGenerator().Emit(OpCodes.Ret);
             TypeBuilder baseTypeImplementedTheInterfaceMethod = module.DefineType("Type3", TypeAttributes.Public, parent: typeof(DefineMethodOverrideClass));
             baseTypeImplementedTheInterfaceMethod.AddInterfaceImplementation(typeof(InterfaceDerivedFromOtherInterface));
             baseTypeImplementedTheInterfaceMethod.DefineMethod("M2", MethodAttributes.Public, typeof(string), [typeof(int)]).GetILGenerator().Emit(OpCodes.Ret);
             TypeBuilder baseTypePartiallyImplemented = module.DefineType("Type4", TypeAttributes.Public, parent: typeof(PartialImplementation));
             baseTypePartiallyImplemented.AddInterfaceImplementation(typeof(InterfaceDerivedFromOtherInterface));
-            TypeBuilder interfaceHasStaticAbstractMethod = module.DefineType("Type5", TypeAttributes.Public);
-            interfaceHasStaticAbstractMethod.AddInterfaceImplementation(typeof(IStaticAbstract));
             TypeBuilder interfaceMethodHasDefaultImplementation = module.DefineType("Type6", TypeAttributes.Public);
             interfaceMethodHasDefaultImplementation.AddInterfaceImplementation(typeof(IDefaultImplementation));
 
-            Assert.Throws<TypeLoadException>(() => typeNotImplementedIfaceMethod.CreateType());
-            Assert.Throws<TypeLoadException>(() => partiallyImplementedType.CreateType());
             baseTypeImplementedTheInterfaceMethod.CreateType(); // succeeds
             interfaceMethodHasDefaultImplementation.CreateType(); //succeeds
             Assert.Throws<TypeLoadException>(() => baseTypePartiallyImplemented.CreateType());
-            Assert.Throws<TypeLoadException>(() => interfaceHasStaticAbstractMethod.CreateType());
             Assert.Throws<InvalidOperationException>(() => interfaceMethodHasDefaultImplementation.DefineTypeInitializer());
         }
 
