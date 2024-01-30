@@ -359,6 +359,44 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
+        [Fact]
+        public async Task NestedTypeWithGenericParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C<T>
+                {
+                    public partial class Nested<U>
+                    {
+                        [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                        static partial void M1(ILogger logger);
+                    }
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task NestedTypeWithGenericParameterWithAttributeOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+                partial class C<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>
+                {
+                    public partial class Nested<[MarkerAttribute] U>
+                    {
+                        [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                        static partial void M1(ILogger logger);
+                    }
+                }
+                [AttributeUsage(AttributeTargets.GenericParameter)]
+                class MarkerAttribute : Attribute { }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
 #if ROSLYN4_0_OR_GREATER
         [Fact]
         public async Task FileScopedNamespaceOK()
