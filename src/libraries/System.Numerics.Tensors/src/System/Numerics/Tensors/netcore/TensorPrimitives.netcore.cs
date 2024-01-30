@@ -15017,13 +15017,48 @@ namespace System.Numerics.Tensors
         {
             private readonly int _n = n;
 
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public T Invoke(T x) => T.RootN(x, _n);
 
-            public Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+            public Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector128.Create((float)_n)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector128.Create((double)_n)).As<double, T>();
+                }
+            }
+
+            public Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector256.Create((float)_n)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector256.Create((double)_n)).As<double, T>();
+                }
+            }
+
+            public Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector512.Create((float)_n)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector512.Create((double)_n)).As<double, T>();
+                }
+            }
         }
 
         /// <summary>T.Round</summary>
