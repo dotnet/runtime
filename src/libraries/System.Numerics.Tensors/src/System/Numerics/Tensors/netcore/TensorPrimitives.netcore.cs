@@ -12771,11 +12771,11 @@ namespace System.Numerics.Tensors
         internal readonly struct HypotOperator<T> : IBinaryOperator<T>
             where T : IRootFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => true;
             public static T Invoke(T x, T y) => T.Hypot(x, y);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => Vector128.Sqrt((x * x) + (y * y));
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => Vector256.Sqrt((x * x) + (y * y));
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => Vector512.Sqrt((x * x) + (y * y));
         }
 
         /// <summary>T.Acos(x)</summary>
@@ -14500,11 +14500,12 @@ namespace System.Numerics.Tensors
         internal readonly struct Log10Operator<T> : IUnaryOperator<T, T>
             where T : ILogarithmicFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            private static readonly double s_log10 = Math.Log(10d);
+            public static bool Vectorizable => LogOperator<T>.Vectorizable;
             public static T Invoke(T x) => T.Log10(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x) => LogOperator<T>.Invoke(x) / Vector128.Create(T.CreateTruncating(s_log10));
+            public static Vector256<T> Invoke(Vector256<T> x) => LogOperator<T>.Invoke(x) / Vector256.Create(T.CreateTruncating(s_log10));
+            public static Vector512<T> Invoke(Vector512<T> x) => LogOperator<T>.Invoke(x) / Vector512.Create(T.CreateTruncating(s_log10));
         }
 
         /// <summary>T.LogP1(x)</summary>
@@ -14544,11 +14545,11 @@ namespace System.Numerics.Tensors
         internal readonly struct LogBaseOperator<T> : IBinaryOperator<T>
             where T : ILogarithmicFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => LogOperator<T>.Vectorizable;
             public static T Invoke(T x, T y) => T.Log(x, y);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => LogOperator<T>.Invoke(x) / LogOperator<T>.Invoke(y);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => LogOperator<T>.Invoke(x) / LogOperator<T>.Invoke(y);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => LogOperator<T>.Invoke(x) / LogOperator<T>.Invoke(y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
