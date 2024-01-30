@@ -455,7 +455,8 @@
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
     <Compile Include="Compiler\ExpectedIsaFeaturesRootProvider.cs" />
     <Compile Include="Compiler\ExternSymbolMappedField.cs" />
-    <Compile Include="Compiler\FeatureSwitchManager.cs" />
+    <Compile Include="Compiler\SubstitutedILProvider.cs" />
+    <Compile Include="Compiler\SubstitutionProvider.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />
     <Compile Include="Compiler\HardwareIntrinsicHelpers.Aot.cs" />
     <Compile Include="Compiler\HardwareIntrinsicILProvider.cs" />
@@ -593,6 +594,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfAbbrev.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCfiOpcode.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCie.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfEhFrame.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfExpressionBuilder.cs" />
@@ -608,6 +610,9 @@
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewNative.cs" />
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewSymbolsBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewTypesBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiNative.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiUnwindConverter.cs" />
     <Compile Include="Compiler\ObjectWriter\LegacyObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWritingOptions.cs" />

@@ -293,8 +293,14 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+
+    RESTORE_CALLEESAVED_REGISTERS sp, __PWTB_CalleeSavedRegisters
+
+    EPILOG_RESTORE_REG_PAIR       fp, ra, __PWTB_CalleeSavedRegisters
+
+    EPILOG_STACK_FREE             __PWTB_StackAlloc
+
+    ret
 .endm
 
 
