@@ -151,15 +151,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return false;
                         try
                         {
+                            var url = args["url"]?.ToString();
+                            if (url?.Contains("/_framework/") == true)//it is from dotnet runtime framework
+                            {
+                                context.FrameworkScriptList.Add(args["scriptId"].Value<int>());
+                                return false;
+                            }
+                            if (url?.Equals("") == false)
+                                return false;
                             var callStack = args["stackTrace"]?["callFrames"]?.Value<JArray>();
                             var topFrameFunctionName = callStack?.Count > 0 ? callStack?[0]?["functionName"]?.Value<string>() : null;
                             //skip mono_wasm_fire_debugger_agent_message_with_data_to_pause or mono_wasm_runtime_ready (both of them have debugger; statement)
-                            if (args["url"]?.ToString()?.Equals("") == true && topFrameFunctionName?.StartsWith("mono_wasm_", StringComparison.Ordinal) == true)
+                            if (topFrameFunctionName?.StartsWith("mono_wasm_", StringComparison.OrdinalIgnoreCase) == true)
                                 return true;
-                            if (args["url"]?.ToString()?.Contains("/_framework/") == true) //it is from dotnet runtime framework
-                            {
-                                context.FrameworkScriptList.Add(args["scriptId"].Value<int>());
-                            }
                         }
                         catch (Exception ex)
                         {
