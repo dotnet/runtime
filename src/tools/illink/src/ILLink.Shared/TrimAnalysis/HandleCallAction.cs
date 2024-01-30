@@ -423,16 +423,8 @@ namespace ILLink.Shared.TrimAnalysis
 									}
 									var name = stringValue.Contents;
 
-									// we may not need to search for constructors depending on the value of 'name', since they're always named '.ctor' (II.10.5.1)
-									DynamicallyAccessedMemberTypes requiredMemberTypes2 = requiredMemberTypes;
-									if (name != ".ctor") {
-										requiredMemberTypes2 &= ~(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors);
-									}
-
-									AddReturnValue (MultiValueLattice.Top); // Initialize return value (so that it's not autofilled if there are no matching members)
-
 									// search for all the things we want by name
-									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)) != 0) {
+									if (name == ".ctor" && (requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)) != 0) {
 										MarkConstructorsOnType (systemTypeValue.RepresentedType, bindingFlags, parameterCount: null);
 									}
 									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)) != 0) {
@@ -452,17 +444,12 @@ namespace ILLink.Shared.TrimAnalysis
 											MarkType (nestedTypeValue.RepresentedType);
 										}
 									}
-								} else if (stringParam is NullValue) {
-									// type.GetMember(null, ...) throws - so track empty value set as its result
-									AddReturnValue (MultiValueLattice.Top);
-								} else {
+								} else if (stringParam is not NullValue) {
+									// Mark based on bitfield requirements
 									_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 								}
 							}
-						} else if (value is NullValue) {
-							// null.GetMember(...) throws - so track empty value set as its result
-							AddReturnValue (MultiValueLattice.Top);
-						} else {
+						} else if (value is not NullValue) {
 							// Mark based on bitfield requirements
 							_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 						}
