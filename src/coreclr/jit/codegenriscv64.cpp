@@ -5336,6 +5336,14 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         instruction storeIns  = ins_Store(slotType);
         emitAttr    storeAttr = emitTypeSize(slotType);
 
+        // When passed in registers or on the stack, integer scalars narrower than XLEN bits
+        // are widened according to the sign of their type up to 32 bits, then sign-extended to XLEN bits.
+        if (EA_SIZE(storeAttr) < EA_PTRSIZE && varTypeUsesIntReg(slotType))
+        {
+            storeAttr = EA_PTRSIZE;
+            storeIns  = INS_sd;
+        }
+
         // If it is contained then source must be the integer constant zero
         if (source->isContained())
         {
