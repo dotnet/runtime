@@ -957,9 +957,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-#if FEATURE_WASM_THREADS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/97652")]
-#endif
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97652", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task StepOverWithMoreThanOneCommandInSameLineAsync()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 710, 0);
