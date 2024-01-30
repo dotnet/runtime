@@ -1701,7 +1701,7 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);
 
 #ifdef DEBUG
-    // For R2R/NAOT not all these helpers are implmented. So don't ask for them.
+    // For R2R/NAOT not all these helpers are implemented. So don't ask for them.
     //
     if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->opts.IsReadyToRun())
     {
