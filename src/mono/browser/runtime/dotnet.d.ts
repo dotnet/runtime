@@ -434,7 +434,7 @@ type APIType = {
      */
     runMain: (mainAssemblyName: string, args?: string[]) => Promise<number>;
     /**
-     * Runs the Main() entrypoint of the application and exits the runtime.
+     * Runs the Main() method of the application and exits the runtime.
      * Note: after the runtime exits, it would reject all further calls to the API.
      * @param mainAssemblyName name of the assembly with the Main() method.
      * @param args command line arguments for the Main() method.
