@@ -47,8 +47,8 @@ PhaseStatus Compiler::optRedundantBranches()
             {
                 bool madeChangesThisBlock = m_compiler->optRedundantRelop(block);
 
-                BasicBlock* const bbNext = block->GetFalseTarget();
-                BasicBlock* const bbJump = block->GetTrueTarget();
+                BasicBlock* const bbFalse = block->GetFalseTarget();
+                BasicBlock* const bbTrue  = block->GetTrueTarget();
 
                 madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
 
@@ -62,28 +62,28 @@ PhaseStatus Compiler::optRedundantBranches()
                     madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
                 }
 
-                // It's possible that the changed flow into bbNext or bbJump may unblock
+                // It's possible that the changed flow into bbFalse or bbTrue may unblock
                 // further optimizations there.
                 //
                 // Note this misses cascading retries, consider reworking the overall
                 // strategy here to iterate until closure.
                 //
-                if (madeChangesThisBlock && (bbNext->countOfInEdges() == 0))
+                if (madeChangesThisBlock && (bbFalse->countOfInEdges() == 0))
                 {
-                    for (BasicBlock* succ : bbNext->Succs())
+                    for (BasicBlock* succ : bbFalse->Succs())
                     {
                         JITDUMP("Will retry RBO in " FMT_BB "; pred " FMT_BB " now unreachable\n", succ->bbNum,
-                                bbNext->bbNum);
+                                bbFalse->bbNum);
                         m_compiler->optRedundantBranch(succ);
                     }
                 }
 
-                if (madeChangesThisBlock && (bbJump->countOfInEdges() == 0))
+                if (madeChangesThisBlock && (bbTrue->countOfInEdges() == 0))
                 {
-                    for (BasicBlock* succ : bbJump->Succs())
+                    for (BasicBlock* succ : bbTrue->Succs())
                     {
                         JITDUMP("Will retry RBO in " FMT_BB "; pred " FMT_BB " now unreachable\n", succ->bbNum,
-                                bbNext->bbNum);
+                                bbFalse->bbNum);
                         m_compiler->optRedundantBranch(succ);
                     }
                 }
