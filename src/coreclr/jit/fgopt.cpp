@@ -4745,6 +4745,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
         BasicBlock* bPrev = nullptr; // the previous non-worthless block
         BasicBlock* bNext;           // the successor of the current block
         BasicBlock* bDest;           // the jump target of the current block
+        BasicBlock* bFalseDest;      // the false target of the current block (if it is a BBJ_COND)
 
         for (block = fgFirstBB; block != nullptr; block = block->Next())
         {
@@ -4778,8 +4779,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
         REPEAT:;
 
-            bNext = block->Next();
-            bDest = nullptr;
+            bNext      = block->Next();
+            bDest      = nullptr;
+            bFalseDest = nullptr;
 
             if (block->KindIs(BBJ_ALWAYS))
             {
@@ -4814,20 +4816,24 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
             }
             else if (block->KindIs(BBJ_COND))
             {
-                bDest                  = block->GetTrueTarget();
-                BasicBlock* bFalseDest = block->GetFalseTarget();
+                bDest      = block->GetTrueTarget();
+                bFalseDest = block->GetFalseTarget();
 
                 if (bFalseDest->KindIs(BBJ_ALWAYS) && bFalseDest->TargetIs(bDest) && bFalseDest->isEmpty())
                 {
                     // Optimize block -> bFalseDest -> bDest into a BBJ_ALWAYS
                     block->SetFalseTarget(bDest);
                     fgAddRefPred(bDest, block, fgRemoveRefPred(bFalseDest, block));
+
+                    // We will convert block to BBJ_ALWAYS, so no need to keep bFalseDest up to date
                 }
                 else if (bDest->KindIs(BBJ_ALWAYS) && bDest->TargetIs(bFalseDest) && bDest->isEmpty())
                 {
                     // Optimize block -> bDest -> bFalseDest into a BBJ_ALWAYS
                     block->SetTrueTarget(bFalseDest);
                     fgAddRefPred(bFalseDest, block, fgRemoveRefPred(bDest, block));
+
+                    // We will continue to use bDest, so ensure it is up to date
                     bDest = bFalseDest;
                 }
 
@@ -4835,8 +4841,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                 {
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
-                    change   = true;
-                    modified = true;
+                    change     = true;
+                    modified   = true;
+                    bFalseDest = nullptr;
                 }
             }
 
@@ -4864,13 +4871,13 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                 // (b) block jump target is elsewhere but join free, and
                 //      bNext's jump target has a join.
                 //
-                if (block->KindIs(BBJ_COND) &&     // block is a BBJ_COND block
-                    block->FalseTargetIs(bNext) && // false target is the next block
-                    (bNext->bbRefs == 1) &&        // no other block jumps to bNext
-                    bNext->KindIs(BBJ_ALWAYS) &&   // the next block is a BBJ_ALWAYS block
-                    !bNext->JumpsToNext() &&       // and it doesn't jump to the next block (we might compact them)
-                    bNext->isEmpty() &&            // and it is an empty block
-                    !bNext->TargetIs(bNext) &&     // special case for self jumps
+                if (block->KindIs(BBJ_COND) &&   // block is a BBJ_COND block
+                    (bFalseDest == bNext) &&     // false target is the next block
+                    (bNext->bbRefs == 1) &&      // no other block jumps to bNext
+                    bNext->KindIs(BBJ_ALWAYS) && // the next block is a BBJ_ALWAYS block
+                    !bNext->JumpsToNext() &&     // and it doesn't jump to the next block (we might compact them)
+                    bNext->isEmpty() &&          // and it is an empty block
+                    !bNext->TargetIs(bNext) &&   // special case for self jumps
                     !bDest->IsFirstColdBlock(this) &&
                     !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
                 {
