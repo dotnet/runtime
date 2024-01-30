@@ -27,6 +27,7 @@ public class WasmTestRunner : WasmApplicationEntryPoint
         var includedClasses = new List<string>();
         var includedMethods = new List<string>();
         var backgroundExec = false;
+        var untilFailed = false;
         var isThreadless = true;
 
         for (int i = 1; i < args.Length; i++)
@@ -57,6 +58,9 @@ public class WasmTestRunner : WasmApplicationEntryPoint
                 case "-backgroundExec":
                     backgroundExec = true;
                     break;
+                case "-untilFailed":
+                    untilFailed = true;
+                    break;
                 case "-threads":
                     isThreadless = false;
                     break;
@@ -81,11 +85,20 @@ public class WasmTestRunner : WasmApplicationEntryPoint
             await Task.Yield();
         }
 
-        if (backgroundExec)
+        var res = 0;
+        do
         {
-            return await Task.Run(() => runner.Run());
+            if (backgroundExec)
+            {
+                res = await Task.Run(() => runner.Run());
+            }
+            else
+            {
+                res = await runner.Run();
+            }
         }
+        while(res == 0 && untilFailed);
 
-        return await runner.Run();
+        return res;
     }
 }

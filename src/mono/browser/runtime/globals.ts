@@ -104,5 +104,5 @@ export function mono_assert(condition: unknown, messageFactory: string | (() => 
         ? messageFactory()
         : messageFactory);
     const error = new Error(message);
-    runtimeHelpers.abort(error);
+    runtimeHelpers.nativeAbort(error);
 }
