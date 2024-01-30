@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
+
+using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -34,7 +35,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public string SelfRegisteredGlobalSdkDir => Path.Combine(SelfRegistered, "sdk");
             public string LocalSdkDir => Path.Combine(ExeDir, "sdk");
             public string LocalFrameworksDir => Path.Combine(ExeDir, "shared");
-            public string GlobalJson => Path.Combine(WorkingDir, "global.json");
             public string[] ProgramFilesGlobalSdks = new[] { "4.5.6", "1.2.3", "2.3.4-preview" };
             public List<(string fwName, string[] fwVersions)> ProgramFilesGlobalFrameworks =
                 new List<(string fwName, string[] fwVersions)>()
@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // start with an empty global.json, it will be ignored, but prevent one lying on disk
                 // on a given machine from impacting the test.
-                File.WriteAllText(GlobalJson, "{}");
+                GlobalJson.CreateEmpty(WorkingDir);
 
                 foreach (string sdk in ProgramFilesGlobalSdks)
                 {
@@ -213,11 +213,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var f = new SdkResolutionFixture(sharedTestState);
 
             string requestedVersion = "5.6.6-preview";
-            File.WriteAllText(f.GlobalJson, "{ \"sdk\": { \"version\": \"" + requestedVersion + "\" } }");
+            string globalJson = GlobalJson.CreateWithVersion(f.WorkingDir, requestedVersion);
             string expectedData = string.Join(';', new[]
             {
                 ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "5.6.7-preview")),
-                ("global_json_path", f.GlobalJson),
+                ("global_json_path", globalJson),
                 ("requested_version", requestedVersion),
             });
 
