@@ -33,6 +33,9 @@
     <!-- wasm specific -->
     <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>
     <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
+    <BrowserProjectRoot>{BrowserProjectRoot}</BrowserProjectRoot>
+    <WasmProjectRoot>{WasmProjectRoot}</WasmProjectRoot>
+    <WasiProjectRoot>{WasiProjectRoot}</WasiProjectRoot>
     <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>{MonoTargetsTasksAssemblyPath}</MonoTargetsTasksAssemblyPath>
@@ -94,5 +97,9 @@
   </Target>
 
   <Import Project="{NativeSanitizersTargets}" />
+
+  <ItemGroup>
+    <Content Include="@(SanitizerRuntimeToCopy->'{SanitizerRuntimeFolder}/%(Identity)')" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
 </Project>

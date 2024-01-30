@@ -352,7 +352,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetForestName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetForestName));
 
-            return TrustHelper.GetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, true);
+            return TrustHelper.GetTrustedDomainInfoStatus(_context, Name, targetForestName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, true);
         }
 
         public void SetSelectiveAuthenticationStatus(string targetForestName, bool enable)
@@ -365,7 +365,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetForestName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetForestName));
 
-            TrustHelper.SetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, true);
+            TrustHelper.SetTrustedDomainInfoStatus(_context, Name, targetForestName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, true);
         }
 
         public bool GetSidFilteringStatus(string targetForestName)
@@ -378,7 +378,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetForestName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetForestName));
 
-            return TrustHelper.GetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL, true);
+            return TrustHelper.GetTrustedDomainInfoStatus(_context, Name, targetForestName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL, true);
         }
 
         public void SetSidFilteringStatus(string targetForestName, bool enable)
@@ -391,7 +391,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetForestName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetForestName));
 
-            TrustHelper.SetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL, enable, true);
+            TrustHelper.SetTrustedDomainInfoStatus(_context, Name, targetForestName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL, enable, true);
         }
 
         public void DeleteLocalSideOfTrustRelationship(string targetForestName)
@@ -881,7 +881,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             DsNameResultItem dsNameResultItem = new DsNameResultItem();
 
                             Marshal.PtrToStructure(currentItem, dsNameResultItem);
-                            if (dsNameResultItem.status == NativeMethods.DsNameNoError)
+                            if (dsNameResultItem.status == NativeMethods.DS_NAME_NO_ERROR)
                             {
                                 string siteName = Utils.GetDNComponents(dsNameResultItem.name!)[0].Value!;
                                 // an existing site
@@ -1074,7 +1074,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        private TrustRelationshipInformationCollection GetTrustsHelper(string? targetForestName)
+        private unsafe TrustRelationshipInformationCollection GetTrustsHelper(string? targetForestName)
         {
             string? serverName = null;
             IntPtr domains = (IntPtr)0;
@@ -1094,7 +1094,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    error = UnsafeNativeMethods.DsEnumerateDomainTrustsW(serverName, (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY | (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND, out domains, out count);
+                    error = Interop.Netapi32.DsEnumerateDomainTrustsW(serverName, Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND, out domains, out count);
                 }
                 finally
                 {
@@ -1116,9 +1116,8 @@ namespace System.DirectoryServices.ActiveDirectory
                     IntPtr addr = (IntPtr)0;
                     for (int i = 0; i < count; i++)
                     {
-                        addr = IntPtr.Add(domains, i * Marshal.SizeOf(typeof(DS_DOMAIN_TRUSTS)));
-                        DS_DOMAIN_TRUSTS unmanagedTrust = new DS_DOMAIN_TRUSTS();
-                        Marshal.PtrToStructure(addr, unmanagedTrust);
+                        addr = IntPtr.Add(domains, i * sizeof(Interop.Netapi32.DS_DOMAIN_TRUSTS));
+                        Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust = *(Interop.Netapi32.DS_DOMAIN_TRUSTS*)addr;
 
                         // whether this is the case that a paticular forest trust info is needed
                         if (targetForestName != null)
@@ -1143,10 +1142,10 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
 
                         // if it is up level trust and forest attribute is set
-                        if (unmanagedTrust.TrustType == TrustHelper.TRUST_TYPE_UPLEVEL && ((unmanagedTrust.TrustAttributes & (int)TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0))
+                        if (unmanagedTrust.TrustType == TrustHelper.TRUST_TYPE_UPLEVEL && ((unmanagedTrust.TrustAttributes & (int)Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0))
                         {
                             // we don't want to include self
-                            if ((unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) != 0)
+                            if ((unmanagedTrust.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) != 0)
                                 continue;
 
                             TrustRelationshipInformation trust = new ForestTrustRelationshipInformation(_context, Name, unmanagedTrust, TrustType.Forest);
@@ -1159,7 +1158,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (domains != (IntPtr)0)
-                    UnsafeNativeMethods.NetApiBufferFree(domains);
+                    Interop.Netapi32.NetApiBufferFree(domains);
             }
         }
 

@@ -493,7 +493,7 @@ void CONTRACT_ASSERT(const char *szElaboration,
     {
         char Buf[512*20 + 2048 + 1024];
 
-        sprintf_s(Buf,ARRAY_SIZE(Buf), "CONTRACT VIOLATION by %s at \"%s\" @ %d\n\n%s\n", szFunction, szFile, lineNum, szElaboration);
+        sprintf_s(Buf,ARRAY_SIZE(Buf), "CONTRACT VIOLATION by %s at \"%s\":%d\n\n%s\n", szFunction, szFile, lineNum, szElaboration);
 
         int count = 20;
         ContractStackRecord *pRec = CheckClrDebugState() ? CheckClrDebugState()->GetContractStackTrace() : NULL;
@@ -530,7 +530,7 @@ void CONTRACT_ASSERT(const char *szElaboration,
                     }
 
                     sprintf_s(tmpbuf,ARRAY_SIZE(tmpbuf),
-                            "\n%s  %s in %s at \"%s\" @ %d",
+                            "\n%s  %s in %s at \"%s\":%d",
                             fshowconflict ? "VIOLATED-->" : "                      ",
                             pRec->m_construct,
                             pRec->m_szFunction,

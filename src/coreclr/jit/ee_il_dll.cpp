@@ -144,12 +144,13 @@ FILE* jitstdout()
 }
 
 // Like printf/logf, but only outputs to jitstdout -- skips call back into EE.
-void jitprintf(const char* fmt, ...)
+int jitprintf(const char* fmt, ...)
 {
     va_list vl;
     va_start(vl, fmt);
-    vfprintf(jitstdout(), fmt, vl);
+    int status = vfprintf(jitstdout(), fmt, vl);
     va_end(vl);
+    return status;
 }
 
 void jitShutdown(bool processIsTerminating)
@@ -319,7 +320,7 @@ bool TargetOS::OSSettingConfigured = false;
 bool TargetOS::IsWindows = false;
 bool TargetOS::IsUnix    = false;
 #endif
-bool TargetOS::IsMacOS = false;
+bool TargetOS::IsApplePlatform = false;
 #endif
 
 /*****************************************************************************
@@ -329,10 +330,10 @@ bool TargetOS::IsMacOS = false;
 void CILJit::setTargetOS(CORINFO_OS os)
 {
 #ifdef TARGET_OS_RUNTIMEDETERMINED
-    TargetOS::IsMacOS = os == CORINFO_MACOS;
+    TargetOS::IsApplePlatform = os == CORINFO_APPLE;
 #ifndef TARGET_UNIX_OS_RUNTIMEDETERMINED // This define is only set if ONLY the different unix variants are
                                          // runtimedetermined
-    TargetOS::IsUnix    = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
+    TargetOS::IsUnix    = (os == CORINFO_UNIX) || (os == CORINFO_APPLE);
     TargetOS::IsWindows = os == CORINFO_WINNT;
 #endif
     TargetOS::OSSettingConfigured = true;
@@ -467,7 +468,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 //
 // Notes:
 //   Usually values passed on the stack are aligned to stack slot (i.e. pointer size), except for
-//   on macOS ARM ABI that allows packing multiple args into a single stack slot.
+//   on Apple ARM ABI that allows packing multiple args into a single stack slot.
 //
 //   The arg size alignment can be different from the normal alignment. One
 //   example is on arm32 where a struct containing a double and float can
@@ -478,7 +479,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 // static
 unsigned Compiler::eeGetArgSizeAlignment(var_types type, bool isFloatHfa)
 {
-    if (compMacOsArm64Abi())
+    if (compAppleArm64Abi())
     {
         if (isFloatHfa)
         {
@@ -1132,9 +1133,10 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
 
 #endif // DEBUG
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-    // For arm64/LoongArch64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
+    // For arm64/LoongArch64/RISCV64, we want to allocate JIT data always adjacent to code similar to what native
+    // compiler does.
     // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
     // For LoongArch64 using `pcaddi + ld` to access such data.
 
@@ -1148,7 +1150,7 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
     args->hotCodeSize                 = roDataOffset + args->roDataSize;
     args->roDataSize                  = 0;
 
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     info.compCompHnd->allocMem(args);
 
@@ -1165,7 +1167,7 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
 
 #endif // DEBUG
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     // Fix up data section pointers.
     assert(args->roDataBlock == nullptr);
@@ -1173,7 +1175,7 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
     args->roDataBlock   = ((BYTE*)args->hotCodeBlock) + roDataOffset;
     args->roDataBlockRW = ((BYTE*)args->hotCodeBlockRW) + roDataOffset;
 
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 }
 
 void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)

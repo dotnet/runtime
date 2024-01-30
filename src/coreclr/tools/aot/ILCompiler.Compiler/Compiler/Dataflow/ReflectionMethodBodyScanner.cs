@@ -515,6 +515,46 @@ namespace ILCompiler.Dataflow
                     break;
 
                 //
+                // System.Delegate
+                //
+                // get_Method ()
+                //
+                // System.Reflection.RuntimeReflectionExtensions
+                //
+                // GetMethodInfo (System.Delegate)
+                //
+                case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
+                case IntrinsicId.Delegate_get_Method:
+                    {
+                        // Find the parameter: first is an instance method, second is an extension method.
+                        MultiValue param = intrinsicId == IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo
+                            ? argumentValues[0] : instanceValue;
+
+                        // If this is Delegate.Method accessed from RuntimeReflectionExtensions.GetMethodInfo, ignore
+                        // because we handle the callsites to that one here as well.
+                        if (Intrinsics.GetIntrinsicIdForMethod(callingMethodDefinition) == IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo)
+                            break;
+
+                        foreach (var valueNode in param.AsEnumerable())
+                        {
+                            TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
+                            if (staticType is null || !staticType.IsDelegate)
+                            {
+                                // The static type is unknown or something useless like Delegate or MulticastDelegate.
+                                reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedDelegate(null), "Delegate.Method access on unknown delegate type");
+                            }
+                            else
+                            {
+                                if (staticType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
+                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedDelegate(staticType.GetTypeDefinition()), "Delegate.Method access (on inexact type)");
+                                else
+                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedDelegate(staticType.ConvertToCanonForm(CanonicalFormKind.Specific)), "Delegate.Method access");
+                            }
+                        }
+                    }
+                    break;
+
+                //
                 // System.Object
                 //
                 // GetType()

@@ -131,7 +131,7 @@ namespace ILCompiler.Logging
             if (TryLogSingleWarning(context, code, origin, subcategory))
                 return null;
 
-            if (Logger.IsWarningAsError(code))
+            if (context.IsWarningAsError(code))
                 return new MessageContainer(MessageCategory.WarningAsError, text, code, subcategory, origin);
 
             return new MessageContainer(MessageCategory.Warning, text, code, subcategory, origin);
@@ -148,7 +148,7 @@ namespace ILCompiler.Logging
             if (TryLogSingleWarning(context, (int)id, origin, subcategory))
                 return null;
 
-            if (Logger.IsWarningAsError((int)id))
+            if (context.IsWarningAsError((int)id))
                 return new MessageContainer(MessageCategory.WarningAsError, id, subcategory, origin, args);
 
             return new MessageContainer(MessageCategory.Warning, id, subcategory, origin, args);

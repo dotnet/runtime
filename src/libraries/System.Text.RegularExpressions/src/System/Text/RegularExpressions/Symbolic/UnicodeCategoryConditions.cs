@@ -48,8 +48,8 @@ namespace System.Text.RegularExpressions.Symbolic
         public static BDD WordLetter(CharSetSolver solver) =>
             s_wordLetter ??
             Interlocked.CompareExchange(ref s_wordLetter,
-                                        solver.Or(new[]
-                                        {
+                                        solver.Or(
+                                        [
                                             GetCategory(UnicodeCategory.UppercaseLetter),
                                             GetCategory(UnicodeCategory.LowercaseLetter),
                                             GetCategory(UnicodeCategory.TitlecaseLetter),
@@ -58,7 +58,7 @@ namespace System.Text.RegularExpressions.Symbolic
                                             GetCategory(UnicodeCategory.NonSpacingMark),
                                             GetCategory(UnicodeCategory.DecimalDigitNumber),
                                             GetCategory(UnicodeCategory.ConnectorPunctuation),
-                                        }),
+                                        ]),
                                         null) ??
             s_wordLetter;
 

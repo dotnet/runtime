@@ -37,7 +37,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 {
     assert(compiler->info.compNeedsConsecutiveRegisters);
-    RefPosition* nextRefPosition;
+    RefPosition* nextRefPosition = nullptr;
     assert(refPosition->needsConsecutive);
     nextConsecutiveRefPositionMap->Lookup(refPosition, &nextRefPosition);
     assert((nextRefPosition == nullptr) || nextRefPosition->needsConsecutive);
@@ -144,11 +144,14 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
                 nextRefPosition = getNextConsecutiveRefPosition(nextRefPosition);
             }
 
-            // If regToAssign is not free, check if it is already assigned to the interval corresponding
-            // to the subsequent nextRefPosition. If yes, it would just use regToAssign for that nextRefPosition.
-            if ((nextRefPosition->getInterval() != nullptr) &&
-                (nextRefPosition->getInterval()->assignedReg != nullptr) &&
-                ((nextRefPosition->getInterval()->assignedReg->regNum == regToAssign)))
+            Interval* interval = nextRefPosition->getInterval();
+
+            // If regToAssign is not free, make sure it is not in use at current location.
+            // If not, then check if it is already assigned to the interval corresponding
+            // to the subsequent nextRefPosition.
+            // If yes, it would just use regToAssign for that nextRefPosition.
+            if ((interval != nullptr) && !isRegInUse(regToAssign, interval->registerType) &&
+                (interval->assignedReg != nullptr) && ((interval->assignedReg->regNum == regToAssign)))
             {
                 continue;
             }

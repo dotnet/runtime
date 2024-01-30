@@ -15,7 +15,7 @@ namespace Internal.Runtime.TypeLoader
     public sealed partial class TypeLoaderEnvironment
     {
         // To keep the synchronization simple, we execute all TLS registration/lookups under a global lock
-        private Lock _threadStaticsLock = new Lock();
+        private Lock _threadStaticsLock = new Lock(useTrivialWaits: true);
 
         // Counter to keep track of generated offsets for TLS cells of dynamic types;
         private LowLevelDictionary<IntPtr, uint> _maxThreadLocalIndex = new LowLevelDictionary<IntPtr, uint>();
@@ -229,7 +229,7 @@ namespace Internal.Runtime.TypeLoader
             NativeHashtable staticsInfoHashtable;
             ExternalReferencesTable externalReferencesLookup;
             if (!GetStaticsInfoHashtable(module, out staticsInfoHashtable, out externalReferencesLookup, out staticsInfoLookup))
-                return new NativeParser();
+                return default(NativeParser);
 
             int lookupHashcode = instantiatedType.GetHashCode();
             var enumerator = staticsInfoHashtable.Lookup(lookupHashcode);
@@ -245,7 +245,7 @@ namespace Internal.Runtime.TypeLoader
                 return entryParser;
             }
 
-            return new NativeParser();
+            return default(NativeParser);
         }
         #endregion
     }

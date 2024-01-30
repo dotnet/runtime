@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework Condition="'$(MonoWasmBuildVariant)' != 'multithread'">$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFrameworks Condition="'$(MonoWasmBuildVariant)' == 'multithread'">$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
@@ -157,7 +158,8 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading" Condition="'$(MonoWasmBuildVariant)' != 'multithread'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.WebAssembly.Threading\ref\System.Threading.WebAssembly.Threading.csproj" Condition="'$(MonoWasmBuildVariant)' == 'multithread'" />
   </ItemGroup>
 
 </Project>

@@ -122,7 +122,7 @@ bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
 bool OptIfConversionDsc::IfConvertCheckThenFlow()
 {
     m_flowFound           = false;
-    BasicBlock* thenBlock = m_startBlock->Next();
+    BasicBlock* thenBlock = m_startBlock->GetFalseTarget();
 
     for (int thenLimit = 0; thenLimit < m_checkLimit; thenLimit++)
     {
@@ -175,7 +175,7 @@ void OptIfConversionDsc::IfConvertFindFlow()
 {
     // First check for flow with no else case. The final block is the destination of the jump.
     m_doElseConversion = false;
-    m_finalBlock       = m_startBlock->GetJumpDest();
+    m_finalBlock       = m_startBlock->GetTrueTarget();
     assert(m_finalBlock != nullptr);
     if (!IfConvertCheckThenFlow() || m_flowFound)
     {
@@ -340,10 +340,6 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 
                 // These do not need conditional execution.
                 case GT_NOP:
-                    if (tree->gtGetOp1() != nullptr || (tree->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
-                    {
-                        return false;
-                    }
                     break;
 
                 // Cannot optimise this block.
@@ -385,15 +381,15 @@ void OptIfConversionDsc::IfConvertDump()
 {
     assert(m_startBlock != nullptr);
     m_comp->fgDumpBlock(m_startBlock);
-    for (BasicBlock* dumpBlock = m_startBlock->Next(); dumpBlock != m_finalBlock;
-         dumpBlock             = dumpBlock->GetUniqueSucc())
+    BasicBlock* dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetFalseTarget() : m_startBlock->Next();
+    for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
     {
         m_comp->fgDumpBlock(dumpBlock);
     }
     if (m_doElseConversion)
     {
-        for (BasicBlock* dumpBlock = m_startBlock->GetJumpDest(); dumpBlock != m_finalBlock;
-             dumpBlock             = dumpBlock->GetUniqueSucc())
+        dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetTrueTarget() : m_startBlock->GetTarget();
+        for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
         {
             m_comp->fgDumpBlock(dumpBlock);
         }
@@ -553,7 +549,7 @@ void OptIfConversionDsc::IfConvertDump()
 bool OptIfConversionDsc::optIfConvert()
 {
     // Does the block end by branching via a JTRUE after a compare?
-    if (!m_startBlock->KindIs(BBJ_COND) || m_startBlock->NumSucc() != 2)
+    if (!m_startBlock->KindIs(BBJ_COND) || (m_startBlock->NumSucc() != 2))
     {
         return false;
     }
@@ -575,14 +571,14 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Check the Then and Else blocks have a single operation each.
-    if (!IfConvertCheckStmts(m_startBlock->Next(), &m_thenOperation))
+    if (!IfConvertCheckStmts(m_startBlock->GetFalseTarget(), &m_thenOperation))
     {
         return false;
     }
     assert(m_thenOperation.node->OperIs(GT_STORE_LCL_VAR, GT_RETURN));
     if (m_doElseConversion)
     {
-        if (!IfConvertCheckStmts(m_startBlock->GetJumpDest(), &m_elseOperation))
+        if (!IfConvertCheckStmts(m_startBlock->GetTrueTarget(), &m_elseOperation))
         {
             return false;
         }
@@ -742,9 +738,8 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Update the flow from the original block.
-    m_comp->fgRemoveAllRefPreds(m_startBlock->Next(), m_startBlock);
-    assert(m_startBlock->HasInitializedJumpDest());
-    m_startBlock->SetJumpKind(BBJ_ALWAYS);
+    m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
+    m_startBlock->SetKindAndTarget(BBJ_ALWAYS, m_startBlock->GetTrueTarget());
 
 #ifdef DEBUG
     if (m_comp->verbose)
@@ -780,7 +775,7 @@ PhaseStatus Compiler::optIfConversion()
     bool madeChanges = false;
 
     // This phase does not respect SSA: assignments are deleted/moved.
-    assert(!fgDomsComputed);
+    assert(!fgSsaValid);
     optReachableBitVecTraits = nullptr;
 
 #if defined(TARGET_ARM64) || defined(TARGET_XARCH)

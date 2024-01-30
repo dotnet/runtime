@@ -252,9 +252,6 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
-// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-#define STATUS_REDHAWK_THREAD_ABORT     0x43
-
 //
 // Rename fields of nested structs
 //
@@ -300,8 +297,12 @@ C_FUNC(\Name):
 
 
 .macro INLINE_GETTHREAD
+#ifdef FEATURE_EMULATED_TLS
+        call        C_FUNC(RhpGetThread)
+#else
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR tls_CurrentThread
+#endif
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2

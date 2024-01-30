@@ -21,7 +21,7 @@ namespace System
         }
     }
 
-    public class RuntimeExceptionHelpers
+    internal static class RuntimeExceptionHelpers
     {
         //------------------------------------------------------------------------------------------------------------
         // @TODO: this function is related to throwing exceptions out of Rtm. If we did not have to throw
@@ -243,7 +243,7 @@ namespace System
                 errorCode = exception != null ? exception.HResult : reason switch
                 {
                     RhFailFastReason.EnvironmentFailFast => HResults.COR_E_FAILFAST,
-                    RhFailFastReason.InternalError  => HResults.COR_E_EXECUTIONENGINE,
+                    RhFailFastReason.InternalError => HResults.COR_E_EXECUTIONENGINE,
                     // Error code for unhandled exceptions is expected to come from the exception object above
                     // RhFailFastReason.UnhandledException or
                     // RhFailFastReason.UnhandledExceptionFromPInvoke

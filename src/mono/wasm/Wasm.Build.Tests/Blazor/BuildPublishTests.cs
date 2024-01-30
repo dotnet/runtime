@@ -26,6 +26,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task DefaultTemplate_WithoutWorkload(string config)
     {
         string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChar}";
@@ -155,11 +156,11 @@ public class BuildPublishTests : BlazorWasmTestBase
         if (config == "Release")
         {
             // relinking in publish for Release config
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true, IsPublish: true));
         }
         else
         {
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true));
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true, IsPublish: true));
         }
 
         AssertResourcesDlls(FindBlazorBinFrameworkDir(config, true));
@@ -177,6 +178,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Theory]
     [InlineData("", true)] // Default case
     [InlineData("false", false)] // the other case
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
     {
         string config = "Release";

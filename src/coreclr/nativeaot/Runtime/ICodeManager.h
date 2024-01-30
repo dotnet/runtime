@@ -65,7 +65,7 @@ inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
     return returnKind;
 }
 
-#elif defined(TARGET_AMD64) 
+#elif defined(TARGET_AMD64)
 
 // Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
 C_ASSERT(PTFF_RAX_IS_GCREF == ((uint64_t)GCRK_Object << 16));
@@ -88,6 +88,46 @@ inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
 #else
     ASSERT((returnKind == GCRK_Scalar) || (transFrameFlags & PTFF_SAVE_RAX));
 #endif
+    return returnKind;
+}
+
+#elif defined(TARGET_X86)
+
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_RAX_IS_GCREF == ((uint64_t)GCRK_Object << 16));
+C_ASSERT(PTFF_RAX_IS_BYREF == ((uint64_t)GCRK_Byref << 16));
+
+inline uintptr_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    // just need to report gc ref bits here.
+    // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
+    return ((uintptr_t)returnKind << 16);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(uintptr_t transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_RAX_IS_GCREF | PTFF_RAX_IS_BYREF)) >> 16);
+    ASSERT((returnKind == GCRK_Scalar) || (transFrameFlags & PTFF_SAVE_RAX));
+    return returnKind;
+}
+
+#elif defined(TARGET_ARM)
+
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_R0_IS_GCREF == ((uint64_t)GCRK_Object << 14));
+C_ASSERT(PTFF_R0_IS_BYREF == ((uint64_t)GCRK_Byref << 14));
+
+inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    // just need to report gc ref bits here.
+    // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
+    return ((uint64_t)returnKind << 14);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_R0_IS_GCREF | PTFF_R0_IS_BYREF)) >> 14);
+    ASSERT((returnKind == GCRK_Scalar) || (transFrameFlags & PTFF_SAVE_R0));
     return returnKind;
 }
 

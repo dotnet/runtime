@@ -88,7 +88,7 @@ void Compiler::lvaInit()
     lvaCallSpCheck = BAD_VAR_NUM;
 #endif
 
-    structPromotionHelper = new (this, CMK_Generic) StructPromotionHelper(this);
+    structPromotionHelper = new (this, CMK_Promotion) StructPromotionHelper(this);
 }
 
 /*****************************************************************************/
@@ -1230,10 +1230,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #else
             unsigned argAlignment = eeGetArgSizeAlignment(origArgType, (hfaType == TYP_FLOAT));
             // We expect the following rounding operation to be a noop on all
-            // ABIs except ARM (where we have 8-byte aligned args) and macOS
+            // ABIs except ARM (where we have 8-byte aligned args) and Apple
             // ARM64 (that allows to pack multiple smaller parameters in a
             // single stack slot).
-            assert(compMacOsArm64Abi() || ((varDscInfo->stackArgSize % argAlignment) == 0));
+            assert(compAppleArm64Abi() || ((varDscInfo->stackArgSize % argAlignment) == 0));
 #endif
             varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
 
@@ -3651,6 +3651,7 @@ void Compiler::lvaSortByRefCount()
 #if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                 case TYP_SIMD64:
+                case TYP_MASK:
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
                 case TYP_STRUCT:
@@ -3909,14 +3910,14 @@ var_types LclVarDsc::GetRegisterType() const
 //   when moving locals between register and stack. Because of this the
 //   returned type is usually at least one 4-byte stack slot. However, there
 //   are certain exceptions for promoted fields in OSR methods (that may refer
-//   back to the original frame) and due to macOS arm64 where subsequent small
+//   back to the original frame) and due to Apple arm64 where subsequent small
 //   parameters can be packed into the same stack slot.
 //
 var_types LclVarDsc::GetStackSlotHomeType() const
 {
     if (varTypeIsSmall(TypeGet()))
     {
-        if (compMacOsArm64Abi() && lvIsParam && !lvIsRegArg)
+        if (compAppleArm64Abi() && lvIsParam && !lvIsRegArg)
         {
             // Allocated by caller and potentially only takes up a small slot
             return GetRegisterType();
@@ -4091,9 +4092,9 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             return;
         }
 
-        if (fgDomsComputed && IsDominatedByExceptionalEntry(block))
+        if ((m_domTree != nullptr) && IsDominatedByExceptionalEntry(block))
         {
-            SetVolatileHint(varDsc);
+            SetHasExceptionalUsesHint(varDsc);
         }
 
         if (tree->OperIs(GT_STORE_LCL_VAR))
@@ -4107,7 +4108,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
             if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
             {
-                bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
                 bool bbIsReturn = block->KindIs(BBJ_RETURN);
                 // TODO: Zero-inits in LSRA are created with below condition. But if filter out based on that condition
                 // we filter a lot of interesting variables that would benefit otherwise with EH var enregistration.
@@ -4169,19 +4170,19 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 //
 bool Compiler::IsDominatedByExceptionalEntry(BasicBlock* block)
 {
-    assert(fgDomsComputed);
+    assert(m_domTree != nullptr);
     return block->IsDominatedByExceptionalEntryFlag();
 }
 
 //------------------------------------------------------------------------
-// SetVolatileHint: Set a local var's volatile hint.
+// SetHasExceptionalUsesHint: Set that a local var has exceptional uses.
 //
 // Arguments:
 //    varDsc - the local variable that needs the hint.
 //
-void Compiler::SetVolatileHint(LclVarDsc* varDsc)
+void Compiler::SetHasExceptionalUsesHint(LclVarDsc* varDsc)
 {
-    varDsc->lvVolatileHint = true;
+    varDsc->lvHasExceptionalUsesHint = true;
 }
 
 //------------------------------------------------------------------------
@@ -5229,7 +5230,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
     if (opts.IsOSR())
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Stack offset includes Tier0 frame.
         //
         JITDUMP("--- delta bump %d for OSR + Tier0 frame\n", info.compPatchpointInfo->TotalFrameSize());
@@ -5334,7 +5335,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#if defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64)
     // We normally add alignment below the locals between them and the outgoing
     // arg space area. When we store fp/lr(ra) at the bottom, however, this will
     // be below the alignment. So we should not apply the alignment adjustment to
@@ -5346,11 +5347,11 @@ void Compiler::lvaFixVirtualFrameOffsets()
     {
         lvaTable[lvaRetAddrVar].SetStackOffset(REGSIZE_BYTES);
     }
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     assert(codeGen->isFramePointerUsed());
     if (lvaRetAddrVar != BAD_VAR_NUM)
     {
-        // For LoongArch64, the RA is below the fp. see the `genPushCalleeSavedRegisters`
+        // For LoongArch64 and RISCV64, the RA is below the fp. see the `genPushCalleeSavedRegisters`
         lvaTable[lvaRetAddrVar].SetStackOffset(-REGSIZE_BYTES);
     }
 #endif // !TARGET_LOONGARCH64
@@ -5443,7 +5444,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     /* Update the argOffs to reflect arguments that are passed in registers */
 
     noway_assert(codeGen->intRegState.rsCalleeRegArgCount <= MAX_REG_ARG);
-    noway_assert(compMacOsArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
+    noway_assert(compAppleArm64Abi() || compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
 
     if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
@@ -5597,7 +5598,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         unsigned argumentSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
 
-        assert(compMacOsArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
+        assert(compAppleArm64Abi() || argumentSize % TARGET_POINTER_SIZE == 0);
 
         argOffs =
             lvaAssignVirtualFrameOffsetToArg(lclNum++, argumentSize, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
@@ -5986,7 +5987,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 #endif // TARGET_ARM
         const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
         const unsigned argAlignment = eeGetArgSizeAlignment(varDsc->lvType, isFloatHfa);
-        if (compMacOsArm64Abi())
+        if (compAppleArm64Abi())
         {
             argOffs = roundUp(argOffs, argAlignment);
         }
@@ -6139,17 +6140,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
     }
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     assert(compCalleeRegsPushed >= 2);
 
-#elif defined(TARGET_RISCV64)
-
-    // Subtract off FP and RA.
-    assert(compCalleeRegsPushed >= 2);
-    stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
-
-#else // !TARGET_RISCV64
+#else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #ifdef TARGET_ARM
     // On ARM32 LR is part of the pushed registers and is always stored at the
     // top.
@@ -6160,7 +6155,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif
 
     stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
-#endif // !TARGET_RISCV64
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
     // (2) Account for the remainder of the frame
     //
@@ -6882,11 +6877,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_ARM64
 
-#if defined(TARGET_RISCV64)
-    assert(isFramePointerUsed()); // Note that currently we always have a frame pointer
-    stkOffs -= 2 * REGSIZE_BYTES;
-#endif // TARGET_RISCV64
-
 #if FEATURE_FIXED_OUT_ARGS
     if (lvaOutgoingArgSpaceSize > 0)
     {
@@ -6903,8 +6893,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#ifdef TARGET_LOONGARCH64
-    // For LoongArch64, CalleeSavedRegs are at bottom.
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // For LoongArch64 and RISCV64, CalleeSavedRegs are at bottom.
     int pushedCount = 0;
 #else
     // compLclFrameSize equals our negated virtual stack offset minus the pushed registers and return address
@@ -7891,7 +7881,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         offset += codeGen->genCallerSPtoInitialSPdelta();
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (forRootFrame && opts.IsOSR())
     {
         const PatchpointInfo* const ppInfo = info.compPatchpointInfo;
@@ -7910,7 +7900,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         //
         const int adjustment = ppInfo->TotalFrameSize() + REGSIZE_BYTES;
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         const int adjustment = ppInfo->TotalFrameSize();
 #endif

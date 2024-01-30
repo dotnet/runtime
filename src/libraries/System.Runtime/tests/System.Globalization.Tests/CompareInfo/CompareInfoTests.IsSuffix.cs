@@ -25,12 +25,12 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "foobardzsdzs", "rddzs", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "foobardzsdzs", "rddzs", CompareOptions.Ordinal, false, 0 };
             yield return new object[] { s_invariantCompare, "dz", "z", CompareOptions.None, true, 1 };
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { s_hungarianCompare, "dz", "z", CompareOptions.None, false, 0 };
             yield return new object[] { s_hungarianCompare, "dz", "z", CompareOptions.Ordinal, true, 1 };
 
             // Slovak
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { s_slovakCompare, "ch", "h", CompareOptions.None, false, 0 };
                 yield return new object[] { s_slovakCompare, "velmi chora", "hora", CompareOptions.None, false, 0 };
@@ -80,7 +80,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800\uD800", CompareOptions.None, true, 2 };
 
             // Ignore symbols
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
                 yield return new object[] { s_invariantCompare, "More Test's", "Tests", CompareOptions.None, false, 0 };
@@ -107,7 +107,7 @@ namespace System.Globalization.Tests
             {
                 yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", CompareOptions.None, false, 0 };
                 yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, false, 0 };
-                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {
                     yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDC00", CompareOptions.None, false, 0 };
                     yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDC00", CompareOptions.IgnoreCase, false, 0 };
@@ -116,7 +116,7 @@ namespace System.Globalization.Tests
 
             // Suffixes where matched length does not equal value string length
             yield return new object[] { s_germanCompare, "xyz Strasse", "xtra\u00DFe", supportedIgnoreCaseIgnoreNonSpaceOptions, false, 0 };
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { s_invariantCompare, "xyzdz", "\u01F3", supportedIgnoreNonSpaceOption, true, 2 };
                 yield return new object[] { s_invariantCompare, "xyz\u01F3", "dz", supportedIgnoreNonSpaceOption, true, 1 };
@@ -152,7 +152,7 @@ namespace System.Globalization.Tests
             valueBoundedMemory.MakeReadonly();
 
             Assert.Equal(expected, compareInfo.IsSuffix(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && !PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 Assert.Equal(expected, compareInfo.IsSuffix(sourceBoundedMemory.Span, valueBoundedMemory.Span, options, out int actualMatchLength));
                 Assert.Equal(expectedMatchLength, actualMatchLength);
@@ -162,7 +162,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void IsSuffix_UnassignedUnicode()
         {
-            bool result = PlatformDetection.IsIcuGlobalization || PlatformDetection.IsHybridGlobalizationOnOSX ? false : true;
+            bool result = PlatformDetection.IsIcuGlobalization || PlatformDetection.IsHybridGlobalizationOnApplePlatform ? false : true;
             int expectedMatchLength = (result) ? 6 : 0;
 
             IsSuffix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result, expectedMatchLength);

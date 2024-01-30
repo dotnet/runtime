@@ -669,7 +669,8 @@ namespace System.Numerics
 
         public static BigInteger Parse(string value, NumberStyles style, IFormatProvider? provider)
         {
-            return BigNumber.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
+            ArgumentNullException.ThrowIfNull(value);
+            return Parse(value.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? value, out BigInteger result)
@@ -679,12 +680,12 @@ namespace System.Numerics
 
         public static bool TryParse([NotNullWhen(true)] string? value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result) == BigNumber.ParsingStatus.OK;
+            return TryParse(value.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         public static BigInteger Parse(ReadOnlySpan<char> value, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
-            return BigNumber.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result)
@@ -694,7 +695,7 @@ namespace System.Numerics
 
         public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result) == BigNumber.ParsingStatus.OK;
+            return Number.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static int Compare(BigInteger left, BigInteger right)
@@ -1182,16 +1183,12 @@ namespace System.Numerics
                     return _sign < other._sign ? -1 : _sign > other._sign ? +1 : 0;
                 return -other._sign;
             }
-            int cuThis, cuOther;
-            if (other._bits == null || (cuThis = _bits.Length) > (cuOther = other._bits.Length))
-                return _sign;
-            if (cuThis < cuOther)
-                return -_sign;
 
-            int cuDiff = GetDiffLength(_bits, other._bits, cuThis);
-            if (cuDiff == 0)
-                return 0;
-            return _bits[cuDiff - 1] < other._bits[cuDiff - 1] ? -_sign : _sign;
+            if (other._bits == null)
+                return _sign;
+
+            int bitsResult = BigIntegerCalculator.Compare(_bits, other._bits);
+            return _sign < 0 ? -bitsResult : bitsResult;
         }
 
         public int CompareTo(object? obj)
@@ -1556,22 +1553,22 @@ namespace System.Numerics
 
         public override string ToString()
         {
-            return BigNumber.FormatBigInteger(this, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatBigInteger(this, null, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return BigNumber.FormatBigInteger(this, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatBigInteger(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
-            return BigNumber.FormatBigInteger(this, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatBigInteger(this, format, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return BigNumber.FormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
         private string DebuggerDisplay
@@ -1631,7 +1628,7 @@ namespace System.Numerics
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return BigNumber.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+            return Number.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
         private static BigInteger Add(ReadOnlySpan<uint> leftBits, int leftSign, ReadOnlySpan<uint> rightBits, int rightSign)
@@ -3114,16 +3111,6 @@ namespace System.Numerics
                 _bits.CopyTo(xd);
             }
             return _sign < 0;
-        }
-
-        internal static int GetDiffLength(uint[] rgu1, uint[] rgu2, int cu)
-        {
-            for (int iv = cu; --iv >= 0;)
-            {
-                if (rgu1[iv] != rgu2[iv])
-                    return iv + 1;
-            }
-            return 0;
         }
 
         [Conditional("DEBUG")]

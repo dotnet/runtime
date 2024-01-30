@@ -15,14 +15,13 @@ namespace Wasm.Build.Tests.Blazor;
 
 public class WorkloadRequiredTests : BlazorWasmTestBase
 {
-    /* Keep in sync with settings in wasm.proj, and WasmApp.Native.targets .
+    /* Keep in sync with settings in browser.proj, and WasmApp.Native.targets .
      * The `triggerValue` here is opposite of the default used when building the runtime pack
-     * (see wasm.proj), and thus requiring a native build
+     * (see browser.proj), and thus requiring a native build
      */
     public static (string propertyName, bool triggerValue)[] PropertiesWithTriggerValues = new[]
     {
         ("RunAOTCompilation", true),
-        ("WasmEnableLegacyJsInterop", false),
         ("WasmEnableSIMD", false),
         ("WasmEnableExceptionHandling", false),
         ("InvariantTimezone", true),
@@ -76,6 +75,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ false)]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ true)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task WorkloadNotRequiredForInvariantGlobalization(string config, bool invariant, bool publish)
     {
         string id = $"props_req_workload_{(publish ? "publish" : "build")}_{GetRandomId()}";

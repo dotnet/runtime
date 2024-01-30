@@ -39,6 +39,7 @@
       DOTNET_EnableSSSE3;
       DOTNET_JitStressEvexEncoding;
       DOTNET_PreferredVectorBitWidth;
+      DOTNET_MaxVectorTBitWidth;
       DOTNET_ForceRelocs;
       DOTNET_GCStress;
       DOTNET_GCName;
@@ -130,6 +131,8 @@
     <TestEnvironment Include="jitstress_isas_x86_nosse41" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
     <TestEnvironment Include="jitstress_isas_x86_nosse42" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_x86_nossse3" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
+    <TestEnvironment Include="jitstress_isas_x86_vectort128" JitStressEvexEncoding="1" MaxVectorTBitWidth="128" />
+    <TestEnvironment Include="jitstress_isas_x86_vectort512" JitStressEvexEncoding="1" MaxVectorTBitWidth="512" />
     <TestEnvironment Include="jitstress_isas_1_x86_noaes" JitStress="1" EnableAES="0" /> <!-- Depends on SSE2 -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx" JitStress="1" EnableAVX="0" /> <!-- Depends on SSE42 -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx2" JitStress="1" EnableAVX2="0" /> <!-- Depends on AVX -->

@@ -169,11 +169,11 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_OFFSET_VTABLE == sizeof(MethodTable));
 
 #define               OFFSETOF__MethodTable__m_ElementType      DBG_FRE(0x38, 0x30)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_ElementType
-                    == offsetof(MethodTable, m_pMultipurposeSlot1));
+                    == offsetof(MethodTable, m_ElementTypeHnd));
 
 #define               OFFSETOF__MethodTable__m_pInterfaceMap    DBG_FRE(0x40, 0x38)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pInterfaceMap
-                    == offsetof(MethodTable, m_pMultipurposeSlot2));
+                    == offsetof(MethodTable, m_pInterfaceMap));
 
 
 #define MethodTable_VtableSlotsPerChunk     8

@@ -230,94 +230,11 @@ namespace ILCompiler.DependencyAnalysis
         // may trash volatile registers. (there are calls to the slow helper and possibly to platform's TLS support)
         private static void EmitInlineTLSAccess(NodeFactory factory, ref X64Emitter encoder)
         {
-            ISymbolNode getInlinedThreadStaticBaseSlow = factory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow);
-            ISymbolNode tlsRoot = factory.TlsRoot;
-            // IsSingleFileCompilation is not enough to guarantee that we can use "Initial Executable" optimizations.
-            // we need a special compiler flag analogous to /GA. Just assume "false" for now.
-            // bool isInitialExecutable = factory.CompilationModuleGroup.IsSingleFileCompilation;
-            bool isInitialExecutable = false;
+            // For factory.Target.IsApplePlatform
+            // movq _\Var @TLVP(% rip), % rdi
+            // callq * (% rdi)
 
-            if (factory.Target.IsWindows)
-            {
-                if (isInitialExecutable)
-                {
-                    // mov         rax,qword ptr gs:[58h]
-                    encoder.Builder.EmitBytes(new byte[] { 0x65, 0x48, 0x8B, 0x04, 0x25, 0x58, 0x00, 0x00, 0x00 });
-
-                    // mov         ecx, SECTIONREL tlsRoot
-                    encoder.Builder.EmitBytes(new byte[] { 0xB9 });
-                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_SECREL);
-
-                    // add         rcx,qword ptr [rax]
-                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x03, 0x08 });
-                }
-                else
-                {
-                    // mov         ecx,dword ptr [_tls_index]
-                    encoder.Builder.EmitBytes(new byte[] { 0x8B, 0x0D });
-                    encoder.Builder.EmitReloc(factory.ExternSymbol("_tls_index"), RelocType.IMAGE_REL_BASED_REL32);
-
-                    // mov         rax,qword ptr gs:[58h]
-                    encoder.Builder.EmitBytes(new byte[] { 0x65, 0x48, 0x8B, 0x04, 0x25, 0x58, 0x00, 0x00, 0x00 });
-
-                    // mov         rax,qword ptr [rax+rcx*8]
-                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8B, 0x04, 0xC8 });
-
-                    // mov         ecx, SECTIONREL tlsRoot
-                    encoder.Builder.EmitBytes(new byte[] { 0xB9 });
-                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_SECREL);
-
-                    // add         rcx,rax
-                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x01, 0xC1 });
-                }
-
-                // mov rax, qword ptr[rcx]
-                encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8b, 0x01 });
-                encoder.EmitCompareToZero(Register.RAX);
-                encoder.EmitJE(getInlinedThreadStaticBaseSlow);
-                encoder.EmitRET();
-            }
-            else if (factory.Target.OperatingSystem == TargetOS.Linux)
-            {
-                if (isInitialExecutable)
-                {
-                    // movq %fs:0x0,%rax
-                    encoder.Builder.EmitBytes(new byte[] { 0x64, 0x48, 0x8B, 0x04, 0x25, 0x00, 0x00, 0x00, 0x00 });
-
-                    // leaq tlsRoot@TPOFF(%rax), %rdi
-                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8D, 0xB8 });
-                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_TPOFF);
-                }
-                else
-                {
-                    // data16 leaq tlsRoot@TLSGD(%rip), %rdi
-                    encoder.Builder.EmitBytes(new byte[] { 0x66, 0x48, 0x8D, 0x3D });
-                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_TLSGD, -4);
-
-                    // data16 data16 rex.W callq __tls_get_addr@PLT
-                    encoder.Builder.EmitBytes(new byte[] { 0x66, 0x66, 0x48, 0xE8 });
-                    encoder.Builder.EmitReloc(factory.ExternSymbol("__tls_get_addr"), RelocType.IMAGE_REL_BASED_REL32);
-
-                    encoder.EmitMOV(Register.RDI, Register.RAX);
-                }
-
-                // mov  rax, qword ptr[rdi]
-                encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8B, 0x07 });
-                encoder.EmitCompareToZero(Register.RAX);
-                encoder.EmitJE(getInlinedThreadStaticBaseSlow);
-                encoder.EmitRET();
-            }
-            else if (factory.Target.IsOSXLike)
-            {
-                // movq _\Var @TLVP(% rip), % rdi
-                // callq * (% rdi)
-
-                throw new NotImplementedException();
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
+            throw new NotImplementedException();
         }
     }
 }

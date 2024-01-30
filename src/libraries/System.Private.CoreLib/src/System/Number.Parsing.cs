@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Unicode;
 
 namespace System
 {
@@ -1197,7 +1198,7 @@ namespace System
         }
 
         internal static bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result)
-            where TChar: unmanaged, IUtfChar<TChar>
+            where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
             NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[TFloat.NumberBufferLength]);
@@ -1361,17 +1362,6 @@ namespace System
             return null;
         }
 
-        private static bool IsWhite(uint ch) => (ch == 0x20) || ((ch - 0x09) <= (0x0D - 0x09));
-
-        private static bool IsDigit(uint ch) => (ch - '0') <= 9;
-
-        internal enum ParsingStatus
-        {
-            OK,
-            Failed,
-            Overflow
-        }
-
         [DoesNotReturn]
         internal static void ThrowOverflowOrFormatException<TChar, TInteger>(ParsingStatus status, ReadOnlySpan<TChar> value)
             where TChar : unmanaged, IUtfChar<TChar>
@@ -1388,7 +1378,27 @@ namespace System
         internal static void ThrowFormatException<TChar>(ReadOnlySpan<TChar> value)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, value.ToString()));
+            string errorMessage;
+
+            if (typeof(TChar) == typeof(byte))
+            {
+                // Decode the UTF8 value into a string we can include in the error message. We're here
+                // because we failed to parse, which also means the bytes might not be valid UTF8,
+                // so fallback to a message that doesn't include the value if the bytes are invalid.
+                // It's possible after we check the bytes for validity that they could be concurrently
+                // mutated, but if that's happening, all bets are off, anyway, and it simply impacts
+                // which exception is thrown.
+                ReadOnlySpan<byte> bytes = MemoryMarshal.Cast<TChar, byte>(value);
+                errorMessage = Utf8.IsValid(bytes) ?
+                    SR.Format(SR.Format_InvalidStringWithValue, Encoding.UTF8.GetString(bytes)) :
+                    SR.Format_InvalidString;
+            }
+            else
+            {
+                errorMessage = SR.Format(SR.Format_InvalidStringWithValue, value.ToString());
+            }
+
+            throw new FormatException(errorMessage);
         }
 
         [DoesNotReturn]

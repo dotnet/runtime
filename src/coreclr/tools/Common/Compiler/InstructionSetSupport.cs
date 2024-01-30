@@ -89,6 +89,10 @@ namespace ILCompiler
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
             }
+            else if (architecture == TargetArchitecture.RiscV64)
+            {
+                return "";
+            }
             else
             {
                 throw new InternalCompilerErrorException("Unknown architecture");
@@ -138,6 +142,10 @@ namespace ILCompiler
                 return SimdVectorLength.None;
             }
             else if (_targetArchitecture == TargetArchitecture.LoongArch64)
+            {
+                return SimdVectorLength.None;
+            }
+            else if (_targetArchitecture == TargetArchitecture.RiscV64)
             {
                 return SimdVectorLength.None;
             }

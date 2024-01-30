@@ -105,9 +105,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float CopySign(float x, float y)
         {
-            if (Sse.IsSupported || AdvSimd.IsSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
-                return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0f), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
+                return Vector128.ConditionalSelect(Vector128.CreateScalarUnsafe(-0.0f), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
             }
             else
             {

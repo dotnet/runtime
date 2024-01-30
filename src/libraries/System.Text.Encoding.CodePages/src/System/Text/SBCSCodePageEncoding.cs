@@ -37,11 +37,11 @@ namespace System.Text
         {
             if (BitConverter.IsLittleEndian)
             {
-              return *(ushort*)pByte;
+                return *(ushort*)pByte;
             }
             else
             {
-              return BinaryPrimitives.ReverseEndianness(*(ushort*)pByte);
+                return BinaryPrimitives.ReverseEndianness(*(ushort*)pByte);
             }
         }
 
