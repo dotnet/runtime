@@ -83,7 +83,7 @@ interface DotnetHostBuilder {
      */
     withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder;
     /**
-     * @param enabled diagnostic log messages during runtime startup and execution, written to the browser console.
+     * @param enabled if "true", writes diagnostic messages during runtime startup and execution to the browser console.
      */
     withDiagnosticTracing(enabled: boolean): DotnetHostBuilder;
     /**
