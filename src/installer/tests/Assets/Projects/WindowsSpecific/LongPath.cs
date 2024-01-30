@@ -5,17 +5,14 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace PortableAppWithLongPath
+namespace WindowsSpecific
 {
-    public static class Program
+    public static partial class Program
     {
-        public static void Main(string[] args)
+        public static void LongPath(string dir)
         {
-            Console.WriteLine("Hello World!");
-            Console.WriteLine(string.Join(Environment.NewLine, args));
-
             // Create a path that is longer than MAX_PATH
-            DirectoryInfo newDir = Directory.CreateDirectory(Path.Combine(args[0], "longPath"));
+            DirectoryInfo newDir = Directory.CreateDirectory(Path.Combine(dir, "longPath"));
             string longPath = Path.Combine(newDir.FullName, new string('x', 255));
 
             Console.WriteLine($"Trying to create `{longPath}`");

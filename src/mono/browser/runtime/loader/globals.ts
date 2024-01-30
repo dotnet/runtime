@@ -72,14 +72,15 @@ export function setLoaderGlobals(
     Object.assign(globalObjects.module, {
         config: deep_merge_config(monoConfig, { environmentVariables: {} }),
     });
-    Object.assign(runtimeHelpers, {
+    const rh: Partial<RuntimeHelpers> = {
         mono_wasm_bindings_is_ready: false,
         javaScriptExports: {} as any,
         config: globalObjects.module.config,
         diagnosticTracing: false,
-        abort: (reason: any) => { throw reason; },
-    });
-    Object.assign(loaderHelpers, {
+        nativeAbort: (reason: any) => { throw reason; },
+        nativeExit: (code: number) => { throw new Error("exit:" + code); }
+    };
+    const lh: Partial<LoaderHelpers> = {
         gitHash,
         config: globalObjects.module.config,
         diagnosticTracing: false,
@@ -124,8 +125,9 @@ export function setLoaderGlobals(
         // from wasm-feature-detect npm package
         exceptions,
         simd,
-
-    } as Partial<LoaderHelpers>);
+    };
+    Object.assign(runtimeHelpers, rh);
+    Object.assign(loaderHelpers, lh);
 }
 
 // this will abort the program if the condition is false
@@ -137,5 +139,5 @@ export function mono_assert(condition: unknown, messageFactory: string | (() => 
         ? messageFactory()
         : messageFactory);
     const error = new Error(message);
-    runtimeHelpers.abort(error);
+    runtimeHelpers.nativeAbort(error);
 }

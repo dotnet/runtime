@@ -221,5 +221,24 @@ namespace System.Linq.Tests
             Array.Sort(randomized, (a, b) => a - b);
             Assert.Equal(randomized, ordered);
         }
+
+        [Fact]
+        public void OrderByDescending_FirstLast_MatchesArray()
+        {
+            object[][] arrays =
+            [
+                [1],
+                [1, 1],
+                [1, 2, 1],
+                [1, 2, 1, 3],
+                [2, 1, 3, 1, 4],
+            ];
+
+            foreach (object[] objects in arrays)
+            {
+                Assert.Same(objects.OrderByDescending(x => x).First(), objects.OrderByDescending(x => x).ToArray().First());
+                Assert.Same(objects.OrderByDescending(x => x).Last(), objects.OrderByDescending(x => x).ToArray().Last());
+            }
+        }
     }
 }

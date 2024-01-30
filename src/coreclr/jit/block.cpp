@@ -301,18 +301,20 @@ bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------
-// CanRemoveJumpToFalseTarget: determine if jump to false target can be omitted
+// CanRemoveJumpToTarget: determine if jump to target can be omitted
 //
 // Arguments:
+//    target - true/false target of the BBJ_COND block
 //    compiler - current compiler instance
 //
 // Returns:
-//    true if block is a BBJ_COND that can fall into its false target
+//    true if block is a BBJ_COND that can fall into target
 //
-bool BasicBlock::CanRemoveJumpToFalseTarget(Compiler* compiler) const
+bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const
 {
     assert(KindIs(BBJ_COND));
-    return NextIs(bbFalseTarget) && !hasAlign() && !compiler->fgInDifferentRegions(this, bbFalseTarget);
+    assert(TrueTargetIs(target) || FalseTargetIs(target));
+    return NextIs(target) && !compiler->fgInDifferentRegions(this, target);
 }
 
 //------------------------------------------------------------------------
@@ -855,8 +857,7 @@ void BasicBlock::CopyTarget(Compiler* compiler, const BasicBlock* from)
             SetEhf(new (compiler, CMK_BasicBlock) BBehfDesc(compiler, from->GetEhfTargets()));
             break;
         case BBJ_COND:
-            // TODO-NoFallThrough: Copy false target, too?
-            SetCond(from->GetTrueTarget(), Next());
+            SetCond(from->GetTrueTarget(), from->GetFalseTarget());
             break;
         case BBJ_ALWAYS:
             SetKindAndTarget(from->GetKind(), from->GetTarget());
@@ -897,8 +898,7 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             from->bbEhfTargets = nullptr; // Make sure nobody uses the descriptor after this.
             break;
         case BBJ_COND:
-            // TODO-NoFallThrough: Copy false target, too?
-            SetCond(from->GetTrueTarget(), Next());
+            SetCond(from->GetTrueTarget(), from->GetFalseTarget());
             break;
         case BBJ_ALWAYS:
             SetKindAndTarget(from->GetKind(), from->GetTarget());
@@ -1123,11 +1123,13 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgStore() const
     return stmt;
 }
 
-/*****************************************************************************
- *
- *  Can a BasicBlock be inserted after this without altering the flowgraph
- */
-
+//------------------------------------------------------------------------
+// bbFallsThrough: Check if inserting a BasicBlock after this one will alter
+// the flowgraph.
+//
+// Returns:
+//    True if so.
+//
 bool BasicBlock::bbFallsThrough() const
 {
     switch (bbKind)
@@ -1183,7 +1185,7 @@ unsigned BasicBlock::NumSucc() const
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueTarget == bbFalseTarget)
             {
                 return 1;
             }
@@ -1308,7 +1310,7 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             return 1;
 
         case BBJ_COND:
-            if (bbTarget == bbNext)
+            if (bbTrueTarget == bbFalseTarget)
             {
                 return 1;
             }
