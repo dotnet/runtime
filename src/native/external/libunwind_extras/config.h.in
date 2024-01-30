@@ -20,8 +20,6 @@
 #cmakedefine HAVE_STDALIGN_H
 #cmakedefine HAVE_STDALIGN_ALIGNAS
 
-#cmakedefine HAVE_PIPE2
-
 #if defined(_MSC_VER) && defined(HAVE_STDALIGN_H) && !defined(HAVE_STDALIGN_ALIGNAS)
 // alignment is a performance optimization for the cross compile libunwind
 // Simply ignore it if it is not supported by the compiler

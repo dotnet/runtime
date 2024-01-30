@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3libunwind}{unw\_getcontext}{David Mosberger-Tang}{Programming Library}{unw\_getcontext}unw\_getcontext -- get initial machine-state
+\begin{Name}{3}{unw\_getcontext}{David Mosberger-Tang}{Programming Library}{unw\_getcontext}unw\_getcontext -- get initial machine-state
 \end{Name}
 
 \section{Synopsis}
@@ -17,11 +17,11 @@
 \section{Description}
 
 The \Func{unw\_getcontext}() routine initializes the context structure
-pointed to by \Var{ucp} with the machine state of the call site.  The
+pointed to by \Var{ucp} with the machine-state of the call-site.  The
 exact set of registers stored by \Func{unw\_getcontext}() is
 platform-specific, but, in general, at least all preserved
 (``callee-saved'') and all frame-related registers, such as the
-stack pointer, will be stored.
+stack-pointer, will be stored.
 
 This routine is normally implemented as a macro and applications
 should not attempt to take its address.
@@ -44,13 +44,13 @@ Otherwise, a value of -1 is returned.
 
 \section{Thread and Signal Safety}
 
-\Func{unw\_getcontext}() is thread safe as well as safe to use
+\Func{unw\_getcontext}() is thread-safe as well as safe to use
 from a signal handler.
 
 \section{See Also}
 
-\SeeAlso{libunwind}(3libunwind),
-\SeeAlso{unw\_init\_local}(3libunwind)
+\SeeAlso{libunwind(3)},
+\SeeAlso{unw\_init\_local(3)}
 
 \section{Author}
 

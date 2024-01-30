@@ -76,6 +76,3 @@ DW_CFA_expression_inner:
   ret
   .cfi_endproc
 .size DW_CFA_expression_inner,.-DW_CFA_expression_inner
-
-      /* We do not need executable stack.  */
-      .section        .note.GNU-stack,"",@progbits

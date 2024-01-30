@@ -25,6 +25,10 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
+#ifdef HAVE_ASM_VSYSCALL_H
+#include <asm/vsyscall.h>
+#endif
+
 #include "libunwind_i.h"
 #include "unwind_i.h"
 #include <signal.h>
@@ -51,6 +55,20 @@ is_plt_entry (struct dwarf_cursor *c)
 
   Debug (14, "ip=0x%lx => 0x%016lx 0x%016lx, ret = %d\n", c->ip, w0, w1, ret);
   return ret;
+}
+
+static int
+is_vsyscall (struct dwarf_cursor *c)
+{
+#if defined(VSYSCALL_START) && defined(VSYSCALL_END)
+  return c->ip >= VSYSCALL_START && c->ip < VSYSCALL_END;
+#elif defined(VSYSCALL_ADDR)
+  /* Linux 3.16 removes `VSYSCALL_START` and `VSYSCALL_END`.  Assume
+     a single page is mapped for vsyscalls.  */
+  return c->ip >= VSYSCALL_ADDR && c->ip < VSYSCALL_ADDR + sysconf(_SC_PAGESIZE);
+#else
+  return 0;
+#endif
 }
 
 int
@@ -122,15 +140,7 @@ unw_step (unw_cursor_t *cursor)
 
       Debug (13, "dwarf_step() failed (ret=%d), trying frame-chain\n", ret);
 
-      if ((ret = x86_64_os_step (c)) != 0)
-        {
-          if (ret < 0)
-            {
-              Debug (2, "returning 0\n");
-              return 0;
-            }
-        }
-      else if (unw_is_signal_frame (cursor) > 0)
+      if (unw_is_signal_frame (cursor) > 0)
         {
           ret = x86_64_handle_signal_frame(cursor);
           if (ret < 0)
@@ -146,6 +156,15 @@ unw_step (unw_cursor_t *cursor)
           c->frame_info.cfa_reg_offset = 8;
           c->frame_info.cfa_reg_rsp = -1;
           c->frame_info.frame_type = UNW_X86_64_FRAME_STANDARD;
+          c->dwarf.loc[RIP] = DWARF_LOC (c->dwarf.cfa, 0);
+          c->dwarf.cfa += 8;
+        }
+      else if (is_vsyscall (&c->dwarf))
+        {
+          Debug (2, "in vsyscall region\n");
+          c->frame_info.cfa_reg_offset = 8;
+          c->frame_info.cfa_reg_rsp = -1;
+          c->frame_info.frame_type = UNW_X86_64_FRAME_GUESSED;
           c->dwarf.loc[RIP] = DWARF_LOC (c->dwarf.cfa, 0);
           c->dwarf.cfa += 8;
         }
@@ -212,19 +231,15 @@ unw_step (unw_cursor_t *cursor)
                              */
                             c->dwarf.cfa += 8;
                             /* Optimised x64 binaries don't use RBP it seems? */
-                            rbp_loc = c->dwarf.loc[RBP];
-                            rsp_loc = DWARF_VAL_LOC (c, rsp + 8);
+                            rbp_loc = DWARF_LOC (rbp, 0);
+                            rsp_loc = DWARF_LOC (rsp, 0);
                             rip_loc = DWARF_LOC (rsp, 0);
                           }
                         else
-                          {
-                            Debug (2, "new_ip 0x%lx dwarf_get(&c->dwarf, DWARF_MEM_LOC(c->dwarf, new_ip), &not_used) != 0\n", new_ip);
-                          }
+                          Debug (2, "new_ip 0x%lx dwarf_get(&c->dwarf, DWARF_MEM_LOC(c->dwarf, new_ip), &not_used) != 0\n", new_ip);
                       }
-                    else
-                      {
+		                else
                         Debug (2, "rsp 0x%lx dwarf_get(&c->dwarf, DWARF_MEM_LOC(c->dwarf, rsp), &new_ip) != 0\n", rsp);
-                      }
                   }
               /*
                * If the previous rip we found on the stack didn't look valid fall back

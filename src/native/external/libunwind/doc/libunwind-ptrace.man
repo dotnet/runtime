@@ -1,7 +1,5 @@
-.\" *********************************** start of \input{common.tex}
-.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 10:53:41 2023
+.\" Manual page created with latex2man on Thu Aug 16 09:44:44 MDT 2007
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,10 +10,10 @@
 
 .fi
 ..
-.TH "LIBUNWIND\-PTRACE" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "LIBUNWIND\-PTRACE" "3" "16 August 2007" "Programming Library " "Programming Library "
 .SH NAME
 libunwind\-ptrace
-\-\- ptrace() support in libunwind
+\-\- ptrace() support in libunwind 
 .PP
 .SH SYNOPSIS
 
@@ -29,49 +27,58 @@ _UPT_accessors;
 .PP
 void *_UPT_create(pid_t);
 .br
-void _UPT_destroy(void *);
+void
+_UPT_destroy(void *);
 .br
 .PP
-int _UPT_find_proc_info(unw_addr_space_t,
+int
+_UPT_find_proc_info(unw_addr_space_t,
 unw_word_t,
 unw_proc_info_t *,
 int,
 void *);
 .br
-void _UPT_put_unwind_info(unw_addr_space_t,
+void
+_UPT_put_unwind_info(unw_addr_space_t,
 unw_proc_info_t *,
 void *);
 .br
-int _UPT_get_dyn_info_list_addr(unw_addr_space_t,
+int
+_UPT_get_dyn_info_list_addr(unw_addr_space_t,
 unw_word_t *,
 void *);
 .br
-int _UPT_access_mem(unw_addr_space_t,
+int
+_UPT_access_mem(unw_addr_space_t,
 unw_word_t,
 unw_word_t *,
 int,
 void *);
 .br
-int _UPT_access_reg(unw_addr_space_t,
+int
+_UPT_access_reg(unw_addr_space_t,
 unw_regnum_t,
 unw_word_t *,
 int,
 void *);
 .br
-int _UPT_access_fpreg(unw_addr_space_t,
+int
+_UPT_access_fpreg(unw_addr_space_t,
 unw_regnum_t,
 unw_fpreg_t *,
 int,
 void *);
 .br
-int _UPT_get_proc_name(unw_addr_space_t,
+int
+_UPT_get_proc_name(unw_addr_space_t,
 unw_word_t,
 char *,
 size_t,
 unw_word_t *,
 void *);
 .br
-int _UPT_resume(unw_addr_space_t,
+int
+_UPT_resume(unw_addr_space_t,
 unw_cursor_t *,
 void *);
 .br
@@ -80,9 +87,9 @@ void *);
 
 .PP
 The ptrace(2)
-system call makes it possible for a process to 
-gain access to the machine state and virtual memory of \fIanother\fP
-process. With the right set of callback routines, it is therefore 
+system\-call makes it possible for a process to 
+gain access to the machine\-state and virtual memory of \fIanother\fP
+process. With the right set of call\-back routines, it is therefore 
 possible to hook up libunwind
 to another process via 
 ptrace(2).
@@ -90,185 +97,117 @@ While it\&'s not very difficult to do so directly,
 libunwind
 further facilitates this task by providing 
 ready\-to\-use callbacks for this purpose. The routines and variables 
-implementing this facility use a name prefix of _UPT,
+implementing this facility use a name\-prefix of _UPT,
 which is 
-stands for ``unwind via ptrace\&''\&. 
+stands for ``unwind\-via\-ptrace\&''\&. 
 .PP
-An application that wants to use the libunwind
-ptrace remote needs to 
-take the folowing steps. 
-.PP
-.TP
-1.
-Create a new libunwind address space that represents the target
-process. This is done by calling unw_create_addr_space().
-In 
-many cases, the application will simply want to pass the address of 
-_UPT_accessors
-as the first argument to this routine. Doing so 
-will ensure that libunwind
-will be able to properly unwind the 
-target process. 
-.PP
-.TP
-2.
-Turn on ptrace mode on the target process, either by forking a new 
-process, invoking PTRACE_TRACEME,
-and then starting the target 
-program (via execve(2)),
-or by directly attaching to an already 
-running process (via PTRACE_ATTACH).
-.PP
-.TP
-3.
-Once the process\-ID (pid) of the target process is known, a 
-UPT info structure can be created by calling 
-_UPT_create(),
-passing the pid of the target process as the 
-only argument. 
-.PP
-.TP
-4.
-The opaque pointer returned then needs to be passed as the 
-``argument\&'' pointer (third argument) to unw_init_remote().
-.PP
-In special circumstances, an application may prefer to use only 
-portions of the libunwind
-ptrace remote. For this reason, the individual 
-callback routines (_UPT_find_proc_info(),
+An application that wants to use the _UPT\-facility
+first needs 
+to create a new libunwind
+address\-space that represents the 
+target process. This is done by calling 
+unw_create_addr_space().
+In many cases, the application 
+will simply want to pass the address of _UPT_accessors
+as the 
+first argument to this routine. Doing so will ensure that 
+libunwind
+will be able to properly unwind the target process. 
+However, in special circumstances, an application may prefer to use 
+only portions of the _UPT\-facility.
+For this reason, the 
+individual callback routines (_UPT_find_proc_info(),
 _UPT_put_unwind_info(),
-etc.) are also available for direct use. Of 
-course, the addresses of these routines could also be picked up from 
-_UPT_accessors,
-but doing so would prevent static initialization. Also, 
-when using _UPT_accessors,
+etc.) are also available for direct 
+use. Of course, the addresses of these routines could also be picked 
+up from _UPT_accessors,
+but doing so would prevent static 
+initialization. Also, when using _UPT_accessors,
 \fIall\fP
-the callback routines will be 
-linked into the application, even if they are never actually called. 
+the callback routines will be linked into the application, even if 
+they are never actually called. 
+.PP
+Next, the application can turn on ptrace\-mode on the target process, 
+either by forking a new process, invoking PTRACE_TRACEME,
+and 
+then starting the target program (via execve(2)),
+or by 
+directly attaching to an already running process (via 
+PTRACE_ATTACH).
+Either way, once the process\-ID (pid) of the 
+target process is known, a _UPT\-info\-structure
+can be created 
+by calling _UPT_create(),
+passing the pid of the target process 
+as the only argument. The returned void\-pointer then needs to be 
+passed as the ``argument\&'' pointer (third argument) to 
+unw_init_remote().
 .PP
 The _UPT_resume()
-routine can be used to resume execution of the target 
-process. It simply invokes ptrace(2)
-with a command value of 
-PTRACE_CONT\&.
+routine can be used to resume execution of 
+the target process. It simply invokes ptrace(2)
+with a command 
+value of PTRACE_CONT\&.
 .PP
 When the application is done using libunwind
-on the target process, 
-_UPT_destroy()
-needs to be called, passing it the opaque pointer that 
-was returned by the call to _UPT_create().
-This ensures that all 
-memory and other resources are freed up. 
+on the target 
+process, _UPT_destroy()
+needs to be called, passing it the 
+void\-pointer that was returned by the corresponding call to 
+_UPT_create().
+This ensures that all memory and other 
+resources are freed up. 
 .PP
 .SH AVAILABILITY
 
 .PP
 Since ptrace(2)
-works within a single machine only, the libunwind ptrace 
-remote by definition is not available in libunwind
-versions configured 
-for cross\-unwinding. 
+works within a single machine only, the 
+_UPT\-facility
+by definition is not available in 
+libunwind\-versions
+configured for cross\-unwinding. 
 .PP
 .SH THREAD SAFETY
 
 .PP
-The libunwind
-ptrace remote assumes that a single UPT info structure is 
-never shared between threads. Because of this, no explicit locking is used. As 
-long as only one thread uses a UPT info structure at any given time, this 
-facility is thread\-safe. 
+The _UPT\-facility
+assumes that a single _UPT\-info
+structure is never shared between threads. Because of this, no 
+explicit locking is used. As long as only one thread uses 
+a _UPT\-info
+structure at any given time, this facility 
+is thread\-safe. 
 .PP
 .SH RETURN VALUE
 
 .PP
 _UPT_create()
 may return a NULL
-pointer if it fails to create 
-the UPT info structure for any reason. For the current implementation, the only 
-reason this call may fail is when the system is out of memory. 
+pointer if it fails 
+to create the _UPT\-info\-structure
+for any reason. For the 
+current implementation, the only reason this call may fail is when the 
+system is out of memory. 
 .PP
 .SH FILES
 
 .PP
 .TP
 libunwind\-ptrace.h
- Header file to include when using the 
+ Headerfile to include when using the 
 interface defined by this library. 
 .TP
 \fB\-l\fPunwind\-ptrace \fB\-l\fPunwind\-generic
- Linker switches to add when building a program that uses the 
+ Linker\-switches to add when building a program that uses the 
 functions defined by this library. 
-.PP
-.SH EXAMPLE
-
-.Vb
-    #include <libunwind\-ptrace.h>
-    #include <stdio.h>
-    #include <stdlib.h>
-
-    int
-    main (int argc, char **argv)
-    {
-      if (argc != 2) {
-        fprintf (stderr, "usage: %s PID\\n", argv[0]);
-        exit (EXIT_FAILURE);
-      }
-
-      char *endptr;
-      pid_t target_pid = strtoul (argv[1], &endptr, 10);
-      if (target_pid == 0 && argv[1] == endptr) {
-        fprintf (stderr, "usage: %s PID\\n", argv[0]);
-        exit (EXIT_FAILURE);
-      }
-
-      unw_addr_space_t as = unw_create_addr_space (&_UPT_accessors, 0);
-      if (!as) {
-        fprintf (stderr, "unw_create_addr_space() failed");
-        exit (EXIT_FAILURE);
-      }
-
-      void *ui = _UPT_create (target_pid);
-      if (!ui) {
-        fprintf (stderr, "_UPT_create() failed");
-        exit (EXIT_FAILURE);
-      }
-
-      unw_cursor_t cursor;
-      int ret = unw_init_remote (&cursor, as, ui);
-      if (ret < 0) {
-        fprintf (stderr, "unw_init_remote() failed: ret=%d\\n", ret);
-        exit (EXIT_FAILURE);
-      }
-
-      do {
-        unw_proc_info_t pi;
-        ret = unw_get_proc_info (&cursor, &pi);
-        if (ret == \-UNW_ENOINFO) {
-          fprintf (stdout, "no info\\n");
-        } else if (ret >= 0) {
-          printf ("\\tproc=%#016lx\-%#016lx\\thandler=%#016lx lsda=%#016lx",
-                  (long) pi.start_ip, (long) pi.end_ip,
-                  (long) pi.handler, (long) pi.lsda);
-        }
-        ret = unw_step (&cursor);
-      } while (ret > 0);
-      if (ret < 0) {
-        fprintf (stderr, "unwind failed with ret=%d\\n", ret);
-        exit (EXIT_FAILURE);
-      }
-
-      _UPT_destroy (ui);
-      unw_destroy_addr_space (as);
-      exit (EXIT_SUCCESS);
-    }
-.Ve
 .PP
 .SH SEE ALSO
 
 .PP
-execve(2),
-libunwind(3libunwind),
-ptrace(2)
+execve(2), 
+libunwind(3),
+ptrace(2) 
 .PP
 .SH AUTHOR
 

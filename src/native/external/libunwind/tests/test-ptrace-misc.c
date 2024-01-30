@@ -33,8 +33,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #include <sys/types.h>
 
-#include "ident.h"
-
 pid_t self;
 int global[64];
 
@@ -70,6 +68,7 @@ func (int arg)
 int
 bar (int v)
 {
+  extern long f (long);
   int arr[1] = { v };
   uintptr_t r;
 

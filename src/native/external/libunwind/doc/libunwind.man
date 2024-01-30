@@ -1,7 +1,5 @@
-.\" *********************************** start of \input{common.tex}
-.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 11:06:25 2023
+.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,7 +10,7 @@
 
 .fi
 ..
-.TH "LIBUNWIND" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "LIBUNWIND" "3" "29 August 2021" "Programming Library " "Programming Library "
 .SH NAME
 libunwind
 \-\- a (mostly) platform\-independent unwind API 
@@ -131,7 +129,7 @@ unwinding. Say
 you want to unwind the stack while executing in some function 
 F().
 In this function, you would call unw_getcontext()
-to get a snapshot of the CPU registers (machine state). Then you 
+to get a snapshot of the CPU registers (machine\-state). Then you 
 initialize an \fIunwind cursor\fP
 based on this snapshot. This is 
 done with a call to unw_init_local().
@@ -142,7 +140,7 @@ The unwind cursor can then
 be moved ``up\&'' (towards earlier stack frames) by calling 
 unw_step().
 By repeatedly calling this routine, you can 
-uncover the entire call chain that led to the activation of function 
+uncover the entire call\-chain that led to the activation of function 
 F().
 A positive return value from unw_step()
 indicates 
@@ -168,7 +166,7 @@ back prev
 to curr
 whenever that is necessary. In the most 
 extreme case, a program could maintain a separate cursor for each call 
-frame and that way it could move up and down the callframe chain at 
+frame and that way it could move up and down the callframe\-chain at 
 will. 
 .PP
 Given an unwind cursor, it is possible to read and write the CPU 
@@ -228,14 +226,14 @@ before including the headerfile
 It is perfectly OK for a single program to 
 employ both local\-only and generic unwinding. That is, whether or not 
 UNW_LOCAL_ONLY
-is defined is a choice that each source file 
-(compilation unit) can make on its own. Independent of the setting(s) 
+is defined is a choice that each source\-file 
+(compilation\-unit) can make on its own. Independent of the setting(s) 
 of UNW_LOCAL_ONLY,
 you\&'ll always link the same library into 
 the program (normally \fB\-l\fPunwind).
 Furthermore, the 
 portion of libunwind
-that manages unwind info for dynamically 
+that manages unwind\-info for dynamically 
 generated code is not affected by the setting of 
 UNW_LOCAL_ONLY\&.
 .PP
@@ -274,12 +272,12 @@ Remote unwinding is typically
 used by debuggers and instruction\-set simulators, for example. 
 .PP
 Before you can unwind a remote process, you need to create a new 
-address space object for that process. This is achieved with the 
+address\-space object for that process. This is achieved with the 
 unw_create_addr_space()
 routine. The routine takes two 
 arguments: a pointer to a set of \fIaccessor\fP
 routines and an 
-integer that specifies the byte order of the target process. The 
+integer that specifies the byte\-order of the target process. The 
 accessor routines provide libunwind
 with the means to 
 communicate with the remote process. In particular, there are 
@@ -290,7 +288,7 @@ With the address space created, unwinding can be initiated by a call
 to unw_init_remote().
 This routine is very similar to 
 unw_init_local(),
-except that it takes an address space 
+except that it takes an address\-space 
 object and an opaque pointer as arguments. The routine uses these 
 arguments to fetch the initial machine state. Libunwind
 never 
@@ -301,7 +299,7 @@ select, e.g., the thread within a process that is to be unwound.
 Once a cursor has been initialized with unw_init_remote(),
 unwinding works exactly like in the local case. That is, you can use 
 unw_step()
-to move ``up\&'' in the call chain, read and write 
+to move ``up\&'' in the call\-chain, read and write 
 registers, or resume execution at a particular stack frame by calling 
 unw_resume\&.
 .PP
@@ -364,7 +362,7 @@ simultaneously.
 However, any given cursor may be accessed by only one thread at 
 any given time. 
 .PP
-To ensure thread safety, some libunwind
+To ensure thread\-safety, some libunwind
 routines may have to 
 use locking. Such routines \fImust not\fP
 be called from signal 
@@ -376,7 +374,7 @@ any routine that may be needed for \fIlocal\fP
 unwinding is 
 signal\-safe (e.g., unw_step()
 for local unwinding is 
-signal\-safe). For remote unwinding, \fInone\fP
+signal\-safe). For remote\-unwinding, \fInone\fP
 of the 
 libunwind
 routines are guaranteed to be signal\-safe. 
@@ -398,15 +396,15 @@ high\-level language exception handling may not work as expected.
 .PP
 The interface for registering and canceling dynamic unwind info has 
 been designed for maximum efficiency, so as to minimize the 
-performance impact on JIT compilers. In particular, both routines are 
+performance impact on JIT\-compilers. In particular, both routines are 
 guaranteed to execute in ``constant time\&'' (O(1)) and the 
-data structure encapsulating the dynamic unwind info has been designed 
+data\-structure encapsulating the dynamic unwind info has been designed 
 to facilitate sharing, such that similar procedures can share much of 
 the underlying information. 
 .PP
 For more information on the libunwind
 support for dynamically 
-generated code, see libunwind\-dynamic(3libunwind).
+generated code, see libunwind\-dynamic(3)\&.
 .PP
 .SH CACHING OF UNWIND INFO
 
@@ -419,7 +417,7 @@ using
 stale data. For example, this would happen if libunwind
 were 
 to cache information about a shared library which later on gets 
-unloaded (e.g., via \fIdlclose\fP(3libunwind)).
+unloaded (e.g., via \fIdlclose\fP(3)).
 .PP
 To prevent the risk of using stale data, libunwind
 provides two 
@@ -430,7 +428,7 @@ unw_flush_cache().
 The second facility is provided by 
 unw_set_caching_policy(),
 which lets a program 
-select the exact caching policy in use for a given address space 
+select the exact caching policy in use for a given address\-space 
 object. In particular, by selecting the policy 
 UNW_CACHE_NONE,
 it is possible to turn off caching 
@@ -457,11 +455,11 @@ should be
 included. 
 .TP
 \fB\-l\fPunwind
- Linker switch to add when building a 
+ Linker\-switch to add when building a 
 program that does native (same platform) unwinding. 
 .TP
 \fB\-l\fPunwind\-PLAT
- Linker switch to add when 
+ Linker\-switch to add when 
 building a program that unwinds a program on platform PLAT\&.
 For example, to (cross\-)unwind an IA\-64 program, the linker switch 
 \-lunwind\-ia64
@@ -472,33 +470,33 @@ multiple platforms.
 .SH SEE ALSO
 
 .PP
-libunwind\-dynamic(3libunwind),
-libunwind\-ia64(3libunwind),
-libunwind\-ptrace(3libunwind),
-libunwind\-setjmp(3libunwind),
-unw_create_addr_space(3libunwind),
-unw_destroy_addr_space(3libunwind),
-unw_flush_cache(3libunwind),
-unw_get_accessors(3libunwind),
-unw_get_fpreg(3libunwind),
-unw_get_proc_info(3libunwind),
-unw_get_proc_name(3libunwind),
-unw_get_reg(3libunwind),
-unw_getcontext(3libunwind),
-unw_init_local(3libunwind),
-unw_init_remote(3libunwind),
-unw_is_fpreg(3libunwind),
-unw_is_signal_frame(3libunwind),
-unw_regname(3libunwind),
-unw_resume(3libunwind),
-unw_set_caching_policy(3libunwind),
-unw_set_cache_size(3libunwind),
-unw_set_fpreg(3libunwind),
-unw_set_reg(3libunwind),
-unw_step(3libunwind),
-unw_strerror(3libunwind),
-_U_dyn_register(3libunwind),
-_U_dyn_cancel(3libunwind)
+libunwind\-dynamic(3),
+libunwind\-ia64(3),
+libunwind\-ptrace(3),
+libunwind\-setjmp(3),
+unw_create_addr_space(3),
+unw_destroy_addr_space(3),
+unw_flush_cache(3),
+unw_get_accessors(3),
+unw_get_fpreg(3),
+unw_get_proc_info(3),
+unw_get_proc_name(3),
+unw_get_reg(3),
+unw_getcontext(3),
+unw_init_local(3),
+unw_init_remote(3),
+unw_is_fpreg(3),
+unw_is_signal_frame(3),
+unw_regname(3),
+unw_resume(3),
+unw_set_caching_policy(3),
+unw_set_cache_size(3),
+unw_set_fpreg(3),
+unw_set_reg(3),
+unw_step(3),
+unw_strerror(3),
+_U_dyn_register(3),
+_U_dyn_cancel(3)
 .PP
 .SH AUTHOR
 

@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3libunwind}{unw\_flush\_cache}{David Mosberger-Tang}{Programming Library}{unw\_flush\_cache}unw\_flush\_cache -- flush cached info
+\begin{Name}{3}{unw\_flush\_cache}{David Mosberger-Tang}{Programming Library}{unw\_flush\_cache}unw\_flush\_cache -- flush cached info
 \end{Name}
 
 \section{Synopsis}
@@ -17,11 +17,11 @@
 \section{Description}
 
 The \Func{unw\_flush\_cache}() routine flushes all cached info as it
-relates to address range \Var{lo} to \Var{hi} (non-inclusive) in the
-target address space \Var{as}.  In addition, all info cached for
-address space \Var{as} that is not tied to a particular code range is
+relates to address-range \Var{lo} to \Var{hi} (non-inclusive) in the
+target address-space \Var{as}.  In addition, all info cached for
+address-space \Var{as} that is not tied to a particular code-range is
 also flushed.  For example, the address of the dynamic registration
-list is not tied to a code range and its cached value (if any) is
+list is not tied to a code-range and its cached value (if any) is
 flushed by a call to this routine.  The address range specified by
 \Var{lo} and \Var{hi} should be understood as a hint:
 \Func{unw\_flush\_cache}() may flush more information than requested,
@@ -38,14 +38,14 @@ return a value.
 
 \section{Thread and Signal Safety}
 
-The \Func{unw\_flush\_cache}() routine is thread safe as well as safe to
+The \Func{unw\_flush\_cache}() routine is thread-safe as well as safe to
 use from a signal handler.
 
 \section{See Also}
 
-\SeeAlso{libunwind}(3libunwind),
-\SeeAlso{unw\_set\_caching\_policy}(3libunwind)
-\SeeAlso{unw\_set\_cache\_size}(3libunwind)
+\SeeAlso{libunwind(3)},
+\SeeAlso{unw\_set\_caching\_policy(3)}
+\SeeAlso{unw\_set\_cache\_size(3)}
 
 \section{Author}
 

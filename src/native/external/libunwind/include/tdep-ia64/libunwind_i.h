@@ -97,9 +97,6 @@ struct unw_addr_space
     struct unw_accessors acc;
     int big_endian;
     int abi;    /* abi < 0 => unknown, 0 => SysV, 1 => HP-UX, 2 => Windows */
-#ifndef UNW_REMOTE_ONLY
-    unw_iterate_phdr_func_t iterate_phdr_function;
-#endif
     unw_caching_policy_t caching_policy;
     _Atomic uint32_t cache_generation;
     unw_word_t dyn_generation;

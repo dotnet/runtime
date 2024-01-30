@@ -60,8 +60,8 @@ int sigcount;
 int recurcount;
 #endif
 
-#define panic(...)					\
-	{ ++nerrors; fprintf (stderr, __VA_ARGS__); return; }
+#define panic(args...)					\
+	{ ++nerrors; fprintf (stderr, args); return; }
 
 static void
 do_backtrace (int may_print, int get_proc_name)
@@ -157,7 +157,7 @@ sighandler (int signal)
 	printf ("SUCCESS.\n");
       exit (0);
     }
-  setitimer (ITIMER_REAL, &interval, NULL);
+  setitimer (ITIMER_VIRTUAL, &interval, NULL);
 }
 
 int
@@ -174,13 +174,13 @@ main (int argc, char **argv UNUSED)
   memset (&act, 0, sizeof (act));
   act.sa_handler = sighandler;
   act.sa_flags = SA_SIGINFO;
-  sigaction (SIGALRM, &act, NULL);
+  sigaction (SIGVTALRM, &act, NULL);
 
-  setitimer (ITIMER_REAL, &interval, NULL);
+  setitimer (ITIMER_VIRTUAL, &interval, NULL);
 
   while (1)
     {
-      if (verbose)
+      if (0 && verbose)
 	printf ("%s: starting backtrace\n", __FUNCTION__);
       do_backtrace (0, (i++ % 100) == 0);
       if (nerrors > nerrors_max)

@@ -43,10 +43,10 @@ CD_elf_map_image(struct UCD_info *ui, coredump_phdr_t *phdr)
        * these pages are allocated, but non-accessible.
        */
       /* addr, length, prot, flags, fd, fd_offset */
-      ei->image = mi_mmap(NULL, phdr->p_memsz, PROT_READ, MAP_PRIVATE, ui->coredump_fd, phdr->p_offset);
+      ei->image = mmap(NULL, phdr->p_memsz, PROT_READ, MAP_PRIVATE, ui->coredump_fd, phdr->p_offset);
       if (ei->image == MAP_FAILED)
         {
-          Debug(0, "error in mmap()\n");
+          Debug(0, "error %d in mmap(): %s\n", errno, strerror(errno));
           ei->image = NULL;
           return NULL;
         }
@@ -55,7 +55,7 @@ CD_elf_map_image(struct UCD_info *ui, coredump_phdr_t *phdr)
       if (remainder_len > 0)
         {
           void *remainder_base = (char*) ei->image + phdr->p_filesz;
-          mi_munmap(remainder_base, remainder_len);
+          munmap(remainder_base, remainder_len);
         }
     } else {
       ucd_file_t *ucd_file =  ucd_file_table_at(&ui->ucd_file_table, phdr->p_backing_file_index);
@@ -76,7 +76,7 @@ CD_elf_map_image(struct UCD_info *ui, coredump_phdr_t *phdr)
   /* Check ELF header for sanity */
   if (!elf_w(valid_object)(ei))
     {
-      mi_munmap(ei->image, ei->size);
+      munmap(ei->image, ei->size);
       ei->image = NULL;
       ei->size = 0;
       return NULL;

@@ -38,21 +38,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <setjmp.h>
 #include <ucontext.h>
 #include <unistd.h>
 #include <libunwind.h>
 
-#include "ident.h"
-
-#define panic(...)				\
-	{ fprintf (stderr, __VA_ARGS__); exit (-1); }
+#define panic(args...)				\
+	{ fprintf (stderr, args); exit (-1); }
 
 #define SIG_STACK_SIZE 0x100000
 
 int verbose;
 int num_errors;
-sigjmp_buf env;
 
 /* These variables are global because they
  * cause the signal stack to overflow */
@@ -106,10 +102,6 @@ do_backtrace (void)
 	  }
 #endif
 	  printf ("\n");
-
-          name[0] = '\0';
-          if (unw_get_elf_filename (&cursor, name, sizeof (name), &off) == UNW_ESUCCESS)
-                printf ("\t[%s+0x%lx]\n", name, (long) off);
 	}
 
       ret = unw_step (&cursor);
@@ -145,8 +137,8 @@ foo (long val UNUSED)
 void
 bar (long v)
 {
+  extern long f (long);
   int arr[v];
-  arr[0] = 0;
 
   /* This is a vain attempt to use up lots of registers to force
      the frame-chain info to be saved on the memory stack on ia64.
@@ -174,17 +166,7 @@ bar (long v)
 }
 
 void
-segv_handler (int signal, siginfo_t *siginfo UNUSED, void *context UNUSED)
-{
-  if (verbose)
-    fprintf (stderr, "segv_handler: got signal %d\n", signal);
-
-  do_backtrace ();
-  siglongjmp (env, 42);
-}
-
-void
-sighandler (int signal, siginfo_t *siginfo UNUSED, void *context)
+sighandler (int signal, void *siginfo UNUSED, void *context)
 {
   ucontext_t *uc UNUSED;
   int sp;
@@ -193,7 +175,7 @@ sighandler (int signal, siginfo_t *siginfo UNUSED, void *context)
 
   if (verbose)
     {
-      printf ("sighandler: got signal %d, sp=%p", signal, (void *)&sp);
+      printf ("sighandler: got signal %d, sp=%p", signal, &sp);
 #if UNW_TARGET_IA64
 # if defined(__linux__) || defined __sun
       printf (" @ %lx", uc->uc_mcontext.sc_ip);
@@ -220,9 +202,9 @@ sighandler (int signal, siginfo_t *siginfo UNUSED, void *context)
       printf (" @ %lx", (unsigned long) uc->uc_mcontext.mc_rip);
 # endif
 #elif UNW_TARGET_AARCH64
-# if defined(__QNX__)
+# if defined(__QNXNTO__)
       fprintf (stderr, " @ %#010lx", (unsigned long) uc->uc_mcontext.cpu.elr);
-# endif /* defined(__QNX__) */
+# endif /* defined(__QNXNTO__) */
 #endif
       printf ("\n");
     }
@@ -245,28 +227,14 @@ main (int argc, char **argv UNUSED)
   bar (1);
 
   memset (&act, 0, sizeof (act));
+  act.sa_handler = (void (*)(int)) sighandler;
   act.sa_flags = SA_SIGINFO;
-  act.sa_sigaction = sighandler;
   if (sigaction (SIGTERM, &act, NULL) < 0)
     panic ("sigaction: %s\n", strerror (errno));
 
   if (verbose)
     printf ("\nBacktrace across signal handler:\n");
   kill (getpid (), SIGTERM);
-
-  if (verbose)
-    printf ("\nBacktrace across SIGSEGV handler:\n");
-
-  act.sa_sigaction = segv_handler;
-  if (sigaction (SIGSEGV, &act, NULL) < 0)
-    panic ("sigaction: %s\n", strerror (errno));
-
-  if (sigsetjmp (env, 1) == 0)
-  {
-    /* Make a NULL pointer dereference.  */
-    int *bad_ptr = NULL;
-    *bad_ptr = 0;
-  }
 
 #ifdef HAVE_SIGALTSTACK
   if (verbose)
@@ -280,8 +248,8 @@ main (int argc, char **argv UNUSED)
     panic ("sigaltstack: %s\n", strerror (errno));
 
   memset (&act, 0, sizeof (act));
+  act.sa_handler = (void (*)(int)) sighandler;
   act.sa_flags = SA_ONSTACK | SA_SIGINFO;
-  act.sa_sigaction = sighandler;
   if (sigaction (SIGTERM, &act, NULL) < 0)
     panic ("sigaction: %s\n", strerror (errno));
   kill (getpid (), SIGTERM);

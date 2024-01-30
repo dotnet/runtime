@@ -80,11 +80,7 @@ typedef struct elf_prstatus UCD_proc_status_t;
 #elif defined(HAVE_STRUCT_PRSTATUS)
 typedef struct prstatus UCD_proc_status_t;
 #elif defined(HAVE_PROCFS_STATUS)
-typedef struct {
-    procfs_status thread;
-    procfs_greg   greg;
-    procfs_fpreg  fpreg;
-} UCD_proc_status_t;
+typedef procfs_status UCD_proc_status_t;
 #else
 # error UCD_proc_status_t undefined
 #endif

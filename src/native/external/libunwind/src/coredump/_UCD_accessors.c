@@ -32,6 +32,5 @@ unw_accessors_t _UCD_accessors =
     .access_reg                 = _UCD_access_reg,
     .access_fpreg               = _UCD_access_fpreg,
     .resume                     = _UCD_resume,
-    .get_proc_name              = _UCD_get_proc_name,
-    .get_elf_filename           = _UCD_get_elf_filename
+    .get_proc_name              = _UCD_get_proc_name
   };

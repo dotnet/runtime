@@ -28,7 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #if HAVE_DECL_PTRACE_POKEUSER || defined(HAVE_TTRACE)
 int
-_UPT_access_fpreg (unw_addr_space_t as UNUSED, unw_regnum_t reg, unw_fpreg_t *val,
+_UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
                    int write, void *arg)
 {
   unw_word_t *wp = (unw_word_t *) val;
@@ -107,11 +107,7 @@ _UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
 #elif defined(__i386__)
           memcpy(&fpreg.fpr_acc[reg], val, sizeof(unw_fpreg_t));
 #elif defined(__arm__)
-#  if __FreeBSD_version >= 1400079
-          memcpy(&fpreg.fpr_r[reg], val, sizeof(unw_fpreg_t));
-#  else
           memcpy(&fpreg.fpr[reg], val, sizeof(unw_fpreg_t));
-#  endif
 #elif defined(__aarch64__)
           memcpy(&fpreg.fp_q[reg], val, sizeof(unw_fpreg_t));
 #elif defined(__powerpc__)
@@ -127,11 +123,7 @@ _UPT_access_fpreg (unw_addr_space_t as, unw_regnum_t reg, unw_fpreg_t *val,
 #elif defined(__i386__)
           memcpy(val, &fpreg.fpr_acc[reg], sizeof(unw_fpreg_t));
 #elif defined(__arm__)
-#  if __FreeBSD_version >= 1400079
-          memcpy(&fpreg.fpr_r[reg], val, sizeof(unw_fpreg_t));
-#  else
-          memcpy(&fpreg.fpr[reg], val, sizeof(unw_fpreg_t));
-#  endif
+          memcpy(val, &fpreg.fpr[reg], sizeof(unw_fpreg_t));
 #elif defined(__aarch64__)
           memcpy(val, &fpreg.fp_q[reg], sizeof(unw_fpreg_t));
 #elif defined(__powerpc__)

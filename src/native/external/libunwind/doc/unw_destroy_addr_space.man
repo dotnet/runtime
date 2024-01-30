@@ -1,7 +1,5 @@
-.\" *********************************** start of \input{common.tex}
-.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 12:09:49 2023
+.\" Manual page created with latex2man on Thu Aug 16 09:44:45 MDT 2007
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_DESTROY\\_ADDR\\_SPACE" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "UNW\\_DESTROY\\_ADDR\\_SPACE" "3" "16 August 2007" "Programming Library " "Programming Library "
 .SH NAME
 unw_destroy_addr_space
 \-\- destroy unwind address space 
@@ -45,8 +43,8 @@ undefined behavior (e.g., the application may crash).
 .SH SEE ALSO
 
 .PP
-libunwind(3libunwind),
-unw_create_addr_space(3libunwind)
+libunwind(3),
+unw_create_addr_space(3)
 .PP
 .SH AUTHOR
 

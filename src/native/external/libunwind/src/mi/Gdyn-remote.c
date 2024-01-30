@@ -286,9 +286,8 @@ unwi_dyn_remote_find_proc_info (unw_addr_space_t as, unw_word_t ip,
 }
 
 HIDDEN void
-unwi_dyn_remote_put_unwind_info (unw_addr_space_t  as UNUSED,
-                                 unw_proc_info_t  *pi,
-                                 void             *arg UNUSED)
+unwi_dyn_remote_put_unwind_info (unw_addr_space_t as, unw_proc_info_t *pi,
+                                 void *arg)
 {
   if (!pi->unwind_info)
     return;

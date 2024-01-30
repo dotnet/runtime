@@ -120,7 +120,7 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local,
   ei.image = NULL;
   *load_offset = 0;
 
-  ret = elf_w (load_debuginfo) (file, &ei, is_local);
+  ret = elf_w (load_debuglink) (file, &ei, is_local);
   if (ret != 0)
     return ret;
 
@@ -128,7 +128,7 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local,
   if (!shdr ||
       (shdr->sh_offset + shdr->sh_size > ei.size))
     {
-      mi_munmap(ei.image, ei.size);
+      munmap(ei.image, ei.size);
       return 1;
     }
 
@@ -146,7 +146,7 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local,
 	  if (!*buf)
 	    {
 	      Debug (2, "failed to allocate zlib .debug_frame buffer, skipping\n");
-	      mi_munmap(ei.image, ei.size);
+	      munmap(ei.image, ei.size);
 	      return 1;
 	    }
 
@@ -156,8 +156,8 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local,
 	  if (ret != Z_OK)
 	    {
 	      Debug (2, "failed to decompress zlib .debug_frame, skipping\n");
-	      mi_munmap(*buf, *bufsize);
-	      mi_munmap(ei.image, ei.size);
+	      munmap(*buf, *bufsize);
+	      munmap(ei.image, ei.size);
 	      return 1;
 	    }
 
@@ -169,7 +169,7 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local,
 	{
 	  Debug (2, "unknown compression type %d, skipping\n",
 		 chdr->ch_type);
-          mi_munmap(ei.image, ei.size);
+          munmap(ei.image, ei.size);
 	  return 1;
         }
     }
@@ -182,7 +182,7 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local,
       if (!*buf)
         {
           Debug (2, "failed to allocate .debug_frame buffer, skipping\n");
-          mi_munmap(ei.image, ei.size);
+          munmap(ei.image, ei.size);
           return 1;
         }
 
@@ -207,7 +207,7 @@ load_debug_frame (const char *file, char **buf, size_t *bufsize, int is_local,
         break;
       }
 
-  mi_munmap(ei.image, ei.size);
+  munmap(ei.image, ei.size);
   return 0;
 }
 
@@ -549,7 +549,7 @@ dwarf_find_eh_frame_section(struct dl_phdr_info *info)
          eh_frame);
 
 out:
-  mi_munmap (ei.image, ei.size);
+  munmap (ei.image, ei.size);
 
   return eh_frame;
 }
@@ -804,7 +804,7 @@ dwarf_find_proc_info (unw_addr_space_t as, unw_word_t ip,
   cb_data.di_debug.format = -1;
 
   SIGPROCMASK (SIG_SETMASK, &unwi_full_mask, &saved_mask);
-  ret = as->iterate_phdr_function (dwarf_callback, &cb_data);
+  ret = dl_iterate_phdr (dwarf_callback, &cb_data);
   SIGPROCMASK (SIG_SETMASK, &saved_mask, NULL);
 
   if (ret > 0)
@@ -966,7 +966,7 @@ dwarf_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
   if (as == unw_local_addr_space)
     {
       e = lookup (table, table_len, ip - ip_base - di->load_offset);
-      if (e && &e[1] < &table[table_len / sizeof (struct table_entry)])
+      if (e && &e[1] < &table[table_len / sizeof (unw_word_t)])
 	last_ip = e[1].start_ip_offset + ip_base + di->load_offset;
       else
 	last_ip = di->end_ip;
@@ -1037,7 +1037,7 @@ dwarf_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
 }
 
 HIDDEN void
-dwarf_put_unwind_info (unw_addr_space_t as UNUSED, unw_proc_info_t *pi UNUSED, void *arg UNUSED)
+dwarf_put_unwind_info (unw_addr_space_t as, unw_proc_info_t *pi, void *arg)
 {
   return;       /* always a nop */
 }

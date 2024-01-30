@@ -20,7 +20,7 @@ add_minidebug()
   nm "$debuginfo" --format=posix --defined-only | awk '{ if ($2 == "T" || $2 == "t") print $1 }' | sort > "$funcsyms"
   # Keep all the function symbols not already in the dynamic symbol table
   comm -13 "$dynsyms" "$funcsyms" > "$keep_symbols"
-  # Copy the full debuginfo, keeping only a minimal set of symbols and removing some unnecessary sections
+  # Copy the full debuginfo, keeping only a minumal set of symbols and removing some unnecessary sections
   objcopy -S --remove-section .gdb_index --remove-section .comment --keep-symbols="$keep_symbols" "$debuginfo" "$mini_debuginfo" &> /dev/null
   wait
   #Inject the compressed data into the .gnu_debugdata section of the original binary

@@ -38,7 +38,6 @@ tdep_get_elf_image (struct elf_image *ei, pid_t pid, unw_word_t ip,
 {
   struct load_module_desc lmd;
   const char *path2;
-  int ret;
 
   if (pid != getpid ())
     {
@@ -64,11 +63,7 @@ tdep_get_elf_image (struct elf_image *ei, pid_t pid, unw_word_t ip,
     }
   Debug(1, "segbase=%lx, mapoff=%lx, path=%s\n", *segbase, *mapoff, path);
 
-  if (ei)
-    ret = elf_map_image (ei, path);
-  else
-    ret = strlen (path2) >= path ? -UNW_ENOMEM : UNW_ESUCCESS;
-  return ret;
+  return elf_map_image (ei, path);
 }
 
 #ifndef UNW_REMOTE_ONLY

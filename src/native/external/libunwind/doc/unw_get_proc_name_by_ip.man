@@ -1,7 +1,5 @@
-.\" *********************************** start of \input{common.tex}
-.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 12:09:48 2023
+.\" Manual page created with latex2man on Mon Aug 30 08:48:42 CEST 2021
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,10 +10,10 @@
 
 .fi
 ..
-.TH "UNW\\_GET\\_PROC\\_NAME\\_BY\\_IP" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "UNW\\_GET\\_PROC\\_NAME\\_BY\\_IP" "3" "30 August 2021" "Programming Library " "Programming Library "
 .SH NAME
 unw_get_proc_name_by_ip
-\-\- get procedure name 
+\-\- get procedure name
 .PP
 .SH SYNOPSIS
 
@@ -37,98 +35,98 @@ void *arg);
 
 .PP
 The unw_get_proc_name_by_ip()
-routine returns the name of 
+routine returns the name of
 a procedure just like unw_get_proc_name(),
-except that the 
-name is looked up by instruction pointer (IP) instead of a cursor. 
+except that the
+name is looked up by instruction\-pointer (IP) instead of a cursor.
 .PP
 The routine expects the following arguments: as
-is the 
-address\-space in which the instruction pointer should be looked up. 
-For a look\-up in the local address\-space, 
+is the
+address\-space in which the instruction\-pointer should be looked up.
+For a look\-up in the local address\-space,
 unw_local_addr_space
-can be passed for this argument. 
+can be passed for this argument.
 Argument ip
-is the instruction\-pointer for which the procedure 
+is the instruction\-pointer for which the procedure
 name should be looked up. The bufp
-argument is a pointer to 
+argument is a pointer to
 a character buffer that is at least len
-bytes long. This buffer 
+bytes long. This buffer
 is used to return the name of the procedure. The offp
-argument 
-is a pointer to a word that is used to return the byte offset of the 
-instruction\-pointer relative to the start of the procedure. 
+argument
+is a pointer to a word that is used to return the byte\-offset of the
+instruction\-pointer relative to the start of the procedure.
 Lastly, arg
-is the address space argument that should be used 
-when accessing the address space. It has the same purpose as the 
+is the address\-space argument that should be used
+when accessing the address\-space. It has the same purpose as the
 argument of the same name for unw_init_remote().
-When 
-accessing the local address space (first argument is 
+When
+accessing the local address\-space (first argument is
 unw_local_addr_space),
 NULL
-must be passed for this 
-argument. 
+must be passed for this
+argument.
 .PP
-Note that on some platforms there is no reliable way to distinguish 
-between procedure names and ordinary labels. Furthermore, if symbol 
-information has been stripped from a program, procedure names may be 
-completely unavailable or may be limited to those exported via a 
-dynamic symbol table. In such cases, 
+Note that on some platforms there is no reliable way to distinguish
+between procedure names and ordinary labels. Furthermore, if symbol
+information has been stripped from a program, procedure names may be
+completely unavailable or may be limited to those exported via a
+dynamic symbol table. In such cases,
 unw_get_proc_name_by_ip()
-may return the name of a label 
-or a preceding (nearby) procedure. However, the offset returned 
+may return the name of a label
+or a preceding (nearby) procedure. However, the offset returned
 through offp
-is always relative to the returned name, which 
-ensures that the value (address) of the returned name plus the 
-returned offset will always be equal to the instruction pointer 
+is always relative to the returned name, which
+ensures that the value (address) of the returned name plus the
+returned offset will always be equal to the instruction\-pointer
 ip\&.
 .PP
 .SH RETURN VALUE
 
 .PP
 On successful completion, unw_get_proc_name_by_ip()
-returns 0. Otherwise the negative value of one of the error codes 
-below is returned. 
+returns 0. Otherwise the negative value of one of the error\-codes
+below is returned.
 .PP
 .SH THREAD AND SIGNAL SAFETY
 
 .PP
 unw_get_proc_name_by_ip()
-is thread safe. If the local 
+is thread\-safe. If the local
 address\-space is passed in argument as,
-this routine is also 
-safe to use from a signal handler. 
+this routine is also
+safe to use from a signal handler.
 .PP
 .SH ERRORS
 
 .PP
 .TP
 UNW_EUNSPEC
- An unspecified error occurred. 
+ An unspecified error occurred.
 .TP
 UNW_ENOINFO
  Libunwind
-was unable to determine 
-the name of the procedure. 
+was unable to determine
+the name of the procedure.
 .TP
 UNW_ENOMEM
- The procedure name is too long to fit 
-in the buffer provided. A truncated version of the name has been 
-returned. 
+ The procedure name is too long to fit
+in the buffer provided. A truncated version of the name has been
+returned.
 .PP
 In addition, unw_get_proc_name_by_ip()
-may return any error 
+may return any error
 returned by the access_mem()
-callback (see 
-unw_create_addr_space(3libunwind)).
+call\-back (see
+unw_create_addr_space(3)).
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3libunwind),
-unw_create_addr_space(3libunwind),
-unw_get_proc_name(3libunwind),
-unw_init_remote(3libunwind)
+libunwind(3),
+unw_create_addr_space(3),
+unw_get_proc_name(3),
+unw_init_remote(3)
 .PP
 .SH AUTHOR
 

@@ -32,12 +32,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <sys/resource.h>
 #include <sys/time.h>
 
-#define panic(...)							  \
-	do { fprintf (stderr, __VA_ARGS__); exit (-1); } while (0)
+#define panic(args...)							  \
+	do { fprintf (stderr, args); exit (-1); } while (0)
 
 long dummy;
 
 static long iterations = 10000;
+static int maxlevel = 100;
 
 #define KB	1024
 #define MB	(1024*1024)
@@ -95,7 +96,7 @@ f1 (int level, int maxlevel, double *step)
 }
 
 static void
-doit (const char *label, int maxlevel)
+doit (const char *label)
 {
   double step, min_step, first_step, sum_step;
   int i;
@@ -217,11 +218,10 @@ measure_init (void)
 int
 main (int argc, char **argv)
 {
-  int maxlevel = 100;
-  struct rlimit rlim = {
-    .rlim_cur = RLIM_INFINITY,
-    .rlim_max = RLIM_INFINITY
-  };
+  struct rlimit rlim;
+
+  rlim.rlim_cur = RLIM_INFINITY;
+  rlim.rlim_max = RLIM_INFINITY;
   setrlimit (RLIMIT_STACK, &rlim);
 
   memset (big, 0xaa, sizeof (big));
@@ -230,21 +230,21 @@ main (int argc, char **argv)
     {
       maxlevel = atol (argv[1]);
       if (argc > 2)
-        iterations = atol (argv[2]);
+	iterations = atol (argv[2]);
     }
 
   measure_init ();
 
-  doit ("default         ", maxlevel);
+  doit ("default         ");
 
   unw_set_caching_policy (unw_local_addr_space, UNW_CACHE_NONE);
-  doit ("no cache        ", maxlevel);
+  doit ("no cache        ");
 
   unw_set_caching_policy (unw_local_addr_space, UNW_CACHE_GLOBAL);
-  doit ("global cache    ", maxlevel);
+  doit ("global cache    ");
 
   unw_set_caching_policy (unw_local_addr_space, UNW_CACHE_PER_THREAD);
-  doit ("per-thread cache", maxlevel);
+  doit ("per-thread cache");
 
   return 0;
 }

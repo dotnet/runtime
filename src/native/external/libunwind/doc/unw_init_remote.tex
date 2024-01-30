@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3libunwind}{unw\_init\_remote}{David Mosberger-Tang}{Programming Library}{unw\_init\_remote}unw\_init\_remote -- initialize cursor for remote unwinding
+\begin{Name}{3}{unw\_init\_remote}{David Mosberger-Tang}{Programming Library}{unw\_init\_remote}unw\_init\_remote -- initialize cursor for remote unwinding
 \end{Name}
 
 \section{Synopsis}
@@ -22,14 +22,14 @@ pointed to by \Var{c} for unwinding in the address space identified by
 \Var{unw\_local\_addr\_space} (local address space) or to an arbitrary
 address space created with \Func{unw\_create\_addr\_space}().
 
-The \Var{arg} opaque pointer tells the address space exactly what entity
+The \Var{arg} void-pointer tells the address space exactly what entity
 should be unwound.  For example, if \Var{unw\_local\_addr\_space} is
 passed in \Var{as}, then \Var{arg} needs to be a pointer to a context
 structure containing the machine-state of the initial stack frame.
-However, other address spaces may instead expect a process ID, a
-thread ID, or a pointer to an arbitrary structure which identifies the
-stack frame chain to be unwound.  In other words, the interpretation
-of \Var{arg} is entirely dependent on the address space in use;
+However, other address-spaces may instead expect a process-id, a
+thread-id, or a pointer to an arbitrary structure which identifies the
+stack-frame chain to be unwound.  In other words, the interpretation
+of \Var{arg} is entirely dependent on the address-space in use;
 \Prog{libunwind} never interprets the argument in any way on its own.
 
 Note that \Func{unw\_init\_remote}() can be used to initiate unwinding
@@ -46,7 +46,7 @@ returned.
 
 \section{Thread and Signal Safety}
 
-\Func{unw\_init\_remote}() is thread safe.  If the local address space
+\Func{unw\_init\_remote}() is thread-safe.  If the local address-space
 is passed in argument \Var{as}, this routine is also safe to use from
 a signal handler.
 
@@ -65,9 +65,8 @@ a signal handler.
 
 \section{See Also}
 
-\SeeAlso{libunwind}(3libunwind),
-\SeeAlso{unw\_create\_addr\_space}(3libunwind),
-\SeeAlso{unw\_init\_local}(3libunwind)
+\SeeAlso{libunwind(3)}, \SeeAlso{unw\_create\_addr\_space(3)},
+\SeeAlso{unw\_init\_local(3)}
 
 \section{Author}
 

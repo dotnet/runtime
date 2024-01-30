@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3libunwind}{unw\_step}{David Mosberger-Tang}{Programming Library}{unw\_step}unw\_step -- advance to next stack frame
+\begin{Name}{3}{unw\_step}{David Mosberger-Tang}{Programming Library}{unw\_step}unw\_step -- advance to next stack frame
 \end{Name}
 
 \section{Synopsis}
@@ -50,12 +50,12 @@ address-space, this routine is also safe to use from a signal handler.
 In addition, \Func{unw\_step}() may return any error returned by the
 \Func{find\_proc\_info}(), \Func{get\_dyn\_info\_list\_addr}(),
 \Func{access\_mem}(), \Func{access\_reg}(), or \Func{access\_fpreg}()
-call-backs (see \Func{unw\_create\_addr\_space}(3libunwind)).
+call-backs (see \Func{unw\_create\_addr\_space}(3)).
 
 \section{See Also}
 
-\SeeAlso{libunwind}(3libunwind),
-\SeeAlso{unw\_create\_addr\_space}(3libunwind)
+\SeeAlso{libunwind(3)},
+\SeeAlso{unw\_create\_addr\_space(3)}
 
 \section{Author}
 

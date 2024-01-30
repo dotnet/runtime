@@ -1,7 +1,5 @@
-.\" *********************************** start of \input{common.tex}
-.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 11:45:59 2023
+.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_GET\\_PROC\\_INFO\\_BY\\_IP" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "UNW\\_GET\\_PROC\\_INFO\\_BY\\_IP" "3" "29 August 2021" "Programming Library " "Programming Library "
 .SH NAME
 unw_get_proc_info_by_ip
 \-\- get procedure info by IP 
@@ -40,13 +38,13 @@ unw_get_proc_info(),
 except that the info is looked up by 
 instruction\-pointer (IP) instead of a cursor. This is more flexible 
 because it is possible to look up the info for an arbitrary procedure, 
-even if it is not part of the current call chain. However, since it 
+even if it is not part of the current call\-chain. However, since it 
 is more flexible, it also tends to run slower (and often much slower) 
 than unw_get_proc_info().
 .PP
 The routine expects the following arguments: as
 is the 
-address\-space in which the instruction pointer should be looked up. 
+address\-space in which the instruction\-pointer should be looked up. 
 For a look\-up in the local address\-space, 
 unw_local_addr_space
 can be passed for this argument. 
@@ -57,11 +55,11 @@ is a pointer to a structure of
 type unw_proc_info_t
 which is used to return the info. 
 Lastly, arg
-is the address space argument that should be used 
-when accessing the address space. It has the same purpose as the 
+is the address\-space argument that should be used 
+when accessing the address\-space. It has the same purpose as the 
 argument of the same name for unw_init_remote().
 When 
-accessing the local address space (first argument is 
+accessing the local address\-space (first argument is 
 unw_local_addr_space),
 NULL
 must be passed for this 
@@ -89,8 +87,8 @@ below is returned.
 
 .PP
 unw_get_proc_info_by_ip()
-is thread safe. If the local 
-address space is passed in argument as,
+is thread\-safe. If the local 
+address\-space is passed in argument as,
 this routine is also 
 safe to use from a signal handler. 
 .PP
@@ -113,17 +111,17 @@ version or format that is not understood by libunwind\&.
 In addition, unw_get_proc_info_by_ip()
 may return any 
 error returned by the access_mem()
-callback (see 
-unw_create_addr_space(3libunwind)).
+call\-back (see 
+unw_create_addr_space(3)).
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3libunwind),
-unw_create_addr_space(3libunwind),
-unw_get_proc_name(3libunwind),
-unw_get_proc_info(3libunwind),
-unw_init_remote(3libunwind)
+libunwind(3),
+unw_create_addr_space(3),
+unw_get_proc_name(3),
+unw_get_proc_info(3),
+unw_init_remote(3)
 .PP
 .SH AUTHOR
 

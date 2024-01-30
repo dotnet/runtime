@@ -40,8 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 # include <ia64intrin.h>
 #endif
 
-#define panic(...)				\
-	{ ++nerrors; fprintf (stderr, __VA_ARGS__); }
+#define panic(args...)				\
+	{ ++nerrors; fprintf (stderr, args); }
 
 int nerrors = 0;
 int verbose = 0;
@@ -112,7 +112,7 @@ a (int n)
 
   if (verbose)
     printf ("a(n=%d): sp=%p bsp=0x%lx\n",
-            n, (void *)&stack, (unsigned long) get_bsp ());
+	    n, &stack, (unsigned long) get_bsp ());
 
   if (n > 0)
     a (n - 1);
@@ -122,7 +122,7 @@ a (int n)
   if (verbose)
     {
       printf ("exception handler: here we go (sp=%p, bsp=0x%lx)...\n",
-              (void *)&stack, (unsigned long) get_bsp ());
+	      &stack, (unsigned long) get_bsp ());
       /* This call works around a bug in gcc (up-to pre3.4) which
 	 causes invalid assembly code to be generated when
 	 __builtin_ia64_bsp() gets predicated.  */

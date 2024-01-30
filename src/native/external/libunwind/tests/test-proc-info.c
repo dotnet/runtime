@@ -40,8 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 int errors;
 
-#define panic(...)					\
-	{ ++errors; fprintf (stderr, __VA_ARGS__); return -1; }
+#define panic(args...)					\
+	{ ++errors; fprintf (stderr, args); return -1; }
 
 static int
 find_proc_info (unw_addr_space_t as UNUSED,
