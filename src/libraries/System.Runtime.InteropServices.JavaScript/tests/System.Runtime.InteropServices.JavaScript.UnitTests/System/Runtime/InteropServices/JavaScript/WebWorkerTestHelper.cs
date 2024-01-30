@@ -330,7 +330,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
                 catch (Exception ex)
                 {
-                    tcs.TrySetException(ex);
+                    if(ex is AggregateException agg)
+                    {
+                        tcs.TrySetException(agg.InnerException);
+                    }
+                    else
+                    {
+                        tcs.TrySetException(ex);
+                    }
                 }
                 finally
                 {
@@ -338,6 +345,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
             });
             thread.Start();
+            tcs.Task.ContinueWith((t) => { thread.Join(); }, cancellationToken, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
             return tcs.Task;
         }
 

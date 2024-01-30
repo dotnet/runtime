@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
-    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
 </Project>

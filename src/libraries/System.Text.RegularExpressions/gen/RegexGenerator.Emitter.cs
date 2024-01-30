@@ -2574,7 +2574,8 @@ namespace System.Text.RegularExpressions.Generator
                 string originalDoneLabel = doneLabel;
 
                 // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
-                string startingPos = ReserveName((node.Options & RegexOptions.RightToLeft) != 0 ? "negativelookbehind_starting_pos" : "negativelookahead_starting_pos");
+                string variablePrefix = (node.Options & RegexOptions.RightToLeft) != 0 ? "negativelookbehind_" : "negativelookahead_";
+                string startingPos = ReserveName($"{variablePrefix}_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
                 int startingSliceStaticPos = sliceStaticPos;
 
@@ -2585,8 +2586,30 @@ namespace System.Text.RegularExpressions.Generator
                 // technically backtracking, it's appropriate to have a timeout check.
                 EmitTimeoutCheckIfNeeded(writer, rm);
 
-                // Emit the child.
                 RegexNode child = node.Child(0);
+
+                // Ensure we're able to uncapture anything captured by the child.
+                bool isInLoop = false;
+                string? capturePos = null;
+                bool hasCaptures = rm.Analysis.MayContainCapture(child);
+                if (hasCaptures)
+                {
+                    // If we're inside a loop, push the current crawl position onto the stack,
+                    // so that each iteration tracks its own value. Otherwise, store it into a local.
+                    isInLoop = rm.Analysis.IsInLoop(node);
+                    if (isInLoop)
+                    {
+                        EmitStackPush("base.Crawlpos()");
+                    }
+                    else
+                    {
+                        capturePos = ReserveName($"{variablePrefix}_capture_pos");
+                        additionalDeclarations.Add($"int {capturePos} = 0;");
+                        writer.WriteLine($"{capturePos} = base.Crawlpos();");
+                    }
+                }
+
+                // Emit the child.
                 if (rm.Analysis.MayBacktrack(child))
                 {
                     // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
@@ -2610,6 +2633,12 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"pos = {startingPos};");
                 SliceInputSpan();
                 sliceStaticPos = startingSliceStaticPos;
+
+                // And uncapture anything if necessary. Negative lookaround captures don't persist beyond the lookaround.
+                if (hasCaptures)
+                {
+                    EmitUncaptureUntil(isInLoop ? StackPop() : capturePos!);
+                }
 
                 doneLabel = originalDoneLabel;
             }

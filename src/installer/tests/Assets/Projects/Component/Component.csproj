@@ -2,8 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <OutputType>Exe</OutputType>
-    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
 
 </Project>

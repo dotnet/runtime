@@ -103,7 +103,7 @@ namespace System.Linq
         }
     }
 
-    internal sealed class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
+    internal sealed partial class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
     {
         private readonly OrderedEnumerable<TElement>? _parent;
         private readonly Func<TElement, TKey> _keySelector;

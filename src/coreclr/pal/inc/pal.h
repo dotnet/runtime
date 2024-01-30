@@ -3636,6 +3636,20 @@ The function returns the initial value pointed to by Target.
 
 --*/
 Define_InterlockMethod(
+    CHAR,
+    InterlockedExchange8(IN OUT CHAR volatile *Target, CHAR Value),
+    InterlockedExchange8(Target, Value),
+    __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+)
+
+Define_InterlockMethod(
+    SHORT,
+    InterlockedExchange16(IN OUT SHORT volatile *Target, SHORT Value),
+    InterlockedExchange16(Target, Value),
+    __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
+)
+
+Define_InterlockMethod(
     LONG,
     InterlockedExchange(IN OUT LONG volatile *Target, LONG Value),
     InterlockedExchange(Target, Value),
@@ -3693,6 +3707,26 @@ Return Values
 The return value is the initial value of the destination.
 
 --*/
+Define_InterlockMethod(
+    CHAR,
+    InterlockedCompareExchange8(IN OUT CHAR volatile *Destination, IN CHAR Exchange, IN CHAR Comperand),
+    InterlockedCompareExchange8(Destination, Exchange, Comperand),
+    __sync_val_compare_and_swap(
+        Destination, /* The pointer to a variable whose value is to be compared with. */
+        Comperand, /* The value to be compared */
+        Exchange /* The value to be stored */)
+)
+
+Define_InterlockMethod(
+    SHORT,
+    InterlockedCompareExchange16(IN OUT SHORT volatile *Destination, IN SHORT Exchange, IN SHORT Comperand),
+    InterlockedCompareExchange16(Destination, Exchange, Comperand),
+    __sync_val_compare_and_swap(
+        Destination, /* The pointer to a variable whose value is to be compared with. */
+        Comperand, /* The value to be compared */
+        Exchange /* The value to be stored */)
+)
+
 Define_InterlockMethod(
     LONG,
     InterlockedCompareExchange(IN OUT LONG volatile *Destination, IN LONG Exchange, IN LONG Comperand),
