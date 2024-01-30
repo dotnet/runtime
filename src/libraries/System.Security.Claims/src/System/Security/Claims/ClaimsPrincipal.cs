@@ -406,9 +406,10 @@ namespace System.Security.Claims
 
             for (int i = 0; i < _identities.Count; i++)
             {
-                if (_identities[i] != null)
+                var tmpIdentity = _identities[i];
+                if (tmpIdentity != null)
                 {
-                    if (_identities[i].HasClaim(match))
+                    if (tmpIdentity.HasClaim(match))
                     {
                         return true;
                     }
@@ -434,9 +435,10 @@ namespace System.Security.Claims
 
             for (int i = 0; i < _identities.Count; i++)
             {
-                if (_identities[i] != null)
+                var tmpIdentity = _identities[i];
+                if (tmpIdentity != null)
                 {
-                    if (_identities[i].HasClaim(type, value))
+                    if (tmpIdentity.HasClaim(type, value))
                     {
                         return true;
                     }
@@ -486,9 +488,10 @@ namespace System.Security.Claims
         {
             for (int i = 0; i < _identities.Count; i++)
             {
-                if (_identities[i] != null)
+                var tmpIdentity = _identities[i];
+                if (tmpIdentity != null)
                 {
-                    if (_identities[i].HasClaim(_identities[i].RoleClaimType, role))
+                    if (tmpIdentity.HasClaim(tmpIdentity.RoleClaimType, role))
                     {
                         return true;
                     }
