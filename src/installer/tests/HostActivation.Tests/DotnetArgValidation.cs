@@ -120,8 +120,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public class SharedTestState : IDisposable
         {
-            public RepoDirectoriesProvider RepoDirectories { get; }
-
             public TestArtifact BaseDirectory { get; }
 
             public SharedTestState()

@@ -15,7 +15,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
     public class MultilevelSDKLookup : IDisposable
     {
-        private readonly RepoDirectoriesProvider RepoDirectories;
         private readonly DotNetCli DotNet;
 
         private readonly string _currentWorkingDir;
@@ -48,8 +47,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             DotNet = new DotNetBuilder(_multilevelDir.Location, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "exe")
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("9999.0.0")
                 .Build();
-
-            RepoDirectories = new RepoDirectoriesProvider(builtDotnet: DotNet.BinPath);
 
             // SdkBaseDirs contain all available version folders
             _cwdSdkBaseDir = Path.Combine(_currentWorkingDir, "sdk");

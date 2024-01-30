@@ -1017,15 +1017,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute();
         }
 
-        public class SharedTestState : IDisposable
+        public sealed class SharedTestState : IDisposable
         {
-            private readonly RepoDirectoriesProvider RepoDirectories;
-
             public string BaseDir { get; }
 
             public string CurrentWorkingDir { get; }
-
-            public string TestAssetsPath { get; }
 
             private readonly TestArtifact _baseDirArtifact;
 
@@ -1037,33 +1033,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 BaseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
                 _baseDirArtifact = new TestArtifact(BaseDir);
 
-                // The three tested locations will be the cwd and the exe dir. cwd is no longer supported.
-                //     All dirs will be placed inside the base folder
-
-                RepoDirectories = new RepoDirectoriesProvider();
-
+                // The tested locations will be the cwd and the exe dir. cwd is no longer supported.
+                // All dirs will be placed inside the base folder
                 // Executable location is created per test as each test adds a different set of SDK versions
 
                 var currentWorkingSdk = new DotNetBuilder(BaseDir, TestContext.BuiltDotNet.BinPath, "current")
                     .AddMockSDK("10000.0.0", "9999.0.0")
                     .Build();
                 CurrentWorkingDir = currentWorkingSdk.BinPath;
-
-                TestAssetsPath = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils", "SDKLookup");
             }
 
             public void Dispose()
             {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
-            protected virtual void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    _baseDirArtifact.Dispose();
-                }
+                _baseDirArtifact.Dispose();
             }
         }
     }
