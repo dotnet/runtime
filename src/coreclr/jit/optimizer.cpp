@@ -37,6 +37,7 @@ void Compiler::optInit()
     optAssertionDep      = nullptr;
     optCSEstart          = BAD_VAR_NUM;
     optCSEcount          = 0;
+    optCSECandidateCount = 0;
     optCSEattempt        = 0;
     optCSEheuristic      = nullptr;
 }
@@ -560,18 +561,12 @@ void Compiler::optCheckPreds()
 //     predOption   - specifies how to update the pred lists
 //
 // Notes:
-//     Fall-through successors are assumed correct and are not modified.
 //     Pred lists for successors of `blk` may be changed, depending on `predOption`.
 //
 void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, RedirectBlockOption predOption)
 {
     const bool updatePreds = (predOption == RedirectBlockOption::UpdatePredLists);
     const bool addPreds    = (predOption == RedirectBlockOption::AddToPredLists);
-
-    if (addPreds && blk->bbFallsThrough())
-    {
-        fgAddRefPred(blk->Next(), blk);
-    }
 
     BasicBlock* newJumpDest = nullptr;
 
@@ -585,9 +580,15 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
             // These have no jump destination to update.
             break;
 
+        case BBJ_CALLFINALLY:
+            if (addPreds && blk->bbFallsThrough())
+            {
+                fgAddRefPred(blk->Next(), blk);
+            }
+
+            FALLTHROUGH;
         case BBJ_ALWAYS:
         case BBJ_LEAVE:
-        case BBJ_CALLFINALLY:
         case BBJ_CALLFINALLYRET:
             // All of these have a single jump destination to update.
             if (redirectMap->Lookup(blk->GetTarget(), &newJumpDest))
@@ -625,6 +626,24 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
             else if (addPreds)
             {
                 fgAddRefPred(blk->GetTrueTarget(), blk);
+            }
+
+            // Update jump taken when condition is false
+            if (redirectMap->Lookup(blk->GetFalseTarget(), &newJumpDest))
+            {
+                if (updatePreds)
+                {
+                    fgRemoveRefPred(blk->GetFalseTarget(), blk);
+                }
+                blk->SetFalseTarget(newJumpDest);
+                if (updatePreds || addPreds)
+                {
+                    fgAddRefPred(newJumpDest, blk);
+                }
+            }
+            else if (addPreds)
+            {
+                fgAddRefPred(blk->GetFalseTarget(), blk);
             }
             break;
 
@@ -1578,26 +1597,6 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     BasicBlock* exit =
         loop->ContainsBlock(exiting->GetTrueTarget()) ? exiting->GetFalseTarget() : exiting->GetTrueTarget();
 
-    // If the original bottom block was falling out of the loop, then insert an
-    // explicit block to branch around the unrolled iterations we created.
-    if (bottom->KindIs(BBJ_COND))
-    {
-        // TODO-NoFallThrough: Shouldn't need new BBJ_ALWAYS block once bbFalseTarget can diverge from bbNext
-        BasicBlock* bottomFalseTarget = bottom->GetFalseTarget();
-        JITDUMP("Create branch around unrolled loop\n");
-        BasicBlock* bottomRedirBlk = fgNewBBafter(BBJ_ALWAYS, bottom, /*extendRegion*/ true, bottomFalseTarget);
-        JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", bottomRedirBlk->bbNum, bottom->bbNum);
-
-        bottom->SetFalseTarget(bottomRedirBlk);
-        fgAddRefPred(bottomRedirBlk, bottom);
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomRedirBlk->bbNum);
-        fgReplacePred(bottomFalseTarget, bottom, bottomRedirBlk);
-        JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", bottom->bbNum,
-                bottomFalseTarget->bbNum, bottomRedirBlk->bbNum, bottomFalseTarget->bbNum);
-
-        insertAfter = bottomRedirBlk;
-    }
-
     for (int lval = lbeg; iterToUnroll > 0; iterToUnroll--)
     {
         // Block weight should no longer have the loop multiplier
@@ -1606,7 +1605,7 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
         // and we might not have upscaled at all, if we had profile data.
         //
         weight_t scaleWeight = 1.0 / BB_LOOP_WEIGHT_SCALE;
-        loop->Duplicate(&insertAfter, &blockMap, scaleWeight, /* bottomNeedsRedirection */ true);
+        loop->Duplicate(&insertAfter, &blockMap, scaleWeight);
 
         // Replace all uses of the loop iterator with the current value.
         loop->VisitLoopBlocks([=, &blockMap](BasicBlock* block) {
@@ -2434,7 +2433,7 @@ PhaseStatus Compiler::optOptimizeLayout()
 
     fgUpdateFlowGraph(/* doTailDuplication */ false);
     fgReorderBlocks(/* useProfile */ true);
-    fgUpdateFlowGraph();
+    fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
 
     // fgReorderBlocks can cause IR changes even if it does not modify
     // the flow graph. It calls gtPrepareCost which can cause operand swapping.
@@ -2524,7 +2523,7 @@ void Compiler::optResetLoopInfo()
             block->RemoveFlags(BBF_RUN_RARELY);
         }
 
-        block->RemoveFlags(BBF_LOOP_FLAGS);
+        block->RemoveFlags(BBF_LOOP_HEAD);
     }
 }
 
@@ -2815,10 +2814,10 @@ bool Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
         ehUpdateLastBlocks(insertionPoint, lastNonLoopBlock);
 
         // Apply any adjustments needed for fallthrough at the boundaries of the moved region.
-        changedFlowGraph |= optLoopCompactionFixupFallThrough(insertionPoint, moveBefore, cur);
-        changedFlowGraph |= optLoopCompactionFixupFallThrough(lastNonLoopBlock, nextLoopBlock, moveBefore);
+        changedFlowGraph |= optLoopCompactionFixupFallThrough(insertionPoint, cur);
+        changedFlowGraph |= optLoopCompactionFixupFallThrough(lastNonLoopBlock, moveBefore);
         // Also apply any adjustments needed where the blocks were snipped out of the loop.
-        changedFlowGraph |= optLoopCompactionFixupFallThrough(previous, cur, nextLoopBlock);
+        changedFlowGraph |= optLoopCompactionFixupFallThrough(previous, nextLoopBlock);
 
         // Update insertionPoint for the next insertion.
         insertionPoint = lastNonLoopBlock;
@@ -2846,7 +2845,7 @@ BasicBlock* Compiler::optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* 
     // out of the loop, and if possible find a spot that won't break up fall-through.
     BasicBlock* bottom         = loop->GetLexicallyBottomMostBlock();
     BasicBlock* insertionPoint = bottom;
-    while (insertionPoint->bbFallsThrough())
+    while (insertionPoint->bbFallsThrough() && !insertionPoint->IsLast())
     {
         // Keep looking for a better insertion point if we can.
         BasicBlock* newInsertionPoint = optTryAdvanceLoopCompactionInsertionPoint(loop, insertionPoint, top, bottom);
@@ -2934,47 +2933,36 @@ BasicBlock* Compiler::optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNatural
 //
 // Parameters:
 //   block   - Block that may have fallthrough
-//   oldNext - The old block that was the fallthrough block
 //   newNext - The new block that was the fallthrough block
 //
 // Returns:
 //   True if the flow graph was changed by this function.
 //
-bool Compiler::optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext)
+bool Compiler::optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* newNext)
 {
+    assert(block->NextIs(newNext));
     bool changed = false;
 
-    if (block->bbFallsThrough())
+    if (block->KindIs(BBJ_COND) && block->TrueTargetIs(newNext))
     {
-        // Need to reconnect the flow from `block` to `oldNext`.
+        // Reverse the jump condition
+        GenTree* test = block->lastNode();
+        noway_assert(test->OperIsConditionalJump());
 
-        if (block->KindIs(BBJ_COND) && (newNext != nullptr) && block->TrueTargetIs(newNext))
+        if (test->OperGet() == GT_JTRUE)
         {
-            // Reverse the jump condition
-            GenTree* test = block->lastNode();
-            noway_assert(test->OperIsConditionalJump());
-
-            if (test->OperGet() == GT_JTRUE)
-            {
-                GenTree* cond = gtReverseCond(test->AsOp()->gtOp1);
-                assert(cond == test->AsOp()->gtOp1); // Ensure `gtReverseCond` did not create a new node.
-                test->AsOp()->gtOp1 = cond;
-            }
-            else
-            {
-                gtReverseCond(test);
-            }
-
-            // Redirect the Conditional JUMP to go to `oldNext`
-            block->SetTrueTarget(oldNext);
-            block->SetFalseTarget(newNext);
+            GenTree* cond = gtReverseCond(test->AsOp()->gtOp1);
+            assert(cond == test->AsOp()->gtOp1); // Ensure `gtReverseCond` did not create a new node.
+            test->AsOp()->gtOp1 = cond;
         }
         else
         {
-            // Insert an unconditional jump to `oldNext` just after `block`.
-            fgConnectFallThrough(block, oldNext);
+            gtReverseCond(test);
         }
 
+        // Redirect the Conditional JUMP to go to `oldNext`
+        block->SetTrueTarget(block->GetFalseTarget());
+        block->SetFalseTarget(newNext);
         changed = true;
     }
     else if (block->KindIs(BBJ_ALWAYS) && block->TargetIs(newNext))
@@ -3057,12 +3045,11 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         BasicBlock* preheaderCandidate = loop->EntryEdges()[0]->getSourceBlock();
         unsigned    candidateEHRegion =
             preheaderCandidate->hasTryIndex() ? preheaderCandidate->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
-        if (preheaderCandidate->KindIs(BBJ_ALWAYS) && (preheaderCandidate->GetUniqueSucc() == loop->GetHeader()) &&
+        if (preheaderCandidate->KindIs(BBJ_ALWAYS) && preheaderCandidate->TargetIs(loop->GetHeader()) &&
             (candidateEHRegion == preheaderEHRegion))
         {
             JITDUMP("Natural loop " FMT_LP " already has preheader " FMT_BB "\n", loop->GetIndex(),
                     preheaderCandidate->bbNum);
-            preheaderCandidate->SetFlags(BBF_LOOP_PREHEADER);
             return false;
         }
     }
@@ -3074,7 +3061,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     }
 
     BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false, header);
-    preheader->SetFlags(BBF_INTERNAL | BBF_LOOP_PREHEADER);
+    preheader->SetFlags(BBF_INTERNAL);
     fgSetEHRegionForNewPreheader(preheader);
 
     if (preheader->NextIs(header))
@@ -3095,47 +3082,6 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
                 header->bbNum, enterBlock->bbNum, preheader->bbNum);
 
         fgReplaceJumpTarget(enterBlock, preheader, header);
-
-        // Fix up fall through
-        if (enterBlock->KindIs(BBJ_COND) && enterBlock->NextIs(header))
-        {
-            FlowEdge*   edge      = fgRemoveRefPred(header, enterBlock);
-            BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, enterBlock, true, preheader);
-            fgAddRefPred(preheader, newAlways, edge);
-            fgAddRefPred(newAlways, enterBlock, edge);
-
-            JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " to preheader\n", newAlways->bbNum,
-                    enterBlock->bbNum);
-            enterBlock->SetFalseTarget(newAlways);
-        }
-    }
-
-    // Fix up potential fallthrough into the preheader.
-    BasicBlock* fallthroughSource = preheader->Prev();
-    if ((fallthroughSource != nullptr) && fallthroughSource->KindIs(BBJ_COND))
-    {
-        if (!loop->ContainsBlock(fallthroughSource))
-        {
-            // Either unreachable or an enter edge. The new fallthrough into
-            // the preheader is what we want. We still need to update refs
-            // which fgReplaceJumpTarget doesn't do for fallthrough.
-            FlowEdge* old = fgRemoveRefPred(header, fallthroughSource);
-            fgAddRefPred(preheader, fallthroughSource, old);
-        }
-        else
-        {
-            // For a backedge we need to make sure we're still going to the head,
-            // and not falling into the preheader.
-            FlowEdge*   edge      = fgRemoveRefPred(header, fallthroughSource);
-            BasicBlock* newAlways = fgNewBBafter(BBJ_ALWAYS, fallthroughSource, true, header);
-            fgAddRefPred(header, newAlways, edge);
-            fgAddRefPred(newAlways, fallthroughSource, edge);
-
-            JITDUMP("Created new BBJ_ALWAYS " FMT_BB " to redirect " FMT_BB " over preheader\n", newAlways->bbNum,
-                    fallthroughSource->bbNum);
-        }
-
-        fallthroughSource->SetFalseTarget(fallthroughSource->Next());
     }
 
     optSetPreheaderWeight(loop, preheader);

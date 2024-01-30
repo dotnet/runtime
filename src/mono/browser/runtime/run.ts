@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { ENVIRONMENT_IS_NODE, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args } from "./startup";
@@ -8,6 +10,7 @@ import cwraps from "./cwraps";
 import { mono_log_info } from "./logging";
 import { assert_js_interop } from "./invoke-js";
 import { assembly_load } from "./invoke-cs";
+import { cancelThreads } from "./pthreads/browser";
 
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
@@ -81,3 +84,17 @@ export function find_entry_point(assembly: string) {
     return method;
 }
 
+export function nativeExit(code: number) {
+    if (MonoWasmThreads) {
+        cancelThreads();
+    }
+    cwraps.mono_wasm_exit(code);
+}
+
+export function nativeAbort(reason: any) {
+    loaderHelpers.exitReason = reason;
+    if (!loaderHelpers.is_exited()) {
+        cwraps.mono_wasm_abort();
+    }
+    throw reason;
+}

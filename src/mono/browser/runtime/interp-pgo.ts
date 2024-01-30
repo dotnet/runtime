@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "./globals";
+import { Module, loaderHelpers } from "./globals";
 import { getCacheKey, cleanupCache, getCacheEntry, storeCacheEntry } from "./snapshot";
 import { mono_log_info, mono_log_error } from "./logging";
 import { localHeapViewU8 } from "./memory";
@@ -9,24 +9,11 @@ import cwraps from "./cwraps";
 
 export const tablePrefix = "https://dotnet.generated.invalid/interp_pgo";
 
-export async function getInterpPgoTable(): Promise<ArrayBuffer | undefined> {
-    const cacheKey = await getCacheKey(tablePrefix);
-    if (!cacheKey)
-        return undefined;
-    return await getCacheEntry(cacheKey);
-}
-
-async function storeInterpPgoTable(memory: ArrayBuffer) {
-    const cacheKey = await getCacheKey(tablePrefix);
-    if (!cacheKey)
+export async function interp_pgo_save_data() {
+    if (!loaderHelpers.is_runtime_running()) {
+        mono_log_info("Skipped saving interp_pgo table (already exited)");
         return;
-
-    await storeCacheEntry(cacheKey, memory, "application/octet-stream");
-
-    cleanupCache(tablePrefix, cacheKey); // no await
-}
-
-export async function interp_pgo_save_data () {
+    }
     const cacheKey = await getCacheKey(tablePrefix);
     if (!cacheKey) {
         mono_log_error("Failed to save interp_pgo table (No cache key)");
@@ -52,17 +39,26 @@ export async function interp_pgo_save_data () {
         const u8 = localHeapViewU8();
         const data = u8.slice(pData, pData + expectedSize);
 
-        await storeInterpPgoTable(data);
+        if (await storeCacheEntry(cacheKey, data, "application/octet-stream")) {
+            mono_log_info("Saved interp_pgo table to cache");
+        }
 
-        mono_log_info("Saved interp_pgo table to cache");
+        cleanupCache(tablePrefix, cacheKey); // no await
+
         Module._free(pData);
     } catch (exc) {
         mono_log_error(`Failed to save interp_pgo table: ${exc}`);
     }
 }
 
-export async function interp_pgo_load_data () {
-    const data = await getInterpPgoTable();
+export async function interp_pgo_load_data() {
+    const cacheKey = await getCacheKey(tablePrefix);
+    if (!cacheKey) {
+        mono_log_error("Failed to create cache key for interp_pgo table");
+        return;
+    }
+
+    const data = await getCacheEntry(cacheKey);
     if (!data) {
         mono_log_info("Failed to load interp_pgo table (No table found in cache)");
         return;
