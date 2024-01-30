@@ -463,11 +463,14 @@ bool Compiler::optExtractInitTestIncr(
         // If we are rebuilding the loops, we would already have the pre-header block introduced
         // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
         // little harder for the possible loop initialization statement.
-        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->TargetIs(header) && (initBlock->countOfInEdges() == 1) &&
-            !initBlock->IsFirst() && initBlock->Prev()->bbFallsThrough())
+        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->TargetIs(header))
         {
-            initBlock = initBlock->Prev();
-            phdrStmt  = initBlock->firstStmt();
+            BasicBlock* uniquePred = initBlock->GetUniquePred(this);
+            if (uniquePred != nullptr)
+            {
+                initBlock = uniquePred;
+                phdrStmt  = initBlock->firstStmt();
+            }
         }
     }
 
