@@ -424,22 +424,22 @@ namespace ILLink.Shared.TrimAnalysis
 									var name = stringValue.Contents;
 
 									// search for all the things we want by name
-									if (name == ".ctor" && (requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)) != 0) {
+									if (name == ".ctor" && (requiredMemberTypes & (DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)) != 0) {
 										MarkConstructorsOnType (systemTypeValue.RepresentedType, bindingFlags, parameterCount: null);
 									}
-									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)) != 0) {
+									if ((requiredMemberTypes & (DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)) != 0) {
 										MarkEventsOnTypeHierarchy (systemTypeValue.RepresentedType, name, bindingFlags);
 									}
-									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)) != 0) {
+									if ((requiredMemberTypes & (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)) != 0) {
 										MarkFieldsOnTypeHierarchy (systemTypeValue.RepresentedType, name, bindingFlags);
 									}
-									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)) != 0) {
+									if ((requiredMemberTypes & (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)) != 0) {
 										foreach (var methodValue in ProcessGetMethodByName (systemTypeValue.RepresentedType, name, bindingFlags)) /*mark method*/;
 									}
-									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)) != 0) {
+									if ((requiredMemberTypes & (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)) != 0) {
 										MarkPropertiesOnTypeHierarchy (systemTypeValue.RepresentedType, name, bindingFlags);
 									}
-									if ((requiredMemberTypes2 & (DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)) != 0) {
+									if ((requiredMemberTypes & (DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)) != 0) {
 										foreach (var nestedTypeValue in GetNestedTypesOnType (systemTypeValue.RepresentedType, name, bindingFlags)) {
 											MarkType (nestedTypeValue.RepresentedType);
 										}
