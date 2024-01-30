@@ -664,6 +664,27 @@ namespace System.Text.Json.Serialization.Tests
             public required int PropertyWithInitOnlySetter { get; init; }
         }
 
+        [Fact]
+        public async Task DerivedClassWithRequiredProperty()
+        {
+            var value = new DerivedClassWithRequiredInitOnlyProperty { MyInt = 42 };
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"MyInt":42}""", json);
+
+            value = await Serializer.DeserializeWrapper<DerivedClassWithRequiredInitOnlyProperty>(json);
+            Assert.Equal(42, value.MyInt);
+        }
+
+        public class BaseClassWithInitOnlyProperty
+        {
+            public int MyInt { get; init; }
+        }
+
+        public class DerivedClassWithRequiredInitOnlyProperty : BaseClassWithInitOnlyProperty
+        {
+            public new required int MyInt { get; init; }
+        }
+
         public static IEnumerable<object[]> InheritedPersonWithRequiredMembersSetsRequiredMembersWorksAsExpectedSources()
         {
             yield return new object[]
