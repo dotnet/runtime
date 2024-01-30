@@ -152,9 +152,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         try
                         {
                             var callStack = args["stackTrace"]?["callFrames"]?.Value<JArray>();
-                            var callStackFunctioName = callStack?.Count > 0 ? callStack?[0]?["functionName"]?.Value<string>() : null;
+                            var topFrameFunctionName = callStack?.Count > 0 ? callStack?[0]?["functionName"]?.Value<string>() : null;
                             //skip mono_wasm_fire_debugger_agent_message_with_data_to_pause or mono_wasm_runtime_ready (both of them have debugger; statement)
-                            if (args["url"]?.ToString()?.Equals("") == true && callStackFunctioName?.StartsWith("mono_wasm_", StringComparison.Ordinal) == true)
+                            if (args["url"]?.ToString()?.Equals("") == true && topFrameFunctionName?.StartsWith("mono_wasm_", StringComparison.Ordinal) == true)
                                 return true;
                             if (args["url"]?.ToString()?.Contains("/_framework/") == true) //it is from dotnet runtime framework
                             {
