@@ -1,7 +1,5 @@
-.\" *********************************** start of \input{common.tex}
-.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 12:09:48 2023
+.\" Manual page created with latex2man on Fri Dec  2 16:09:33 PST 2016
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_FLUSH\\_CACHE" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "UNW\\_FLUSH\\_CACHE" "3" "02 December 2016" "Programming Library " "Programming Library "
 .SH NAME
 unw_flush_cache
 \-\- flush cached info 
@@ -37,15 +35,15 @@ hi);
 .PP
 The unw_flush_cache()
 routine flushes all cached info as it 
-relates to address range lo
+relates to address\-range lo
 to hi
 (non\-inclusive) in the 
-target address space as\&.
+target address\-space as\&.
 In addition, all info cached for 
-address space as
-that is not tied to a particular code range is 
+address\-space as
+that is not tied to a particular code\-range is 
 also flushed. For example, the address of the dynamic registration 
-list is not tied to a code range and its cached value (if any) is 
+list is not tied to a code\-range and its cached value (if any) is 
 flushed by a call to this routine. The address range specified by 
 lo
 and hi
@@ -74,15 +72,15 @@ return a value.
 
 .PP
 The unw_flush_cache()
-routine is thread safe as well as safe to 
+routine is thread\-safe as well as safe to 
 use from a signal handler. 
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3libunwind),
-unw_set_caching_policy(3libunwind)
-unw_set_cache_size(3libunwind)
+libunwind(3),
+unw_set_caching_policy(3)
+unw_set_cache_size(3)
 .PP
 .SH AUTHOR
 

@@ -9,7 +9,6 @@ add_definitions(-DHAVE___THREAD=0)
 add_definitions(-D_GNU_SOURCE)
 add_definitions(-DPACKAGE_STRING="")
 add_definitions(-DPACKAGE_BUGREPORT="")
-add_definitions(-DHAVE_DL_ITERATE_PHDR=1)
 
 if(CLR_CMAKE_HOST_UNIX)
     if (CLR_CMAKE_HOST_ARCH_AMD64)

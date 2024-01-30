@@ -74,9 +74,3 @@ UNW_OBJ(handle_signal_frame) (unw_cursor_t *cursor)
 {
   return -UNW_EBADFRAME;
 }
-
-int
-UNW_OBJ(os_step) (struct cursor *c)
-{
-  return 0;
-}

@@ -1,7 +1,5 @@
-.\" *********************************** start of \input{common.tex}
-.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 11:45:59 2023
+.\" Manual page created with latex2man on Thu Aug 16 09:44:45 MDT 2007
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_GET\\_FPREG" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "UNW\\_GET\\_FPREG" "3" "16 August 2007" "Programming Library " "Programming Library "
 .SH NAME
 unw_get_fpreg
 \-\- get contents of floating\-point register 
@@ -40,20 +38,20 @@ in the stack frame identified by cursor cp
 and stores the value in the variable pointed to by valp\&.
 .PP
 The register numbering is target\-dependent and described in separate 
-manual pages (e.g., libunwind\-ia64(3libunwind) for the IA\-64 target). 
+manual pages (e.g., libunwind\-ia64(3) for the IA\-64 target). 
 Furthermore, the exact set of accessible registers may depend on the 
 type of frame that cp
 is referring to. For ordinary stack 
 frames, it is normally possible to access only the preserved 
 (``callee\-saved\&'') registers and frame\-related registers (such as the 
 stack\-pointer). However, for signal frames (see 
-unw_is_signal_frame(3libunwind)),
+unw_is_signal_frame(3)),
 it is usually possible to access 
 all registers. 
 .PP
 Note that unw_get_fpreg()
 can only read the contents of 
-floating\-point registers. See unw_get_fpreg(3libunwind)
+floating\-point registers. See unw_get_fpreg(3)
 for a way to 
 read registers which fit in a single word. 
 .PP
@@ -62,14 +60,14 @@ read registers which fit in a single word.
 .PP
 On successful completion, unw_get_fpreg()
 returns 0. 
-Otherwise the negative value of one of the error codes below is 
+Otherwise the negative value of one of the error\-codes below is 
 returned. 
 .PP
 .SH THREAD AND SIGNAL SAFETY
 
 .PP
 unw_get_fpreg()
-is thread safe as well as safe to use 
+is thread\-safe as well as safe to use 
 from a signal handler. 
 .PP
 .SH ERRORS
@@ -90,17 +88,17 @@ access_reg(),
 and 
 access_fpreg()
 call\-backs (see 
-unw_create_addr_space(3libunwind)).
+unw_create_addr_space(3)).
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3libunwind),
-libunwind\-ia64(3libunwind),
-unw_get_reg(3libunwind),
-unw_is_fpreg(3libunwind),
-unw_is_signal_frame(3libunwind),
-unw_set_fpreg(3libunwind)
+libunwind(3),
+libunwind\-ia64(3),
+unw_get_reg(3),
+unw_is_fpreg(3),
+unw_is_signal_frame(3),
+unw_set_fpreg(3)
 .PP
 .SH AUTHOR
 

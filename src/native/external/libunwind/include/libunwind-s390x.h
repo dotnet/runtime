@@ -36,10 +36,6 @@ extern "C" {
 #include <inttypes.h>
 #include <ucontext.h>
 
-#ifndef UNW_EMPTY_STRUCT
-#  define UNW_EMPTY_STRUCT uint8_t unused;
-#endif
-
 #define UNW_TARGET              s390x
 #define UNW_TARGET_S390X        1
 
@@ -56,8 +52,6 @@ typedef uint64_t unw_word_t;
 typedef int64_t unw_sword_t;
 
 typedef double unw_tdep_fpreg_t;
-
-#define UNW_WORD_MAX UINT64_MAX
 
 typedef enum
   {
@@ -120,7 +114,7 @@ s390x_regnum_t;
 typedef struct unw_tdep_save_loc
   {
     /* Additional target-dependent info on a save location.  */
-    UNW_EMPTY_STRUCT
+    char unused;
   }
 unw_tdep_save_loc_t;
 
@@ -130,7 +124,7 @@ typedef ucontext_t unw_tdep_context_t;
 typedef struct
   {
     /* no s390x-specific auxiliary proc-info */
-    UNW_EMPTY_STRUCT
+    char unused;
   }
 unw_tdep_proc_info_t;
 

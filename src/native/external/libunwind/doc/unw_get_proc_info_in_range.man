@@ -1,7 +1,7 @@
 .\" *********************************** start of \input{common.tex}
 .\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 11:45:59 2023
+.\" Manual page created with latex2man on Wed Jun 29 18:53:42 2022
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,7 +12,7 @@
 
 .fi
 ..
-.TH "UNW\\_GET\\_PROC\\_INFO\\_IN\\_RANGE" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "UNW\\_GET\\_PROC\\_INFO\\_IN\\_RANGE" "3" "29 June 2022" "Programming Library " "Programming Library "
 .SH NAME
 unw_get_proc_info_in_range
 \-\- get procedure info in IP range and a frame index table 
@@ -42,9 +42,9 @@ routine returns the same
 kind of auxiliary information about a procedure as 
 unw_get_proc_info_by_ip(),
 except that the info is looked up in 
-instruction pointer (IP) range and frame table instead of just at IP. This 
+instruction\-pointer (IP) range and frame table instead of just at IP. This 
 is equally flexible because it is possible to look up the info for an arbitrary 
-procedure, even if it is not part of the current call chain. However, since it 
+procedure, even if it is not part of the current call\-chain. However, since it 
 is more flexible, it also tends to run slower (and often much slower) 
 than unw_get_proc_info().
 .PP
@@ -59,8 +59,8 @@ below is returned.
 
 .PP
 unw_get_proc_info_in_range()
-is thread safe. If the local 
-address space is passed in argument as,
+is thread\-safe. If the local 
+address\-space is passed in argument as,
 this routine is also 
 safe to use from a signal handler. 
 .PP
@@ -86,17 +86,17 @@ UNW_EINVAL
 In addition, unw_get_proc_info_by_ip()
 may return any 
 error returned by the access_mem()
-callback (see 
-unw_create_addr_space(3libunwind)).
+call\-back (see 
+unw_create_addr_space(3)).
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3libunwind),
-unw_get_proc_info_in_range(3libunwind),
-unw_create_addr_space(3libunwind),
-unw_get_proc_name(3libunwind),
-unw_get_proc_info(3libunwind)
+libunwind(3),
+unw_get_proc_info_in_range(3),
+unw_create_addr_space(3),
+unw_get_proc_name(3),
+unw_get_proc_info(3)
 .PP
 .SH AUTHOR
 

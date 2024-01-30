@@ -1,7 +1,5 @@
-.\" *********************************** start of \input{common.tex}
-.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 12:09:48 2023
+.\" Manual page created with latex2man on Wed Aug 16 11:09:44 PDT 2017
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_APPLY\\_REG\\_STATE" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "UNW\\_APPLY\\_REG\\_STATE" "3" "16 August 2017" "Programming Library " "Programming Library "
 .SH NAME
 unw_apply_reg_state
 \-\- apply a register state update to a cursor 
@@ -41,16 +39,16 @@ which have been obtained by calling unw_reg_states_iterate\&.
 .PP
 On successful completion, unw_apply_reg_state()
 returns 0. 
-Otherwise the negative value of one of the error codes below is 
+Otherwise the negative value of one of the error\-codes below is 
 returned. 
 .PP
 .SH THREAD AND SIGNAL SAFETY
 
 .PP
 unw_apply_reg_state()
-is thread safe. If cursor cp
+is thread\-safe. If cursor cp
 is 
-in the local address space, this routine is also safe to use from a 
+in the local address\-space, this routine is also safe to use from a 
 signal handler. 
 .PP
 .SH ERRORS
@@ -66,20 +64,20 @@ was unable to locate
 unwind\-info for the procedure. 
 .TP
 UNW_EBADVERSION
- The unwind info for the procedure has 
+ The unwind\-info for the procedure has 
 version or format that is not understood by libunwind\&.
 .PP
 In addition, unw_apply_reg_state()
 may return any error 
 returned by the access_mem()
 call\-back (see 
-unw_create_addr_space(3libunwind)).
+unw_create_addr_space(3)).
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3libunwind),
-unw_reg_states_iterate(3libunwind)
+libunwind(3),
+unw_reg_states_iterate(3)
 .PP
 .SH AUTHOR
 

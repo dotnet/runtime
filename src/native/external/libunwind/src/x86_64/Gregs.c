@@ -131,8 +131,8 @@ tdep_access_reg (struct cursor *c, unw_regnum_t reg, unw_word_t *valp,
 }
 
 HIDDEN int
-tdep_access_fpreg (struct cursor *c UNUSED, unw_regnum_t reg UNUSED,
-                   unw_fpreg_t *valp UNUSED, int write UNUSED)
+tdep_access_fpreg (struct cursor *c, unw_regnum_t reg, unw_fpreg_t *valp,
+                   int write)
 {
       return -UNW_EBADREG;
 }

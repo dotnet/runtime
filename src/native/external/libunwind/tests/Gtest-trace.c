@@ -40,10 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <unistd.h>
 #include <libunwind.h>
 
-#include "ident.h"
-
-#define panic(...)				\
-	{ fprintf (stderr, __VA_ARGS__); exit (-1); }
+#define panic(args...)				\
+	{ fprintf (stderr, args); exit (-1); }
 
 #define SIG_STACK_SIZE 0x100000
 
@@ -82,7 +80,7 @@ do_backtrace (void)
   if (ret < 0)
     {
       unw_get_reg (&cursor, UNW_REG_IP, &ip);
-      printf ("FAILURE: unw_step() returned %d for ip=%#010lx\n", ret, (long) ip);
+      printf ("FAILURE: unw_step() returned %d for ip=%lx\n", ret, (long) ip);
       ++num_errors;
     }
 
@@ -123,7 +121,7 @@ do_backtrace (void)
   if (n == m)
     for (i = 1; i < n; ++i)
       /* Allow one in difference in comparison, trace returns adjusted addresses. */
-      if (labs (addresses[1][i] - addresses[2][i]) > 1)
+      if (labs((unw_word_t) addresses[1][i] - (unw_word_t) addresses[2][i]) > 1)
 	{
           printf ("FAILURE: backtrace() and unw_backtrace() addresses differ at %d: %p vs. %p\n",
                   i, addresses[1][i], addresses[2][i]);
@@ -133,7 +131,7 @@ do_backtrace (void)
   if (n == depth+1)
     for (i = 1; i < depth; ++i)
       /* Allow one in difference in comparison, trace returns adjusted addresses. */
-      if (labs (addresses[0][i] - addresses[1][i]) > 1)
+      if (labs((unw_word_t) addresses[0][i] - (unw_word_t) addresses[1][i]) > 1)
 	{
           printf ("FAILURE: unw_step() loop and backtrace() addresses differ at %d: %p vs. %p\n",
                   i, addresses[0][i], addresses[1][i]);
@@ -165,7 +163,7 @@ do_backtrace_with_context(void *context)
   if (ret < 0)
     {
       unw_get_reg (&cursor, UNW_REG_IP, &ip);
-      printf ("FAILURE: unw_step() returned %d for ip=%#010lx\n", ret, (long) ip);
+      printf ("FAILURE: unw_step() returned %d for ip=%lx\n", ret, (long) ip);
       ++num_errors;
     }
 
@@ -191,9 +189,9 @@ do_backtrace_with_context(void *context)
   if (m == depth + 1)
     for (i = 0; i < depth; ++i)
       /* Allow one in difference in comparison, trace returns adjusted addresses. */
-      if ( labs(addresses[0][i] - addresses[1][i]) > 1)
+      if (labs((unw_word_t) addresses[0][i] - (unw_word_t) addresses[1][i]) > 1)
 	{
-          printf ("FAILURE: unw_step() loop and unw_backtrace2() addresses differ at %d: %p vs. %p\n",
+          printf ("FAILURE: unw_step() loop and uwn_backtrace2() addresses differ at %d: %p vs. %p\n",
                   i, addresses[0][i], addresses[1][i]);
           ++num_errors;
 	}
@@ -208,8 +206,8 @@ foo (long val UNUSED)
 void
 bar (long v)
 {
+  extern long f (long);
   int arr[v];
-  arr[0] = 0;
 
   /* This is a vain attempt to use up lots of registers to force
      the frame-chain info to be saved on the memory stack on ia64.
@@ -237,7 +235,7 @@ bar (long v)
 }
 
 void
-sighandler (int signal, siginfo_t *siginfo UNUSED, void *context)
+sighandler (int signal, void *siginfo UNUSED, void *context)
 {
   ucontext_t *uc UNUSED;
   int sp;
@@ -246,10 +244,10 @@ sighandler (int signal, siginfo_t *siginfo UNUSED, void *context)
 
   if (verbose)
     {
-      printf ("sighandler: got signal %d, sp=%p", signal, (void *)&sp);
+      printf ("sighandler: got signal %d, sp=%p", signal, &sp);
 #if UNW_TARGET_IA64
 # if defined(__linux__)
-      printf (" @ %#010lx", uc->uc_mcontext.sc_ip);
+      printf (" @ %lx", uc->uc_mcontext.sc_ip);
 # else
       {
 	uint16_t reason;
@@ -257,26 +255,26 @@ sighandler (int signal, siginfo_t *siginfo UNUSED, void *context)
 
 	__uc_get_reason (uc, &reason);
 	__uc_get_ip (uc, &ip);
-	printf (" @ %#010lx (reason=%d)", ip, reason);
+	printf (" @ %lx (reason=%d)", ip, reason);
       }
 # endif
 #elif UNW_TARGET_X86
 #if defined __linux__
-      printf (" @ %#010lx", (unsigned long) uc->uc_mcontext.gregs[REG_EIP]);
+      printf (" @ %lx", (unsigned long) uc->uc_mcontext.gregs[REG_EIP]);
 #elif defined __FreeBSD__
-      printf (" @ %#010lx", (unsigned long) uc->uc_mcontext.mc_eip);
+      printf (" @ %lx", (unsigned long) uc->uc_mcontext.mc_eip);
 #endif
 #elif UNW_TARGET_X86_64
 #if defined __linux__ || defined __sun
-      printf (" @ %#010lx", (unsigned long) uc->uc_mcontext.gregs[REG_RIP]);
+      printf (" @ %lx", (unsigned long) uc->uc_mcontext.gregs[REG_RIP]);
 #elif defined __FreeBSD__
-      printf (" @ %#010lx", (unsigned long) uc->uc_mcontext.mc_rip);
+      printf (" @ %lx", (unsigned long) uc->uc_mcontext.mc_rip);
 #endif
 #elif defined UNW_TARGET_ARM
 #if defined __linux__
-      printf (" @ %#010lx", (unsigned long) uc->uc_mcontext.arm_pc);
+      printf (" @ %lx", (unsigned long) uc->uc_mcontext.arm_pc);
 #elif defined __FreeBSD__
-      printf (" @ %#010lx", (unsigned long) uc->uc_mcontext.__gregs[_REG_PC]);
+      printf (" @ %lx", (unsigned long) uc->uc_mcontext.__gregs[_REG_PC]);
 #endif
 #endif
       printf ("\n");
@@ -301,7 +299,7 @@ main (int argc, char **argv UNUSED)
   bar (1);
 
   memset (&act, 0, sizeof (act));
-  act.sa_sigaction = sighandler;
+  act.sa_handler = (void (*)(int)) sighandler;
   act.sa_flags = SA_SIGINFO;
   if (sigaction (SIGTERM, &act, NULL) < 0)
     panic ("sigaction: %s\n", strerror (errno));
@@ -322,7 +320,7 @@ main (int argc, char **argv UNUSED)
     panic ("sigaltstack: %s\n", strerror (errno));
 
   memset (&act, 0, sizeof (act));
-  act.sa_sigaction = sighandler;
+  act.sa_handler = (void (*)(int)) sighandler;
   act.sa_flags = SA_ONSTACK | SA_SIGINFO;
   if (sigaction (SIGTERM, &act, NULL) < 0)
     panic ("sigaction: %s\n", strerror (errno));

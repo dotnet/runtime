@@ -208,18 +208,6 @@ typedef struct unw_accessors
     int (*get_proc_name) (unw_addr_space_t, unw_word_t, char *, size_t,
 			  unw_word_t *, void *);
 
-    /* Optional call back to obtain the name of a elf file where the ip belongs to.
-       This callback is optional and may be set to NULL.  */
-    int (*get_elf_filename) (unw_addr_space_t, unw_word_t, char *, size_t,
-			  unw_word_t *, void *);
-
-    /* Optional call back to obtain the start and end ip of a procedure.
-     * procedure ip range is [start, end), the range is without end.
-     * This callback is optional and may be set to NULL.
-     */
-    int (*get_proc_ip_range) (unw_addr_space_t, unw_word_t, unw_word_t *,
-			  unw_word_t *, void *);
-
     /* Optional call back to return a mask to be used with pointer
      * authentication on arm64.
      *
@@ -261,10 +249,6 @@ typedef struct unw_save_loc
   }
 unw_save_loc_t;
 
-struct dl_phdr_info;
-typedef int (*unw_iterate_phdr_callback_t) (struct dl_phdr_info *, size_t, void *);
-typedef int (*unw_iterate_phdr_func_t) (unw_iterate_phdr_callback_t, void *);
-
 /* These routines work both for local and remote unwinding.  */
 
 #define unw_local_addr_space		UNW_OBJ(local_addr_space)
@@ -290,11 +274,8 @@ typedef int (*unw_iterate_phdr_func_t) (unw_iterate_phdr_callback_t, void *);
 #define unw_is_signal_frame		UNW_OBJ(is_signal_frame)
 #define unw_get_proc_name		UNW_OBJ(get_proc_name)
 #define unw_get_proc_name_by_ip		UNW_OBJ(get_proc_name_by_ip)
-#define unw_get_elf_filename		UNW_OBJ(get_elf_filename)
-#define unw_get_elf_filename_by_ip		UNW_OBJ(get_elf_filename_by_ip)
 #define unw_set_caching_policy		UNW_OBJ(set_caching_policy)
 #define unw_set_cache_size		UNW_OBJ(set_cache_size)
-#define unw_set_iterate_phdr_function	UNW_OBJ(set_iterate_phdr_function)
 #define unw_regname			UNW_ARCH_OBJ(regname)
 #define unw_flush_cache			UNW_ARCH_OBJ(flush_cache)
 #define unw_strerror			UNW_ARCH_OBJ(strerror)
@@ -306,7 +287,6 @@ extern unw_accessors_t *unw_get_accessors_int (unw_addr_space_t);
 extern void unw_flush_cache (unw_addr_space_t, unw_word_t, unw_word_t);
 extern int unw_set_caching_policy (unw_addr_space_t, unw_caching_policy_t);
 extern int unw_set_cache_size (unw_addr_space_t, size_t, int);
-extern void unw_set_iterate_phdr_function (unw_addr_space_t, unw_iterate_phdr_func_t);
 extern const char *unw_regname (unw_regnum_t);
 
 extern int unw_init_local (unw_cursor_t *, unw_context_t *);
@@ -334,9 +314,6 @@ extern int unw_is_signal_frame (unw_cursor_t *);
 extern int unw_get_proc_name (unw_cursor_t *, char *, size_t, unw_word_t *);
 extern int unw_get_proc_name_by_ip (unw_addr_space_t, unw_word_t, char *,
 				    size_t, unw_word_t *, void *);
-extern int unw_get_elf_filename (unw_cursor_t *, char *, size_t, unw_word_t *);
-extern int unw_get_elf_filename_by_ip (unw_addr_space_t, unw_word_t, char *,
-                                       size_t, unw_word_t *, void *);
 extern const char *unw_strerror (int);
 extern int unw_backtrace (void **, int);
 extern int unw_backtrace2 (void **, int, unw_context_t*, int);

@@ -1,7 +1,5 @@
-.\" *********************************** start of \input{common.tex}
-.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Tue Aug 29 12:09:48 2023
+.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -12,7 +10,7 @@
 
 .fi
 ..
-.TH "UNW\\_GET\\_PROC\\_NAME" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.TH "UNW\\_GET\\_PROC\\_NAME" "3" "29 August 2021" "Programming Library " "Programming Library "
 .SH NAME
 unw_get_proc_name
 \-\- get name of current procedure 
@@ -44,14 +42,14 @@ that is at least len
 bytes long. This buffer is used to return 
 the name of the procedure. The offp
 argument is a pointer to a 
-word that is used to return the byte offset of the instruction\-pointer 
+word that is used to return the byte\-offset of the instruction\-pointer 
 saved in the stack frame identified by cp,
 relative to the start 
 of the procedure. For example, if procedure foo()
 starts at 
 address 0x40003000, then invoking unw_get_proc_name()
 on a 
-stack frame with an instruction pointer value of 0x40003080 would 
+stack frame with an instruction\-pointer value of 0x40003080 would 
 return a value of 0x80 in the word pointed to by offp
 (assuming 
 the procedure is at least 0x80 bytes long). 
@@ -66,23 +64,23 @@ However, the offset returned through offp
 is always relative to 
 the returned name, which ensures that the value (address) of the 
 returned name plus the returned offset will always be equal to the 
-instruction pointer of the stack frame identified by cp\&.
+instruction\-pointer of the stack frame identified by cp\&.
 .PP
 .SH RETURN VALUE
 
 .PP
 On successful completion, unw_get_proc_name()
 returns 0. 
-Otherwise the negative value of one of the error codes below is 
+Otherwise the negative value of one of the error\-codes below is 
 returned. 
 .PP
 .SH THREAD AND SIGNAL SAFETY
 
 .PP
 unw_get_proc_name()
-is thread safe. If cursor cp
+is thread\-safe. If cursor cp
 is 
-in the local address space, this routine is also safe to use from a 
+in the local address\-space, this routine is also safe to use from a 
 signal handler. 
 .PP
 .SH ERRORS
@@ -105,14 +103,14 @@ returned.
 In addition, unw_get_proc_name()
 may return any error 
 returned by the access_mem()
-callback (see 
-unw_create_addr_space(3libunwind)).
+call\-back (see 
+unw_create_addr_space(3)).
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3libunwind),
-unw_get_proc_info(3libunwind)
+libunwind(3),
+unw_get_proc_info(3)
 .PP
 .SH AUTHOR
 
