@@ -141,7 +141,7 @@ INST9(ld1w,              "ld1w",                  0,                       IF_SV
     // LD1W    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B_D         11000101010mmmmm 110gggnnnnnttttt     C540 C000   
     // LD1W    {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_HX_3A_E         10000101001iiiii 110gggnnnnnttttt     8520 C000   
     // LD1W    {<Zt>.X }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IH_3A_F         101001010000iiii 001gggnnnnnttttt     A500 2000   
-    // LD1W    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]                                SVE_II_4A_H         10100101000mmmmm 000gggnnnnnttttt     A500 0000   
+    // LD1W    {<Zt>.X }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]                                SVE_II_4A_H         10100101000mmmmm 000gggnnnnnttttt     A500 0000   
 
 
 //    enum               name                     info                                              SVE_IH_3A        SVE_IH_3A_A      SVE_II_4A        SVE_II_4A_B      SVE_IU_4A        SVE_IU_4A_C      SVE_IU_4B        SVE_IU_4B_D      SVE_IV_3A        

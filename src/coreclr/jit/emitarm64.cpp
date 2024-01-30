@@ -1739,8 +1739,35 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_II_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isGeneralRegister(id->idReg4()));   // mmmmm
+            assert(isScalableVectorSize(elemsize));
+            break;
+
         case IF_SVE_II_4A_B: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_Q);
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isGeneralRegister(id->idReg4()));   // mmmmm
+            assert(isScalableVectorSize(elemsize));
+            break;
+
         case IF_SVE_II_4A_H: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
+            elemsize = id->idOpSize();
+            assert(insOptsScalableWordsOrQuadwords(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isGeneralRegister(id->idReg4()));   // mmmmm
+            assert(isScalableVectorSize(elemsize));
+            break;
+
         case IF_SVE_IK_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
         case IF_SVE_IK_4A_F: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
         case IF_SVE_IK_4A_G: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
@@ -1786,8 +1813,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalableWords(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));    // ttttt
             assert(isPredicateRegister(id->idReg2())); // ggg
-            assert(isVectorRegister(id->idReg3()));    // nnnnn
-            assert(isGeneralRegisterOrZR(id->idReg4())); // mmmmm
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isGeneralRegister(id->idReg4()));   // mmmmm
             assert(isScalableVectorSize(elemsize));
             break;
 
@@ -11807,6 +11834,11 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
                         fmt = IF_SVE_IG_4A_F;
                         break;
 
+                    case INS_sve_ld1w:
+                        assert(insOptsScalableWordsOrQuadwords(opt));
+                        fmt = IF_SVE_II_4A_H;
+                        break;
+
                     default:
                         assert(!"Invalid instruction");
                         break;
@@ -11871,22 +11903,24 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
 
                 if (opt == INS_OPTS_SCALABLE_Q)
                 {
+                    assert(reg4 != REG_ZR);
                     assert(ins == INS_sve_ld1d);
-                    assert(!"not implemented");
-                    // TODO
+                    fmt = IF_SVE_II_4A_B;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_D);
-                    assert(isVectorRegister(reg1));
-                    assert(isPredicateRegister(reg2));
-                    assert(isGeneralRegister(reg3));
 
                     switch (ins)
                     {
                         case INS_sve_ldff1d:
                         case INS_sve_ldff1sw:
                             fmt = IF_SVE_IG_4A;
+                            break;
+
+                        case INS_sve_ld1d:
+                            assert(reg4 != REG_ZR);
+                            fmt = IF_SVE_II_4A;
                             break;
 
                         default:
@@ -15410,6 +15444,29 @@ void emitter::emitIns_Call(EmitCallType          callType,
             }
             break;
 
+        case IF_SVE_II_4A:
+        case IF_SVE_II_4A_B:
+            switch (ins)
+            {
+                case INS_sve_ld1d:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_II_4A_H:
+            switch (ins)
+            {
+                case INS_sve_ld1w:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
         default:
             break;
     }
@@ -15746,6 +15803,33 @@ void emitter::emitIns_Call(EmitCallType          callType,
             }
             break;
 
+        case IF_SVE_II_4A:
+        case IF_SVE_II_4A_B:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_ld1d:
+                    return 3;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_II_4A_H:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_ld1w:
+                    return 2;
+
+                default:
+                    break;
+            }
+            break;
+
         default:
             break;
     }
@@ -15787,13 +15871,14 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns the encoding to select the 1/2/4/8/16 byte elemsize for an Arm64 Sve vector instruction
+ *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
  *  for the 'dtype' field.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t code)
 {
     assert(canEncodeSveElemsize_dtype(ins));
+    assert(ins != INS_sve_ld1w);
     switch (size)
     {
         case EA_1BYTE:
@@ -15833,11 +15918,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case EA_4BYTE:
             switch (ins)
             {
-                case INS_sve_ld1w:
-                    // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '1' to get the
-                    // proper encoding for S.
-                    return (code | (1 << 15)) | (1 << 22); // Set bit '22' and '15' to 1.
-
                 case INS_sve_ldnf1w:
                 case INS_sve_ldff1w:
                     return code; // By default, the instruction already encodes 32-bit.
@@ -15866,11 +15946,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         case EA_8BYTE:
             switch (ins)
             {
-                case INS_sve_ld1w:
-                    // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '1' to get the
-                    // proper encoding for D.
-                    return ((code | (1 << 15)) | (1 << 22)) | (1 << 21); // Set bit '22', '21' and '15' to 1.
-
                 case INS_sve_ldnf1w:
                 case INS_sve_ldff1w:
                     return code | (1 << 21); // Set bit '21' to 1. Set bit '15' to 1.
@@ -15896,21 +15971,83 @@ void emitter::emitIns_Call(EmitCallType          callType,
             }
             return code;
 
-        case EA_16BYTE:
-            switch (ins)
-            {
-                case INS_sve_ld1w:
-                    return code | (1 << 20); // Set bit '20' to 1.
-
-                default:
-                    assert(!"Invalid instruction for encoding dtype.");
-            }
-            return code;
-
         default:
             assert(!"Invalid size for encoding dtype.");
     }
 
+    return code;
+}
+
+/*****************************************************************************
+ *
+ * Returns the encoding to select the 4/8/16 byte elemsize for the Arm64 Sve vector instruction 'ld1w'
+ * for the 'dtype' field.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtype_ld1w(instruction ins, insFormat fmt, emitAttr size, code_t code)
+{
+    assert(canEncodeSveElemsize_dtype(ins));
+    assert(ins == INS_sve_ld1w);
+    switch (size)
+    {
+        case EA_4BYTE:
+            switch (fmt)
+            {
+                case IF_SVE_IH_3A_F:
+                    // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '1' to get the
+                    // proper encoding for S.
+                    return (code | (1 << 15)) | (1 << 22); // Set bit '22' and '15' to 1.
+
+                case IF_SVE_II_4A_H:
+                    // Note: Bit '14' is not actually part of 'dtype', but it is necessary to set to '1' to get the
+                    // proper encoding for S.
+                    return (code | (1 << 14)) | (1 << 22); // Set bit '22' and '14' to 1.
+
+                default:
+                    break;
+            }
+            break;
+
+        case EA_8BYTE:
+            switch (fmt)
+            {
+                case IF_SVE_IH_3A_F:
+                    // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '1' to get the
+                    // proper encoding for D.
+                    return ((code | (1 << 15)) | (1 << 22)) | (1 << 21); // Set bit '22', '21' and '15' to 1.
+
+                case IF_SVE_II_4A_H:
+                    // Note: Bit '14' is not actually part of 'dtype', but it is necessary to set to '1' to get the
+                    // proper encoding for D.
+                    return ((code | (1 << 14)) | (1 << 22)) | (1 << 21); // Set bit '22', '21' and '14' to 1.
+
+                default:
+                    break;
+            }
+            break;
+
+        case EA_16BYTE:
+            switch (fmt)
+            {
+                case IF_SVE_IH_3A_F:
+                    return code | (1 << 20); // Set bit '20' to 1.
+
+                case IF_SVE_II_4A_H:
+                    // Note: Bit '15' is not actually part of 'dtype', but it is necessary to set to '1' to get the
+                    // proper encoding for Q.
+                    return code | (1 << 15); // Set bit '15' to 1.
+
+                default:
+                    break;
+            }
+            break;
+
+        default:
+            assert(!"Invalid size for encoding dtype.");
+            break;
+    }
+
+    assert(!"Invalid instruction format");
     return code;
 }
 
@@ -18515,7 +18652,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             if (canEncodeSveElemsize_dtype(ins))
             {
-                code = insEncodeSveElemsize_dtype(ins, optGetSveElemsize(id->idInsOpt()), code);
+                if (ins == INS_sve_ld1w)
+                {
+                    code = insEncodeSveElemsize_dtype_ld1w(ins, fmt, optGetSveElemsize(id->idInsOpt()), code);
+                }
+                else
+                {
+                    code = insEncodeSveElemsize_dtype(ins, optGetSveElemsize(id->idInsOpt()), code);
+                }
             }
 
             dst += emitOutput_Instr(dst, code);
@@ -18662,6 +18806,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                              // scalar)
         case IF_SVE_IG_4A_G: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous first-fault load (scalar plus
                              // scalar)
+        case IF_SVE_II_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
+        case IF_SVE_II_4A_B: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
+        case IF_SVE_II_4A_H: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
@@ -18670,7 +18817,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             if (canEncodeSveElemsize_dtype(ins))
             {
-                code = insEncodeSveElemsize_dtype(ins, optGetSveElemsize(id->idInsOpt()), code);
+                if (ins == INS_sve_ld1w)
+                {
+                    code = insEncodeSveElemsize_dtype_ld1w(ins, fmt, optGetSveElemsize(id->idInsOpt()), code);
+                }
+                else
+                {
+                    code = insEncodeSveElemsize_dtype(ins, optGetSveElemsize(id->idInsOpt()), code);
+                }
             }
 
             dst += emitOutput_Instr(dst, code);
@@ -21698,8 +21852,11 @@ void emitter::emitDispInsHelp(
         // {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, <Xm>, LSL #1}]
         case IF_SVE_IG_4A_G: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous first-fault load (scalar plus
                              // scalar)
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]
         case IF_SVE_II_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
+        // {<Zt>.Q }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]
         case IF_SVE_II_4A_B: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]
         case IF_SVE_II_4A_H: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
         case IF_SVE_IK_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
         case IF_SVE_IK_4A_F: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)

@@ -523,9 +523,13 @@ static int insSveGetLslOrModN(instruction ins, insFormat fmt);
 // Returns true if the specified instruction can encode the 'dtype' field.
 static bool canEncodeSveElemsize_dtype(instruction ins);
 
-// Returns the encoding to select the 1/2/4/8/16 byte elemsize for an Arm64 Sve vector instruction
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
 // for the 'dtype' field.
 static code_t insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t code);
+
+// Returns the encoding to select the 4/8/16 byte elemsize for the Arm64 Sve vector instruction 'ld1w'
+// for the 'dtype' field.
+static code_t insEncodeSveElemsize_dtype_ld1w(instruction ins, insFormat fmt, emitAttr size, code_t code);
 
 // Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
