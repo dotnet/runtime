@@ -2259,21 +2259,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void RootN<T>(ReadOnlySpan<T> x, int n, Span<T> destination)
-            where T : IRootFunctions<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.RootN(x[i], n);
-            }
-        }
+            where T : IRootFunctions<T> =>
+            InvokeSpanIntoSpan(x, new RootNOperator<T>(n), destination);
 
         /// <summary>Computes the element-wise rotation left of numbers in the specified tensor by the specified rotation amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2287,21 +2274,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void RotateLeft<T>(ReadOnlySpan<T> x, int rotateAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.RotateLeft(x[i], rotateAmount);
-            }
-        }
+            where T : IBinaryInteger<T> =>
+            InvokeSpanIntoSpan(x, new RotateLeftOperator<T>(rotateAmount), destination);
 
         /// <summary>Computes the element-wise rotation right of numbers in the specified tensor by the specified rotation amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2315,21 +2289,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void RotateRight<T>(ReadOnlySpan<T> x, int rotateAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.RotateRight(x[i], rotateAmount);
-            }
-        }
+            where T : IBinaryInteger<T> =>
+            InvokeSpanIntoSpan(x, new RotateRightOperator<T>(rotateAmount), destination);
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2414,22 +2375,12 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
             if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
             }
 
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.Round(x[i], digits, mode);
-            }
+            InvokeSpanIntoSpan(x, new RoundOperator<T>(digits, mode), destination);
         }
 
         /// <summary>Computes the element-wise product of numbers in the specified tensor and their base-radix raised to the specified power.</summary>
@@ -2444,21 +2395,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ScaleB<T>(ReadOnlySpan<T> x, int n, Span<T> destination)
-            where T : IFloatingPointIeee754<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.ScaleB(x[i], n);
-            }
-        }
+            where T : IFloatingPointIeee754<T> =>
+            InvokeSpanIntoSpan(x, new ScaleBOperator<T>(n), destination);
 
         /// <summary>Computes the element-wise shifting left of numbers in the specified tensor by the specified shift amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2472,21 +2410,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftLeft<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = x[i] << shiftAmount;
-            }
-        }
+            where T : IShiftOperators<T, int, T> =>
+            InvokeSpanIntoSpan(x, new ShiftLeftOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise arithmetic (signed) shifting right of numbers in the specified tensor by the specified shift amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2500,21 +2425,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftRightArithmetic<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = x[i] >> shiftAmount;
-            }
-        }
+            where T : IShiftOperators<T, int, T> =>
+            InvokeSpanIntoSpan(x, new ShiftRightArithmeticOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise logical (unsigned) shifting right of numbers in the specified tensor by the specified shift amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2528,21 +2440,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftRightLogical<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = x[i] >>> shiftAmount;
-            }
-        }
+            where T : IShiftOperators<T, int, T> =>
+            InvokeSpanIntoSpan(x, new ShiftRightLogicalOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise sigmoid function on the specified non-empty tensor of numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>

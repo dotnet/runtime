@@ -3509,6 +3509,904 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <typeparam name="TStatefulUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
+        private static void InvokeSpanIntoSpan<T, TStatefulUnaryOperator>(
+            ReadOnlySpan<T> x, TStatefulUnaryOperator op, Span<T> destination)
+            where TStatefulUnaryOperator : struct, IStatefulUnaryOperator<T>
+        {
+            // NOTE: This implementation is an exact copy of InvokeSpanIntoSpan<T, TUnaryOperator>,
+            // except it accepts an operator that carries state with it, using instance rather than
+            // static invocation methods.
+
+            if (x.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+
+            // Since every branch has a cost and since that cost is
+            // essentially lost for larger inputs, we do branches
+            // in a way that allows us to have the minimum possible
+            // for small sizes
+
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            ref T dRef = ref MemoryMarshal.GetReference(destination);
+
+            nuint remainder = (uint)x.Length;
+
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TStatefulUnaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            {
+                if (remainder >= (uint)Vector512<T>.Count)
+                {
+                    Vectorized512(ref xRef, ref dRef, remainder, op);
+                }
+                else
+                {
+                    // We have less than a vector and so we can only handle this as scalar. To do this
+                    // efficiently, we simply have a small jump table and fallthrough. So we get a simple
+                    // length check, single jump, and then linear execution.
+
+                    VectorizedSmall(ref xRef, ref dRef, remainder, op);
+                }
+
+                return;
+            }
+
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TStatefulUnaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            {
+                if (remainder >= (uint)Vector256<T>.Count)
+                {
+                    Vectorized256(ref xRef, ref dRef, remainder, op);
+                }
+                else
+                {
+                    // We have less than a vector and so we can only handle this as scalar. To do this
+                    // efficiently, we simply have a small jump table and fallthrough. So we get a simple
+                    // length check, single jump, and then linear execution.
+
+                    VectorizedSmall(ref xRef, ref dRef, remainder, op);
+                }
+
+                return;
+            }
+
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TStatefulUnaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            {
+                if (remainder >= (uint)Vector128<T>.Count)
+                {
+                    Vectorized128(ref xRef, ref dRef, remainder, op);
+                }
+                else
+                {
+                    // We have less than a vector and so we can only handle this as scalar. To do this
+                    // efficiently, we simply have a small jump table and fallthrough. So we get a simple
+                    // length check, single jump, and then linear execution.
+
+                    VectorizedSmall(ref xRef, ref dRef, remainder, op);
+                }
+
+                return;
+            }
+
+            // This is the software fallback when no acceleration is available
+            // It requires no branches to hit
+
+            SoftwareFallback(ref xRef, ref dRef, remainder, op);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void SoftwareFallback(ref T xRef, ref T dRef, nuint length, TStatefulUnaryOperator op)
+            {
+                for (nuint i = 0; i < length; i++)
+                {
+                    Unsafe.Add(ref dRef, i) = op.Invoke(Unsafe.Add(ref xRef, i));
+                }
+            }
+
+            static void Vectorized128(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                ref T dRefBeg = ref dRef;
+
+                // Preload the beginning and end so that overlapping accesses don't negatively impact the data
+
+                Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                Vector128<T> end = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                if (remainder > (uint)(Vector128<T>.Count * 8))
+                {
+                    // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
+                    // for large inputs (> 85KB) which are on the LOH and unlikely to be compacted.
+
+                    fixed (T* px = &xRef)
+                    fixed (T* pd = &dRef)
+                    {
+                        T* xPtr = px;
+                        T* dPtr = pd;
+
+                        // We need to the ensure the underlying data can be aligned and only align
+                        // it if it can. It is possible we have an unaligned ref, in which case we
+                        // can never achieve the required SIMD alignment.
+
+                        bool canAlign = ((nuint)dPtr % (nuint)sizeof(T)) == 0;
+
+                        if (canAlign)
+                        {
+                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
+                            //
+                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
+                            // are more expensive than unaligned loads and aligning both is significantly more
+                            // complex.
+
+                            nuint misalignment = ((uint)sizeof(Vector128<T>) - ((nuint)dPtr % (uint)sizeof(Vector128<T>))) / (uint)sizeof(T);
+
+                            xPtr += misalignment;
+                            dPtr += misalignment;
+
+                            Debug.Assert(((nuint)dPtr % (uint)sizeof(Vector128<T>)) == 0);
+
+                            remainder -= misalignment;
+                        }
+
+                        Vector128<T> vector1;
+                        Vector128<T> vector2;
+                        Vector128<T> vector3;
+                        Vector128<T> vector4;
+
+                        if ((remainder > (NonTemporalByteThreshold / (nuint)sizeof(T))) && canAlign)
+                        {
+                            // This loop stores the data non-temporally, which benefits us when there
+                            // is a large amount of data involved as it avoids polluting the cache.
+
+                            while (remainder >= (uint)(Vector128<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 3)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 0));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 1));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 2));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 7)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 4));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 5));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 6));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector128<T>.Count * 8);
+                                dPtr += (uint)(Vector128<T>.Count * 8);
+
+                                remainder -= (uint)(Vector128<T>.Count * 8);
+                            }
+                        }
+                        else
+                        {
+                            while (remainder >= (uint)(Vector128<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 3)));
+
+                                vector1.Store(dPtr + (uint)(Vector128<T>.Count * 0));
+                                vector2.Store(dPtr + (uint)(Vector128<T>.Count * 1));
+                                vector3.Store(dPtr + (uint)(Vector128<T>.Count * 2));
+                                vector4.Store(dPtr + (uint)(Vector128<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 7)));
+
+                                vector1.Store(dPtr + (uint)(Vector128<T>.Count * 4));
+                                vector2.Store(dPtr + (uint)(Vector128<T>.Count * 5));
+                                vector3.Store(dPtr + (uint)(Vector128<T>.Count * 6));
+                                vector4.Store(dPtr + (uint)(Vector128<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector128<T>.Count * 8);
+                                dPtr += (uint)(Vector128<T>.Count * 8);
+
+                                remainder -= (uint)(Vector128<T>.Count * 8);
+                            }
+                        }
+
+                        // Adjusting the refs here allows us to avoid pinning for very small inputs
+
+                        xRef = ref *xPtr;
+                        dRef = ref *dPtr;
+                    }
+                }
+
+                // Process the remaining [Count, Count * 8] elements via a jump table
+                //
+                // Unless the original length was an exact multiple of Count, then we'll
+                // end up reprocessing a couple elements in case 1 for end. We'll also
+                // potentially reprocess a few elements in case 0 for beg, to handle any
+                // data before the first aligned address.
+
+                nuint endIndex = remainder;
+                remainder = (remainder + (uint)(Vector128<T>.Count - 1)) & (nuint)(-Vector128<T>.Count);
+
+                switch (remainder / (uint)Vector128<T>.Count)
+                {
+                    case 8:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
+                            goto case 7;
+                        }
+
+                    case 7:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
+                            goto case 6;
+                        }
+
+                    case 6:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
+                            goto case 5;
+                        }
+
+                    case 5:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
+                            goto case 4;
+                        }
+
+                    case 4:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
+                            goto case 3;
+                        }
+
+                    case 3:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
+                            goto case 2;
+                        }
+
+                    case 2:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
+                            goto case 1;
+                        }
+
+                    case 1:
+                        {
+                            // Store the last block, which includes any elements that wouldn't fill a full vector
+                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
+                            goto case 0;
+                        }
+
+                    case 0:
+                        {
+                            // Store the first block, which includes any elements preceding the first aligned block
+                            beg.StoreUnsafe(ref dRefBeg);
+                            break;
+                        }
+                }
+            }
+
+            static void Vectorized256(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                ref T dRefBeg = ref dRef;
+
+                // Preload the beginning and end so that overlapping accesses don't negatively impact the data
+
+                Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                Vector256<T> end = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                if (remainder > (uint)(Vector256<T>.Count * 8))
+                {
+                    // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
+                    // for large inputs (> 85KB) which are on the LOH and unlikely to be compacted.
+
+                    fixed (T* px = &xRef)
+                    fixed (T* pd = &dRef)
+                    {
+                        T* xPtr = px;
+                        T* dPtr = pd;
+
+                        // We need to the ensure the underlying data can be aligned and only align
+                        // it if it can. It is possible we have an unaligned ref, in which case we
+                        // can never achieve the required SIMD alignment.
+
+                        bool canAlign = ((nuint)dPtr % (nuint)sizeof(T)) == 0;
+
+                        if (canAlign)
+                        {
+                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
+                            //
+                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
+                            // are more expensive than unaligned loads and aligning both is significantly more
+                            // complex.
+
+                            nuint misalignment = ((uint)sizeof(Vector256<T>) - ((nuint)dPtr % (uint)sizeof(Vector256<T>))) / (uint)sizeof(T);
+
+                            xPtr += misalignment;
+                            dPtr += misalignment;
+
+                            Debug.Assert(((nuint)dPtr % (uint)sizeof(Vector256<T>)) == 0);
+
+                            remainder -= misalignment;
+                        }
+
+                        Vector256<T> vector1;
+                        Vector256<T> vector2;
+                        Vector256<T> vector3;
+                        Vector256<T> vector4;
+
+                        if ((remainder > (NonTemporalByteThreshold / (nuint)sizeof(T))) && canAlign)
+                        {
+                            // This loop stores the data non-temporally, which benefits us when there
+                            // is a large amount of data involved as it avoids polluting the cache.
+
+                            while (remainder >= (uint)(Vector256<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 3)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 0));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 1));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 2));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 7)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 4));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 5));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 6));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector256<T>.Count * 8);
+                                dPtr += (uint)(Vector256<T>.Count * 8);
+
+                                remainder -= (uint)(Vector256<T>.Count * 8);
+                            }
+                        }
+                        else
+                        {
+                            while (remainder >= (uint)(Vector256<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 3)));
+
+                                vector1.Store(dPtr + (uint)(Vector256<T>.Count * 0));
+                                vector2.Store(dPtr + (uint)(Vector256<T>.Count * 1));
+                                vector3.Store(dPtr + (uint)(Vector256<T>.Count * 2));
+                                vector4.Store(dPtr + (uint)(Vector256<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 7)));
+
+                                vector1.Store(dPtr + (uint)(Vector256<T>.Count * 4));
+                                vector2.Store(dPtr + (uint)(Vector256<T>.Count * 5));
+                                vector3.Store(dPtr + (uint)(Vector256<T>.Count * 6));
+                                vector4.Store(dPtr + (uint)(Vector256<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector256<T>.Count * 8);
+                                dPtr += (uint)(Vector256<T>.Count * 8);
+
+                                remainder -= (uint)(Vector256<T>.Count * 8);
+                            }
+                        }
+
+                        // Adjusting the refs here allows us to avoid pinning for very small inputs
+
+                        xRef = ref *xPtr;
+                        dRef = ref *dPtr;
+                    }
+                }
+
+                // Process the remaining [Count, Count * 8] elements via a jump table
+                //
+                // Unless the original length was an exact multiple of Count, then we'll
+                // end up reprocessing a couple elements in case 1 for end. We'll also
+                // potentially reprocess a few elements in case 0 for beg, to handle any
+                // data before the first aligned address.
+
+                nuint endIndex = remainder;
+                remainder = (remainder + (uint)(Vector256<T>.Count - 1)) & (nuint)(-Vector256<T>.Count);
+
+                switch (remainder / (uint)Vector256<T>.Count)
+                {
+                    case 8:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
+                            goto case 7;
+                        }
+
+                    case 7:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
+                            goto case 6;
+                        }
+
+                    case 6:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
+                            goto case 5;
+                        }
+
+                    case 5:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
+                            goto case 4;
+                        }
+
+                    case 4:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
+                            goto case 3;
+                        }
+
+                    case 3:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
+                            goto case 2;
+                        }
+
+                    case 2:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
+                            goto case 1;
+                        }
+
+                    case 1:
+                        {
+                            // Store the last block, which includes any elements that wouldn't fill a full vector
+                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
+                            goto case 0;
+                        }
+
+                    case 0:
+                        {
+                            // Store the first block, which includes any elements preceding the first aligned block
+                            beg.StoreUnsafe(ref dRefBeg);
+                            break;
+                        }
+                }
+            }
+
+            static void Vectorized512(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                ref T dRefBeg = ref dRef;
+
+                // Preload the beginning and end so that overlapping accesses don't negatively impact the data
+
+                Vector512<T> beg = op.Invoke(Vector512.LoadUnsafe(ref xRef));
+                Vector512<T> end = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)Vector512<T>.Count));
+
+                if (remainder > (uint)(Vector512<T>.Count * 8))
+                {
+                    // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
+                    // for large inputs (> 85KB) which are on the LOH and unlikely to be compacted.
+
+                    fixed (T* px = &xRef)
+                    fixed (T* pd = &dRef)
+                    {
+                        T* xPtr = px;
+                        T* dPtr = pd;
+
+                        // We need to the ensure the underlying data can be aligned and only align
+                        // it if it can. It is possible we have an unaligned ref, in which case we
+                        // can never achieve the required SIMD alignment.
+
+                        bool canAlign = ((nuint)dPtr % (nuint)sizeof(T)) == 0;
+
+                        if (canAlign)
+                        {
+                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
+                            //
+                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
+                            // are more expensive than unaligned loads and aligning both is significantly more
+                            // complex.
+
+                            nuint misalignment = ((uint)sizeof(Vector512<T>) - ((nuint)dPtr % (uint)sizeof(Vector512<T>))) / (uint)sizeof(T);
+
+                            xPtr += misalignment;
+                            dPtr += misalignment;
+
+                            Debug.Assert(((nuint)dPtr % (uint)sizeof(Vector512<T>)) == 0);
+
+                            remainder -= misalignment;
+                        }
+
+                        Vector512<T> vector1;
+                        Vector512<T> vector2;
+                        Vector512<T> vector3;
+                        Vector512<T> vector4;
+
+                        if ((remainder > (NonTemporalByteThreshold / (nuint)sizeof(T))) && canAlign)
+                        {
+                            // This loop stores the data non-temporally, which benefits us when there
+                            // is a large amount of data involved as it avoids polluting the cache.
+
+                            while (remainder >= (uint)(Vector512<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 3)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 0));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 1));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 2));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 7)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 4));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 5));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 6));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector512<T>.Count * 8);
+                                dPtr += (uint)(Vector512<T>.Count * 8);
+
+                                remainder -= (uint)(Vector512<T>.Count * 8);
+                            }
+                        }
+                        else
+                        {
+                            while (remainder >= (uint)(Vector512<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 3)));
+
+                                vector1.Store(dPtr + (uint)(Vector512<T>.Count * 0));
+                                vector2.Store(dPtr + (uint)(Vector512<T>.Count * 1));
+                                vector3.Store(dPtr + (uint)(Vector512<T>.Count * 2));
+                                vector4.Store(dPtr + (uint)(Vector512<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 7)));
+
+                                vector1.Store(dPtr + (uint)(Vector512<T>.Count * 4));
+                                vector2.Store(dPtr + (uint)(Vector512<T>.Count * 5));
+                                vector3.Store(dPtr + (uint)(Vector512<T>.Count * 6));
+                                vector4.Store(dPtr + (uint)(Vector512<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector512<T>.Count * 8);
+                                dPtr += (uint)(Vector512<T>.Count * 8);
+
+                                remainder -= (uint)(Vector512<T>.Count * 8);
+                            }
+                        }
+
+                        // Adjusting the refs here allows us to avoid pinning for very small inputs
+
+                        xRef = ref *xPtr;
+                        dRef = ref *dPtr;
+                    }
+                }
+
+                // Process the remaining [Count, Count * 8] elements via a jump table
+                //
+                // Unless the original length was an exact multiple of Count, then we'll
+                // end up reprocessing a couple elements in case 1 for end. We'll also
+                // potentially reprocess a few elements in case 0 for beg, to handle any
+                // data before the first aligned address.
+
+                nuint endIndex = remainder;
+                remainder = (remainder + (uint)(Vector512<T>.Count - 1)) & (nuint)(-Vector512<T>.Count);
+
+                switch (remainder / (uint)Vector512<T>.Count)
+                {
+                    case 8:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
+                            goto case 7;
+                        }
+
+                    case 7:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
+                            goto case 6;
+                        }
+
+                    case 6:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
+                            goto case 5;
+                        }
+
+                    case 5:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
+                            goto case 4;
+                        }
+
+                    case 4:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
+                            goto case 3;
+                        }
+
+                    case 3:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
+                            goto case 2;
+                        }
+
+                    case 2:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
+                            goto case 1;
+                        }
+
+                    case 1:
+                        {
+                            // Store the last block, which includes any elements that wouldn't fill a full vector
+                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
+                            goto case 0;
+                        }
+
+                    case 0:
+                        {
+                            // Store the first block, which includes any elements preceding the first aligned block
+                            beg.StoreUnsafe(ref dRefBeg);
+                            break;
+                        }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                if (sizeof(T) == 4)
+                {
+                    VectorizedSmall4(ref xRef, ref dRef, remainder, op);
+                }
+                else
+                {
+                    Debug.Assert(sizeof(T) == 8);
+                    VectorizedSmall8(ref xRef, ref dRef, remainder, op);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall4(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                Debug.Assert(sizeof(T) == 4);
+
+                switch (remainder)
+                {
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                        {
+                            Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                            Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                            Vector256<T> end = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                            beg.StoreUnsafe(ref dRef);
+                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                            break;
+                        }
+
+                    case 8:
+                        {
+                            Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                            Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                            beg.StoreUnsafe(ref dRef);
+
+                            break;
+                        }
+
+                    case 7:
+                    case 6:
+                    case 5:
+                        {
+                            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                            Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                            Vector128<T> end = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                            beg.StoreUnsafe(ref dRef);
+                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                            break;
+                        }
+
+                    case 4:
+                        {
+                            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                            Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                            beg.StoreUnsafe(ref dRef);
+
+                            break;
+                        }
+
+                    case 3:
+                        {
+                            Unsafe.Add(ref dRef, 2) = op.Invoke(Unsafe.Add(ref xRef, 2));
+                            goto case 2;
+                        }
+
+                    case 2:
+                        {
+                            Unsafe.Add(ref dRef, 1) = op.Invoke(Unsafe.Add(ref xRef, 1));
+                            goto case 1;
+                        }
+
+                    case 1:
+                        {
+                            dRef = op.Invoke(xRef);
+                            goto case 0;
+                        }
+
+                    case 0:
+                        {
+                            break;
+                        }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall8(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                Debug.Assert(sizeof(T) == 8);
+
+                switch (remainder)
+                {
+                    case 7:
+                    case 6:
+                    case 5:
+                        {
+                            Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                            Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                            Vector256<T> end = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                            beg.StoreUnsafe(ref dRef);
+                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                            break;
+                        }
+
+                    case 4:
+                        {
+                            Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                            Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                            beg.StoreUnsafe(ref dRef);
+
+                            break;
+                        }
+
+                    case 3:
+                        {
+                            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                            Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                            Vector128<T> end = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                            beg.StoreUnsafe(ref dRef);
+                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                            break;
+                        }
+
+                    case 2:
+                        {
+                            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                            Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                            beg.StoreUnsafe(ref dRef);
+
+                            break;
+                        }
+
+                    case 1:
+                        {
+                            dRef = op.Invoke(xRef);
+                            goto case 0;
+                        }
+
+                    case 0:
+                        {
+                            break;
+                        }
+                }
+            }
+        }
+
+        /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
         /// <typeparam name="TInput">The element input type.</typeparam>
         /// <typeparam name="TOutput">The element output type. Must be the same size as TInput if TInput and TOutput both support vectorization.</typeparam>
         /// <typeparam name="TUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
@@ -13957,6 +14855,114 @@ namespace System.Numerics.Tensors
             public static Vector512<T> Invoke(Vector512<T> x) => (x * T.CreateChecked(180)) / T.Pi;
         }
 
+        /// <summary>T &lt;&lt; amount</summary>
+        internal readonly struct ShiftLeftOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
+        {
+            private readonly int _amount = amount;
+
+            public static bool Vectorizable => true;
+
+            public T Invoke(T x) => x << _amount;
+            public Vector128<T> Invoke(Vector128<T> x) => x << _amount;
+            public Vector256<T> Invoke(Vector256<T> x) => x << _amount;
+            public Vector512<T> Invoke(Vector512<T> x) => x << _amount;
+        }
+
+        /// <summary>T &gt;&gt; amount</summary>
+        internal readonly struct ShiftRightArithmeticOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
+        {
+            private readonly int _amount = amount;
+
+            public static bool Vectorizable => true;
+
+            public T Invoke(T x) => x >> _amount;
+            public Vector128<T> Invoke(Vector128<T> x) => x >> _amount;
+            public Vector256<T> Invoke(Vector256<T> x) => x >> _amount;
+            public Vector512<T> Invoke(Vector512<T> x) => x >> _amount;
+        }
+
+        /// <summary>T &gt;&gt;&gt; amount</summary>
+        internal readonly struct ShiftRightLogicalOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
+        {
+            private readonly int _amount = amount;
+
+            public static bool Vectorizable => true;
+
+            public T Invoke(T x) => x >>> _amount;
+            public Vector128<T> Invoke(Vector128<T> x) => x >>> _amount;
+            public Vector256<T> Invoke(Vector256<T> x) => x >>> _amount;
+            public Vector512<T> Invoke(Vector512<T> x) => x >>> _amount;
+        }
+
+        /// <summary>T.RotateLeft(amount)</summary>
+        internal readonly struct RotateLeftOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IBinaryInteger<T>
+        {
+            private readonly int _amount = amount;
+
+            public static bool Vectorizable => true;
+
+            public T Invoke(T x) => T.RotateLeft(x, _amount);
+            public Vector128<T> Invoke(Vector128<T> x) => (x << _amount) | (x >>> ((sizeof(T) * 8) - _amount));
+            public Vector256<T> Invoke(Vector256<T> x) => (x << _amount) | (x >>> ((sizeof(T) * 8) - _amount));
+            public Vector512<T> Invoke(Vector512<T> x) => (x << _amount) | (x >>> ((sizeof(T) * 8) - _amount));
+        }
+
+        /// <summary>T.RotateRight(amount)</summary>
+        internal readonly struct RotateRightOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IBinaryInteger<T>
+        {
+            private readonly int _amount = amount;
+
+            public static bool Vectorizable => true;
+
+            public T Invoke(T x) => T.RotateRight(x, _amount);
+            public Vector128<T> Invoke(Vector128<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
+            public Vector256<T> Invoke(Vector256<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
+            public Vector512<T> Invoke(Vector512<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
+        }
+
+        /// <summary>T.ScaleB(x, n)</summary>
+        internal readonly struct ScaleBOperator<T>(int n) : IStatefulUnaryOperator<T> where T : IFloatingPointIeee754<T>
+        {
+            private readonly int _n = n;
+            private readonly T _pow2n = typeof(T) == typeof(float) || typeof(T) == typeof(double) ? T.Pow(T.CreateTruncating(2), T.CreateTruncating(n)) : default!;
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
+            public T Invoke(T x) => T.ScaleB(x, _n);
+            public Vector128<T> Invoke(Vector128<T> x) => x * Vector128.Create(_pow2n);
+            public Vector256<T> Invoke(Vector256<T> x) => x * Vector256.Create(_pow2n);
+            public Vector512<T> Invoke(Vector512<T> x) => x * Vector512.Create(_pow2n);
+        }
+
+        /// <summary>T.RootN(x, n)</summary>
+        internal readonly struct RootNOperator<T>(int n) : IStatefulUnaryOperator<T> where T : IRootFunctions<T>
+        {
+            private readonly int _n = n;
+
+            public static bool Vectorizable => false; // TODO: Vectorize
+
+            public T Invoke(T x) => T.RootN(x, _n);
+
+            public Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.Round</summary>
+        internal readonly struct RoundOperator<T>(int digits, MidpointRounding mode) : IStatefulUnaryOperator<T> where T : IFloatingPoint<T>
+        {
+            private readonly int _digits = digits;
+            private readonly MidpointRounding _mode = mode;
+
+            public static bool Vectorizable => false; // TODO: Vectorize
+
+            public T Invoke(T x) => T.Round(x, _digits, _mode);
+
+            public Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
         /// <summary>T.ILogB(x)</summary>
         internal readonly struct ILogBOperator<T> : IUnaryOperator<T, int> where T : IFloatingPointIeee754<T>
         {
@@ -14678,6 +15684,16 @@ namespace System.Numerics.Tensors
             static abstract Vector128<TOutput> Invoke(Vector128<TInput> lower, Vector128<TInput> upper);
             static abstract Vector256<TOutput> Invoke(Vector256<TInput> lower, Vector256<TInput> upper);
             static abstract Vector512<TOutput> Invoke(Vector512<TInput> lower, Vector512<TInput> upper);
+        }
+
+        /// <summary>Operator that takes one input value and returns a single value.</summary>
+        private interface IStatefulUnaryOperator<T>
+        {
+            static abstract bool Vectorizable { get; }
+            T Invoke(T x);
+            Vector128<T> Invoke(Vector128<T> x);
+            Vector256<T> Invoke(Vector256<T> x);
+            Vector512<T> Invoke(Vector512<T> x);
         }
 
         /// <summary>Operator that takes two input values and returns a single value.</summary>
