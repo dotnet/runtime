@@ -472,47 +472,47 @@ type APIType = {
      */
     setHeapB32: (offset: NativePointer, value: number | boolean) => void;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapU8: (offset: NativePointer, value: number) => void;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapU16: (offset: NativePointer, value: number) => void;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapU32: (offset: NativePointer, value: NativePointer | number) => void;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapI8: (offset: NativePointer, value: number) => void;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapI16: (offset: NativePointer, value: number) => void;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapI32: (offset: NativePointer, value: number) => void;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapI52: (offset: NativePointer, value: number) => void;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapU52: (offset: NativePointer, value: number) => void;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapI64Big: (offset: NativePointer, value: bigint) => void;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapF32: (offset: NativePointer, value: number) => void;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapF64: (offset: NativePointer, value: number) => void;
     /**
@@ -520,47 +520,47 @@ type APIType = {
      */
     getHeapB32: (offset: NativePointer) => boolean;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapU8: (offset: NativePointer) => number;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapU16: (offset: NativePointer) => number;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapU32: (offset: NativePointer) => number;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapI8: (offset: NativePointer) => number;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapI16: (offset: NativePointer) => number;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapI32: (offset: NativePointer) => number;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapI52: (offset: NativePointer) => number;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapU52: (offset: NativePointer) => number;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapI64Big: (offset: NativePointer) => bigint;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapF32: (offset: NativePointer) => number;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapF64: (offset: NativePointer) => number;
     /**
@@ -568,35 +568,35 @@ type APIType = {
      */
     localHeapViewI8: () => Int8Array;
     /**
-     * Short term view of the WASM linear memory. Don't store the reference, don't use after await.
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
      */
     localHeapViewI16: () => Int16Array;
     /**
-     * Short term view of the WASM linear memory. Don't store the reference, don't use after await.
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
      */
     localHeapViewI32: () => Int32Array;
     /**
-     * Short term view of the WASM linear memory. Don't store the reference, don't use after await.
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
      */
     localHeapViewI64Big: () => BigInt64Array;
     /**
-     * Short term view of the WASM linear memory. Don't store the reference, don't use after await.
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
      */
     localHeapViewU8: () => Uint8Array;
     /**
-     * Short term view of the WASM linear memory. Don't store the reference, don't use after await.
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
      */
     localHeapViewU16: () => Uint16Array;
     /**
-     * Short term view of the WASM linear memory. Don't store the reference, don't use after await.
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
      */
     localHeapViewU32: () => Uint32Array;
     /**
-     * Short term view of the WASM linear memory. Don't store the reference, don't use after await.
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
      */
     localHeapViewF32: () => Float32Array;
     /**
-     * Short term view of the WASM linear memory. Don't store the reference, don't use after await.
+     * Returns a short term view of the WASM linear memory. Don't store the reference, don't use it after await.
      */
     localHeapViewF64: () => Float64Array;
 };
