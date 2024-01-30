@@ -333,7 +333,7 @@ interface AssetEntry {
 }
 type SingleAssetBehaviors = 
 /**
- * The binary of the dotnet runtime.
+ * The binary of the .NET runtime.
  */
 "dotnetwasm"
 /**
@@ -427,7 +427,7 @@ type DotnetModuleConfig = {
 type APIType = {
     /**
      * Runs the Main() method of the application and exits the runtime.
-     * Note: this will keep the dotnet runtime alive and the APIs will be available for further calls.
+     * Note: this will keep the .NET runtime alive and the APIs will be available for further calls.
      * @param mainAssemblyName name of the assembly with the Main() method.
      * @param args command line arguments for the Main() method.
      * @returns exit code of the Main() method.
@@ -612,7 +612,7 @@ type RuntimeAPI = {
 } & APIType;
 type ModuleAPI = {
     /**
-     * The builder for the dotnet runtime.
+     * The builder for the .NET runtime.
      */
     dotnet: DotnetHostBuilder;
     /**
