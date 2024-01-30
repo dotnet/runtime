@@ -29,12 +29,6 @@ namespace Internal.JitInterface
                 return (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
             }
 
-            //// The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
-            if (typeDesc.IsIntrinsic)
-            {
-                throw new NotImplementedException("For RISCV64, SIMD would be implemented later");
-            }
-
             MetadataType mdType = typeDesc as MetadataType;
             Debug.Assert(mdType != null);
 
@@ -85,6 +79,16 @@ namespace Internal.JitInterface
                         {
                             floatFieldFlags |= (uint)StructFloatFieldInfoFlags.STRUCT_SECOND_FIELD_DOUBLE;
                         }
+
+                        // Pass with two integer registers in `struct {int a, int b, float/double c}` cases
+                        if (fieldIndex == 1 &&
+                                (floatFieldFlags |
+                                 (uint)StructFloatFieldInfoFlags.STRUCT_FIRST_FIELD_SIZE_IS8 |
+                                 (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND) ==
+                                floatFieldFlags)
+                        {
+                            floatFieldFlags = (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
+                        }
                     }
                     break;
 
@@ -105,6 +109,16 @@ namespace Internal.JitInterface
                         else
                         {
                             floatFieldFlags |= (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND;
+                        }
+
+                        // Pass with two integer registers in `struct {int a, int b, float/double c}` cases
+                        if (fieldIndex == 1 &&
+                                (floatFieldFlags |
+                                 (uint)StructFloatFieldInfoFlags.STRUCT_FIRST_FIELD_SIZE_IS8 |
+                                 (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND) ==
+                                floatFieldFlags)
+                        {
+                            floatFieldFlags = (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
                         }
                     }
                     break;
