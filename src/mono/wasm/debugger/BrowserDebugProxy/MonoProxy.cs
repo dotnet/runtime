@@ -147,12 +147,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "Debugger.scriptParsed":
                     {
-                        if (args["url"]?.ToString()?.Equals("") == true)
-                            return true;
-                        if (args["url"]?.ToString()?.Contains("/_framework/") == true) //is from dotnet runtime framework
+                        if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
+                            return false;
+                        try
                         {
-                            if (Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
+                            var callStack = args["stackTrace"]?["callFrames"]?.Value<JArray>();
+                            var callstackScriptId = callStack?.Count > 0 ? args["stackTrace"]?["callFrames"]?[0]?["scriptId"]?.Value<int>() : null;
+                            if (args["url"]?.ToString()?.Equals("") == true && callstackScriptId.HasValue && context.FrameworkScriptList.Contains(callstackScriptId.Value))
+                                return true;
+                            if (args["url"]?.ToString()?.Contains("/_framework/") == true) //is from dotnet runtime framework
+                            {
                                 context.FrameworkScriptList.Add(args["scriptId"].Value<int>());
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogDebug($"Debugger.scriptParsed - {args} - failed with exception: {ex}");
                         }
                         return false;
                     }
