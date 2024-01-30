@@ -205,7 +205,6 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("zh-TW").DateTimeFormat, "下午" };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/75123", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         [MemberData(nameof(PMDesignator_Get_TestData_HybridGlobalization))]
         public void PMDesignator_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string value)
