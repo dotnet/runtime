@@ -52,5 +52,6 @@
     <None Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
     <None Include="System\Runtime\InteropServices\JavaScript\test.json" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
+    <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\test.json" />
   </ItemGroup>
 </Project>
