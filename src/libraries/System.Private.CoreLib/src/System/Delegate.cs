@@ -94,15 +94,7 @@ namespace System
             /// </summary>
             public TDelegate Current
             {
-                get
-                {
-                    Delegate? d = _delegate?.TryGetAt(_index);
-                    if (d == null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-                    }
-                    return Unsafe.As<TDelegate>(d);
-                }
+                get => Unsafe.As<TDelegate>(_delegate?.TryGetAt(_index));
             }
 
             /// <summary>
