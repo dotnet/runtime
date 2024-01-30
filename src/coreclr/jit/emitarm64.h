@@ -381,6 +381,9 @@ static code_t insEncodeReg_P_2_to_0(regNumber reg);
 // Return an encoding for the specified predicate type used in '16' position.
 static code_t insEncodePredQualifier_16(bool merge);
 
+// Return an encoding for the specified predicate type used in '4' position.
+static code_t insEncodePredQualifier_4(bool merge);
+
 // Return an encoding for the specified 'V' register used in '18' thru '16' position.
 static code_t insEncodeReg_V_18_to_16(regNumber reg);
 
