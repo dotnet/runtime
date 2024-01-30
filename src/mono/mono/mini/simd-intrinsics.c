@@ -2722,11 +2722,11 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			if(len == 3){
 				float r4_0 = 0.0f;
 				MonoInst *zero;
-				int dreg = alloc_freg (cfg);
+				int zero_dreg = alloc_freg (cfg);
 				MONO_INST_NEW (cfg, zero, OP_R4CONST);
 				zero->type = STACK_R4;
 				zero->inst_p0 = (void*)&r4_0;
-				zero->dreg = dreg;
+				zero->dreg = zero_dreg;
 				MONO_ADD_INS (cfg->cbb, zero);
 				ins = emit_vector_insert_element (cfg, klass, ins, MONO_TYPE_R4, zero, 3, FALSE);
 			}
