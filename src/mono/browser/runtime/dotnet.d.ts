@@ -516,7 +516,7 @@ type APIType = {
      */
     setHeapF64: (offset: NativePointer, value: number) => void;
     /**
-     * Read from the WASM linear memory
+     * Reads from the WASM linear memory
      */
     getHeapB32: (offset: NativePointer) => boolean;
     /**
