@@ -70,8 +70,9 @@ namespace System
         /// This returns a <see cref="InvocationListEnumerator{TDelegate}"/>" /> that follows the IEnumerable pattern and
         /// thus can be used in a C# 'foreach' statements to retrieve the invocation targets of this delegate without allocations.
         /// The order of the delegates returned by the enumerator is the same order in which the current delegate invokes the methods that those delegates represent.
+        /// The method returns an empty enumerator for null delegate.
         /// </remarks>
-        public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate d) where TDelegate : System.Delegate
+        public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate? d) where TDelegate : System.Delegate
             => new InvocationListEnumerator<TDelegate>(Unsafe.As<MulticastDelegate>(d));
 
         /// <summary>
@@ -80,10 +81,10 @@ namespace System
         /// <typeparam name="TDelegate">Delegate type being enumerated.</typeparam>
         public struct InvocationListEnumerator<TDelegate> where TDelegate : System.Delegate
         {
-            private readonly MulticastDelegate _delegate;
+            private readonly MulticastDelegate? _delegate;
             private int _index;
 
-            internal InvocationListEnumerator(MulticastDelegate d)
+            internal InvocationListEnumerator(MulticastDelegate? d)
             {
                 _delegate = d;
                 _index = -1;

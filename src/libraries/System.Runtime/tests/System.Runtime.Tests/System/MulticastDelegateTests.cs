@@ -28,6 +28,15 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void EnumerateInvocationListNull()
+        {
+            foreach (Action d in Delegate.EnumerateInvocationList<Action>(null))
+            {
+                Assert.Fail();
+            }
+        }
+
+        [Fact]
         public static void EqualsTest()
         {
             C c = new C();

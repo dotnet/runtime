@@ -2179,7 +2179,7 @@ namespace System
         public static System.Delegate? CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
         public object? DynamicInvoke(params object?[]? args) { throw null; }
         protected virtual object? DynamicInvokeImpl(object?[]? args) { throw null; }
-        public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate d) where TDelegate : System.Delegate { throw null; }
+        public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate? d) where TDelegate : System.Delegate { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public virtual System.Delegate[] GetInvocationList() { throw null; }
