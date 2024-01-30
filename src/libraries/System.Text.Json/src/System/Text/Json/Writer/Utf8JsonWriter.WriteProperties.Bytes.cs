@@ -236,7 +236,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            Base64EncodeAndWrite(bytes, output, encodedLength);
+            Base64EncodeAndWrite(bytes, output);
 
             output[BytesPending++] = JsonConstants.Quote;
         }
@@ -272,7 +272,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            Base64EncodeAndWrite(bytes, output, encodedLength);
+            Base64EncodeAndWrite(bytes, output);
 
             output[BytesPending++] = JsonConstants.Quote;
         }
@@ -322,7 +322,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            Base64EncodeAndWrite(bytes, output, encodedLength);
+            Base64EncodeAndWrite(bytes, output);
 
             output[BytesPending++] = JsonConstants.Quote;
         }
@@ -373,7 +373,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            Base64EncodeAndWrite(bytes, output, encodedLength);
+            Base64EncodeAndWrite(bytes, output);
 
             output[BytesPending++] = JsonConstants.Quote;
         }
