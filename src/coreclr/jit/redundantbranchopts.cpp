@@ -942,7 +942,6 @@ struct JumpThreadInfo
         : m_block(block)
         , m_trueTarget(block->GetTrueTarget())
         , m_falseTarget(block->GetFalseTarget())
-        , m_fallThroughPred(nullptr)
         , m_ambiguousVNBlock(nullptr)
         , m_truePreds(BlockSetOps::MakeEmpty(comp))
         , m_ambiguousPreds(BlockSetOps::MakeEmpty(comp))
@@ -961,8 +960,6 @@ struct JumpThreadInfo
     BasicBlock* const m_trueTarget;
     // Block successor if predicate is false
     BasicBlock* const m_falseTarget;
-    // Unique pred that falls through to block, if any
-    BasicBlock* m_fallThroughPred;
     // Block that brings in the ambiguous VN
     BasicBlock* m_ambiguousVNBlock;
     // Pred blocks for which the predicate will be true
@@ -1337,15 +1334,6 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
             jti.m_numFalsePreds++;
             JITDUMP(FMT_BB " is a false pred\n", predBlock->bbNum);
         }
-
-        // Note if the true or false pred is the fall through pred.
-        //
-        if (predBlock->NextIs(block))
-        {
-            JITDUMP(FMT_BB " is the fall-through pred\n", predBlock->bbNum);
-            assert(jti.m_fallThroughPred == nullptr);
-            jti.m_fallThroughPred = predBlock;
-        }
     }
 
     // Do the optimization.
@@ -1597,15 +1585,6 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
 
             continue;
         }
-
-        // Note if the true or false pred is the fall through pred.
-        //
-        if (predBlock->NextIs(block))
-        {
-            JITDUMP(FMT_BB " is the fall-through pred\n", predBlock->bbNum);
-            assert(jti.m_fallThroughPred == nullptr);
-            jti.m_fallThroughPred = predBlock;
-        }
     }
 
     // Do the optimization.
@@ -1638,48 +1617,6 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         return false;
     }
 
-    if ((jti.m_numAmbiguousPreds > 0) && (jti.m_fallThroughPred != nullptr))
-    {
-        // TODO: Simplify jti.m_fallThroughPred logic, now that implicit fallthrough is disallowed.
-        const bool fallThroughIsTruePred = BlockSetOps::IsMember(this, jti.m_truePreds, jti.m_fallThroughPred->bbNum);
-        const bool predJumpsToNext = jti.m_fallThroughPred->KindIs(BBJ_ALWAYS) && jti.m_fallThroughPred->JumpsToNext();
-
-        if (predJumpsToNext && ((fallThroughIsTruePred && (jti.m_numFalsePreds == 0)) ||
-                                (!fallThroughIsTruePred && (jti.m_numTruePreds == 0))))
-        {
-            JITDUMP(FMT_BB " has ambiguous preds and a (%s) fall through pred and no (%s) preds.\n"
-                           "Fall through pred " FMT_BB " is BBJ_ALWAYS\n",
-                    jti.m_block->bbNum, fallThroughIsTruePred ? "true" : "false",
-                    fallThroughIsTruePred ? "false" : "true", jti.m_fallThroughPred->bbNum);
-
-            assert(jti.m_fallThroughPred->TargetIs(jti.m_block));
-        }
-        else
-        {
-            // Treat the fall through pred as an ambiguous pred.
-            JITDUMP(FMT_BB " has both ambiguous preds and a fall through pred\n", jti.m_block->bbNum);
-            JITDUMP("Treating fall through pred " FMT_BB " as an ambiguous pred\n", jti.m_fallThroughPred->bbNum);
-
-            if (fallThroughIsTruePred)
-            {
-                BlockSetOps::RemoveElemD(this, jti.m_truePreds, jti.m_fallThroughPred->bbNum);
-                assert(jti.m_numTruePreds > 0);
-                jti.m_numTruePreds--;
-            }
-            else
-            {
-                assert(jti.m_numFalsePreds > 0);
-                jti.m_numFalsePreds--;
-            }
-
-            assert(!(BlockSetOps::IsMember(this, jti.m_ambiguousPreds, jti.m_fallThroughPred->bbNum)));
-            BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, jti.m_fallThroughPred->bbNum);
-            jti.m_numAmbiguousPreds++;
-        }
-
-        jti.m_fallThroughPred = nullptr;
-    }
-
     // There still should be at least one pred that can bypass block.
     //
     if ((jti.m_numTruePreds == 0) && (jti.m_numFalsePreds == 0))
@@ -1695,13 +1632,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     bool truePredsWillReuseBlock  = false;
     bool falsePredsWillReuseBlock = false;
 
-    if (jti.m_fallThroughPred != nullptr)
-    {
-        assert(jti.m_numAmbiguousPreds == 0);
-        truePredsWillReuseBlock  = BlockSetOps::IsMember(this, jti.m_truePreds, jti.m_fallThroughPred->bbNum);
-        falsePredsWillReuseBlock = !truePredsWillReuseBlock;
-    }
-    else if (jti.m_numAmbiguousPreds == 0)
+    if (jti.m_numAmbiguousPreds == 0)
     {
         truePredsWillReuseBlock  = true;
         falsePredsWillReuseBlock = !truePredsWillReuseBlock;
@@ -1761,9 +1692,6 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         }
 
         // Yes, we need to jump to the appropriate successor.
-        // Note we should not be altering flow for the fall-through pred.
-        //
-        assert(predBlock != jti.m_fallThroughPred);
 
         if (isTruePred)
         {
