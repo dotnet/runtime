@@ -12955,7 +12955,7 @@ GOT_DSP:
 #else
                     dst += emitOutputLong(dst, dsp);
 #endif
-                    if ((ins == INS_call) && id->idIsTlsGD())
+                    if (!IsAvx512OrPriorInstruction(ins) && id->idIsTlsGD())
                     {
                         addlDelta = -4;
                         emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_TLSGD,
