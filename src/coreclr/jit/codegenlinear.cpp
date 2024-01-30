@@ -1261,13 +1261,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 unspillType = lcl->TypeGet();
             }
 
-#if defined(TARGET_LOONGARCH64)
-            if (varTypeIsFloating(unspillType) && emitter::isGeneralRegister(tree->GetRegNum()))
-            {
-                unspillType = unspillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
-            }
-#endif
-
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
             bool isLastUse = lcl->IsLastUse(0);
             genUnspillLocal(lcl->GetLclNum(), unspillType, lcl->AsLclVar(), tree->GetRegNum(), reSpill, isLastUse);
