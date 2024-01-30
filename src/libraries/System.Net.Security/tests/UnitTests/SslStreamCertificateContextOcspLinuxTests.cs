@@ -121,7 +121,6 @@ public class SslStreamCertificateContextOcspLinuxTests
     }
 
     [Fact]
-    [OuterLoop("Takes about 3 seconds")]
     public async Task RefreshOcspResponse_AfterExpiration()
     {
         await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
