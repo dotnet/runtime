@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build;
-using Microsoft.DotNet.Cli.Build.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
+
+using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -81,7 +82,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Set specified SDK version = 9999.3.4-global-dummy
             string requestedVersion = "9999.3.4-global-dummy";
-            string globalJsonPath = SetGlobalJsonVersion(requestedVersion);
+            string globalJsonPath = GlobalJson.CreateWithVersion(_currentWorkingDir, requestedVersion);
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Cwd: empty
@@ -182,7 +183,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Set specified SDK version = 9999.3.304-global-dummy
             string requestedVersion = "9999.3.304-global-dummy";
-            string globalJsonPath = SetGlobalJsonVersion(requestedVersion);
+            string globalJsonPath = GlobalJson.CreateWithVersion(_currentWorkingDir, requestedVersion);
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Cwd: empty
@@ -282,7 +283,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void SdkMultilevelLookup_Precedential_Order()
         {
-            WriteEmptyGlobalJson();
+            GlobalJson.CreateEmpty(_currentWorkingDir);
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.4");
@@ -324,7 +325,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // different registry key, inside the HKEY_CURRENT_USER hive which is writable without admin.
             // Note that the test creates a unique key (based on PID) for every run, to avoid collisions between parallel running tests.
 
-            WriteEmptyGlobalJson();
+            GlobalJson.CreateEmpty(_currentWorkingDir);
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(DotNet.GreatestVersionHostFxrFilePath))
             {
@@ -353,7 +354,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [PlatformSpecific(TestPlatforms.Windows)] // Multi-level lookup is only supported on Windows.
         public void SdkMultilevelLookup_Must_Pick_The_Highest_Semantic_Version()
         {
-            WriteEmptyGlobalJson();
+            GlobalJson.CreateEmpty(_currentWorkingDir);
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.0", "9999.0.3-dummy");
@@ -495,7 +496,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Set specified SDK version = 9999.3.4-global-dummy - such SDK doesn't exist
             string requestedVersion = "9999.3.4-global-dummy";
-            string globalJsonPath = SetGlobalJsonVersion(requestedVersion);
+            string globalJsonPath = GlobalJson.CreateWithVersion(_currentWorkingDir, requestedVersion);
 
             // When we fail to resolve SDK version, we print out all available SDKs
             var expectedList = AddSdkVersionsAndGetExpectedList();
@@ -561,20 +562,5 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Save();
             }
         }
-
-        // Put a global.json file in the cwd in order to specify a CLI
-        private string SetGlobalJsonVersion(string version)
-        {
-            string destFile = Path.Combine(_currentWorkingDir, "global.json");
-            File.WriteAllText(destFile, @$"{{ ""sdk"": {{ ""version"": ""{version}"" }} }}");
-            return destFile;
-        }
-
-        private void WriteGlobalJson(string contents)
-        {
-            File.WriteAllText(Path.Combine(_currentWorkingDir, "global.json"), contents);
-        }
-
-        private void WriteEmptyGlobalJson() => WriteGlobalJson("{}");
     }
 }
