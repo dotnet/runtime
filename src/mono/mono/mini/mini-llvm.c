@@ -6147,7 +6147,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					break;
 				case LLVMArgVtypeAsScalar:
 					if (is_simd) {
-						retval = LLVMBuildBitCast (builder, values [ins->sreg1], ret_type, "setret_simd_vtype_as_scalar");
+						retval = LLVMBuildBitCast (builder, lhs, ret_type, "setret_simd_vtype_as_scalar");
 					} else {
 						g_assert (addresses [ins->sreg1]);
 						retval = LLVMBuildLoad2 (builder, ret_type, build_ptr_cast (builder, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
@@ -9579,9 +9579,7 @@ MONO_RESTORE_WARNING
 			LLVMValueRef args [2];
 			args [0] = convert (ctx, lhs, sse_i2_t);
 			args [1] = convert (ctx, rhs, sse_i2_t);
-			values [ins->dreg] = convert (ctx,
-				call_intrins (ctx, INTRINS_SSE_PACKUSWB, args, dname),
-				type_to_sse_type (GTMREG_TO_INT (ins->inst_c1)));
+			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PACKUSWB, args, dname);
 			break;
 		}
 

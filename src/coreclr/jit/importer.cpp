@@ -5462,7 +5462,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     // Pessimistically assume the jit cannot expand this as an inline test
     bool                  canExpandInline = false;
-    bool                  partialExpand   = false;
     bool                  reversedMTCheck = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
@@ -5559,7 +5558,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
 
     GenTree* op2Var = op2;
-    if (isCastClass && !partialExpand && (exactCls == NO_CLASS_HANDLE))
+    if (isCastClass && (exactCls == NO_CLASS_HANDLE))
     {
         // if exactCls is not null we won't have to clone op2 (it will be used only for the fallback)
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
@@ -5597,11 +5596,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             // use the special helper that skips the cases checked by our inlined cast
             specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
         }
-        condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
-    }
-    else if (partialExpand)
-    {
-        condTrue = gtNewHelperCallNode(helper, TYP_REF, op2, gtClone(op1));
+        condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, op2Var, gtClone(op1));
     }
     else
     {
@@ -10296,8 +10291,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
 #endif
 
-                    op1 = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
-                    op1->gtFlags |= indirFlags;
+                    op1 = gtNewStoreDynBlkNode(op1, op2, op3, indirFlags);
                 }
                 goto SPILL_APPEND;
             }

@@ -132,6 +132,7 @@
       <_ApplePropertyNames Include="UseRuntimeComponents" />
       <_ApplePropertyNames Include="IncludesTestRunner" />
       <_ApplePropertyNames Include="_NetCoreAppToolCurrent" />
+      <_ApplePropertyNames Include="ShouldILStrip" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"

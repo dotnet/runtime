@@ -856,8 +856,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock = bbIsTryBeg(block);
 
                 if (isTryEntryBlock ||
-                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER |
-                                      BBF_LOOP_ALIGN))
+                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -876,10 +875,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     if (block->HasFlag(BBF_LOOP_HEAD))
                     {
                         fprintf(fgxFile, "L");
-                    }
-                    if (block->HasFlag(BBF_LOOP_PREHEADER))
-                    {
-                        fprintf(fgxFile, "P");
                     }
                     if (block->HasFlag(BBF_LOOP_ALIGN))
                     {
@@ -2984,13 +2979,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
 
         maxBBNum = max(maxBBNum, block->bbNum);
-
-        // BBJ_COND's normal (false) jump target is expected to be the next block
-        // TODO-NoFallThrough: Allow bbFalseTarget to diverge from bbNext
-        if (block->KindIs(BBJ_COND))
-        {
-            assert(block->NextIs(block->GetFalseTarget()));
-        }
 
         // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
         // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will

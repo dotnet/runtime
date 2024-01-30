@@ -173,6 +173,10 @@ public:
     bool genUseOptimizedWriteBarriers(GenTreeStoreInd* store);
     CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf);
 
+#ifdef DEBUG
+    bool genWriteBarrierUsed;
+#endif
+
     // The following property indicates whether the current method sets up
     // an explicit stack frame or not.
 private:

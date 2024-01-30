@@ -2189,7 +2189,7 @@ public:
     bool HasDef(unsigned lclNum);
 
     bool CanDuplicate(INDEBUG(const char** reason));
-    void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale, bool bottomNeedsRedirection);
+    void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale);
 
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoop* loop);
@@ -2482,6 +2482,8 @@ class Compiler
     friend class CSE_DataFlow;
     friend class CSE_HeuristicCommon;
     friend class CSE_HeuristicRandom;
+    friend class CSE_HeuristicReplay;
+    friend class CSE_HeuristicRL;
     friend class CSE_Heuristic;
     friend class CodeGenInterface;
     friend class CodeGen;
@@ -3340,6 +3342,9 @@ public:
 
     GenTreeBlk* gtNewStoreBlkNode(
         ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+
+    GenTreeStoreDynBlk* gtNewStoreDynBlkNode(
+        GenTree* addr, GenTree* data, GenTree* dynamicSize, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeStoreInd* gtNewStoreIndNode(
         var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
@@ -5964,8 +5969,6 @@ public:
 
     bool fgOptimizeSwitchBranches(BasicBlock* block);
 
-    bool fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev);
-
     bool fgOptimizeSwitchJumps();
 #ifdef DEBUG
     void fgPrintEdgeWeights();
@@ -6780,7 +6783,7 @@ public:
     bool optCompactLoop(FlowGraphNaturalLoop* loop);
     BasicBlock* optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* top);
     BasicBlock* optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* insertionPoint, BasicBlock* top, BasicBlock* bottom);
-    bool optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* oldNext, BasicBlock* newNext);
+    bool optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* newNext);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
     void optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader);
 
@@ -9781,6 +9784,7 @@ public:
         bool compLongAddress;          // Force using large pseudo instructions for long address
                                        // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
         bool dspGCtbls;                // Display the GC tables
+        bool dspMetrics;               // Display metrics
 #endif
 
 // Default numbers used to perform loop alignment. All the numbers are chosen

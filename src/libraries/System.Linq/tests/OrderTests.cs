@@ -493,5 +493,24 @@ namespace System.Linq.Tests
             byte[] newValues = values.Order(Comparer<byte>.Create((a, b) => 0)).ToArray();
             AssertExtensions.SequenceEqual(values, newValues);
         }
+
+        [Fact]
+        public void Order_FirstLast_MatchesArray()
+        {
+            object[][] arrays =
+            [
+                [1],
+                [1, 1],
+                [1, 2, 1],
+                [1, 2, 1, 3],
+                [2, 1, 3, 1, 4],
+            ];
+
+            foreach (object[] objects in arrays)
+            {
+                Assert.Same(objects.Order().First(), objects.Order().ToArray().First());
+                Assert.Same(objects.Order().Last(), objects.Order().ToArray().Last());
+            }
+        }
     }
 }
