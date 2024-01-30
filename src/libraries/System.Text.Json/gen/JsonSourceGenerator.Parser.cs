@@ -752,6 +752,11 @@ namespace System.Text.Json.SourceGeneration
                     collectionType = CollectionType.Array;
                     valueType = arraySymbol.ElementType;
                 }
+                else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.KeyedCollectionType)) != null)
+                {
+                    collectionType = CollectionType.ICollectionOfT;
+                    valueType = actualTypeToConvert.TypeArguments[1];
+                }
                 else if ((actualTypeToConvert = type.GetCompatibleGenericBaseType(_knownSymbols.ListOfTType)) != null)
                 {
                     collectionType = CollectionType.List;
