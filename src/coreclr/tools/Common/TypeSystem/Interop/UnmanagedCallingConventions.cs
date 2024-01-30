@@ -139,18 +139,16 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(delegateType.IsDelegate);
 
-            if (delegateType is not EcmaType ecmaDelegate)
+            if (delegateType is EcmaType ecmaDelegate)
             {
-                return GetPlatformDefaultUnmanagedCallingConvention(delegateType.Context);
-            }
-
-            MethodSignatureFlags unmanagedCallConv = ecmaDelegate.GetDelegatePInvokeFlags().UnmanagedCallingConvention;
-            if (unmanagedCallConv != MethodSignatureFlags.None)
-            {
-                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)UnmanagedCallingConventions.Cdecl
-                    && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)UnmanagedCallingConventions.Stdcall
-                    && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
-                return (UnmanagedCallingConventions)unmanagedCallConv;
+                MethodSignatureFlags unmanagedCallConv = ecmaDelegate.GetDelegatePInvokeFlags().UnmanagedCallingConvention;
+                if (unmanagedCallConv != MethodSignatureFlags.None)
+                {
+                    Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)UnmanagedCallingConventions.Cdecl
+                        && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)UnmanagedCallingConventions.Stdcall
+                        && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
+                    return (UnmanagedCallingConventions)unmanagedCallConv;
+                }
             }
 
             return GetPlatformDefaultUnmanagedCallingConvention(delegateType.Context);
