@@ -616,7 +616,7 @@ type ModuleAPI = {
      */
     dotnet: DotnetHostBuilder;
     /**
-     * Will terminate the runtime "process" and reject all further calls to the API.
+     * Terminates the runtime "process" and reject all further calls to the API.
      */
     exit: (code: number, reason?: any) => void;
 };
