@@ -774,12 +774,12 @@ void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emi
 
     assert(targetReg != REG_NA);
 
-    if((instOptions & INS_OPTS_b_MASK) != 0)
+    if ((instOptions & INS_OPTS_b_MASK) != 0)
     {
         // As embedded rounding only appies in R_R_R case, we can skip other checks for different paths.
         OperandDesc rmOpDesc = genOperandDesc(op1);
         assert(rmOpDesc.GetKind() == OperandKind::Reg);
-        regNumber op1Reg    = op1->GetRegNum();
+        regNumber op1Reg = op1->GetRegNum();
         assert(op1Reg != REG_NA);
 
         GetEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, instOptions);
