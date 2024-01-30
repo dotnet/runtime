@@ -2412,10 +2412,12 @@ namespace System.Reflection.Metadata
     {
         public string AssemblyQualifiedName { get { throw null; } }
         public System.Reflection.AssemblyName? AssemblyName { get { throw null; } }
+        public TypeName? ContainingType { get { throw null; } }
         public bool IsArray { get { throw null; } }
         public bool IsConstructedGenericType { get { throw null; } }
         public bool IsElementalType { get { throw null; } }
         public bool IsManagedPointerType { get { throw null; } }
+        public bool IsNestedType { get { throw null; } }
         public bool IsSzArrayType { get { throw null; } }
         public bool IsUnmanagedPointerType { get { throw null; } }
         public bool IsVariableBoundArrayType { get { throw null; } }
@@ -2433,7 +2435,7 @@ namespace System.Reflection.Metadata
     {
         public TypeNameParserOptions() { }
         public int MaxRecursiveDepth { get { throw null; } set { } }
-        public virtual void ValidateIdentifier(string candidate) { }
+        public virtual void ValidateIdentifier(System.ReadOnlySpan<char> candidate) { }
     }
     public readonly partial struct TypeReference
     {

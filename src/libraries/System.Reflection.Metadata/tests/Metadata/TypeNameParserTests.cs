@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using Xunit;
 
-namespace System.Reflection.Metadata.Tests.Metadata
+namespace System.Reflection.Metadata.Tests
 {
     public class TypeNameParserTests
     {
@@ -189,33 +189,68 @@ namespace System.Reflection.Metadata.Tests.Metadata
 
         [Theory]
         [InlineData(typeof(int))]
-        [InlineData(typeof(int*))]
-        [InlineData(typeof(int***))]
         [InlineData(typeof(int[]))]
         [InlineData(typeof(int[,]))]
         [InlineData(typeof(int[,,,]))]
         [InlineData(typeof(List<int>))]
         [InlineData(typeof(Dictionary<int, string>))]
+        [InlineData(typeof(NestedNonGeneric_0))]
+        [InlineData(typeof(NestedNonGeneric_0.NestedNonGeneric_1))]
+        [InlineData(typeof(NestedGeneric_0<int>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>.NestedNonGeneric_3))]
         public void GetType_Roundtrip(Type type)
         {
-            TypeName typeName = TypeNameParser.Parse(type.FullName.AsSpan(), allowFullyQualifiedName: true);
+            Test(type);
+            Test(type.MakePointerType());
+            Test(type.MakePointerType().MakePointerType());
+            Test(type.MakeByRefType());
 
-            Type afterRoundtrip = typeName.GetType(throwOnError: true);
+            if (!type.IsArray)
+            {
+                Test(type.MakeArrayType());  // []
+                Test(type.MakeArrayType(1)); // [*]
+                Test(type.MakeArrayType(2)); // [,]
+            }
 
-            Assert.NotNull(afterRoundtrip);
-            Assert.Equal(type, afterRoundtrip);
+            static void Test(Type type)
+            {
+                TypeName typeName = TypeNameParser.Parse(type.AssemblyQualifiedName.AsSpan(), allowFullyQualifiedName: true);
+
+                Type afterRoundtrip = typeName.GetType(throwOnError: true);
+
+                Assert.NotNull(afterRoundtrip);
+                Assert.Equal(type, afterRoundtrip);
+            }
+        }
+
+        public class NestedNonGeneric_0
+        {
+            public class NestedNonGeneric_1 { }
+        }
+
+        public class NestedGeneric_0<T1>
+        {
+            public class NestedGeneric_1<T2, T3>
+            {
+                public class NestedGeneric_2<T4, T5, T6>
+                {
+                    public class NestedNonGeneric_3 { }
+                }
+            }
         }
 
         internal sealed class NonAsciiNotAllowed : TypeNameParserOptions
         {
-            public override void ValidateIdentifier(string candidate)
+            public override void ValidateIdentifier(ReadOnlySpan<char> candidate)
             {
                 base.ValidateIdentifier(candidate);
 
 #if NET8_0_OR_GREATER
                 if (!Ascii.IsValid(candidate))
 #else
-                if (candidate.Any(c => c >= 128))
+                if (candidate.ToArray().Any(c => c >= 128))
 #endif
                 {
                     throw new ArgumentException("Non ASCII char found");

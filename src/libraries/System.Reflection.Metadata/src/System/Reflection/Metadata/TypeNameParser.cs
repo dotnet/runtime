@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
@@ -10,7 +11,7 @@ namespace System.Reflection.Metadata
 {
     public ref struct TypeNameParser
     {
-        private const string EndOfTypeNameDelimiters = "[]&*,"; // TODO: Roslyn is using '+' here as well
+        private const string EndOfTypeNameDelimiters = "[]&*,+";
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> _endOfTypeNameDelimitersSearchValues = SearchValues.Create(EndOfTypeNameDelimiters);
 #endif
@@ -44,13 +45,14 @@ namespace System.Reflection.Metadata
         {
             Dive(ref recursiveDepth);
 
-            int offset = GetOffsetOfEndOfTypeName(_inputString);
+            List<int>? nestedNameLengths = null;
+            int typeNameLength = GetTypeNameLengthWithNestedNameLengths(_inputString, ref nestedNameLengths);
 
-            string typeName = _inputString.Slice(0, offset).ToString();
+            ReadOnlySpan<char> typeName = _inputString.Slice(0, typeNameLength);
 
             _parseOptions.ValidateIdentifier(typeName);
 
-            _inputString = _inputString.Slice(offset);
+            _inputString = _inputString.Slice(typeNameLength);
 
             List<TypeName>? genericArgs = null; // TODO: use some stack-based list in CoreLib
 
@@ -129,10 +131,20 @@ namespace System.Reflection.Metadata
 
             AssemblyName? assemblyName = allowFullyQualifiedName ? ParseAssemblyName() : null;
 
-            TypeName result = new(typeName, assemblyName, rankOrModifier: 0, underlyingType: null, genericArgs?.ToArray());
+            TypeName? containingType = GetContainingType(ref typeName, nestedNameLengths, assemblyName);
+            TypeName result = new(typeName.ToString(), assemblyName, rankOrModifier: 0, underlyingType: null, containingType, genericArgs?.ToArray());
 
             if (previousDecorator != default) // some decorators were recognized
             {
+                StringBuilder sb = new StringBuilder(typeName.Length + 4);
+#if NET8_0_OR_GREATER
+                sb.Append(typeName);
+#else
+                for (int i = 0; i < typeName.Length; i++)
+                {
+                    sb.Append(typeName[i]);
+                }
+#endif
                 while (TryParseNextDecorator(ref capturedBeforeProcessing, out int parsedModifier))
                 {
                     // we are not reusing the input string, as it could have contain whitespaces that we want to exclude
@@ -143,17 +155,38 @@ namespace System.Reflection.Metadata
                         TypeName.SZArray => "[]",
                         1 => "[*]",
                         _ => ArrayRankToString(parsedModifier)
-                    }; ;
-                    typeName += trimmedModifier;
-                    result = new(typeName, assemblyName, parsedModifier, underlyingType: result);
+                    };
+                    sb.Append(trimmedModifier);
+                    result = new(sb.ToString(), assemblyName, parsedModifier, underlyingType: result);
                 }
             }
 
             return result;
         }
 
+        private static int GetTypeNameLengthWithNestedNameLengths(ReadOnlySpan<char> input, ref List<int>? nestedNameLengths)
+        {
+            bool isNestedType;
+            int totalLength = 0;
+            do
+            {
+                int length = GetTypeNameLength(input.Slice(totalLength), out isNestedType);
+                Debug.Assert(length > 0, "GetTypeNameLength should never return a negative value");
+
+                if (isNestedType)
+                {
+                    // do not validate the type name now, it will be validated as a whole nested type name later
+                    (nestedNameLengths ??= new()).Add(length);
+                    totalLength += 1; // skip the '+' sign in next search
+                }
+                totalLength += length;
+            } while (isNestedType);
+
+            return totalLength;
+        }
+
         // Normalizes "not found" to input length, since caller is expected to slice.
-        private static int GetOffsetOfEndOfTypeName(ReadOnlySpan<char> input)
+        private static int GetTypeNameLength(ReadOnlySpan<char> input, out bool isNestedType)
         {
             // NET 6+ guarantees that MemoryExtensions.IndexOfAny has worst-case complexity
             // O(m * i) if a match is found, or O(m * n) if a match is not found, where:
@@ -178,6 +211,7 @@ namespace System.Reflection.Metadata
                 if (EndOfTypeNameDelimiters.IndexOf(input[offset]) >= 0) { break; }
             }
 #endif
+            isNestedType = offset > 0 && input[offset] == '+';
 
             return (int)Math.Min((uint)offset, (uint)input.Length);
         }
@@ -200,6 +234,23 @@ namespace System.Reflection.Metadata
             return null;
         }
 
+        private static TypeName? GetContainingType(ref ReadOnlySpan<char> typeName, List<int>? nestedNameLengths, AssemblyName? assemblyName)
+        {
+            if (nestedNameLengths is null)
+            {
+                return null;
+            }
+
+            TypeName? containingType = null;
+            foreach (int nestedNameLength in nestedNameLengths)
+            {
+                containingType = new(typeName.Slice(0, nestedNameLength).ToString(), assemblyName, rankOrModifier: 0, null, containingType: containingType, null);
+                typeName = typeName.Slice(nestedNameLength + 1); // don't include the `+` in type name
+            }
+
+            return containingType;
+        }
+
         private void Dive(ref int depth)
         {
             if (depth >= _parseOptions.MaxRecursiveDepth)
@@ -219,7 +270,7 @@ namespace System.Reflection.Metadata
         {
             if (!span.IsEmpty && span[0] == value)
             {
-                span = span.Slice(1).Trim(' ');
+                span = span.Slice(1).TrimStart(' ');
                 return true;
             }
             return false;
@@ -318,12 +369,16 @@ namespace System.Reflection.Metadata
         private readonly int _rankOrModifier;
         private readonly TypeName[]? _genericArguments;
 
-        internal TypeName(string name, AssemblyName? assemblyName, int rankOrModifier, TypeName? underlyingType = default, TypeName[]? genericTypeArguments = default)
+        internal TypeName(string name, AssemblyName? assemblyName, int rankOrModifier,
+            TypeName? underlyingType = default,
+            TypeName? containingType = default,
+            TypeName[]? genericTypeArguments = default)
         {
             Name = name;
             AssemblyName = assemblyName;
             _rankOrModifier = rankOrModifier;
             UnderlyingType = underlyingType;
+            ContainingType = containingType;
             _genericArguments = genericTypeArguments;
             AssemblyQualifiedName = assemblyName is null ? name : $"{name}, {assemblyName.FullName}";
         }
@@ -377,6 +432,12 @@ namespace System.Reflection.Metadata
         public bool IsManagedPointerType => _rankOrModifier == ByRef; // name inconsistent with Type.IsByRef
 
         /// <summary>
+        /// Returns true if this is a nested type (e.g., "Namespace.Containing+Nested").
+        /// For nested types <seealso cref="ContainingType"/> returns their containing type.
+        /// </summary>
+        public bool IsNestedType => ContainingType is not null;
+
+        /// <summary>
         /// Returns true if this type represents a single-dimensional, zero-indexed array (e.g., "int[]").
         /// </summary>
         public bool IsSzArrayType => _rankOrModifier == SZArray; // name could be more user-friendly
@@ -392,6 +453,15 @@ namespace System.Reflection.Metadata
         /// than 1 (e.g., "int[,]") or a single-dimensional array which isn't necessarily zero-indexed.
         /// </summary>
         public bool IsVariableBoundArrayType => _rankOrModifier > 1;
+
+        /// <summary>
+        /// If this type is a nested type (see <see cref="IsNestedType"/>), gets
+        /// the containing type. If this type is not a nested type, returns null.
+        /// </summary>
+        /// <remarks>
+        /// For example, given "Namespace.Containing+Nested", unwraps the outermost type and returns "Namespace.Containing".
+        /// </remarks>
+        public TypeName? ContainingType { get; }
 
         /// <summary>
         /// The name of this type, including namespace, but without the assembly name; e.g., "System.Int32".
@@ -434,68 +504,69 @@ namespace System.Reflection.Metadata
 #if NET8_0_OR_GREATER
         [RequiresUnreferencedCode("The type might be removed")]
         [RequiresDynamicCode("Required by MakeArrayType")]
+#else
+#pragma warning disable IL2075, IL2057, IL2055
 #endif
         public Type? GetType(bool throwOnError = true)
         {
-            if (UnderlyingType is null)
+            if (ContainingType is not null) // nested type
             {
-                Type? type;
-                if (AssemblyName is null)
-                {
-#pragma warning disable IL2057 // Unrecognized value passed to the parameter of method. It's not possible to guarantee the availability of the target type.
-                    type = Type.GetType(Name, throwOnError);
-#pragma warning restore IL2057 // Unrecognized value passed to the parameter of method. It's not possible to guarantee the availability of the target type.
-                }
-                else
-                {
-                    Assembly assembly = Assembly.Load(AssemblyName);
-                    type = assembly.GetType(Name, throwOnError);
-                }
+                const BindingFlags flagsCopiedFromClr = BindingFlags.NonPublic | BindingFlags.Public;
+                return Make(ContainingType.GetType(throwOnError)?.GetNestedType(Name, flagsCopiedFromClr));
+            }
+            else if (UnderlyingType is null)
+            {
+                Type? type = AssemblyName is null
+                    ? Type.GetType(Name, throwOnError)
+                    : Assembly.Load(AssemblyName).GetType(Name, throwOnError);
 
-                if (IsElementalType || type is null)
+                return Make(type);
+            }
+
+            return Make(UnderlyingType.GetType(throwOnError));
+
+            Type? Make(Type? type)
+            {
+                if (type is null || IsElementalType)
                 {
                     return type;
                 }
-
-                TypeName[] genericArgs = GetGenericArguments();
-                Type[] genericTypes = new Type[genericArgs.Length];
-                for (int i = 0; i < genericArgs.Length; i++)
+                else if (IsConstructedGenericType)
                 {
-                    Type? genericArg = genericArgs[i].GetType(throwOnError);
-                    if (genericArg is null)
+                    TypeName[] genericArgs = GetGenericArguments();
+                    Type[] genericTypes = new Type[genericArgs.Length];
+                    for (int i = 0; i < genericArgs.Length; i++)
                     {
-                        return null;
+                        Type? genericArg = genericArgs[i].GetType(throwOnError);
+                        if (genericArg is null)
+                        {
+                            return null;
+                        }
+                        genericTypes[i] = genericArg;
                     }
-                    genericTypes[i] = genericArg;
+
+                    return type.MakeGenericType(genericTypes);
                 }
-
-#pragma warning disable IL2055 // Either the type on which the MakeGenericType is called can't be statically determined, or the type parameters to be used for generic arguments can't be statically determined.
-                return type.MakeGenericType(genericTypes);
-#pragma warning restore IL2055 // Either the type on which the MakeGenericType is called can't be statically determined, or the type parameters to be used for generic arguments can't be statically determined.
+                else if (IsManagedPointerType)
+                {
+                    return type.MakeByRefType();
+                }
+                else if (IsUnmanagedPointerType)
+                {
+                    return type.MakePointerType();
+                }
+                else if (IsSzArrayType)
+                {
+                    return type.MakeArrayType();
+                }
+                else
+                {
+                    return type.MakeArrayType(rank: GetArrayRank());
+                }
             }
-
-            Type? underlyingType = UnderlyingType.GetType(throwOnError);
-            if (underlyingType is null)
-            {
-                return null;
-            }
-
-            if (IsManagedPointerType)
-            {
-                return underlyingType.MakeByRefType();
-            }
-            else if (IsUnmanagedPointerType)
-            {
-                return underlyingType.MakePointerType();
-            }
-            else if (IsSzArrayType)
-            {
-                return underlyingType.MakeArrayType();
-            }
-
-            return underlyingType.MakeArrayType(rank: GetArrayRank());
         }
     }
+#pragma warning restore IL2075, IL2057, IL2055
 
     public class TypeNameParserOptions
     {
@@ -514,11 +585,18 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public virtual void ValidateIdentifier(string candidate)
+        internal bool AllowSpacesOnly { get; set; }
+
+        internal bool AllowEscaping { get; set; }
+
+        internal bool StrictValidation { get; set; }
+
+        public virtual void ValidateIdentifier(ReadOnlySpan<char> candidate)
         {
-#if NET8_0_OR_GREATER
-            ArgumentNullException.ThrowIfNullOrEmpty(candidate, nameof(candidate));
-#endif
+            if (candidate.IsEmpty)
+            {
+                throw new ArgumentException("TODO");
+            }
         }
     }
 
@@ -532,7 +610,7 @@ namespace System.Reflection.Metadata
 
         public bool AllowNonAsciiIdentifiers { get; set; }
 
-        public override void ValidateIdentifier(string candidate)
+        public override void ValidateIdentifier(ReadOnlySpan<char> candidate)
         {
             base.ValidateIdentifier(candidate);
 
@@ -542,7 +620,7 @@ namespace System.Reflection.Metadata
 
     internal class RoslynTypeNameParserOptions : TypeNameParserOptions
     {
-        public override void ValidateIdentifier(string candidate)
+        public override void ValidateIdentifier(ReadOnlySpan<char> candidate)
         {
             // it seems that Roslyn is not performing any kind of validation
         }
