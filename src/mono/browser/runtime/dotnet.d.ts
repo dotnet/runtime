@@ -98,7 +98,7 @@ interface DotnetHostBuilder {
      */
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
     /**
-     * Capture "command line" arguments for the Main() method from browser query string.
+     * Supply "command line" arguments for the Main() method from browser query arguments named "arg". Eg. `index.html?arg=A&arg=B&arg=C`.
      * @param args
      */
     withApplicationArgumentsFromQuery(): DotnetHostBuilder;
