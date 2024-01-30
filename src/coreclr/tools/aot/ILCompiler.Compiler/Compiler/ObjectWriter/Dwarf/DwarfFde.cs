@@ -36,14 +36,6 @@ namespace ILCompiler.ObjectWriter
             PersonalitySymbolName = personalitySymbolName;
         }
 
-        private enum CFI_OPCODE
-        {
-            CFI_ADJUST_CFA_OFFSET,    // Offset is adjusted relative to the current one.
-            CFI_DEF_CFA_REGISTER,     // New register is used to compute CFA
-            CFI_REL_OFFSET,           // Register is saved at offset from the current CFA
-            CFI_DEF_CFA               // Take address from register and add offset to it.
-        }
-
         /// <summary>
         /// Convert JIT version of CFI blob into the the DWARF byte code form.
         /// </summary>

@@ -258,14 +258,17 @@ namespace System.Reflection.Metadata.Decoding.Tests
                 Assert.Equal("DoSomething", reader.GetString(methodDef.Name));
 
                 MethodBodyBlock body = peReader.GetMethodBody(methodDef.RelativeVirtualAddress);
-                StandaloneSignature localSignature = reader.GetStandaloneSignature(body.LocalSignature);
+                var il = body.GetILBytes();
+                // ILStrip replaces method body with the 'ret' IL opcode i.e. 0x2a
+                if (!(il?.Length == 1 && il[0] == 0x2a)) {
+                    StandaloneSignature localSignature = reader.GetStandaloneSignature(body.LocalSignature);
+                    ImmutableArray<string> localTypes = localSignature.DecodeLocalSignature(provider, genericContext: null);
 
-                ImmutableArray<string> localTypes = localSignature.DecodeLocalSignature(provider, genericContext: null);
-
-                // Compiler can generate temporaries or re-order so just check the ones we expect are there.
-                // (They could get optimized away too. If that happens in practice, change this test to use hard-coded signatures.)
-                Assert.Contains("uint8[] pinned", localTypes);
-                Assert.Contains("uint8[]", localTypes);
+                    // Compiler can generate temporaries or re-order so just check the ones we expect are there.
+                    // (They could get optimized away too. If that happens in practice, change this test to use hard-coded signatures.)
+                    Assert.Contains("uint8[] pinned", localTypes);
+                    Assert.Contains("uint8[]", localTypes);
+                }
             }
         }
 

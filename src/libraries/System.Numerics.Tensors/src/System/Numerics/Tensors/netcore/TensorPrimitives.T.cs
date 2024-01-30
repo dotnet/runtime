@@ -2552,26 +2552,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void SinCos<T>(ReadOnlySpan<T> x, Span<T> sinDestination, Span<T> cosDestination)
-            where T : ITrigonometricFunctions<T>
-        {
-            if (x.Length > sinDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(sinDestination));
-            }
-            if (x.Length > cosDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(cosDestination));
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, sinDestination);
-            ValidateInputOutputSpanNonOverlapping(x, cosDestination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                (sinDestination[i], cosDestination[i]) = T.SinCos(x[i]);
-            }
-        }
+            where T : ITrigonometricFunctions<T> =>
+            InvokeSpanIntoSpan_TwoOutputs<T, SinCosOperator<T>>(x, sinDestination, cosDestination);
 
         /// <summary>Computes the element-wise sine and cosine of the value in the specified tensor that has been multiplied by Pi.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2589,26 +2571,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void SinCosPi<T>(ReadOnlySpan<T> x, Span<T> sinPiDestination, Span<T> cosPiDestination)
-            where T : ITrigonometricFunctions<T>
-        {
-            if (x.Length > sinPiDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(sinPiDestination));
-            }
-            if (x.Length > cosPiDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(cosPiDestination));
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, sinPiDestination);
-            ValidateInputOutputSpanNonOverlapping(x, cosPiDestination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                (sinPiDestination[i], cosPiDestination[i]) = T.SinCosPi(x[i]);
-            }
-        }
+            where T : ITrigonometricFunctions<T> =>
+            InvokeSpanIntoSpan_TwoOutputs<T, SinCosPiOperator<T>>(x, sinPiDestination, cosPiDestination);
 
         /// <summary>Computes the softmax function over the specified non-empty tensor of numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
