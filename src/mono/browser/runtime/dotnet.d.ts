@@ -448,7 +448,7 @@ type APIType = {
      */
     setEnvironmentVariable: (name: string, value: string) => void;
     /**
-     * Loads the assembly with the given name and returns the [JSExports] of the assembly
+     * Returns the [JSExport] methods of the assembly with the given name
      * @param assemblyName
      */
     getAssemblyExports(assemblyName: string): Promise<any>;
