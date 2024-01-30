@@ -426,7 +426,7 @@ type DotnetModuleConfig = {
 } & Partial<EmscriptenModule>;
 type APIType = {
     /**
-     * Runs the Main() entrypoint of the application and exits the runtime.
+     * Runs the Main() method of the application and exits the runtime.
      * Note: this will keep the dotnet runtime alive and the APIs will be available for further calls.
      * @param mainAssemblyName name of the assembly with the Main() method.
      * @param args command line arguments for the Main() method.
