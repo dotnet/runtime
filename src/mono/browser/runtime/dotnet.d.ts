@@ -468,7 +468,7 @@ type APIType = {
      */
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>;
     /**
-     * write into the WASM linear memory
+     * Writes to the WASM linear memory
      */
     setHeapB32: (offset: NativePointer, value: number | boolean) => void;
     /**
