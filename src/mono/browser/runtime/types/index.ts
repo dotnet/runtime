@@ -582,7 +582,7 @@ export type RuntimeAPI = {
 
 export type ModuleAPI = {
     /**
-     * The builder for the dotnet runtime.
+     * The builder for the .NET runtime.
      */
     dotnet: DotnetHostBuilder;
     /**
