@@ -391,6 +391,7 @@ gint    g_ascii_xdigit_value (gchar c);
 #define g_ascii_isalpha(c)   (isalpha (c) != 0)
 #define g_ascii_isprint(c)   (isprint (c) != 0)
 #define g_ascii_isxdigit(c)  (isxdigit (c) != 0)
+#define g_isascii(c)         (isascii (c) != 0)
 
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #ifdef _MSC_VER
