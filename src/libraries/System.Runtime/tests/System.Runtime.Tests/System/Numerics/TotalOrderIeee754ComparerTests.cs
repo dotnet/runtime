@@ -112,7 +112,7 @@ namespace System.Runtime.Tests
                     yield return new object[] { BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), NFloat.NegativeInfinity, -1 };
                     yield return new object[] { BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), -1.0d, -1 };
                     yield return new object[] { BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), -1 };
-                    yield return new object[] { BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), BitConverter.UInt64BitsToDouble(0x7FF80000_00000001), -1 }; // implementation defined, not part of IEEE 754 totalOrder                    
+                    yield return new object[] { BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), BitConverter.UInt64BitsToDouble(0x7FF80000_00000001), -1 };
                 }
                 else
                 {
@@ -121,7 +121,7 @@ namespace System.Runtime.Tests
                     yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), NFloat.NegativeInfinity, -1 };
                     yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), -1.0f, -1 };
                     yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), BitConverter.UInt32BitsToSingle(0x7FC00000), -1 };
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt32BitsToSingle(0x7FC00001), -1 }; // implementation defined, not part of IEEE 754 totalOrder
+                    yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt32BitsToSingle(0x7FC00001), -1 };
                 }
             }
         }
