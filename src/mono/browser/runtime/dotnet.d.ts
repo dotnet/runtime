@@ -120,7 +120,7 @@ interface DotnetHostBuilder {
      */
     create(): Promise<RuntimeAPI>;
     /**
-     * Runs the Main() entrypoint of the application and resolves promise with exit code.
+     * Runs the Main() method of the application and resolves promise with exit code.
      * @param keepRunning if true, the runtime will keep processing API calls after the Main() method exits. Default is false.
      * You can provide "command line" arguments for the Main() method using
      * - dotnet.withApplicationArguments(["A", "B", "C"])
