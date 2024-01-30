@@ -376,18 +376,14 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    async run(keepRunning?: boolean): Promise<number> {
+    async run(): Promise<number> {
         try {
             mono_assert(emscriptenModule.config, "Null moduleConfig.config");
             if (!this.instance) {
                 await this.create();
             }
             mono_assert(emscriptenModule.config.mainAssemblyName, "Null moduleConfig.config.mainAssemblyName");
-            if (keepRunning) {
-                return this.instance!.runMain(emscriptenModule.config.mainAssemblyName);
-            } else {
-                return this.instance!.runMainAndExit(emscriptenModule.config.mainAssemblyName);
-            }
+            return this.instance!.runMainAndExit(emscriptenModule.config.mainAssemblyName);
         } catch (err) {
             mono_exit(1, err);
             throw err;

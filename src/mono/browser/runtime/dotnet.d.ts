@@ -120,13 +120,14 @@ interface DotnetHostBuilder {
      */
     create(): Promise<RuntimeAPI>;
     /**
-     * Runs the Main() method of the application and resolves promise with exit code.
-     * @param keepRunning if true, the runtime will keep processing API calls after the Main() method exits. Default is false.
+     * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
      * - dotnet.withApplicationArguments(["A", "B", "C"])
      * - dotnet.withApplicationArgumentsFromQuery()
+     * Note: after the runtime exits, it would reject all further calls to the API.
+     * You can use runMain() if you want to keep the runtime alive.
      */
-    run(keepRunning?: boolean): Promise<number>;
+    run(): Promise<number>;
 }
 type MonoConfig = {
     /**
@@ -426,7 +427,7 @@ type DotnetModuleConfig = {
 } & Partial<EmscriptenModule>;
 type APIType = {
     /**
-     * Runs the Main() method of the application and exits the runtime.
+     * Runs the Main() method of the application.
      * Note: this will keep the .NET runtime alive and the APIs will be available for further calls.
      * @param mainAssemblyName name of the assembly with the Main() method.
      * @param args command line arguments for the Main() method.
