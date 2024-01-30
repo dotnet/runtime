@@ -23,6 +23,17 @@
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
   </PropertyGroup>
 
+  <PropertyGroup Label="ShortStacks">
+    <ShortStack Condition="'$(TargetOS)' == 'wasi'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'browser'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'ios'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'iossimulator'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'tvos'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'tvossimulator'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'maccatalyst'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'android'">true</ShortStack>
+  </PropertyGroup>
+
   <Target Name="GetRuntimeSourceBuildCommandConfiguration"
           BeforeTargets="GetSourceBuildCommandConfiguration">
     <PropertyGroup>
@@ -31,9 +42,9 @@
            Properties that control flags from source-build, and the expected output for source-build should be added to this file. -->
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)arch $(TargetArch)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)os $(TargetOS)</InnerBuildArgs>
-      <InnerBuildArgs Condition=" '$(TargetArch)' != '$(_hostArch)' ">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(TargetArch)' != '$(_hostArch)' and '$(ShortStack)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)configuration $(Configuration)</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)allconfigurations</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(ShortStack)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)allconfigurations</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)verbosity $(LogVerbosity)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)nodereuse $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)warnAsError $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
