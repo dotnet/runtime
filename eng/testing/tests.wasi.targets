@@ -31,7 +31,7 @@
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) -- $(WasmTestAppArgs)</_AppArgs>
 
     <!-- FIXME: wasttime specific param name -->
-    <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --env=XHARNESS_LOG_TEST_START=1</WasmXHarnessMonoArgs>
+    <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --env=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RunScriptCommand)' == ''">
