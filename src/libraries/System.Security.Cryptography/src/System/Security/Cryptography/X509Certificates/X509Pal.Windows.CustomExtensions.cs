@@ -157,32 +157,5 @@ namespace System.Security.Cryptography.X509Certificates
                     });
             }
         }
-
-        public byte[] EncodeX509SubjectKeyIdentifierExtension(ReadOnlySpan<byte> subjectKeyIdentifier)
-        {
-            unsafe
-            {
-                fixed (byte* pSubkectKeyIdentifier = subjectKeyIdentifier)
-                {
-                    Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pSubkectKeyIdentifier), (uint)subjectKeyIdentifier.Length);
-                    return Interop.crypt32.EncodeObject(Oids.SubjectKeyIdentifier, &blob);
-                }
-            }
-        }
-
-        public void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier)
-        {
-            unsafe
-            {
-                subjectKeyIdentifier = encoded.DecodeObject(
-                    Oids.SubjectKeyIdentifier,
-                    static delegate (void* pvDecoded, int cbDecoded)
-                    {
-                        Debug.Assert(cbDecoded >= sizeof(Interop.Crypt32.DATA_BLOB));
-                        Interop.Crypt32.DATA_BLOB* pBlob = (Interop.Crypt32.DATA_BLOB*)pvDecoded;
-                        return pBlob->ToByteArray();
-                    });
-            }
-        }
     }
 }
