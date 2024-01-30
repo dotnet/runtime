@@ -333,13 +333,6 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             {
                 break;
             }
-            // if (srcType == TYP_FLOAT && dstType == TYP_INT)
-            // {
-            //     oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
-            //     tree = gtNewCastNode(dstType, oper, false, dstType);
-            //     return fgMorphTree(tree);
-            //     // srcType = TYP_DOUBLE;
-            // }
             CorInfoType fieldType = (srcType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
 
             if ( compOpportunisticallyDependsOn(InstructionSet_AVX512F) )
@@ -401,11 +394,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     // The logic is that first and second operand are basically the same because we want 
                     // the output to be in the same xmm register
                     // Hence we clone the first operand
-                    // GenTree* op2Clone = gtNewSimdCreateBroadcastNode(TYP_SIMD16, gtNewDconNode(2.0, srcType), fieldType, 16);
-                    // oper = impCloneExpr(oper, &op2Clone, CHECK_SPILL_ALL,
-                    //                     nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
-                    GenTree* op2Clone = fgMakeMultiUse(&oper);
-                    
+                    GenTree* op2Clone = fgMakeMultiUse(&oper);                    
 
                     //run vfixupimmsd base on table and no flags reporting
                     oper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op2Clone, tbl, gtNewIconNode(0),
@@ -517,6 +506,12 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #endif // TARGET_X86
 
                     case TYP_LONG:
+#ifdef TARGET_AMD64
+                        if (tree->IsSaturatedConversion())
+                        {
+                            return nullptr;
+                        }
+#endif //TARGET_AMD64
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
 
                     case TYP_ULONG:

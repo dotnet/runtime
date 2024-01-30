@@ -1481,15 +1481,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 
                 //run vfixupimmsd base on table and no flags reporting
                 GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
-                                                            NI_AVX512F_Fixup, fieldType, simdSize);
+                                                            NI_AVX512F_Fixup, simdBaseJitType, simdSize);
 
-                GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT64_MAX)), fieldType, simdSize);
+                GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT64_MAX)), simdBaseJitType, simdSize);
                 GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT64_MAX, TYP_LONG), CORINFO_TYPE_LONG, simdSize);
                 //we will be using the input value twice
                 GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
 
                 //usage 1 --> compare with max value of integer
-                saturate_val = gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, fieldType, simdSize);
+                saturate_val = gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, simdBaseJitType, simdSize);
                 //cast it
 
                 intrinsic = (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
@@ -1651,15 +1651,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 
                 //run vfixupimmsd base on table and no flags reporting
                 GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
-                                                            NI_AVX512F_Fixup, fieldType, simdSize);
+                                                            NI_AVX512F_Fixup, simdBaseJitType, simdSize);
 
-                GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT32_MAX)), fieldType, simdSize);
+                GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT32_MAX)), simdBaseJitType, simdSize);
                 GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT32_MAX, TYP_INT), CORINFO_TYPE_INT, simdSize);
                 //we will be using the input value twice
                 GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
 
                 //usage 1 --> compare with max value of integer
-                saturate_val = gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, fieldType, simdSize);
+                saturate_val = gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, simdBaseJitType, simdSize);
                 //cast it
 
                 intrinsic = (simdSize == 16) ? NI_SSE2_ConvertToVector128Int32WithTruncation
