@@ -14624,12 +14624,12 @@ namespace System.Numerics.Tensors
         internal readonly struct Log10Operator<T> : IUnaryOperator<T, T>
             where T : ILogarithmicFunctions<T>
         {
-            private static readonly double s_log10 = Math.Log(10d);
+            private const double NaturalLog10 = 2.302585092994046;
             public static bool Vectorizable => LogOperator<T>.Vectorizable;
             public static T Invoke(T x) => T.Log10(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => LogOperator<T>.Invoke(x) / Vector128.Create(T.CreateTruncating(s_log10));
-            public static Vector256<T> Invoke(Vector256<T> x) => LogOperator<T>.Invoke(x) / Vector256.Create(T.CreateTruncating(s_log10));
-            public static Vector512<T> Invoke(Vector512<T> x) => LogOperator<T>.Invoke(x) / Vector512.Create(T.CreateTruncating(s_log10));
+            public static Vector128<T> Invoke(Vector128<T> x) => LogOperator<T>.Invoke(x) / Vector128.Create(T.CreateTruncating(NaturalLog10));
+            public static Vector256<T> Invoke(Vector256<T> x) => LogOperator<T>.Invoke(x) / Vector256.Create(T.CreateTruncating(NaturalLog10));
+            public static Vector512<T> Invoke(Vector512<T> x) => LogOperator<T>.Invoke(x) / Vector512.Create(T.CreateTruncating(NaturalLog10));
         }
 
         /// <summary>T.LogP1(x)</summary>
