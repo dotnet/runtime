@@ -233,6 +233,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public static void DebuggerAttributeTests()
         {
             ReadOnlyDictionary<int, int> dict = new ReadOnlyDictionary<int, int>(new Dictionary<int, int>{{1, 2}, {2, 4}, {3, 6}});
@@ -257,6 +258,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public static void DebuggerAttribute_NullDictionary_ThrowsArgumentNullException()
         {
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() =>   DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(ReadOnlyDictionary<int, int>)));
@@ -266,6 +268,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public static void DebuggerAttribute_NullDictionaryKeys_ThrowsArgumentNullException()
         {
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(ReadOnlyDictionary<int, int>.KeyCollection)));
