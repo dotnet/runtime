@@ -32,8 +32,8 @@ namespace ILCompiler.ObjectWriter
 
         protected int EhFrameSectionIndex => _ehFrameSectionIndex;
 
-        private static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly, null);
-        private static readonly ObjectNodeSection EhFrameSection = new ObjectNodeSection(".eh_frame", SectionType.ReadOnly, null);
+        private static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly);
+        private static readonly ObjectNodeSection EhFrameSection = new ObjectNodeSection(".eh_frame", SectionType.UnwindData);
         private static readonly ObjectNodeSection DebugInfoSection = new ObjectNodeSection(".debug_info", SectionType.Debug);
         private static readonly ObjectNodeSection DebugStringSection = new ObjectNodeSection(".debug_str", SectionType.Debug);
         private static readonly ObjectNodeSection DebugAbbrevSection = new ObjectNodeSection(".debug_abbrev", SectionType.Debug);
@@ -67,6 +67,53 @@ namespace ILCompiler.ObjectWriter
 
         private protected virtual bool UseFrameNames => false;
 
+        private protected void EmitLsda(
+            INodeWithCodeInfo nodeWithCodeInfo,
+            FrameInfo[] frameInfos,
+            int frameInfoIndex,
+            SectionWriter lsdaSectionWriter,
+            ref long mainLsdaOffset)
+        {
+            FrameInfo frameInfo = frameInfos[frameInfoIndex];
+            FrameInfoFlags flags = frameInfo.Flags;
+
+            if (frameInfoIndex != 0)
+            {
+                lsdaSectionWriter.WriteByte((byte)flags);
+                lsdaSectionWriter.WriteLittleEndian<int>((int)(mainLsdaOffset - lsdaSectionWriter.Position));
+                // Emit relative offset from the main function
+                lsdaSectionWriter.WriteLittleEndian<uint>((uint)(frameInfo.StartOffset - frameInfos[0].StartOffset));
+            }
+            else
+            {
+                MethodExceptionHandlingInfoNode ehInfo = nodeWithCodeInfo.EHInfo;
+                ISymbolNode associatedDataNode = nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory) as ISymbolNode;
+
+                flags |= ehInfo is not null ? FrameInfoFlags.HasEHInfo : 0;
+                flags |= associatedDataNode is not null ? FrameInfoFlags.HasAssociatedData : 0;
+
+                mainLsdaOffset = lsdaSectionWriter.Position;
+                lsdaSectionWriter.WriteByte((byte)flags);
+
+                if (associatedDataNode is not null)
+                {
+                    string symbolName = GetMangledName(associatedDataNode);
+                    lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
+                }
+
+                if (ehInfo is not null)
+                {
+                    string symbolName = GetMangledName(ehInfo);
+                    lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
+                }
+
+                if (nodeWithCodeInfo.GCInfo is not null)
+                {
+                    lsdaSectionWriter.Write(nodeWithCodeInfo.GCInfo);
+                }
+            }
+        }
+
         private protected override void EmitUnwindInfo(
             SectionWriter sectionWriter,
             INodeWithCodeInfo nodeWithCodeInfo,
@@ -75,12 +122,7 @@ namespace ILCompiler.ObjectWriter
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
                 nodeWithCodeInfo is ISymbolDefinitionNode)
             {
-                // On ARM we always use frame names, even for first frame to ensure that
-                // DWARF data uses PC references without the Thumb bit set. Using a function
-                // symbol would propagate the bit. Unfortunately, the R_ARM_REL32_NOI
-                // relocation is not widely implemented, so using that is not an option.
-                bool isArm = _nodeFactory.Target.Architecture == TargetArchitecture.ARM;
-                bool useFrameNames = isArm || UseFrameNames;
+                bool useFrameNames = UseFrameNames;
                 SectionWriter lsdaSectionWriter;
 
                 if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
@@ -92,7 +134,7 @@ namespace ILCompiler.ObjectWriter
                     lsdaSectionWriter = _lsdaSectionWriter;
                 }
 
-                long mainLsdaOffset = lsdaSectionWriter.Position;
+                long mainLsdaOffset = 0;
                 for (int i = 0; i < frameInfos.Length; i++)
                 {
                     FrameInfo frameInfo = frameInfos[i];
@@ -105,49 +147,12 @@ namespace ILCompiler.ObjectWriter
                     string framSymbolName = $"_fram{i}{currentSymbolName}";
 
                     lsdaSectionWriter.EmitSymbolDefinition(lsdaSymbolName);
-                    if (useFrameNames && (isArm || start != 0))
+                    if (useFrameNames && start != 0)
                     {
                         sectionWriter.EmitSymbolDefinition(framSymbolName, start);
                     }
 
-                    FrameInfoFlags flags = frameInfo.Flags;
-
-                    if (i != 0)
-                    {
-                        lsdaSectionWriter.WriteByte((byte)flags);
-                        lsdaSectionWriter.WriteLittleEndian<int>((int)(mainLsdaOffset - lsdaSectionWriter.Position));
-                        // Emit relative offset from the main function
-                        lsdaSectionWriter.WriteLittleEndian<uint>((uint)(start - frameInfos[0].StartOffset));
-                    }
-                    else
-                    {
-                        MethodExceptionHandlingInfoNode ehInfo = nodeWithCodeInfo.EHInfo;
-                        ISymbolNode associatedDataNode = nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory) as ISymbolNode;
-
-                        flags |= ehInfo is not null ? FrameInfoFlags.HasEHInfo : 0;
-                        flags |= associatedDataNode is not null ? FrameInfoFlags.HasAssociatedData : 0;
-
-                        lsdaSectionWriter.WriteByte((byte)flags);
-
-                        if (associatedDataNode is not null)
-                        {
-                            string symbolName = GetMangledName(associatedDataNode);
-                            lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
-                        }
-
-                        if (ehInfo is not null)
-                        {
-                            string symbolName = GetMangledName(ehInfo);
-                            lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
-                        }
-
-                        if (nodeWithCodeInfo.GCInfo is not null)
-                        {
-                            lsdaSectionWriter.Write(nodeWithCodeInfo.GCInfo);
-                        }
-                    }
-
-                    string startSymbolName = useFrameNames && (isArm || start != 0) ? framSymbolName : currentSymbolName;
+                    string startSymbolName = useFrameNames && start != 0 ? framSymbolName : currentSymbolName;
                     ulong length = (ulong)(end - start);
                     if (!EmitCompactUnwinding(startSymbolName, length, lsdaSymbolName, blob))
                     {
@@ -161,6 +166,8 @@ namespace ILCompiler.ObjectWriter
                             personalitySymbolName: null);
                         _dwarfEhFrame.AddFde(fde);
                     }
+
+                    EmitLsda(nodeWithCodeInfo, frameInfos, i, _lsdaSectionWriter, ref mainLsdaOffset);
                 }
             }
         }
