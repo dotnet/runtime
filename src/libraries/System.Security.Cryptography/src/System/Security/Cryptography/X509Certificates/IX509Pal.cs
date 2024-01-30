@@ -21,7 +21,5 @@ namespace System.Security.Cryptography.X509Certificates
         void DecodeX509BasicConstraints2Extension(byte[] encoded, out bool certificateAuthority, out bool hasPathLengthConstraint, out int pathLengthConstraint);
         byte[] EncodeX509EnhancedKeyUsageExtension(OidCollection usages);
         void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages);
-        byte[] EncodeX509SubjectKeyIdentifierExtension(ReadOnlySpan<byte> subjectKeyIdentifier);
-        void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier);
     }
 }
