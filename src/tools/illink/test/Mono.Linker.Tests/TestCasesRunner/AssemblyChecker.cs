@@ -38,60 +38,59 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				attr.Name == nameof (RemovedNameValueAttribute));
 		}
 
-		static (IEnumerable<T> Missing, IEnumerable<T> Extra) SetDifference<T> (IEnumerable<T> expected, IEnumerable<T> found)
-		{
-			var missing = expected.Except (found);
-			var extra = found.Except (expected);
-			return (missing, extra);
-		}
-
 		public void Verify ()
 		{
-			IEnumerable<string> failures = VerifyExportedTypes (originalAssembly, linkedAssembly);
-			failures = failures.Concat (VerifyCustomAttributes (originalAssembly, linkedAssembly));
-			failures = failures.Concat (VerifySecurityAttributes (originalAssembly, linkedAssembly));
+			var failures = GetFailures ().ToList ();
+			if (failures.Count > 0)
+				Assert.Fail (string.Join (Environment.NewLine, failures));
 
-			foreach (var originalModule in originalAssembly.Modules)
-				failures = failures.Concat (VerifyModule (originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name)));
+			IEnumerable<string> GetFailures ()
+			{
+				foreach (var err in VerifyExportedTypes (originalAssembly, linkedAssembly)) yield return err;
+				foreach (var err in VerifyCustomAttributes (originalAssembly, linkedAssembly)) yield return err;
+				foreach (var err in VerifySecurityAttributes (originalAssembly, linkedAssembly)) yield return err;
 
-			failures = failures.Concat (VerifyResources (originalAssembly, linkedAssembly));
-			failures = failures.Concat (VerifyReferences (originalAssembly, linkedAssembly));
-			failures = failures.Concat (VerifyKeptByAttributes (originalAssembly, originalAssembly.FullName));
+				foreach (var originalModule in originalAssembly.Modules)
+					foreach (var err in VerifyModule (originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name))) yield return err;
 
-			linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Select (s => {
-				return s.FullName;
-			}), StringComparer.Ordinal);
+				foreach (var err in VerifyResources (originalAssembly, linkedAssembly)) yield return err;
+				foreach (var err in VerifyReferences (originalAssembly, linkedAssembly)) yield return err;
+				foreach (var err in VerifyKeptByAttributes (originalAssembly, originalAssembly.FullName)) yield return err;
 
-			// Workaround for compiler injected attribute to describe the language version
-			linkedMembers.Remove ("System.Void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor()");
-			linkedMembers.Remove ("System.Int32 System.Runtime.CompilerServices.RefSafetyRulesAttribute::Version");
-			linkedMembers.Remove ("System.Void System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(System.Int32)");
+				linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Select (s => {
+					return s.FullName;
+				}), StringComparer.Ordinal);
 
-			// Workaround for compiler injected attribute to describe the language version
-			verifiedGeneratedTypes.Add ("Microsoft.CodeAnalysis.EmbeddedAttribute");
-			verifiedGeneratedTypes.Add ("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
+				// Workaround for compiler injected attribute to describe the language version
+				linkedMembers.Remove ("System.Void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor()");
+				linkedMembers.Remove ("System.Int32 System.Runtime.CompilerServices.RefSafetyRulesAttribute::Version");
+				linkedMembers.Remove ("System.Void System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(System.Int32)");
 
-			var membersToAssert = originalAssembly.MainModule.Types;
-			foreach (var originalMember in membersToAssert) {
-				if (originalMember is TypeDefinition td) {
-					if (td.Name == "<Module>") {
-						linkedMembers.Remove (td.Name);
+				// Workaround for compiler injected attribute to describe the language version
+				verifiedGeneratedTypes.Add ("Microsoft.CodeAnalysis.EmbeddedAttribute");
+				verifiedGeneratedTypes.Add ("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
+
+				var membersToAssert = originalAssembly.MainModule.Types;
+				foreach (var originalMember in membersToAssert) {
+					if (originalMember is TypeDefinition td) {
+						if (td.Name == "<Module>") {
+							linkedMembers.Remove (td.Name);
+							continue;
+						}
+
+						TypeDefinition linkedType = linkedAssembly.MainModule.GetType (originalMember.FullName);
+						foreach (var err in VerifyTypeDefinition (td, linkedType)) yield return err;
+						linkedMembers.Remove (td.FullName);
+
 						continue;
 					}
 
-					TypeDefinition linkedType = linkedAssembly.MainModule.GetType (originalMember.FullName);
-					failures = failures.Concat (VerifyTypeDefinition (td, linkedType));
-					linkedMembers.Remove (td.FullName);
-
-					continue;
+					yield return $"Don't know how to check member of type {originalMember.GetType ()}";
 				}
 
-				throw new NotImplementedException ($"Don't know how to check member of type {originalMember.GetType ()}");
+				if (linkedMembers.Any ())
+					foreach (var err in linkedMembers.Select (m => $"Member `{m}' was not expected to be kept")) yield return err;
 			}
-
-			if (linkedMembers.Any ())
-				failures = failures.Concat (linkedMembers.Select (m => $"Member `{m}' was not expected to be kept"));
-			Assert.IsEmpty (failures, string.Join (Environment.NewLine, failures));
 		}
 
 		static bool IsBackingField (FieldDefinition field) => field.Name.StartsWith ("<") && field.Name.EndsWith (">k__BackingField");
@@ -161,6 +160,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				foreach (var attr in original.CustomAttributes.Where (l => l.AttributeType.Name == nameof (CreatedMemberAttribute))) {
 					var newName = original.FullName + "::" + attr.ConstructorArguments[0].Value.ToString ();
 
+					// Assert.AreEqual (1, linkedMembers.RemoveWhere (l => l.Contains (newName)), $"Newly created member '{newName}' was not found");
 					var asdf = linkedMembers.Where (l => l.Contains (newName)).ToList ();
 					if (1 != linkedMembers.RemoveWhere (l => l.Contains (newName))) {
 						yield return $"Newly created member '{newName}' was not found";
@@ -321,7 +321,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				if (expectedInterfaces.Any ()) {
-					yield return $"Expected interfaces were not found on {src}";
+					yield return $"Expected interfaces were not found on {src}: {string.Join (", ", expectedInterfaces.Select(i => i.Split('.', '/').Last()))}";
 				}
 			}
 		}
@@ -416,11 +416,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			if (linked == null) {
 				yield return $"Field `{src}' should have been kept";
-				yield break; ;
+				yield break;
 			}
 
-			if (src?.Constant != linked?.Constant)
-				yield return $"Field `{src}' value";
+			if (!src?.Constant?.Equals (linked?.Constant) == true)
+				yield return $"Field `{src}' value was expected to be {src?.Constant} but was {linked?.Constant}";
 
 			foreach (var err in VerifyKeptByAttributes (src, linked)) yield return err;
 			VerifyPseudoAttributes (src, linked);
@@ -788,7 +788,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				var expectedResource = (EmbeddedResource) original.MainModule.Resources.First (r => r.Name == resource.Name);
 
-				if (!embeddedResource.GetResourceData ().SequenceEqual(expectedResource.GetResourceData ()))
+				if (!embeddedResource.GetResourceData ().SequenceEqual (expectedResource.GetResourceData ()))
 					yield return $"Resource '{resource.Name}' data doesn't match.";
 			}
 
@@ -1132,12 +1132,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					}
 
 					if (checkNames) {
-						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute)))
-						{
+						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute))) {
 							if (lnkp.Name != string.Empty) yield return $"Expected empty parameter name. Parameter {i} of {(src as MethodDefinition)}";
-						}
-						else
-						{
+						} else {
 							if (srcp.Name != lnkp.Name) yield return $"Mismatch in parameter name. Parameter {i} of {(src as MethodDefinition)}";
 						}
 					}

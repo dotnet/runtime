@@ -723,18 +723,15 @@ namespace Mono.Linker.Steps
 		bool ShouldMarkOverrideForBase (OverrideInformation overrideInformation)
 		{
 			Debug.Assert (Annotations.IsMarked (overrideInformation.Base) || IgnoreScope (overrideInformation.Base.DeclaringType.Scope));
-			if (!Annotations.IsMarked (overrideInformation.Override.DeclaringType))
-				return false;
 			if (overrideInformation.IsOverrideOfInterfaceMember) {
 				_interfaceOverrides.Add ((overrideInformation, ScopeStack.CurrentScope));
 				return false;
 			}
+			if (!Annotations.IsMarked (overrideInformation.Override.DeclaringType))
+				return false;
 
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, overrideInformation.Override))
 				return true;
-
-			if(Annotations.GetDefaultInterfaceImplementations(overrideInformation.Base).Where(dim => dim.DefaultInterfaceMethods == overrideInformation.Override).ToList() is [var dim])
-				return Annotations.IsRelevantToVariantCasting(dim.InstanceType);
 
 			// In this context, an override needs to be kept if
 			// a) it's an override on an instantiated type (of a marked base) or
@@ -2553,14 +2550,16 @@ namespace Mono.Linker.Steps
 		{
 			var @base = overrideInformation.Base;
 			var method = overrideInformation.Override;
+			Debug.Assert(@base.DeclaringType.IsInterface);
 			if (@base is null || method is null || @base.DeclaringType is null)
 				return false;
 
 			if (Annotations.IsMarked (method))
 				return false;
 
-			if (!@base.DeclaringType.IsInterface)
-				return false;
+			// If the override is a DIM that provides an implementation for a type that requires the interface, mark the method
+			if (Annotations.GetDefaultInterfaceImplementations (@base).Where (dim => dim.DefaultInterfaceMethod == overrideInformation.Override).Any (dim => Annotations.IsRelevantToVariantCasting (dim.InstanceType)))
+				return true;
 
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
@@ -2818,51 +2817,7 @@ namespace Mono.Linker.Steps
 
 				if (parameter.HasDefaultConstructorConstraint)
 					MarkDefaultConstructor (argumentTypeDef, new DependencyInfo (DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance));
-
-				// var interfaceConstraints = GetConstraintInterfaces (parameter);
-				// foreach (var constrainedInterfacemethod in interfaceConstraints.SelectMany (c => c.Methods).Where (m => m.IsStatic)) {
-				// foreach (var dim in Annotations.GetDefaultInterfaceImplementations (constrainedInterfacemethod)) {
-				// var asdf = new MessageOrigin(parameter);
-				// MarkMethod (dim.DefaultInterfaceMethods, new DependencyInfo (DependencyKind.DefaultImplementationForImplementingType, constrainedInterfacemethod), in asdf);
-				// }
-				// }
 			}
-			// IEnumerable<TypeDefinition> GetConstraintInterfaces (GenericParameter gp)
-			// {
-			//  foreach (var constraint in gp.Constraints) {
-			//      switch (constraint.ConstraintType) {
-			//      case GenericParameter gp2:
-			//          foreach (var td1 in GetConstraintInterfaces (gp2)) {
-			//              yield return td1;
-			//          }
-			//          break;
-			//      case TypeSpecification when constraint.ConstraintType is not GenericInstanceType:
-			//          // Not a resolvable type
-			//          continue;
-			//      default:
-			//          if (Context.Resolve (constraint.ConstraintType) is TypeDefinition { IsInterface: true } td2) {
-			//              yield return td2;
-			//          }
-			//          break;
-			//      }
-			//  }
-			// }
-			// MethodDefinition? def = Context.Resolve (method);
-			// if (def is not null) {
-			//  for (int i = 0; i < gim.GenericArguments.Count; i++) {
-			//      TypeReference arg = gim.GenericArguments[i];
-			//      GenericParameter param = def.GenericParameters[i];
-			//      var interfaceConstraints = GetConstraintInterfaces (param);
-			//      foreach (var constrainedInterfacemethod in interfaceConstraints.SelectMany (c => c.Methods).Where (m => m.IsStatic)) {
-			//          foreach (var dim in Annotations.GetDefaultInterfaceImplementations (constrainedInterfacemethod)) {
-			//              var thisMethodOrigin = new MessageOrigin (def);
-			//              using (ScopeStack.PushScope (thisMethodOrigin)) {
-			//                  MarkMethod (dim.DefaultInterfaceMethods, new DependencyInfo (DependencyKind.DefaultImplementationForImplementingType, method), in thisMethodOrigin);
-			//              }
-			//          }
-			//      }
-			//  }
-			// }
 		}
 
 		IGenericParameterProvider? GetGenericProviderFromInstance (IGenericInstance instance)
@@ -3876,8 +3831,6 @@ namespace Mono.Linker.Steps
 		{
 			if (Annotations.IsMarked (iface))
 				return;
-			if (iface.InterfaceType.Name == "IBase")
-				_ = 0;
 			Annotations.MarkProcessed (iface, reason ?? new DependencyInfo (DependencyKind.InterfaceImplementationOnType, ScopeStack.CurrentScope.Origin.Provider));
 
 			using var localScope = origin.HasValue ? ScopeStack.PushScope (origin.Value) : null;

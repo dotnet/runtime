@@ -236,8 +236,6 @@ namespace Mono.Linker
 
 		public void MarkInstantiated (TypeDefinition type)
 		{
-			if (type.Name == "NotUsedAsIBase")
-				_ = 0;
 			marked_instantiated.Add (type);
 		}
 
@@ -470,7 +468,7 @@ namespace Mono.Linker
 			return TypeMapInfo.GetOverrides (method);
 		}
 
-		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface, MethodDefinition DefaultInterfaceMethods)> GetDefaultInterfaceImplementations (MethodDefinition method)
+		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface, MethodDefinition DefaultInterfaceMethod)> GetDefaultInterfaceImplementations (MethodDefinition method)
 		{
 			return TypeMapInfo.GetDefaultInterfaceImplementations (method) ?? [];
 		}

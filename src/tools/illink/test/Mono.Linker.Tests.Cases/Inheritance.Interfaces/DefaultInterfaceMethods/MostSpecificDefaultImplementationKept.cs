@@ -38,13 +38,13 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 			}
 		}
 
-		// [Kept]
-		// [KeptInterface (typeof (IBase))]
+		[Kept]
+		[KeptInterface (typeof (IBase))]
 		interface IMiddle : IBase
 		{
-			// [Kept] // Should be removable -- Add link to bug before merge
+			[Kept] // Should be removable -- Add link to bug before merge
 			static int IBase.Value {
-				// [Kept] // Should be removable -- Add link to bug before merge
+				[Kept] // Should be removable -- Add link to bug before merge
 				get => 1;
 			}
 		}
@@ -73,9 +73,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 		}
 
 		[Kept]
-		// [KeptInterface(typeof(IDerived))]
-		// [KeptInterface(typeof(IMiddle))]
-		// [KeptInterface(typeof(IBase))]
 		class NotUsedAsIBase : IDerived, INotReferenced
 		{
 			[Kept]
@@ -93,10 +90,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 		[KeptInterface (typeof (IDerived))]
 		[KeptInterface (typeof (IMiddle))]
 		[KeptInterface (typeof (IBase))]
-		class UsedAsIBase2 : IBase
+		class UsedAsIBase2 : IDerived
 		{
-			[Kept]
-			public static int Value => 0;
 		}
 #endif
 	}
