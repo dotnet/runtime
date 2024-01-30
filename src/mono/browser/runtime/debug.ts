@@ -18,6 +18,7 @@ let _debugger_buffer: VoidPtr;
 let _assembly_name_str: string; //keep this variable, it's used by BrowserDebugProxy
 let _entrypoint_method_token: number; //keep this variable, it's used by BrowserDebugProxy
 
+//if function name is changed, update the name in BrowserDebugProxy
 export function mono_wasm_runtime_ready(): void {
     INTERNAL.mono_wasm_runtime_is_ready = runtimeHelpers.mono_wasm_runtime_is_ready = true;
 
@@ -32,6 +33,7 @@ export function mono_wasm_runtime_ready(): void {
         debugger;
 }
 
+//if function name is changed, update the name in BrowserDebugProxy
 export function mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String: string): void {
     //keep this console.assert, otherwise optimization will remove the assignments
     // eslint-disable-next-line no-console

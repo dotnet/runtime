@@ -208,6 +208,7 @@ namespace DebuggerTests
 
         internal Dictionary<string, string> dicScriptsIdToUrl;
         internal Dictionary<string, string> dicFileToUrl;
+        internal int noUrlScripts = 0;
         internal virtual Dictionary<string, string> SubscribeToScripts(Inspector insp)
         {
             dicScriptsIdToUrl = new Dictionary<string, string>();
@@ -235,6 +236,10 @@ namespace DebuggerTests
                 var arrStr = dbgUrl.Split("/");
                 dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
                 dicFileToUrl[new Uri(url).AbsolutePath] = url;
+            }
+            else
+            {
+                noUrlScripts++;
             }
             return Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
         }
