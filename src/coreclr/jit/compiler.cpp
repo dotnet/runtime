@@ -4881,6 +4881,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doValueNum                = true;
         bool doLoopHoisting            = true;
         bool doCopyProp                = true;
+        bool doOptimizeIVs             = true;
         bool doBranchOpt               = true;
         bool doCse                     = true;
         bool doAssertionProp           = true;
@@ -4893,6 +4894,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doSsa                     = (JitConfig.JitDoSsa() != 0);
         doEarlyProp               = doSsa && (JitConfig.JitDoEarlyProp() != 0);
         doValueNum                = doSsa && (JitConfig.JitDoValueNumber() != 0);
+        doOptimizeIVs             = doSsa && (JitConfig.JitDoOptimizeIVs() != 0);
         doLoopHoisting            = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
         doCopyProp                = doValueNum && (JitConfig.JitDoCopyProp() != 0);
         doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
@@ -4929,6 +4931,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Propagate array length and rewrite getType() method call
                 //
                 DoPhase(this, PHASE_EARLY_PROP, &Compiler::optEarlyProp);
+            }
+
+            if (doOptimizeIVs)
+            {
+                // Simplify and optimize induction variables used in natural loops
+                //
+                DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, &Compiler::optInductionVariables);
             }
 
             if (doValueNum)

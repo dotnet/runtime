@@ -94,7 +94,6 @@ set( JIT_SOURCES
   bitset.cpp
   block.cpp
   buildstring.cpp
-  layout.cpp
   codegencommon.cpp
   codegenlinear.cpp
   compiler.cpp
@@ -123,20 +122,22 @@ set( JIT_SOURCES
   gentree.cpp
   gschecks.cpp
   hashbv.cpp
-  hwintrinsic.cpp
-  hostallocator.cpp
-  ifconversion.cpp
   helperexpansion.cpp
-  indirectcalltransformer.cpp
-  importercalls.cpp
+  hostallocator.cpp
+  hwintrinsic.cpp
+  ifconversion.cpp
   importer.cpp
+  importercalls.cpp
   importervectorization.cpp
+  indirectcalltransformer.cpp
+  inductionvariableopts.cpp
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp
+  layout.cpp
   lclmorph.cpp
   lclvars.cpp
   likelyclass.cpp
@@ -151,7 +152,6 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
-  switchrecognition.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
@@ -172,6 +172,7 @@ set( JIT_SOURCES
   ssabuilder.cpp
   ssarenamestate.cpp
   stacklevelsetter.cpp
+  switchrecognition.cpp
   treelifeupdater.cpp
   unwind.cpp
   utils.cpp

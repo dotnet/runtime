@@ -84,6 +84,7 @@ CompPhaseNameMacro(PHASE_BUILD_SSA_DF,               "SSA: DF",                 
 CompPhaseNameMacro(PHASE_BUILD_SSA_INSERT_PHIS,      "SSA: insert phis",               false, PHASE_BUILD_SSA, false)
 CompPhaseNameMacro(PHASE_BUILD_SSA_RENAME,           "SSA: rename",                    false, PHASE_BUILD_SSA, false)
 CompPhaseNameMacro(PHASE_EARLY_PROP,                 "Early Value Propagation",        false, -1, false)
+CompPhaseNameMacro(PHASE_OPTIMIZE_INDUCTION_VARIABLES, "Optimize Induction Variables", false, -1, false)
 CompPhaseNameMacro(PHASE_VALUE_NUMBER,               "Do value numbering",             false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_INDEX_CHECKS,      "Optimize index checks",          false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_VALNUM_CSES,       "Optimize Valnum CSEs",           false, -1, false)

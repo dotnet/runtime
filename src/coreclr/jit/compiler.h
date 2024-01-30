@@ -7377,6 +7377,8 @@ public:
                              BasicBlock* basicBlock);
 #endif
 
+    PhaseStatus optInductionVariables();
+
     // Redundant branch opts
     //
     PhaseStatus optRedundantBranches();

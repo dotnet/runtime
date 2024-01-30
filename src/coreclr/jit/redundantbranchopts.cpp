@@ -11,7 +11,6 @@
 //
 PhaseStatus Compiler::optRedundantBranches()
 {
-
 #if DEBUG
     if (verbose)
     {
