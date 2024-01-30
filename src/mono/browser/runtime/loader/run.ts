@@ -382,8 +382,7 @@ export class HostBuilder implements DotnetHostBuilder {
             if (!this.instance) {
                 await this.create();
             }
-            mono_assert(emscriptenModule.config.mainAssemblyName, "Null moduleConfig.config.mainAssemblyName");
-            return this.instance!.runMainAndExit(emscriptenModule.config.mainAssemblyName);
+            return this.instance!.runMainAndExit();
         } catch (err) {
             mono_exit(1, err);
             throw err;

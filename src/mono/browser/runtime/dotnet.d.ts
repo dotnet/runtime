@@ -429,19 +429,19 @@ type APIType = {
     /**
      * Runs the Main() method of the application.
      * Note: this will keep the .NET runtime alive and the APIs will be available for further calls.
-     * @param mainAssemblyName name of the assembly with the Main() method.
-     * @param args command line arguments for the Main() method.
+     * @param mainAssemblyName name of the assembly with the Main() method. Optional. Default is the same as the .csproj name.
+     * @param args command line arguments for the Main() method. Optional.
      * @returns exit code of the Main() method.
      */
-    runMain: (mainAssemblyName: string, args?: string[]) => Promise<number>;
+    runMain: (mainAssemblyName?: string, args?: string[]) => Promise<number>;
     /**
      * Runs the Main() method of the application and exits the runtime.
      * Note: after the runtime exits, it would reject all further calls to the API.
-     * @param mainAssemblyName name of the assembly with the Main() method.
-     * @param args command line arguments for the Main() method.
+     * @param mainAssemblyName name of the assembly with the Main() method. Optional. Default is the same as the .csproj name.
+     * @param args command line arguments for the Main() method. Optional.
      * @returns exit code of the Main() method.
      */
-    runMainAndExit: (mainAssemblyName: string, args?: string[]) => Promise<number>;
+    runMainAndExit: (mainAssemblyName?: string, args?: string[]) => Promise<number>;
     /**
      * Sets the environment variable for the "process"
      * @param name

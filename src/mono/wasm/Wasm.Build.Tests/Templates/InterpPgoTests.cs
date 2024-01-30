@@ -40,8 +40,8 @@ public class InterpPgoTests : WasmTemplateTestBase
         UpdateBrowserMainJs((js) => {
             // We need to capture INTERNAL so we can explicitly save the PGO table
             js = js.Replace(
-                "const { setModuleImports, getAssemblyExports, getConfig } = await dotnet",
-                "const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet"
+                "const { setModuleImports, getAssemblyExports, getConfig, runMain } = await dotnet",
+                "const { setModuleImports, getAssemblyExports, getConfig, runMain, INTERNAL } = await dotnet"
             );
             // Enable interpreter PGO + interpreter PGO logging + console output capturing
             js = js.Replace(
