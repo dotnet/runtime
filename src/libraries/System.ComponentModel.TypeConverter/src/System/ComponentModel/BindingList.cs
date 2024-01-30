@@ -301,8 +301,6 @@ namespace System.ComponentModel
             return newItem;
         }
 
-        private bool AddingNewHandled => _onAddingNew != null && _onAddingNew.GetInvocationList().Length > 0;
-
         /// <summary>
         /// Creates a new item and adds it to the list.
         ///
@@ -336,7 +334,7 @@ namespace System.ComponentModel
                 }
                 // Even if the item doesn't have a default constructor, the user can hook AddingNew to provide an item.
                 // If there's a handler for this, we should allow new.
-                return AddingNewHandled;
+                return _onAddingNew != null;
             }
             set
             {

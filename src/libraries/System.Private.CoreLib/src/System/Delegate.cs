@@ -67,7 +67,7 @@ namespace System
         /// Gets an enumerator for the invocation targets of this delegate.
         /// </summary>
         /// <remarks>
-        /// This returns a <see cref="InvocationListEnumerator" /> that follows the IEnumerable pattern and
+        /// This returns a <see cref="InvocationListEnumerator{TDelegate}"/>" /> that follows the IEnumerable pattern and
         /// thus can be used in a C# 'foreach' statements to retrieve the invocation targets of this delegate without allocations.
         /// The order of the delegates returned by the enumerator is the same order in which the current delegate invokes the methods that those delegates represent.
         /// </remarks>

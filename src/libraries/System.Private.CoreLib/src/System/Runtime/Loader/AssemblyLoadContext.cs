@@ -627,7 +627,7 @@ namespace System.Runtime.Loader
             if (resolvingHandler != null)
             {
                 // Loop through the event subscribers and return the first non-null Assembly instance
-                foreach (Func<AssemblyLoadContext, AssemblyName, Assembly> handler in resolvingHandler.GetInvocationList())
+                foreach (Func<AssemblyLoadContext, AssemblyName, Assembly> handler in Delegate.EnumerateInvocationList(resolvingHandler))
                 {
                     resolvedAssembly = handler(this, assemblyName);
 #if CORECLR
@@ -741,7 +741,7 @@ namespace System.Runtime.Loader
 
             var args = new ResolveEventArgs(name, assembly);
 
-            foreach (ResolveEventHandler handler in eventHandler.GetInvocationList())
+            foreach (ResolveEventHandler handler in Delegate.EnumerateInvocationList(eventHandler))
             {
                 Assembly? asm = handler(AppDomain.CurrentDomain, args);
 #if CORECLR
@@ -822,7 +822,7 @@ namespace System.Runtime.Loader
             if (dllResolveHandler != null)
             {
                 // Loop through the event subscribers and return the first non-null native library handle
-                foreach (Func<Assembly, string, IntPtr> handler in dllResolveHandler.GetInvocationList())
+                foreach (Func<Assembly, string, IntPtr> handler in Delegate.EnumerateInvocationList(dllResolveHandler))
                 {
                     resolvedDll = handler(assembly, unmanagedDllName);
                     if (resolvedDll != IntPtr.Zero)
