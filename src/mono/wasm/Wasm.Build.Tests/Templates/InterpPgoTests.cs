@@ -48,7 +48,7 @@ public class InterpPgoTests : WasmTemplateTestBase
                 ".create()",
                 ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().withRuntimeOptions(['--interp-pgo-logging']).withInterpreterPgo(true).create()"
             );
-            js = js.Replace("runMain", "dotnet.run()");
+            js = js.Replace("runMain()", "dotnet.run()");
             // Call Greeting in a loop to exercise enough code to cause something to tier,
             //  then call INTERNAL.interp_pgo_save_data() to save the interp PGO table
             js = js.Replace(
