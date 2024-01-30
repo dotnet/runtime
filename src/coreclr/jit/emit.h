@@ -779,9 +779,7 @@ protected:
 #define _idBound _idCustom1 /* jump target / frame offset bound */
 #define _idTlsGD _idCustom2 /* Used to store information related to TLS GD access on linux */
 #define _idNoGC _idCustom3  /* Some helpers don't get recorded in GC tables */
-#define _idEvexAaaContext                                                                                              \
-    ((_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1) /* bits used for the EVEX.aaa context                         \
-                                                                                              */
+#define _idEvexAaaContext (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1 /* bits used for the EVEX.aaa context */
 
 #if !defined(TARGET_ARMARCH)
         unsigned _idCustom4 : 1;
@@ -1594,30 +1592,36 @@ protected:
 
         bool idIsBound() const
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             return _idBound != 0;
         }
         void idSetIsBound()
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             _idBound = 1;
         }
 
 #ifndef TARGET_ARMARCH
         bool idIsCallRegPtr() const
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             return _idCallRegPtr != 0;
         }
         void idSetIsCallRegPtr()
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             _idCallRegPtr = 1;
         }
 #endif // !TARGET_ARMARCH
 
         bool idIsTlsGD() const
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             return _idTlsGD != 0;
         }
         void idSetTlsGD()
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             _idTlsGD = 1;
         }
 
@@ -1626,10 +1630,12 @@ protected:
         // code, it is not necessary to generate GC info for a call so labeled.
         bool idIsNoGC() const
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             return _idNoGC != 0;
         }
         void idSetIsNoGC(bool val)
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             _idNoGC = val;
         }
 
@@ -1668,6 +1674,7 @@ protected:
 
         unsigned idGetEvexAaaContext() const
         {
+            assert(IsAvx512OrPriorInstruction(_idIns));
             return _idEvexAaaContext;
         }
 
@@ -1683,6 +1690,7 @@ protected:
 
         bool idIsEvexZContextSet() const
         {
+            assert(IsAvx512OrPriorInstruction(_idIns));
             return _idEvexZContext != 0;
         }
 

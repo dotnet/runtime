@@ -49,23 +49,6 @@ bool emitter::IsKInstruction(instruction ins)
     return (flags & KInstruction) != 0;
 }
 
-//------------------------------------------------------------------------
-// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
-// Technically, K instructions would be considered under the VEX encoding umbrella, but due to
-// the instruction table encoding had to be pulled out with the rest of the `INST5` definitions.
-//
-// Arguments:
-//    ins - The instruction to check.
-//
-// Returns:
-//    `true` if it is a sse or avx or avx512 instruction.
-//
-bool emitter::IsAvx512OrPriorInstruction(instruction ins)
-{
-    // TODO-XArch-AVX512: Fix check once AVX512 instructions are added.
-    return ((ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION));
-}
-
 bool emitter::IsAVXOnlyInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
@@ -4189,9 +4172,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         }
 
         // If this is just "call reg", we're done.
-        if (id->idIsCallRegPtr())
+        if (((ins == INS_call) || (ins == INS_tail_i_jmp)) && id->idIsCallRegPtr())
         {
-            assert(ins == INS_call || ins == INS_tail_i_jmp);
             assert(dsp == 0);
             return size;
         }
@@ -11081,7 +11063,7 @@ void emitter::emitDispIns(
         case IF_AWR:
         case IF_ARW:
         {
-            if (id->idIsCallRegPtr())
+            if (((ins == INS_call) || (ins == INS_tail_i_jmp)) && id->idIsCallRegPtr())
             {
                 printf("%s", emitRegName(id->idAddr()->iiaAddrMode.amBaseReg));
             }
@@ -12973,7 +12955,7 @@ GOT_DSP:
 #else
                     dst += emitOutputLong(dst, dsp);
 #endif
-                    if (id->idIsTlsGD())
+                    if ((ins == INS_call) && id->idIsTlsGD())
                     {
                         addlDelta = -4;
                         emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_TLSGD,
@@ -16703,7 +16685,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
 #ifdef DEBUG
-            if (ins == INS_call && !id->idIsTlsGD())
+            if ((ins == INS_call) && !id->idIsTlsGD())
             {
                 emitRecordCallSite(emitCurCodeOffs(*dp), id->idDebugOnlyInfo()->idCallSig,
                                    (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);

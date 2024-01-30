@@ -84,6 +84,26 @@ enum instruction : uint32_t
     INS_count = INS_none
 };
 
+//------------------------------------------------------------------------
+// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
+// Technically, K instructions would be considered under the VEX encoding umbrella, but due to
+// the instruction table encoding had to be pulled out with the rest of the `INST5` definitions.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if it is a sse or avx or avx512 instruction.
+//
+inline bool IsAvx512OrPriorInstruction(instruction ins)
+{
+#if defined(TARGET_XARCH)
+    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION);
+#else
+    return false;
+#endif // TARGET_XARCH
+}
+
 /*****************************************************************************/
 
 enum insUpdateModes
