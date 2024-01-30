@@ -13,7 +13,7 @@ export function is_runtime_running() {
 }
 
 export function assert_runtime_running() {
-    mono_assert(runtimeHelpers.runtimeReady, "dotnet runtime didn't start yet. Please call dotnet.create() first.");
+    mono_assert(runtimeHelpers.runtimeReady, ".NET runtime didn't start yet. Please call dotnet.create() first.");
     mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `dotnet runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can pass dotnet.run(false) or use runtime.runMain() instead.`);
 }
 
