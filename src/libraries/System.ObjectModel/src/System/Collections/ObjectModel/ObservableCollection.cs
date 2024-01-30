@@ -228,7 +228,8 @@ namespace System.Collections.ObjectModel
                 // only arises if reentrant changes make the original event args
                 // invalid for later listeners.  This keeps existing code working
                 // (e.g. Selector.SelectedItems).
-                if (!CollectionChanged?.HasSingleTarget)
+                NotifyCollectionChangedEventHandler? handler = CollectionChanged;
+                if (handler != null && !handler.HasSingleTarget)
                     throw new InvalidOperationException(SR.ObservableCollectionReentrancyNotAllowed);
             }
         }
