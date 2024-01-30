@@ -88,7 +88,7 @@ interface DotnetHostBuilder {
     withDiagnosticTracing(enabled: boolean): DotnetHostBuilder;
     /**
      * @param level
-     * level > 0 enables debugging and sets the debug log level to debugLevel
+     * level > 0 enables debugging and sets the logging level to debug
      * level == 0 disables debugging and enables interpreter optimizations
      * level < 0 enables debugging and disables debug logging.
      */
