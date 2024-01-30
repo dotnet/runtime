@@ -372,8 +372,30 @@ struct VTableCallStub
 
     inline size_t size()
     {
-        _ASSERTE(!"RISCV64:NYI");
-        return 0;
+        LIMITED_METHOD_CONTRACT;
+
+        BYTE* pStubCode = (BYTE *)this;
+
+
+        if ((*(DWORD*)(&pStubCode[12])) == 0x000e8067)
+        {
+            // jalr x0, t4, 0
+            return 20;//4*ins + slot = 4*4 + 4;
+        }
+
+        //auipc t1, 0
+        assert((*(DWORD*)(&pStubCode[4])) == 0x00000317);
+
+        size_t cbSize = 36;
+
+        // ld t4, 0(t4)
+        if ((*(DWORD*)(&pStubCode[16])) == 0x000ebe83)
+        {
+            if ((*(DWORD*)(&pStubCode[28])) == 0x000ebe83)
+                cbSize += 12;
+        }
+
+        return cbSize;
     }
 
     inline PCODE        entryPoint()        const { LIMITED_METHOD_CONTRACT;  return (PCODE)&_entryPoint[0]; }
@@ -402,8 +424,8 @@ struct VTableCallHolder
         STATIC_CONTRACT_WRAPPER;
         unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
         unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-        int indirectionsCodeSize = (offsetOfIndirection >= 0x1000 ? 12 : 4) + (offsetAfterIndirection >= 0x1000 ? 12 : 4);
-        int indirectionsDataSize = (offsetOfIndirection >= 0x1000 ? 4 : 0) + (offsetAfterIndirection >= 0x1000 ? 4 : 0);
+        int indirectionsCodeSize = (offsetOfIndirection > 2047 ? 12 : 4) + (offsetAfterIndirection > 2047 ? 12 : 4);
+        int indirectionsDataSize = (offsetOfIndirection > 2047 ? 4 : 0) + (offsetAfterIndirection > 2047 ? 4 : 0);
         return 12 + indirectionsCodeSize + ((indirectionsDataSize > 0) ? (indirectionsDataSize + 4) : 0);
     }
 
@@ -444,15 +466,15 @@ void VTableCallHolder::Initialize(unsigned slot)
     *(UINT32*)p = 0x00053e83; // VTABLECALL_STUB_FIRST_DWORD
     p += 4;
 
-    if ((offsetOfIndirection >= 0x1000) || (offsetAfterIndirection >= 0x1000))
+    if ((offsetOfIndirection > 2047) || (offsetAfterIndirection > 2047))
     {
         *(UINT32*)p = 0x00000317; // auipc t1, 0
         p += 4;
     }
 
-    if (offsetOfIndirection >= 0x1000)
+    if (offsetOfIndirection > 2047)
     {
-        uint dataOffset = 20 + (offsetAfterIndirection >= 0x1000 ? 12 : 4);
+        uint dataOffset = 20 + (offsetAfterIndirection > 2047 ? 12 : 4);
 
         // lwu t3,dataOffset(t1)
         *(DWORD*)p = 0x00036e03 | ((UINT32)dataOffset << 20); p += 4;
@@ -467,13 +489,13 @@ void VTableCallHolder::Initialize(unsigned slot)
         *(DWORD*)p = 0x000ebe83 | ((UINT32)offsetOfIndirection << 20); p += 4;
     }
 
-    if (offsetAfterIndirection >= 0x1000)
+    if (offsetAfterIndirection > 2047)
     {
-        uint indirectionsCodeSize = (offsetOfIndirection >= 0x1000 ? 12 : 4);
-        uint indirectionsDataSize = (offsetOfIndirection >= 0x1000 ? 4 : 0);
+        uint indirectionsCodeSize = (offsetOfIndirection > 2047 ? 12 : 4);
+        uint indirectionsDataSize = (offsetOfIndirection > 2047 ? 4 : 0);
         uint dataOffset = 20 + indirectionsCodeSize + indirectionsDataSize;
 
-        // ldw t3,dataOffset(t1)
+        // lwu t3,dataOffset(t1)
         *(DWORD*)p = 0x00036e03 | ((UINT32)dataOffset << 20); p += 4;
         // add t4, t4, t3
         *(DWORD*)p = 0x01ce8eb3; p += 4;
@@ -490,12 +512,12 @@ void VTableCallHolder::Initialize(unsigned slot)
     *(UINT32*)p = 0x000e8067; p += 4;
 
     // data labels:
-    if (offsetOfIndirection >= 0x1000)
+    if (offsetOfIndirection > 2047)
     {
         *(UINT32*)p = (UINT32)offsetOfIndirection;
         p += 4;
     }
-    if (offsetAfterIndirection >= 0x1000)
+    if (offsetAfterIndirection > 2047)
     {
         *(UINT32*)p = (UINT32)offsetAfterIndirection;
         p += 4;

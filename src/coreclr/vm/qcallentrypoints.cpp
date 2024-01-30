@@ -166,6 +166,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MdUtf8String_EqualsCaseInsensitive)
     DllImportEntry(Array_CreateInstance)
     DllImportEntry(Array_GetElementConstructorEntrypoint)
+    DllImportEntry(Array_CanAssignArrayType)
     DllImportEntry(AssemblyName_InitializeAssemblySpec)
     DllImportEntry(AssemblyNative_GetFullName)
     DllImportEntry(AssemblyNative_GetLocation)

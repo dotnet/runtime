@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Formats.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -145,11 +146,35 @@ namespace System.Security.Cryptography.X509Certificates
                     }
 
                 case X509SubjectKeyIdentifierHashAlgorithm.CapiSha1:
-                    return X509Pal.Instance.ComputeCapiSha1OfPublicKey(key);
-
+                    // CAPI SHA1 is the SHA-1 hash over the whole SubjectPublicKeyInfo
+                    return HashSubjectPublicKeyInfo(key, HashAlgorithmName.SHA1);
                 default:
                     throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, algorithm), nameof(algorithm));
             }
+        }
+
+        private static byte[] HashSubjectPublicKeyInfo(PublicKey key, HashAlgorithmName hashAlgorithmName)
+        {
+            Span<byte> hash = stackalloc byte[512 / 8]; // Largest known hash is 512-bits.
+            AsnWriter writer = key.EncodeSubjectPublicKeyInfo();
+
+             // An RSA 4096 SPKI is going to be about 550 bytes. 640 for a little extra space. Anything bigger will rent.
+            const int MaxSpkiStackSize = 640;
+            byte[]? rented = null;
+            int encodedLength = writer.GetEncodedLength();
+            Span<byte> spkiBuffer = encodedLength <= MaxSpkiStackSize ?
+                stackalloc byte[MaxSpkiStackSize] :
+                (rented = CryptoPool.Rent(encodedLength));
+
+            int spkiWritten = writer.Encode(spkiBuffer);
+            int hashWritten = CryptographicOperations.HashData(hashAlgorithmName, spkiBuffer.Slice(0, spkiWritten), hash);
+
+            if (rented is not null)
+            {
+                CryptoPool.Return(rented, clearSize: 0); // SPKI is public so no need to zero it.
+            }
+
+            return hash.Slice(0, hashWritten).ToArray();
         }
     }
 }

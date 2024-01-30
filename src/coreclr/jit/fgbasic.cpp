@@ -694,32 +694,36 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
 
         case BBJ_COND:
         {
-            FlowEdge* oldEdge = fgGetPredForBlock(oldTarget, block);
-            assert(oldEdge != nullptr);
-
+            FlowEdge* oldEdge = fgRemoveRefPred(oldTarget, block);
             if (block->TrueTargetIs(oldTarget))
             {
                 if (block->FalseTargetIs(oldTarget))
                 {
-                    assert(oldEdge->getDupCount() == 2);
+                    // fgRemoveRefPred returns nullptr for BBJ_COND blocks with two flow edges to target
+                    assert(oldEdge == nullptr);
                     fgRemoveConditionalJump(block);
                     assert(block->KindIs(BBJ_ALWAYS));
                     block->SetTarget(newTarget);
                 }
                 else
                 {
+                    // fgRemoveRefPred should have removed the flow edge
+                    assert(oldEdge != nullptr);
                     block->SetTrueTarget(newTarget);
                 }
+
+                // TODO-NoFallThrough: Proliferate weight from oldEdge
+                // (we avoid doing so when updating the true target to reduce diffs for now, as a quirk)
+                fgAddRefPred(newTarget, block);
             }
             else
             {
+                // fgRemoveRefPred should have removed the flow edge
+                assert(oldEdge != nullptr);
                 assert(block->FalseTargetIs(oldTarget));
                 block->SetFalseTarget(newTarget);
+                fgAddRefPred(newTarget, block, oldEdge);
             }
-
-            assert(oldEdge->getDupCount() == 1);
-            fgRemoveRefPred(oldTarget, block);
-            fgAddRefPred(newTarget, block);
             break;
         }
 
@@ -1393,7 +1397,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_Create:
                             case NI_Vector128_CreateScalar:
                             case NI_Vector128_CreateScalarUnsafe:
-                            case NI_VectorT128_CreateBroadcast:
+                            case NI_VectorT_CreateBroadcast:
 #if defined(TARGET_XARCH)
                             case NI_BMI1_TrailingZeroCount:
                             case NI_BMI1_X64_TrailingZeroCount:
@@ -1407,7 +1411,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector512_CreateScalar:
                             case NI_Vector256_CreateScalarUnsafe:
                             case NI_Vector512_CreateScalarUnsafe:
-                            case NI_VectorT256_CreateBroadcast:
                             case NI_X86Base_BitScanForward:
                             case NI_X86Base_X64_BitScanForward:
                             case NI_X86Base_BitScanReverse:
@@ -1649,20 +1652,20 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_AsUInt64:
                             case NI_Vector128_AsVector4:
                             case NI_Vector128_op_UnaryPlus:
-                            case NI_VectorT128_As:
-                            case NI_VectorT128_AsVectorByte:
-                            case NI_VectorT128_AsVectorDouble:
-                            case NI_VectorT128_AsVectorInt16:
-                            case NI_VectorT128_AsVectorInt32:
-                            case NI_VectorT128_AsVectorInt64:
-                            case NI_VectorT128_AsVectorNInt:
-                            case NI_VectorT128_AsVectorNUInt:
-                            case NI_VectorT128_AsVectorSByte:
-                            case NI_VectorT128_AsVectorSingle:
-                            case NI_VectorT128_AsVectorUInt16:
-                            case NI_VectorT128_AsVectorUInt32:
-                            case NI_VectorT128_AsVectorUInt64:
-                            case NI_VectorT128_op_UnaryPlus:
+                            case NI_VectorT_As:
+                            case NI_VectorT_AsVectorByte:
+                            case NI_VectorT_AsVectorDouble:
+                            case NI_VectorT_AsVectorInt16:
+                            case NI_VectorT_AsVectorInt32:
+                            case NI_VectorT_AsVectorInt64:
+                            case NI_VectorT_AsVectorNInt:
+                            case NI_VectorT_AsVectorNUInt:
+                            case NI_VectorT_AsVectorSByte:
+                            case NI_VectorT_AsVectorSingle:
+                            case NI_VectorT_AsVectorUInt16:
+                            case NI_VectorT_AsVectorUInt32:
+                            case NI_VectorT_AsVectorUInt64:
+                            case NI_VectorT_op_UnaryPlus:
 #if defined(TARGET_XARCH)
                             case NI_Vector256_As:
                             case NI_Vector256_AsByte:
@@ -1678,20 +1681,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector256_AsUInt32:
                             case NI_Vector256_AsUInt64:
                             case NI_Vector256_op_UnaryPlus:
-                            case NI_VectorT256_As:
-                            case NI_VectorT256_AsVectorByte:
-                            case NI_VectorT256_AsVectorDouble:
-                            case NI_VectorT256_AsVectorInt16:
-                            case NI_VectorT256_AsVectorInt32:
-                            case NI_VectorT256_AsVectorInt64:
-                            case NI_VectorT256_AsVectorNInt:
-                            case NI_VectorT256_AsVectorNUInt:
-                            case NI_VectorT256_AsVectorSByte:
-                            case NI_VectorT256_AsVectorSingle:
-                            case NI_VectorT256_AsVectorUInt16:
-                            case NI_VectorT256_AsVectorUInt32:
-                            case NI_VectorT256_AsVectorUInt64:
-                            case NI_VectorT256_op_UnaryPlus:
                             case NI_Vector512_As:
                             case NI_Vector512_AsByte:
                             case NI_Vector512_AsDouble:
@@ -1736,9 +1725,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_get_AllBitsSet:
                             case NI_Vector128_get_One:
                             case NI_Vector128_get_Zero:
-                            case NI_VectorT128_get_AllBitsSet:
-                            case NI_VectorT128_get_One:
-                            case NI_VectorT128_get_Zero:
+                            case NI_VectorT_get_AllBitsSet:
+                            case NI_VectorT_get_One:
+                            case NI_VectorT_get_Zero:
 #if defined(TARGET_XARCH)
                             case NI_Vector256_get_AllBitsSet:
                             case NI_Vector256_get_One:
@@ -1746,9 +1735,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector512_get_AllBitsSet:
                             case NI_Vector512_get_One:
                             case NI_Vector512_get_Zero:
-                            case NI_VectorT256_get_AllBitsSet:
-                            case NI_VectorT256_get_One:
-                            case NI_VectorT256_get_Zero:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
                             {
@@ -4797,7 +4783,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->CopyFlags(curr);
 
     // Remove flags that the new block can't have.
-    newBlock->RemoveFlags(BBF_LOOP_HEAD | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER | BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT |
+    newBlock->RemoveFlags(BBF_LOOP_HEAD | BBF_FUNCLET_BEG | BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT |
                           BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
@@ -4915,10 +4901,8 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
     }
 
     // We split a block, possibly, in the middle - we need to propagate some flags
-    prevBb->SetFlagsRaw(originalFlags &
-                        (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT));
-    block->SetFlags(originalFlags &
-                    (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
+    prevBb->SetFlagsRaw(originalFlags & (~(BBF_SPLIT_LOST | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT));
+    block->SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_RETLESS_CALL));
 
     // prevBb should flow into block
     assert(prevBb->KindIs(BBJ_ALWAYS) && prevBb->JumpsToNext() && prevBb->NextIs(block));
@@ -5222,7 +5206,7 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
 //
 // Arguments:
 //   block       - the block to remove
-//   unreachable - the block to remove
+//   unreachable - indicates whether removal is because block is unreachable or empty
 //
 // Return Value:
 //   The block after the block, or blocks, removed.
@@ -5230,7 +5214,6 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
 BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 {
     assert(block != nullptr);
-    assert(unreachable || !optLoopsRequirePreHeaders || !block->HasFlag(BBF_LOOP_PREHEADER));
 
     JITDUMP("fgRemoveBlock " FMT_BB ", unreachable=%s\n", block->bbNum, dspBool(unreachable));
 
@@ -5292,12 +5275,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         /* At this point the bbPreds and bbRefs had better be zero */
         noway_assert((block->bbRefs == 0) && (block->bbPreds == nullptr));
-
-        if (bPrev->KindIs(BBJ_COND) && bPrev->FalseTargetIs(block))
-        {
-            assert(bNext != nullptr);
-            bPrev->SetFalseTarget(bNext);
-        }
     }
     else // block is empty
     {
@@ -5509,7 +5486,7 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
 //   Newly inserted block after bSrc that jumps to bDst,
 //   or nullptr if bSrc already falls through to bDst
 //
-BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, bool noFallThroughQuirk /* = false */)
+BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 {
     assert(bSrc != nullptr);
     assert(fgPredsComputed);
@@ -5519,16 +5496,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, b
 
     if (bSrc->KindIs(BBJ_COND) && bSrc->FalseTargetIs(bDst) && !bSrc->NextIs(bDst))
     {
-        assert(fgGetPredForBlock(bDst, bSrc) != nullptr);
-
-        // Allow the caller to decide whether to use the old logic of maintaining implicit fallthrough behavior,
-        // or to allow BBJ_COND blocks' false targets to diverge from bbNext.
-        // TODO-NoFallThrough: Remove this quirk once callers' dependencies on implicit fallthrough are gone.
-        if (noFallThroughQuirk)
-        {
-            return jmpBlk;
-        }
-
         // Add a new block after bSrc which jumps to 'bDst'
         jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
         bSrc->SetFalseTarget(jmpBlk);
@@ -5585,10 +5552,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst, b
     else if (bSrc->KindIs(BBJ_ALWAYS) && bSrc->HasInitializedTarget() && bSrc->JumpsToNext())
     {
         bSrc->SetFlags(BBF_NONE_QUIRK);
-    }
-    else if (bSrc->KindIs(BBJ_COND) && bSrc->NextIs(bDst))
-    {
-        bSrc->SetFalseTarget(bDst);
     }
 
     return jmpBlk;
@@ -5699,14 +5662,8 @@ bool Compiler::fgRenumberBlocks()
  */
 bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc /* = NULL */)
 {
-    if (bJump->KindIs(BBJ_COND))
-    {
-        assert(bJump->TrueTargetIs(bDest) || bJump->FalseTargetIs(bDest));
-    }
-    else
-    {
-        assert(bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest));
-    }
+    assert((bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest)) ||
+           (bJump->KindIs(BBJ_COND) && bJump->TrueTargetIs(bDest)));
 
     bool        result = false;
     BasicBlock* bTemp  = (bSrc == nullptr) ? bJump : bSrc;
@@ -6109,11 +6066,15 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     // We have decided to insert the block(s) after fgLastBlock
     fgMoveBlocksAfter(bStart, bLast, insertAfterBlk);
 
-    // If bPrev falls through, we will insert a jump to block
-    fgConnectFallThrough(bPrev, bStart);
+    if (bPrev->KindIs(BBJ_ALWAYS) && bPrev->JumpsToNext())
+    {
+        bPrev->SetFlags(BBF_NONE_QUIRK);
+    }
 
-    // If bLast falls through, we will insert a jump to bNext
-    fgConnectFallThrough(bLast, bNext);
+    if (bLast->KindIs(BBJ_ALWAYS) && bLast->JumpsToNext())
+    {
+        bLast->SetFlags(BBF_NONE_QUIRK);
+    }
 
 #endif // !FEATURE_EH_FUNCLETS
 
@@ -7003,9 +6964,6 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
             }
         }
     }
-
-    /* If afterBlk falls through, we insert a jump around newBlk */
-    fgConnectFallThrough(afterBlk, newBlk->Next());
 
 #ifdef DEBUG
     fgVerifyHandlerTab();
