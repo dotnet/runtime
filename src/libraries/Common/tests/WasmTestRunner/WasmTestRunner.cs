@@ -3,12 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XHarness.TestRunners.Xunit;
-using Xunit.Sdk;
 
 public class WasmTestRunner : WasmApplicationEntryPoint
 {
