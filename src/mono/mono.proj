@@ -8,7 +8,7 @@
       - MonoAOTEnableLLVM - enable LLVM for an AOT-only Mono
       - MonoVerboseBuild - enable verbose build
       - MonoThreadSuspend - coop,hybrid,preemptive - default thread suspend mode
-      - MonoWasmThreads - build runtime with threading support for wasm
+      - WasmEnableThreads - build runtime with threading support for wasm
   -->
 
   <PropertyGroup>
@@ -51,8 +51,6 @@
     <_CompilerTargetArch Condition="'$(AotHostArchitecture)' != ''">$(AotHostArchitecture)</_CompilerTargetArch>
     <RepositoryEngineeringCommonDir>$([MSBuild]::NormalizeDirectory('$(RepositoryEngineeringDir)', 'common'))</RepositoryEngineeringCommonDir>
     <CrossToolchainFile>$([MSBuild]::NormalizePath('$(RepositoryEngineeringCommonDir)', 'cross', 'toolchain.cmake'))</CrossToolchainFile>
-    <MonoWasmThreads Condition="'$(WasmEnableThreads)' != 'true'">false</MonoWasmThreads>
-    <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true'">true</MonoWasmThreads>
     <MonoLLVMMajorVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.Substring(0, $(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.IndexOf('.'))))</MonoLLVMMajorVersion>
     <MonoUseLibCxx Condition="'$(MonoLLVMMajorVersion)' >= '16.0'">true</MonoUseLibCxx>
   </PropertyGroup>
@@ -428,7 +426,7 @@
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <_MonoMinimal Condition="'$(Configuration)' == 'Release'">,debugger_agent,log_dest</_MonoMinimal>
       <_MonoMinimal Condition="'$(Configuration)' == 'Release' and '$(MonoEnableAssertMessages)' != 'true'">$(_MonoMinimal),assert_messages</_MonoMinimal>
-      <_MonoMinimal Condition="'$(MonoWasmThreads)' != 'true'">$(_MonoMinimal),threads</_MonoMinimal>
+      <_MonoMinimal Condition="'$(WasmEnableThreads)' != 'true'">$(_MonoMinimal),threads</_MonoMinimal>
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,interpreter,qcalls$(_MonoMinimal)"/>
@@ -437,18 +435,18 @@
       <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <_MonoCMakeArgs Include="-DENABLE_WEBCIL=1"/>
-      <_MonoCFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-pthread"/>
-      <_MonoCFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
-      <_MonoCXXFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-pthread"/>
-      <_MonoCXXFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
+      <_MonoCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread"/>
+      <_MonoCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
+      <_MonoCXXFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread"/>
+      <_MonoCXXFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
     </ItemGroup>
     <!-- Browser specific options -->
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_LLVM_RUNTIME=1"/>
       <_MonoCMakeArgs Include="-DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm"/>
-      <_MonoCFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'include'))$(EscapedQuoteW)"/>
+      <_MonoCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'include'))$(EscapedQuoteW)"/>
 
-      <_MonoCFLAGS Condition="'$(MonoWasmThreads)' != 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'include'))$(EscapedQuoteW)"/>
+      <_MonoCFLAGS Condition="'$(WasmEnableThreads)' != 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'include'))$(EscapedQuoteW)"/>
     </ItemGroup>
     <!-- WASI specific options -->
     <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
@@ -463,8 +461,8 @@
       <_MonoCFLAGS Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
       <_MonoCFLAGS Include="-D_WASI_EMULATED_SIGNAL"/>
       <_MonoCFLAGS Include="-D_WASI_EMULATED_MMAN"/>
-      <_MonoCFLAGS Condition="'$(MonoWasmThreads)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'include').Replace('\','/'))$(EscapedQuoteW)"/>
-      <_MonoCFLAGS Condition="'$(MonoWasmThreads)' != 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'include').Replace('\','/'))$(EscapedQuoteW)"/>
+      <_MonoCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'include').Replace('\','/'))$(EscapedQuoteW)"/>
+      <_MonoCFLAGS Condition="'$(WasmEnableThreads)' != 'true'" Include="$(EscapedQuoteW)-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'include').Replace('\','/'))$(EscapedQuoteW)"/>
     </ItemGroup>
 
     <!-- iOS/tvOS specific options -->

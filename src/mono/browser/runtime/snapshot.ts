@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
 
@@ -116,7 +116,7 @@ export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mim
         if (!cache) {
             return;
         }
-        const copy = MonoWasmThreads
+        const copy = WasmEnableThreads
             // storing SHaredArrayBuffer in the cache is not working
             ? (new Uint8Array(memory)).slice(0)
             : memory;

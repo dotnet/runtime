@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
@@ -42,7 +42,7 @@ export function is_args_exception(args: JSMarshalerArguments): boolean {
 }
 
 export function set_args_context(args: JSMarshalerArguments): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     mono_assert(args, "Null args");
     const exc = get_arg(args, 0);
     const res = get_arg(args, 1);
@@ -263,7 +263,7 @@ export function get_arg_js_handle(arg: JSMarshalerArgument): JSHandle {
 }
 
 export function set_arg_proxy_context(arg: JSMarshalerArgument): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     mono_assert(arg, "Null arg");
     setI32(<any>arg + 16, <any>runtimeHelpers.proxy_context_gc_handle);
 }
@@ -349,7 +349,7 @@ export class ManagedError extends Error implements IDisposable {
         if (this.managed_stack) {
             return this.managed_stack;
         }
-        if (loaderHelpers.is_runtime_running() && (!MonoWasmThreads || runtimeHelpers.proxy_context_gc_handle)) {
+        if (loaderHelpers.is_runtime_running() && (!WasmEnableThreads || runtimeHelpers.proxy_context_gc_handle)) {
             const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
             if (gc_handle !== GCHandleNull) {
                 const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);

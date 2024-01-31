@@ -3,7 +3,7 @@
 
 /* eslint-disable no-console */
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { ENVIRONMENT_IS_WORKER, loaderHelpers } from "./globals";
 
@@ -62,12 +62,12 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
             if (typeof payload === "string") {
                 if (payload[0] == "[") {
                     const now = new Date().toISOString();
-                    if (MonoWasmThreads && ENVIRONMENT_IS_WORKER) {
+                    if (WasmEnableThreads && ENVIRONMENT_IS_WORKER) {
                         payload = `[${threadNamePrefix}][${now}] ${payload}`;
                     } else {
                         payload = `[${now}] ${payload}`;
                     }
-                } else if (MonoWasmThreads && ENVIRONMENT_IS_WORKER) {
+                } else if (WasmEnableThreads && ENVIRONMENT_IS_WORKER) {
                     if (payload.indexOf("keeping the worker alive for asynchronous operation") !== -1) {
                         // muting emscripten noise
                         return;

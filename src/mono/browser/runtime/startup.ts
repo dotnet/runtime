@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
 import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH, ENVIRONMENT_IS_WORKER } from "./globals";
@@ -233,7 +233,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         // Threads early are not supported with memory snapshot. See below how we enable them later.
         // Please disable startupMemoryCache in order to be able to diagnose or pause runtime startup.
-        if (MonoWasmThreads && !runtimeHelpers.config.startupMemoryCache) {
+        if (WasmEnableThreads && !runtimeHelpers.config.startupMemoryCache) {
             await mono_wasm_init_threads();
         }
 
@@ -270,7 +270,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             FS.chdir(cwd);
         }
 
-        if (MonoWasmThreads && runtimeHelpers.config.startupMemoryCache) {
+        if (WasmEnableThreads && runtimeHelpers.config.startupMemoryCache) {
             await mono_wasm_init_threads();
         }
 
@@ -282,7 +282,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             Module.runtimeKeepalivePush();
         }
 
-        if (MonoWasmThreads) {
+        if (WasmEnableThreads) {
             runtimeHelpers.javaScriptExports.install_main_synchronization_context();
         }
 
@@ -327,7 +327,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
         Module["FS_createPath"]("/", "usr", true, true);
         Module["FS_createPath"]("/", "usr/share", true, true);
 
-        if (MonoWasmThreads) {
+        if (WasmEnableThreads) {
             tcwraps.mono_wasm_init_finalizer_thread();
         }
 
@@ -351,7 +351,7 @@ export function postRunWorker() {
 }
 
 async function mono_wasm_init_threads() {
-    if (!MonoWasmThreads) {
+    if (!WasmEnableThreads) {
         return;
     }
     const threadName = `0x${mono_wasm_main_thread_ptr().toString(16)}-main`;
@@ -389,7 +389,7 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     mono_log_debug("mono_wasm_pre_init_essential_async");
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
 
-    if (MonoWasmThreads) {
+    if (WasmEnableThreads) {
         preAllocatePThreadWorkerPool(runtimeHelpers.config.pthreadPoolSize!);
     }
 

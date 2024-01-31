@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 
@@ -267,7 +267,7 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
         const arg3 = get_arg(args, 4);
 
         try {
-            mono_assert(!MonoWasmThreads || !wrapper.isDisposed, "Function is disposed and should not be invoked anymore.");
+            mono_assert(!WasmEnableThreads || !wrapper.isDisposed, "Function is disposed and should not be invoked anymore.");
 
             let arg1_js: any = undefined;
             let arg2_js: any = undefined;
@@ -311,7 +311,7 @@ export class PromiseHolder extends ManagedObject {
 function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: MarshalerType, res_converter?: MarshalerToCs) {
     const handleIsPreallocated = get_arg_type(arg) == MarshalerType.TaskPreCreated;
     if (value === null || value === undefined) {
-        if (MonoWasmThreads && handleIsPreallocated) {
+        if (WasmEnableThreads && handleIsPreallocated) {
             // This is multi-threading return from JSImport with Task result and we can't return synchronously,
             // because C# caller could be on different thread and sent us an async message.
             // It already returned pending Task to it's own caller.
@@ -336,7 +336,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         (holder as any)[proxy_debug_symbol] = `PromiseHolder with GCHandle ${gc_handle}`;
     }
 
-    if (MonoWasmThreads)
+    if (WasmEnableThreads)
         addUnsettledPromise();
 
     function resolve(data: any) {
@@ -346,7 +346,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         }
         try {
             mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
-            if (MonoWasmThreads) {
+            if (WasmEnableThreads) {
                 settleUnsettledPromise();
             }
             // we can unregister the GC handle on JS side
@@ -367,7 +367,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         }
         try {
             mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
-            if (MonoWasmThreads) {
+            if (WasmEnableThreads) {
                 settleUnsettledPromise();
             }
             // we can unregister the GC handle on JS side

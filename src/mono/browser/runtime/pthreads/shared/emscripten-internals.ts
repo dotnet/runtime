@@ -3,7 +3,7 @@
 
 import { Module } from "../../globals";
 import { pthreadPtr } from "./types";
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 /** @module emscripten-internals accessors to the functions in the emscripten PThreads library, including
  * the low-level representations of {@linkcode pthreadPtr} thread info structs, etc.
@@ -45,7 +45,7 @@ function isRunningPThreadWorker(w: Worker): w is PThreadWorker {
 }
 
 /// These utility functions dig into Emscripten internals
-export const Internals = !MonoWasmThreads ? null as any : {
+export const Internals = !WasmEnableThreads ? null as any : {
     get modulePThread(): PThreadLibrary {
         return (<any>Module).PThread as PThreadLibrary;
     },

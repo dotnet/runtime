@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
@@ -31,7 +31,7 @@ import { mono_wasm_browser_entropy } from "./crypto";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
-export const mono_wasm_threads_imports = !MonoWasmThreads ? [] : [
+export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     // mono-threads-wasm.c
     mono_wasm_pthread_on_pthread_attached,
     mono_wasm_pthread_on_pthread_detached,

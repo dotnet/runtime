@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { ENVIRONMENT_IS_PTHREAD, Module, mono_assert, runtimeHelpers } from "../../globals";
@@ -160,7 +160,7 @@ export function isMonoWorkerMessagePreload(message: MonoWorkerMessage): message 
 }
 
 export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     bindings_init();
     if (!runtimeHelpers.proxy_context_gc_handle) {
         runtimeHelpers.proxy_context_gc_handle = context_gc_handle;
@@ -175,7 +175,7 @@ export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle)
 }
 
 export function mono_wasm_uninstall_js_worker_interop(): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "JS interop is not installed on this worker.");
     mono_assert(runtimeHelpers.proxy_context_gc_handle, "JSSynchronizationContext is not installed on this worker.");
 
@@ -189,7 +189,7 @@ export function mono_wasm_uninstall_js_worker_interop(): void {
 
 // this is just for Debug build of the runtime, making it easier to debug worker threads
 export function set_thread_info(pthread_ptr: number, isAttached: boolean, hasInterop: boolean, hasSynchronization: boolean): void {
-    if (MonoWasmThreads && BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
+    if (WasmEnableThreads && BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
         try {
             (globalThis as any).monoThreadInfo = new Function(`//# sourceURL=https://WorkerInfo/\r\nconsole.log("tid:0x${pthread_ptr.toString(16)} isAttached:${isAttached} hasInterop:${!!hasInterop} hasSynchronization:${hasSynchronization}" );`);
         }
@@ -200,11 +200,11 @@ export function set_thread_info(pthread_ptr: number, isAttached: boolean, hasInt
 }
 
 export function mono_wasm_pthread_ptr(): number {
-    if (!MonoWasmThreads) return 0;
+    if (!WasmEnableThreads) return 0;
     return (<any>Module)["_pthread_self"]();
 }
 
 export function mono_wasm_main_thread_ptr(): number {
-    if (!MonoWasmThreads) return 0;
+    if (!WasmEnableThreads) return 0;
     return (<any>Module)["_emscripten_main_runtime_thread_id"]();
 }

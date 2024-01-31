@@ -3,7 +3,7 @@
 
 /// <reference lib="webworker" />
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { ENVIRONMENT_IS_PTHREAD, mono_assert, loaderHelpers } from "../../globals";
 import { makeChannelCreatedMonoMessage, mono_wasm_pthread_ptr, set_thread_info } from "../shared";
@@ -59,7 +59,7 @@ export let currentWorkerThreadEvents: WorkerThreadEventTarget = undefined as any
 
 export function initWorkerThreadEvents() {
     // treeshake if threads are disabled
-    currentWorkerThreadEvents = MonoWasmThreads ? new globalThis.EventTarget() : null as any as WorkerThreadEventTarget;
+    currentWorkerThreadEvents = WasmEnableThreads ? new globalThis.EventTarget() : null as any as WorkerThreadEventTarget;
 }
 
 // this is the message handler for the worker that receives messages from the main thread
@@ -70,7 +70,7 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
 
 
 function setupChannelToMainThread(pthread_ptr: pthreadPtr): PThreadSelf {
-    if (!MonoWasmThreads) return null as any;
+    if (!WasmEnableThreads) return null as any;
     const channel = new MessageChannel();
     const workerPort = channel.port1;
     const mainPort = channel.port2;
@@ -85,7 +85,7 @@ function setupChannelToMainThread(pthread_ptr: pthreadPtr): PThreadSelf {
 /// This is an implementation detail function.
 /// Called in the worker thread (not main thread) from mono when a pthread becomes attached to the mono runtime.
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     mono_assert(pthread_self !== null && pthread_self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
     const threadName = `0x${pthread_id.toString(16)}-worker`;
     mono_set_thread_name(threadName);
@@ -98,7 +98,7 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void 
 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
 export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     postRunWorker();
     set_thread_info(pthread_id, false, false, false);
     const threadName = `0x${pthread_id.toString(16)}-worker-detached`;
@@ -110,7 +110,7 @@ export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void 
 /// Called by emscripten when a pthread is setup to run on a worker.  Can be called multiple times
 /// for the same worker, since emscripten can reuse workers.  This is an implementation detail, that shouldn't be used directly.
 export function afterThreadInitTLS(): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     // don't do this callback for the main thread
     if (ENVIRONMENT_IS_PTHREAD) {
         const pthread_ptr = mono_wasm_pthread_ptr();

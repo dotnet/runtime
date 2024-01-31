@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
@@ -398,7 +398,7 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_vie
     else {
         if (length !== 0) {
             // we could use the un-pinned view, because it will be immediately used in ws.send()
-            if (MonoWasmThreads) {
+            if (WasmEnableThreads) {
                 buffer = buffer_view.slice(); // copy, because the provided ArrayBufferView value must not be shared.
             } else {
                 buffer = buffer_view;
@@ -456,7 +456,7 @@ type Message = {
 }
 
 function resolvedPromise(): Promise<void> | null {
-    if (!MonoWasmThreads) {
+    if (!WasmEnableThreads) {
         // signal that we are finished synchronously
         // this is optimization, which doesn't allocate and doesn't require to marshal resolve() call to C# side.
         return null;
