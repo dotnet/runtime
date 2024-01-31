@@ -1902,7 +1902,7 @@ static int GetLikelyClassesForCast(Compiler*             comp,
         if (cls != NO_CLASS_HANDLE)
         {
             // Validate static profile data
-            if ((comp->info.compCompHnd->getClassAttribs(candidates[0]) &
+            if ((comp->info.compCompHnd->getClassAttribs(cls) &
                  (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0)
             {
                 // Possible scenario: someone changed Foo to be an interface/abstract class/static class,
