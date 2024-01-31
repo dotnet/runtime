@@ -169,8 +169,9 @@ namespace ILCompiler.ObjectWriter
                     // For R_ARM_THM_JUMP24 the thumb bit cannot be encoded, so mask it out.
                     long maskThumbBitOut = relocType is IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
                     long maskThumbBitIn = relocType is IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
+                    long adjustedAddend = addend;
 
-                    addend -= relocType switch
+                    adjustedAddend -= relocType switch
                     {
                         IMAGE_REL_BASED_REL32 => 4,
                         IMAGE_REL_BASED_THUMB_BRANCH24 => 4,
@@ -178,11 +179,19 @@ namespace ILCompiler.ObjectWriter
                         _ => 0
                     };
 
-                    addend += definedSymbol.Value & ~maskThumbBitOut;
-                    addend += Relocation.ReadValue(relocType, (void*)pData);
-                    addend |= definedSymbol.Value & maskThumbBitIn;
-                    addend -= offset;
-                    Relocation.WriteValue(relocType, (void*)pData, addend);
+                    adjustedAddend += definedSymbol.Value & ~maskThumbBitOut;
+                    adjustedAddend += Relocation.ReadValue(relocType, (void*)pData);
+                    adjustedAddend |= definedSymbol.Value & maskThumbBitIn;
+                    adjustedAddend -= offset;
+
+                    if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && (uint)adjustedAddend >= 0xFFFFFF)
+                    {
+                        EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
+                    }
+                    else
+                    {
+                        Relocation.WriteValue(relocType, (void*)pData, adjustedAddend);
+                    }
                 }
             }
             else
