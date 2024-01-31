@@ -46,16 +46,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			IEnumerable<string> GetFailures ()
 			{
-				foreach (var err in VerifyExportedTypes (originalAssembly, linkedAssembly)) yield return err;
-				foreach (var err in VerifyCustomAttributes (originalAssembly, linkedAssembly)) yield return err;
-				foreach (var err in VerifySecurityAttributes (originalAssembly, linkedAssembly)) yield return err;
+				foreach (var err in VerifyExportedTypes (originalAssembly, linkedAssembly))
+					yield return err;
+				foreach (var err in VerifyCustomAttributes (originalAssembly, linkedAssembly))
+					yield return err;
+				foreach (var err in VerifySecurityAttributes (originalAssembly, linkedAssembly))
+					yield return err;
 
 				foreach (var originalModule in originalAssembly.Modules)
-					foreach (var err in VerifyModule (originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name))) yield return err;
+					foreach (var err in VerifyModule (originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name)))
+						yield return err;
 
-				foreach (var err in VerifyResources (originalAssembly, linkedAssembly)) yield return err;
-				foreach (var err in VerifyReferences (originalAssembly, linkedAssembly)) yield return err;
-				foreach (var err in VerifyKeptByAttributes (originalAssembly, originalAssembly.FullName)) yield return err;
+				foreach (var err in VerifyResources (originalAssembly, linkedAssembly))
+					yield return err;
+				foreach (var err in VerifyReferences (originalAssembly, linkedAssembly))
+					yield return err;
+				foreach (var err in VerifyKeptByAttributes (originalAssembly, originalAssembly.FullName))
+					yield return err;
 
 				linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Select (s => {
 					return s.FullName;
@@ -79,7 +86,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						}
 
 						TypeDefinition linkedType = linkedAssembly.MainModule.GetType (originalMember.FullName);
-						foreach (var err in VerifyTypeDefinition (td, linkedType)) yield return err;
+						foreach (var err in VerifyTypeDefinition (td, linkedType))
+							yield return err;
 						linkedMembers.Remove (td.FullName);
 
 						continue;
@@ -89,7 +97,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				if (linkedMembers.Any ())
-					foreach (var err in linkedMembers.Select (m => $"Member `{m}' was not expected to be kept")) yield return err;
+					foreach (var err in linkedMembers.Select (m => $"Member `{m}' was not expected to be kept"))
+						yield return err;
 			}
 		}
 
@@ -112,7 +121,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (!expected.SetEquals (actual))
 				yield return $"In module {original.FileName} Expected module references `{string.Join (", ", expected)}` but got `{string.Join (", ", actual)}`";
 
-			foreach (var err in VerifyCustomAttributes (original, linked)) yield return err;
+			foreach (var err in VerifyCustomAttributes (original, linked))
+				yield return err;
 		}
 
 		protected virtual IEnumerable<string> VerifyTypeDefinition (TypeDefinition original, TypeDefinition linked)
@@ -152,7 +162,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			bool prev = checkNames;
 			checkNames |= original.HasAttribute (nameof (VerifyMetadataNamesAttribute));
 
-			foreach (var err in VerifyTypeDefinitionKept (original, linked)) yield return err;
+			foreach (var err in VerifyTypeDefinitionKept (original, linked))
+				yield return err;
 
 			checkNames = prev;
 
@@ -239,43 +250,57 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			// Skip verification of type metadata for compiler generated types (we don't currently need it yet)
 			if (!IsCompilerGeneratedMember (original)) {
-				foreach (var err in VerifyKeptByAttributes (original, linked)) yield return err;
+				foreach (var err in VerifyKeptByAttributes (original, linked))
+					yield return err;
 				if (!original.IsInterface)
-					foreach (var err in VerifyBaseType (original, linked)) yield return err;
+					foreach (var err in VerifyBaseType (original, linked))
+						yield return err;
 
-				foreach (var err in VerifyInterfaces (original, linked)) yield return err;
-				foreach (var err in VerifyPseudoAttributes (original, linked)) yield return err;
-				foreach (var err in VerifyGenericParameters (original, linked, compilerGenerated: false)) yield return err;
-				foreach (var err in VerifyCustomAttributes (original, linked)) yield return err;
-				foreach (var err in VerifySecurityAttributes (original, linked)) yield return err;
+				foreach (var err in VerifyInterfaces (original, linked))
+					yield return err;
+				foreach (var err in VerifyPseudoAttributes (original, linked))
+					yield return err;
+				foreach (var err in VerifyGenericParameters (original, linked, compilerGenerated: false))
+					yield return err;
+				foreach (var err in VerifyCustomAttributes (original, linked))
+					yield return err;
+				foreach (var err in VerifySecurityAttributes (original, linked))
+					yield return err;
 
-				foreach (var err in VerifyFixedBufferFields (original, linked)) yield return err;
+				foreach (var err in VerifyFixedBufferFields (original, linked))
+					yield return err;
 			}
 
 			// Need to check delegate cache fields before the normal field check
-			foreach (var err in VerifyDelegateBackingFields (original, linked)) yield return err;
-			foreach (var err in VerifyPrivateImplementationDetails (original, linked)) yield return err;
+			foreach (var err in VerifyDelegateBackingFields (original, linked))
+				yield return err;
+			foreach (var err in VerifyPrivateImplementationDetails (original, linked))
+				yield return err;
 
 			foreach (var td in original.NestedTypes) {
-				foreach (var err in VerifyTypeDefinition (td, linked?.NestedTypes.FirstOrDefault (l => td.FullName == l.FullName))) yield return err;
+				foreach (var err in VerifyTypeDefinition (td, linked?.NestedTypes.FirstOrDefault (l => td.FullName == l.FullName)))
+					yield return err;
 				linkedMembers.Remove (td.FullName);
 			}
 
 			// Need to check properties before fields so that the KeptBackingFieldAttribute is handled correctly
 			foreach (var p in original.Properties) {
-				foreach (var err in VerifyProperty (p, linked?.Properties.FirstOrDefault (l => p.Name == l.Name), linked)) yield return err;
+				foreach (var err in VerifyProperty (p, linked?.Properties.FirstOrDefault (l => p.Name == l.Name), linked))
+					yield return err;
 				linkedMembers.Remove (p.FullName);
 			}
 			// Need to check events before fields so that the KeptBackingFieldAttribute is handled correctly
 			foreach (var e in original.Events) {
-				foreach (var err in VerifyEvent (e, linked?.Events.FirstOrDefault (l => e.Name == l.Name), linked)) yield return err;
+				foreach (var err in VerifyEvent (e, linked?.Events.FirstOrDefault (l => e.Name == l.Name), linked))
+					yield return err;
 				linkedMembers.Remove (e.FullName);
 			}
 
 			foreach (var f in original.Fields) {
 				if (verifiedGeneratedFields.Contains (f.FullName))
 					continue;
-				foreach (var err in VerifyField (f, linked?.Fields.FirstOrDefault (l => f.Name == l.Name))) yield return err;
+				foreach (var err in VerifyField (f, linked?.Fields.FirstOrDefault (l => f.Name == l.Name)))
+					yield return err;
 				linkedMembers.Remove (f.FullName);
 			}
 
@@ -283,7 +308,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (verifiedEventMethods.Contains (m.FullName))
 					continue;
 				var msign = m.GetSignature ();
-				foreach (var err in VerifyMethod (m, linked?.Methods.FirstOrDefault (l => msign == l.GetSignature ()))) yield return err;
+				foreach (var err in VerifyMethod (m, linked?.Methods.FirstOrDefault (l => msign == l.GetSignature ())))
+					yield return err;
 				linkedMembers.Remove (m.FullName);
 			}
 		}
@@ -409,7 +435,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield break;
 			}
 
-			foreach (var err in VerifyFieldKept (src, linked, compilerGenerated)) yield return err;
+			foreach (var err in VerifyFieldKept (src, linked, compilerGenerated))
+				yield return err;
 		}
 
 		IEnumerable<string> VerifyFieldKept (FieldDefinition src, FieldDefinition linked, bool compilerGenerated)
@@ -422,15 +449,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (!src?.Constant?.Equals (linked?.Constant) == true)
 				yield return $"Field `{src}' value was expected to be {src?.Constant} but was {linked?.Constant}";
 
-			foreach (var err in VerifyKeptByAttributes (src, linked)) yield return err;
+			foreach (var err in VerifyKeptByAttributes (src, linked))
+				yield return err;
 			VerifyPseudoAttributes (src, linked);
 			if (!compilerGenerated)
-				foreach (var err in VerifyCustomAttributes (src, linked)) yield return err;
+				foreach (var err in VerifyCustomAttributes (src, linked))
+					yield return err;
 		}
 
 		IEnumerable<string> VerifyProperty (PropertyDefinition src, PropertyDefinition linked, TypeDefinition linkedType)
 		{
-			foreach (var err in VerifyMemberBackingField (src, linkedType)) yield return err;
+			foreach (var err in VerifyMemberBackingField (src, linkedType))
+				yield return err;
 
 			bool compilerGenerated = IsCompilerGeneratedMember (src);
 			bool expectedKept = ShouldBeKept (src) || compilerGenerated;
@@ -450,15 +480,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (src?.Constant != linked?.Constant)
 				yield return $"Property `{src}' value";
 
-			foreach (var err in VerifyKeptByAttributes (src, linked)) yield return err;
-			foreach (var err in VerifyPseudoAttributes (src, linked)) yield return err;
+			foreach (var err in VerifyKeptByAttributes (src, linked))
+				yield return err;
+			foreach (var err in VerifyPseudoAttributes (src, linked))
+				yield return err;
 			if (!compilerGenerated)
-				foreach (var err in VerifyCustomAttributes (src, linked)) yield return err;
+				foreach (var err in VerifyCustomAttributes (src, linked))
+					yield return err;
 		}
 
 		IEnumerable<string> VerifyEvent (EventDefinition src, EventDefinition linked, TypeDefinition linkedType)
 		{
-			foreach (var err in VerifyMemberBackingField (src, linkedType)) yield return err;
+			foreach (var err in VerifyMemberBackingField (src, linkedType))
+				yield return err;
 
 			bool compilerGenerated = IsCompilerGeneratedMember (src);
 			bool expectedKept = ShouldBeKept (src) || compilerGenerated;
@@ -476,28 +510,34 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventAddMethodAttribute))) {
-				foreach (var err in VerifyMethodInternal (src.AddMethod, linked.AddMethod, true, compilerGenerated)) yield return err;
+				foreach (var err in VerifyMethodInternal (src.AddMethod, linked.AddMethod, true, compilerGenerated))
+					yield return err;
 				verifiedEventMethods.Add (src.AddMethod.FullName);
 				linkedMembers.Remove (src.AddMethod.FullName);
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventRemoveMethodAttribute))) {
-				foreach (var err in VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true, compilerGenerated)) yield return err;
+				foreach (var err in VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true, compilerGenerated))
+					yield return err;
 				verifiedEventMethods.Add (src.RemoveMethod.FullName);
 				linkedMembers.Remove (src.RemoveMethod.FullName);
 			}
 
-			foreach (var err in VerifyKeptByAttributes (src, linked)) yield return err;
-			foreach (var err in VerifyPseudoAttributes (src, linked)) yield return err;
+			foreach (var err in VerifyKeptByAttributes (src, linked))
+				yield return err;
+			foreach (var err in VerifyPseudoAttributes (src, linked))
+				yield return err;
 			if (!compilerGenerated)
-				foreach (var err in VerifyCustomAttributes (src, linked)) yield return err;
+				foreach (var err in VerifyCustomAttributes (src, linked))
+					yield return err;
 		}
 
 		IEnumerable<string> VerifyMethod (MethodDefinition src, MethodDefinition linked)
 		{
 			bool compilerGenerated = IsCompilerGeneratedMember (src);
 			bool expectedKept = ShouldMethodBeKept (src);
-			foreach (var err in VerifyMethodInternal (src, linked, expectedKept, compilerGenerated)) yield return err;
+			foreach (var err in VerifyMethodInternal (src, linked, expectedKept, compilerGenerated))
+				yield return err;
 		}
 
 		IEnumerable<string> VerifyMethodInternal (MethodDefinition src, MethodDefinition linked, bool expectedKept, bool compilerGenerated)
@@ -513,7 +553,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					yield return $"Method `{src.FullName}' should have been removed";
 			}
 
-			foreach (var err in VerifyMethodKept (src, linked, compilerGenerated)) yield return err;
+			foreach (var err in VerifyMethodKept (src, linked, compilerGenerated))
+				yield return err;
 		}
 
 		IEnumerable<string> VerifyMemberBackingField (IMemberDefinition src, TypeDefinition linkedType)
@@ -540,7 +581,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield break;
 			}
 
-			foreach (var err in VerifyFieldKept (srcField, linkedType?.Fields.FirstOrDefault (l => srcField.Name == l.Name), compilerGenerated: true)) yield return err;
+			foreach (var err in VerifyFieldKept (srcField, linkedType?.Fields.FirstOrDefault (l => srcField.Name == l.Name), compilerGenerated: true))
+				yield return err;
 			verifiedGeneratedFields.Add (srcField.FullName);
 			linkedMembers.Remove (srcField.FullName);
 		}
@@ -552,18 +594,27 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield break;
 			}
 
-			foreach (var err in VerifyPseudoAttributes (src, linked)) yield return err;
-			foreach (var err in VerifyGenericParameters (src, linked, compilerGenerated)) yield return err;
+			foreach (var err in VerifyPseudoAttributes (src, linked))
+				yield return err;
+			foreach (var err in VerifyGenericParameters (src, linked, compilerGenerated))
+				yield return err;
 			if (!compilerGenerated) {
-				foreach (var err in VerifyCustomAttributes (src, linked)) yield return err;
-				foreach (var err in VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType)) yield return err;
+				foreach (var err in VerifyCustomAttributes (src, linked))
+					yield return err;
+				foreach (var err in VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType))
+					yield return err;
 
 			}
-			foreach (var err in VerifyParameters (src, linked, compilerGenerated)) yield return err;
-			foreach (var err in VerifySecurityAttributes (src, linked)) yield return err;
-			foreach (var err in VerifyArrayInitializers (src, linked)) yield return err;
-			foreach (var err in VerifyMethodBody (src, linked)) yield return err;
-			foreach (var err in VerifyKeptByAttributes (src, linked)) yield return err;
+			foreach (var err in VerifyParameters (src, linked, compilerGenerated))
+				yield return err;
+			foreach (var err in VerifySecurityAttributes (src, linked))
+				yield return err;
+			foreach (var err in VerifyArrayInitializers (src, linked))
+				yield return err;
+			foreach (var err in VerifyMethodBody (src, linked))
+				yield return err;
+			foreach (var err in VerifyKeptByAttributes (src, linked))
+				yield return err;
 		}
 
 		protected virtual IEnumerable<string> VerifyMethodBody (MethodDefinition src, MethodDefinition linked)
@@ -571,8 +622,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (!src.HasBody)
 				yield break;
 
-			foreach (var err in VerifyInstructions (src, linked)) yield return err;
-			foreach (var err in VerifyLocals (src, linked)) yield return err;
+			foreach (var err in VerifyInstructions (src, linked))
+				yield return err;
+			foreach (var err in VerifyLocals (src, linked))
+				yield return err;
 		}
 
 		protected static IEnumerable<string> VerifyInstructions (MethodDefinition src, MethodDefinition linked)
@@ -876,7 +929,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			TypeDefinition srcImplementationDetails;
 			TypeDefinition linkedImplementationDetails;
-			foreach (var err in VerifyPrivateImplementationDetailsType (original.Module, linked.Module, out srcImplementationDetails, out linkedImplementationDetails)) yield return err;
+			foreach (var err in VerifyPrivateImplementationDetailsType (original.Module, linked.Module, out srcImplementationDetails, out linkedImplementationDetails))
+				yield return err;
 			foreach (var methodName in expectedImplementationDetailsMethods) {
 				var originalMethod = srcImplementationDetails.Methods.FirstOrDefault (m => m.Name == methodName);
 				if (originalMethod == null)
@@ -919,7 +973,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield return $"`{nameof (KeptInitializerData)}` cannot be used on methods that don't have bodies";
 			TypeDefinition srcImplementationDetails;
 			TypeDefinition linkedImplementationDetails;
-			foreach (var err in VerifyPrivateImplementationDetailsType (src.Module, linked.Module, out srcImplementationDetails, out linkedImplementationDetails)) yield return err;
+			foreach (var err in VerifyPrivateImplementationDetailsType (src.Module, linked.Module, out srcImplementationDetails, out linkedImplementationDetails))
+				yield return err;
 
 			var possibleInitializerFields = src.Body.Instructions
 				.Where (ins => IsLdtokenOnPrivateImplementationDetails (srcImplementationDetails, ins))
@@ -932,7 +987,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (expectKeptAll) {
 				foreach (var srcField in possibleInitializerFields) {
 					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.InitialValue.SequenceEqual (srcField.InitialValue));
-					foreach (var err in VerifyInitializerField (srcField, linkedField)) yield return err;
+					foreach (var err in VerifyInitializerField (srcField, linkedField))
+						yield return err;
 				}
 			} else {
 				foreach (var index in expectedIndices) {
@@ -942,17 +998,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					var srcField = possibleInitializerFields[index];
 					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.InitialValue.SequenceEqual (srcField.InitialValue));
 
-					foreach (var err in VerifyInitializerField (srcField, linkedField)) yield return err;
+					foreach (var err in VerifyInitializerField (srcField, linkedField))
+						yield return err;
 				}
 			}
 		}
 
 		IEnumerable<string> VerifyInitializerField (FieldDefinition src, FieldDefinition linked)
 		{
-			foreach (var err in VerifyFieldKept (src, linked, compilerGenerated: true)) yield return err;
+			foreach (var err in VerifyFieldKept (src, linked, compilerGenerated: true))
+				yield return err;
 			verifiedGeneratedFields.Add (linked.FullName);
 			linkedMembers.Remove (linked.FullName);
-			foreach (var err in VerifyTypeDefinitionKept (src.FieldType.Resolve (), linked.FieldType.Resolve ())) yield return err;
+			foreach (var err in VerifyTypeDefinitionKept (src.FieldType.Resolve (), linked.FieldType.Resolve ()))
+				yield return err;
 			linkedMembers.Remove (linked.FieldType.FullName);
 			linkedMembers.Remove (linked.DeclaringType.FullName);
 			verifiedGeneratedTypes.Add (linked.DeclaringType.FullName);
@@ -1048,11 +1107,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					yield return $"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}";
 
 				var linkedField = linkedCompilerGeneratedBufferType?.Fields.FirstOrDefault ();
-				foreach (var err in VerifyFieldKept (originalElementField, linkedField, compilerGenerated: true)) yield return err;
+				foreach (var err in VerifyFieldKept (originalElementField, linkedField, compilerGenerated: true))
+					yield return err;
 				verifiedGeneratedFields.Add (originalElementField.FullName);
 				linkedMembers.Remove (linkedField.FullName);
 
-				foreach (var err in VerifyTypeDefinitionKept (originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType)) yield return err;
+				foreach (var err in VerifyTypeDefinitionKept (originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType))
+					yield return err;
 				verifiedGeneratedTypes.Add (originalCompilerGeneratedBufferType.FullName);
 			}
 		}
@@ -1079,12 +1140,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						yield return $"Invalid expected delegate backing field {expectedFieldName} in {src}. This member was not in the unlinked assembly";
 
 					var linkedField = linkedNestedType?.Fields.FirstOrDefault (f => f.Name == expectedFieldName);
-					foreach (var err in VerifyFieldKept (originalField, linkedField, compilerGenerated: true)) yield return err;
+					foreach (var err in VerifyFieldKept (originalField, linkedField, compilerGenerated: true))
+						yield return err;
 					verifiedGeneratedFields.Add (linkedField.FullName);
 					linkedMembers.Remove (linkedField.FullName);
 				}
 
-				foreach (var err in VerifyTypeDefinitionKept (nestedType, linkedNestedType)) yield return err;
+				foreach (var err in VerifyTypeDefinitionKept (nestedType, linkedNestedType))
+					yield return err;
 				verifiedGeneratedTypes.Add (linkedNestedType.FullName);
 			}
 		}
@@ -1099,7 +1162,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					var lnkp = linked.GenericParameters[i];
 
 					if (!compilerGenerated) {
-						foreach (var err in VerifyCustomAttributes (srcp, lnkp)) yield return err;
+						foreach (var err in VerifyCustomAttributes (srcp, lnkp))
+							yield return err;
 					}
 
 					if (checkNames) {
@@ -1128,7 +1192,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					var lnkp = linked.Parameters[i];
 
 					if (!compilerGenerated) {
-						foreach (var err in VerifyCustomAttributes (srcp, lnkp)) yield return err;
+						foreach (var err in VerifyCustomAttributes (srcp, lnkp))
+							yield return err;
 					}
 
 					if (checkNames) {
