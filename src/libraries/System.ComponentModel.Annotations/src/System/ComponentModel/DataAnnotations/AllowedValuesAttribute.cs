@@ -47,11 +47,11 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (allowed is null ? value is null : allowed.Equals(value))
                 {
-                    return false;
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
     }
 }
