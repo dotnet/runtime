@@ -92,10 +92,6 @@ static gint64 discarded_jit_time;
 #define mono_jit_unlock() mono_os_mutex_unlock (&jit_mutex)
 static mono_mutex_t jit_mutex;
 
-// used for Swift interop
-GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
-
 #ifndef DISABLE_JIT
 static guint32 jinfo_try_holes_size;
 static MonoBackend *current_backend;

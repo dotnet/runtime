@@ -127,6 +127,9 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "Sys
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.Runtime.InteropServices", "UnmanagedCallConvAttribute")
 
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
+
 static gboolean type_is_blittable (MonoType *type);
 
 static IlgenCallbacksToMono ilgenCallbacksToMono = {
@@ -3638,7 +3641,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						swift_error_args++;
 					} else if (param_klass == swift_self) {
 						swift_self_args++;
-					} else if (!m_class_is_enumtype (param_klass) && !m_class_is_primitive (param_klass) && m_class_get_this_arg (param_klass)->type != MONO_TYPE_FNPTR) {
+					} else if (!m_class_is_blittable (param_klass) && m_class_get_this_arg (param_klass)->type != MONO_TYPE_FNPTR) {
 						swift_error_args = swift_self_args = 0;
 						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-primitive value types to a P/Invoke with the Swift calling convention is unsupported.");
 						break;
