@@ -144,6 +144,9 @@
   <data name="MinLengthAttribute_ValidationError" xml:space="preserve">
     <value>The field {0} must be a string or array type with a minimum length of '{1}'.</value>
   </data>
+  <data name="NotAllowedValuesAttribute_Invalid" xml:space="preserve">
+    <value>The {0} field equal one of the values specified in the NotAllowedValuesAttribute.</value>
+  </data>
   <data name="LengthAttribute_InvalidMinLength" xml:space="preserve">
     <value>LengthAttribute must have a MinimumLength value that is zero or greater.</value>
   </data>

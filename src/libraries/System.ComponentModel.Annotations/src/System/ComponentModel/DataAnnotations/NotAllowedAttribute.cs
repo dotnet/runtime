@@ -9,15 +9,15 @@ namespace System.ComponentModel.DataAnnotations
     [CLSCompliant(false)]
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter,
         AllowMultiple = false)]
-    public class AllowedValuesAttribute : ValidationAttribute
+    public class NotAllowedValuesAttribute : ValidationAttribute
     {
         /// <summary>
-        ///     Initializes a new instance of the <see cref="AllowedValuesAttribute"/> class.
+        ///     Initializes a new instance of the <see cref="NotAllowedValuesAttribute"/> class.
         /// </summary>
         /// <param name="values">
         ///     A list of values that the validated value should be equal to.
         /// </param>
-        public AllowedValuesAttribute(params object?[] values)
+        public NotAllowedValuesAttribute(params object?[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
             Values = values;
@@ -34,18 +34,18 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="value">The object to validate.</param>
         /// <returns>
-        ///     <see langword="true" /> if any of the <see cref="Values"/> are equal to <paramref name="value"/>,
+        ///     <see langword="true" /> if all of the <see cref="Values"/> are not equal to <paramref name="value"/>,
         ///     otherwise <see langword="false" />
         /// </returns>
         /// <remarks>
         ///     This method can return <see langword="true"/> if the <paramref name="value" /> is <see langword="null"/>,
-        ///     provided that <see langword="null"/> is also specified in one of the <see cref="Values"/>.
+        ///     not provided that <see langword="null"/> is also specified in one of the <see cref="Values"/>.
         /// </remarks>
         public override bool IsValid(object? value)
         {
             foreach (object? allowed in Values)
             {
-                if (allowed is null ? value is null : allowed.Equals(value))
+                if (allowed is null ? value is not null : !allowed.Equals(value))
                 {
                     return false;
                 }

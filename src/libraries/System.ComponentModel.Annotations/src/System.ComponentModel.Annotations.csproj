@@ -39,6 +39,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\MetadataPropertyDescriptorWrapper.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\MetadataTypeAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\MinLengthAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\NotAllowedAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\PhoneAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\RangeAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttribute.cs" />

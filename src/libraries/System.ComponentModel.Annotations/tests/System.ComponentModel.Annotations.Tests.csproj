@@ -10,6 +10,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProviderTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\Base64StringAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\LengthAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\NotAllowedValuesAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\UIHintAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\FilterUIHintAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayAttributeTests.cs" />

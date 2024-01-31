@@ -242,6 +242,14 @@ namespace System.ComponentModel.DataAnnotations
         public override string FormatErrorMessage(string name) { throw null; }
         public override bool IsValid(object? value) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.CLSCompliantAttribute(false)]
+    public partial class NotAllowedValuesAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        public NotAllowedValuesAttribute(params object?[] values) { }
+        public object?[] Values { get { throw null; } }
+        public override bool IsValid(object? value) { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class PhoneAttribute : System.ComponentModel.DataAnnotations.DataTypeAttribute
     {

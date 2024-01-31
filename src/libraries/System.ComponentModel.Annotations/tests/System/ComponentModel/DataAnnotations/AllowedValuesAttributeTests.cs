@@ -73,7 +73,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         public static IEnumerable<object[]> Get_Ctor_ValuesPropertyReturnsTheSameArray()
         {
-            yield return new object?[][] { new object?[] { null } };
+            yield return new object?[][] { [null] };
             yield return new object?[][] { new object?[] { 1, 2, 3 } };
             yield return new object?[][] { new object?[] { "apple", "banana", "mango", null } };
             yield return new object?[][] { new object?[] { null, false, 0, -0d, 1.1 } };
