@@ -3,11 +3,11 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { MonoWorkerToMainMessage, pthreadPtr } from "../shared/types";
+import { pthreadPtr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
 import { PThreadWorker, allocateUnusedWorker, getRunningWorkers, getUnusedWorkerPool, getWorker, loadWasmModuleToWorker } from "../shared/emscripten-internals";
-import { createPromiseController, mono_assert, runtimeHelpers } from "../../globals";
-import { MainToWorkerMessageType, PromiseAndController, PromiseController, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
+import { createPromiseController, runtimeHelpers } from "../../globals";
+import { PromiseAndController, PromiseController } from "../../types/internal";
 
 const threadPromises: Map<pthreadPtr, PromiseController<Thread>[]> = new Map();
 
@@ -16,14 +16,6 @@ export interface Thread {
     readonly port: MessagePort;
     postMessageToWorker<T extends MonoThreadMessage>(message: T): void;
 }
-
-class ThreadImpl implements Thread {
-    constructor(readonly pthreadPtr: pthreadPtr, readonly worker: Worker, readonly port: MessagePort) { }
-    postMessageToWorker<T extends MonoThreadMessage>(message: T): void {
-        this.port.postMessage(message);
-    }
-}
-
 
 /// wait until the thread with the given id has set up a message port to the runtime
 export function waitForThread(pthreadPtr: pthreadPtr): Promise<Thread> {
