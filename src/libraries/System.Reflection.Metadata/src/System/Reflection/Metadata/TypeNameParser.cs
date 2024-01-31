@@ -211,7 +211,7 @@ namespace System.Reflection.Metadata
                 if (EndOfTypeNameDelimiters.IndexOf(input[offset]) >= 0) { break; }
             }
 #endif
-            isNestedType = offset > 0 && input[offset] == '+';
+            isNestedType = offset > 0 && offset < input.Length && input[offset] == '+';
 
             return (int)Math.Min((uint)offset, (uint)input.Length);
         }
@@ -505,25 +505,29 @@ namespace System.Reflection.Metadata
         [RequiresUnreferencedCode("The type might be removed")]
         [RequiresDynamicCode("Required by MakeArrayType")]
 #else
-#pragma warning disable IL2075, IL2057, IL2055
+#pragma warning disable IL2055, IL2057, IL2075, IL2096
 #endif
-        public Type? GetType(bool throwOnError = true)
+        public Type? GetType(bool throwOnError = true, bool ignoreCase = false)
         {
             if (ContainingType is not null) // nested type
             {
-                const BindingFlags flagsCopiedFromClr = BindingFlags.NonPublic | BindingFlags.Public;
-                return Make(ContainingType.GetType(throwOnError)?.GetNestedType(Name, flagsCopiedFromClr));
+                BindingFlags flagsCopiedFromClr = BindingFlags.NonPublic | BindingFlags.Public;
+                if (ignoreCase)
+                {
+                    flagsCopiedFromClr |= BindingFlags.IgnoreCase;
+                }
+                return Make(ContainingType.GetType(throwOnError, ignoreCase)?.GetNestedType(Name, flagsCopiedFromClr));
             }
             else if (UnderlyingType is null)
             {
                 Type? type = AssemblyName is null
-                    ? Type.GetType(Name, throwOnError)
-                    : Assembly.Load(AssemblyName).GetType(Name, throwOnError);
+                    ? Type.GetType(Name, throwOnError, ignoreCase)
+                    : Assembly.Load(AssemblyName).GetType(Name, throwOnError, ignoreCase);
 
                 return Make(type);
             }
 
-            return Make(UnderlyingType.GetType(throwOnError));
+            return Make(UnderlyingType.GetType(throwOnError, ignoreCase));
 
             Type? Make(Type? type)
             {
@@ -537,7 +541,7 @@ namespace System.Reflection.Metadata
                     Type[] genericTypes = new Type[genericArgs.Length];
                     for (int i = 0; i < genericArgs.Length; i++)
                     {
-                        Type? genericArg = genericArgs[i].GetType(throwOnError);
+                        Type? genericArg = genericArgs[i].GetType(throwOnError, ignoreCase);
                         if (genericArg is null)
                         {
                             return null;
@@ -566,7 +570,7 @@ namespace System.Reflection.Metadata
             }
         }
     }
-#pragma warning restore IL2075, IL2057, IL2055
+#pragma warning restore IL2055, IL2057, IL2075, IL2096
 
     public class TypeNameParserOptions
     {

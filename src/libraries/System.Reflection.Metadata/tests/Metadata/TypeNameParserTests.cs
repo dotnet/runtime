@@ -217,11 +217,21 @@ namespace System.Reflection.Metadata.Tests
             static void Test(Type type)
             {
                 TypeName typeName = TypeNameParser.Parse(type.AssemblyQualifiedName.AsSpan(), allowFullyQualifiedName: true);
+                Verify(type, typeName, ignoreCase: false);
 
-                Type afterRoundtrip = typeName.GetType(throwOnError: true);
+                typeName = TypeNameParser.Parse(type.AssemblyQualifiedName.ToLower().AsSpan(), allowFullyQualifiedName: true);
+                Verify(type, typeName, ignoreCase: true);
 
-                Assert.NotNull(afterRoundtrip);
-                Assert.Equal(type, afterRoundtrip);
+                typeName = TypeNameParser.Parse(type.AssemblyQualifiedName.ToUpper().AsSpan(), allowFullyQualifiedName: true);
+                Verify(type, typeName, ignoreCase: true);
+
+                static void Verify(Type type, TypeName typeName, bool ignoreCase)
+                {
+                    Type afterRoundtrip = typeName.GetType(throwOnError: true, ignoreCase: ignoreCase);
+
+                    Assert.NotNull(afterRoundtrip);
+                    Assert.Equal(type, afterRoundtrip);
+                }
             }
         }
 

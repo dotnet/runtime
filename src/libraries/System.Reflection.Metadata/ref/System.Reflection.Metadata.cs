@@ -2425,7 +2425,7 @@ namespace System.Reflection.Metadata
         public TypeName? UnderlyingType { get { throw null; } }
         public int GetArrayRank() { throw null; }
         public System.Reflection.Metadata.TypeName[] GetGenericArguments() { throw null; }
-        public System.Type? GetType(bool throwOnError = true) { throw null; }
+        public System.Type? GetType(bool throwOnError = true, bool ignoreCase = false) { throw null; }
     }
     public ref partial struct TypeNameParser
     {
