@@ -4539,8 +4539,10 @@ void Compiler::impImportLeave(BasicBlock* block)
         assert(!step->HasInitializedTarget());
 
         step->SetTarget(finalStep);
-        FlowEdge* const newEdge = fgAddRefPred(finalStep, step);
-        newEdge->setLikelihood(1.0);
+        {
+            FlowEdge* const newEdge = fgAddRefPred(finalStep, step);
+            newEdge->setLikelihood(1.0);
+        }
 
         // The new block will inherit this block's weight.
         finalStep->inheritWeight(block);
@@ -4569,8 +4571,10 @@ void Compiler::impImportLeave(BasicBlock* block)
         impEndTreeList(finalStep, endLFinStmt, lastStmt);
 
         // this is the ultimate destination of the LEAVE
-        FlowEdge* const newEdge = fgAddRefPred(leaveTarget, finalStep);
-        newEdge->setLikelihood(1.0);
+        {
+            FlowEdge* const newEdge = fgAddRefPred(leaveTarget, finalStep);
+            newEdge->setLikelihood(1.0);
+        }
 
         // Queue up the jump target for importing
 
