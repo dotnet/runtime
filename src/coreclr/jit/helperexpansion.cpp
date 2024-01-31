@@ -1896,15 +1896,16 @@ static int GetLikelyClassesForCast(Compiler*             comp,
 }
 
 //------------------------------------------------------------------------------
-// PickCandidatesForTypeCheck: picks a class(es) to use as a fast type check against
+// PickCandidatesForTypeCheck: picks classes to use as fast type checks against
 //    the object being casted. The function also defines the strategy to follow
-//    if the type check fails or passes.
+//    if the type checks fail or pass.
 //
 // Arguments:
 //    comp               - Compiler instance
 //    castHelper         - Cast helper call to expand
+//    candidates         - [out] Classes (guesses) to use in the fast path (up to MAX_CAST_GUESSES)
 //    commonCls          - [out] Common denominator class for the fast and the fallback paths.
-//    likelihood         - [out] Likelihood of successful type check [0..100]
+//    likelihoods        - [out] Likelihoods of successful type checks [0..100]
 //    typeCheckFailed    - [out] Action to perform if the type check fails
 //    typeCheckPassed    - [out] Action to perform if the type check passes
 //
@@ -2000,7 +2001,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     // NOTE: only 2) supports multiple candidates at the moment.
     //
 
-    //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
     // 1) If "cast to" class is already exact we can go ahead and make some decisions
     //
     const bool isCastToExact = comp->info.compCompHnd->isExactType(castToCls);
@@ -2049,13 +2050,12 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         return 1;
     }
 
-    //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
     // 2) If VM can tell us the exact class for this "cast to" class - use it.
     //    Just make sure the class is truly exact.
     //
 
-    // Let's re-use the same threshold as for the GDV expansion on how many
-    // guesses we can make.
+    // Let's re-use GDV's threshold on how many guesses we can make.
     const int maxTypeChecks = min(comp->getGDVMaxTypeChecks(), MAX_CAST_GUESSES);
 
     CORINFO_CLASS_HANDLE exactClasses[MAX_CAST_GUESSES] = {};
@@ -2063,6 +2063,15 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     bool      allTrulyExact   = true;
     for (int i = 0; i < numExactClasses; i++)
     {
+        // TODO-InlineCast: we shouldn't need isExactType check, otherwise we skip cases like this:
+        //
+        // if (obj is IMyInterface) { ... }
+        //
+        // class MyClass : IMyInterface
+        // class MySubClass : MyClass
+        //
+        // (and both classes are the only ones implementing the interface)
+        //
         if (!comp->info.compCompHnd->isExactType(exactClasses[i]))
         {
             allTrulyExact = false;
@@ -2117,7 +2126,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         return numExactClasses;
     }
 
-    //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
     // 3) Consult with PGO data
     //
     CORINFO_CLASS_HANDLE likelyClasses[MAX_CAST_GUESSES]     = {};
@@ -2167,8 +2176,8 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         }
     }
 
-    //
-    // 4) Last chance: let's try to speculate!
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 4) Last chance: speculative guesses
     //
     switch (helper)
     {
