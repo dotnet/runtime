@@ -644,7 +644,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyMetadataAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameHelpers.StrongName.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameParser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFlags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFormatter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameProxy.cs" />
@@ -1462,6 +1461,18 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Reflection\TypeNameParser.cs">
       <Link>Common\System\Reflection\TypeNameParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\AssemblyNameParser.cs">
+      <Link>Common\System\Reflection\AssemblyNameParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeName.cs">
+      <Link>Common\System\Reflection\Metadata\TypeName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParser.cs">
+      <Link>Common\System\Reflection\Metadata\TypeNameParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserOptions.cs">
+      <Link>Common\System\Reflection\Metadata\TypeNameParserOptions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>

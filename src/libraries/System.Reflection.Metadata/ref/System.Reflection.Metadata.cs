@@ -2429,13 +2429,13 @@ namespace System.Reflection.Metadata
     }
     public ref partial struct TypeNameParser
     {
-        public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> name, bool allowFullyQualifiedName = true, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
+        public static System.Reflection.Metadata.TypeName? Parse(System.ReadOnlySpan<char> name, bool allowFullyQualifiedName = true, bool throwOnError = true, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
     }
     public partial class TypeNameParserOptions
     {
         public TypeNameParserOptions() { }
         public int MaxRecursiveDepth { get { throw null; } set { } }
-        public virtual void ValidateIdentifier(System.ReadOnlySpan<char> candidate) { }
+        public virtual bool ValidateIdentifier(System.ReadOnlySpan<char> candidate, bool throwOnError) { throw null; }
     }
     public readonly partial struct TypeReference
     {

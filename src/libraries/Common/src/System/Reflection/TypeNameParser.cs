@@ -636,7 +636,7 @@ namespace System.Reflection
             => Array.IndexOf(CharsToEscape, c) >= 0;
 #endif
 
-        private static string EscapeTypeName(string name)
+        internal static string EscapeTypeName(string name)
         {
             if (name.AsSpan().IndexOfAny(CharsToEscape) < 0)
                 return name;
@@ -652,7 +652,7 @@ namespace System.Reflection
             return sb.ToString();
         }
 
-        private static string EscapeTypeName(string typeName, ReadOnlySpan<string> nestedTypeNames)
+        internal static string EscapeTypeName(string typeName, ReadOnlySpan<string> nestedTypeNames)
         {
             string fullName = EscapeTypeName(typeName);
             if (nestedTypeNames.Length > 0)

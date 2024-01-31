@@ -77,7 +77,6 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\Metadata\MetadataReaderProvider.cs" />
     <Compile Include="System\Reflection\Metadata\BlobContentId.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\PrimitiveSerializationTypeCode.cs" />
-    <Compile Include="System\Reflection\Metadata\TypeNameParser.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyDefinition.netstandard.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyReference.netstandard.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\Handles.TypeSystem.cs" />
@@ -251,7 +250,12 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\PortableExecutable\SectionHeader.cs" />
     <Compile Include="System\Reflection\Throw.cs" />
     <Compile Include="System\Reflection\System.Reflection.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Reflection\AssemblyNameParser.cs" Link="System\Reflection\AssemblyNameParser.cs" />
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeName.cs" Link="System\Reflection\Metadata\TypeName.cs" />
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParser.cs" Link="System\Reflection\Metadata\TypeNameParser.cs" />
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserOptions.cs" Link="System\Reflection\Metadata\TypeNameParserOptions.cs" />
   </ItemGroup>
 
   <ItemGroup>

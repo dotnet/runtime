@@ -20,7 +20,24 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(" ")]
         [InlineData("    ")]
         public void EmptyStringsAreNotAllowed(string input)
-            => Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(input.AsSpan()));
+        {
+            Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(input.AsSpan(), throwOnError: true));
+
+            Assert.Null(TypeNameParser.Parse(input.AsSpan(), throwOnError: false));
+        }
+
+        [Theory]
+        [InlineData("Namespace.Containing++Nested")] // a pair of '++'
+        [InlineData("TypeNameFollowedBySome[] crap")] // unconsumed characters
+        [InlineData("MissingAssemblyName, ")]
+        [InlineData("ExtraComma, ,")]
+        [InlineData("ExtraComma, , System.Runtime")]
+        public void InvalidTypeNamesAreNotAllowed(string input)
+        {
+            Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(input.AsSpan(), throwOnError: true));
+
+            Assert.Null(TypeNameParser.Parse(input.AsSpan(), throwOnError: false));
+        }
 
         [Theory]
         [InlineData("Namespace.Kość", "Namespace.Kość")]
@@ -30,7 +47,11 @@ namespace System.Reflection.Metadata.Tests
         [Theory]
         [InlineData("Namespace.Kość")]
         public void UsersCanCustomizeIdentifierValidation(string input)
-            => Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(input.AsSpan(), true, new NonAsciiNotAllowed()));
+        {
+            Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(input.AsSpan(), true, throwOnError: true, new NonAsciiNotAllowed()));
+
+            Assert.Null(TypeNameParser.Parse(input.AsSpan(), true, throwOnError: false, new NonAsciiNotAllowed()));
+        }
 
         public static IEnumerable<object[]> TypeNamesWithAssemblyNames()
         {
@@ -253,9 +274,12 @@ namespace System.Reflection.Metadata.Tests
 
         internal sealed class NonAsciiNotAllowed : TypeNameParserOptions
         {
-            public override void ValidateIdentifier(ReadOnlySpan<char> candidate)
+            public override bool ValidateIdentifier(ReadOnlySpan<char> candidate, bool throwOnError)
             {
-                base.ValidateIdentifier(candidate);
+                if (!base.ValidateIdentifier(candidate, throwOnError))
+                {
+                    return false;
+                }
 
 #if NET8_0_OR_GREATER
                 if (!Ascii.IsValid(candidate))
@@ -263,8 +287,13 @@ namespace System.Reflection.Metadata.Tests
                 if (candidate.ToArray().Any(c => c >= 128))
 #endif
                 {
-                    throw new ArgumentException("Non ASCII char found");
+                    if (throwOnError)
+                    {
+                        throw new ArgumentException("Non ASCII char found");
+                    }
+                    return false;
                 }
+                return true;
             }
         }
 

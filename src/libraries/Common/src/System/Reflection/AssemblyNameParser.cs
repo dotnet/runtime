@@ -57,41 +57,53 @@ namespace System.Reflection
 
         private AssemblyNameParser(ReadOnlySpan<char> input)
         {
+#if SYSTEM_PRIVATE_CORELIB
             if (input.Length == 0)
                 throw new ArgumentException(SR.Format_StringZeroLength);
+#else
+            Debug.Assert(input.Length > 0);
+#endif
 
             _input = input;
             _index = 0;
         }
 
-        public static AssemblyNameParts Parse(string name)
-        {
-            return new AssemblyNameParser(name).Parse();
-        }
+#if SYSTEM_PRIVATE_CORELIB
+        public static AssemblyNameParts Parse(string name) => Parse(name.AsSpan());
 
         public static AssemblyNameParts Parse(ReadOnlySpan<char> name)
         {
-            return new AssemblyNameParser(name).Parse();
+            AssemblyNameParser parser = new(name);
+            AssemblyNameParts result = default;
+            if (parser.TryParse(ref result))
+            {
+                return result;
+            }
+            throw new FileLoadException(SR.InvalidAssemblyName, name.ToString());
+        }
+#endif
+
+        internal static bool TryParse(ReadOnlySpan<char> name, ref AssemblyNameParts parts)
+        {
+            AssemblyNameParser parser = new(name);
+            return parser.TryParse(ref parts);
         }
 
-        private void RecordNewSeenOrThrow(scoped ref AttributeKind seenAttributes, AttributeKind newAttribute)
+        private static bool TryRecordNewSeen(scoped ref AttributeKind seenAttributes, AttributeKind newAttribute)
         {
             if ((seenAttributes & newAttribute) != 0)
             {
-                ThrowInvalidAssemblyName();
+                return false;
             }
             seenAttributes |= newAttribute;
+            return true;
         }
 
-        private AssemblyNameParts Parse()
+        private bool TryParse(ref AssemblyNameParts result)
         {
             // Name must come first.
-            Token token = GetNextToken(out string name);
-            if (token != Token.String)
-                ThrowInvalidAssemblyName();
-
-            if (string.IsNullOrEmpty(name))
-                ThrowInvalidAssemblyName();
+            if (!TryGetNextToken(out string name, out Token token) || token != Token.String || string.IsNullOrEmpty(name))
+                return false;
 
             Version? version = null;
             string? cultureName = null;
@@ -99,61 +111,92 @@ namespace System.Reflection
             AssemblyNameFlags flags = 0;
 
             AttributeKind alreadySeen = default;
-            token = GetNextToken();
+            if (!TryGetNextToken(out _, out token))
+                return false;
+
             while (token != Token.End)
             {
                 if (token != Token.Comma)
-                    ThrowInvalidAssemblyName();
+                    return false;
 
-                token = GetNextToken(out string attributeName);
-                if (token != Token.String)
-                    ThrowInvalidAssemblyName();
+                if (!TryGetNextToken(out string attributeName, out token) || token != Token.String)
+                    return false;
 
-                token = GetNextToken();
-                if (token != Token.Equals)
-                    ThrowInvalidAssemblyName();
+                if (!TryGetNextToken(out _, out token) || token != Token.Equals)
+                    return false;
 
-                token = GetNextToken(out string attributeValue);
-                if (token != Token.String)
-                    ThrowInvalidAssemblyName();
+                if (!TryGetNextToken(out string attributeValue, out token) || token != Token.String)
+                    return false;
 
                 if (attributeName == string.Empty)
-                    ThrowInvalidAssemblyName();
+                    return false;
 
                 if (attributeName.Equals("Version", StringComparison.OrdinalIgnoreCase))
                 {
-                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.Version);
-                    version = ParseVersion(attributeValue);
+                    if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.Version))
+                    {
+                        return false;
+                    }
+                    if (!TryParseVersion(attributeValue, ref version))
+                    {
+                        return false;
+                    }
                 }
 
                 if (attributeName.Equals("Culture", StringComparison.OrdinalIgnoreCase))
                 {
-                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.Culture);
+                    if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.Culture))
+                    {
+                        return false;
+                    }
                     cultureName = ParseCulture(attributeValue);
                 }
 
                 if (attributeName.Equals("PublicKey", StringComparison.OrdinalIgnoreCase))
                 {
-                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.PublicKeyOrToken);
-                    pkt = ParsePKT(attributeValue, isToken: false);
+                    if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.PublicKeyOrToken))
+                    {
+                        return false;
+                    }
+                    if (!TryParsePKT(attributeValue, isToken: false, ref pkt))
+                    {
+                        return false;
+                    }
                     flags |= AssemblyNameFlags.PublicKey;
                 }
 
                 if (attributeName.Equals("PublicKeyToken", StringComparison.OrdinalIgnoreCase))
                 {
-                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.PublicKeyOrToken);
-                    pkt = ParsePKT(attributeValue, isToken: true);
+                    if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.PublicKeyOrToken))
+                    {
+                        return false;
+                    }
+                    if (!TryParsePKT(attributeValue, isToken: true, ref pkt))
+                    {
+                        return false;
+                    }
                 }
 
                 if (attributeName.Equals("ProcessorArchitecture", StringComparison.OrdinalIgnoreCase))
                 {
-                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.ProcessorArchitecture);
-                    flags |= (AssemblyNameFlags)(((int)ParseProcessorArchitecture(attributeValue)) << 4);
+                    if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.ProcessorArchitecture))
+                    {
+                        return false;
+                    }
+                    if (!TryParseProcessorArchitecture(attributeValue, out ProcessorArchitecture arch))
+                    {
+                        return false;
+                    }
+                    flags |= (AssemblyNameFlags)(((int)arch) << 4);
                 }
 
                 if (attributeName.Equals("Retargetable", StringComparison.OrdinalIgnoreCase))
                 {
-                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.Retargetable);
+                    if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.Retargetable))
+                    {
+                        return false;
+                    }
+
                     if (attributeValue.Equals("Yes", StringComparison.OrdinalIgnoreCase))
                     {
                         flags |= AssemblyNameFlags.Retargetable;
@@ -164,38 +207,46 @@ namespace System.Reflection
                     }
                     else
                     {
-                        ThrowInvalidAssemblyName();
+                        return false;
                     }
                 }
 
                 if (attributeName.Equals("ContentType", StringComparison.OrdinalIgnoreCase))
                 {
-                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.ContentType);
+                    if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.ContentType))
+                    {
+                        return false;
+                    }
+
                     if (attributeValue.Equals("WindowsRuntime", StringComparison.OrdinalIgnoreCase))
                     {
                         flags |= (AssemblyNameFlags)(((int)AssemblyContentType.WindowsRuntime) << 9);
                     }
                     else
                     {
-                        ThrowInvalidAssemblyName();
+                        return false;
                     }
                 }
 
                 // Desktop compat: If we got here, the attribute name is unknown to us. Ignore it.
-                token = GetNextToken();
+                if (!TryGetNextToken(out _, out token))
+                {
+                    return false;
+                }
             }
 
-            return new AssemblyNameParts(name, version, cultureName, flags, pkt);
+            result = new AssemblyNameParts(name, version, cultureName, flags, pkt);
+            return true;
         }
 
-        private Version ParseVersion(string attributeValue)
+        private bool TryParseVersion(string attributeValue, ref Version? version)
         {
             ReadOnlySpan<char> attributeValueSpan = attributeValue;
             Span<Range> parts = stackalloc Range[5];
             parts = parts.Slice(0, attributeValueSpan.Split(parts, '.'));
             if (parts.Length is < 2 or > 4)
             {
-                ThrowInvalidAssemblyName();
+                return false;
             }
 
             Span<ushort> versionNumbers = stackalloc ushort[4];
@@ -209,20 +260,22 @@ namespace System.Reflection
 
                 if (!ushort.TryParse(attributeValueSpan[parts[i]], NumberStyles.None, NumberFormatInfo.InvariantInfo, out versionNumbers[i]))
                 {
-                    ThrowInvalidAssemblyName();
+                    return false;
                 }
             }
 
             if (versionNumbers[0] == ushort.MaxValue ||
                 versionNumbers[1] == ushort.MaxValue)
             {
-                ThrowInvalidAssemblyName();
+                return false;
             }
 
-            return
+            version =
                 versionNumbers[2] == ushort.MaxValue ? new Version(versionNumbers[0], versionNumbers[1]) :
                 versionNumbers[3] == ushort.MaxValue ? new Version(versionNumbers[0], versionNumbers[1], versionNumbers[2]) :
                 new Version(versionNumbers[0], versionNumbers[1], versionNumbers[2], versionNumbers[3]);
+
+            return true;
         }
 
         private static string ParseCulture(string attributeValue)
@@ -235,13 +288,18 @@ namespace System.Reflection
             return attributeValue;
         }
 
-        private byte[] ParsePKT(string attributeValue, bool isToken)
+        private static bool TryParsePKT(string attributeValue, bool isToken, ref byte[]? result)
         {
             if (attributeValue.Equals("null", StringComparison.OrdinalIgnoreCase) || attributeValue == string.Empty)
-                return Array.Empty<byte>();
+            {
+                result = Array.Empty<byte>();
+                return true;
+            }
 
             if (isToken && attributeValue.Length != 8 * 2)
-                ThrowInvalidAssemblyName();
+            {
+                return false;
+            }
 
             byte[] pkt = new byte[attributeValue.Length / 2];
             int srcIndex = 0;
@@ -249,44 +307,43 @@ namespace System.Reflection
             {
                 char hi = attributeValue[srcIndex++];
                 char lo = attributeValue[srcIndex++];
-                pkt[i] = (byte)((ParseHexNybble(hi) << 4) | ParseHexNybble(lo));
+
+                if (!TryParseHexNybble(hi, out byte parsedHi) || !TryParseHexNybble(lo, out byte parsedLo))
+                {
+                    return false;
+                }
+
+                pkt[i] = (byte)((parsedHi << 4) | parsedLo);
             }
-            return pkt;
+            result = pkt;
+            return true;
         }
 
-        private ProcessorArchitecture ParseProcessorArchitecture(string attributeValue)
+        private static bool TryParseProcessorArchitecture(string attributeValue, out ProcessorArchitecture result)
         {
-            if (attributeValue.Equals("msil", StringComparison.OrdinalIgnoreCase))
-                return ProcessorArchitecture.MSIL;
-            if (attributeValue.Equals("x86", StringComparison.OrdinalIgnoreCase))
-                return ProcessorArchitecture.X86;
-            if (attributeValue.Equals("ia64", StringComparison.OrdinalIgnoreCase))
-                return ProcessorArchitecture.IA64;
-            if (attributeValue.Equals("amd64", StringComparison.OrdinalIgnoreCase))
-                return ProcessorArchitecture.Amd64;
-            if (attributeValue.Equals("arm", StringComparison.OrdinalIgnoreCase))
-                return ProcessorArchitecture.Arm;
-            ThrowInvalidAssemblyName();
-            return default; // unreachable
+            result = attributeValue switch
+            {
+                _ when attributeValue.Equals("msil", StringComparison.OrdinalIgnoreCase) => ProcessorArchitecture.MSIL,
+                _ when attributeValue.Equals("x86", StringComparison.OrdinalIgnoreCase) => ProcessorArchitecture.X86,
+                _ when attributeValue.Equals("ia64", StringComparison.OrdinalIgnoreCase) => ProcessorArchitecture.IA64,
+                _ when attributeValue.Equals("amd64", StringComparison.OrdinalIgnoreCase) => ProcessorArchitecture.Amd64,
+                _ when attributeValue.Equals("arm", StringComparison.OrdinalIgnoreCase) => ProcessorArchitecture.Arm,
+                _ when attributeValue.Equals("msil", StringComparison.OrdinalIgnoreCase) => ProcessorArchitecture.MSIL,
+                _ => ProcessorArchitecture.None
+            };
+            return result != ProcessorArchitecture.None;
         }
 
-        private byte ParseHexNybble(char c)
+        private static bool TryParseHexNybble(char c, out byte parsed)
         {
             int value = HexConverter.FromChar(c);
             if (value == 0xFF)
             {
-                ThrowInvalidAssemblyName();
+                parsed = 0;
+                return false;
             }
-            return (byte)value;
-        }
-
-        //
-        // Return the next token in assembly name. If you expect the result to be Token.String,
-        // use GetNext(out String) instead.
-        //
-        private Token GetNextToken()
-        {
-            return GetNextToken(out _);
+            parsed = (byte)value;
+            return true;
         }
 
         private static bool IsWhiteSpace(char ch)
@@ -304,15 +361,14 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private char GetNextChar()
+        private bool TryGetNextChar(out char ch)
         {
-            char ch;
             if (_index < _input.Length)
             {
                 ch = _input[_index++];
                 if (ch == '\0')
                 {
-                    ThrowInvalidAssemblyName();
+                    return false;
                 }
             }
             else
@@ -320,29 +376,43 @@ namespace System.Reflection
                 ch = '\0';
             }
 
-            return ch;
+            return true;
         }
 
         //
         // Return the next token in assembly name. If the result is Token.String,
         // sets "tokenString" to the tokenized string.
         //
-        private Token GetNextToken(out string tokenString)
+        private bool TryGetNextToken(out string tokenString, out Token token)
         {
             tokenString = string.Empty;
             char c;
 
             while (true)
             {
-                c = GetNextChar();
+                if (!TryGetNextChar(out c))
+                {
+                    token = default;
+                    return false;
+                }
+
                 switch (c)
                 {
                     case ',':
-                        return Token.Comma;
+                    {
+                        token = Token.Comma;
+                        return true;
+                    }
                     case '=':
-                        return Token.Equals;
+                    {
+                        token = Token.Equals;
+                        return true;
+                    }
                     case '\0':
-                        return Token.End;
+                    {
+                        token = Token.End;
+                        return true;
+                    }
                 }
 
                 if (!IsWhiteSpace(c))
@@ -351,13 +421,21 @@ namespace System.Reflection
                 }
             }
 
+#if SYSTEM_PRIVATE_CORELIB
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
+#else
+            StringBuilder sb = new(64);
+#endif
 
             char quoteChar = '\0';
             if (c == '\'' || c == '\"')
             {
                 quoteChar = c;
-                c = GetNextChar();
+                if (!TryGetNextChar(out c))
+                {
+                    token = default;
+                    return false;
+                }
             }
 
             for (; ; )
@@ -367,7 +445,8 @@ namespace System.Reflection
                     if (quoteChar != 0)
                     {
                         // EOS and unclosed quotes is an error
-                        ThrowInvalidAssemblyName();
+                        token = default;
+                        return false;
                     }
                     // Reached end of input and therefore of string
                     break;
@@ -383,11 +462,18 @@ namespace System.Reflection
                 }
 
                 if (quoteChar == 0 && (c == '\'' || c == '\"'))
-                    ThrowInvalidAssemblyName();
+                {
+                    token = default;
+                    return false;
+                }
 
                 if (c == '\\')
                 {
-                    c = GetNextChar();
+                    if (!TryGetNextChar(out c))
+                    {
+                        token = default;
+                        return false;
+                    }
 
                     switch (c)
                     {
@@ -408,8 +494,8 @@ namespace System.Reflection
                             sb.Append('\n');
                             break;
                         default:
-                            ThrowInvalidAssemblyName();
-                            break; //unreachable
+                            token = default;
+                            return false; //unreachable
                     }
                 }
                 else
@@ -417,7 +503,11 @@ namespace System.Reflection
                     sb.Append(c);
                 }
 
-                c = GetNextChar();
+                if (!TryGetNextChar(out c))
+                {
+                    token = default;
+                    return false;
+                }
             }
 
 
@@ -428,11 +518,8 @@ namespace System.Reflection
             }
 
             tokenString = sb.ToString();
-            return Token.String;
+            token = Token.String;
+            return true;
         }
-
-        [DoesNotReturn]
-        private void ThrowInvalidAssemblyName()
-            => throw new FileLoadException(SR.InvalidAssemblyName, _input.ToString());
     }
 }
