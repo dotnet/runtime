@@ -125,7 +125,6 @@ fi
 export DOTNET_DbgEnableMiniDump=1
 export DOTNET_EnableCrashReport=1
 export DOTNET_DbgMiniDumpName=$HELIX_DUMP_FOLDER/coredump.%d.dmp
-export DOTNET_CreateDumpVerboseDiagnostics=1
 # ========================= END Core File Setup ==============================
 
 # ========================= BEGIN support for SuperPMI collection ==============================
