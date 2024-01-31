@@ -51,7 +51,6 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <minipal/getexepath.h>
-#include "cominterop.h"
 #include <mono/utils/w32api.h>
 #include <mono/utils/unlocked.h>
 #include "external-only.h"

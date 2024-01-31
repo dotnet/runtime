@@ -283,17 +283,6 @@ mono_gc_run_finalize (void *obj, void *data)
 
 	finalizer = mono_class_get_finalizer (o->vtable->klass);
 
-	/* If object has a CCW but has no finalizer, it was only
-	 * registered for finalization in order to free the CCW.
-	 * Else it needs the regular finalizer run.
-	 * FIXME: what to do about resurrection and suppression
-	 * of finalizer on object with CCW.
-	 */
-	if (mono_marshal_free_ccw (o) && !finalizer) {
-		mono_domain_set_internal_with_options (caller_domain, TRUE);
-		return;
-	}
-
 	/*
 	 * To avoid the locking plus the other overhead of mono_runtime_invoke_checked (),
 	 * create and precompile a wrapper which calls the finalize method using

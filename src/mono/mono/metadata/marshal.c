@@ -17,6 +17,7 @@
 #include <alloca.h>
 #endif
 
+#include <glib.h>
 #if defined(HOST_WIN32)
 #include <mono/utils/mono-compiler.h>
 MONO_PRAGMA_WARNING_PUSH()
@@ -24,8 +25,11 @@ MONO_PRAGMA_WARNING_DISABLE (4115) // warning C4115: 'IRpcStubBuffer': named typ
 #include <winsock2.h>
 #include <windows.h>
 #include <objbase.h>
+#include <oleauto.h>
 MONO_PRAGMA_WARNING_POP()
+#include <mono/utils/w32subset.h>
 #endif
+#include <mono/utils/w32api.h>
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/loader.h>
@@ -53,7 +57,6 @@ MONO_PRAGMA_WARNING_POP()
 #include "mono/metadata/threads-types.h"
 #include "mono/metadata/string-icalls.h"
 #include "mono/metadata/attrdefs.h"
-#include "mono/metadata/cominterop.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/handle.h"
 #include "mono/metadata/object-internals.h"
@@ -320,6 +323,9 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_free_array, mono_icall_sig_void_ptr_int32, FALSE);
 		register_icall (mono_string_to_byvalstr, mono_icall_sig_void_ptr_ptr_int32, FALSE);
 		register_icall (mono_string_to_byvalwstr, mono_icall_sig_void_ptr_ptr_int32, FALSE);
+		register_icall (mono_string_to_bstr, mono_icall_sig_ptr_obj, FALSE);
+		register_icall (mono_string_from_bstr_icall, mono_icall_sig_obj_ptr, FALSE);
+		register_icall (mono_free_bstr, mono_icall_sig_void_ptr, FALSE);
 		// Because #define g_free monoeg_g_free.
 		register_icall (monoeg_g_free, mono_icall_sig_void_ptr, FALSE);
 		register_icall (mono_object_isinst_icall, mono_icall_sig_object_object_ptr, TRUE);
@@ -338,8 +344,6 @@ mono_marshal_init (void)
 		register_icall (mono_threads_detach_coop, mono_icall_sig_void_ptr_ptr, TRUE);
 		register_icall (mono_marshal_get_type_object, mono_icall_sig_object_ptr, TRUE);
 		register_icall (mono_marshal_lookup_pinvoke, mono_icall_sig_ptr_ptr, FALSE);
-
-		mono_cominterop_init ();
 
 		mono_counters_register ("MonoClass::class_marshal_info_count count",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_marshal_info_count);
@@ -1087,6 +1091,18 @@ mono_string_to_tbstr_impl (MonoStringHandle string_obj, MonoError *error)
 #endif
 }
 
+static MonoStringHandle
+mono_string_from_bstr_checked (mono_bstr_const bstr, MonoError *error)
+{
+	if (!bstr)
+		return NULL_HANDLE_STRING;
+#if HAVE_API_SUPPORT_WIN32_BSTR
+	return mono_string_new_utf16_handle (bstr, SysStringLen ((BSTR)bstr), error);
+#else
+	return mono_string_new_utf16_handle (bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
+#endif // HAVE_API_SUPPORT_WIN32_BSTR
+}
+
 /* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
 MonoStringHandle
 mono_string_from_tbstr_impl (gpointer data, MonoError *error)
@@ -1165,6 +1181,125 @@ mono_string_new_len_wrapper_impl (const char *text, guint length, MonoError *err
 	return_val_if_nok (error, NULL_HANDLE_STRING);
 	return MONO_HANDLE_NEW (MonoString, s);
 }
+
+
+mono_bstr
+mono_string_to_bstr_impl (MonoStringHandle s, MonoError *error)
+{
+	if (MONO_HANDLE_IS_NULL (s))
+		return NULL;
+
+	MonoGCHandle gchandle = NULL;
+	mono_bstr const res = mono_ptr_to_bstr (mono_string_handle_pin_chars (s, &gchandle), mono_string_handle_length (s));
+	mono_gchandle_free_internal (gchandle);
+	return res;
+}
+
+// This function is used regardless of the BSTR type, so cast the return value
+// Inputted string length, in bytes, should include the null terminator
+// Returns the start of the string itself
+static gpointer
+mono_bstr_alloc (size_t str_byte_len)
+{
+	// Allocate string length plus pointer-size integer to store the length, aligned to 16 bytes
+	size_t alloc_size = str_byte_len + SIZEOF_VOID_P;
+	alloc_size += (16 - 1);
+	alloc_size &= ~(16 - 1);
+	gpointer ret = g_malloc0 (alloc_size);
+	return ret ? (char *)ret + SIZEOF_VOID_P : NULL;
+}
+
+static void
+mono_bstr_set_length (gunichar2 *bstr, int slen)
+{
+	*((guint32 *)bstr - 1) = slen * sizeof (gunichar2);
+}
+
+static mono_bstr
+default_ptr_to_bstr (const gunichar2* ptr, int slen)
+{
+	// In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform.
+	// Presumably this is due to the BStr documentation page, which indicates that behavior and then directs you to call
+	// SysAllocString on Windows to handle the allocation for you. Unfortunately, this is not actually how it works:
+	// The allocation pre-string is pointer-sized, and then only 4 bytes are used for the length regardless. Additionally,
+	// the total length is also aligned to a 16-byte boundary. This preserves the old behavior on legacy and fixes it for
+	// netcore moving forward.
+	mono_bstr const s = (mono_bstr)mono_bstr_alloc ((slen + 1) * sizeof (gunichar2));
+	if (s == NULL)
+		return NULL;
+
+	mono_bstr_set_length (s, slen);
+	if (ptr)
+		memcpy (s, ptr, slen * sizeof (gunichar2));
+	s [slen] = 0;
+	return s;
+}
+
+/* PTR can be NULL */
+mono_bstr
+mono_ptr_to_bstr (const gunichar2* ptr, int slen)
+{
+#if HAVE_API_SUPPORT_WIN32_BSTR
+	return SysAllocStringLen (ptr, slen);
+#else
+	return default_ptr_to_bstr (ptr, slen);
+#endif // HAVE_API_SUPPORT_WIN32_BSTR
+}
+
+char *
+mono_ptr_to_ansibstr (const char *ptr, size_t slen)
+{
+	char *s = (char *)mono_bstr_alloc ((slen + 1) * sizeof(char));
+	if (s == NULL)
+		return NULL;
+	*((guint32 *)s - 1) = (guint32)(slen * sizeof (char));
+	if (ptr)
+		memcpy (s, ptr, slen * sizeof (char));
+	s [slen] = 0;
+	return s;
+}
+
+MonoString *
+mono_string_from_bstr (/*mono_bstr_const*/gpointer bstr)
+{
+	// FIXME gcmode
+	HANDLE_FUNCTION_ENTER ();
+	ERROR_DECL (error);
+	MonoStringHandle result = mono_string_from_bstr_checked ((mono_bstr_const)bstr, error);
+	mono_error_cleanup (error);
+	HANDLE_FUNCTION_RETURN_OBJ (result);
+}
+
+MonoStringHandle
+mono_string_from_bstr_icall_impl (mono_bstr_const bstr, MonoError *error)
+{
+	return mono_string_from_bstr_checked (bstr, error);
+}
+
+MONO_API void
+mono_free_bstr (/*mono_bstr_const*/gpointer bstr)
+{
+	if (!bstr)
+		return;
+#if HAVE_API_SUPPORT_WIN32_BSTR
+	SysFreeString ((BSTR)bstr);
+#else
+	g_free (((char *)bstr) - SIZEOF_VOID_P);
+#endif // HAVE_API_SUPPORT_WIN32_BSTR
+}
+
+mono_bstr
+ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2* ptr, int len)
+{
+	return mono_ptr_to_bstr (ptr, len);
+}
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (mono_bstr_const ptr)
+{
+	mono_free_bstr ((gpointer)ptr);
+}
+
 
 guint8
 mono_type_to_ldind (MonoType *type)
@@ -1495,13 +1630,13 @@ get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
 	return *var;
 }
 
-GHashTable*
+static GHashTable*
 mono_marshal_get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
 {
 	return get_cache (var, hash_func, equal_func);
 }
 
-MonoMethod*
+static MonoMethod*
 mono_marshal_find_in_cache (GHashTable *cache, gpointer key)
 {
 	MonoMethod *res;
@@ -1530,7 +1665,7 @@ mono_mb_create (MonoMethodBuilder *mb, MonoMethodSignature *sig,
 }
 
 /* Create the method from the builder and place it in the cache */
-MonoMethod*
+static MonoMethod*
 mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
 							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
 							   int max_stack, WrapperInfo *info, gboolean *out_found)
@@ -1564,7 +1699,7 @@ mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
 	return res;
 }
 
-MonoMethod*
+static MonoMethod*
 mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
 							   int max_stack)
@@ -3352,6 +3487,8 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		mono_custom_attrs_free(cinfo);
 }
 
+static void
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags);
 
 /**
  * mono_marshal_get_native_wrapper:
@@ -3833,7 +3970,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
  * it could have fewer parameters than the method it wraps.
  * THIS_LOC is the memory location where the target of the delegate is stored.
  */
-void
+static void
 mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
 {
 	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle, FALSE, error);
@@ -6418,8 +6555,6 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->native_func_wrapper_indirect_cache);
 	free_hash (cache->synchronized_cache);
 	free_hash (cache->unbox_wrapper_cache);
-	free_hash (cache->cominterop_invoke_cache);
-	free_hash (cache->cominterop_wrapper_cache);
 	free_hash (cache->thunk_invoke_cache);
 	free_hash (cache->unsafe_accessor_cache);
 }

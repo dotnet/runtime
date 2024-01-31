@@ -29,7 +29,6 @@
 #include "marshal.h"
 #include <mono/metadata/debug-helpers.h>
 #include "abi-details.h"
-#include "cominterop.h"
 #include "components.h"
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/mono-error-internals.h>

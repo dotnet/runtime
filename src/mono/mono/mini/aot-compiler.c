@@ -9530,9 +9530,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		// FIXME: The wrapper should be generic too, but it is not
 		return;
 
-	if (method->wrapper_type == MONO_WRAPPER_COMINTEROP)
-		return;
-
 	if (acfg->aot_opts.profile_only && !g_hash_table_lookup (acfg->profile_methods, method)) {
 		if (acfg->aot_opts.llvm_only) {
 			gboolean keep = FALSE;
