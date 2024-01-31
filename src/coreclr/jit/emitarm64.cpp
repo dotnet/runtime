@@ -15590,6 +15590,149 @@ void emitter::emitIns_Call(EmitCallType          callType,
             }
             break;
 
+        case IF_SVE_IP_4A:
+            switch (ins)
+            {             
+                case INS_sve_ld1roh:
+                case INS_sve_ld1row:
+                case INS_sve_ld1rod:
+                case INS_sve_ld1rqh:
+                case INS_sve_ld1rqw:
+                case INS_sve_ld1rqd:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IR_4A:
+            switch (ins)
+            {
+                case INS_sve_ld2q:
+                case INS_sve_ld3q:
+                case INS_sve_ld4q:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IT_4A:
+            switch (ins)
+            {
+                case INS_sve_ld2h:
+                case INS_sve_ld2w:
+                case INS_sve_ld2d:
+                case INS_sve_ld3h:
+                case INS_sve_ld3w:
+                case INS_sve_ld3d:
+                case INS_sve_ld4h:
+                case INS_sve_ld4w:
+                case INS_sve_ld4d:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IU_4B:
+            switch (ins)
+            {
+                case INS_sve_ld1sw:
+                case INS_sve_ldff1sw:
+                case INS_sve_ld1d:
+                case INS_sve_ldff1d:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JB_4A:
+            switch (ins)
+            {
+                case INS_sve_stnt1h:
+                case INS_sve_stnt1w:
+                case INS_sve_stnt1d:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JC_4A:
+            switch (ins)
+            {
+                case INS_sve_st2h:
+                case INS_sve_st2w:
+                case INS_sve_st2d:
+                case INS_sve_st3h:
+                case INS_sve_st3w:
+                case INS_sve_st3d:
+                case INS_sve_st4h:
+                case INS_sve_st4w:
+                case INS_sve_st4d:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JD_4C:
+            switch (ins)
+            {
+                case INS_sve_st1w:
+                case INS_sve_st1d:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JD_4C_A:
+            switch (ins)
+            {
+                case INS_sve_st1d:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JF_4A:
+            switch (ins)
+            {
+                case INS_sve_st2q:
+                case INS_sve_st3q:
+                case INS_sve_st4q:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JJ_4B:
+            switch (ins)
+            {
+                case INS_sve_st1h:
+                case INS_sve_st1w:
+                case INS_sve_st1d:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
         default:
             break;
     }
@@ -16002,6 +16145,192 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 case INS_sve_ldnt1w:
                     return 2;
                 case INS_sve_ldnt1d:
+                    return 3;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IP_4A:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_ld1roh:
+                case INS_sve_ld1rqh:
+                    return 1;
+
+                case INS_sve_ld1row:
+                case INS_sve_ld1rqw:
+                    return 2;
+                case INS_sve_ld1rod:
+                case INS_sve_ld1rqd:
+                    return 3;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IR_4A:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_ld2q:
+                case INS_sve_ld3q:
+                case INS_sve_ld4q:
+                    return 4;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IT_4A:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_ld2h:
+                case INS_sve_ld3h:
+                case INS_sve_ld4h:
+                    return 1;
+
+                case INS_sve_ld2w:
+                case INS_sve_ld3w:
+                case INS_sve_ld4w:
+                    return 2;
+
+                case INS_sve_ld2d:
+                case INS_sve_ld3d:
+                case INS_sve_ld4d:
+                    return 3;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IU_4B:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_ld1sw:
+                case INS_sve_ldff1sw:
+                    return 2;
+
+                case INS_sve_ld1d:
+                case INS_sve_ldff1d:
+                    return 3;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JB_4A:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_stnt1h:
+                    return 1;
+
+                case INS_sve_stnt1w:
+                    return 2;
+
+                case INS_sve_stnt1d:
+                    return 3;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JC_4A:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_st2h:
+                case INS_sve_st3h:
+                case INS_sve_st4h:
+                    return 1;
+
+                case INS_sve_st2w:
+                case INS_sve_st3w:
+                case INS_sve_st4w:
+                    return 2;
+
+                case INS_sve_st2d:
+                case INS_sve_st3d:
+                case INS_sve_st4d:
+                    return 3;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JD_4C:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_st1w:
+                    return 2;
+
+                case INS_sve_st1d:
+                    return 3;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JD_4C_A:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_st1d:
+                    return 3;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JF_4A:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_st2q:
+                case INS_sve_st3q:
+                case INS_sve_st4q:
+                    return 4;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_JJ_4B:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_st1h:
+                    return 1;
+
+                case INS_sve_st1w:
+                    return 2;
+
+                case INS_sve_st1d:
                     return 3;
 
                 default:
@@ -22066,39 +22395,96 @@ void emitter::emitDispInsHelp(
         // {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Xm>]
         // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>]
         case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
+        // {<Zt>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]
+        // {<Zt>.H }, <Pg>/Z, [<Xn|SP>, <Xm>]
+        // {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Xm>]
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>]
         case IF_SVE_IP_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus scalar)
+        // {<Zt1>.Q, <Zt2>.Q }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #4]
+        // {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #4]
+        // {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #4]
         case IF_SVE_IR_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
                            // scalar)
+        // {<Zt1>.B, <Zt2>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]
+        // {<Zt1>.H, <Zt2>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]
+        // {<Zt1>.S, <Zt2>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]
+        // {<Zt1>.D, <Zt2>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]
+        // {<Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]
+        // {<Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]
+        // {<Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]
+        // {<Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]
+        // {<Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]
+        // {<Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]
+        // {<Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]
+        // {<Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]
         case IF_SVE_IT_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (scalar plus scalar)
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, LSL #2]
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, LSL #3]
         case IF_SVE_IU_4B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
                            // scaled offsets)
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]
         case IF_SVE_IU_4B_B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
                              // scaled offsets)
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]
         case IF_SVE_IU_4B_D: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
                              // scaled offsets)
+        // {<Zt>.Q }, <Pg>/Z, [<Zn>.D{, <Xm>}]
         case IF_SVE_IW_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit gather load (vector plus scalar)
+        // {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]
         case IF_SVE_IX_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit gather non-temporal load (vector plus
                              // scalar)
+        // {<Zt>.Q }, <Pg>, [<Zn>.D{, <Xm>}]
         case IF_SVE_IY_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit scatter store (vector plus scalar)
+        // {<Zt>.S }, <Pg>, [<Zn>.S{, <Xm>}]
         case IF_SVE_IZ_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit scatter non-temporal store (vector plus
                              // scalar)
+        // {<Zt>.D }, <Pg>, [<Zn>.D{, <Xm>}]
         case IF_SVE_IZ_4A_A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit scatter non-temporal store (vector plus
                              // scalar)
+        // {<Zt>.D }, <Pg>, [<Zn>.D{, <Xm>}]
         case IF_SVE_JA_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit scatter non-temporal store (vector plus
                              // scalar)
+        // {<Zt>.B }, <Pg>, [<Xn|SP>, <Xm>]
+        // {<Zt>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
+        // {<Zt>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
         case IF_SVE_JB_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
                              // scalar)
+        // {<Zt1>.B, <Zt2>.B }, <Pg>, [<Xn|SP>, <Xm>]
+        // {<Zt1>.H, <Zt2>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
+        // {<Zt1>.S, <Zt2>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
+        // {<Zt1>.D, <Zt2>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
+        // {<Zt1>.B, <Zt2>.B, <Zt3>.B }, <Pg>, [<Xn|SP>, <Xm>]
+        // {<Zt1>.H, <Zt2>.H, <Zt3>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
+        // {<Zt1>.S, <Zt2>.S, <Zt3>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
+        // {<Zt1>.D, <Zt2>.D, <Zt3>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
+        // {<Zt1>.B, <Zt2>.B, <Zt3>.B, <Zt4>.B }, <Pg>, [<Xn|SP>, <Xm>]
+        // {<Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
+        // {<Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
+        // {<Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
         case IF_SVE_JC_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE store multiple structures (scalar plus scalar)
+        // {<Zt>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
         case IF_SVE_JD_4C:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+        // {<Zt>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
         case IF_SVE_JD_4C_A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+        // {<Zt1>.Q, <Zt2>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #4]
+        // {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #4]
+        // {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #4]
         case IF_SVE_JF_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE store multiple structures (quadwords, scalar plus
                            // scalar)
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, LSL #1]
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, LSL #2]
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D, LSL #3]
         case IF_SVE_JJ_4B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
                            // offsets)
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D]
         case IF_SVE_JJ_4B_C: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
                              // offsets)
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D]
         case IF_SVE_JJ_4B_E: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
                              // offsets)
+        // {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D]
         case IF_SVE_JK_4B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit unscaled
                            // offsets)
             emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt

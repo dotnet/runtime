@@ -2143,12 +2143,12 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 #endif // defined(LATE_DISASM) || defined(DEBUG)
 
 #ifdef LATE_DISASM
-    getDisAssembler().disAsmCode((BYTE*)*codePtr, (BYTE*)codePtrRW, finalHotCodeSize, (BYTE*)coldCodePtr,
-                                 (BYTE*)coldCodePtrRW, finalColdCodeSize);
+    //getDisAssembler().disAsmCode((BYTE*)*codePtr, (BYTE*)codePtrRW, finalHotCodeSize, (BYTE*)coldCodePtr,
+    //                             (BYTE*)coldCodePtrRW, finalColdCodeSize);
 #endif // LATE_DISASM
 
 #ifdef DEBUG
-    if (JitConfig.JitRawHexCode().contains(compiler->info.compMethodHnd, compiler->info.compClassHnd,
+    if (compiler->opts.altJit && JitConfig.JitRawHexCode().contains(compiler->info.compMethodHnd, compiler->info.compClassHnd,
                                            &compiler->info.compMethodInfo->args))
     {
         // NOTE: code in cold region is not supported.
