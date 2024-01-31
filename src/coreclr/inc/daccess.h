@@ -558,6 +558,7 @@
 #ifndef __daccess_h__
 #define __daccess_h__
 
+#ifndef NATIVEAOT
 #include <stdint.h>
 
 #include "switches.h"
@@ -660,6 +661,8 @@ public:
 #include "vptr_list.h"
 #undef VPTR_CLASS
 } DacGlobals;
+
+#endif // !NATIVEAOT
 
 #ifdef DACCESS_COMPILE
 
@@ -2365,6 +2368,23 @@ inline type* DacUnsafeMarshalSingleElement( ArrayDPTR(type) arrayPtr )
 //
 //----------------------------------------------------------------------------
 
+typedef DPTR(size_t)  PTR_size_t;
+#ifdef NATIVEAOT
+typedef DPTR(int8_t)          PTR_Int8;
+typedef DPTR(int16_t)         PTR_Int16;
+typedef DPTR(int32_t)         PTR_Int32;
+typedef DPTR(int64_t)         PTR_Int64;
+typedef ArrayDPTR(uint8_t)    PTR_UInt8;
+typedef DPTR(PTR_UInt8)     PTR_PTR_UInt8;
+typedef DPTR(PTR_PTR_UInt8) PTR_PTR_PTR_UInt8;
+typedef DPTR(uint16_t)        PTR_UInt16;
+typedef DPTR(uint32_t)        PTR_UInt32;
+typedef DPTR(uint64_t)        PTR_UInt64;
+typedef DPTR(uintptr_t)    PTR_UIntNative;
+typedef uint8_t               Code;
+typedef DPTR(Code)          PTR_Code;
+typedef DPTR(PTR_Code)      PTR_PTR_Code;
+#else
 typedef ArrayDPTR(BYTE)    PTR_BYTE;
 typedef ArrayDPTR(uint8_t) PTR_uint8_t;
 typedef DPTR(PTR_BYTE) PTR_PTR_BYTE;
@@ -2387,7 +2407,6 @@ typedef DPTR(ULONG64) PTR_ULONG64;
 typedef DPTR(INT64)   PTR_INT64;
 typedef DPTR(UINT64)  PTR_UINT64;
 typedef DPTR(SIZE_T)  PTR_SIZE_T;
-typedef DPTR(size_t)  PTR_size_t;
 typedef DPTR(TADDR)   PTR_TADDR;
 typedef DPTR(int)     PTR_int;
 typedef DPTR(BOOL)    PTR_BOOL;
@@ -2417,6 +2436,7 @@ typedef DPTR(IMAGE_NT_HEADERS64)    PTR_IMAGE_NT_HEADERS64;
 typedef DPTR(IMAGE_SECTION_HEADER)  PTR_IMAGE_SECTION_HEADER;
 typedef DPTR(IMAGE_EXPORT_DIRECTORY)  PTR_IMAGE_EXPORT_DIRECTORY;
 typedef DPTR(IMAGE_TLS_DIRECTORY)   PTR_IMAGE_TLS_DIRECTORY;
+#endif
 
 #if defined(DACCESS_COMPILE)
 #include <corhdr.h>
@@ -2424,6 +2444,7 @@ typedef DPTR(IMAGE_TLS_DIRECTORY)   PTR_IMAGE_TLS_DIRECTORY;
 #include <xclrdata.h>
 #endif
 
+#ifndef NATIVEAOT
 #if defined(TARGET_X86) && defined(TARGET_UNIX)
 typedef DPTR(struct _UNWIND_INFO)      PTR_UNWIND_INFO;
 #endif
@@ -2438,6 +2459,7 @@ typedef DPTR(union _UNWIND_CODE)       PTR_UNWIND_CODE;
 
 #ifdef TARGET_ARM
 typedef DPTR(T_RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
+#endif
 #endif
 
 //----------------------------------------------------------------------------
