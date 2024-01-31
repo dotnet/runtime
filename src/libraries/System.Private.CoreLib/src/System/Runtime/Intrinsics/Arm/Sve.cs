@@ -13,6 +13,7 @@ namespace System.Runtime.Intrinsics.Arm
     /// </summary>
     [Intrinsic]
     [CLSCompliant(false)]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Sve is in preview.")]
     public abstract class Sve : AdvSimd
     {
         internal Sve() { }
