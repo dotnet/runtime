@@ -4552,11 +4552,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
 
-    // Disable profile checks now.
-    // Over time we will move this further and further back in the phase list, as we fix issues.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
     // Cleanup un-imported BBs, cleanup un-imported or
     // partially imported try regions, add OSR step blocks.
     //
@@ -4587,6 +4582,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Prepare for the morph phases
     //
     DoPhase(this, PHASE_MORPH_INIT, &Compiler::fgMorphInit);
+
+    // Disable profile checks now.
+    // Over time we will move this further and further back in the phase list, as we fix issues.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // Inline callee methods into this root method
     //
