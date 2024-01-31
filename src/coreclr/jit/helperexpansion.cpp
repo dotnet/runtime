@@ -1858,75 +1858,6 @@ enum class TypeCheckPassedAction
 #define MAX_CAST_GUESSES 8
 
 //------------------------------------------------------------------------------
-// GetLikelyClassesForCast: returns a list of likely classes for the given cast
-//   using profile data.
-//
-// Arguments:
-//    comp        - Compiler instance
-//    ilOffset    - IL offset of the cast
-//    candidates  - [out] Array of likely class handles (up to MAX_CAST_GUESSES)
-//    likelihoods - [out] Array of their likelihoods [0..100]
-//
-// Returns:
-//    Number of likely classes
-//
-static int GetLikelyClassesForCast(Compiler*             comp,
-                                   int                   ilOffset,
-                                   CORINFO_CLASS_HANDLE* candidates,
-                                   unsigned*             likelihoods)
-{
-    if (!comp->opts.IsOptimizedWithProfile() || (JitConfig.JitConsumeProfileForCasts() == 0))
-    {
-        return 0;
-    }
-
-    LikelyClassMethodRecord likelyClasses[MAX_CAST_GUESSES];
-    unsigned                likelyClassCount = getLikelyClasses(likelyClasses, MAX_CAST_GUESSES, comp->fgPgoSchema,
-                                                 comp->fgPgoSchemaCount, comp->fgPgoData, ilOffset);
-
-    if (likelyClassCount == 0)
-    {
-        return 0;
-    }
-
-    int numberOfCandidates = 0;
-    for (UINT32 i = 0; i < likelyClassCount; i++)
-    {
-#ifdef DEBUG
-        const char* className = comp->eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
-        JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
-                likelyClasses[i].likelihood);
-#endif
-
-        CORINFO_CLASS_HANDLE cls = (CORINFO_CLASS_HANDLE)likelyClasses[i].handle;
-        if (cls != NO_CLASS_HANDLE)
-        {
-            // Validate static profile data
-            if ((comp->info.compCompHnd->getClassAttribs(cls) &
-                 (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0)
-            {
-                // Possible scenario: someone changed Foo to be an interface/abstract class/static class,
-                // but static profile data still reports it as a normal likely class.
-
-                // Should we ignore this case and continue with the next likely class?
-                // Conservatively treat it as compromised profile data and bail out.
-                return 0;
-            }
-
-            candidates[numberOfCandidates]  = cls;
-            likelihoods[numberOfCandidates] = likelyClasses[i].likelihood;
-            numberOfCandidates++;
-        }
-        else
-        {
-            // TODO-InlineCast: null as a likely class could mean that the object is mostly null,
-            // but we currently don't take advantage of that.
-        }
-    }
-    return numberOfCandidates;
-}
-
-//------------------------------------------------------------------------------
 // PickCandidatesForTypeCheck: picks classes to use as fast type checks against
 //    the object being casted. The function also defines the strategy to follow
 //    if the type checks fail or pass.
@@ -2020,6 +1951,8 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     // in most cases it's just the generic "cast to" class.
     *commonCls = castToCls;
 
+    const unsigned isAbstractFlags = CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT;
+
     //
     // Now we need to figure out what classes to use for the fast path, we have 4 options:
     //  1) If "cast to" class is already exact we can go ahead and make some decisions
@@ -2034,7 +1967,8 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // 1) If "cast to" class is already exact we can go ahead and make some decisions
-    //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     const bool isCastToExact = comp->info.compCompHnd->isExactType(castToCls);
     if (isCastToExact && ((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY)))
     {
@@ -2084,9 +2018,9 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // 2) If VM can tell us the exact class for this "cast to" class - use it.
     //    Just make sure the class is truly exact.
-    //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // Let's re-use GDV's threshold on how many guesses we can make.
+    // Let's re-use GDV's threshold on how many guesses we can make (can be 3 by default).
     const int maxTypeChecks = min(comp->getGDVMaxTypeChecks(), MAX_CAST_GUESSES);
 
     CORINFO_CLASS_HANDLE exactClasses[MAX_CAST_GUESSES] = {};
@@ -2159,25 +2093,28 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // 3) Consult with PGO data
-    //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     CORINFO_CLASS_HANDLE likelyClasses[MAX_CAST_GUESSES]     = {};
     unsigned             likelyLikelihoods[MAX_CAST_GUESSES] = {};
-    unsigned             likelyClassCount =
-        GetLikelyClassesForCast(comp, (int)castHelper->gtCastHelperILOffset, likelyClasses, likelyLikelihoods);
+    int                  likelyClassCount                    = 0;
+    comp->pickGDV(castHelper, castHelper->gtCastHelperILOffset, false, likelyClasses, nullptr, &likelyClassCount,
+                  likelihoods);
 
     if (likelyClassCount > 0)
     {
-        // if there is a dominating candidate with >= 50% likelihood, use it
         // TODO-InlineCast: support multiple candidates, for now always pick the first one
-        const unsigned likelihoodMinThreshold = 50;
-        if (likelyLikelihoods[0] < likelihoodMinThreshold)
-        {
-            JITDUMP("Likely class likelihood is below %u%% - bail out.\n", likelihoodMinThreshold);
-            return 0;
-        }
-
+        // It's already supported, but it requires some careful performance testing to enable.
+        //
         likelihoods[0] = likelyLikelihoods[0];
         candidates[0]  = likelyClasses[0];
+
+        // Protect from stale static PGO data if a candidate becomes abstract/interface
+        if ((likelyClasses[0] == NO_CLASS_HANDLE) ||
+            (comp->info.compCompHnd->getClassAttribs(likelyClasses[0]) & isAbstractFlags) != 0)
+        {
+            return 0;
+        }
 
         // We don't fully trust PGO data, so let's check it via compareTypesForCast
         const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(candidates[0], castToCls);
@@ -2209,7 +2146,8 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // 4) Last chance: speculative guesses
-    //
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
     switch (helper)
     {
         case CORINFO_HELP_CHKCASTINTERFACE:
@@ -2240,8 +2178,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         case CORINFO_HELP_CHKCASTANY:
             // Same as CORINFO_HELP_CHKCASTCLASS above, the only difference - let's check castToCls for
             // being non-abstract and non-interface first as it makes no sense to speculate on those.
-            if ((comp->info.compCompHnd->getClassAttribs(castToCls) & (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) !=
-                0)
+            if ((comp->info.compCompHnd->getClassAttribs(castToCls) & isAbstractFlags) != 0)
             {
                 return 0;
             }
@@ -2337,6 +2274,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // typeCheckBb (BBJ_COND):                      [weight: 0.5]
     //     if (tmp->pMT == likelyCls)
     //         goto typeCheckSucceedBb;
+    //     goto (either next type check or fallbackBb)
     //
     // < there can be multiple typeCheckBbs >
     //
