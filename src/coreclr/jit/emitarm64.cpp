@@ -8466,7 +8466,10 @@ void emitter::emitIns_R_R_I(
 
     id->idReg1(reg1);
     id->idReg2(reg2);
-
+    if (EA_IS_CNS_TLSGD_RELOC(attr))
+    {
+        id->idSetTlsGD();
+    }
     dispIns(id);
     appendToCurIG(id);
 }
@@ -12699,6 +12702,10 @@ void emitter::emitIns_R_AI(instruction ins,
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idReg1(ireg);
     id->idSetIsDspReloc();
+    if (EA_IS_CNS_TLSGD_RELOC(attr))
+    {
+        id->idSetTlsGD();
+    }
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
     id->idDebugOnlyInfo()->idFlags     = gtFlags;
@@ -12722,6 +12729,10 @@ void emitter::emitIns_R_AI(instruction ins,
         id->idAddr()->iiaAddr = (BYTE*)addr;
         id->idReg1(ireg);
         id->idReg2(ireg);
+        if (EA_IS_CNS_TLSGD_RELOC(attr))
+        {
+            id->idSetTlsGD();
+        }
 
         dispIns(id);
         appendToCurIG(id);
@@ -16406,7 +16417,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(ins, fmt);
                 code |= insEncodeReg_Rd(id->idReg1()); // ddddd
                 dst += emitOutput_Instr(dst, code);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEBASE_REL21);
+                if (id->idIsTlsGD())
+                {
+                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21);
+                }
+                else
+                {
+                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEBASE_REL21);
+                }
             }
             else
             {
@@ -16449,7 +16467,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 assert(sz == sizeof(instrDesc));
                 assert(id->idAddr()->iiaAddr != nullptr);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
+                if (id->idIsTlsGD())
+                {
+                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_AARCH64_TLSDESC_ADD_LO12);
+                }
+                else
+                {
+                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
+                }
             }
             break;
 
@@ -21021,6 +21046,10 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         }
 #endif // DEBUG
 
+        if (addr->gtFlags & GTF_ICON_TLSGD_OFFSET)
+        {
+            attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
+        }
         // Then load/store dataReg from/to [addrReg]
         emitIns_R_R(ins, attr, dataReg, addr->GetRegNum());
     }
