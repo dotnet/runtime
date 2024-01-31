@@ -120,7 +120,6 @@
           Condition="'$(WasmGenerateAppBundle)' == 'true'">
 
     <PropertyGroup>
-      <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnableThreads)' == 'true'">true</_WasmAppIncludeThreadsWorker>
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.native.js -->
       <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == ''">-1</_WasmPThreadPoolSize>
     </PropertyGroup>
@@ -148,7 +147,7 @@
       ExtraConfig="@(WasmExtraConfig)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
-      IncludeThreadsWorker="$(_WasmAppIncludeThreadsWorker)"
+      IncludeThreadsWorker="$(WasmEnableThreads)"
       PThreadPoolSize="$(_WasmPThreadPoolSize)"
       UseWebcil="$(WasmEnableWebcil)"
       WasmIncludeFullIcuData="$(WasmIncludeFullIcuData)"

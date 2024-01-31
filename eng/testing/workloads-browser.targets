@@ -47,8 +47,14 @@
   <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
     <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
     <PropertyGroup>
-      <_BuildVariant Condition="'$(WasmEnableThreads)' == 'true'">multithread.</_BuildVariant>
-      <_DefaultRuntimePackNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.$(_BuildVariant)$(RIDForWorkload).$(PackageVersionForWorkloadManifests).nupkg</_DefaultRuntimePackNuGetPath>
+      <_BuildVariant Condition="'$(WasmEnableThreads)' == 'true'">multithread</_BuildVariant>
+      <_Descriptor Condition="'$(WasmEnableThreads)' == 'true'">runtime pack for $(_BuildVariant)</_Descriptor>
+      <_Descriptor Condition="'$(WasmEnableThreads)' != 'true'">single threaded runtime pack</_Descriptor>
+      <_DefaultRuntimePackNuGetPath>$([System.String]::Join('.',
+        $(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono,
+        $(_BuildVariant),
+        $(RIDForWorkload).$(PackageVersionForWorkloadManifests).nupkg))
+      </_DefaultRuntimePackNuGetPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -61,20 +67,12 @@
            Text="Expected to find either one or two in $(LibrariesShippingPackagesDir): @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)')" />
 
     <ItemGroup>
-      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.$(_BuildVariant)$(RIDForWorkload).$(PackageVersionForWorkloadManifests).nupkg"
+      <_NuGetsToBuild Include="$(_DefaultRuntimePackNuGetPath)"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
                       Dependencies="$(_DefaultRuntimePackNuGetPath)"
                       Properties="@(_DefaultPropsForNuGetBuild, ';');WasmEnableThreads=$(WasmEnableThreads)"
-                      Descriptor="runtime pack for $(_BuildVariant)"
+                      Descriptor="$(_Descriptor)"
                       Condition="'$(WasmEnableThreads)' == 'true'"/>
-
-      <!-- add for non-threaded runtime also -->
-      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.$(RIDForWorkload).$(PackageVersionForWorkloadManifests).nupkg"
-                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
-                      Properties="@(_DefaultPropsForNuGetBuild, ';');"
-                      Dependencies="$(_DefaultRuntimePackNuGetPath)"
-                      Descriptor="single threaded runtime pack"
-                      Condition="'$(WasmEnableThreads)' != 'true'" />
     </ItemGroup>
 
     <Message
