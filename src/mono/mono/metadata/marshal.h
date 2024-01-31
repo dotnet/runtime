@@ -15,7 +15,6 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
-#include <mono/metadata/class-init.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/method-builder.h>
