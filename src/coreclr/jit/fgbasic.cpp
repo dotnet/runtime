@@ -456,7 +456,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
         {
             // Remove the old edge [oldTarget from blockSwitch]
             //
-            fgRemoveAllRefPreds(oldTarget, blockSwitch);
+            FlowEdge* const oldEdge = fgRemoveAllRefPreds(oldTarget, blockSwitch);
 
             //
             // Change the jumpTab entry to branch to the new location
@@ -466,7 +466,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
             //
             // Create the new edge [newTarget from blockSwitch]
             //
-            FlowEdge* const newEdge = fgAddRefPred(newTarget, blockSwitch);
+            FlowEdge* const newEdge = fgAddRefPred(newTarget, blockSwitch, oldEdge);
 
             // Now set the correct value of newEdge's DupCount
             // and replace any other jumps in jumpTab[] that go to oldTarget.
@@ -687,14 +687,15 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             if (block->TargetIs(oldTarget))
             {
                 block->SetTarget(newTarget);
-                fgRemoveRefPred(oldTarget, block);
-                fgAddRefPred(newTarget, block);
+                FlowEdge* const oldEdge = fgRemoveRefPred(oldTarget, block);
+                fgAddRefPred(newTarget, block, oldEdge);
             }
             break;
 
         case BBJ_COND:
         {
-            FlowEdge* oldEdge = fgRemoveRefPred(oldTarget, block);
+            FlowEdge* const oldEdge = fgRemoveRefPred(oldTarget, block);
+
             if (block->TrueTargetIs(oldTarget))
             {
                 if (block->FalseTargetIs(oldTarget))
@@ -712,9 +713,15 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
                     block->SetTrueTarget(newTarget);
                 }
 
-                // TODO-NoFallThrough: Proliferate weight from oldEdge
-                // (we avoid doing so when updating the true target to reduce diffs for now, as a quirk)
-                fgAddRefPred(newTarget, block);
+                FlowEdge* const newEdge = fgAddRefPred(newTarget, block);
+                if (block->KindIs(BBJ_ALWAYS))
+                {
+                    newEdge->setLikelihood(1.0);
+                }
+                else if (oldEdge->hasLikelihood())
+                {
+                    newEdge->setLikelihood(oldEdge->getLikelihood());
+                }
             }
             else
             {
@@ -737,10 +744,10 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             {
                 if (jumpTab[i] == oldTarget)
                 {
-                    jumpTab[i] = newTarget;
-                    changed    = true;
-                    fgRemoveRefPred(oldTarget, block);
-                    fgAddRefPred(newTarget, block);
+                    jumpTab[i]              = newTarget;
+                    changed                 = true;
+                    FlowEdge* const oldEdge = fgRemoveRefPred(oldTarget, block);
+                    fgAddRefPred(newTarget, block, oldEdge);
                 }
             }
 
@@ -5067,7 +5074,8 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         }
 
         fgReplacePred(succ, curr, newBlock);
-        fgAddRefPred(newBlock, curr);
+        FlowEdge* const newEdge = fgAddRefPred(newBlock, curr);
+        newEdge->setLikelihood(1.0);
     }
     else if (curr->KindIs(BBJ_SWITCH))
     {
@@ -5075,18 +5083,22 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         fgReplaceSwitchJumpTarget(curr, newBlock, succ);
 
         // And 'succ' has 'newBlock' as a new predecessor.
-        fgAddRefPred(succ, newBlock);
+        FlowEdge* const newEdge = fgAddRefPred(succ, newBlock);
+        newEdge->setLikelihood(1.0);
     }
     else
     {
         assert(curr->KindIs(BBJ_ALWAYS));
         fgReplacePred(succ, curr, newBlock);
         curr->SetTarget(newBlock);
-        fgAddRefPred(newBlock, curr);
+        FlowEdge* const newEdge = fgAddRefPred(newBlock, curr);
+        newEdge->setLikelihood(1.0);
     }
 
     // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
     // branch 50% of the time.
+    //
+    // TODO: leverage edge likelihood.
     //
     if (!curr->KindIs(BBJ_ALWAYS))
     {

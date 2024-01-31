@@ -511,7 +511,8 @@ void BlockCountInstrumentor::RelocateProbes()
                 m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
             intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
-            m_comp->fgAddRefPred(block, intermediary);
+            FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
+            newEdge->setLikelihood(1.0);
             SetModifiedFlow();
 
             while (criticalPreds.Height() > 0)
@@ -1682,7 +1683,8 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true, /* jumpDest */ block);
             intermediary->SetFlags(BBF_IMPORTED | BBF_NONE_QUIRK);
             intermediary->inheritWeight(block);
-            m_comp->fgAddRefPred(block, intermediary);
+            FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
+            newEdge->setLikelihood(1.0);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
             SetModifiedFlow();
 
