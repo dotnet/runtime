@@ -1793,15 +1793,24 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
-        case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
-        case IF_SVE_IP_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus scalar)
-        case IF_SVE_IT_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (scalar plus scalar)
-        case IF_SVE_IU_4B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
-                           // scaled offsets)
+        case IF_SVE_IU_4B:   // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
         case IF_SVE_IU_4B_B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
                              // scaled offsets)
         case IF_SVE_IU_4B_D: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
                              // scaled offsets)
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isVectorRegister(id->idReg4()));    // mmmmm
+            assert(isScalableVectorSize(elemsize));
+            break;
+
+        case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
+        case IF_SVE_IP_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus scalar)
+        case IF_SVE_IT_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (scalar plus scalar)
         case IF_SVE_IW_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit gather load (vector plus scalar)
         case IF_SVE_IX_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit gather non-temporal load (vector plus
                              // scalar)
@@ -11972,9 +11981,8 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
                     }
                 }
             }
-            else
+            else if (insOptsScalableDoubleWord32bitExtends(opt))
             {
-                assert(insOptsScalableDoubleWord32bitExtends(opt));
                 assert(isVectorRegister(reg4));
 
                 if (sopt == INS_SCALABLE_OPTS_MOD_N)
@@ -11984,6 +11992,7 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
                 else
                 {
                     assert(insScalableOptsNone(sopt));
+
                     if (ins == INS_sve_ld1d)
                     {
                         fmt = IF_SVE_IU_4A_C;
@@ -11992,6 +12001,27 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
                     {
                         fmt = IF_SVE_IU_4A_A;
                     }
+                }
+            }
+            else if (sopt == INS_SCALABLE_OPTS_LSL_N)
+            {
+                assert(isVectorRegister(reg4));
+                assert(opt == INS_OPTS_SCALABLE_D);
+                fmt = IF_SVE_IU_4B;
+            }
+            else
+            {
+                assert(isVectorRegister(reg4));
+                assert(opt == INS_OPTS_SCALABLE_D);
+                assert(insScalableOptsNone(sopt));
+
+                if (ins == INS_sve_ld1d)
+                {
+                    fmt = IF_SVE_IU_4B_D;
+                }
+                else
+                {
+                    fmt = IF_SVE_IU_4B_B;
                 }
             }
             break;
@@ -19435,6 +19465,32 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_II_4A_H: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
+        case IF_SVE_IK_4A_F: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
+        case IF_SVE_IK_4A_G: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
+        case IF_SVE_IK_4A_H: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
+        case IF_SVE_IK_4A_I: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
+            code |= insEncodeReg_R_20_to_16(id->idReg4()); // mmmmm
+
+            if (canEncodeSveElemsize_dtype(ins))
+            {
+                if (ins == INS_sve_ld1w)
+                {
+                    code = insEncodeSveElemsize_dtype_ld1w(ins, fmt, optGetSveElemsize(id->idInsOpt()), code);
+                }
+                else
+                {
+                    code = insEncodeSveElemsize_dtype(ins, optGetSveElemsize(id->idInsOpt()), code);
+                }
+            }
+
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_IG_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous first-fault load (scalar plus scalar)
         case IF_SVE_IG_4A_D: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous first-fault load (scalar plus
                              // scalar)
@@ -19446,23 +19502,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                              // scalar)
         case IF_SVE_II_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
         case IF_SVE_II_4A_B: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
-        case IF_SVE_II_4A_H: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
         case IF_SVE_IK_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
-        case IF_SVE_IK_4A_F: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
-        case IF_SVE_IK_4A_G: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
-        case IF_SVE_IK_4A_H: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
-        case IF_SVE_IK_4A_I: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
         case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
         case IF_SVE_IP_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus scalar)
         case IF_SVE_IR_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
                            // scalar)
         case IF_SVE_IT_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (scalar plus scalar)
-        case IF_SVE_IU_4B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
-                           // scaled offsets)
-        case IF_SVE_IU_4B_B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
-                             // scaled offsets)
-        case IF_SVE_IU_4B_D: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
-                             // scaled offsets)
         case IF_SVE_IW_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit gather load (vector plus scalar)
         case IF_SVE_IX_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit gather non-temporal load (vector plus
                              // scalar)
@@ -19493,19 +19538,20 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
             code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
             code |= insEncodeReg_R_20_to_16(id->idReg4()); // mmmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
 
-            if (canEncodeSveElemsize_dtype(ins))
-            {
-                if (ins == INS_sve_ld1w)
-                {
-                    code = insEncodeSveElemsize_dtype_ld1w(ins, fmt, optGetSveElemsize(id->idInsOpt()), code);
-                }
-                else
-                {
-                    code = insEncodeSveElemsize_dtype(ins, optGetSveElemsize(id->idInsOpt()), code);
-                }
-            }
-
+        case IF_SVE_IU_4B:   // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+        case IF_SVE_IU_4B_B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+        case IF_SVE_IU_4B_D: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg4()); // mmmmm
             dst += emitOutput_Instr(dst, code);
             break;
 
