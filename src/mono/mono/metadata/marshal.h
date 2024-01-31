@@ -708,6 +708,9 @@ ICALL_EXPORT
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (mono_bstr_const ptr);
 
+MONO_API MONO_RT_EXTERNAL_ONLY MonoString *
+mono_string_from_bstr (/*mono_bstr*/gpointer bstr);
+
 void
 mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, guint8 *bitmask);
 
