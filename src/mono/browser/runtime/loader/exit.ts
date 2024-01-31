@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, emscriptenModule, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_debug, mono_log_error, mono_log_info_no_prefix, mono_log_warn, teardown_proxy_console } from "./logging";
 
@@ -126,8 +128,13 @@ export function mono_exit(exit_code: number, reason?: any): void {
 }
 
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
+    if (MonoWasmThreads && ENVIRONMENT_IS_WORKER && runtimeHelpers.nativeAbort) {
+        // note that the reason is not passed to UI thread
+        runtimeHelpers.nativeAbort(reason);
+        throw reason;
+    }
+
     if (runtimeHelpers.runtimeReady && runtimeHelpers.nativeExit) {
-        runtimeHelpers.runtimeReady = false;
         try {
             runtimeHelpers.nativeExit(exit_code);
         }
@@ -193,7 +200,7 @@ function abort_promises(reason: any) {
 }
 
 function appendElementOnExit(exit_code: number) {
-    if (ENVIRONMENT_IS_WEB && loaderHelpers.config && loaderHelpers.config.appendElementOnExit) {
+    if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && loaderHelpers.config && loaderHelpers.config.appendElementOnExit) {
         //Tell xharness WasmBrowserTestRunner what was the exit code
         const tests_done_elem = document.createElement("label");
         tests_done_elem.id = "tests_done";
@@ -213,15 +220,19 @@ function logOnExit(exit_code: number, reason: any) {
         if (typeof reason == "string") {
             mono_log(reason);
         }
-        else if (reason.stack && reason.message) {
-            if (runtimeHelpers.stringify_as_error_with_stack) {
-                mono_log(runtimeHelpers.stringify_as_error_with_stack(reason));
-            } else {
-                mono_log(reason.message + "\n" + reason.stack);
-            }
-        }
         else {
-            mono_log(JSON.stringify(reason));
+            if (reason.stack === undefined) {
+                reason.stack = new Error().stack + "";
+            }
+            if (reason.message) {
+                const message = runtimeHelpers.stringify_as_error_with_stack
+                    ? runtimeHelpers.stringify_as_error_with_stack(reason.message + "\n" + reason.stack)
+                    : reason.message + "\n" + reason.stack;
+                mono_log(message);
+            }
+            else {
+                mono_log(JSON.stringify(reason));
+            }
         }
     }
     if (loaderHelpers.config) {
@@ -235,5 +246,36 @@ function logOnExit(exit_code: number, reason: any) {
         else if (loaderHelpers.config.forwardConsoleLogsToWS) {
             teardown_proxy_console();
         }
+    }
+}
+
+export function installUnhandledErrorHandler() {
+    const handler = function fatal_handler(event: Event, reason: any) {
+        event.preventDefault();
+        try {
+            if (!reason) {
+                reason = new Error("Unhandled");
+            }
+            if (reason.stack === undefined) {
+                reason.stack = new Error().stack;
+            }
+            reason.stack = reason.stack + "";// string conversion (it could be getter)
+            if (!reason.silent) {
+                mono_log_error("Unhandled error:", reason);
+                mono_exit(1, reason);
+            }
+        } catch (err) {
+            // no not re-throw from the fatal handler
+        }
+    };
+    try {
+        // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
+        if (ENVIRONMENT_IS_WEB) {
+            globalThis.addEventListener("unhandledrejection", (event) => handler(event, event.reason));
+            globalThis.addEventListener("error", (event) => handler(event, event.error));
+        }
+    } catch (err) {
+        mono_exit(1, err);
+        throw err;
     }
 }
