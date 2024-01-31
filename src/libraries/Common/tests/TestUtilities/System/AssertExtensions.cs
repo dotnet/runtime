@@ -1130,8 +1130,14 @@ namespace System
         /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
         public static void Equal(double expected, double actual)
         {
-            if (BitConverter.DoubleToInt64Bits(expected) == BitConverter.DoubleToInt64Bits(actual))
+            if (BitConverter.ToInt64(BitConverter.GetBytes(expected)) == BitConverter.ToInt64(BitConverter.GetBytes(actual)))
             {
+                return;
+            }
+
+            if (PlatformDetection.IsRiscV64Process && double.IsNaN(expected) && double.IsNaN(actual))
+            {
+                // RISC-V does not preserve payload
                 return;
             }
 
@@ -1144,7 +1150,7 @@ namespace System
         /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
         public static void Equal(float expected, float actual)
         {
-            if (BitConverter.SingleToInt32Bits(expected) == BitConverter.SingleToInt32Bits(actual))
+            if (BitConverter.ToInt32(BitConverter.GetBytes(expected)) == BitConverter.ToInt32(BitConverter.GetBytes(actual)))
             {
                 return;
             }
@@ -1165,7 +1171,7 @@ namespace System
         /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
         public static void Equal(Half expected, Half actual)
         {
-            if (BitConverter.HalfToUInt16Bits(expected) == BitConverter.HalfToUInt16Bits(actual))
+            if (BitConverter.ToInt16(BitConverter.GetBytes(expected)) == BitConverter.ToInt16(BitConverter.GetBytes(actual)))
             {
                 return;
             }
