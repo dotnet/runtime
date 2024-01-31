@@ -6585,11 +6585,14 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_R(INS_sve_ld1q, EA_SCALABLE, REG_V0, REG_P1, REG_V2, REG_ZR,
                                 INS_OPTS_SCALABLE_Q); // LD1Q    {<Zt>.Q }, <Pg>/Z, [<Zn>.D{, <Xm>}]
 
-    //// IF_SVE_IX_4A
-    //theEmitter->emitIns_R_R_R_R(INS_sve_ldnt1d, EA_SCALABLE, REG_V0, REG_P0, REG_V0, REG_R0,
-    //                            INS_OPTS_SCALABLE_B); // LDNT1D  {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]
-    //theEmitter->emitIns_R_R_R_R(INS_sve_ldnt1sw, EA_SCALABLE, REG_V0, REG_P0, REG_V0, REG_R0,
-    //                            INS_OPTS_SCALABLE_B); // LDNT1SW {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]
+    // IF_SVE_IX_4A
+    theEmitter->emitIns_R_R_R_R(INS_sve_ldnt1d, EA_SCALABLE, REG_V4, REG_P2, REG_V1, REG_R3,
+                                INS_OPTS_SCALABLE_D); // LDNT1D  {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]
+    theEmitter->emitIns_R_R_R_R(INS_sve_ldnt1sw, EA_SCALABLE, REG_V7, REG_P1, REG_V0, REG_R1,
+                                INS_OPTS_SCALABLE_D); // LDNT1SW {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]
+    // REG_ZR can be used due to the optional {, <Xm>} of the format.
+    theEmitter->emitIns_R_R_R_R(INS_sve_ldnt1sw, EA_SCALABLE, REG_V7, REG_P1, REG_V0, REG_ZR,
+                                INS_OPTS_SCALABLE_D); // LDNT1SW {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]
 
     //// IF_SVE_IY_4A
     //theEmitter->emitIns_R_R_R_R(INS_sve_st1q, EA_SCALABLE, REG_V0, REG_P0, REG_V0, REG_R0,

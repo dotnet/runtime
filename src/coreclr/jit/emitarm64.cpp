@@ -1818,11 +1818,20 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        case IF_SVE_IX_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit gather non-temporal load (vector plus
+                           // scalar)
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(id->idReg1()));      // ttttt
+            assert(isPredicateRegister(id->idReg2()));   // ggg
+            assert(isVectorRegister(id->idReg3()));      // nnnnn
+            assert(isGeneralRegisterOrZR(id->idReg4())); // mmmmm
+            assert(isScalableVectorSize(elemsize));
+            break;
+
         case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
         case IF_SVE_IP_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus scalar)
         case IF_SVE_IT_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (scalar plus scalar)
-        case IF_SVE_IX_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit gather non-temporal load (vector plus
-                             // scalar)
         case IF_SVE_IY_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit scatter store (vector plus scalar)
         case IF_SVE_IZ_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit scatter non-temporal store (vector plus
                              // scalar)
@@ -12041,6 +12050,7 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
         case INS_sve_ldnt1d:
         case INS_sve_ldnt1sb:
         case INS_sve_ldnt1sh:
+        case INS_sve_ldnt1sw:
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));
             assert(isScalableVectorSize(size));
@@ -12080,9 +12090,17 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
 
                 fmt = IF_SVE_IN_4A;
             }
+            else if ((ins == INS_sve_ldnt1d) || (ins == INS_sve_ldnt1sw))
+            {
+                assert(insOptsScalableWords(opt));
+                assert(isVectorRegister(reg3));
+                assert(isGeneralRegisterOrZR(reg4));
+                assert(insScalableOptsNone(sopt));
+                assert(opt == INS_OPTS_SCALABLE_D);
+                fmt = IF_SVE_IX_4A;
+            }
             else
             {
-                assert(ins != INS_sve_ldnt1d);
                 assert(insOptsScalableWords(opt));
                 assert(isVectorRegister(reg3));
                 assert(isGeneralRegisterOrZR(reg4));
@@ -19478,6 +19496,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SVE_IF_4A_A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit gather non-temporal load (vector plus
                              // scalar)
         case IF_SVE_IW_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit gather load (vector plus scalar)
+        case IF_SVE_IX_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit gather non-temporal load (vector plus
+                             // scalar)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
@@ -19529,8 +19549,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SVE_IR_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
                            // scalar)
         case IF_SVE_IT_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (scalar plus scalar)
-        case IF_SVE_IX_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit gather non-temporal load (vector plus
-                             // scalar)
         case IF_SVE_IY_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit scatter store (vector plus scalar)
         case IF_SVE_IZ_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit scatter non-temporal store (vector plus
                              // scalar)
