@@ -6505,15 +6505,17 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_R(INS_sve_ld1rqw, EA_SCALABLE, REG_V0, REG_P1, REG_R2, REG_R3, INS_OPTS_SCALABLE_S,
                                 INS_SCALABLE_OPTS_LSL_N); // LD1RQW  {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]
 
-    //// IF_SVE_IR_4A
-    //theEmitter->emitIns_R_R_R_R(INS_sve_ld2q, EA_SCALABLE, REG_V0, REG_P0, REG_V0, REG_R0,
-    //                            INS_OPTS_SCALABLE_B); // LD2Q    {<Zt1>.Q, <Zt2>.Q }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #4]
-    //theEmitter->emitIns_R_R_R_R(INS_sve_ld3q, EA_SCALABLE, REG_V0, REG_P0, REG_V0, REG_R0,
-    //                            INS_OPTS_SCALABLE_B); // LD3Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q }, <Pg>/Z, [<Xn|SP>, <Xm>,
-    //                                                  // LSL #4]
-    //theEmitter->emitIns_R_R_R_R(INS_sve_ld4q, EA_SCALABLE, REG_V0, REG_P0, REG_V0, REG_R0,
-    //                            INS_OPTS_SCALABLE_B); // LD4Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>/Z,
-    //                                                  // [<Xn|SP>, <Xm>, LSL #4]
+    // IF_SVE_IR_4A
+    theEmitter->emitIns_R_R_R_R(INS_sve_ld2q, EA_SCALABLE, REG_V0, REG_P3, REG_R2, REG_R1, INS_OPTS_SCALABLE_Q,
+                                INS_SCALABLE_OPTS_LSL_N); // LD2Q    {<Zt1>.Q, <Zt2>.Q }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL
+                                                          // #4]
+    theEmitter->emitIns_R_R_R_R(INS_sve_ld3q, EA_SCALABLE, REG_V3, REG_P4, REG_R1, REG_R2, INS_OPTS_SCALABLE_Q,
+                                INS_SCALABLE_OPTS_LSL_N); // LD3Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q }, <Pg>/Z, [<Xn|SP>,
+                                                          // <Xm>,
+                                                          // LSL #4]
+    theEmitter->emitIns_R_R_R_R(INS_sve_ld4q, EA_SCALABLE, REG_V5, REG_P1, REG_R4, REG_R3, INS_OPTS_SCALABLE_Q,
+                                INS_SCALABLE_OPTS_LSL_N); // LD4Q    {<Zt1>.Q, <Zt2>.Q, <Zt3>.Q, <Zt4>.Q }, <Pg>/Z,
+                                                          // [<Xn|SP>, <Xm>, LSL #4]
 
     //// IF_SVE_IT_4A
     //theEmitter->emitIns_R_R_R_R(INS_sve_ld2b, EA_SCALABLE, REG_V0, REG_P0, REG_V0, REG_R0,

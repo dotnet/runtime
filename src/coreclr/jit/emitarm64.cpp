@@ -1782,10 +1782,19 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
-        case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
-        case IF_SVE_IP_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus scalar)
         case IF_SVE_IR_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
                            // scalar)
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_Q);
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isGeneralRegister(id->idReg3()));   // nnnnn
+            assert(isGeneralRegister(id->idReg4()));   // mmmmm
+            assert(isScalableVectorSize(elemsize));
+            break;
+
+        case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
+        case IF_SVE_IP_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus scalar)
         case IF_SVE_IT_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (scalar plus scalar)
         case IF_SVE_IU_4B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
                            // scaled offsets)
@@ -12102,6 +12111,25 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
             fmt = IF_SVE_IP_4A;
             break;
 
+        case INS_sve_ld2q:
+        case INS_sve_ld3q:
+        case INS_sve_ld4q:
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isGeneralRegister(reg4));
+            assert(isScalableVectorSize(size));
+            assert(opt == INS_OPTS_SCALABLE_Q);
+            assert(sopt == INS_SCALABLE_OPTS_LSL_N);
+
+            fmt = IF_SVE_IR_4A;
+
+            break;
+
+
+            break;
+
+
         default:
             unreached();
             break;
@@ -15923,7 +15951,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  Returns 0, 1, 2 or 3 depending on the instruction and format.
+ *  Returns 0, 1, 2, 3 or 4 depending on the instruction and format.
  *  This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N],
  * [<Xn|SP>{, <Xm>, LSL #N}]
  */
@@ -19945,6 +19973,10 @@ void emitter::emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2
         emitDispComma();
         switch (insSveGetLslOrModN(ins, fmt))
         {
+            case 4:
+                printf("lsl #4");
+                break;
+
             case 3:
                 printf("lsl #3");
                 break;
