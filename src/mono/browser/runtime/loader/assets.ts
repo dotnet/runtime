@@ -68,6 +68,7 @@ const skipBufferByAssetTypes: {
 } = {
     "dotnetwasm": true,
     "symbols": true,
+    "segmentation-rules": true,
 };
 
 const containedInSnapshotByAssetTypes: {
@@ -87,6 +88,7 @@ const skipInstantiateByAssetTypes: {
     ...jsModulesAssetTypes,
     "dotnetwasm": true,
     "symbols": true,
+    "segmentation-rules": true,
 };
 
 export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
@@ -224,6 +226,9 @@ export async function mono_download_assets(): Promise<void> {
                         if (asset.behavior === "symbols") {
                             await runtimeHelpers.instantiate_symbols_asset(asset);
                             cleanupAsset(asset);
+                        } else if (asset.behavior === "segmentation-rules") {
+                            await runtimeHelpers.instantiate_segmentation_rules_asset(asset);
+                            cleanupAsset(asset);
                         }
 
                         if (skipBufferByAssetTypes[asset.behavior]) {
@@ -342,6 +347,12 @@ export function prepareAssets() {
                         hash: resources.icu[name],
                         behavior: "icu",
                         loadRemote: true
+                    });
+                } else if (name === "segmentation-rules.json") {
+                    alwaysLoadedAssets.push({
+                        name,
+                        hash: resources.icu[name],
+                        behavior: "segmentation-rules",
                     });
                 }
             }
@@ -600,7 +611,7 @@ function download_resource(asset: AssetEntryInternal): LoadingResource {
         totalResources.add(asset.name!);
         response.response.then(() => {
             if (asset.behavior == "assembly") {
-                loaderHelpers.loadedAssemblies.push(asset.resolvedUrl!);
+                loaderHelpers.loadedAssemblies.push(asset.name);
             }
 
             resourcesLoaded++;

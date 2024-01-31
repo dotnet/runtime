@@ -18,7 +18,9 @@ using System.Threading.Tasks;
 
 namespace System.Linq.Parallel
 {
+#if !FEATURE_WASM_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
     internal sealed class OrderPreservingPipeliningSpoolingTask<TOutput, TKey> : SpoolingTaskBase
     {
         private readonly QueryTaskGroupState _taskGroupState; // State shared among tasks.

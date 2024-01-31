@@ -13,8 +13,6 @@
                                         >true</InstallWasmtimeForTests>
 
     <!--<InstallWorkloadUsingArtifactsDependsOn>_GetWorkloadsToInstall;$(InstallWorkloadUsingArtifactsDependsOn)</InstallWorkloadUsingArtifactsDependsOn>-->
-    <GetWorkloadInputsDependsOn>_GetWorkloadsToInstall;$(GetWorkloadInputsDependsOn)</GetWorkloadInputsDependsOn>
-    <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetNugetsForAOT;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
     <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
 
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasiBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
@@ -156,21 +154,6 @@
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="set PREPEND_PATH=$(WasmtimeDir)" />
       <SetScriptCommands Condition="'$(IsWasiProject)' == 'true'" Include="set RuntimeIdentifier=wasi-wasm" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersionForWorkloadsTesting" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
-    <ItemGroup>
-      <WorkloadIdForTesting Include="wasi-experimental"
-                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
-                            Variant="latest"
-                            Version="$(PackageVersionForWorkloadManifests)" />
-
-      <WorkloadIdForTesting Include="wasi-experimental-net8;wasi-experimental"
-                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net8"
-                            Variant="net8"
-                            Version="$(PackageVersionForWorkloadManifests)" />
-      <WorkloadCombinationsToInstall Include="latest" Variants="latest;net8" />
     </ItemGroup>
   </Target>
 </Project>

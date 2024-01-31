@@ -11,7 +11,7 @@ using System.Data;
 
 namespace Microsoft.Interop.JavaScript
 {
-    internal sealed class JSGeneratorFactory : IMarshallingGeneratorFactory
+    internal sealed class JSGeneratorResolver : IMarshallingGeneratorResolver
     {
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {

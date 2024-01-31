@@ -31,7 +31,7 @@ For more information, see [SharedArrayBuffer security requirements](https://deve
 
 JavaScript interop with managed code via `[JSExport]`/`[JSImport]` is currently limited to the main thread even if multi-threading support is enabled.
 
-Blocking on the main thread with operations like `Task.Wait` or `Monitor.Enter` is not supported by browsers and very dangerous. The work on the proper design for this still in progress.
+Blocking on the main thread with operations like `Task.Wait` or `Monitor.Enter` are not supported by browsers and are very dangerous. The work on the proper design for this is still in progress.
 
 ### SIMD - Single instruction, multiple data
 WebAssembly SIMD provides significant performance improvements for operations on spans, strings, vectors and arrays. This feature requires a somewhat recent browser and may also not be supported by older hardware. It is currently enabled by default.

@@ -76,6 +76,13 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     )
 endif()
 
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(icu_shim_sources_base
+      ${icu_shim_sources_base}
+      pal_placeholders.c
+    )
+endif()
+
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 
   if (TARGET_DARWIN)
@@ -307,6 +314,7 @@ set(interp_sources
     interp/mintops.h
     interp/mintops.c
     interp/transform.c
+    interp/transform-opt.c
     interp/tiering.h
     interp/tiering.c
     interp/jiterpreter.c

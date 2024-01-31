@@ -24,6 +24,7 @@ public class LibraryInitializerTests : AppTestBase
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task LoadLibraryInitializer()
     {
         CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer");
@@ -37,6 +38,7 @@ public class LibraryInitializerTests : AppTestBase
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task AbortStartupOnError()
     {
         CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError");

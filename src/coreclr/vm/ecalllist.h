@@ -254,10 +254,6 @@ FCFuncStart(gCOMModuleHandleFuncs)
     FCFuncElement("GetMDStreamVersion", ModuleHandle::GetMDStreamVersion)
 FCFuncEnd()
 
-FCFuncStart(gCustomAttributeEncodedArgument)
-    FCFuncElement("ParseAttributeArguments", Attribute::ParseAttributeArguments)
-FCFuncEnd()
-
 FCFuncStart(gCOMCustomAttributeFuncs)
     FCFuncElement("_ParseAttributeUsageAttribute", COMCustomAttribute::ParseAttributeUsageAttribute)
     FCFuncElement("_CreateCaObject", COMCustomAttribute::CreateCaObject)
@@ -348,13 +344,11 @@ FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalGetCurrentThread", GetThread)
-    FCFuncElement("SleepInternal", ThreadNative::Sleep)
     FCFuncElement("Initialize", ThreadNative::Initialize)
     FCFuncElement("GetCurrentThreadNative", ThreadNative::GetCurrentThread)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
     FCFuncElement("get_IsAlive", ThreadNative::IsAlive)
-    FCFuncElement("IsBackgroundNative", ThreadNative::IsBackground)
-    FCFuncElement("SetBackgroundNative", ThreadNative::SetBackground)
+    FCFuncElement("GetIsBackground", ThreadNative::GetIsBackground)
     FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
     FCFuncElement("set_IsThreadPoolThread", ThreadNative::SetIsThreadpoolThread)
     FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
@@ -364,10 +358,6 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("GetApartmentStateNative", ThreadNative::GetApartmentState)
     FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-#ifdef FEATURE_COMINTEROP
-    FCFuncElement("DisableComObjectEagerCleanup", ThreadNative::DisableComObjectEagerCleanup)
-#endif // FEATURE_COMINTEROP
-    FCFuncElement("Interrupt", ThreadNative::Interrupt)
     FCFuncElement("Join", ThreadNative::Join)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
@@ -389,12 +379,6 @@ FCFuncStart(gVariantFuncs)
 FCFuncEnd()
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_COMINTEROP
-FCFuncStart(gOAVariantFuncs)
-    FCFuncElement("ChangeTypeEx", COMOAVariant::ChangeTypeEx)
-FCFuncEnd()
-#endif // FEATURE_COMINTEROP
-
 FCFuncStart(gCastHelpers)
     FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
@@ -405,7 +389,6 @@ FCFuncEnd()
 FCFuncStart(gArrayFuncs)
     FCFuncElement("GetCorElementTypeOfElementType", ArrayNative::GetCorElementTypeOfElementType)
     FCFuncElement("IsSimpleCopy", ArrayNative::IsSimpleCopy)
-    FCFuncElement("CopySlow", ArrayNative::CopySlow)
     FCFuncElement("InternalSetValue", ArrayNative::SetValue)
 FCFuncEnd()
 
@@ -419,7 +402,6 @@ FCFuncStart(gGCFrameRegistration)
 FCFuncEnd()
 
 FCFuncStart(gGCInterfaceFuncs)
-    FCFuncElement("GetGenerationWR", GCInterface::GetGenerationWR)
     FCFuncElement("_RegisterForFullGCNotification", GCInterface::RegisterForFullGCNotification)
     FCFuncElement("_CancelFullGCNotification", GCInterface::CancelFullGCNotification)
     FCFuncElement("_CollectionCount", GCInterface::CollectionCount)
@@ -454,24 +436,24 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetExceptionCode", ExceptionNative::GetExceptionCode)
     FCFuncElement("GetExceptionPointers", ExceptionNative::GetExceptionPointers)
 
-    FCFuncElement("OffsetOfHelper", MarshalNative::OffsetOfHelper)
-    FCFuncElement("GetExceptionForHRInternal", MarshalNative::GetExceptionForHR)
-
 #ifdef FEATURE_COMINTEROP
-    FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
     FCFuncElement("AreComObjectsAvailableForCleanup", MarshalNative::AreComObjectsAvailableForCleanup)
 #endif // FEATURE_COMINTEROP
 FCFuncEnd()
 
 FCFuncStart(gInterlockedFuncs)
-    FCFuncElementSig("Exchange", &gsig_SM_RefInt_Int_RetInt, COMInterlocked::Exchange)
-    FCFuncElementSig("Exchange", &gsig_SM_RefLong_Long_RetLong, COMInterlocked::Exchange64)
-    FCFuncElementSig("Exchange", &gsig_SM_RefObj_Obj_RetObj, COMInterlocked::ExchangeObject)
-    FCFuncElementSig("CompareExchange", &gsig_SM_RefInt_Int_Int_RetInt, COMInterlocked::CompareExchange)
-    FCFuncElementSig("CompareExchange", &gsig_SM_RefLong_Long_Long_RetLong, COMInterlocked::CompareExchange64)
-    FCFuncElementSig("CompareExchange", &gsig_SM_RefObj_Obj_Obj_RetObj, COMInterlocked::CompareExchangeObject)
-    FCFuncElementSig("ExchangeAdd", &gsig_SM_RefInt_Int_RetInt, COMInterlocked::ExchangeAdd32)
-    FCFuncElementSig("ExchangeAdd", &gsig_SM_RefLong_Long_RetLong, COMInterlocked::ExchangeAdd64)
+    FCFuncElement("Exchange8", COMInterlocked::Exchange8)
+    FCFuncElement("Exchange16", COMInterlocked::Exchange16)
+    FCFuncElement("Exchange32", COMInterlocked::Exchange32)
+    FCFuncElement("Exchange64", COMInterlocked::Exchange64)
+    FCFuncElement("ExchangeObject", COMInterlocked::ExchangeObject)
+    FCFuncElement("CompareExchange8", COMInterlocked::CompareExchange8)
+    FCFuncElement("CompareExchange16", COMInterlocked::CompareExchange16)
+    FCFuncElement("CompareExchange32", COMInterlocked::CompareExchange32)
+    FCFuncElement("CompareExchange64", COMInterlocked::CompareExchange64)
+    FCFuncElement("CompareExchangeObject", COMInterlocked::CompareExchangeObject)
+    FCFuncElement("ExchangeAdd32", COMInterlocked::ExchangeAdd32)
+    FCFuncElement("ExchangeAdd64", COMInterlocked::ExchangeAdd64)
 FCFuncEnd()
 
 FCFuncStart(gJitInfoFuncs)
@@ -501,6 +483,7 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("AllocTailCallArgBuffer", TailCallHelp::AllocTailCallArgBuffer)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
     FCFuncElement("Box", JIT_Box)
+    FCFuncElement("Unbox_Nullable", JIT_Unbox_Nullable)
 FCFuncEnd()
 
 FCFuncStart(gMethodTableFuncs)
@@ -632,7 +615,6 @@ FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
 FCClassElement("ComAwareWeakReference", "System", gComAwareWeakReferenceFuncs)
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
-FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)
 FCClassElement("Debugger", "System.Diagnostics", gDiagnosticsDebugger)
 FCClassElement("Delegate", "System", gDelegateFuncs)
 FCClassElement("DependentHandle", "System.Runtime", gDependentHandleFuncs)
@@ -663,9 +645,6 @@ FCClassElement("MngdSafeArrayMarshaler", "System.StubHelpers", gMngdSafeArrayMar
 #endif // FEATURE_COMINTEROP
 FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
-#endif
 FCClassElement("Object", "System", gObjectFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)

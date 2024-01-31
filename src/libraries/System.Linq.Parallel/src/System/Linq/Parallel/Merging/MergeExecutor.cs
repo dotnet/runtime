@@ -141,7 +141,9 @@ namespace System.Linq.Parallel
         //     An array of asynchronous channels, one for each partition.
         //
 
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
         internal static AsynchronousChannel<TInputOutput>[] MakeAsynchronousChannels(int partitionCount, ParallelMergeOptions options, IntValueEvent? consumerEvent, CancellationToken cancellationToken)
         {
             AsynchronousChannel<TInputOutput>[] channels = new AsynchronousChannel<TInputOutput>[partitionCount];

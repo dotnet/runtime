@@ -449,16 +449,6 @@ private:
     DebuggerAssemblyControlFlags m_debuggerFlags;
 
     BOOL                  m_fTerminated;
-
-#ifdef FEATURE_READYTORUN
-    enum IsInstrumentedStatus {
-        IS_INSTRUMENTED_UNSET = 0,
-        IS_INSTRUMENTED_FALSE = 1,
-        IS_INSTRUMENTED_TRUE = 2,
-    };
-    IsInstrumentedStatus    m_isInstrumentedStatus;
-#endif // FEATURE_READYTORUN
-
 };
 
 #ifndef DACCESS_COMPILE

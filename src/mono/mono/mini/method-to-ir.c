@@ -1362,7 +1362,7 @@ mono_create_rgctx_var (MonoCompile *cfg)
 	if (!cfg->rgctx_var) {
 		cfg->rgctx_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		/* force the var to be stack allocated */
-		if (!cfg->llvm_only)
+		if (!COMPILE_LLVM (cfg))
 			cfg->rgctx_var->flags |= MONO_INST_VOLATILE;
 		if (cfg->verbose_level > 2) {
 			printf ("\trgctx : ");
@@ -2519,7 +2519,7 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 			g_assert (method->is_inflated && mono_method_get_context (method)->method_inst);
 		*/
 
-		if (cfg->llvm_only) {
+		if (COMPILE_LLVM (cfg)) {
 			mrgctx_var = mono_get_mrgctx_var (cfg);
 		} else {
 			/* Volatile */
@@ -6793,7 +6793,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		args [0] = mono_get_mrgctx_var (cfg);
 
 		if (COMPILE_LLVM (cfg) || cfg->backend->have_init_mrgctx) {
-			if (cfg->compile_aot)
+			if (COMPILE_LLVM (cfg))
+				/* OP_INIT_MRGCTX emits it itself */
+				EMIT_NEW_PCONST (cfg, args [1], NULL);
+			else if (cfg->compile_aot)
 				args [1] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GSHARED_METHOD_INFO, info);
 			else
 				EMIT_NEW_PCONST (cfg, args [1], info);
@@ -7058,11 +7061,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			emit_set_deopt_il_offset (cfg, GPTRDIFF_TO_INT (ip - cfg->cil_start));
 		} else {
 			if ((tblock = cfg->cil_offset_to_bb [ip - cfg->cil_start]) && (tblock != cfg->cbb)) {
-				link_bblock (cfg, cfg->cbb, tblock);
 				if (sp != stack_start) {
+					link_bblock (cfg, cfg->cbb, tblock);
 					handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 					sp = stack_start;
 					CHECK_UNVERIFIABLE (cfg);
+				} else {
+					if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_NOT_REACHED))
+						link_bblock (cfg, cfg->cbb, tblock);
 				}
 				cfg->cbb->next_bb = tblock;
 				cfg->cbb = tblock;

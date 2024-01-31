@@ -14,9 +14,7 @@
     <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == '' and '$(FeatureWasmThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
-    <WasmEnableLegacyJsInterop Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
-    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
     <DefineConstants Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(DefineConstants);ENABLE_JS_INTEROP_BY_VALUE</DefineConstants>
     <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -29,7 +27,6 @@
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Runtime.cs" Link="System\Runtime\InteropServices\JavaScript\Interop\Interop.Runtime.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.Generated.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSHost.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSMarshalerType.cs" />
@@ -45,7 +42,6 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSExportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\SynchronizationContextExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSProxyContext.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
@@ -66,18 +62,6 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.JSObject.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.String.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Exception.cs" />
-  </ItemGroup>
-
-  <!-- only include legacy interop when WasmEnableLegacyJsInterop is enabled -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' != 'false'">
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\LegacyExports.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Runtime.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\ArrayBuffer.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\DataView.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Function.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Uint8Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\LegacyHostImplementation.cs" />
   </ItemGroup>
 
   <!-- only include threads support when FeatureWasmThreads is enabled -->

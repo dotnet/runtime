@@ -9,15 +9,15 @@ using Microsoft.CodeAnalysis;
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// An <see cref="IMarshallingGeneratorFactory"/> that adds diagnostics to warn users about breaking changes in the interop generators,
+    /// An <see cref="IMarshallingGeneratorResolver"/> that adds diagnostics to warn users about breaking changes in the interop generators,
     /// whether from built-in to source-generated interop or between versions of interop source-generation.
     /// </summary>
-    public sealed class BreakingChangeDetector(IMarshallingGeneratorFactory inner) : IMarshallingGeneratorFactory
+    public sealed class BreakingChangeDetector(IMarshallingGeneratorResolver inner) : IMarshallingGeneratorResolver
     {
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             ResolvedGenerator gen = inner.Create(info, context);
-            if (!gen.ResolvedSuccessfully)
+            if (!gen.IsResolvedWithoutErrors)
             {
                 return gen;
             }

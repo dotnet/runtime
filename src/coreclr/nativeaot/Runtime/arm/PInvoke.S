@@ -49,8 +49,7 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         mov     r2, #0
         str     r2, [r3, #OFFSETOF__Thread__m_pTransitionFrame]
 
-        ldr     r3, =C_FUNC(RhpTrapThreads)
-        ldr     r3, [r3]
+        PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r3
         cbnz    r3, LOCAL_LABEL(ReturnRareTrapThread)  // TrapThreadsFlags_None = 0
 
         bx      lr

@@ -13,7 +13,7 @@ import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
 import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
-import { mono_set_thread_name, setup_proxy_console } from "./logging";
+import { mono_log_error, mono_set_thread_name, setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { deep_merge_config, hasDebuggingEnabled } from "./config";
 import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
@@ -23,7 +23,7 @@ if (typeof importScripts === "function" && !globalThis.onmessage) {
     (globalThis as any).dotnetSidecar = true;
 }
 
-// keep in sync with src\mono\wasm\runtime\globals.ts and src\mono\wasm\test-main.js
+// keep in sync with src\mono\browser\runtime\globals.ts and src\mono\browser\test-main.js
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
 export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
@@ -70,17 +70,17 @@ export function setLoaderGlobals(
     });
 
     Object.assign(globalObjects.module, {
-        disableDotnet6Compatibility: true,
         config: deep_merge_config(monoConfig, { environmentVariables: {} }),
     });
-    Object.assign(runtimeHelpers, {
+    const rh: Partial<RuntimeHelpers> = {
         mono_wasm_bindings_is_ready: false,
         javaScriptExports: {} as any,
         config: globalObjects.module.config,
         diagnosticTracing: false,
-        abort: (reason: any) => { throw reason; },
-    });
-    Object.assign(loaderHelpers, {
+        nativeAbort: (reason: any) => { throw reason; },
+        nativeExit: (code: number) => { throw new Error("exit:" + code); }
+    };
+    const lh: Partial<LoaderHelpers> = {
         gitHash,
         config: globalObjects.module.config,
         diagnosticTracing: false,
@@ -125,12 +125,13 @@ export function setLoaderGlobals(
         // from wasm-feature-detect npm package
         exceptions,
         simd,
-
-    } as Partial<LoaderHelpers>);
+    };
+    Object.assign(runtimeHelpers, rh);
+    Object.assign(loaderHelpers, lh);
 }
 
 // this will abort the program if the condition is false
-// see src\mono\wasm\runtime\rollup.config.js
+// see src\mono\browser\runtime\rollup.config.js
 // we inline the condition, because the lambda could allocate closure on hot path otherwise
 export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (condition) return;
@@ -138,5 +139,6 @@ export function mono_assert(condition: unknown, messageFactory: string | (() => 
         ? messageFactory()
         : messageFactory);
     const error = new Error(message);
-    runtimeHelpers.abort(error);
+    mono_log_error(message, error);
+    runtimeHelpers.nativeAbort(error);
 }

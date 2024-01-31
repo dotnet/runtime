@@ -303,7 +303,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static int IndexOfMax(ReadOnlySpan<float> x) =>
-            IndexOfMinMaxCore<IndexOfMaxOperator_Single>(x);
+            IndexOfMinMaxCore<float, IndexOfMaxOperator_Single>(x);
 
         /// <summary>Searches for the index of the single-precision floating-point number with the largest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -320,7 +320,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static int IndexOfMaxMagnitude(ReadOnlySpan<float> x) =>
-            IndexOfMinMaxCore<IndexOfMaxMagnitudeOperator_Single>(x);
+            IndexOfMinMaxCore<float, IndexOfMaxMagnitudeOperator_Single>(x);
 
         /// <summary>Searches for the index of the smallest single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -336,7 +336,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static int IndexOfMin(ReadOnlySpan<float> x) =>
-            IndexOfMinMaxCore<IndexOfMinOperator_Single>(x);
+            IndexOfMinMaxCore<float, IndexOfMinOperator_Single>(x);
 
         /// <summary>Searches for the index of the single-precision floating-point number with the smallest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -353,7 +353,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static int IndexOfMinMagnitude(ReadOnlySpan<float> x) =>
-            IndexOfMinMaxCore<IndexOfMinMagnitudeOperator_Single>(x);
+            IndexOfMinMaxCore<float, IndexOfMinMagnitudeOperator_Single>(x);
 
         /// <summary>Computes the element-wise natural (base <c>e</c>) logarithm of single-precision floating-point numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>

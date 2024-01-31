@@ -1,6 +1,8 @@
-v1.7.0
-https://github.com/libunwind/libunwind/commit/688caaf6ef9853cc26ad8bd1706804d48a0df0bc
+v1.8.0
+https://github.com/libunwind/libunwind/commit/2c2566c79c4f9cb505e6a23e4ab884d856ef88fe
 
-Apply https://github.com/libunwind/libunwind/pull/457
-Apply https://github.com/libunwind/libunwind/pull/455
-Apply https://github.com/libunwind/libunwind/pull/460
+Apply https://github.com/libunwind/libunwind/pull/700
+Apply https://github.com/libunwind/libunwind/pull/701
+Apply https://github.com/libunwind/libunwind/pull/703
+Apply https://github.com/libunwind/libunwind/pull/704
+Revert https://github.com/libunwind/libunwind/pull/503 # issue: https://github.com/libunwind/libunwind/issues/702

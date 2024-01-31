@@ -61,11 +61,11 @@
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and '$(_targetOS)' == 'win'"
       Text="Cross-OS native compilation is not supported." />
 
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(_targetArchitecture)' != 'x64' and '$(_targetArchitecture)' != 'arm64'"
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(_targetArchitecture)' != 'x64' and '$(_targetArchitecture)' != 'arm64' and '$(_targetArchitecture)' != 'arm'"
       Text="Native compilation does not support targeting $(RuntimeIdentifier) yet." />
 
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !('$(_hostArchitecture)' == 'x64' or '$(_hostArchitecture)' == 'arm64')"
-      Text="Native compilation can run on x64 and arm64 hosts only." />
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !('$(_hostArchitecture)' == 'x64' or '$(_hostArchitecture)' == 'arm64' or '$(_hostArchitecture)' == 'arm')"
+      Text="Native compilation can run on x64, arm64 and arm hosts only." />
 
     <Error Condition="'$(IlcHostPackagePath)' == '' and '$(RuntimePackagePath)' != '' and ('$(_hostArchitecture)' == 'x64' or '$(_hostArchitecture)' == 'arm64')"
       Text="Add a PackageReference for '$(_hostPackageName)' to allow cross-compilation for $(_targetArchitecture)" />
@@ -105,8 +105,8 @@
       <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
       <_symbolSourcePath>$(NativeOutputPath)$(TargetName)$(_symbolExt)</_symbolSourcePath>
       <_symbolTargetPath>$(PublishDir)\$(TargetName)$(_symbolExt)</_symbolTargetPath>
-      <!-- If the symbol is a dsym bundle, it's a folder not a file. -->
-      <_symbolIsFile Condition="'$(NativeSymbolExt)' == '.dsym'">false</_symbolIsFile>
+      <!-- If the symbol is a dSYM bundle, it's a folder not a file. -->
+      <_symbolIsFile Condition="'$(NativeSymbolExt)' == '.dSYM'">false</_symbolIsFile>
       <_symbolIsFile Condition="'$(_symbolIsFile)' == ''">true</_symbolIsFile>
     </PropertyGroup>
 

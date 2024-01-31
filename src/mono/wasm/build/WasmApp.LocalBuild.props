@@ -22,7 +22,7 @@
   <Import Project="$(_WasmTargetsDir)$(_TargetsBaseName).props" />
 
   <PropertyGroup>
-    <_TargetFrameworkForNETCoreTasks>net8.0</_TargetFrameworkForNETCoreTasks>
+    <_TargetFrameworkForNETCoreTasks>net9.0</_TargetFrameworkForNETCoreTasks>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
