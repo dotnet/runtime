@@ -11989,25 +11989,66 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
 
         case INS_sve_ldnt1b:
         case INS_sve_ldnt1h:
+        case INS_sve_ldnt1w:
+        case INS_sve_ldnt1d:
         case INS_sve_ldnt1sb:
         case INS_sve_ldnt1sh:
-        case INS_sve_ldnt1w:
-            assert(insOptsScalableWords(opt));
             assert(isVectorRegister(reg1));
-            assert(isPredicateRegister(reg2));        
-            assert(isVectorRegister(reg3));
-            assert(isGeneralRegisterOrZR(reg4));
-            assert(isScalableVectorSize(size));
-            assert(insScalableOptsNone(sopt));
+            assert(isPredicateRegister(reg2));
 
-            if (opt == INS_OPTS_SCALABLE_S)
+            if (isGeneralRegister(reg3))
             {
-                fmt = IF_SVE_IF_4A;
+                assert(isGeneralRegister(reg4));
+
+#ifdef DEBUG
+                switch (ins)
+                {
+                    case INS_sve_ldnt1b:
+                        assert(opt == INS_OPTS_SCALABLE_B);
+                        assert(insScalableOptsNone(sopt));
+                        break;
+
+                    case INS_sve_ldnt1h:
+                        assert(opt == INS_OPTS_SCALABLE_H);
+                        assert(sopt == INS_SCALABLE_OPTS_LSL_N);
+                        break;
+
+                    case INS_sve_ldnt1w:
+                        assert(opt == INS_OPTS_SCALABLE_S);
+                        assert(sopt == INS_SCALABLE_OPTS_LSL_N);
+                        break;
+
+                    case INS_sve_ldnt1d:
+                        assert(opt == INS_OPTS_SCALABLE_D);
+                        assert(sopt == INS_SCALABLE_OPTS_LSL_N);
+                        break;
+
+                    default:
+                        assert(!"Invalid instruction");
+                        break;
+                }
+#endif // DEBUG
+
+                fmt = IF_SVE_IN_4A;
             }
             else
             {
-                assert(opt == INS_OPTS_SCALABLE_D);
-                fmt = IF_SVE_IF_4A_A;
+                assert(ins != INS_sve_ldnt1d);
+                assert(insOptsScalableWords(opt));
+                assert(isVectorRegister(reg3));
+                assert(isGeneralRegisterOrZR(reg4));
+                assert(isScalableVectorSize(size));
+                assert(insScalableOptsNone(sopt));
+
+                if (opt == INS_OPTS_SCALABLE_S)
+                {
+                    fmt = IF_SVE_IF_4A;
+                }
+                else
+                {
+                    assert(opt == INS_OPTS_SCALABLE_D);
+                    fmt = IF_SVE_IF_4A_A;
+                }
             }
             break;
 
@@ -15536,6 +15577,19 @@ void emitter::emitIns_Call(EmitCallType          callType,
             }
             break;
 
+        case IF_SVE_IN_4A:
+            switch (ins)
+            {
+                case INS_sve_ldnt1d:
+                case INS_sve_ldnt1h:
+                case INS_sve_ldnt1w:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
         default:
             break;
     }
@@ -15932,6 +15986,23 @@ void emitter::emitIns_Call(EmitCallType          callType,
             {
                 case INS_sve_ld1h:
                     return 1;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IN_4A:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_ldnt1h:
+                    return 1;
+                case INS_sve_ldnt1w:
+                    return 2;
+                case INS_sve_ldnt1d:
+                    return 3;
 
                 default:
                     break;
@@ -18922,6 +18993,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SVE_IK_4A_G: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
         case IF_SVE_IK_4A_H: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
         case IF_SVE_IK_4A_I: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
+        case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
@@ -21989,6 +22061,10 @@ void emitter::emitDispInsHelp(
         // {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]
         // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]
         case IF_SVE_IK_4A_I: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
+        // {<Zt>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]
+        // {<Zt>.H }, <Pg>/Z, [<Xn|SP>, <Xm>]
+        // {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Xm>]
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>]
         case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
         case IF_SVE_IP_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus scalar)
         case IF_SVE_IR_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
