@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -13,6 +12,11 @@ namespace System.Linq
             if (source == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             if (count <= 0)
@@ -28,7 +32,7 @@ namespace System.Linq
             }
             else if (source is IPartition<TSource> partition)
             {
-                return partition.Skip(count);
+                return partition.Skip(count) ?? Empty<TSource>();
             }
 
             return SkipIterator(source, count);
@@ -44,6 +48,11 @@ namespace System.Linq
             if (predicate == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return SkipWhileIterator(source, predicate);
@@ -80,6 +89,11 @@ namespace System.Linq
             if (predicate == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return SkipWhileIterator(source, predicate);
@@ -119,8 +133,9 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return count <= 0 ?
-                source.Skip(0) :
+            return
+                IsEmptyArray(source) ? [] :
+                count <= 0 ? source.Skip(0) :
                 TakeRangeFromEndIterator(source,
                     isStartIndexFromEnd: false, startIndex: 0,
                     isEndIndexFromEnd: true, endIndex: count);

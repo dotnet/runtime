@@ -99,11 +99,11 @@
     <!-- when this is updated, make sure to keep $(_TargetFrameworkForNETCoreTasks)
          in src/mono/wasm/build/WasmApp.LocalBuild.props
          and in src/mono/msbuild/apple/build/AppleBuild.LocalBuild.props in sync -->
-    <NetCoreAppToolCurrentVersion>8.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrentVersion>9.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
 
-    <AspNetCoreAppCurrentVersion>8.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>9.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>

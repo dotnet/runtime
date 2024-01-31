@@ -379,8 +379,6 @@
              Link="Common\Interop\Windows\WinHttp\Interop.winhttp.cs" />
     <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
-    <Compile Include="$(CommonPath)\System\StringExtensions.cs"
-             Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs"
@@ -412,8 +410,6 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
-    <Compile Include="$(CommonPath)System\StringExtensions.cs"
-             Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs"
@@ -434,8 +430,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
-    <Compile Include="$(CommonPath)\System\StringExtensions.cs"
-             Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs"
              Link="Common\System\Net\HttpStatusDescription.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs" />

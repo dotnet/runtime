@@ -386,14 +386,14 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
-        public static void FailedAllocation(EETypePtr pEEType, bool fIsOverflow)
+        public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
         {
             ExceptionIDs exID = fIsOverflow ? ExceptionIDs.Overflow : ExceptionIDs.OutOfMemory;
 
             // Throw the out of memory exception defined by the classlib, using the input MethodTable*
             // to find the correct classlib.
 
-            throw pEEType.ToPointer()->GetClasslibException(exID);
+            throw pEEType->GetClasslibException(exID);
         }
 
 #if !INPLACE_RUNTIME

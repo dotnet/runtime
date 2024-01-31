@@ -75,27 +75,27 @@ bool EHblkDsc::InHndRegionILRange(BasicBlock* pBlk)
 }
 
 // HasCatchHandler: returns 'true' for either try/catch, or try/filter/filter-handler.
-bool EHblkDsc::HasCatchHandler()
+bool EHblkDsc::HasCatchHandler() const
 {
     return (ebdHandlerType == EH_HANDLER_CATCH) || (ebdHandlerType == EH_HANDLER_FILTER);
 }
 
-bool EHblkDsc::HasFilter()
+bool EHblkDsc::HasFilter() const
 {
     return ebdHandlerType == EH_HANDLER_FILTER;
 }
 
-bool EHblkDsc::HasFinallyHandler()
+bool EHblkDsc::HasFinallyHandler() const
 {
     return ebdHandlerType == EH_HANDLER_FINALLY;
 }
 
-bool EHblkDsc::HasFaultHandler()
+bool EHblkDsc::HasFaultHandler() const
 {
     return (ebdHandlerType == EH_HANDLER_FAULT) || (ebdHandlerType == EH_HANDLER_FAULT_WAS_FINALLY);
 }
 
-bool EHblkDsc::HasFinallyOrFaultHandler()
+bool EHblkDsc::HasFinallyOrFaultHandler() const
 {
     return HasFinallyHandler() || HasFaultHandler();
 }
@@ -594,9 +594,9 @@ unsigned short Compiler::bbFindInnermostCommonTryRegion(BasicBlock* bbOne, Basic
 // most nested try region it is a member of. Thus, we only need to check the EH
 // table entry related to the try index stored on the block.
 //
-bool Compiler::bbIsTryBeg(BasicBlock* block)
+bool Compiler::bbIsTryBeg(const BasicBlock* block)
 {
-    EHblkDsc* ehDsc = ehGetBlockTryDsc(block);
+    const EHblkDsc* ehDsc = ehGetBlockTryDsc(block);
     return (ehDsc != nullptr) && (block == ehDsc->ebdTryBeg);
 }
 
@@ -605,9 +605,9 @@ bool Compiler::bbIsTryBeg(BasicBlock* block)
 // of the most nested handler or filter region it is in. Thus, we only need to look at the EH
 // descriptor corresponding to the handler index on the block.
 //
-bool Compiler::bbIsHandlerBeg(BasicBlock* block)
+bool Compiler::bbIsHandlerBeg(const BasicBlock* block)
 {
-    EHblkDsc* ehDsc = ehGetBlockHndDsc(block);
+    const EHblkDsc* ehDsc = ehGetBlockHndDsc(block);
     return (ehDsc != nullptr) && ((block == ehDsc->ebdHndBeg) || (ehDsc->HasFilter() && (block == ehDsc->ebdFilter)));
 }
 
@@ -2255,13 +2255,6 @@ bool Compiler::fgNormalizeEHCase2()
                             // Change pred branches.
                             //
                             fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
-
-                            if (predBlock->NextIs(newTryStart) && predBlock->KindIs(BBJ_COND))
-                            {
-                                predBlock->SetFalseTarget(newTryStart);
-                                fgRemoveRefPred(insertBeforeBlk, predBlock);
-                                fgAddRefPred(newTryStart, predBlock);
-                            }
 
                             JITDUMP("Redirect " FMT_BB " target from " FMT_BB " to " FMT_BB ".\n", predBlock->bbNum,
                                     insertBeforeBlk->bbNum, newTryStart->bbNum);

@@ -4211,24 +4211,37 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	}
 
 	if (cfg->rgctx_var) {
+		LLVMValueRef rgctx_alloc = NULL;
+
+		/*
+		 * The rgxtx arg is received in a non-abi register. It needs to be saved to the stack so its
+		 * accessible during EH.
+		 */
 		if (!(cfg->rgctx_var->flags & MONO_INST_VOLATILE)) {
 			/* FIXME: This could be volatile even in llvmonly mode if used inside a clause etc. */
 			g_assert (!ctx->addresses [cfg->rgctx_var->dreg]);
-			ctx->values [cfg->rgctx_var->dreg] = ctx->rgctx_arg;
+			if (cfg->llvm_only) {
+				ctx->values [cfg->rgctx_var->dreg] = ctx->rgctx_arg;
+			} else {
+				rgctx_alloc = mono_llvm_build_alloca (builder, ThisType (), const_int32 (1), 0, "");
+				/* This volatile store will keep the alloca alive */
+				emit_store (builder, ctx->rgctx_arg, rgctx_alloc, TRUE);
+				/*
+				 * Load it into a normal llvm value instead of using rgctx_arg, the non-abi register could cause codegen
+				 * problems otherwise.
+				 */
+				ctx->values [cfg->rgctx_var->dreg] = emit_load (builder, ThisType (), convert (ctx, rgctx_alloc, ThisType ()), "mrgctx", TRUE);
+			}
 		} else {
-			LLVMValueRef rgctx_alloc, store;
-
-			/*
-			 * We handle the rgctx arg similarly to the this pointer.
-			 */
+			/* The rgctx var is volatile so it already has an address, and there is no need to set ctx->values */
 			g_assert (ctx->addresses [cfg->rgctx_var->dreg]);
 			rgctx_alloc = ctx->addresses [cfg->rgctx_var->dreg]->value;
 			/* This volatile store will keep the alloca alive */
-			store = emit_store (builder, convert (ctx, ctx->rgctx_arg, IntPtrType ()), rgctx_alloc, TRUE);
-			(void)store; /* unused */
-
-			set_metadata_flag (rgctx_alloc, "mono.this");
+			emit_store (builder, convert (ctx, ctx->rgctx_arg, IntPtrType ()), rgctx_alloc, TRUE);
 		}
+
+		if (rgctx_alloc)
+			set_metadata_flag (rgctx_alloc, "mono.this");
 	}
 
 #ifdef TARGET_WASM
@@ -6134,7 +6147,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					break;
 				case LLVMArgVtypeAsScalar:
 					if (is_simd) {
-						retval = LLVMBuildBitCast (builder, values [ins->sreg1], ret_type, "setret_simd_vtype_as_scalar");
+						retval = LLVMBuildBitCast (builder, lhs, ret_type, "setret_simd_vtype_as_scalar");
 					} else {
 						g_assert (addresses [ins->sreg1]);
 						retval = LLVMBuildLoad2 (builder, ret_type, build_ptr_cast (builder, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
@@ -7741,8 +7754,11 @@ MONO_RESTORE_WARNING
 			if (!icall_sig)
 				icall_sig = LLVMFunctionType2 (LLVMVoidType (), IntPtrType (), IntPtrType (), FALSE);
 
+			/* Emit this here instead of receiving it as an argument so the load ends up in the out-of-line bb */
+			LLVMValueRef info = get_aotconst (ctx, MONO_PATCH_INFO_GSHARED_METHOD_INFO, cfg->gshared_info, pointer_type (IntPtrType ()));
+
 			args [0] = convert (ctx, lhs, IntPtrType ());
-			args [1] = convert (ctx, rhs, IntPtrType ());
+			args [1] = convert (ctx, info, IntPtrType ());
 
 			callee = get_callee (ctx, icall_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_init_method_rgctx));
 			LLVMBuildCall2 (builder, icall_sig, callee, args, 2, "");
@@ -9563,9 +9579,7 @@ MONO_RESTORE_WARNING
 			LLVMValueRef args [2];
 			args [0] = convert (ctx, lhs, sse_i2_t);
 			args [1] = convert (ctx, rhs, sse_i2_t);
-			values [ins->dreg] = convert (ctx,
-				call_intrins (ctx, INTRINS_SSE_PACKUSWB, args, dname),
-				type_to_sse_type (GTMREG_TO_INT (ins->inst_c1)));
+			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PACKUSWB, args, dname);
 			break;
 		}
 

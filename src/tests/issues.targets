@@ -2531,9 +2531,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/SameNameDifferentAssembly/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Primitives/Pointer/NonBlittablePointer/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
@@ -2573,16 +2570,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/StdCallMemberFunction/StdCallMemberFunctionTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/gc_poll/InsertGCPoll/**">
@@ -2758,7 +2746,7 @@
     </ItemGroup>
 
     <!-- These are known failures on mono-arm64 on OSX -->
-    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsOSX)' == 'true'" >
+    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsOSX)' == 'true' and '$(RuntimeVariant)' == 'monointerpreter'" >
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/96051</Issue>
         </ExcludeList>
@@ -3649,6 +3637,12 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'riscv64'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/gc_poll/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
     </ItemGroup>
 

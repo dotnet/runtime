@@ -881,37 +881,29 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
     return pTargetCall;
 }
 
-FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
-                        Object *refThisUNSAFE,
-                        Object *targetUNSAFE,
-                        ReflectClassBaseObject *pMethodTypeUNSAFE,
-                        StringObject* methodNameUNSAFE,
-                        int flags)
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
+    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags)
 {
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        DELEGATEREF refThis;
-        OBJECTREF target;
-        STRINGREF methodName;
-        REFLECTCLASSBASEREF refMethodType;
-    } gc;
-
-    gc.refThis    = (DELEGATEREF) ObjectToOBJECTREF(refThisUNSAFE);
-    gc.target     = (OBJECTREF) targetUNSAFE;
-    gc.methodName = (STRINGREF) methodNameUNSAFE;
-    gc.refMethodType = (REFLECTCLASSBASEREF) ObjectToOBJECTREF(pMethodTypeUNSAFE);
-
-    TypeHandle methodType = gc.refMethodType->GetType();
+    QCALL_CONTRACT;
 
     MethodDesc *pMatchingMethod = NULL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    BEGIN_QCALL;
 
-    // Caching of MethodDescs (impl and decl) for MethodTable slots provided significant
-    // performance gain in some reflection emit scenarios.
-    MethodTable::AllowMethodDataCaching();
+    GCX_COOP();
+
+    struct
+    {
+        DELEGATEREF refThis;
+        OBJECTREF target;
+    } gc;
+
+    gc.refThis    = (DELEGATEREF) d.Get();
+    gc.target     = target.Get();
+
+    GCPROTECT_BEGIN(gc);
+
+    TypeHandle methodType = pMethodType.AsTypeHandle();
 
     TypeHandle targetType((gc.target != NULL) ? gc.target->GetMethodTable() : NULL);
     // get the invoke of the delegate
@@ -922,11 +914,6 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     //
     // now loop through the methods looking for a match
     //
-
-    // get the name in UTF8 format
-    StackSString szName;
-    szName.SetAndConvertToUTF8(gc.methodName->GetBuffer());
-    LPCUTF8 szNameStr = szName.GetUTF8();
 
     // pick a proper compare function
     typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
@@ -946,7 +933,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
             if (pCurMethod->IsGenericMethodDefinition())
                 continue;
 
-            if ((pCurMethod != NULL) && (StrCompFunc(szNameStr, pCurMethod->GetName()) == 0))
+            if ((pCurMethod != NULL) && (StrCompFunc(pszMethodName, pCurMethod->GetName()) == 0))
             {
                 // found a matching string, get an associated method desc if needed
                 // Use unboxing stubs for instance and virtual methods on value types.
@@ -987,7 +974,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
 
                 // Found the target that matches the signature and satisfies security transparency rules
                 // Initialize the delegate to point to the target method.
-                BindToMethod(&gc.refThis,
+                COMDelegate::BindToMethod(&gc.refThis,
                              &gc.target,
                              pCurMethod,
                              methodType.GetMethodTable(),
@@ -1000,36 +987,37 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     }
     done:
         ;
-    HELPER_METHOD_FRAME_END();
 
-    FC_RETURN_BOOL(pMatchingMethod != NULL);
+    GCPROTECT_END();
+
+    END_QCALL;
+
+    return (pMatchingMethod != NULL);
 }
-FCIMPLEND
 
-
-FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectMethodObject *pMethodUNSAFE, ReflectClassBaseObject *pMethodTypeUNSAFE, int flags)
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
+    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     BOOL result = TRUE;
 
-    struct _gc
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    struct
     {
         DELEGATEREF refThis;
         OBJECTREF refFirstArg;
-        REFLECTCLASSBASEREF refMethodType;
-        REFLECTMETHODREF refMethod;
     } gc;
 
-    gc.refThis          = (DELEGATEREF) ObjectToOBJECTREF(refThisUNSAFE);
-    gc.refFirstArg      = ObjectToOBJECTREF(targetUNSAFE);
-    gc.refMethodType    = (REFLECTCLASSBASEREF) ObjectToOBJECTREF(pMethodTypeUNSAFE);
-    gc.refMethod        = (REFLECTMETHODREF) ObjectToOBJECTREF(pMethodUNSAFE);
+    gc.refThis          = (DELEGATEREF) d.Get();
+    gc.refFirstArg      = target.Get();
 
-    MethodTable *pMethMT = gc.refMethodType->GetType().GetMethodTable();
-    MethodDesc *method = gc.refMethod->GetMethod();
+    GCPROTECT_BEGIN(gc);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    MethodTable *pMethMT = pMethodType.AsTypeHandle().GetMethodTable();
 
     // Assert to track down VS#458689.
     _ASSERTE(gc.refThis != gc.refFirstArg);
@@ -1062,7 +1050,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                             &fIsOpenDelegate))
     {
         // Initialize the delegate to point to the target method.
-        BindToMethod(&gc.refThis,
+        COMDelegate::BindToMethod(&gc.refThis,
                      &gc.refFirstArg,
                      method,
                      pMethMT,
@@ -1071,11 +1059,12 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
     else
         result = FALSE;
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
 
-    FC_RETURN_BOOL(result);
+    END_QCALL;
+
+    return result;
 }
-FCIMPLEND
 
 // This method is called (in the late bound case only) once a target method has been decided on. All the consistency checks
 // (signature matching etc.) have been done at this point, this method will simply initialize the delegate, with any required
@@ -1497,47 +1486,43 @@ void COMDelegate::RemoveEntryFromFPtrHash(UPTR key)
     COMDelegate::s_pDelegateToFPtrHash->DeleteValue(key, NULL);
 }
 
-FCIMPL2(PCODE, COMDelegate::GetCallStub, Object* refThisUNSAFE, PCODE method)
+extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    PCODE target = NULL;
+    BEGIN_QCALL;
 
-    DELEGATEREF refThis = (DELEGATEREF)ObjectToOBJECTREF(refThisUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
+    GCX_COOP();
+
     MethodDesc *pMeth = MethodTable::GetMethodDescForSlotAddress((PCODE)method);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic() && pMeth->IsVirtual());
-    target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
+    PCODE target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
+
+    DELEGATEREF refThis = (DELEGATEREF)d.Get();
+    refThis->SetMethodPtrAux(target);
     refThis->SetInvocationCount((INT_PTR)(void*)pMeth);
-    HELPER_METHOD_FRAME_END();
-    return target;
+
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetUNSAFE, PCODE method)
+extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack target, PCODE method)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    if (targetUNSAFE == NULL)
-        FCThrow(kArgumentNullException);
+    BEGIN_QCALL;
 
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisUNSAFE);
-    OBJECTREF target  = ObjectToOBJECTREF(targetUNSAFE);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refThis, target);
-
-    _ASSERTE(refThis);
     _ASSERTE(method);
 
-    MethodTable *pMT = target->GetMethodTable();
+    MethodTable* pMTTarg = target.Get()->GetMethodTable();
 
-    MethodDesc *pMeth = Entry2MethodDesc(method, pMT);
+    MethodDesc *pMeth = Entry2MethodDesc(method, pMTTarg);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic());
 
     // close delegates
-    MethodTable* pMTTarg = target->GetMethodTable();
     MethodTable* pMTMeth = pMeth->GetMethodTable();
 
     MethodDesc *pCorrectedMethod = pMeth;
@@ -1557,11 +1542,11 @@ FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetU
     {
         method = pCorrectedMethod->GetMultiCallableAddrOfCode();
     }
-    HELPER_METHOD_FRAME_END();
+
+    END_QCALL;
 
     return method;
 }
-FCIMPLEND
 
 #if defined(_MSC_VER) && !defined(TARGET_UNIX)
 // VC++ Compiler intrinsic.
@@ -1984,39 +1969,35 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     RETURN ret;
 }
 
-FCIMPL1(Object*, COMDelegate::InternalAlloc, ReflectClassBaseObject * pTargetUNSAFE)
+extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refTarget = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTargetUNSAFE);
-    OBJECTREF refRetVal = NULL;
-    TypeHandle targetTH = refTarget->GetType();
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refTarget);
+    BEGIN_QCALL;
 
-    _ASSERTE(targetTH.GetMethodTable() != NULL && targetTH.GetMethodTable()->IsDelegate());
+    GCX_COOP();
 
-    refRetVal = targetTH.GetMethodTable()->Allocate();
+    _ASSERTE(pType.AsTypeHandle().AsMethodTable()->IsDelegate());
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRetVal);
+    d.Set(pType.AsTypeHandle().AsMethodTable()->Allocate());
+
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL1(Object*, COMDelegate::InternalAllocLike, Object* pThis)
+extern "C" void QCALLTYPE Delegate_InternalAllocLike(QCall::ObjectHandleOnStack d)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF refRetVal = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
+    BEGIN_QCALL;
 
-    _ASSERTE(pThis->GetMethodTable() != NULL && pThis->GetMethodTable()->IsDelegate());
+    GCX_COOP();
 
-    refRetVal = pThis->GetMethodTable()->AllocateNoChecks();
+    _ASSERTE(d.Get()->GetMethodTable()->IsDelegate());
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRetVal);
+    d.Set(d.Get()->GetMethodTable()->AllocateNoChecks());
+
+    END_QCALL;
 }
-FCIMPLEND
 
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {
@@ -2110,46 +2091,40 @@ DELEGATEREF COMDelegate::CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc*
     return gc.innerDel;
 }
 
-// InternalGetMethodInfo
 // This method will get the MethodInfo for a delegate
-FCIMPL1(ReflectMethodObject *, COMDelegate::FindMethodHandle, Object* refThisIn)
+extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    MethodDesc* pMD = NULL;
-    REFLECTMETHODREF pRet = NULL;
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisIn);
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
+    GCX_COOP();
 
-    pMD = GetMethodDesc(refThis);
+    MethodDesc* pMD = COMDelegate::GetMethodDesc(d.Get());
     pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
-    pRet = pMD->GetStubMethodInfo();
-    HELPER_METHOD_FRAME_END();
+    retMethodInfo.Set(pMD->GetStubMethodInfo());
 
-    return (ReflectMethodObject*)OBJECTREFToObject(pRet);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, COMDelegate::InternalEqualMethodHandles, Object *refLeftIn, Object *refRightIn)
+extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF refLeft = ObjectToOBJECTREF(refLeftIn);
-    OBJECTREF refRight = ObjectToOBJECTREF(refRightIn);
     BOOL fRet = FALSE;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refLeft, refRight);
+    BEGIN_QCALL;
 
-    MethodDesc* pMDLeft = GetMethodDesc(refLeft);
-    MethodDesc* pMDRight = GetMethodDesc(refRight);
+    GCX_COOP();
+
+    MethodDesc* pMDLeft = COMDelegate::GetMethodDesc(left.Get());
+    MethodDesc* pMDRight = COMDelegate::GetMethodDesc(right.Get());
     fRet = pMDLeft == pMDRight;
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
-    FC_RETURN_BOOL(fRet);
+    return fRet;
 }
-FCIMPLEND
 
 FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, Object* refThisIn)
 {

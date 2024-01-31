@@ -1464,7 +1464,12 @@ void DisAssembler::disRecordRelocation(size_t relocAddr, size_t targetAddr)
  * Disassemble the code which has been generated
  */
 
-void DisAssembler::disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* coldCodePtr, size_t coldCodeSize)
+void DisAssembler::disAsmCode(BYTE*  hotCodePtr,
+                              BYTE*  hotCodePtrRW,
+                              size_t hotCodeSize,
+                              BYTE*  coldCodePtr,
+                              BYTE*  coldCodePtrRW,
+                              size_t coldCodeSize)
 {
     if (!disComp->opts.doLateDisasm)
     {
@@ -1511,7 +1516,7 @@ void DisAssembler::disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* coldCo
         fprintf(disAsmFile, "************************** %hs:%hs size 0x%04IX **************************\n\n",
                 disCurClassName, disCurMethodName, hotCodeSize);
 
-        fprintf(disAsmFile, "Base address : %ph\n", dspAddr(hotCodePtr));
+        fprintf(disAsmFile, "Base address : %ph (RW: %ph)\n", dspAddr(hotCodePtr), dspAddr(hotCodePtrRW));
     }
     else
     {
@@ -1519,14 +1524,14 @@ void DisAssembler::disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* coldCo
                 "************************** %hs:%hs hot size 0x%04IX cold size 0x%04IX **************************\n\n",
                 disCurClassName, disCurMethodName, hotCodeSize, coldCodeSize);
 
-        fprintf(disAsmFile, "Hot  address : %ph\n", dspAddr(hotCodePtr));
-        fprintf(disAsmFile, "Cold address : %ph\n", dspAddr(coldCodePtr));
+        fprintf(disAsmFile, "Hot  address : %ph (RW: %ph)\n", dspAddr(hotCodePtr), dspAddr(hotCodePtrRW));
+        fprintf(disAsmFile, "Cold address : %ph (RW: %ph)\n", dspAddr(coldCodePtr), dspAddr(coldCodePtrRW));
     }
 
     disStartAddr     = 0;
-    disHotCodeBlock  = (size_t)hotCodePtr;
+    disHotCodeBlock  = (size_t)hotCodePtrRW;
     disHotCodeSize   = hotCodeSize;
-    disColdCodeBlock = (size_t)coldCodePtr;
+    disColdCodeBlock = (size_t)coldCodePtrRW;
     disColdCodeSize  = coldCodeSize;
 
     disTotalCodeSize = disHotCodeSize + disColdCodeSize;

@@ -170,8 +170,6 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <exception cref="PlatformNotSupportedException">The method is executed on an architecture other than WebAssembly.</exception>
         // JavaScriptExports need to be protected from trimming because they are used from C/JS code which IL linker can't see
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
-        // Same for legacy, but the type could be explicitly trimmed by setting WasmEnableLegacyJsInterop=false which would use ILLink.Descriptors.LegacyJsInterop.xml
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.LegacyExportsTrimmingRoot", "System.Runtime.InteropServices.JavaScript")]
         public static JSFunctionBinding BindJSFunction(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
@@ -197,7 +195,9 @@ namespace System.Runtime.InteropServices.JavaScript
             return BindManagedFunctionImpl(fullyQualifiedName, signatureHash, signatures);
         }
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         internal static unsafe void InvokeJSFunction(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
             jsFunction.AssertNotDisposed();
@@ -218,7 +218,9 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         internal static unsafe void InvokeJSFunctionCurrent(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
             var functionHandle = (int)jsFunction.JSHandle;
@@ -235,7 +237,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
 
 #if FEATURE_WASM_THREADS
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         internal static unsafe void DispatchJSFunctionSync(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
             var args = (nint)Unsafe.AsPointer(ref arguments[0]);
@@ -255,7 +259,9 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 #endif
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         internal static unsafe void InvokeJSImportImpl(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
 #if FEATURE_WASM_THREADS
@@ -311,7 +317,9 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         internal static unsafe void InvokeJSImportCurrent(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
             fixed (JSMarshalerArgument* args = arguments)
@@ -332,7 +340,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if FEATURE_WASM_THREADS
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         internal static unsafe void DispatchJSImportSync(JSFunctionBinding signature, JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
         {
             var args = (nint)Unsafe.AsPointer(ref arguments[0]);
@@ -351,7 +361,9 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         internal static unsafe void DispatchJSImportAsync(JSFunctionBinding signature, JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
         {
             // this copy is freed in mono_wasm_invoke_import_async
@@ -418,7 +430,9 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 #else
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         internal static unsafe void ResolveOrRejectPromise(JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
         {
             // this copy is freed in mono_wasm_invoke_import_async

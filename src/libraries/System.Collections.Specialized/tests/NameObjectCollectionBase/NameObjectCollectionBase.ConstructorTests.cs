@@ -20,7 +20,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(0, coll.Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Constructor_Int_Provider_Comparer()
         {
 #pragma warning disable CS0618 // Type or member is obsolete

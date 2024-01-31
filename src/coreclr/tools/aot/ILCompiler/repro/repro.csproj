@@ -41,6 +41,7 @@
       <ReproResponseLines Include="--feature:System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported=false" />
       <ReproResponseLines Include="--feature:System.Globalization.Invariant=true" />
       <ReproResponseLines Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
+      <ReproResponseLines Include="--feature:System.StartupHookProvider.IsSupported=false" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(OutputPath)\compile-with-$(LibrariesConfiguration)-libs.rsp"

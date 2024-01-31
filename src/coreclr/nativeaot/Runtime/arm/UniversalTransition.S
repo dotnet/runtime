@@ -102,7 +102,7 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         // frame, and the code at the call target is required to use only the transition frame
         // copies when dispatching this call to the eventual callee.
 
-        ldr         r3, =C_FUNC(RhpFpTrashValues)
+        PREPARE_EXTERNAL_VAR RhpFpTrashValues, r3
         vldr        d0, [r3, #(0 * 8)]
         vldr        d1, [r3, #(1 * 8)]
         vldr        d2, [r3, #(2 * 8)]
@@ -112,7 +112,7 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         vldr        d6, [r3, #(6 * 8)]
         vldr        d7, [r3, #(7 * 8)]
 
-        ldr         r3, =C_FUNC(RhpIntegerTrashValues)
+        PREPARE_EXTERNAL_VAR RhpIntegerTrashValues, r3
         ldr         r2, [r3, #(2 * 4)]
         ldr         r3, [r3, #(3 * 4)]
 

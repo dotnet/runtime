@@ -1187,8 +1187,30 @@ get_wrapper_shared_vtype (MonoType *t)
 	if (mono_class_has_failure (klass))
 		return NULL;
 
-	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, NULL))
-		return NULL;
+	guint32 packing, packing_size;
+	gboolean has_explicit_size = FALSE;
+	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), &packing, &packing_size)) {
+		// FIXME: Support other sizes
+		if (packing == 0 && (packing_size == 8 || packing_size == 16)) {
+			has_explicit_size = TRUE;
+			switch (packing_size) {
+			case 8:
+				findex = 1;
+				args [0] = m_class_get_byval_arg (mono_get_int64_class ());
+				break;
+			case 16:
+				findex = 2;
+				args [0] = m_class_get_byval_arg (mono_get_int64_class ());
+				args [1] = m_class_get_byval_arg (mono_get_int64_class ());
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+		} else {
+			return NULL;
+		}
+	}
 
 	gpointer iter = NULL;
 	MonoClassField *field;
@@ -1199,9 +1221,11 @@ get_wrapper_shared_vtype (MonoType *t)
 		if (m_class_is_byreflike (mono_class_from_mono_type_internal (ftype)))
 			/* Cannot inflate generic params with byreflike types */
 			return NULL;
-		args [findex ++] = ftype;
-		if (findex >= 16)
-			break;
+		if (!has_explicit_size) {
+			args [findex ++] = ftype;
+			if (findex >= 16)
+				break;
+		}
 #ifdef TARGET_WASM
 		if (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8 || MONO_TYPE_ISSTRUCT (ftype))
 			has_fp = TRUE;
@@ -1209,10 +1233,9 @@ get_wrapper_shared_vtype (MonoType *t)
 	}
 
 #ifdef TARGET_WASM
-	if (!has_fp) {
+	if (!has_explicit_size && !has_fp) {
 		guint32 align;
 		int size = mono_class_value_size (klass, &align);
-
 		/* Other platforms might pass small valuetypes or valuetypes with non-int fields differently */
 		if (align == 4 && size <= 4 * 5) {
 			findex = size / align;
@@ -3743,6 +3766,23 @@ mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_v
 	if (mono_opt_experimental_gshared_mrgctx)
 		return method->is_inflated;
 
+	if (method->is_inflated && mono_method_get_context (method)->method_inst)
+		return TRUE;
+
+	return ((method->flags & METHOD_ATTRIBUTE_STATIC) ||
+			m_class_is_valuetype (method->klass) ||
+			mini_method_is_default_method (method)) &&
+		(mono_class_is_ginst (method->klass) || mono_class_is_gtd (method->klass));
+}
+
+/*
+ * mono_method_needs_mrgctx_arg_for_eh:
+ *
+ *   Return TRUE if the mrgctx arg to the gshared method METHOD cannot be eliminated.
+ */
+gboolean
+mono_method_needs_mrgctx_arg_for_eh (MonoMethod *method)
+{
 	if (method->is_inflated && mono_method_get_context (method)->method_inst)
 		return TRUE;
 

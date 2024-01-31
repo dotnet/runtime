@@ -230,14 +230,14 @@ namespace System.Text.Json.Serialization
                 {
                     if (state.Current.PropertyState == StackFramePropertyState.None)
                     {
-                        state.Current.PropertyState = StackFramePropertyState.ReadName;
-
                         // Read the key name.
                         if (!reader.Read())
                         {
                             value = default;
                             return false;
                         }
+
+                        state.Current.PropertyState = StackFramePropertyState.ReadName;
                     }
 
                     // Determine the property.
@@ -274,14 +274,14 @@ namespace System.Text.Json.Serialization
 
                     if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
                     {
-                        state.Current.PropertyState = StackFramePropertyState.ReadValue;
-
-                        if (!SingleValueReadWithReadAhead(_valueConverter.RequiresReadAhead, ref reader, ref state))
+                        if (!reader.TryAdvanceWithOptionalReadAhead(_valueConverter.RequiresReadAhead))
                         {
                             state.Current.DictionaryKey = key;
                             value = default;
                             return false;
                         }
+
+                        state.Current.PropertyState = StackFramePropertyState.ReadValue;
                     }
 
                     if (state.Current.PropertyState < StackFramePropertyState.TryRead)

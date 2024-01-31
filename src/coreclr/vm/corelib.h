@@ -216,31 +216,6 @@ DEFINE_FIELD(STUBMETHODINFO,      HANDLE,                 m_value)
 
 DEFINE_CLASS(CONSTRUCTOR_INFO,      Reflection,             ConstructorInfo)
 
-DEFINE_CLASS_U(Reflection, CustomAttributeEncodedArgument, CustomAttributeValue)
-DEFINE_FIELD_U(m_primitiveValue,   CustomAttributeValue,           m_rawValue)
-DEFINE_FIELD_U(m_arrayValue,       CustomAttributeValue,           m_value)
-DEFINE_FIELD_U(m_stringValue,      CustomAttributeValue,           m_enumOrTypeName)
-DEFINE_FIELD_U(m_type,             CustomAttributeValue,           m_type)
-DEFINE_CLASS(CUSTOM_ATTRIBUTE_ENCODED_ARGUMENT, Reflection, CustomAttributeEncodedArgument)
-
-DEFINE_CLASS_U(Reflection, CustomAttributeNamedParameter, CustomAttributeNamedArgument)
-DEFINE_FIELD_U(m_argumentName,     CustomAttributeNamedArgument,   m_argumentName)
-DEFINE_FIELD_U(m_fieldOrProperty,  CustomAttributeNamedArgument,   m_propertyOrField)
-DEFINE_FIELD_U(m_padding,          CustomAttributeNamedArgument,   m_padding)
-DEFINE_FIELD_U(m_type,             CustomAttributeNamedArgument,   m_type)
-DEFINE_FIELD_U(m_encodedArgument,  CustomAttributeNamedArgument,   m_value)
-
-DEFINE_CLASS_U(Reflection, CustomAttributeCtorParameter, CustomAttributeArgument)
-DEFINE_FIELD_U(m_type,             CustomAttributeArgument,        m_type)
-DEFINE_FIELD_U(m_encodedArgument,  CustomAttributeArgument,        m_value)
-
-DEFINE_CLASS_U(Reflection, CustomAttributeType, CustomAttributeType)
-DEFINE_FIELD_U(m_enumName,         CustomAttributeType,            m_enumName)
-DEFINE_FIELD_U(m_encodedType,      CustomAttributeType,            m_tag)
-DEFINE_FIELD_U(m_encodedEnumType,  CustomAttributeType,            m_enumType)
-DEFINE_FIELD_U(m_encodedArrayType, CustomAttributeType,            m_arrayType)
-DEFINE_FIELD_U(m_padding,          CustomAttributeType,            m_padding)
-
 DEFINE_CLASS_U(Globalization,          CultureInfo,        CultureInfoBaseObject)
 DEFINE_FIELD_U(_compareInfo,       CultureInfoBaseObject,  _compareInfo)
 DEFINE_FIELD_U(_textInfo,          CultureInfoBaseObject,  _textInfo)
@@ -549,12 +524,9 @@ DEFINE_FIELD(MISSING,               VALUE,                  Value)
 
 DEFINE_CLASS_U(Reflection,             RuntimeModule,               ReflectModuleBaseObject)
 DEFINE_FIELD_U(m_runtimeType,               ReflectModuleBaseObject,    m_runtimeType)
-DEFINE_FIELD_U(m_pRefClass,                 ReflectModuleBaseObject,    m_ReflectClass)
+DEFINE_FIELD_U(m_runtimeAssembly,           ReflectModuleBaseObject,    m_runtimeAssembly)
 DEFINE_FIELD_U(m_pData,                     ReflectModuleBaseObject,    m_pData)
-DEFINE_FIELD_U(m_pGlobals,                  ReflectModuleBaseObject,    m_pGlobals)
-DEFINE_FIELD_U(m_pFields,                   ReflectModuleBaseObject,    m_pGlobalsFlds)
 DEFINE_CLASS(MODULE,                Reflection,             RuntimeModule)
-DEFINE_FIELD(MODULE,                DATA,                   m_pData)
 
 DEFINE_CLASS(TYPE_BUILDER,          ReflectionEmit,         TypeBuilder)
 DEFINE_CLASS(ENUM_BUILDER,          ReflectionEmit,         EnumBuilder)
@@ -752,6 +724,7 @@ DEFINE_CLASS(CALLCONV_THISCALL,              CompilerServices,       CallConvThi
 DEFINE_CLASS(CALLCONV_FASTCALL,              CompilerServices,       CallConvFastcall)
 DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSuppressGCTransition)
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
+DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwift)
 
 DEFINE_CLASS_U(Interop,                SafeHandle,         SafeHandle)
 DEFINE_FIELD_U(_ctorStackTrace,            SafeHandle,            m_ctorStackTrace)

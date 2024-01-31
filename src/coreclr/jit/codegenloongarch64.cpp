@@ -4330,6 +4330,13 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(regs != 0);
 
     emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs); // 5-bits;
+
+    // If we cannot fall into the false target, emit a jump to it
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
 }
 
 //---------------------------------------------------------------------
@@ -4884,6 +4891,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             assert(jcc->gtCondition.Is(GenCondition::EQ, GenCondition::NE));
             instruction ins = jcc->gtCondition.Is(GenCondition::EQ) ? INS_bceqz : INS_bcnez;
             emit->emitIns_J(ins, tgtBlock, (int)1 /* cc */);
+
+            if (compiler->compCurBB->KindIs(BBJ_COND))
+            {
+                // If we cannot fall into the false target, emit a jump to it
+                BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+                if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+                {
+                    inst_JMP(EJ_jmp, falseTarget);
+                }
+            }
         }
         break;
 
@@ -6351,6 +6368,54 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
     genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
 }
 
+//------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
+{
+    GenTree* const dstNode = initBlkNode->Addr();
+    genConsumeReg(dstNode);
+    const regNumber dstReg = dstNode->GetRegNum();
+
+    if (initBlkNode->IsVolatile())
+    {
+        // issue a full memory barrier before a volatile initBlock Operation
+        instGen_MemoryBarrier();
+    }
+
+    const unsigned size = initBlkNode->GetLayout()->GetSize();
+    assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+
+    // The loop is reversed - it makes it smaller.
+    // Although, we zero the first pointer before the loop (the loop doesn't zero it)
+    // it works as a nullcheck, otherwise the first iteration would try to access
+    // "null + potentially large offset" and hit AV.
+    GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_R0, dstReg, 0);
+    if (size > TARGET_POINTER_SIZE)
+    {
+        // Extend liveness of dstReg in case if it gets killed by the store.
+        gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
+
+        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
+
+        // loop begin:
+        // *(dstReg + offsetReg) = 0
+        GetEmitter()->emitIns_R_R_R(INS_stx_d, EA_PTRSIZE, REG_R0, dstReg, offsetReg);
+        // offsetReg = offsetReg - 8
+        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, offsetReg, offsetReg, -8);
+        // if (offsetReg != 0) goto loop;
+        GetEmitter()->emitIns_R_I(INS_bnez, EA_8BYTE, offsetReg, -2 << 2);
+
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+    }
+}
+
 // Generate code for a load from some address + offset
 //   base: tree node which can be either a local address or arbitrary node
 //   offset: distance from the base from which to load
@@ -7262,6 +7327,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             genCodeForCpObj(blkOp->AsBlk());
             break;
 
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
+            break;
+
         case GenTreeBlk::BlkOpKindHelper:
             if (isCopyBlk)
             {
@@ -7596,6 +7666,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
 #ifdef DEBUG
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -7608,6 +7679,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());

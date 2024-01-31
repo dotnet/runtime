@@ -13,8 +13,8 @@ export function is_runtime_running() {
 }
 
 export function assert_runtime_running() {
-    mono_assert(runtimeHelpers.runtimeReady, "mono runtime didn't start yet");
-    mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `mono runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}`);
+    mono_assert(runtimeHelpers.runtimeReady, ".NET runtime didn't start yet. Please call dotnet.create() first.");
+    mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use runtime.runMain() which doesn't exit the runtime.`);
 }
 
 export function register_exit_handlers() {
@@ -126,10 +126,10 @@ export function mono_exit(exit_code: number, reason?: any): void {
 }
 
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
-    if (runtimeHelpers.runtimeReady && runtimeHelpers.mono_wasm_exit) {
+    if (runtimeHelpers.runtimeReady && runtimeHelpers.nativeExit) {
         runtimeHelpers.runtimeReady = false;
         try {
-            runtimeHelpers.mono_wasm_exit(exit_code);
+            runtimeHelpers.nativeExit(exit_code);
         }
         catch (err) {
             if (runtimeHelpers.ExitStatus && !(err instanceof runtimeHelpers.ExitStatus)) {

@@ -724,6 +724,40 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
+        public void ObjectDictionaryWithHarcodedElements()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ObjectDictionary:abc:Integer", "1"},
+                {"ObjectDictionary:def", "null"},
+                {"ObjectDictionary:ghi", "null"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            options.ObjectDictionary = new()
+            {
+                {"abc", new(){ Integer = 42}},
+                {"def", new(){ Integer = 42}},
+            };
+
+            Assert.Equal(2, options.ObjectDictionary.Count);
+            Assert.Equal(42, options.ObjectDictionary["abc"].Integer);
+            Assert.Equal(42, options.ObjectDictionary["def"].Integer);
+
+            config.Bind(options);
+
+            Assert.Equal(3, options.ObjectDictionary.Count);
+
+            Assert.Equal(1, options.ObjectDictionary["abc"].Integer);
+            Assert.Equal(42, options.ObjectDictionary["def"].Integer);
+            Assert.Equal(0, options.ObjectDictionary["ghi"].Integer);
+        }
+
+        [Fact]
         public void ListDictionary()
         {
             var input = new Dictionary<string, string>

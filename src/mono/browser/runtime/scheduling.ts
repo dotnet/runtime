@@ -4,7 +4,8 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 
 import cwraps from "./cwraps";
-import { Module, loaderHelpers } from "./globals";
+import { ENVIRONMENT_IS_WORKER, Module, loaderHelpers } from "./globals";
+import { is_thread_available } from "./pthreads/shared/emscripten-replacements";
 
 let spread_timers_maximum = 0;
 let pump_count = 0;
@@ -50,7 +51,23 @@ function mono_background_exec_until_done() {
 
 export function schedule_background_exec(): void {
     ++pump_count;
-    Module.safeSetTimeout(mono_background_exec_until_done, 0);
+    let max_postpone_count = 10;
+    function postpone_schedule_background() {
+        if (max_postpone_count < 0 || is_thread_available()) {
+            Module.safeSetTimeout(mono_background_exec_until_done, 0);
+        } else {
+            max_postpone_count--;
+            Module.safeSetTimeout(postpone_schedule_background, 10);
+        }
+    }
+
+    if (MonoWasmThreads && !ENVIRONMENT_IS_WORKER) {
+        // give threads chance to load before we run more synchronous code on UI thread
+        postpone_schedule_background();
+    }
+    else {
+        Module.safeSetTimeout(mono_background_exec_until_done, 0);
+    }
 }
 
 let lastScheduledTimeoutId: any = undefined;

@@ -3148,7 +3148,7 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
     SOSDacEnter();
 
 #ifdef FEATURE_EH_FUNCLETS
-    ExceptionTracker *pExData = PTR_ExceptionTracker(TO_TADDR(exception));
+    ExceptionTrackerBase *pExData = PTR_ExceptionTrackerBase(TO_TADDR(exception));
 #else
     ExInfo *pExData = PTR_ExInfo(TO_TADDR(exception));
 #endif // FEATURE_EH_FUNCLETS

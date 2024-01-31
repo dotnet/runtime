@@ -28,18 +28,16 @@ namespace System.Linq
                 return iterator.Select(selector);
             }
 
-            if (GetEmptyIfEmpty<TSource, TResult>(source) is IEnumerable<TResult> empty)
-            {
-                return empty;
-            }
-
             if (source is IList<TSource> ilist)
             {
                 if (source is TSource[] array)
                 {
-                    return array.Length == 0 ?
-                        Empty<TResult>() :
-                        new SelectArrayIterator<TSource, TResult>(array, selector);
+                    if (array.Length == 0)
+                    {
+                        return [];
+                    }
+
+                    return new SelectArrayIterator<TSource, TResult>(array, selector);
                 }
 
                 if (source is List<TSource> list)
@@ -78,6 +76,11 @@ namespace System.Linq
             if (selector == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return SelectIterator(source, selector);

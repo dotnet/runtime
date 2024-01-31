@@ -11,7 +11,6 @@ using System.Runtime.Versioning;
 using System.Threading;
 
 using Internal.Reflection.Augments;
-using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -26,31 +25,20 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe RuntimeType GetTypeFromMethodTable(MethodTable* pMT)
         {
-            // If we support the writable data section on MethodTables, the runtime type associated with the MethodTable
-            // is cached there. If writable data is not supported, we need to do a lookup in the runtime type
-            // unifier's hash table.
-            if (MethodTable.SupportsWritableData)
-            {
-                ref RuntimeType? type = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
-                return type ?? GetTypeFromMethodTableSlow(pMT);
-            }
-            else
-            {
-                return RuntimeTypeUnifier.GetRuntimeTypeForMethodTable(pMT);
-            }
+            ref RuntimeType? type = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+            return type ?? GetTypeFromMethodTableSlow(pMT);
         }
 
         private static class AllocationLockHolder
         {
-            public static LowLevelLock AllocationLock = new LowLevelLock();
+            public static Lock AllocationLock = new Lock(useTrivialWaits: true);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT)
         {
             // Allocate and set the RuntimeType under a lock - there's no way to free it if there is a race.
-            AllocationLockHolder.AllocationLock.Acquire();
-            try
+            using (AllocationLockHolder.AllocationLock.EnterScope())
             {
                 ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
                 if (runtimeTypeCache != null)
@@ -65,10 +53,6 @@ namespace System
                 runtimeTypeCache = type;
 
                 return type;
-            }
-            finally
-            {
-                AllocationLockHolder.AllocationLock.Release();
             }
         }
 

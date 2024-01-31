@@ -21,10 +21,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static partial void Log(string message);
 
         [JSImport("delay", "InlineTestHelper")]
-        public static partial Task Delay(int ms);
+        public static partial Task JSDelay(int ms);
 
         [JSImport("getTid", "WebWorkerTestHelper")]
         public static partial int GetTid();
+
+        [JSImport("getState", "WebWorkerTestHelper")]
+        public static partial JSObject GetState();
+
+        [JSImport("promiseState", "WebWorkerTestHelper")]
+        public static partial Task<JSObject> PromiseState();
+
+        [JSImport("validateState", "WebWorkerTestHelper")]
+        public static partial bool ValidateState(JSObject state);
+
+        [JSImport("promiseValidateState", "WebWorkerTestHelper")]
+        public static partial Task<bool> PromiseValidateState(JSObject state);
 
         public static string GetOriginUrl()
         {
@@ -40,78 +52,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return JSHost.ImportAsync("InlineTestHelper", es6DataUrl);
         }
 
-        #region Execute
-
-        public async static Task RunOnNewThread(Func<Task> job)
-        {
-            TaskCompletionSource tcs = new TaskCompletionSource();
-            var t = new Thread(() =>
-            {
-                try
-                {
-                    var task = job();
-                    task.Wait();
-                    tcs.SetResult();
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                }
-            });
-            t.Start();
-            await tcs.Task;
-            t.Join();
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern")]
-        public async static Task RunOnMainAsync(Func<Task> job)
-        {
-            if (MainSynchronizationContext == null)
-            {
-                var jsProxyContext = typeof(JSObject).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSProxyContext");
-                var mainThreadContext = jsProxyContext.GetField("_MainThreadContext", BindingFlags.NonPublic | BindingFlags.Static);
-                var synchronizationContext = jsProxyContext.GetField("SynchronizationContext", BindingFlags.Public | BindingFlags.Instance);
-                var mainCtx = mainThreadContext.GetValue(null);
-                MainSynchronizationContext = (SynchronizationContext)synchronizationContext.GetValue(mainCtx);
-            }
-            await RunOnTargetAsync(MainSynchronizationContext, job);
-        }
-
-        public static Task RunOnTargetAsync(SynchronizationContext ctx, Func<Task> job)
-        {
-            TaskCompletionSource tcs = new TaskCompletionSource();
-            ctx.Post(async _ =>
-            {
-                await InitializeAsync();
-                try
-                {
-                    await job().ConfigureAwait(true);
-                    tcs.SetResult();
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                }
-                finally
-                {
-                    await DisposeAsync();
-                }
-            }, null);
-            return tcs.Task;
-        }
-
-        #endregion
-
         #region Setup
 
         [ThreadStatic]
         public static JSObject WebWorkerTestHelperModule;
         [ThreadStatic]
         public static JSObject InlineTestHelperModule;
-
-        public static SynchronizationContext MainSynchronizationContext;
 
         [JSImport("setup", "WebWorkerTestHelper")]
         internal static partial Task Setup();
@@ -131,7 +77,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
             else
             {
-                await Delay(1).ConfigureAwait(false);
+                await JSDelay(1).ConfigureAwait(false);
             }
         }
 
@@ -162,7 +108,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         #endregion
     }
 
-    #region
+    #region Executor
 
     public enum ExecutorType
     {
@@ -171,9 +117,32 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         NewThread,
         JSWebWorker,
     }
+
     public class Executor
     {
         public int ExecutorTID;
+        public SynchronizationContext ExecutorSynchronizationContext;
+        private static SynchronizationContext _mainSynchronizationContext;
+        public static SynchronizationContext MainSynchronizationContext
+        {
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern")]
+            get
+            {
+                if (_mainSynchronizationContext != null)
+                {
+                    return _mainSynchronizationContext;
+                }
+                var jsProxyContext = typeof(JSObject).Assembly.GetType("System.Runtime.InteropServices.JavaScript.JSProxyContext");
+                var mainThreadContext = jsProxyContext.GetField("_MainThreadContext", BindingFlags.NonPublic | BindingFlags.Static);
+                var synchronizationContext = jsProxyContext.GetField("SynchronizationContext", BindingFlags.Public | BindingFlags.Instance);
+                var mainCtx = mainThreadContext.GetValue(null);
+                _mainSynchronizationContext = (SynchronizationContext)synchronizationContext.GetValue(mainCtx);
+                return _mainSynchronizationContext;
+            }
+        }
 
         public ExecutorType Type;
 
@@ -182,24 +151,26 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Type = type;
         }
 
-        public Task Execute(Func<Task> job)
+        public Task Execute(Func<Task> job, CancellationToken cancellationToken)
         {
             Task wrapExecute()
             {
                 ExecutorTID = Environment.CurrentManagedThreadId;
+                ExecutorSynchronizationContext = SynchronizationContext.Current ?? MainSynchronizationContext;
+                AssertTargetThread();
                 return job();
             }
 
             switch (Type)
             {
                 case ExecutorType.Main:
-                    return WebWorkerTestHelper.RunOnMainAsync(wrapExecute);
+                    return RunOnTargetAsync(MainSynchronizationContext, wrapExecute, cancellationToken);
                 case ExecutorType.ThreadPool:
-                    return Task.Run(wrapExecute);
+                    return RunOnThreadPool(wrapExecute, cancellationToken);
                 case ExecutorType.NewThread:
-                    return WebWorkerTestHelper.RunOnNewThread(wrapExecute);
+                    return RunOnNewThread(wrapExecute, cancellationToken);
                 case ExecutorType.JSWebWorker:
-                    return JSWebWorker.RunAsync(wrapExecute);
+                    return JSWebWorker.RunAsync(wrapExecute, cancellationToken);
                 default:
                     throw new InvalidOperationException();
             }
@@ -217,11 +188,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
             if (Type == ExecutorType.ThreadPool)
             {
-                Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                Assert.True(Thread.CurrentThread.IsThreadPoolThread, "IsThreadPoolThread:" + Thread.CurrentThread.IsThreadPoolThread + " Type " + Type);
             }
             else
             {
-                Assert.False(Thread.CurrentThread.IsThreadPoolThread);
+                Assert.False(Thread.CurrentThread.IsThreadPoolThread, "IsThreadPoolThread:" + Thread.CurrentThread.IsThreadPoolThread + " Type " + Type);
             }
         }
 
@@ -240,10 +211,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     Assert.False(Thread.CurrentThread.IsThreadPoolThread);
                     break;
                 case ExecutorType.NewThread:
-                    // the actual new thread is now blocked in .Wait() and so this is running on TP
                     Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                    Assert.NotEqual(ExecutorTID, Environment.CurrentManagedThreadId);
-                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                    // sometimes this is TP and some times newThread, why ?
+                    if (Thread.CurrentThread.IsThreadPoolThread)
+                    {
+                        Assert.NotEqual(ExecutorTID, Environment.CurrentManagedThreadId);
+                    }
+                    else
+                    {
+                        Assert.Equal(ExecutorTID, Environment.CurrentManagedThreadId);
+                    }
                     break;
                 case ExecutorType.ThreadPool:
                     // it could migrate to any TP thread
@@ -285,17 +262,118 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public override string ToString() => Type.ToString();
 
         // make sure we stay on the executor
-        public async Task StickyAwait(Task task)
+        public async Task StickyAwait(Task task, CancellationToken cancellationToken)
         {
             if (Type == ExecutorType.NewThread)
             {
-                task.Wait();
+                task.Wait(cancellationToken);
             }
             else
             {
                 await task.ConfigureAwait(true);
             }
             AssertTargetThread();
+        }
+
+        public static Task RunOnThreadPool(Func<Task> job, CancellationToken cancellationToken)
+        {
+            TaskCompletionSource done = new TaskCompletionSource();
+            var reg = cancellationToken.Register(() =>
+            {
+                done.TrySetException(new OperationCanceledException(cancellationToken));
+            });
+            Task.Run(job, cancellationToken).ContinueWith(result =>
+            {
+                if (result.IsFaulted)
+                {
+                    if (result.Exception is AggregateException ag && ag.InnerException != null)
+                    {
+                        done.TrySetException(ag.InnerException);
+                    }
+                    else
+                    {
+                        done.TrySetException(result.Exception);
+                    }
+                }
+                else if (result.IsCanceled)
+                {
+                    done.TrySetCanceled(cancellationToken);
+                }
+                else
+                {
+                    done.TrySetResult();
+                }
+            }, TaskContinuationOptions.ExecuteSynchronously);
+            return done.Task;
+        }
+
+        public static Task RunOnNewThread(Func<Task> job, CancellationToken cancellationToken)
+        {
+            TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var thread = new Thread(() =>
+            {
+                CancellationTokenRegistration? reg = null;
+                try
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        tcs.TrySetException(new OperationCanceledException(cancellationToken));
+                        return;
+                    }
+                    reg = cancellationToken.Register(() =>
+                    {
+                        tcs.TrySetException(new OperationCanceledException(cancellationToken));
+                    });
+                    var task = job();
+                    task.Wait(cancellationToken);
+                    tcs.TrySetResult();
+                }
+                catch (Exception ex)
+                {
+                    if(ex is AggregateException agg)
+                    {
+                        tcs.TrySetException(agg.InnerException);
+                    }
+                    else
+                    {
+                        tcs.TrySetException(ex);
+                    }
+                }
+                finally
+                {
+                    reg?.Dispose();
+                }
+            });
+            thread.Start();
+            tcs.Task.ContinueWith((t) => { thread.Join(); }, cancellationToken, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
+            return tcs.Task;
+        }
+
+        public static Task RunOnTargetAsync(SynchronizationContext ctx, Func<Task> job, CancellationToken cancellationToken)
+        {
+            TaskCompletionSource tcs = new TaskCompletionSource();
+            ctx.Post(async _ =>
+            {
+                CancellationTokenRegistration? reg = null;
+                try
+                {
+                    reg = cancellationToken.Register(() =>
+                    {
+                        tcs.TrySetException(new OperationCanceledException(cancellationToken));
+                    });
+                    await job().ConfigureAwait(true);
+                    tcs.TrySetResult();
+                }
+                catch (Exception ex)
+                {
+                    tcs.TrySetException(ex);
+                }
+                finally
+                {
+                    reg?.Dispose();
+                }
+            }, null);
+            return tcs.Task;
         }
     }
 

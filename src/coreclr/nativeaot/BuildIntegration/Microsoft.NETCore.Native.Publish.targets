@@ -105,8 +105,8 @@
       <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
       <_symbolSourcePath>$(NativeOutputPath)$(TargetName)$(_symbolExt)</_symbolSourcePath>
       <_symbolTargetPath>$(PublishDir)\$(TargetName)$(_symbolExt)</_symbolTargetPath>
-      <!-- If the symbol is a dsym bundle, it's a folder not a file. -->
-      <_symbolIsFile Condition="'$(NativeSymbolExt)' == '.dsym'">false</_symbolIsFile>
+      <!-- If the symbol is a dSYM bundle, it's a folder not a file. -->
+      <_symbolIsFile Condition="'$(NativeSymbolExt)' == '.dSYM'">false</_symbolIsFile>
       <_symbolIsFile Condition="'$(_symbolIsFile)' == ''">true</_symbolIsFile>
     </PropertyGroup>
 

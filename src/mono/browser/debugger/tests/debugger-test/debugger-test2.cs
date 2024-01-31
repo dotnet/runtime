@@ -129,3 +129,13 @@ public class TestChild : TestParent
         Debugger.Break();
     }
 }
+
+namespace DebuggerBreakpointTests
+{
+    public partial class BreakpointTestsClass
+    {
+        // Variables with initializers defined in different file than cctr
+        public int variable1 = 10;
+        public string variable2 = "Hello";
+    }
+}

@@ -216,9 +216,11 @@ namespace ILCompiler.DependencyAnalysis
 
             if (BuildSealedVTableSlots(factory, relocsOnly))
             {
+                DefType defType = _type.GetClosestDefType();
+
                 for (int i = 0; i < _sealedVTableEntries.Count; i++)
                 {
-                    IMethodNode relocTarget = _sealedVTableEntries[i].GetTarget(factory, _type);
+                    IMethodNode relocTarget = _sealedVTableEntries[i].GetTarget(factory, defType);
 
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(relocTarget, RelocType.IMAGE_REL_BASED_RELPTR32);

@@ -134,9 +134,17 @@ namespace System.Runtime.InteropServices.JavaScript
             var executionContext = ExecutionContext;
             if (executionContext != null)
             {
-                // we could will call JS on the current thread (or child task), if it has the JS interop installed
+                // we could will call JS on the task's AsyncLocal context, if it has the JS interop installed
                 return executionContext;
             }
+
+            var currentThreadContext = CurrentThreadContext;
+            if (currentThreadContext != null)
+            {
+                // we could will call JS on the current thread (or child task), if it has the JS interop installed
+                return currentThreadContext;
+            }
+
             // otherwise we will call JS on the main thread, which always has JS interop
             return MainThreadContext;
         }
@@ -150,13 +158,13 @@ namespace System.Runtime.InteropServices.JavaScript
                 Environment.FailFast($"Method only allowed during JSImport capturing phase, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
             }
 
-            var capturedContext = _CapturedOperationContext;
+            var alreadyCapturedContext = _CapturedOperationContext;
 
-            if (capturedContext == null)
+            if (alreadyCapturedContext == null)
             {
-                _CapturedOperationContext = capturedContext;
+                _CapturedOperationContext = parameterContext;
             }
-            else if (parameterContext != capturedContext)
+            else if (parameterContext != alreadyCapturedContext)
             {
                 _CapturedOperationContext = null;
                 _CapturingState = JSImportOperationState.None;
@@ -346,6 +354,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         throw new InvalidOperationException("ReleasePromiseHolder expected PromiseHolder " + holderGCHandle);
                     }
+                    holder.IsDisposed = true;
                 }
                 else
                 {
@@ -359,9 +368,9 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         throw new InvalidOperationException("ReleasePromiseHolder expected PromiseHolder" + holderGCHandle);
                     }
+                    holder.IsDisposed = true;
                     handle.Free();
                 }
-                holder.IsDisposed = true;
             }
         }
 
@@ -455,69 +464,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     ctx.FreeJSVHandle(jsHandle);
                 }
-            }
-        }
-
-        #endregion
-
-        #region Legacy
-
-        // legacy
-        public void RegisterCSOwnedObject(JSObject proxy)
-        {
-            lock (this)
-            {
-                ThreadCsOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
-            }
-        }
-
-        // legacy
-        public JSObject? GetCSOwnedObjectByJSHandle(nint jsHandle, int shouldAddInflight)
-        {
-            lock (this)
-            {
-                if (ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
-                {
-                    reference.TryGetTarget(out JSObject? jsObject);
-                    if (shouldAddInflight != 0)
-                    {
-                        jsObject?.AddInFlight();
-                    }
-                    return jsObject;
-                }
-            }
-            return null;
-        }
-
-        // legacy
-        public JSObject CreateCSOwnedProxy(nint jsHandle, LegacyHostImplementation.MappedType mappedType, int shouldAddInflight)
-        {
-            lock (this)
-            {
-                JSObject? res = null;
-                if (!ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
-                !reference.TryGetTarget(out res) ||
-                res.IsDisposed)
-                {
-#pragma warning disable CS0612 // Type or member is obsolete
-                    res = mappedType switch
-                    {
-                        LegacyHostImplementation.MappedType.JSObject => new JSObject(jsHandle, JSProxyContext.MainThreadContext),
-                        LegacyHostImplementation.MappedType.Array => new Array(jsHandle),
-                        LegacyHostImplementation.MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
-                        LegacyHostImplementation.MappedType.DataView => new DataView(jsHandle),
-                        LegacyHostImplementation.MappedType.Function => new Function(jsHandle),
-                        LegacyHostImplementation.MappedType.Uint8Array => new Uint8Array(jsHandle),
-                        _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
-                    };
-#pragma warning restore CS0612 // Type or member is obsolete
-                    ThreadCsOwnedObjects[jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
-                }
-                if (shouldAddInflight != 0)
-                {
-                    res.AddInFlight();
-                }
-                return res;
             }
         }
 

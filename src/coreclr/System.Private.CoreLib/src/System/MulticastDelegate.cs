@@ -182,7 +182,7 @@ namespace System
         private MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
-            MulticastDelegate result = (MulticastDelegate)InternalAllocLike(this);
+            MulticastDelegate result = InternalAllocLike(this);
 
             // Performance optimization - if this already points to a true multicast delegate,
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
@@ -433,6 +433,21 @@ namespace System
             return del;
         }
 
+        internal new bool HasSingleTarget => !(_invocationList is object[]);
+
+        // Used by delegate invocation list enumerator
+        internal object? /* Delegate? */ TryGetAt(int index)
+        {
+            if (!(_invocationList is object[] invocationList))
+            {
+                return (index == 0) ? this : null;
+            }
+            else
+            {
+                return ((uint)index < (uint)_invocationCount) ? invocationList[index] : null;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(MulticastDelegate? d1, MulticastDelegate? d2)
         {
@@ -593,6 +608,8 @@ namespace System
         [DebuggerStepThrough]
         private void CtorRTClosed(object target, IntPtr methodPtr)
         {
+            if (target == null)
+                ThrowNullThisInDelegateToInstance();
             this._target = target;
             this._methodPtr = AdjustTarget(target, methodPtr);
         }
@@ -612,7 +629,7 @@ namespace System
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
-            this._methodPtrAux = GetCallStub(methodPtr);
+            this.InitializeVirtualCallStub(methodPtr);
         }
 
         [DebuggerNonUserCode]
@@ -640,8 +657,8 @@ namespace System
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
-            this._methodPtrAux = GetCallStub(methodPtr);
             this._methodBase = GCHandle.InternalGet(gchandle);
+            this.InitializeVirtualCallStub(methodPtr);
         }
 #pragma warning restore IDE0060
     }

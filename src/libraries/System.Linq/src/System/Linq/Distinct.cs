@@ -17,6 +17,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (IsEmptyArray(source))
+            {
+                return [];
+            }
+
             return new DistinctIterator<TSource>(source, comparer);
         }
 
@@ -54,6 +59,11 @@ namespace System.Linq
             if (keySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return DistinctByIterator(source, keySelector, comparer);

@@ -1362,8 +1362,12 @@ mono_create_rgctx_var (MonoCompile *cfg)
 	if (!cfg->rgctx_var) {
 		cfg->rgctx_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		/* force the var to be stack allocated */
-		if (!cfg->llvm_only)
+		if (!COMPILE_LLVM (cfg))
 			cfg->rgctx_var->flags |= MONO_INST_VOLATILE;
+		if (cfg->verbose_level > 2) {
+			printf ("\trgctx : ");
+			mono_print_ins (cfg->rgctx_var);
+		}
 	}
 }
 
@@ -2515,7 +2519,7 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 			g_assert (method->is_inflated && mono_method_get_context (method)->method_inst);
 		*/
 
-		if (cfg->llvm_only) {
+		if (COMPILE_LLVM (cfg)) {
 			mrgctx_var = mono_get_mrgctx_var (cfg);
 		} else {
 			/* Volatile */
@@ -6786,22 +6790,51 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		info->entries = (MonoRuntimeGenericContextInfoTemplate *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoRuntimeGenericContextInfoTemplate) * info->count_entries);
 		cfg->gshared_info = info;
 
-		// FIXME: Optimize this ?
 		args [0] = mono_get_mrgctx_var (cfg);
-		if (cfg->compile_aot)
-			args [1] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GSHARED_METHOD_INFO, info);
-		else
-			EMIT_NEW_PCONST (cfg, args [1], info);
 
-		cfg->init_method_rgctx_ins_arg = args [1];
 		if (COMPILE_LLVM (cfg) || cfg->backend->have_init_mrgctx) {
+			if (COMPILE_LLVM (cfg))
+				/* OP_INIT_MRGCTX emits it itself */
+				EMIT_NEW_PCONST (cfg, args [1], NULL);
+			else if (cfg->compile_aot)
+				args [1] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GSHARED_METHOD_INFO, info);
+			else
+				EMIT_NEW_PCONST (cfg, args [1], info);
+			cfg->init_method_rgctx_ins_arg = args [1];
+
 			MONO_INST_NEW (cfg, ins, OP_INIT_MRGCTX);
 			ins->sreg1 = args [0]->dreg;
 			ins->sreg2 = args [1]->dreg;
 			MONO_ADD_INS (cfg->cbb, ins);
 			cfg->init_method_rgctx_ins = ins;
+			cfg->has_calls = TRUE;
 		} else {
+			MonoBasicBlock *end_bb;
+			int mrgctx_reg, entries_reg;
+
+			NEW_BBLOCK (cfg, end_bb);
+
+			mrgctx_reg = mono_get_mrgctx_var (cfg)->dreg;
+			entries_reg = alloc_preg (cfg);
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, entries_reg, mrgctx_reg, MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, entries));
+			cfg->init_method_rgctx_ins_load = cfg->cbb->last_ins;
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, entries_reg, 0);
+			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, end_bb);
+
+			/* Slowpath */
+			cfg->cbb->out_of_line = TRUE;
+			if (cfg->compile_aot)
+				args [1] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GSHARED_METHOD_INFO, info);
+			else
+				EMIT_NEW_PCONST (cfg, args [1], info);
+			// FIXME: Eliminate the whole code not just the slowpath
+			cfg->init_method_rgctx_ins_arg = args [1];
 			cfg->init_method_rgctx_ins = mono_emit_jit_icall (cfg, mini_init_method_rgctx, args);
+			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+			MONO_START_BB (cfg, end_bb);
+			init_localsbb = cfg->cbb;
+			init_localsbb2 = cfg->cbb;
 		}
 	}
 
@@ -7028,11 +7061,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			emit_set_deopt_il_offset (cfg, GPTRDIFF_TO_INT (ip - cfg->cil_start));
 		} else {
 			if ((tblock = cfg->cil_offset_to_bb [ip - cfg->cil_start]) && (tblock != cfg->cbb)) {
-				link_bblock (cfg, cfg->cbb, tblock);
 				if (sp != stack_start) {
+					link_bblock (cfg, cfg->cbb, tblock);
 					handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 					sp = stack_start;
 					CHECK_UNVERIFIABLE (cfg);
+				} else {
+					if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_NOT_REACHED))
+						link_bblock (cfg, cfg->cbb, tblock);
 				}
 				cfg->cbb->next_bb = tblock;
 				cfg->cbb = tblock;

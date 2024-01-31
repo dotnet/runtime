@@ -23,6 +23,7 @@ public class AppSettingsTests : AppTestBase
     [Theory]
     [InlineData("Development")]
     [InlineData("Production")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task LoadAppSettingsBasedOnApplicationEnvironment(string applicationEnvironment)
     {
         CopyTestAsset("WasmBasicTestApp", "AppSettingsTests");

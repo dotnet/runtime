@@ -115,6 +115,14 @@
        setting up the per-scenario environment.
   -->
 
+  <ItemGroup Condition=" '$(TargetOS)' == 'windows' ">
+    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetOS)' != 'windows' ">
+    <HelixPreCommand Include="export __TestArchitecture=$(TargetArchitecture)" />
+  </ItemGroup>
+
   <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetOS)' == 'windows' ">
     <HelixPreCommand Include="set __TestEnv=%HELIX_CORRELATION_PAYLOAD%\$(TestEnvFileName)" />
     <HelixPreCommand Include="type %__TestEnv%" />

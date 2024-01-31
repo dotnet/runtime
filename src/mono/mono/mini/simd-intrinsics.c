@@ -1475,10 +1475,23 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			ins->inst_c1 = arg0_type;
 			return ins;
 		} else {
-			if (!COMPILE_LLVM (cfg))
-				// FIXME:
-				return NULL;
-			return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
+			if (COMPILE_LLVM (cfg))
+				return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
+			
+			// SSSE3 does not support i64
+			if (is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3) && 
+				!(arg0_type == MONO_TYPE_I8 || (TARGET_SIZEOF_VOID_P == 8 && arg0_type == MONO_TYPE_I)))
+				return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
+
+			MonoInst *zero = emit_xzero (cfg, klass);
+			MonoInst *neg = emit_simd_ins (cfg, klass, OP_XBINOP, zero->dreg, args [0]->dreg);
+			neg->inst_c0 = OP_ISUB;
+			neg->inst_c1 = arg0_type;
+			
+			MonoInst *ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, neg->dreg);
+			ins->inst_c0 = OP_IMAX;
+			ins->inst_c1 = arg0_type;
+			return ins;
 		}
 #elif defined(TARGET_WASM)
 		if (type_enum_is_float(arg0_type)) {
@@ -1699,6 +1712,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			if (!COMPILE_LLVM (cfg))
 				return NULL;
 #endif
+			if (COMPILE_LLVM (cfg)) {
+				/*
+				 * The sregs are half size, and the dreg is full size
+				 * which can cause problems if mono_handle_global_vregs () is trying to
+				 * spill them since it uses ins->klass to create the variable.
+				 * So create variables for them here.
+				 * This is not a problem for the JIT since that only has 1 simd type right now.
+				 */
+				mono_compile_create_var_for_vreg (cfg, fsig->params [0], OP_LOCAL, args [0]->dreg);
+				mono_compile_create_var_for_vreg (cfg, fsig->params [1], OP_LOCAL, args [1]->dreg);
+			}
+
 			return emit_simd_ins (cfg, klass, OP_XCONCAT, args [0]->dreg, args [1]->dreg);
 		}
 		else if (is_elementwise_create_overload (fsig, etype))

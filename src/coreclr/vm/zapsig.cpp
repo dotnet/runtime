@@ -7,7 +7,7 @@
 // This module contains helper functions used to encode and manipulate
 // signatures for scenarios where runtime-specific signatures
 // including specific generic instantiations are persisted,
-// like Ready-To-Run decoding, IBC, and Multi-core JIT recording/playback
+// like Ready-To-Run decoding, and Multi-core JIT recording/playback
 //
 // ===========================================================================
 
@@ -39,7 +39,7 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
     }
     else if (elemType == ELEMENT_TYPE_VAR || elemType == ELEMENT_TYPE_MVAR)
     {
-        // Enable encoding of type variables for NGen signature only. IBC toolchain is not aware of them yet.
+        // Enable encoding of type variables for R2R signature only.
         if (context.externalTokens == ZapSig::NormalTokens)
             elemType = (CorElementType) ELEMENT_TYPE_VAR_ZAPSIG;
     }
@@ -196,10 +196,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
     if (pTypeHandleModule != this->context.pInfoModule)
     {
-        // During IBC profiling this calls
-        //     code:Module.EncodeModuleHelper
-        // During ngen this calls
-        //     code:ZapImportTable.EncodeModuleHelper
         // During multicorejit this calls
         //     code:MulticoreJitManager.EncodeModuleHelper
         //
@@ -1250,11 +1246,8 @@ BOOL ZapSig::EncodeMethod(
 
         if (pTypeHandleModule != pInfoModule)
         {
-            // During IBC profiling this calls
-            //     code:Module.EncodeModuleHelper
-            // During ngen this calls
-            //     code:ZapImportTable.EncodeModuleHelper)
-            //
+            // During multicorejit this calls
+            //     code:MulticoreJitManager.EncodeModuleHelper
             DWORD index = (*((EncodeModuleCallback) pfnEncodeModule))(pEncodeModuleContext, pTypeHandleModule);
 
             if (index == ENCODE_MODULE_FAILED)

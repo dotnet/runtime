@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions.Symbolic
@@ -162,13 +161,13 @@ namespace System.Text.RegularExpressions.Symbolic
         public long[] Serialize()
         {
             if (IsEmpty)
-                return new long[] { 0 };
+                return [0];
 
             if (IsFull)
-                return new long[] { 1 };
+                return [1];
 
             if (IsLeaf)
-                return new long[] { 0, 0, -Ordinal };
+                return [0, 0, -Ordinal];
 
             BDD[] nodes = TopologicalSort();
 
@@ -240,10 +239,10 @@ namespace System.Text.RegularExpressions.Symbolic
         private BDD[] TopologicalSort()
         {
             if (IsFull || IsEmpty)
-                return Array.Empty<BDD>();
+                return [];
 
             if (IsLeaf)
-                return new BDD[] { this };
+                return [this];
 
             // Order the nodes according to their ordinals into the nonterminals array
             var nonterminals = new List<BDD>[Ordinal + 1];
@@ -300,10 +299,10 @@ namespace System.Text.RegularExpressions.Symbolic
         public byte[] SerializeToBytes()
         {
             if (IsEmpty)
-                return new byte[] { 0 };
+                return [0];
 
             if (IsFull)
-                return new byte[] { 1 };
+                return [1];
 
             // in other cases make use of the general serializer to long[]
             long[] serialized = Serialize();

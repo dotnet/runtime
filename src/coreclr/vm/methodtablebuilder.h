@@ -209,8 +209,6 @@ private:
     void SetModuleDynamicID(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetModuleDynamicID(x); }
     void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); }
     void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); }
-    void SetNumBoxedRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedRegularStatics(x); }
-    void SetNumBoxedThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedThreadStatics(x); }
     void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); }
     void SetHasOverlaidFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasOverlaidFields(); }
     void SetNonGCRegularStaticFieldBytes(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNonGCRegularStaticFieldBytes(x); }
@@ -808,6 +806,11 @@ private:
         operator PCCOR_SIGNATURE() const
             { return GetSignature(); }
 
+        //-----------------------------------------------------------------------------------------
+        // Get a hash of the Name that can be compared with hashes from other MethodSignatures
+        UINT32
+        GetNameHash() const;
+
     protected:
         //-----------------------------------------------------------------------------------------
         Module *                m_pModule;
@@ -834,10 +837,6 @@ private:
         //-----------------------------------------------------------------------------------------
         void
         GetMethodAttributes() const;
-
-        //-----------------------------------------------------------------------------------------
-        UINT32
-        GetNameHash() const;
 
     private:
         //-----------------------------------------------------------------------------------

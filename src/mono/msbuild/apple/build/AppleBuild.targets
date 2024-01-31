@@ -4,7 +4,7 @@
     <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == ''">true</AppleGenerateAppBundle>
     <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
     <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true' and '$(ForceLibraryModeGenerateAppBundle)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">false</AppleGenerateAppBundle>
-    <_ProcessRuntimeComponentsForLibraryMode Condition="'$(_IsLibraryMode)' == 'true'">_ProcessRuntimeComponentsForLibraryMode</_ProcessRuntimeComponentsForLibraryMode>
+    <_ProcessRuntimeComponentsForLibraryMode Condition="'$(_IsLibraryMode)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">_ProcessRuntimeComponentsForLibraryMode</_ProcessRuntimeComponentsForLibraryMode>
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 
@@ -267,7 +267,7 @@
   </Target>
 
   <Target Name="_AppleNativeAotCompile"
-          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile" />
+          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile;$(_IlcLibraryBuildDependsOn)" />
 
   <Target Name="_AppleGenerateAppBundle" 
           Condition="'$(AppleGenerateAppBundle)' == 'true'"
@@ -275,17 +275,18 @@
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
 
+    <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
+
     <ItemGroup>
       <ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
       <NativeDependencies Include="$(LibraryOutputPath)" />
     </ItemGroup>
 
-    <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
-
-    <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <!-- Only pass additional linker flags with NativeAOT when we are not in the library mode -->
+    <ItemGroup Condition="'$(_IsLibraryMode)' != 'true' and '$(UseNativeAOTRuntime)' == 'true'">
       <NativeDependencies Condition="$(NativeDependencies) == ''" Include="%(ManagedBinary.IlcOutputFile)" />
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />

@@ -16,13 +16,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Returns true if the proxy was already disposed.
         /// </summary>
-        public bool IsDisposed
-        {
-            get
-            {
-                return _isDisposed;
-            }
-        }
+        public bool IsDisposed => _isDisposed;
 
         /// <summary>
         /// Checks whether the target object or one of its prototypes has a property with the specified name.

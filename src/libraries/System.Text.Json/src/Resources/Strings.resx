@@ -708,4 +708,10 @@
   <data name="FormatHalf" xml:space="preserve">
     <value>Either the JSON value is not in a supported format, or is out of bounds for a Half.</value>
   </data>
+  <data name="InvalidIndentCharacter" xml:space="preserve">
+    <value>Supported indentation characters are space and horizontal tab.</value>
+  </data>
+  <data name="InvalidIndentSize" xml:space="preserve">
+    <value>Indentation size must be between {0} and {1}.</value>
+  </data>
 </root>

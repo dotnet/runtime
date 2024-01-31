@@ -4287,7 +4287,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
                 // region, SysSweepThreadsForDebug would similarly identify the thread as synced
                 // after it leaves the forbid region.
 
-#if defined(FEATURE_THREAD_ACTIVATION) && defined(TARGET_WINDOWS)
+#if defined(FEATURE_THREAD_ACTIVATION)
                 // Inject an activation that will interrupt the thread and try to bring it to a safe point
                 thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
 #endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
@@ -4424,7 +4424,7 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
                 goto Label_MarkThreadAsSynced;
             }
 
-#if defined(FEATURE_THREAD_ACTIVATION) && defined(TARGET_WINDOWS)
+#if defined(FEATURE_THREAD_ACTIVATION)
             // Inject an activation that will interrupt the thread and try to bring it to a safe point
             thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
 #endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
@@ -6040,7 +6040,7 @@ bool Thread::InjectActivation(ActivationReason reason)
     _ASSERTE(success);
     return true;
 #elif defined(TARGET_UNIX)
-    _ASSERTE((reason == ActivationReason::SuspendForGC) || (reason == ActivationReason::ThreadAbort));
+    _ASSERTE((reason == ActivationReason::SuspendForGC) || (reason == ActivationReason::ThreadAbort) || (reason == ActivationReason::SuspendForDebugger));
 
     static ConfigDWORD injectionEnabled;
     if (injectionEnabled.val(CLRConfig::INTERNAL_ThreadSuspendInjection) == 0)

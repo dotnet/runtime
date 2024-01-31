@@ -428,8 +428,9 @@ namespace Microsoft.Extensions.Configuration
             }
             else
             {
-                if (isParentCollection)
+                if (isParentCollection && bindingPoint.Value is null)
                 {
+                    // If we don't have an instance, try to create one
                     bindingPoint.TrySetValue(CreateInstance(type, config, options));
                 }
             }

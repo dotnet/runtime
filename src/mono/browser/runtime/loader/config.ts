@@ -190,7 +190,7 @@ export function normalizeConfig() {
 
     if (MonoWasmThreads && !Number.isInteger(config.pthreadPoolSize)) {
         // ActiveIssue https://github.com/dotnet/runtime/issues/91538
-        config.pthreadPoolSize = 5;
+        config.pthreadPoolSize = 7;
     }
 
     // Default values (when WasmDebugLevel is not set)

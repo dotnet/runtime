@@ -500,8 +500,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_NEG:
 #ifdef TARGET_ARM64
         {
-            GenTree* next = TryLowerNegToMulLongOp(node->AsOp());
-            if (next != nullptr)
+            GenTree* next;
+            if (TryLowerNegToMulLongOp(node->AsOp(), &next))
             {
                 return next;
             }
@@ -640,8 +640,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             CheckImmedAndMakeContained(node, node->AsOp()->gtOp2);
             break;
 #elif defined(TARGET_XARCH)
-        case GT_XORR:
-        case GT_XAND:
         case GT_XADD:
             if (node->IsUnusedValue())
             {
@@ -1679,9 +1677,10 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     {
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        if (call->IsVarargs() || comp->opts.compUseSoftFP)
+        if (call->IsVarargs() || comp->opts.compUseSoftFP || callArg->AbiInfo.IsMismatchedArgType())
         {
             // For vararg call or on armel, reg args should be all integer.
+            // For arg type and arg reg mismatch, reg arg should be integer on riscv64
             // Insert copies as needed to move float value to integer register.
             GenTree* newNode = LowerFloatArg(ppArg, callArg);
             if (newNode != nullptr)
@@ -1712,7 +1711,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 //------------------------------------------------------------------------
-// LowerFloatArg: Lower float call arguments on the arm/LoongArch64 platform.
+// LowerFloatArg: Lower float call arguments on the arm/LoongArch64/RiscV64 platform.
 //
 // Arguments:
 //    arg  - The arg node
@@ -4186,7 +4185,7 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
 
     JITDUMP("lowering GT_JMP\n");
     DISPNODE(jmp);
-    JITDUMP("============");
+    JITDUMP("============\n");
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.
@@ -4203,7 +4202,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 
     JITDUMP("lowering GT_RETURN\n");
     DISPNODE(ret);
-    JITDUMP("============");
+    JITDUMP("============\n");
 
     GenTree* retVal = ret->gtGetOp1();
     // There are two kinds of retyping:
@@ -4273,7 +4272,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     }
 
     // Method doing PInvokes has exactly one return block unless it has tail calls.
-    if (comp->compMethodRequiresPInvokeFrame() && (comp->compCurBB == comp->genReturnBB))
+    if (comp->compMethodRequiresPInvokeFrame())
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
@@ -4281,7 +4280,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerStoreLocCommon: platform idependent part of local var or field store lowering.
+// LowerStoreLocCommon: platform independent part of local var or field store lowering.
 //
 // Arguments:
 //     lclStore - The store lcl node to lower.
@@ -5371,7 +5370,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     JITDUMP("======= Inserting PInvoke method epilog\n");
 
     // Method doing PInvoke calls has exactly one return block unless it has "jmp" or tail calls.
-    assert(((returnBB == comp->genReturnBB) && returnBB->KindIs(BBJ_RETURN)) || returnBB->endsWithTailCallOrJmp(comp));
+    assert(returnBB->KindIs(BBJ_RETURN) || returnBB->endsWithTailCallOrJmp(comp));
 
     LIR::Range& returnBlockRange = LIR::AsRange(returnBB);
 
@@ -6386,14 +6385,13 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 #ifdef TARGET_ARM64
     if (node->OperIs(GT_ADD))
     {
-        GenTree* next = LowerAddForPossibleContainment(node);
-        if (next != nullptr)
+        GenTree* next;
+        if (TryLowerAddForPossibleContainment(node, &next))
         {
             return next;
         }
 
-        next = TryLowerAddSubToMulLongOp(node);
-        if (next != nullptr)
+        if (TryLowerAddSubToMulLongOp(node, &next))
         {
             return next;
         }
@@ -7132,7 +7130,7 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
         {
             JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
             DISPNODE(node);
-            JITDUMP("============");
+            JITDUMP("============\n");
 
             node->gtType = TYP_SIMD16;
         }
@@ -7203,7 +7201,7 @@ PhaseStatus Lowering::DoPhase()
     // local var liveness can delete code, which may create empty blocks
     if (comp->opts.OptimizationEnabled())
     {
-        bool modified = comp->fgUpdateFlowGraph();
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
         modified |= comp->fgRemoveDeadBlocks();
 
         if (modified)
@@ -8864,6 +8862,15 @@ void Lowering::LowerLclHeap(GenTree* node)
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+
+    if (blkNode->ContainsReferences() && !blkNode->OperIsCopyBlkOp())
+    {
+        // Make sure we don't use GT_STORE_DYN_BLK
+        assert(blkNode->OperIs(GT_STORE_BLK));
+
+        // and we only zero it (and that zero is better to be not hoisted/CSE'd)
+        assert(blkNode->Data()->IsIntegralConst(0));
+    }
 
     // Lose the type information stored in the source - we no longer need it.
     if (blkNode->Data()->OperIs(GT_BLK))

@@ -1677,7 +1677,8 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 		} else {
 			ainfo->nfregs_to_skip = FP_PARAM_REGS > cinfo->fr ? FP_PARAM_REGS - cinfo->fr : 0;
 			cinfo->fr = FP_PARAM_REGS;
-			size = ALIGN_TO (size, 8);
+			if (!(ios_abi && cinfo->pinvoke))
+				size = ALIGN_TO (size, 8);
 			ainfo->storage = ArgVtypeOnStack;
 			cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, align);
 			ainfo->offset = cinfo->stack_usage;
@@ -3240,16 +3241,49 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		}
 		break;
 	}
-	case ArgVtypeOnStack:
-		for (i = 0; i < ainfo->size / 8; ++i) {
-			MONO_INST_NEW (cfg, load, OP_LOADI8_MEMBASE);
+	case ArgVtypeOnStack: {
+		int load_opcode = OP_LOADI8_MEMBASE;
+		int store_opcode = OP_STOREI8_MEMBASE_REG;
+		int size = 8;
+		int offset = 0;
+		while (offset < ainfo->size) {
+			int left = ainfo->size - offset;
+			if (left < 8) {
+				switch (left) {
+				case 7:
+				case 6:
+				case 5:
+				case 4:
+					load_opcode = OP_LOADI4_MEMBASE;
+					store_opcode = OP_STOREI4_MEMBASE_REG;
+					size = 4;
+					break;
+				case 3:
+				case 2:
+					load_opcode = OP_LOADI2_MEMBASE;
+					store_opcode = OP_STOREI2_MEMBASE_REG;
+					size = 2;
+					break;
+				case 1:
+					load_opcode = OP_LOADI1_MEMBASE;
+					store_opcode = OP_STOREI1_MEMBASE_REG;
+					size = 1;
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+			}
+			MONO_INST_NEW (cfg, load, load_opcode);
 			load->dreg = mono_alloc_ireg (cfg);
 			load->inst_basereg = src->dreg;
-			load->inst_offset = i * 8;
+			load->inst_offset = offset;
 			MONO_ADD_INS (cfg->cbb, load);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI8_MEMBASE_REG, ARMREG_SP, ainfo->offset + (i * 8), load->dreg);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, store_opcode, ARMREG_SP, ainfo->offset + offset, load->dreg);
+			offset += size;
 		}
 		break;
+	}
 	case ArgInSIMDReg:
 		MONO_INST_NEW (cfg, load, OP_LOADX_MEMBASE);
 		load->dreg = mono_alloc_ireg (cfg);
@@ -6086,7 +6120,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* Save mrgctx received in MONO_ARCH_RGCTX_REG */
-	if (cfg->rgctx_var) {
+	if (cfg->rgctx_var && !cfg->init_method_rgctx_elim) {
 		MonoInst *ins = cfg->rgctx_var;
 
 		g_assert (ins->opcode == OP_REGOFFSET);

@@ -1783,7 +1783,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     }
 #endif // DEBUG
 
-    // Track the shortcircuit criterias
+    // Track the short-circuit criteria
     optCanPropLclVar |= newAssertion->CanPropLclVar();
     optCanPropEqual |= newAssertion->CanPropEqualOrNotEqual();
     optCanPropNonNull |= newAssertion->CanPropNonNull();
@@ -4764,17 +4764,14 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
     {
         return optAssertionProp_Update(call, call, stmt);
     }
-    else if (!optLocalAssertionProp && (call->gtCallType == CT_HELPER))
+    else if (!optLocalAssertionProp && call->IsHelperCall())
     {
-        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFINTERFACE) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFARRAY) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFCLASS) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFANY) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTINTERFACE) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTARRAY) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTANY) ||
-            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL))
+        const CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+        if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
+            (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY) ||
+            (helper == CORINFO_HELP_CHKCASTINTERFACE) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
+            (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
+            (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
             GenTree* arg1 = call->gtArgs.GetArgByIndex(1)->GetNode();
             if (arg1->gtOper != GT_LCL_VAR)
@@ -4804,6 +4801,11 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
 
                 return optAssertionProp_Update(arg1, call, stmt);
             }
+
+            // TODO-InlineCast: check optAssertionIsNonNull for the object argument and replace
+            // the helper with its nonnull version, e.g.:
+            // CORINFO_HELP_ISINSTANCEOFANY -> CORINFO_HELP_ISINSTANCEOFANY_NONNULL
+            // so then fgLateCastExpansion can skip the null check.
         }
     }
 

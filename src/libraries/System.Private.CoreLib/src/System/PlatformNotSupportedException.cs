@@ -21,13 +21,13 @@ namespace System
         }
 
         public PlatformNotSupportedException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_PlatformNotSupported)
         {
             HResult = HResults.COR_E_PLATFORMNOTSUPPORTED;
         }
 
         public PlatformNotSupportedException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_PlatformNotSupported, inner)
         {
             HResult = HResults.COR_E_PLATFORMNOTSUPPORTED;
         }

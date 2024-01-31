@@ -4,7 +4,6 @@
     <SharedGUID>c5ed3c1d-b572-46f1-8f96-522a85ce1179</SharedGUID>
     <StringResourcesName Condition="'$(StringResourcesName)' == ''">System.Private.CoreLib.Strings</StringResourcesName>
     <GenerateResourcesSubstitutions>true</GenerateResourcesSubstitutions>
-
     <!-- CA2252: Opt in to preview features before using them (for System.Threading.Lock) -->
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
@@ -524,6 +523,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\StringWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\TextReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\TextWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\TextWriter.CreateBroadcasting.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnixFileMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryAccessor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryStream.cs" />
@@ -602,7 +602,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\VectorDebugView_1.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\VectorMath.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Object.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ObjectDisposedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ObsoleteAttribute.cs" />
@@ -1015,6 +1014,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StringMarshalling.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StructLayoutAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\SuppressGCTransitionAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Swift\SwiftTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\TypeIdentifierAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnknownWrapper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\UnmanagedCallConvAttribute.cs" />
@@ -1039,6 +1039,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64DebugView_1.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\VectorMath.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Enums.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\JitInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\AssemblyLoadContext.cs" />

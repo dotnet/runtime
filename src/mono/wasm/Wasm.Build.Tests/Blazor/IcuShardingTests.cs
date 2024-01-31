@@ -21,9 +21,10 @@ public class IcuShardingTests : BlazorWasmTestBase
 
     [Theory]
     [InlineData("Debug", "icudt.dat")]
-    [InlineData("Release", "icudt.dat")]    
+    [InlineData("Release", "icudt.dat")]
     [InlineData("Debug", "icudt_CJK.dat")]
     [InlineData("Release", "icudt_CJK.dat")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task CustomIcuFileFromRuntimePack(string config, string fileName)
     {
         string id = $"blz_customFromRuntimePack_{config}_{GetRandomId()}";
@@ -37,7 +38,7 @@ public class IcuShardingTests : BlazorWasmTestBase
             );
         AddItemsPropertiesToProject(
             projectFile,
-            extraProperties: 
+            extraProperties:
                 $"<BlazorIcuDataFileName>{fileName}</BlazorIcuDataFileName>");
 
         (CommandResult res, string logPath) = BlazorBuild(buildOptions);
@@ -55,7 +56,7 @@ public class IcuShardingTests : BlazorWasmTestBase
         string projectFile = CreateBlazorWasmTemplateProject(id);
         AddItemsPropertiesToProject(
             projectFile,
-            extraProperties: 
+            extraProperties:
                 $"<BlazorIcuDataFileName>{fileName}</BlazorIcuDataFileName>");
 
         try
@@ -90,13 +91,14 @@ public class IcuShardingTests : BlazorWasmTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task CustomFileNotFromRuntimePackAbsolutePath(string config)
     {
         string id = $"blz_invalidCustomIcu_{config}_{GetRandomId()}";
         string projectFile = CreateBlazorWasmTemplateProject(id);
         AddItemsPropertiesToProject(
             projectFile,
-            extraProperties: 
+            extraProperties:
                 $"<BlazorIcuDataFileName>{IcuTestsBase.CustomIcuPath}</BlazorIcuDataFileName>");
 
         (CommandResult res, string logPath) = BlazorBuild(

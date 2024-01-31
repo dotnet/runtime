@@ -252,23 +252,17 @@ namespace System.Text.RegularExpressions
         public List<FixedDistanceSet>? FixedDistanceSets { get; }
 
         /// <summary>Data about a character class at a fixed offset from the start of any match to a pattern.</summary>
-        public struct FixedDistanceSet
+        public struct FixedDistanceSet(char[]? chars, string set, int distance)
         {
-            public FixedDistanceSet(char[]? chars, string set, int distance)
-            {
-                Chars = chars;
-                Set = set;
-                Distance = distance;
-            }
 
             /// <summary>The character class description.</summary>
-            public string Set;
+            public string Set = set;
             /// <summary>Whether the <see cref="Set"/> is negated.</summary>
             public bool Negated;
             /// <summary>Small list of all of the characters that make up the set, if known; otherwise, null.</summary>
-            public char[]? Chars;
+            public char[]? Chars = chars;
             /// <summary>The distance of the set from the beginning of the match.</summary>
-            public int Distance;
+            public int Distance = distance;
             /// <summary>As an alternative to <see cref="Chars"/>, a description of the single range the set represents, if it does.</summary>
             public (char LowInclusive, char HighInclusive)? Range;
         }
