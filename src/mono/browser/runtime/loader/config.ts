@@ -189,7 +189,7 @@ export function normalizeConfig() {
     }
 
     if (MonoWasmThreads && !Number.isInteger(config.pthreadPoolSize)) {
-        // ActiveIssue https://github.com/dotnet/runtime/issues/91538
+        // ActiveIssue https://github.com/dotnet/runtime/issues/75602
         config.pthreadPoolSize = 7;
     }
 
