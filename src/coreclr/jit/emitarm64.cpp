@@ -12121,14 +12121,66 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
             assert(isScalableVectorSize(size));
             assert(opt == INS_OPTS_SCALABLE_Q);
             assert(sopt == INS_SCALABLE_OPTS_LSL_N);
-
             fmt = IF_SVE_IR_4A;
-
             break;
 
+        case INS_sve_ld2b:
+        case INS_sve_ld3b:
+        case INS_sve_ld4b:
+        case INS_sve_ld2h:
+        case INS_sve_ld3h:
+        case INS_sve_ld4h:
+        case INS_sve_ld2w:
+        case INS_sve_ld3w:
+        case INS_sve_ld4w:
+        case INS_sve_ld2d:
+        case INS_sve_ld3d:
+        case INS_sve_ld4d:
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isGeneralRegister(reg4));
+            assert(isScalableVectorSize(size));
 
+#ifdef DEBUG
+            switch (ins)
+            {
+                case INS_sve_ld2b:
+                case INS_sve_ld3b:
+                case INS_sve_ld4b:
+                    assert(opt == INS_OPTS_SCALABLE_B);
+                    assert(insScalableOptsNone(sopt));
+                    break;
+
+                case INS_sve_ld2h:
+                case INS_sve_ld3h:
+                case INS_sve_ld4h:
+                    assert(opt == INS_OPTS_SCALABLE_H);
+                    assert(sopt == INS_SCALABLE_OPTS_LSL_N);
+                    break;
+
+                case INS_sve_ld2w:
+                case INS_sve_ld3w:
+                case INS_sve_ld4w:
+                    assert(opt == INS_OPTS_SCALABLE_S);
+                    assert(sopt == INS_SCALABLE_OPTS_LSL_N);
+                    break;
+
+                case INS_sve_ld2d:
+                case INS_sve_ld3d:
+                case INS_sve_ld4d:
+                    assert(opt == INS_OPTS_SCALABLE_D);
+                    assert(sopt == INS_SCALABLE_OPTS_LSL_N);
+                    break;
+
+                default:
+                    assert(!"Invalid instruction");
+                    break;
+            }
+#endif // DEBUG
+
+            fmt = IF_SVE_IT_4A;
             break;
-
 
         default:
             unreached();
