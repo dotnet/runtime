@@ -159,8 +159,6 @@
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
 
     <PropertyGroup>
-    <!-- Default for now. If we can remove our ICU and rely on the system one, then HybridGlobalization becomes the default and we can remove checks for it -->
-      <!-- <HybridGlobalization>true</HybridGlobalization> -->
       <IncludesTestRunner Condition="'$(IncludesTestRunner)' == ''">true</IncludesTestRunner>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>

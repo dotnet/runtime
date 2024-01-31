@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <HybridGlobalization>false</HybridGlobalization>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetStringComparerTests.cs" />

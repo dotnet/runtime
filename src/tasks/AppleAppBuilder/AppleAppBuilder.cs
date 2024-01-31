@@ -155,7 +155,7 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// Forces the runtime to use hybrid(icu files + native functions) mode
     /// </summary>
-    public bool HybridGlobalization { get; set; }
+    public bool HybridGlobalization { get; set; } = true;
 
     /// <summary>
     /// Forces the runtime to use the interpreter

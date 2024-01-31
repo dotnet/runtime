@@ -16,7 +16,6 @@
     <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
     <!-- Same for ILLink -->
     <DebuggerSupport>true</DebuggerSupport>
-    <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
 
   <!--

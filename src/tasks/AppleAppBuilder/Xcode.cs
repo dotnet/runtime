@@ -476,7 +476,7 @@ internal sealed class Xcode
             defines.AppendLine("add_definitions(-DINVARIANT_GLOBALIZATION=1)");
         }
 
-        if (hybridGlobalization)
+        if (hybridGlobalization && !invariantGlobalization)
         {
             defines.AppendLine("add_definitions(-DHYBRID_GLOBALIZATION=1)");
         }
