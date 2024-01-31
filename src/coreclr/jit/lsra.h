@@ -1098,6 +1098,10 @@ private:
     regMaskTP allSIMDRegs();
     regMaskTP lowSIMDRegs();
     regMaskTP internalFloatRegCandidates();
+#ifdef TARGET_ARM64
+    regMaskTP allPredicateRegs();
+    regMaskTP lowPredicateRegs();
+#endif
 
     void makeRegisterInactive(RegRecord* physRegRecord);
     void freeRegister(RegRecord* physRegRecord);
@@ -1664,6 +1668,8 @@ private:
     PhasedVar<regMaskTP> availableDoubleRegs;
 #if defined(TARGET_XARCH)
     PhasedVar<regMaskTP> availableMaskRegs;
+#elif defined(TARGET_ARM64)
+    PhasedVar<regMaskTP> availablePredicateRegs;
 #endif
     PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 

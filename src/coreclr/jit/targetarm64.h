@@ -140,6 +140,10 @@
   #define REG_JUMP_THUNK_PARAM     REG_R12
   #define RBM_JUMP_THUNK_PARAM     RBM_R12
 
+  #define RBM_LOWPREDICATE        (RBM_P0 | RBM_P1 | RBM_P2 | RBM_P3 | RBM_P4 | RBM_P5 | RBM_P6 | RBM_P7)
+  #define RBM_HIGHPREDICATE       (RBM_P8 | RBM_P9 | RBM_P10 | RBM_P11 | RBM_P12 | RBM_P13 | RBM_P14 | RBM_P15)
+  #define RBM_ALLPREDICATE        (RBM_LOWPREDICATE | RBM_HIGHPREDICATE)
+
   // ARM64 write barrier ABI (see vm\arm64\asmhelpers.asm, vm\arm64\asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
   //     On entry:

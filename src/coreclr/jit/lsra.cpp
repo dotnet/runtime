@@ -271,6 +271,33 @@ regMaskTP LinearScan::lowSIMDRegs()
 #endif
 }
 
+
+#ifdef TARGET_ARM64
+
+//------------------------------------------------------------------------
+// allPredicateRegs(): Return the set of all predicate SVE registers.
+//
+// Return Value:
+// Register mask of the SVE predicate registers
+//
+regMaskTP LinearScan::allPredicateRegs()
+{
+    return (availablePredicateRegs & RBM_ALLPREDICATE);
+}
+
+//------------------------------------------------------------------------
+// lowPredicateRegs(): Return the set of all the lower predicate SVE registers.
+//
+// Return Value:
+// Register mask of the low SVE predicate registers
+//
+regMaskTP LinearScan::lowPredicateRegs()
+{
+    return (availablePredicateRegs & RBM_LOWPREDICATE);
+}
+
+#endif
+
 void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition)
 {
     LsraLocation nextLocation;
@@ -790,6 +817,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableDoubleRegs = RBM_ALLDOUBLE;
 #if defined(TARGET_XARCH)
     availableMaskRegs = RBM_ALLMASK;
+#elif defined(TARGET_ARM64)
+    availablePredicateRegs = RBM_ALLPREDICATE;
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)

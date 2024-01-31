@@ -1518,6 +1518,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 srcCount++;
             }
         }
+        else if (HWIntrinsicInfo::HasPredicatedResult(intrin.id))
+        {
+            // TODO-SVE: Allocate a predicate register instead of a vector regiter
+
+            regMaskTP predMask = RBM_NONE;
+            switch (intrin.id)
+            {
+                case NI_Sve_LoadVectorNonFaulting:
+                    predMask = lowPredicateRegs();
+                    break;
+
+                // TODO-SVE: allPredicateRegs() cases
+
+                default:
+                    noway_assert(!"Not a supported predicated result SVE operation");
+            }
+            srcCount += BuildOperandUses(intrin.op1, predMask);
+        }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
             srcCount += BuildAddrUses(intrin.op1);
@@ -1715,6 +1733,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 noway_assert(!"Not a supported as multiple consecutive register intrinsic");
         }
         return srcCount;
+    }
+    else if (HWIntrinsicInfo::HasPredicatedResult(intrin.id))
+    {
+        // For intrinsics with a predicated result, op2 is the same as op1 in other intrinsics.
+        if (intrinsicTree->OperIsMemoryLoadOrStore())
+        {
+            srcCount += BuildAddrUses(intrin.op2);
+        }
+        else
+        {
+            // TODO-SVE: Support more SVE cases here.
+            noway_assert(!"Not a supported predicated result SVE operation");
+        }
     }
     else if (intrin.op2 != nullptr)
     {
