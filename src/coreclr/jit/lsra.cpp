@@ -12297,7 +12297,11 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     {
         ordering = W("ABCDEFGHIJKLMNOPQ");
 
-        if (!linearScan->enregisterLocalVars && linearScan->compiler->opts.OptimizationDisabled())
+        if (!linearScan->enregisterLocalVars && linearScan->compiler->opts.OptimizationDisabled()
+#ifdef TARGET_ARM64
+            && !linearScan->compiler->info.compNeedsConsecutiveRegisters
+#endif
+            )
         {
             ordering = W("MQQQQQQQQQQQQQQQQ");
         }

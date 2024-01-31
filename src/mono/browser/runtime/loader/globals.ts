@@ -13,7 +13,7 @@ import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
 import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
-import { mono_set_thread_name, setup_proxy_console } from "./logging";
+import { mono_log_error, mono_set_thread_name, setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { deep_merge_config, hasDebuggingEnabled } from "./config";
 import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
@@ -139,5 +139,6 @@ export function mono_assert(condition: unknown, messageFactory: string | (() => 
         ? messageFactory()
         : messageFactory);
     const error = new Error(message);
+    mono_log_error(message, error);
     runtimeHelpers.nativeAbort(error);
 }

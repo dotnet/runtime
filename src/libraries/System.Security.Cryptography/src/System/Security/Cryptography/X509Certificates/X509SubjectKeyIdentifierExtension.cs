@@ -92,9 +92,34 @@ namespace System.Security.Cryptography.X509Certificates
 
         private void Decode(byte[] rawData)
         {
-            X509Pal.Instance.DecodeX509SubjectKeyIdentifierExtension(rawData, out _subjectKeyIdentifierBytes);
+            _subjectKeyIdentifierBytes = DecodeX509SubjectKeyIdentifierExtension(rawData);
             _subjectKeyIdentifierString = _subjectKeyIdentifierBytes.ToHexStringUpper();
             _decoded = true;
+        }
+
+        internal static byte[] DecodeX509SubjectKeyIdentifierExtension(byte[] encoded)
+        {
+            ReadOnlySpan<byte> contents;
+
+            try
+            {
+                bool gotContents = AsnDecoder.TryReadPrimitiveOctetString(
+                    encoded,
+                    AsnEncodingRules.BER,
+                    out contents,
+                    out int consumed);
+
+                if (!gotContents || consumed != encoded.Length)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            return contents.ToArray();
         }
 
         private static byte[] EncodeExtension(ReadOnlySpan<byte> subjectKeyIdentifier)
@@ -102,7 +127,20 @@ namespace System.Security.Cryptography.X509Certificates
             if (subjectKeyIdentifier.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(subjectKeyIdentifier));
 
-            return X509Pal.Instance.EncodeX509SubjectKeyIdentifierExtension(subjectKeyIdentifier);
+            // https://tools.ietf.org/html/rfc5280#section-4.2.1.2
+            //
+            // subjectKeyIdentifier EXTENSION ::= {
+            //     SYNTAX SubjectKeyIdentifier
+            //     IDENTIFIED BY id - ce - subjectKeyIdentifier
+            // }
+            //
+            // SubjectKeyIdentifier::= KeyIdentifier
+            //
+            // KeyIdentifier ::= OCTET STRING
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteOctetString(subjectKeyIdentifier);
+            return writer.Encode();
         }
 
         private static byte[] EncodeExtension(string subjectKeyIdentifier)
