@@ -98,30 +98,30 @@ namespace System.Runtime.Tests
         {
             get
             {
-                yield return new object[] { 0.0f, 0.0f, 0 };
-                yield return new object[] { -0.0f, -0.0f, 0 };
-                yield return new object[] { 0.0f, -0.0f, 1 };
-                yield return new object[] { -0.0f, 0.0f, -1 };
-                yield return new object[] { 0.0f, 1.0f, -1 };
-                yield return new object[] { NFloat.PositiveInfinity, 1.0f, 1 };
+                yield return new object[] { (NFloat)(0.0f), (NFloat)(0.0f), 0 };
+                yield return new object[] { (NFloat)(-0.0f), (NFloat)(-0.0f), 0 };
+                yield return new object[] { (NFloat)(0.0f), (NFloat)(-0.0f), 1 };
+                yield return new object[] { (NFloat)(-0.0f), (NFloat)(0.0f), -1 };
+                yield return new object[] { (NFloat)(0.0f), (NFloat)(1.0f), -1 };
+                yield return new object[] { NFloat.PositiveInfinity, (NFloat)(1.0f), 1 };
                 yield return new object[] { NFloat.NaN, NFloat.NaN, 0 };
                 if (Environment.Is64BitProcess)
                 {
-                    yield return new object[] { BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), 1.0d, 1 };
-                    yield return new object[] { BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), NFloat.PositiveInfinity, 1 };
-                    yield return new object[] { BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), NFloat.NegativeInfinity, -1 };
-                    yield return new object[] { BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), -1.0d, -1 };
-                    yield return new object[] { BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), -1 };
-                    yield return new object[] { BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), BitConverter.UInt64BitsToDouble(0x7FF80000_00000001), -1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), (NFloat)(1.0d), 1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), NFloat.PositiveInfinity, 1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), NFloat.NegativeInfinity, -1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), (NFloat)(-1.0d), -1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt64BitsToDouble(0xFFF80000_00000000), (NFloat)(BitConverter.UInt64BitsToDouble(0x7FF80000_00000000)), -1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), (NFloat)(BitConverter.UInt64BitsToDouble(0x7FF80000_00000001)), -1 };
                 }
                 else
                 {
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), 1.0f, 1 };
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), NFloat.PositiveInfinity, 1 };
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), NFloat.NegativeInfinity, -1 };
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), -1.0f, -1 };
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0xFFC00000), BitConverter.UInt32BitsToSingle(0x7FC00000), -1 };
-                    yield return new object[] { BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt32BitsToSingle(0x7FC00001), -1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt32BitsToSingle(0x7FC00000), (NFloat)(1.0f), 1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt32BitsToSingle(0x7FC00000), NFloat.PositiveInfinity, 1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt32BitsToSingle(0xFFC00000), NFloat.NegativeInfinity, -1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt32BitsToSingle(0xFFC00000), (NFloat)(-1.0f), -1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt32BitsToSingle(0xFFC00000), (NFloat)(BitConverter.UInt32BitsToSingle(0x7FC00000)), -1 };
+                    yield return new object[] { (NFloat)BitConverter.UInt32BitsToSingle(0x7FC00000), (NFloat)(BitConverter.UInt32BitsToSingle(0x7FC00001)), -1 };
                 }
             }
         }
