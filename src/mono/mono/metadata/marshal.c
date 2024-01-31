@@ -3630,7 +3630,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			for (int i = 0; i < method->signature->param_count; ++i) {
 				MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
 				if (param_klass) {
-					if (param_klass == swift_error && method->signature->params [i]->byref__ == 0) {
+					if (param_klass == swift_error && !m_type_is_byref (method->signature->params [i])) {
 						swift_error_args = swift_self_args = 0;
 						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftError argument must be passed by reference.");
 						break;
