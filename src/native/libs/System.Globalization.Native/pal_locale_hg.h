@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pal_compiler.h"
+#include "pal_hybrid.h"
 #include "pal_common.h"
 
 PALEXPORT const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData, const char* currentUILocaleName);

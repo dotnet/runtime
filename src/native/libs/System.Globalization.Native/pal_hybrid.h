@@ -4,6 +4,17 @@
 
 #pragma once
 #include <stddef.h>
+
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+
+// All ICU headers need to be included here so that all function prototypes are
+// available before the function pointers are declared below.
+#include <unicode/uchar.h>
+#include <unicode/uidna.h>
+#include <unicode/utypes.h>
+
+#endif
+
 /**
  * Append a code point to a string, overwriting 1 or 2 code units.
  * The offset points to the current end of the string contents
