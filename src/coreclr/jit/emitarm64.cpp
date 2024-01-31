@@ -1808,10 +1808,19 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        case IF_SVE_IW_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit gather load (vector plus scalar)
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_Q);
+            assert(isVectorRegister(id->idReg1()));      // ttttt
+            assert(isPredicateRegister(id->idReg2()));   // ggg
+            assert(isVectorRegister(id->idReg3()));      // nnnnn
+            assert(isGeneralRegisterOrZR(id->idReg4())); // mmmmm
+            assert(isScalableVectorSize(elemsize));
+            break;
+
         case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
         case IF_SVE_IP_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus scalar)
         case IF_SVE_IT_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (scalar plus scalar)
-        case IF_SVE_IW_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit gather load (vector plus scalar)
         case IF_SVE_IX_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit gather non-temporal load (vector plus
                              // scalar)
         case IF_SVE_IY_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit scatter store (vector plus scalar)
@@ -12141,6 +12150,17 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
             fmt = IF_SVE_IP_4A;
             break;
 
+        case INS_sve_ld1q:
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isGeneralRegisterOrZR(reg4));
+            assert(isScalableVectorSize(size));
+            assert(opt == INS_OPTS_SCALABLE_Q);
+            assert(insScalableOptsNone(sopt));
+            fmt = IF_SVE_IW_4A;
+            break;
+
         case INS_sve_ld2q:
         case INS_sve_ld3q:
         case INS_sve_ld4q:
@@ -19457,6 +19477,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                              // scalar)
         case IF_SVE_IF_4A_A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit gather non-temporal load (vector plus
                              // scalar)
+        case IF_SVE_IW_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit gather load (vector plus scalar)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
@@ -19508,7 +19529,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SVE_IR_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
                            // scalar)
         case IF_SVE_IT_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (scalar plus scalar)
-        case IF_SVE_IW_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit gather load (vector plus scalar)
         case IF_SVE_IX_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit gather non-temporal load (vector plus
                              // scalar)
         case IF_SVE_IY_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit scatter store (vector plus scalar)
@@ -20044,7 +20064,18 @@ void emitter::emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2
 
     if (isVectorRegister(reg1))
     {
-        emitDispSveReg(reg1, opt, reg2 != REG_ZR);
+        // If the overall instruction is working on 128-bit
+        // registers, the size of this register for
+        // the mod addr is always 64-bit.
+        // Example: LD1Q    {<Zt>.Q }, <Pg>/Z, [<Zn>.D{, <Xm>}]
+        if (opt == INS_OPTS_SCALABLE_Q)
+        {
+            emitDispSveReg(reg1, INS_OPTS_SCALABLE_D, reg2 != REG_ZR);
+        }
+        else
+        {
+            emitDispSveReg(reg1, opt, reg2 != REG_ZR);
+        }
     }
     else
     {
