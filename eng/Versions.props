@@ -83,22 +83,22 @@
     <!-- SDK dependencies -->
     <MicrosoftDotNetApiCompatTaskVersion>9.0.100-alpha.1.24072.3</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetBuildTasksFeedVersion>9.0.0-beta.24076.5</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>9.0.0-beta.24076.5</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>9.0.0-beta.24076.5</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>9.0.0-beta.24076.5</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitAssertVersion>2.6.7-beta.24076.5</MicrosoftDotNetXUnitAssertVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>9.0.0-beta.24076.5</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.6.7-beta.24076.5</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksArchivesVersion>9.0.0-beta.24076.5</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksInstallersVersion>9.0.0-beta.24076.5</MicrosoftDotNetBuildTasksInstallersVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>9.0.0-beta.24076.5</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>9.0.0-beta.24076.5</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
-    <MicrosoftDotNetBuildTasksTemplatingVersion>9.0.0-beta.24076.5</MicrosoftDotNetBuildTasksTemplatingVersion>
-    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>9.0.0-beta.24076.5</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>9.0.0-beta.24076.5</MicrosoftDotNetRemoteExecutorVersion>
-    <MicrosoftDotNetVersionToolsTasksVersion>9.0.0-beta.24076.5</MicrosoftDotNetVersionToolsTasksVersion>
-    <MicrosoftDotNetPackageTestingVersion>9.0.0-beta.24076.5</MicrosoftDotNetPackageTestingVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>9.0.0-beta.24080.1</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>9.0.0-beta.24080.1</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenAPIVersion>9.0.0-beta.24080.1</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>9.0.0-beta.24080.1</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitAssertVersion>2.6.7-beta.24080.1</MicrosoftDotNetXUnitAssertVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>9.0.0-beta.24080.1</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.6.7-beta.24080.1</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetBuildTasksArchivesVersion>9.0.0-beta.24080.1</MicrosoftDotNetBuildTasksArchivesVersion>
+    <MicrosoftDotNetBuildTasksInstallersVersion>9.0.0-beta.24080.1</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>9.0.0-beta.24080.1</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>9.0.0-beta.24080.1</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
+    <MicrosoftDotNetBuildTasksTemplatingVersion>9.0.0-beta.24080.1</MicrosoftDotNetBuildTasksTemplatingVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>9.0.0-beta.24080.1</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>9.0.0-beta.24080.1</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>9.0.0-beta.24080.1</MicrosoftDotNetVersionToolsTasksVersion>
+    <MicrosoftDotNetPackageTestingVersion>9.0.0-beta.24080.1</MicrosoftDotNetPackageTestingVersion>
     <!-- TODO: Remove pinned xunit.analyzers version: https://github.com/dotnet/runtime/issues/97088 -->
     <XUnitAnalyzersVersion>1.4.0</XUnitAnalyzersVersion>
     <!-- NuGet dependencies -->
