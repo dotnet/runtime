@@ -55,21 +55,21 @@ rethrow: src1:i len:4
 br: len:4
 br_reg: src1:i len:4
 jump_table: dest:i len:16
-call: dest:a len:4 clob:c
-call_reg: dest:a src1:i len:4 clob:c
-call_membase: dest:a src1:b len:20 clob:c
-voidcall: len:4 clob:c
-voidcall_reg: src1:i len:4 clob:c
-voidcall_membase: src1:b len:20 clob:c
+call: dest:a len:28 clob:c
+call_reg: dest:a src1:i len:16 clob:c
+call_membase: dest:a src1:b len:32 clob:c
+voidcall: len:28 clob:c
+voidcall_reg: src1:i len:16 clob:c
+voidcall_membase: src1:b len:32 clob:c
 vcall2: len:28 clob:c
-vcall2_reg: src1:i len:28 clob:c
-vcall2_membase: src1:b len:28 clob:c
-fcall: dest:f len:8 clob:c
-fcall_reg: dest:f src1:i len:8 clob:c
-fcall_membase: dest:f src1:b len:12 clob:c
-rcall: dest:f len:8 clob:c
-rcall_reg: dest:f src1:i len:8 clob:c
-rcall_membase: dest:f src1:b len:12 clob:c
+vcall2_reg: src1:i len:16 clob:c
+vcall2_membase: src1:b len:32 clob:c
+fcall: dest:f len:28 clob:c
+fcall_reg: dest:f src1:i len:16 clob:c
+fcall_membase: dest:f src1:b len:32 clob:c
+rcall: dest:f len:28 clob:c
+rcall_reg: dest:f src1:i len:16 clob:c
+rcall_membase: dest:f src1:b len:32 clob:c
 
 # Note: in RV32, it shoule be 
 # lcall: dest:l ...
