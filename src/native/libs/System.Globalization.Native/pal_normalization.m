@@ -3,7 +3,6 @@
 //
 
 #include "pal_errors.h"
-#include "pal_common.h"
 #include "pal_hybrid.h"
 #include "pal_normalization_hg.h"
 #import <Foundation/Foundation.h>
@@ -12,7 +11,6 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if defined(APPLE_HYBRID_GLOBALIZATION)
 static NSString* GetNormalizedStringForForm(NormalizationForm normalizationForm, NSString* sourceString)
 {
     switch (normalizationForm)
@@ -88,5 +86,5 @@ int32_t GlobalizationNative_NormalizeStringNative(NormalizationForm normalizatio
         return !isError ? [normalizedString length] : 0;
     }
 }
-#endif
+
 

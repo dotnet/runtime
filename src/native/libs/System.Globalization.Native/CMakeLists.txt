@@ -205,17 +205,7 @@ if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVO
         pal_common.c
     )
 
-    if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-        add_definitions(-DAPPLE_HYBRID_GLOBALIZATION)
-        set(NATIVEGLOBALIZATION_SOURCES
-            ${NATIVEGLOBALIZATION_SOURCES}
-            pal_placeholders.c
-        )
-    endif()
-
-    if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-        link_libraries(icucore)
-    endif()
+    link_libraries(icucore)
 
     if (CMAKE_USE_PTHREADS)
         add_compile_options(-pthread)
@@ -235,26 +225,22 @@ if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVO
         include_directories(${CMAKE_CURRENT_BINARY_DIR})
     elseif (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
         add_definitions(-DSTATIC_ICU)
-        # set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim_static_hybrid.c)
         set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES})
 
     else()
-        # set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim.c)
         set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES})
     endif()
 
-    if (CLR_CMAKE_TARGET_APPLE)
-        set(NATIVEGLOBALIZATION_SOURCES_OBJC
-            pal_locale_hg.m
-            pal_locale.m
-            pal_collation.m
-            pal_casing.m
-            pal_calendarData.m
-            pal_normalization.m
-            pal_timeZoneInfo.m)
-        set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES_OBJC} PROPERTIES COMPILE_FLAGS "-fobjc-arc ${CLR_CMAKE_COMMON_OBJC_FLAGS}")
-        set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} ${NATIVEGLOBALIZATION_SOURCES_OBJC})
-    endif()
+    set(NATIVEGLOBALIZATION_SOURCES_OBJC
+        pal_locale_hg.m
+        pal_locale.m
+        pal_collation.m
+        pal_casing.m
+        pal_calendarData.m
+        pal_normalization.m
+        pal_timeZoneInfo.m)
+    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES_OBJC} PROPERTIES COMPILE_FLAGS "-fobjc-arc ${CLR_CMAKE_COMMON_OBJC_FLAGS}")
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} ${NATIVEGLOBALIZATION_SOURCES_OBJC})
 
     if (MSVC)
         set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
@@ -263,10 +249,8 @@ if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVO
     include_directories("../Common")
 
     if (GEN_SHARED_LIB)
-        if (CLR_CMAKE_TARGET_APPLE)
-            include(CMakeFindFrameworks)
-            find_library(FOUNDATION Foundation REQUIRED)
-        endif()
+        include(CMakeFindFrameworks)
+        find_library(FOUNDATION Foundation REQUIRED)
 
         add_library(System.HybridGlobalization.Native
             SHARED
@@ -289,29 +273,8 @@ if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVO
         entrypoints_hg.c
     )
 
-    if(CLR_CMAKE_TARGET_UNIX)
-        set_target_properties(System.HybridGlobalization.Native-Static PROPERTIES OUTPUT_NAME System.HybridGlobalization.Native  CLEAN_DIRECT_OUTPUT 1)
-    endif()
+    set_target_properties(System.HybridGlobalization.Native-Static PROPERTIES OUTPUT_NAME System.HybridGlobalization.Native  CLEAN_DIRECT_OUTPUT 1)
 
     install (TARGETS System.HybridGlobalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-    if(CLR_CMAKE_TARGET_WIN32)
-        if(STATIC_LIBS_ONLY)
-            add_library(System.HybridGlobalization.Native.Aot
-                STATIC
-                ${NATIVEGLOBALIZATION_SOURCES}
-            )
-            set_target_properties(System.HybridGlobalization.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
-            set_target_properties(System.HybridGlobalization.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
-
-            add_library(System.HybridGlobalization.Native.Aot.GuardCF
-                STATIC
-                ${NATIVEGLOBALIZATION_SOURCES}
-            )
-            set_target_properties(System.HybridGlobalization.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
-
-            install_static_library(System.HybridGlobalization.Native.Aot aotsdk nativeaot)
-            install_static_library(System.HybridGlobalization.Native.Aot.GuardCF aotsdk nativeaot)
-        endif()
-    endif()
 endif()

@@ -5,7 +5,6 @@
 #include <string.h>
 #include "pal_hybrid.h"
 #include "pal_locale_hg.h"
-// #include "pal_locale_internal.h"
 #include "pal_localeStringData.h"
 #include "pal_localeNumberData.h"
 
@@ -16,7 +15,6 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if defined(APPLE_HYBRID_GLOBALIZATION)
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 {
     @autoreleasepool
@@ -796,4 +794,4 @@ int32_t GlobalizationNative_IsPredefinedLocaleNative(const char* localeName)
         return false;
     }
 }
-#endif
+

@@ -5,10 +5,6 @@
 #include <string.h>
 #include "pal_hybrid.h"
 #include "pal_common.h"
-// #include "pal_locale_hybrid.h"
-// #include "pal_locale_internal.h"
-// #include "pal_localeStringData.h"
-// #include "pal_localeNumberData.h"
 
 #import <Foundation/Foundation.h>
 #import <Foundation/NSFormatter.h>

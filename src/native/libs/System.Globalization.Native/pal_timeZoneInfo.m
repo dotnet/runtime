@@ -3,7 +3,6 @@
 //
 
 #include "pal_errors_internal.h"
-#include "pal_common.h"
 #include "pal_hybrid.h"
 #include "pal_timeZoneInfo_hg.h"
 #import <Foundation/Foundation.h>
@@ -12,7 +11,6 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if defined(APPLE_HYBRID_GLOBALIZATION)
 /*
 Gets the localized display name that is currently in effect for the specified time zone.
 */
@@ -83,4 +81,4 @@ int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeN
         return resultCode;
     }
 }
-#endif
+
