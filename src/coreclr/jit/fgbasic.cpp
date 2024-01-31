@@ -464,7 +464,7 @@ void Compiler::fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock)
 //   newSucc - new successor
 //   oldSucc - old successor
 //
-void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* newSucc, BasicBlock* oldSucc)
+void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc)
 {
     assert(block != nullptr);
     assert(oldSucc != nullptr);
@@ -595,7 +595,7 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ)
 // 3. The predecessor lists are updated.
 // 4. If any switch table entry was updated, the switch table "unique successor" cache is invalidated.
 //
-void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, BasicBlock* oldTarget)
+void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget)
 {
     assert(block != nullptr);
     assert(fgPredsComputed);
@@ -4979,7 +4979,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
             newBlock->bbNum);
 
     // newBlock replaces succ as curr's successor.
-    fgReplaceJumpTarget(curr, newBlock, succ);
+    fgReplaceJumpTarget(curr, succ, newBlock);
 
     // And succ has newBlock as a new predecessor.
     fgAddRefPred(succ, newBlock);
@@ -5258,11 +5258,11 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
                 case BBJ_SWITCH:
-                    fgReplaceJumpTarget(predBlock, succBlock, block);
+                    fgReplaceJumpTarget(predBlock, block, succBlock);
                     break;
 
                 case BBJ_EHFINALLYRET:
-                    fgReplaceEhfSuccessor(predBlock, succBlock, block);
+                    fgReplaceEhfSuccessor(predBlock, block, succBlock);
                     break;
             }
         }

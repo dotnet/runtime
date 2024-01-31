@@ -1014,7 +1014,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         while (preds.Height() > 0)
         {
             BasicBlock* const predBlock = preds.Pop();
-            fgReplaceJumpTarget(predBlock, block, bNext);
+            fgReplaceJumpTarget(predBlock, bNext, block);
         }
     }
 

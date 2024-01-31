@@ -1724,7 +1724,7 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
             JITDUMP("Redirecting " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", entering->bbNum,
                     loop->GetHeader()->bbNum, entering->bbNum, target->bbNum);
             assert(!entering->KindIs(BBJ_COND)); // Ensured by canonicalization
-            fgReplaceJumpTarget(entering, target, loop->GetHeader());
+            fgReplaceJumpTarget(entering, loop->GetHeader(), target);
         }
     }
 }
@@ -3081,7 +3081,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         JITDUMP("Entry edge " FMT_BB " -> " FMT_BB " becomes " FMT_BB " -> " FMT_BB "\n", enterBlock->bbNum,
                 header->bbNum, enterBlock->bbNum, preheader->bbNum);
 
-        fgReplaceJumpTarget(enterBlock, preheader, header);
+        fgReplaceJumpTarget(enterBlock, header, preheader);
     }
 
     optSetPreheaderWeight(loop, preheader);
