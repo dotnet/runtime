@@ -4,15 +4,18 @@
 
 #pragma once
 
-// #if defined(TARGET_UNIX)
-
 #include "pal_compiler.h"
+
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
 #include <unicode/uchar.h>
 #include <unicode/uidna.h>
 #include <unicode/utypes.h>
+
+#endif
+
 // calendarData
 /*
 * These values should be kept in sync with System.Globalization.CalendarId
@@ -181,5 +184,3 @@ typedef struct _Range {
     int32_t location;
     int32_t length;
 } Range;
-
-// #endif
