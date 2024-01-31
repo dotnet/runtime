@@ -661,8 +661,19 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void AddDefaultValue(EntityHandle parentHandle, object? defaultValue) =>
+        private void AddDefaultValue(EntityHandle parentHandle, object? defaultValue)
+        {
+            if (defaultValue != null)
+            {
+                Type type = defaultValue.GetType();
+                if (type.IsEnum)
+                {
+                    defaultValue = Convert.ChangeType(defaultValue, type.GetEnumUnderlyingType());
+                }
+            }
+
             _metadataBuilder.AddConstant(parent: parentHandle, value: defaultValue);
+        }
 
         private void AddMethodSemantics(EntityHandle parentHandle, MethodSemanticsAttributes attribute, MethodDefinitionHandle methodHandle) =>
             _metadataBuilder.AddMethodSemantics(
