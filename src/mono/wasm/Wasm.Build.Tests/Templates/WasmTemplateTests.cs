@@ -44,6 +44,7 @@ namespace Wasm.Build.Tests
                             ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
                             : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
 
+                mainJsContent = mainJsContent.Replace("runMain()", "dotnet.run()");
                 mainJsContent = mainJsContent.Replace("from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
 
                 return mainJsContent;
