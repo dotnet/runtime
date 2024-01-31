@@ -545,6 +545,10 @@ namespace System.Reflection.Emit
                         {
                             memberHandle = AddMethodSpecification(GetMemberHandle(method.GetGenericMethodDefinition()), method.GetGenericArguments());
                         }
+                        else if (method is SymbolMethod sm)
+                        {
+                            memberHandle = AddMemberReference(sm.Name, GetTypeHandle(sm.DeclaringType!), GetMethodSymbolSignature(sm));
+                        }
                         else
                         {
                             method = (MethodInfo)GetOriginalMemberIfConstructedType(method);
@@ -580,6 +584,9 @@ namespace System.Reflection.Emit
         private BlobBuilder GetMethodSignature(MethodInfo method, Type[]? optionalParameterTypes) =>
             MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), method.ReturnType,
                 GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
+
+        private BlobBuilder GetMethodSymbolSignature(SymbolMethod method) => MetadataSignatureHelper.GetMethodSignature(
+            this, method.ParameterTypes, method.ReturnType, GetSignatureConvention(method.CallingConvention));
 
         internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConvention)
         {
@@ -1050,7 +1057,22 @@ namespace System.Reflection.Emit
             return field;
         }
 
-        protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
+        protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName,
+            CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
+        {
+            if (!arrayClass.IsArray)
+            {
+                throw new ArgumentException(SR.Argument_HasToBeArrayClass);
+            }
+
+            // GetArrayMethod is useful when you have an array of a type whose definition has not been completed and
+            // you want to access methods defined on Array. For example, you might define a type and want to define a
+            // method that takes an array of the type as a parameter. In order to access the elements of the array,
+            // you will need to call methods of the Array class.
+
+            return new SymbolMethod(this, arrayClass, methodName, callingConvention, returnType, parameterTypes);
+        }
+
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             _customAttributes ??= new List<CustomAttributeWrapper>();

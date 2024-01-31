@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -286,6 +287,61 @@ namespace System.Reflection.Emit.Tests
 
             Assert.True(signatureToken > 0);
             Assert.True(stringToken > 0);
+        }
+
+        [Fact]
+        public static void GetArrayMethodTest()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+
+                ModuleBuilder moduleBuilder = ab.DefineDynamicModule("MyModule");
+                TypeBuilder typeBuilder = moduleBuilder.DefineType("TempClass", TypeAttributes.Public);
+                Type[] paramArray = { typeof(Array) };
+                // Add 'SortArray' method to the class, with the given signature.
+                MethodBuilder myMethod = typeBuilder.DefineMethod("SortArray", MethodAttributes.Public, typeof(Array), paramArray);
+
+                Type[] myArrayClass = new Type[1];
+                Type[] parameterTypes = { typeof(Array) };
+                // Get the 'MethodInfo' object corresponding to 'Sort' method of 'Array' class.
+                MethodInfo myMethodInfo = moduleBuilder.GetArrayMethod(myArrayClass.GetType(), "Sort", CallingConventions.Standard, null, parameterTypes);
+                Assert.Equal(typeof(Type[]), myMethodInfo.DeclaringType);
+                Assert.Equal("Sort", myMethodInfo.Name);
+                Assert.Equal(CallingConventions.Standard, myMethodInfo.CallingConvention);
+                Assert.Equal(typeof(void), myMethodInfo.ReturnType);
+
+                ILGenerator methodIL = myMethod.GetILGenerator();
+                methodIL.Emit(OpCodes.Ldarg_1);
+                methodIL.Emit(OpCodes.Call, myMethodInfo);
+                methodIL.Emit(OpCodes.Ldarg_1);
+                methodIL.Emit(OpCodes.Ret);
+
+                // Complete the creation of type.
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Type typeFromDisk = mlc.LoadFromAssemblyPath(file.Path).GetType("TempClass");
+                    MethodInfo method = typeFromDisk.GetMethod("SortArray");
+                    Assert.NotNull(typeFromDisk);
+                    Assert.NotNull(method);
+                    Assert.NotNull(method.GetMethodBody());
+                }
+            }
+        }
+
+        [Fact]
+        public void GetArrayMethod_InvalidArgument_ThrowsArgumentException()
+        {
+            ModuleBuilder module = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly")).DefineDynamicModule("MyModule");
+
+            AssertExtensions.Throws<ArgumentNullException>("arrayClass", () => module.GetArrayMethod(null, "TestMethod", CallingConventions.Standard, null, null));
+            AssertExtensions.Throws<ArgumentNullException>("methodName", () => module.GetArrayMethod(typeof(string[]), null, CallingConventions.Standard, typeof(void), null));
+            AssertExtensions.Throws<ArgumentException>("methodName", () => module.GetArrayMethod(typeof(string[]), "", CallingConventions.Standard, null, null));
+            AssertExtensions.Throws<ArgumentNullException>("parameterTypes", () => module.GetArrayMethod(typeof(string[]), "TestMethod", CallingConventions.Standard, null, [null]));
+            AssertExtensions.Throws<ArgumentException>(null, () => module.GetArrayMethod(typeof(Array), "TestMethod", CallingConventions.Standard, null, null));
         }
     }
 }

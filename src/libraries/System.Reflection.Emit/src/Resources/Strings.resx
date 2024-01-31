@@ -297,4 +297,7 @@
   <data name="NotSupported_NonReflectedType" xml:space="preserve">
     <value>Not supported in a non-reflected type.</value>
   </data>
+  <data name="NotSupported_SymbolMethod" xml:space="preserve">
+    <value>Not supported in an array method of a type definition that is not complete.</value>
+  </data>
 </root>
