@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Net.Cache;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -1678,6 +1679,9 @@ namespace System.Net
                 {
                     var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
+                    // Start resolve dns task
+                    Task<IPAddress[]> addressesTask = Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken);
+                    IPAddress[]? addresses = null;
                     try
                     {
                         if (parameters.ServicePoint is { } servicePoint)
@@ -1693,19 +1697,54 @@ namespace System.Net
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, keepAlive.Time);
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, keepAlive.Interval);
                             }
+
+                            if (servicePoint.BindIPEndPointDelegate != null)
+                            {
+                                addresses ??= await addressesTask.ConfigureAwait(false);
+                                foreach (IPAddress address in addresses)
+                                {
+                                    int retryCount = 0;
+                                    for (; retryCount < int.MaxValue; retryCount++)
+                                    {
+                                        IPEndPoint endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, context.DnsEndPoint.Port), retryCount);
+                                        if (endPoint != null)
+                                        {
+                                            try
+                                            {
+                                                socket.Bind(endPoint);
+                                                break;
+                                            }
+                                            catch
+                                            {
+                                                continue;
+                                            }
+                                        }
+                                    }
+
+                                    if (retryCount == int.MaxValue)
+                                    {
+                                        throw new OverflowException(); //TODO (aaksoy): Add SR for this.
+                                    }
+                                }
+                            }
+
+                            if (servicePoint.UseNagleAlgorithm is not true)
+                            {
+                                socket.NoDelay = true;
+                            }
                         }
 
-                        socket.NoDelay = true;
+                        addresses ??= await addressesTask.ConfigureAwait(false);
 
                         if (parameters.Async)
                         {
-                            await socket.ConnectAsync(context.DnsEndPoint, cancellationToken).ConfigureAwait(false);
+                            await socket.ConnectAsync(addresses, context.DnsEndPoint.Port, cancellationToken).ConfigureAwait(false);
                         }
                         else
                         {
                             using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
                             {
-                                socket.Connect(context.DnsEndPoint);
+                                socket.Connect(addresses, context.DnsEndPoint.Port);
                             }
 
                             // Throw in case cancellation caused the socket to be disposed after the Connect completed

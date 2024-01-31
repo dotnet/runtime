@@ -78,7 +78,7 @@ namespace System.Net
             }
         }
 
-        public static bool UseNagleAlgorithm { get; set; } = true;
+        public static bool UseNagleAlgorithm { get; set; }
 
         public static bool Expect100Continue { get; set; } = true;
 

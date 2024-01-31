@@ -25,6 +25,7 @@ namespace System.Net
         private WebHeaderCollection? _webHeaderCollection;
         private string? _characterSet;
         private readonly bool _isVersionHttp11 = true;
+        private readonly int _maxResponseHeadersLength = -1;
 
         [Obsolete("This API supports the .NET infrastructure and is not intended to be used directly from your code.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -53,10 +54,11 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
-        internal HttpWebResponse(HttpResponseMessage _message, Uri requestUri, CookieContainer? cookieContainer)
+        internal HttpWebResponse(HttpResponseMessage _message, Uri requestUri, CookieContainer? cookieContainer, int maxErrorResponseLength)
         {
             _httpResponseMessage = _message;
             _requestUri = requestUri;
+            _maxResponseHeadersLength = maxErrorResponseLength;
 
             // Match Desktop behavior. If the request didn't set a CookieContainer, we don't populate the response's CookieCollection.
             if (cookieContainer != null)
@@ -337,7 +339,28 @@ namespace System.Net
             CheckDisposed();
             if (_httpResponseMessage.Content != null)
             {
-                return _httpResponseMessage.Content.ReadAsStream();
+                Stream contentStream = _httpResponseMessage.Content.ReadAsStream();
+                if (_maxResponseHeadersLength == -1)
+                {
+                    return contentStream;
+                }
+
+                MemoryStream memoryStream = new MemoryStream();
+                byte[] buffer = new byte[1024];
+                int readLength = 0;
+
+                while (readLength < _maxResponseHeadersLength)
+                {
+                    int len = contentStream.Read(buffer, 0, Math.Min(_maxResponseHeadersLength - readLength, buffer.Length));
+                    if (len == 0)
+                    {
+                        break;
+                    }
+                    memoryStream.Write(buffer, 0, len);
+                    readLength += len;
+                }
+
+                return memoryStream;
             }
 
             return Stream.Null;
