@@ -51,7 +51,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte Exchange(ref byte location1, byte value)
         {
-#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM
             return Exchange(ref location1, value); // Must expand intrinsic
 #else
             if (Unsafe.IsNullRef(ref location1))
@@ -72,7 +72,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Exchange(ref short location1, short value)
         {
-#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM
             return Exchange(ref location1, value); // Must expand intrinsic
 #else
             if (Unsafe.IsNullRef(ref location1))
@@ -93,7 +93,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Exchange(ref int location1, int value)
         {
-#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM || TARGET_RISCV64
             return Exchange(ref location1, value); // Must expand intrinsic
 #else
             if (Unsafe.IsNullRef(ref location1))
@@ -172,7 +172,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte CompareExchange(ref byte location1, byte value, byte comparand)
         {
-#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
             if (Unsafe.IsNullRef(ref location1))
@@ -194,7 +194,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short CompareExchange(ref short location1, short value, short comparand)
         {
-#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
             if (Unsafe.IsNullRef(ref location1))
@@ -216,7 +216,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
-#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM || TARGET_RISCV64
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
             if (Unsafe.IsNullRef(ref location1))
@@ -238,7 +238,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
-#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM || TARGET_RISCV64
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
             if (Unsafe.IsNullRef(ref location1))
@@ -315,7 +315,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ExchangeAdd(ref int location1, int value)
         {
-#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM || TARGET_RISCV64
             return ExchangeAdd(ref location1, value); // Must expand intrinsic
 #else
             if (Unsafe.IsNullRef(ref location1))

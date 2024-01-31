@@ -3433,8 +3433,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             }
 #endif // defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
-            // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64)
             case NI_System_Threading_Interlocked_CompareExchange:
             {
                 var_types retType = JITtype2varType(sig->retType);
@@ -3443,12 +3442,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     break;
                 }
-#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_ARM)
                 else if (genTypeSize(retType) < 4)
                 {
                     break;
                 }
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_ARM)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
@@ -3484,12 +3483,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     break;
                 }
-#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_ARM)
                 else if (genTypeSize(retType) < 4)
                 {
                     break;
                 }
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_ARM)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
@@ -3515,7 +3514,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                           callType, op1, op2);
                 break;
             }
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64)
 
             case NI_System_Threading_Interlocked_MemoryBarrier:
             case NI_System_Threading_Interlocked_ReadMemoryBarrier:

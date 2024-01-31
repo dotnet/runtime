@@ -425,6 +425,26 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(emitGetInsSC(id) < 0x100);
             break;
 
+        case IF_T2_O1: // T2_O1   ............nnnn ttttTTTT....dddd       R1  R2  R3  R4
+            assert(isGeneralRegister(id->idReg1()));
+            assert(isGeneralRegister(id->idReg2()));
+            assert(isGeneralRegister(id->idReg3()));
+            assert(isGeneralRegister(id->idReg4()));
+            break;
+
+        case IF_T2_O2: // T2_O2   ............nnnn tttt........dddd       R1  R2  R3
+            assert(isGeneralRegister(id->idReg1()));
+            assert(isGeneralRegister(id->idReg2()));
+            assert(isGeneralRegister(id->idReg3()));
+            break;
+
+        case IF_T2_O3: // T2_O3   ............nnnn ttttddddiiiiiiii       R1  R2  R3         imm8
+            assert(isGeneralRegister(id->idReg1()));
+            assert(isGeneralRegister(id->idReg2()));
+            assert(isGeneralRegister(id->idReg3()));
+            assert(emitGetInsSC(id) < 0x100);
+            break;
+
         case IF_T1_K:  // T1_K    ....cccciiiiiiii                        Branch             imm8, cond4
         case IF_T1_M:  // T1_M    .....iiiiiiiiiii                        Branch             imm11
         case IF_T2_J1: // T2_J1   .....Scccciiiiii ..j.jiiiiiiiiiii       Branch             imm20, cond4
@@ -554,6 +574,9 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_T2_H1:
         case IF_T2_K1:
         case IF_T2_K4:
+        case IF_T2_O1:
+        case IF_T2_O2:
+        case IF_T2_O3:
             // Some formats with "destination" or "target" registers are actually used for store instructions, for the
             // "source" value written to memory.
             // Similarly, PUSH has a target register, indicating the start of the set of registers to push.  POP
@@ -2441,21 +2464,19 @@ void emitter::emitIns_R_R(
             sf  = INS_FLAGS_NOT_SET;
             break;
 
+        case INS_ldrex:
+            fmt = IF_T2_H1;
+            goto COMMON_THUMB2_EX;
+
         case INS_ldrexb:
-        case INS_strexb:
+        case INS_ldrexh:
+            fmt = IF_T2_E1;
+        COMMON_THUMB2_EX:
             assert(size == EA_4BYTE);
             assert(insDoesNotSetFlags(flags));
-            fmt = IF_T2_E1;
             sf  = INS_FLAGS_NOT_SET;
             break;
 
-        case INS_ldrexh:
-        case INS_strexh:
-            assert(size == EA_4BYTE);
-            assert(insDoesNotSetFlags(flags));
-            fmt = IF_T2_E1;
-            sf  = INS_FLAGS_NOT_SET;
-            break;
         default:
 #ifdef DEBUG
             printf("did not expect instruction %s\n", codeGen->genInsName(ins));
@@ -2464,7 +2485,8 @@ void emitter::emitIns_R_R(
     }
 
     assert((fmt == IF_T1_D0) || (fmt == IF_T1_E) || (fmt == IF_T2_C3) || (fmt == IF_T2_C9) || (fmt == IF_T2_C10) ||
-           (fmt == IF_T2_VFP2) || (fmt == IF_T2_VMOVD) || (fmt == IF_T2_VMOVS) || (fmt == IF_T2_E1));
+           (fmt == IF_T2_VFP2) || (fmt == IF_T2_VMOVD) || (fmt == IF_T2_VMOVS) || (fmt == IF_T2_H1) ||
+           (fmt == IF_T2_E1));
 
     assert(sf != INS_FLAGS_DONT_CARE);
 
@@ -3034,14 +3056,13 @@ void emitter::emitIns_R_R_I(instruction ins,
             break;
 
         case INS_ldrex:
-        case INS_strex:
             assert(insOptsNone(opt));
             assert(insDoesNotSetFlags(flags));
             sf = INS_FLAGS_NOT_SET;
 
             if ((imm & 0x03fc) == imm)
             {
-                fmt = IF_T2_H0;
+                fmt = IF_T2_H1;
             }
             else
             {
@@ -3295,9 +3316,19 @@ void emitter::emitIns_R_R_R(instruction ins,
             break;
 
         case INS_ldrexd:
-        case INS_strexd:
-            assert(insDoesNotSetFlags(flags));
             fmt = IF_T2_G1;
+            goto COMMON_THUMB2_EX;
+
+        case INS_strex:
+            fmt = IF_T2_O3;
+            goto COMMON_THUMB2_EX;
+
+        case INS_strexb:
+        case INS_strexh:
+            fmt = IF_T2_O2;
+        COMMON_THUMB2_EX:
+            assert(size == EA_4BYTE);
+            assert(insDoesNotSetFlags(flags));
             sf  = INS_FLAGS_NOT_SET;
             break;
 
@@ -3305,7 +3336,7 @@ void emitter::emitIns_R_R_R(instruction ins,
             unreached();
     }
     assert((fmt == IF_T1_H) || (fmt == IF_T2_C4) || (fmt == IF_T2_C5) || (fmt == IF_T2_VFP3) || (fmt == IF_T2_VMOVD) ||
-           (fmt == IF_T2_G1));
+           (fmt == IF_T2_G1) || (fmt == IF_T2_O2) || (fmt == IF_T2_O3));
     assert(sf != INS_FLAGS_DONT_CARE);
 
     instrDesc* id  = emitNewInstr(attr);
@@ -3549,10 +3580,25 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             }
             break;
 
+        case INS_strex:
+            assert(insOptsNone(opt));
+            assert(insDoesNotSetFlags(flags));
+            sf = INS_FLAGS_NOT_SET;
+
+            if ((imm & 0x03fc) == imm)
+            {
+                fmt = IF_T2_O3;
+            }
+            else
+            {
+                assert(!"Instruction cannot be encoded");
+            }
+            break;
+
         default:
             unreached();
     }
-    assert((fmt == IF_T2_C0) || (fmt == IF_T2_E0) || (fmt == IF_T2_G0));
+    assert((fmt == IF_T2_C0) || (fmt == IF_T2_E0) || (fmt == IF_T2_G0) || (fmt == IF_T2_O3));
     assert(sf != INS_FLAGS_DONT_CARE);
 
     // 3-reg ops can't use the small instrdesc
@@ -3586,7 +3632,6 @@ void emitter::emitIns_R_R_R_R(
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
-
         case INS_smull:
         case INS_umull:
         case INS_smlal:
@@ -3598,10 +3643,13 @@ void emitter::emitIns_R_R_R_R(
         case INS_mls:
             fmt = IF_T2_F2;
             break;
+        case INS_strexd:
+            fmt = IF_T2_O1;
+            break;
         default:
             unreached();
     }
-    assert((fmt == IF_T2_F1) || (fmt == IF_T2_F2));
+    assert((fmt == IF_T2_F1) || (fmt == IF_T2_F2) || (fmt == IF_T2_O1));
 
     assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
     assert(reg2 != REG_PC);
@@ -6262,6 +6310,37 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 emitHandlePCRelativeMov32((void*)(dst - 8), addr);
             break;
 
+        case IF_T2_O1: // T2_O1   ............nnnn ttttTTTT....dddd       R1  R2  R3  R4
+            sz   = emitGetInstrDescSize(id);
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeRegT2_M(id->idReg1());
+            code |= insEncodeRegT2_D(id->idReg2());
+            code |= insEncodeRegT2_T(id->idReg3());
+            code |= insEncodeRegT2_N(id->idReg4());
+            dst += emitOutput_Thumb2Instr(dst, code);
+            break;
+
+        case IF_T2_O2: // T2_O2   ............nnnn tttt........dddd       R1  R2  R3
+            sz   = emitGetInstrDescSize(id);
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeRegT2_M(id->idReg1());
+            code |= insEncodeRegT2_T(id->idReg2());
+            code |= insEncodeRegT2_N(id->idReg3());
+            dst += emitOutput_Thumb2Instr(dst, code);
+            break;
+
+        case IF_T2_O3: // T2_O3   ............nnnn ttttddddiiiiiiii       R1  R2  R3         imm8
+            sz   = emitGetInstrDescSize(id);
+            code = emitInsCode(ins, fmt);
+            imm  = emitGetInsSC(id);
+            assert((imm & 0x00ff) == imm);
+            code |= insEncodeRegT2_D(id->idReg1());
+            code |= insEncodeRegT2_T(id->idReg2());
+            code |= insEncodeRegT2_N(id->idReg3());
+            code |= imm;
+            dst += emitOutput_Thumb2Instr(dst, code);
+            break;
+
         case IF_T2_VFP3:
             // these are the binary operators
             // d = n - m
@@ -7408,6 +7487,28 @@ void emitter::emitDispInsHelp(
             {
                 emitDispReg(id->idReg2(), attr, true);
                 emitDispImm(imm, false);
+            }
+            break;
+
+        case IF_T2_O1:
+        case IF_T2_O2:
+        case IF_T2_O3:
+            emitDispReg(id->idReg1(), attr, true);
+            emitDispReg(id->idReg2(), attr, true);
+            if (fmt == IF_T2_O1)
+            {
+                emitDispReg(id->idReg3(), attr, true);
+                emitDispAddrR(id->idReg4(), attr);
+            }
+            else if (fmt == IF_T2_O2)
+            {
+                emitDispAddrR(id->idReg3(), attr);
+            }
+            else
+            {
+                assert(fmt == IF_T2_O3);
+                imm = emitGetInsSC(id);
+                emitDispAddrRI(id->idReg3(), imm, attr);
             }
             break;
 

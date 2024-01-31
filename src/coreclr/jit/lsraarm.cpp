@@ -570,6 +570,74 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
+        case GT_CMPXCHG:
+        {
+            GenTreeCmpXchg* cmpXchgNode = tree->AsCmpXchg();
+            srcCount                    = cmpXchgNode->Comparand()->isContained() ? 2 : 3;
+            assert(dstCount == 1);
+
+            // For ARM exclusives requires a single internal register
+            buildInternalIntRegisterDefForNode(tree);
+
+            // For ARM exclusives the lifetime of the addr and data must be extended because
+            // it may be used multiple during retries
+
+            RefPosition* locationUse = BuildUse(tree->AsCmpXchg()->Addr());
+            setDelayFree(locationUse);
+            RefPosition* valueUse = BuildUse(tree->AsCmpXchg()->Data());
+            setDelayFree(valueUse);
+            if (!cmpXchgNode->Comparand()->isContained())
+            {
+                RefPosition* comparandUse = BuildUse(tree->AsCmpXchg()->Comparand());
+
+                // For ARM exclusives the lifetime of the comparand must be extended because
+                // it may be used multiple during retries
+                setDelayFree(comparandUse);
+            }
+
+            // Internals may not collide with target
+            setInternalRegsDelayFree = true;
+            buildInternalRegisterUses();
+            BuildDef(tree);
+        }
+        break;
+
+        case GT_XADD:
+        case GT_XCHG:
+        {
+            assert(dstCount == (tree->TypeIs(TYP_VOID) ? 0 : 1));
+            srcCount = tree->gtGetOp2()->isContained() ? 1 : 2;
+
+            buildInternalIntRegisterDefForNode(tree);
+
+            assert(!tree->gtGetOp1()->isContained());
+            RefPosition* op1Use = BuildUse(tree->gtGetOp1());
+            RefPosition* op2Use = nullptr;
+            if (!tree->gtGetOp2()->isContained())
+            {
+                op2Use = BuildUse(tree->gtGetOp2());
+            }
+
+            // For ARM exclusives the lifetime of the addr and data must be extended because
+            // it may be used multiple during retries
+            // Internals may not collide with target
+            if (dstCount == 1)
+            {
+                setDelayFree(op1Use);
+                if (op2Use != nullptr)
+                {
+                    setDelayFree(op2Use);
+                }
+                setInternalRegsDelayFree = true;
+            }
+            buildInternalRegisterUses();
+            if (dstCount == 1)
+            {
+                BuildDef(tree);
+            }
+        }
+        break;
+
         case GT_CALL:
             srcCount = BuildCall(tree->AsCall());
             if (tree->AsCall()->HasMultiRegRetVal())

@@ -437,14 +437,14 @@ INST1(stmdb,   "stmdb",  0,ST, IF_EN2D,   0xE9000000)
                                            //  Rn{!},<reglist16> T2_I0     1110100100W0nnnn 0r0rrrrrrrrrrrrr   E900 0000
 INST1(strd,    "strd",   0,ST, IF_T2_G0,  0xE8400000)
                                            //  Rt,RT,[Rn],+-i8{!}T2_G0     1110100PU1W0nnnn ttttTTTTiiiiiiii   E840 0000
-INST1(strex,   "strex",  0,ST, IF_T2_H1,  0xE8400F00)
-                                           //  Rt,[Rn+i8]        T2_H1     111010000100nnnn tttt1111iiiiiiii   E840 0F00           imm(0-1020)
-INST1(strexb,  "strexb", 0,ST, IF_T2_E1,  0xE8C00F4F)
-                                           //  Rt,[Rn]           T2_E1     111010001100nnnn tttt111101001111   E8C0 0F4F
-INST1(strexd,  "strexd", 0,ST, IF_T2_G1,  0xE8C0007F)
-                                           //  Rt,RT,[Rn]        T2_G1     111010001100nnnn ttttTTTT01111111   E8C0 007F
-INST1(strexh,  "strexh", 0,ST, IF_T2_E1,  0xE8C00F5F)
-                                           //  Rt,[Rn]           T2_E1     111010001100nnnn tttt111101011111   E8C0 0F5F
+INST1(strex,   "strex",  0,ST, IF_T2_O3,  0xE8400000)
+                                           //  Rd,Rt,[Rn+i8]     T2_H1     111010000100nnnn ttttddddiiiiiiii   E840 0F00           imm(0-255)
+INST1(strexb,  "strexb", 0,ST, IF_T2_O2,  0xE8C00F50)
+                                           //  Rd,Rt,[Rn]        T2_E1     111010001100nnnn tttt11110100dddd   E8C0 0F4F
+INST1(strexd,  "strexd", 0,ST, IF_T2_O1,  0xE8C00070)
+                                           //  Rd,Rt,RT,[Rn]     T2_G1     111010001100nnnn ttttTTTT0111dddd   E8C0 007F
+INST1(strexh,  "strexh", 0,ST, IF_T2_O2,  0xE8C00F50)
+                                           //  Rd,Rt,[Rn]        T2_E1     111010001100nnnn tttt11110101dddd   E8C0 0F5F
 INST1(subw,    "subw",   0, 0, IF_T2_M0,  0xF2A00000)
                                            //  Rd,Rn,+i12        T2_M0     11110i101010nnnn 0iiiddddiiiiiiii   F2A0 0000           imm(0-4095)
 INST1(tbb,     "tbb",    0, 0, IF_T2_C9,  0xE8D0F000)
