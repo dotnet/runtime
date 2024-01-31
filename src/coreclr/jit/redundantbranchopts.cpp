@@ -1727,12 +1727,11 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     {
         Statement* const lastStmt = jti.m_block->lastStmt();
         fgRemoveStmt(jti.m_block, lastStmt);
-        JITDUMP("  repurposing " FMT_BB " to always fall through to " FMT_BB "\n", jti.m_block->bbNum,
+        JITDUMP("  repurposing " FMT_BB " to always jump to " FMT_BB "\n", jti.m_block->bbNum,
                 jti.m_falseTarget->bbNum);
         fgRemoveRefPred(jti.m_trueTarget, jti.m_block);
         jti.m_block->SetKindAndTarget(BBJ_ALWAYS, jti.m_falseTarget);
         jti.m_block->SetFlags(BBF_NONE_QUIRK);
-        assert(jti.m_block->JumpsToNext());
     }
 
     // Now reroute the flow from the predecessors.

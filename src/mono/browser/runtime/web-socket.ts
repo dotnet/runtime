@@ -47,8 +47,14 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     verifyEnvironment();
     assert_js_interop();
     mono_assert(uri && typeof uri === "string", () => `ERR12: Invalid uri ${typeof uri}`);
-
-    const ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
+    let ws: WebSocketExtension;
+    try {
+        ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
+    }
+    catch (e) {
+        mono_log_warn("WebSocket error", e);
+        throw e;
+    }
     const { promise_control: open_promise_control } = createPromiseController<WebSocketExtension>();
 
     ws[wasm_ws_pending_receive_event_queue] = new Queue();
@@ -60,20 +66,20 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     ws.binaryType = "arraybuffer";
     const local_on_open = () => {
         if (ws[wasm_ws_is_aborted]) return;
-        if (loaderHelpers.is_exited()) return;
+        if (!loaderHelpers.is_runtime_running()) return;
         open_promise_control.resolve(ws);
         prevent_timer_throttling();
     };
     const local_on_message = (ev: MessageEvent) => {
         if (ws[wasm_ws_is_aborted]) return;
-        if (loaderHelpers.is_exited()) return;
+        if (!loaderHelpers.is_runtime_running()) return;
         _mono_wasm_web_socket_on_message(ws, ev);
         prevent_timer_throttling();
     };
     const local_on_close = (ev: CloseEvent) => {
         ws.removeEventListener("message", local_on_message);
         if (ws[wasm_ws_is_aborted]) return;
-        if (loaderHelpers.is_exited()) return;
+        if (!loaderHelpers.is_runtime_running()) return;
 
         ws[wasm_ws_close_received] = true;
         ws["close_status"] = ev.code;
@@ -97,7 +103,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     };
     const local_on_error = (ev: any) => {
         if (ws[wasm_ws_is_aborted]) return;
-        if (loaderHelpers.is_exited()) return;
+        if (!loaderHelpers.is_runtime_running()) return;
         ws.removeEventListener("message", local_on_message);
         const error = new Error(ev.message || "WebSocket error");
         mono_log_warn("WebSocket error", error);
