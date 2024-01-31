@@ -100,8 +100,6 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (execution_context, "System.Threading",
 #define ldstr_lock() mono_coop_mutex_lock (&ldstr_section)
 #define ldstr_unlock() mono_coop_mutex_unlock (&ldstr_section)
 static MonoCoopMutex ldstr_section;
-/* Used by remoting proxies */
-static MonoMethod *create_proxy_for_type_method;
 static MonoGHashTable *ldstr_table;
 
 static GString *
