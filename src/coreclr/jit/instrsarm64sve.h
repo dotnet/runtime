@@ -128,7 +128,7 @@ INST9(ld1h,              "ld1h",                  0,                       IF_SV
     // LD1H    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B_D         11000100110mmmmm 110gggnnnnnttttt     C4C0 C000   
     // LD1H    {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_HX_3A_E         10000100101iiiii 110gggnnnnnttttt     84A0 C000   
     // LD1H    {<Zt>.X }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IJ_3A_G         101001001000iiii 101gggnnnnnttttt     A480 A000   
-    // LD1H    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]                                SVE_IK_4A_I         10100100100mmmmm 010gggnnnnnttttt     A480 4000   
+    // LD1H    {<Zt>.X }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #1]                                SVE_IK_4A_I         10100100100mmmmm 010gggnnnnnttttt     A480 4000   
 
 
 //    enum               name                     info                                              SVE_HW_4A        SVE_HW_4A_A      SVE_HW_4A_B      SVE_HW_4A_C      SVE_HW_4B        SVE_HW_4B_D      SVE_HX_3A_E      SVE_IH_3A_F      SVE_II_4A_H      
@@ -277,7 +277,7 @@ INST6(ld1b,              "ld1b",                  0,                       IF_SV
     // LD1B    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B           11000100010mmmmm 110gggnnnnnttttt     C440 C000   
     // LD1B    {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_HX_3A_B         10000100001iiiii 110gggnnnnnttttt     8420 C000   
     // LD1B    {<Zt>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IJ_3A_E         101001000000iiii 101gggnnnnnttttt     A400 A000   
-    // LD1B    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>]                                        SVE_IK_4A_H         10100100000mmmmm 010gggnnnnnttttt     A400 4000   
+    // LD1B    {<Zt>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]                                        SVE_IK_4A_H         10100100000mmmmm 010gggnnnnnttttt     A400 4000   
 
 
 //    enum               name                     info                                              SVE_HY_3A        SVE_HY_3A_A      SVE_HY_3B        SVE_HZ_2A_B      SVE_IA_2A        SVE_IB_3A        
