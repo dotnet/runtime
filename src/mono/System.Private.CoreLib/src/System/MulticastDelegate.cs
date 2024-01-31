@@ -115,7 +115,7 @@ namespace System
 
         internal new bool HasSingleTarget
         {
-            get { return delegates == null; }
+            get { return delegates == null || delegates.Length == 1; }
         }
 
         // Used by delegate invocation list enumerator
