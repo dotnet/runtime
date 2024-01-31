@@ -2474,7 +2474,7 @@ void emitter::emitIns_R_R(
         COMMON_THUMB2_EX:
             assert(size == EA_4BYTE);
             assert(insDoesNotSetFlags(flags));
-            sf  = INS_FLAGS_NOT_SET;
+            sf = INS_FLAGS_NOT_SET;
             break;
 
         default:
@@ -3329,7 +3329,7 @@ void emitter::emitIns_R_R_R(instruction ins,
         COMMON_THUMB2_EX:
             assert(size == EA_4BYTE);
             assert(insDoesNotSetFlags(flags));
-            sf  = INS_FLAGS_NOT_SET;
+            sf = INS_FLAGS_NOT_SET;
             break;
 
         default:

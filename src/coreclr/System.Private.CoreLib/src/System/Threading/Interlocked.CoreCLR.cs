@@ -238,7 +238,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
-#if TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM || TARGET_RISCV64
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
             if (Unsafe.IsNullRef(ref location1))

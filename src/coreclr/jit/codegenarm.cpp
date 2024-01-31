@@ -888,7 +888,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     {
         assert(comparand->AsIntConCommon()->IconValue() <= INT32_MAX);
         GetEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, targetReg,
-            (target_ssize_t)comparand->AsIntConCommon()->IconValue());
+                                  (target_ssize_t)comparand->AsIntConCommon()->IconValue());
     }
     else
     {
