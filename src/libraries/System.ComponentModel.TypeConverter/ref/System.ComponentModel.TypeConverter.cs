@@ -1409,7 +1409,7 @@ namespace System.ComponentModel
     }
     public sealed partial class TypeDescriptor
     {
-
+        [System.Diagnostics.CodeAnalysis.FeatureGuard(typeof(System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute))]
 #pragma warning disable IL4000
         public static bool SupportsInstanceTypeDescriptor => false;
 #pragma warning restore IL4000

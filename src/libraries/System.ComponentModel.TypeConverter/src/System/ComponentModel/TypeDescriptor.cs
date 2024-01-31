@@ -19,7 +19,6 @@ namespace System.ComponentModel
     /// </summary>
     public sealed class TypeDescriptor
     {
-        
         [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 #pragma warning disable IL4000
         public static bool SupportsInstanceTypeDescriptor => false;
