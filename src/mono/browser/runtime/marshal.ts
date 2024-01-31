@@ -349,7 +349,11 @@ export class ManagedError extends Error implements IDisposable {
         if (this.managed_stack) {
             return this.managed_stack;
         }
-        if (loaderHelpers.is_runtime_running() && (!WasmEnableThreads || runtimeHelpers.proxy_context_gc_handle)) {
+        if (!loaderHelpers.is_runtime_running()) {
+            this.managed_stack = "... omitted managed stack trace.\n" + this.getSuperStack();
+            return this.managed_stack;
+        }
+        if (!WasmEnableThreads || runtimeHelpers.proxy_context_gc_handle) {
             const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
             if (gc_handle !== GCHandleNull) {
                 const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);

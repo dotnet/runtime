@@ -212,6 +212,7 @@ const typesConfig = {
     ],
     external: externalDependencies,
     plugins: [dts()],
+    onwarn: onwarn
 };
 
 let diagnosticMockTypesConfig = undefined;
@@ -239,6 +240,7 @@ if (isDebug) {
         ],
         external: externalDependencies,
         plugins: [dts()],
+        onwarn: onwarn
     };
 }
 

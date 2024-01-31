@@ -3,21 +3,24 @@
 
 import ProductVersion from "consts:productVersion";
 import WasmEnableThreads from "consts:wasmEnableThreads";
-import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
+import { MonoConfigInternal } from "./types/internal";
 
 export const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
 
 // adapted from Blazor's WebAssemblyResourceLoader.ts
 export async function openCache(): Promise<Cache | null> {
-    // caches will be undefined if we're running on an insecure origin (secure means https or localhost)
-    if (typeof globalThis.caches === "undefined") {
-        return null;
-    }
-
     // cache integrity is compromised if the first request has been served over http (except localhost)
     // in this case, we want to disable caching and integrity validation
     if (ENVIRONMENT_IS_WEB && globalThis.window.isSecureContext === false) {
+        mono_log_warn("Failed to open the cache, running on an insecure origin");
+        return null;
+    }
+
+    // caches will be undefined if we're running on an insecure origin (secure means https or localhost)
+    if (typeof globalThis.caches === "undefined") {
+        mono_log_warn("Failed to open the cache, probably running on an insecure origin");
         return null;
     }
 
@@ -46,6 +49,9 @@ export async function openCache(): Promise<Cache | null> {
 
 export async function checkMemorySnapshotSize(): Promise<void> {
     try {
+        if (!ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
+            return;
+        }
         if (!runtimeHelpers.config.startupMemoryCache) {
             // we could start downloading DLLs because snapshot is disabled
             return;
@@ -110,11 +116,11 @@ export async function getCacheEntry(cacheKey: string): Promise<ArrayBuffer | und
     }
 }
 
-export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mimeType: string) {
+export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mimeType: string): Promise<boolean> {
     try {
         const cache = await openCache();
         if (!cache) {
-            return;
+            return false;
         }
         const copy = WasmEnableThreads
             // storing SHaredArrayBuffer in the cache is not working
@@ -129,9 +135,11 @@ export async function storeCacheEntry(cacheKey: string, memory: ArrayBuffer, mim
         });
 
         await cache.put(cacheKey, responseToCache);
+
+        return true;
     } catch (ex) {
         mono_log_warn("Failed to store entry to the cache: " + cacheKey, ex);
-        return;
+        return false;
     }
 }
 
@@ -167,10 +175,10 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     if (!runtimeHelpers.subtle) {
         return null;
     }
-    const inputs = Object.assign({}, runtimeHelpers.config) as any;
+    const inputs = Object.assign({}, runtimeHelpers.config) as MonoConfigInternal;
 
     // Now we remove assets collection from the hash.
-    inputs.resourcesHash = inputs.resources.hash;
+    inputs.resourcesHash = inputs.resources!.hash;
     delete inputs.assets;
     delete inputs.resources;
     // some things are calculated at runtime, so we need to add them to the hash
@@ -192,6 +200,7 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.enableDownloadRetry;
     delete inputs.exitAfterSnapshot;
     delete inputs.extensions;
+    delete inputs.runtimeId;
 
     inputs.GitHash = loaderHelpers.gitHash;
     inputs.ProductVersion = ProductVersion;

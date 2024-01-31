@@ -349,14 +349,14 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             if (WasmEnableThreads) {
                 settleUnsettledPromise();
             }
-            // we can unregister the GC handle on JS side
-            teardown_managed_proxy(holder, gc_handle, true);
+            // we can unregister the GC handle just on JS side
+            teardown_managed_proxy(holder, gc_handle, /*skipManaged: */ true);
             // order of operations with teardown_managed_proxy matters
             // so that managed user code running in the continuation could allocate the same GCHandle number and the local registry would be already ok with that
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
         }
         catch (ex) {
-            runtimeHelpers.abort(ex);
+            runtimeHelpers.nativeAbort(ex);
         }
     }
 
@@ -370,13 +370,13 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             if (WasmEnableThreads) {
                 settleUnsettledPromise();
             }
-            // we can unregister the GC handle on JS side
-            teardown_managed_proxy(holder, gc_handle, true);
+            // we can unregister the GC handle just on JS side
+            teardown_managed_proxy(holder, gc_handle, /*skipManaged: */ true);
             // order of operations with teardown_managed_proxy matters
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
         }
         catch (ex) {
-            runtimeHelpers.abort(ex);
+            runtimeHelpers.nativeAbort(ex);
         }
     }
 

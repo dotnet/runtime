@@ -3549,8 +3549,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		}
 
 		cfg->opt &= ~MONO_OPT_LINEARS;
-
-		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 
 	cfg->after_method_to_ir = TRUE;
@@ -3975,7 +3973,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (!cfg->compile_aot)
 		mono_lldb_save_method_info (cfg);
 
-	if (cfg->verbose_level >= 2) {
+	if (cfg->verbose_level >= 2 && !cfg->llvm_only) {
 		char *id =  mono_method_full_name (cfg->method, TRUE);
 		g_print ("\n*** ASM for %s ***\n", id);
 		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);

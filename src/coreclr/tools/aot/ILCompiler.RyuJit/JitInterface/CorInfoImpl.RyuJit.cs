@@ -2157,7 +2157,7 @@ namespace Internal.JitInterface
                     }
                     else if (field.IsThreadStatic)
                     {
-                        if (MethodBeingCompiled.Context.Target.IsWindows && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
+                        if ((MethodBeingCompiled.Context.Target.IsWindows || MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Linux) && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
                         {
                             ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex((MetadataType)field.OwningType);
                             if (index is TypeThreadStaticIndexNode ti)
@@ -2425,6 +2425,7 @@ namespace Internal.JitInterface
             pInfo->tlsIndexObject = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
             pInfo->tlsRootObject = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
             pInfo->threadStaticBaseSlow = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
+            pInfo->tlsGetAddrFtnPtr = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("__tls_get_addr"));
         }
 
 #pragma warning disable CA1822 // Mark members as static

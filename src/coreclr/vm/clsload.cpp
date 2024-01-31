@@ -216,7 +216,7 @@ Module * ClassLoader::ComputeLoaderModule(MethodTable * pMT,
                                methodInst);
 }
 /*static*/
-Module *ClassLoader::ComputeLoaderModule(TypeKey *typeKey)
+Module *ClassLoader::ComputeLoaderModule(const TypeKey *typeKey)
 {
     CONTRACTL
     {
@@ -729,7 +729,7 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
 }
 
 /*static*/
-void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(TypeKey *pKey,
+void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(const TypeKey *pKey,
                                                            UINT resIDWhy)
 {
     STATIC_CONTRACT_THROWS;
@@ -743,7 +743,7 @@ void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(TypeKey *pKey,
 
 #endif
 
-TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
+TypeHandle ClassLoader::LoadConstructedTypeThrowing(const TypeKey *pKey,
                                                     LoadTypesFlag fLoadTypes /*= LoadTypes*/,
                                                     ClassLoadLevel level /*=CLASS_LOADED*/,
                                                     const InstantiationContext *pInstContext /*=NULL*/)
@@ -858,7 +858,7 @@ void ClassLoader::TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 }
 
 /* static */
-TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey, EETypeHashTable *pTable)
+TypeHandle ClassLoader::LookupTypeKey(const TypeKey *pKey, EETypeHashTable *pTable)
 {
     CONTRACTL {
         NOTHROW;
@@ -875,7 +875,7 @@ TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey, EETypeHashTable *pTable)
 }
 
 /* static */
-TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey)
+TypeHandle ClassLoader::LookupInLoaderModule(const TypeKey *pKey)
 {
     CONTRACTL {
         NOTHROW;
@@ -895,7 +895,7 @@ TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey)
 
 
 /* static */
-TypeHandle ClassLoader::LookupTypeHandleForTypeKey(TypeKey *pKey)
+TypeHandle ClassLoader::LookupTypeHandleForTypeKey(const TypeKey *pKey)
 {
     CONTRACTL
     {
@@ -1660,12 +1660,6 @@ ClassLoader::~ClassLoader()
     CONTRACTL_END
 
 #ifdef _DEBUG
-    // Do not walk m_pUnresolvedClassHash at destruct time as it is loaderheap allocated memory
-    // and may already have been deallocated via an AllocMemTracker.
-    m_pUnresolvedClassHash = (PendingTypeLoadTable*)(UINT_PTR)0xcccccccc;
-#endif
-
-#ifdef _DEBUG
 //     LOG((
 //         LF_CLASSLOADER,
 //         INFO3,
@@ -1704,7 +1698,6 @@ ClassLoader::~ClassLoader()
 
     FreeModules();
 
-    m_UnresolvedClassLock.Destroy();
     m_AvailableClassLock.Destroy();
     m_AvailableTypesLock.Destroy();
 }
@@ -1729,7 +1722,6 @@ ClassLoader::ClassLoader(Assembly *pAssembly)
 
     m_pAssembly = pAssembly;
 
-    m_pUnresolvedClassHash          = NULL;
     m_cUnhashedModules              = 0;
 
 #ifdef _DEBUG
@@ -1759,12 +1751,6 @@ ClassLoader::ClassLoader(Assembly *pAssembly)
 VOID ClassLoader::Init(AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
-
-    m_pUnresolvedClassHash = PendingTypeLoadTable::Create(GetAssembly()->GetLowFrequencyHeap(),
-                                                          UNRESOLVED_CLASS_HASH_BUCKETS,
-                                                          pamTracker);
-
-    m_UnresolvedClassLock.Init(CrstUnresolvedClassLock);
 
     // This lock is taken within the classloader whenever we have to enter a
     // type in one of the modules governed by the loader.
@@ -2605,7 +2591,7 @@ ClassLoader::LoadApproxParentThrowing(
 // Perform a single phase of class loading
 // It is the caller's responsibility to lock
 /*static*/
-TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd, ClassLoadLevel currentLevel)
+TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle typeHnd, ClassLoadLevel currentLevel)
 {
     CONTRACTL
     {
@@ -2679,7 +2665,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
 // For canonical instantiations of generic types, create a brand new method table
 // For other constructed types, create a type desc and template method table if necessary
 // For all other types, create a method table
-TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracker* pamTracker)
+TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMemTracker* pamTracker)
 {
     CONTRACT(TypeHandle)
     {
@@ -2794,7 +2780,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
 // particular, exact parent info (base class and interfaces) is loaded
 // in a later phase
 /*static*/
-TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
+TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
 {
     CONTRACTL
     {
@@ -2994,7 +2980,7 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
 
 
 //
-TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
+TypeHandle ClassLoader::LoadTypeHandleForTypeKey(const TypeKey *pTypeKey,
                                                  TypeHandle typeHnd,
                                                  ClassLoadLevel targetLevel/*=CLASS_LOADED*/,
                                                  const InstantiationContext *pInstContext/*=NULL*/)
@@ -3018,8 +3004,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
         SString name;
         TypeString::AppendTypeKeyDebug(name, pTypeKey);
         LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: LoadTypeHandleForTypeKey for type %s to level %s\n", name.GetUTF8(), classLoadLevelName[targetLevel]));
-        CrstHolder unresolvedClassLockHolder(&m_UnresolvedClassLock);
-        m_pUnresolvedClassHash->Dump();
+        PendingTypeLoadTable::GetTable()->Dump();
     }
 #endif
 
@@ -3051,7 +3036,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
 }
 
 //
-TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(TypeKey *pTypeKey,
+TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(const TypeKey *pTypeKey,
                                                        ClassLoadLevel targetLevel/*=CLASS_LOADED*/,
                                                        const InstantiationContext *pInstContext/*=NULL*/)
 {
@@ -3091,11 +3076,11 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(TypeKey *pTypeKey,
 class PendingTypeLoadHolder
 {
     Thread * m_pThread;
-    PendingTypeLoadEntry * m_pEntry;
+    PendingTypeLoadTable::Entry * m_pEntry;
     PendingTypeLoadHolder * m_pPrevious;
 
 public:
-    PendingTypeLoadHolder(PendingTypeLoadEntry * pEntry)
+    PendingTypeLoadHolder(PendingTypeLoadTable::Entry * pEntry)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -3114,7 +3099,7 @@ public:
         m_pThread->SetPendingTypeLoad(m_pPrevious);
     }
 
-    static bool CheckForDeadLockOnCurrentThread(PendingTypeLoadEntry * pEntry)
+    static bool CheckForDeadLockOnCurrentThread(PendingTypeLoadTable::Entry * pEntry)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -3136,7 +3121,7 @@ public:
 //
 TypeHandle
 ClassLoader::LoadTypeHandleForTypeKey_Body(
-    TypeKey *                         pTypeKey,
+    const TypeKey *                         pTypeKey,
     TypeHandle                        typeHnd,
     ClassLoadLevel                    targetLevel)
 {
@@ -3167,14 +3152,16 @@ ClassLoader::LoadTypeHandleForTypeKey_Body(
 #endif
     }
 
-    ReleaseHolder<PendingTypeLoadEntry> pLoadingEntry;
-    CrstHolderWithState unresolvedClassLockHolder(&m_UnresolvedClassLock, false);
+    ReleaseHolder<PendingTypeLoadTable::Entry> pLoadingEntry;
+    DWORD dwHashedTypeKey;
+    PendingTypeLoadTable::Shard *pPendingTypeLoadShard = PendingTypeLoadTable::GetTable()->GetShard(*pTypeKey, this, &dwHashedTypeKey);
+    CrstHolderWithState unresolvedClassLockHolder(pPendingTypeLoadShard->GetCrst(), false);
 
 retry:
     unresolvedClassLockHolder.Acquire();
 
     // Is it in the hash of classes currently being loaded?
-    pLoadingEntry = m_pUnresolvedClassHash->GetValue(pTypeKey);
+    pLoadingEntry = pPendingTypeLoadShard->FindPendingTypeLoadEntry(dwHashedTypeKey, *pTypeKey);
     if (pLoadingEntry)
     {
         pLoadingEntry->AddRef();
@@ -3219,15 +3206,8 @@ retry:
             goto retry;
         }
 
-        {
-            // Wait for class to be loaded by another thread.  This is where we start tracking the
-            // entry, so there is an implicit Acquire in our use of Assign here.
-            CrstHolder loadingEntryLockHolder(&pLoadingEntry->m_Crst);
-            _ASSERTE(pLoadingEntry->HasLock());
-        }
-
         // Result of other thread loading the class
-        HRESULT hr = pLoadingEntry->m_hrResult;
+        HRESULT hr = pLoadingEntry->DelayForProgress(&typeHnd);
 
         if (FAILED(hr)) {
 
@@ -3262,9 +3242,6 @@ retry:
             pLoadingEntry->ThrowException();
         }
 
-        // Get a pointer to the EEClass being loaded
-        typeHnd = pLoadingEntry->m_typeHandle;
-
         if (!typeHnd.IsNull())
         {
             // If the type load on the other thread loaded the type to the needed level, return it here.
@@ -3294,12 +3271,7 @@ retry:
 
     // It was not loaded, and it is not being loaded, so we must load it.  Create a new LoadingEntry
     // and acquire it immediately so that other threads will block.
-    pLoadingEntry = new PendingTypeLoadEntry(*pTypeKey, typeHnd);  // this atomically creates a crst and acquires it
-
-    if (!(m_pUnresolvedClassHash->InsertValue(pLoadingEntry)))
-    {
-        COMPlusThrowOM();
-    }
+    pLoadingEntry = pPendingTypeLoadShard->InsertPendingTypeLoadEntry(dwHashedTypeKey, *pTypeKey, typeHnd);  // this atomically creates a crst and acquires it
 
     // Leave the global lock, so that other threads may now start waiting on our class's lock
     unresolvedClassLockHolder.Release();
@@ -3337,7 +3309,7 @@ retry:
 
         // Unlink this class from the unresolved class list.
         unresolvedClassLockHolder.Acquire();
-        m_pUnresolvedClassHash->DeleteValue(pTypeKey);
+        pPendingTypeLoadShard->RemovePendingTypeLoadEntry(pLoadingEntry);
 
         // Release the lock before proceeding. The unhandled exception filters take number of locks that
         // have ordering violations with this lock.
@@ -3350,13 +3322,13 @@ retry:
 
     // Unlink this class from the unresolved class list.
     unresolvedClassLockHolder.Acquire();
-    m_pUnresolvedClassHash->DeleteValue(pTypeKey);
+    pPendingTypeLoadShard->RemovePendingTypeLoadEntry(pLoadingEntry);
     unresolvedClassLockHolder.Release();
 
     // Unblock any thread waiting to load same type as in TypeLoadEntry. This should be done
-    // after pLoadingEntry is removed from m_pUnresolvedClassHash. Otherwise the other thread
+    // after pLoadingEntry is removed from the PendingTypeLoadTable. Otherwise the other thread
     // (which was waiting) will keep spinning for a while after waking up, till the current thread removes
-    //  pLoadingEntry from m_pUnresolvedClassHash. This can cause hang in situation when the current
+    //  pLoadingEntry from the PendingTypeLoadTable. This can cause hang in situation when the current
     // thread is a background thread and so will get very less processor cycle to perform subsequent
     // operations to remove the entry from hash later.
     pLoadingEntry->UnblockWaiters();

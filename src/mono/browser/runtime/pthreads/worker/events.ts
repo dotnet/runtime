@@ -2,17 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
-import type { pthreadPtr } from "../shared/types";
-import type { PThreadInfo, MonoThreadMessage } from "../shared";
-
-/// Identification of the current thread executing on a worker
-export interface PThreadSelf extends PThreadInfo {
-    readonly pthreadId: pthreadPtr;
-    readonly portToBrowser: MessagePort;
-    readonly isBrowserThread: boolean;
-    postMessageToBrowser: <T extends MonoThreadMessage>(message: T, transfer?: Transferable[]) => void;
-    addEventListenerFromBrowser: (listener: <T extends MonoThreadMessage>(event: MessageEvent<T>) => void) => void;
-}
+import { PThreadSelf } from "./index";
 
 export const dotnetPthreadCreated = "dotnet:pthread:created" as const;
 export const dotnetPthreadAttached = "dotnet:pthread:attached" as const;

@@ -40,14 +40,15 @@ public class InterpPgoTests : WasmTemplateTestBase
         UpdateBrowserMainJs((js) => {
             // We need to capture INTERNAL so we can explicitly save the PGO table
             js = js.Replace(
-                "const { setModuleImports, getAssemblyExports, getConfig } = await dotnet",
-                "const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet"
+                "const { setModuleImports, getAssemblyExports, getConfig, runMain } = await dotnet",
+                "const { setModuleImports, getAssemblyExports, getConfig, runMain, INTERNAL } = await dotnet"
             );
             // Enable interpreter PGO + interpreter PGO logging + console output capturing
             js = js.Replace(
                 ".create()",
                 ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().withRuntimeOptions(['--interp-pgo-logging']).withInterpreterPgo(true).create()"
             );
+            js = js.Replace("runMain()", "dotnet.run()");
             // Call Greeting in a loop to exercise enough code to cause something to tier,
             //  then call INTERNAL.interp_pgo_save_data() to save the interp PGO table
             js = js.Replace(
@@ -107,6 +108,7 @@ public class InterpPgoTests : WasmTemplateTestBase
 
             Assert.Contains("Hello, Browser!", output);
             // Verify that table data was loaded from cache
+            // if this breaks, it could be caused by change in config which affects the config hash and the cache storage hash key
             Assert.Contains(" bytes of interp_pgo data (table size == ", output);
             // Verify that the table was saved after the app ran
             Assert.Contains("Saved interp_pgo table", output);

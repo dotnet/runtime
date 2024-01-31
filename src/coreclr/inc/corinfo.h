@@ -772,7 +772,8 @@ enum class CorInfoCallConvExtension
     // New calling conventions supported with the extensible calling convention encoding go here.
     CMemberFunction,
     StdcallMemberFunction,
-    FastcallMemberFunction
+    FastcallMemberFunction,
+    Swift
 };
 
 #ifdef TARGET_X86
@@ -1736,6 +1737,7 @@ struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
     CORINFO_CONST_LOOKUP tlsRootObject;
     CORINFO_CONST_LOOKUP tlsIndexObject;
     CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+    CORINFO_CONST_LOOKUP tlsGetAddrFtnPtr;
 };
 
 //----------------------------------------------------------------------------
@@ -3370,6 +3372,7 @@ public:
 #define IMAGE_REL_BASED_REL32           0x10
 #define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
 #define IMAGE_REL_SECREL                0x104
+#define IMAGE_REL_TLSGD                 0x105
 
 // The identifier for ARM32-specific PC-relative address
 // computation corresponds to the following instruction

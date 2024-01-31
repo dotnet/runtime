@@ -1261,13 +1261,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 unspillType = lcl->TypeGet();
             }
 
-#if defined(TARGET_LOONGARCH64)
-            if (varTypeIsFloating(unspillType) && emitter::isGeneralRegister(tree->GetRegNum()))
-            {
-                unspillType = unspillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
-            }
-#endif
-
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
             bool isLastUse = lcl->IsLastUse(0);
             genUnspillLocal(lcl->GetLclNum(), unspillType, lcl->AsLclVar(), tree->GetRegNum(), reSpill, isLastUse);
@@ -2643,9 +2636,10 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     inst_JCC(jcc->gtCondition, compiler->compCurBB->GetTrueTarget());
 
     // If we cannot fall into the false target, emit a jump to it
-    if (!compiler->compCurBB->CanRemoveJumpToFalseTarget(compiler))
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
     {
-        inst_JMP(EJ_jmp, compiler->compCurBB->GetFalseTarget());
+        inst_JMP(EJ_jmp, falseTarget);
     }
 }
 
