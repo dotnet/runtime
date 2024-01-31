@@ -3547,13 +3547,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		}
 	}
 
-	if (MONO_CLASS_IS_IMPORT (method->klass)) {
-		/* The COM code is not AOT compatible, it calls mono_custom_attrs_get_attr_checked () */
-		if (aot)
-			return method;
-		
-		g_assert_not_reached ();
-	}
+	g_assert (!MONO_CLASS_IS_IMPORT (method->klass));
 
 	sig = mono_method_signature_internal (method);
 

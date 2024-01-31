@@ -623,10 +623,9 @@ gc_safe_transition_builder_add_locals (GCSafeTransitionBuilder *builder)
 static void
 gc_safe_transition_builder_emit_enter (GCSafeTransitionBuilder *builder, MonoMethod *method, gboolean aot)
 {
-
 	// Perform an extra, early lookup of the function address, so any exceptions
 	// potentially resulting from the lookup occur before entering blocking mode.
-	if (!builder->func_param && !MONO_CLASS_IS_IMPORT (builder->mb->method->klass) && aot) {
+	if (!builder->func_param && aot) {
 		mono_mb_emit_byte (builder->mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_op (builder->mb, CEE_MONO_ICALL_ADDR, method);
 		mono_mb_emit_byte (builder->mb, CEE_POP); // Result not needed yet
@@ -798,6 +797,7 @@ emit_native_wrapper_validate_signature (MonoMethodBuilder *mb, MonoMethodSignatu
 static void
 emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags)
 {
+	g_assert (!MONO_CLASS_IS_IMPORT (mb->method->klass));
 	gboolean aot = (flags & EMIT_NATIVE_WRAPPER_AOT) != 0;
 	gboolean check_exceptions = (flags & EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS) != 0;
 	gboolean func_param = (flags & EMIT_NATIVE_WRAPPER_FUNC_PARAM) != 0;
@@ -863,7 +863,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	if (need_gc_safe)
 		gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
 
-	if (!func && !aot && !func_param && !MONO_CLASS_IS_IMPORT (mb->method->klass)) {
+	if (!func && !aot && !func_param) {
 		/*
 		 * On netcore, its possible to register pinvoke resolvers at runtime, so
 		 * a pinvoke lookup can fail, and then succeed later. So if the
@@ -958,8 +958,6 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 			mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
 		}
 		mono_mb_emit_calli (mb, csig);
-	} else if (MONO_CLASS_IS_IMPORT (mb->method->klass)) {
-		g_assert_not_reached();
 	} else {
 		if (func_addr_local != -1) {
 			mono_mb_emit_ldloc (mb, func_addr_local);
