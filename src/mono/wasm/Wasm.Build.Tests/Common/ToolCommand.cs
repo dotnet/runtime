@@ -133,7 +133,7 @@ namespace Wasm.Build.Tests
             CurrentProcess.BeginOutputReadLine();
             CurrentProcess.BeginErrorReadLine();
             await completionTask;
-
+            CurrentProcess.Kill();
             RemoveNullTerminator(output);
 
             return new CommandResult(
