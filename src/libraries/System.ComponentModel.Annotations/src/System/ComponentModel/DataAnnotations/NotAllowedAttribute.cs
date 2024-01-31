@@ -4,7 +4,7 @@
 namespace System.ComponentModel.DataAnnotations
 {
     /// <summary>
-    ///     Specifies a list of values that should be allowed in a property.
+    ///     Specifies a list of values that should be not allowed in a property.
     /// </summary>
     [CLSCompliant(false)]
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter,
@@ -15,7 +15,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Initializes a new instance of the <see cref="NotAllowedValuesAttribute"/> class.
         /// </summary>
         /// <param name="values">
-        ///     A list of values that the validated value should be equal to.
+        ///     A list of values that the validated value should be not equal to.
         /// </param>
         public NotAllowedValuesAttribute(params object?[] values)
         {
@@ -25,7 +25,7 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         /// <summary>
-        ///     Gets the list of values allowed by this attribute.
+        ///     Gets the list of values not allowed by this attribute.
         /// </summary>
         public object?[] Values { get; }
 
