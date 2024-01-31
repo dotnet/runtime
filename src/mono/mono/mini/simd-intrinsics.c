@@ -561,7 +561,7 @@ emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, Mono
 		ret->inst_c0 = SIMD_EXTR_ARE_ALL_SET;
 		ret->inst_c1 = mono_class_value_size (klass, NULL);
 		return ret;
-	} else if (simd_size== 16 || simd_size == 12) {
+	} else if (simd_size == 16 || simd_size == 12) {
 		return emit_simd_ins (cfg, klass, OP_XEQUAL_ARM64_V128_FAST, arg1->dreg, arg2->dreg);
 	} else {
 		return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
@@ -651,7 +651,14 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	int vector_size = mono_class_value_size (vector_class, NULL);
 	int element_size;
 	
-	guint32 nelems = mini_number_of_elements (vector_class);
+	guint32 nelems;
+ 	mini_get_simd_type_info (vector_class, &nelems);
+
+	// Override nelems for Vector3, with actual number of elements
+	const char *klass_name = m_class_get_name (vector_class); 
+	if (!strcmp (klass_name, "Vector3"))
+		nelems = 3;
+
 	element_size = vector_size / nelems;
 	gboolean has_single_element = vector_size == element_size;
 
@@ -2720,7 +2727,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			for (int i = 1; i < fsig->param_count; ++i)
 				ins = emit_vector_insert_element (cfg, klass, ins, MONO_TYPE_R4, args [i + 1], i, FALSE);
 
-			if(len == 3){
+			if (len == 3) {
 				static float r4_0 = 0;
 				MonoInst *zero;
 				int zero_dreg = alloc_freg (cfg);

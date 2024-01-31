@@ -4170,16 +4170,16 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgAsFpArgs:
 		{
 			MonoClass *klass = mono_class_from_mono_type_internal (ainfo->type);
-			if (mini_class_is_simd (ctx->cfg, klass)){
+			if (mini_class_is_simd (ctx->cfg, klass)) {
 				LLVMValueRef loadedVector = LLVMBuildLoad2 (builder, ctx->addresses [reg]->type, ctx->addresses [reg]->value, "simd_vtype");
 
-				if(mono_class_value_size(klass, NULL) == 12){
-					LLVMValueRef zero = LLVMConstReal(LLVMFloatType(), 0.0);
-					LLVMValueRef index = LLVMConstInt(LLVMInt32Type(), 3, 0);
-					loadedVector = LLVMBuildInsertElement(builder, loadedVector, zero, index, "insert_zero");
+				if (mono_class_value_size (klass, NULL) == 12) {
+					LLVMValueRef zero = LLVMConstReal (LLVMFloatType (), 0.0);
+					LLVMValueRef index = LLVMConstInt (LLVMInt32Type (), 3, 0);
+					loadedVector = LLVMBuildInsertElement (builder, loadedVector, zero, index, "insert_zero");
 				}
 
-				ctx->values[reg] = loadedVector;
+				ctx->values [reg] = loadedVector;
 			}
 			break;
 		}
@@ -8317,6 +8317,11 @@ MONO_RESTORE_WARNING
 
 			src = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_basereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), pointer_type (t));
 			values [ins->dreg] = mono_llvm_build_aligned_load (builder, t, src, "", FALSE, 1);
+			if (mono_class_value_size (ins->klass, NULL) == 12) {
+        				LLVMValueRef zero = LLVMConstReal (LLVMFloatType (), 0.0);
+        				LLVMValueRef index = LLVMConstInt (LLVMInt32Type (), 3, 0);
+        				values [ins->dreg] = LLVMBuildInsertElement (builder, values [ins->dreg], zero, index, "insert_zero");
+    		}
 			break;
 		}
 		case OP_STOREX_MEMBASE: {

@@ -2959,7 +2959,6 @@ enum {
 
 int mini_primitive_type_size (MonoTypeEnum type);
 MonoTypeEnum mini_get_simd_type_info (MonoClass *klass, guint32 *nelems);
-guint32 mini_number_of_elements(MonoClass *klass);
 
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
@@ -2999,7 +2998,7 @@ mini_class_is_simd (MonoCompile *cfg, MonoClass *klass)
 		return TRUE;
 	int size = mono_type_size (m_class_get_byval_arg (klass), NULL);
 #ifdef TARGET_ARM64
-	if (size == 8 || size == 16 || (size == 12 && !strcmp (m_class_get_name (klass), "Vector3")))
+	if (size == 8 || size == 16 || size == 12)
 		return TRUE;
 #else
 	if (size == 16)

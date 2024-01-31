@@ -4065,7 +4065,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STOREX_MEMBASE:
 			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
 				code = emit_strfpx (code, sreg1, dreg, GTMREG_TO_INT (ins->inst_offset));
-			else if (ins->klass && mono_class_value_size (ins->klass, NULL) == 12){
+			else if (ins->klass && mono_class_value_size (ins->klass, NULL) == 12) {
 				arm_neon_ins_e (code, SIZE_4, ARMREG_IP0, sreg1, 0, 2);
 				code = emit_strfpx (code, sreg1, dreg, GTMREG_TO_INT (ins->inst_offset));
 				code = emit_strfpw (code, ARMREG_IP0, dreg , GTMREG_TO_INT (ins->inst_offset + 8));
@@ -4075,7 +4075,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADX_MEMBASE:
 			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
 				code = emit_ldrfpx (code, dreg, sreg1, GTMREG_TO_INT (ins->inst_offset));
-			else if (ins->klass && mono_class_value_size (ins->klass, NULL) == 12){
+			else if (ins->klass && mono_class_value_size (ins->klass, NULL) == 12) {
 				code = emit_ldrfpx (code, dreg, sreg1, GTMREG_TO_INT (ins->inst_offset));
 				code = emit_ldrfpw (code, ARMREG_IP0, sreg1, GTMREG_TO_INT (ins->inst_offset + 8));
 				arm_neon_ins_e (code, SIZE_4, dreg, ARMREG_IP0, 2, 0);
