@@ -1130,7 +1130,7 @@ namespace System
         /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
         public static void Equal(double expected, double actual)
         {
-            if (BitConverter.ToInt64(BitConverter.GetBytes(expected)) == BitConverter.ToInt64(BitConverter.GetBytes(actual)))
+            if (BitConverter.ToInt64(BitConverter.GetBytes(expected), 0) == BitConverter.ToInt64(BitConverter.GetBytes(actual), 0))
             {
                 return;
             }
@@ -1150,7 +1150,7 @@ namespace System
         /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
         public static void Equal(float expected, float actual)
         {
-            if (BitConverter.ToInt32(BitConverter.GetBytes(expected)) == BitConverter.ToInt32(BitConverter.GetBytes(actual)))
+            if (BitConverter.ToInt32(BitConverter.GetBytes(expected), 0) == BitConverter.ToInt32(BitConverter.GetBytes(actual), 0))
             {
                 return;
             }
@@ -1171,7 +1171,7 @@ namespace System
         /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
         public static void Equal(Half expected, Half actual)
         {
-            if (BitConverter.ToInt16(BitConverter.GetBytes(expected)) == BitConverter.ToInt16(BitConverter.GetBytes(actual)))
+            if (BitConverter.ToInt16(BitConverter.GetBytes(expected), 0) == BitConverter.ToInt16(BitConverter.GetBytes(actual), 0))
             {
                 return;
             }
