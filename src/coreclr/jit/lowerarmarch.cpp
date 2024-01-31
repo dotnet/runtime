@@ -3188,6 +3188,15 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_TrueMask:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op1));
+                if (intrin.op1->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+                break;
+
             default:
                 unreached();
         }

@@ -280,6 +280,11 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
                 break;
 
+            case NI_Sve_TrueMask:
+                immLowerBound = (int) SVE_PATTERN_POW2;
+                immUpperBound = (int) SVE_PATTERN_ALL;
+                break;
+
             default:
                 unreached();
         }

@@ -265,6 +265,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         emitSize = EA_UNKNOWN;
         opt      = INS_OPTS_NONE;
     }
+    else if (HWIntrinsicInfo::IsScalable(intrin.id))
+    {
+        emitSize = EA_SCALABLE;
+        opt = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
+    }
     else
     {
         emitSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
@@ -370,6 +375,28 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             else
             {
                 emitShift(intrin.op2, op1Reg);
+            }
+
+        }
+        else if (intrin.category == HW_Category_EnumPattern)
+        {
+            assert(hasImmediateOperand);
+
+            switch (intrin.numOperands)
+            {
+                case 1:
+                    {
+                        HWIntrinsicImmOpHelper helper(this, intrin.op1, node);
+                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                        {
+                            const insSvePattern pattern = (insSvePattern) helper.ImmValue();
+                            GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, pattern);
+                        }
+                    };
+                    break;
+
+                default:
+                    unreached();
             }
         }
         else

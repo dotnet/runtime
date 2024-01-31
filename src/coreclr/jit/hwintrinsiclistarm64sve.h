@@ -16,6 +16,8 @@
 // ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
 //  SVE Intrinsics
 
+// Sve
+HARDWARE_INTRINSIC(Sve,           TrueMask,                                                         -1,      1,      false, {INS_invalid,        INS_sve_ptrue,      INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_EnumPattern,           HW_Flag_Scalable|HW_Flag_HasImmediateOperand|HW_Flag_ReturnsPerElementMask)
 
 #endif // FEATURE_HW_INTRINSIC
 

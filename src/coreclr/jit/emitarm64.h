@@ -786,6 +786,9 @@ static emitAttr optGetDatasize(insOpts arrangement);
 //  For the given 'arrangement' returns the 'elemsize' specified by the vector register arrangement
 static emitAttr optGetElemsize(insOpts arrangement);
 
+//  For the given 'elemsize' returns the 'arrangement' when used in a SVE vector register arrangement.
+static insOpts optGetSveInsOpt(emitAttr elemsize);
+
 //  For the given 'arrangement' returns the 'elemsize' specified by the SVE vector register arrangement
 static emitAttr optGetSveElemsize(insOpts arrangement);
 

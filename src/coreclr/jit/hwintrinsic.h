@@ -58,6 +58,7 @@ enum HWIntrinsicCategory : uint8_t
     HW_Category_ShiftLeftByImmediate,
     HW_Category_ShiftRightByImmediate,
     HW_Category_SIMDByIndexedElement,
+    HW_Category_EnumPattern,
 
     // Helper intrinsics
     // - do not directly correspond to a instruction, such as Vector64.AllBitsSet
@@ -175,6 +176,15 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic needs consecutive registers
     HW_Flag_NeedsConsecutiveRegisters = 0x4000,
+
+    // The intrinsic uses scalable registers
+    HW_Flag_Scalable = 0x8000,
+
+    // Returns Per-Element Mask
+    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
+    // this output can be used as a per-element mask
+    HW_Flag_ReturnsPerElementMask = 0x10000,
+
 #else
 #error Unsupported platform
 #endif
@@ -669,10 +679,8 @@ struct HWIntrinsicInfo
     static bool ReturnsPerElementMask(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (flags & HW_Flag_ReturnsPerElementMask) != 0;
-#elif defined(TARGET_ARM64)
-        unreached();
 #else
 #error Unsupported platform
 #endif
@@ -863,6 +871,13 @@ struct HWIntrinsicInfo
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_HasImmediateOperand) != 0;
     }
+
+    static bool IsScalable(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_Scalable) != 0;
+    }
+
 #endif // TARGET_ARM64
 
     static bool HasSpecialSideEffect(NamedIntrinsic id)

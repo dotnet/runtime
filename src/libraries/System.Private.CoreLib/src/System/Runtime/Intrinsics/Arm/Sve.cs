@@ -27,5 +27,21 @@ namespace System.Runtime.Intrinsics.Arm
 
             public static new bool IsSupported { get => IsSupported; }
         }
+
+        ///  TrueMask : Set predicate elements to true
+
+        /// <summary>
+        /// svbool_t svptrue_pat_b8(enum svpattern pattern)
+        ///   PTRUE Presult.B, pattern
+        /// svbool_t svptrue_pat_b16(enum svpattern pattern)
+        ///   PTRUE Presult.H, pattern
+        /// svbool_t svptrue_pat_b32(enum svpattern pattern)
+        ///   PTRUE Presult.S, pattern
+        /// svbool_t svptrue_pat_b64(enum svpattern pattern)
+        ///   PTRUE Presult.D, pattern
+        /// </summary>
+
+        public static unsafe Vector<byte> TrueMask([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => TrueMask(pattern);
+
     }
 }

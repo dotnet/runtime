@@ -6157,6 +6157,34 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     }
 }
 
+//  For the given 'elemsize' returns the 'arrangement' when used in a SVE vector register arrangement.
+//  Asserts and returns INS_OPTS_NONE if an invalid 'elemsize' is passed
+//
+/*static*/ insOpts emitter::optGetSveInsOpt(emitAttr elemsize)
+{
+    switch (elemsize)
+    {
+        case EA_1BYTE:
+            return INS_OPTS_SCALABLE_B;
+
+        case EA_2BYTE:
+            return INS_OPTS_SCALABLE_H;
+
+        case EA_4BYTE:
+            return INS_OPTS_SCALABLE_S;
+
+        case EA_8BYTE:
+            return INS_OPTS_SCALABLE_D;
+
+        case EA_16BYTE:
+            return INS_OPTS_SCALABLE_Q;
+
+        default:
+            assert(!"Invalid emitAttr for sve vector register");
+            return INS_OPTS_NONE;
+    }
+}
+
 //  For the given 'arrangement' returns the 'elemsize' specified by the SVE vector register arrangement
 //  asserts and returns EA_UNKNOWN if an invalid 'arrangement' value is passed
 //

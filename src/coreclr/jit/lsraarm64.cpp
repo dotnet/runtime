@@ -1318,6 +1318,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     int srcCount = 0;
     int dstCount = 0;
+    regMaskTP dstCandidates = RBM_NONE;
 
     if (HWIntrinsicInfo::IsMultiReg(intrin.id))
     {
@@ -1428,6 +1429,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_Arm64_InsertSelectedScalar:
                         assert(intrin.op2->isContainedIntOrIImmed());
                         assert(intrin.op4->isContainedIntOrIImmed());
+                        break;
+
+                    case NI_Sve_TrueMask:
+                        needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
                         break;
 
                     default:
@@ -1716,6 +1721,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         return srcCount;
     }
+
+    else if (HWIntrinsicInfo::ReturnsPerElementMask(intrin.id))
+    {
+        switch (intrin.id)
+        {
+            case NI_Sve_TrueMask:
+                dstCandidates = RBM_ALLMASK;
+                break;
+
+            default:
+                noway_assert(!"Not a supported ReturnsPerElementMask operation");
+        }
+    }
+
     else if (intrin.op2 != nullptr)
     {
         // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
@@ -1770,11 +1789,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     if ((dstCount == 1) || (dstCount == 2))
     {
-        BuildDef(intrinsicTree);
+        BuildDef(intrinsicTree, dstCandidates);
 
         if (dstCount == 2)
         {
-            BuildDef(intrinsicTree, RBM_NONE, 1);
+            BuildDef(intrinsicTree, dstCandidates, 1);
         }
     }
     else
