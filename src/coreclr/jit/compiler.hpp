@@ -4893,27 +4893,40 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
 template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
 {
-    BasicBlock* top    = m_header;
-    BasicBlock* bottom = m_header;
+    BasicBlock* top           = m_header;
+    unsigned    numLoopBlocks = 0;
     VisitLoopBlocks([&](BasicBlock* block) {
         if (block->bbNum < top->bbNum)
+        {
             top = block;
-        if (block->bbNum > bottom->bbNum)
-            bottom = block;
+        }
+
+        numLoopBlocks++;
         return BasicBlockVisit::Continue;
     });
 
-    BasicBlock* block = top;
-    while (true)
+    INDEBUG(BasicBlock* prev = nullptr);
+    BasicBlock* cur = top;
+    while (numLoopBlocks > 0)
     {
-        if (ContainsBlock(block) && (func(block) == BasicBlockVisit::Abort))
-            return BasicBlockVisit::Abort;
+        // If we run out of blocks the blocks aren't sequential.
+        assert(cur != nullptr);
 
-        if (block == bottom)
-            return BasicBlockVisit::Continue;
+        if (ContainsBlock(cur))
+        {
+            assert((prev == nullptr) || (prev->bbNum < cur->bbNum));
 
-        block = block->Next();
+            if (func(cur) == BasicBlockVisit::Abort)
+                return BasicBlockVisit::Abort;
+
+            INDEBUG(prev = cur);
+            numLoopBlocks--;
+        }
+
+        cur = cur->Next();
     }
+
+    return BasicBlockVisit::Continue;
 }
 
 /*****************************************************************************/

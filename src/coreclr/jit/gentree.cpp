@@ -8583,7 +8583,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
 //
 // Arguments:
 //    layout     - The struct layout
-//    addr       - Destionation address
+//    addr       - Destination address
 //    data       - Value to store
 //    indirFlags - Indirection flags
 //
@@ -8596,6 +8596,34 @@ GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenT
     assert(data->IsInitVal() || ClassLayout::AreCompatible(layout, data->GetLayout(this)));
 
     GenTreeBlk* store = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, addr, data, layout);
+    store->gtFlags |= GTF_ASG;
+    gtInitializeIndirNode(store, indirFlags);
+    gtInitializeStoreNode(store, data);
+
+    return store;
+}
+
+//------------------------------------------------------------------------------
+// gtNewStoreDynBlkNode : Create a dynamic block store node.
+//
+// Arguments:
+//    addr        - Destination address
+//    data        - Value to store (init val or indirection representing a location)
+//    dynamicSize - Node that computes number of bytes to store
+//    indirFlags  - Indirection flags
+//
+// Return Value:
+//    The created GT_STORE_DYN_BLK node.
+//
+GenTreeStoreDynBlk* Compiler::gtNewStoreDynBlkNode(GenTree*     addr,
+                                                   GenTree*     data,
+                                                   GenTree*     dynamicSize,
+                                                   GenTreeFlags indirFlags)
+{
+    assert((indirFlags & GTF_IND_INVARIANT) == 0);
+    assert(data->IsInitVal() || data->OperIs(GT_IND));
+
+    GenTreeStoreDynBlk* store = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(addr, data, dynamicSize);
     store->gtFlags |= GTF_ASG;
     gtInitializeIndirNode(store, indirFlags);
     gtInitializeStoreNode(store, data);
@@ -9214,29 +9242,15 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 }
 
 //------------------------------------------------------------------------
-// gtCloneExpr: Create a copy of `tree`, adding flags `addFlags`, mapping
-//              local `varNum` to int constant `varVal` if it appears at
-//              the root, and mapping uses of local `deepVarNum` to constant
-//              `deepVarVal` if they occur beyond the root.
+// gtCloneExpr: Create a copy of `tree`
 //
 // Arguments:
 //    tree - GenTree to create a copy of
-//    addFlags - GTF_* flags to add to the copied tree nodes
-//    varNum - lclNum to replace at the root, or ~0 for no root replacement
-//    varVal - If replacing at root, replace local `varNum` with IntCns `varVal`
-//    deepVarNum - lclNum to replace uses of beyond the root, or ~0 for no replacement
-//    deepVarVal - If replacing beyond root, replace `deepVarNum` with IntCns `deepVarVal`
 //
 // Return Value:
-//    A copy of the given tree with the replacements and added flags specified.
-//
-// Notes:
-//    Top-level callers should generally call the overload that doesn't have
-//    the explicit `deepVarNum` and `deepVarVal` parameters; those are used in
-//    recursive invocations to avoid replacing defs.
+//    A copy of the given tree.
 
-GenTree* Compiler::gtCloneExpr(
-    GenTree* tree, GenTreeFlags addFlags, unsigned varNum, int varVal, unsigned deepVarNum, int deepVarVal)
+GenTree* Compiler::gtCloneExpr(GenTree* tree)
 {
     if (tree == nullptr)
     {
@@ -9301,34 +9315,20 @@ GenTree* Compiler::gtCloneExpr(
 
             case GT_LCL_VAR:
 
-                if (tree->AsLclVarCommon()->GetLclNum() == varNum)
-                {
-                    copy = gtNewIconNode(varVal, tree->gtType);
-                }
-                else
-                {
-                    // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
-                    tree->gtFlags |= GTF_VAR_MOREUSES;
-                    copy = gtNewLclvNode(tree->AsLclVar()->GetLclNum(),
-                                         tree->gtType DEBUGARG(tree->AsLclVar()->gtLclILoffs));
-                    copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
-                }
+                // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
+                tree->gtFlags |= GTF_VAR_MOREUSES;
+                copy =
+                    gtNewLclvNode(tree->AsLclVar()->GetLclNum(), tree->gtType DEBUGARG(tree->AsLclVar()->gtLclILoffs));
+                copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
                 goto DONE;
 
             case GT_LCL_FLD:
-                if (tree->AsLclFld()->GetLclNum() == varNum)
-                {
-                    IMPL_LIMITATION("replacing GT_LCL_FLD with a constant");
-                }
-                else
-                {
-                    // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
-                    tree->gtFlags |= GTF_VAR_MOREUSES;
-                    copy = new (this, GT_LCL_FLD)
-                        GenTreeLclFld(GT_LCL_FLD, tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
-                                      tree->AsLclFld()->GetLclOffs(), tree->AsLclFld()->GetLayout());
-                    copy->AsLclFld()->SetSsaNum(tree->AsLclFld()->GetSsaNum());
-                }
+                // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
+                tree->gtFlags |= GTF_VAR_MOREUSES;
+                copy =
+                    new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
+                                                         tree->AsLclFld()->GetLclOffs(), tree->AsLclFld()->GetLayout());
+                copy->AsLclFld()->SetSsaNum(tree->AsLclFld()->GetSsaNum());
                 goto DONE;
 
             case GT_RET_EXPR:
@@ -9582,38 +9582,14 @@ GenTree* Compiler::gtCloneExpr(
                 break;
         }
 
-        // Some flags are conceptually part of the gtOper, and should be copied immediately.
-        if (tree->gtOverflowEx())
-        {
-            copy->gtFlags |= GTF_OVERFLOW;
-        }
-
         if (tree->AsOp()->gtOp1)
         {
-            copy->AsOp()->gtOp1 = gtCloneExpr(tree->AsOp()->gtOp1, addFlags, deepVarNum, deepVarVal);
+            copy->AsOp()->gtOp1 = gtCloneExpr(tree->AsOp()->gtOp1);
         }
 
         if (tree->gtGetOp2IfPresent())
         {
-            copy->AsOp()->gtOp2 = gtCloneExpr(tree->AsOp()->gtOp2, addFlags, deepVarNum, deepVarVal);
-        }
-
-        /* Flags */
-        addFlags |= tree->gtFlags;
-
-#ifdef DEBUG
-        /* GTF_NODE_MASK should not be propagated from 'tree' to 'copy' */
-        addFlags &= ~GTF_NODE_MASK;
-#endif
-
-        // Effects flags propagate upwards.
-        if (copy->AsOp()->gtOp1 != nullptr)
-        {
-            copy->gtFlags |= (copy->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
-        }
-        if (copy->gtGetOp2IfPresent() != nullptr)
-        {
-            copy->gtFlags |= (copy->gtGetOp2()->gtFlags & GTF_ALL_EFFECT);
+            copy->AsOp()->gtOp2 = gtCloneExpr(tree->AsOp()->gtOp2);
         }
 
         goto DONE;
@@ -9632,7 +9608,7 @@ GenTree* Compiler::gtCloneExpr(
                 NO_WAY("Cloning of calls with associated GT_RET_EXPR nodes is not supported");
             }
 
-            copy = gtCloneExprCallHelper(tree->AsCall(), addFlags, deepVarNum, deepVarVal);
+            copy = gtCloneExprCallHelper(tree->AsCall());
             break;
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -9648,7 +9624,7 @@ GenTree* Compiler::gtCloneExpr(
         CLONE_MULTIOP_OPERANDS:
             for (GenTree** use : copy->AsMultiOp()->UseEdges())
             {
-                *use = gtCloneExpr(*use, addFlags, deepVarNum, deepVarVal);
+                *use = gtCloneExpr(*use);
             }
             break;
 #endif
@@ -9659,11 +9635,10 @@ GenTree* Compiler::gtCloneExpr(
             GenTree*        inds[GT_ARR_MAX_RANK];
             for (unsigned dim = 0; dim < arrElem->gtArrRank; dim++)
             {
-                inds[dim] = gtCloneExpr(arrElem->gtArrInds[dim], addFlags, deepVarNum, deepVarVal);
+                inds[dim] = gtCloneExpr(arrElem->gtArrInds[dim]);
             }
-            copy = new (this, GT_ARR_ELEM)
-                GenTreeArrElem(arrElem->TypeGet(), gtCloneExpr(arrElem->gtArrObj, addFlags, deepVarNum, deepVarVal),
-                               arrElem->gtArrRank, arrElem->gtArrElemSize, &inds[0]);
+            copy = new (this, GT_ARR_ELEM) GenTreeArrElem(arrElem->TypeGet(), gtCloneExpr(arrElem->gtArrObj),
+                                                          arrElem->gtArrRank, arrElem->gtArrElemSize, &inds[0]);
         }
         break;
 
@@ -9673,9 +9648,8 @@ GenTree* Compiler::gtCloneExpr(
             GenTreePhi::Use** prevUse = &copy->AsPhi()->gtUses;
             for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
             {
-                *prevUse = new (this, CMK_ASTNode)
-                    GenTreePhi::Use(gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal), *prevUse);
-                prevUse = &((*prevUse)->NextRef());
+                *prevUse = new (this, CMK_ASTNode) GenTreePhi::Use(gtCloneExpr(use.GetNode()), *prevUse);
+                prevUse  = &((*prevUse)->NextRef());
             }
         }
         break;
@@ -9684,32 +9658,27 @@ GenTree* Compiler::gtCloneExpr(
             copy = new (this, GT_FIELD_LIST) GenTreeFieldList();
             for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
             {
-                copy->AsFieldList()->AddField(this, gtCloneExpr(use.GetNode(), addFlags, deepVarNum, deepVarVal),
-                                              use.GetOffset(), use.GetType());
+                copy->AsFieldList()->AddField(this, gtCloneExpr(use.GetNode()), use.GetOffset(), use.GetType());
             }
             break;
 
         case GT_CMPXCHG:
             copy = new (this, GT_CMPXCHG)
-                GenTreeCmpXchg(tree->TypeGet(),
-                               gtCloneExpr(tree->AsCmpXchg()->Addr(), addFlags, deepVarNum, deepVarVal),
-                               gtCloneExpr(tree->AsCmpXchg()->Data(), addFlags, deepVarNum, deepVarVal),
-                               gtCloneExpr(tree->AsCmpXchg()->Comparand(), addFlags, deepVarNum, deepVarVal));
+                GenTreeCmpXchg(tree->TypeGet(), gtCloneExpr(tree->AsCmpXchg()->Addr()),
+                               gtCloneExpr(tree->AsCmpXchg()->Data()), gtCloneExpr(tree->AsCmpXchg()->Comparand()));
             break;
 
         case GT_STORE_DYN_BLK:
-            copy = new (this, oper)
-                GenTreeStoreDynBlk(gtCloneExpr(tree->AsStoreDynBlk()->Addr(), addFlags, deepVarNum, deepVarVal),
-                                   gtCloneExpr(tree->AsStoreDynBlk()->Data(), addFlags, deepVarNum, deepVarVal),
-                                   gtCloneExpr(tree->AsStoreDynBlk()->gtDynamicSize, addFlags, deepVarNum, deepVarVal));
+            copy = new (this, oper) GenTreeStoreDynBlk(gtCloneExpr(tree->AsStoreDynBlk()->Addr()),
+                                                       gtCloneExpr(tree->AsStoreDynBlk()->Data()),
+                                                       gtCloneExpr(tree->AsStoreDynBlk()->gtDynamicSize));
             break;
 
         case GT_SELECT:
-            copy = new (this, oper)
-                GenTreeConditional(oper, tree->TypeGet(),
-                                   gtCloneExpr(tree->AsConditional()->gtCond, addFlags, deepVarNum, deepVarVal),
-                                   gtCloneExpr(tree->AsConditional()->gtOp1, addFlags, deepVarNum, deepVarVal),
-                                   gtCloneExpr(tree->AsConditional()->gtOp2, addFlags, deepVarNum, deepVarVal));
+            copy =
+                new (this, oper) GenTreeConditional(oper, tree->TypeGet(), gtCloneExpr(tree->AsConditional()->gtCond),
+                                                    gtCloneExpr(tree->AsConditional()->gtOp1),
+                                                    gtCloneExpr(tree->AsConditional()->gtOp2));
             break;
         default:
 #ifdef DEBUG
@@ -9719,33 +9688,10 @@ GenTree* Compiler::gtCloneExpr(
     }
 
 DONE:
+    assert(copy->gtOper == oper);
 
     copy->gtVNPair = tree->gtVNPair; // A cloned tree gets the original's Value number pair
-
-    /* Compute the flags for the copied node. Note that we can do this only
-       if we didnt gtFoldExpr(copy) */
-
-    if (copy->gtOper == oper)
-    {
-        addFlags |= tree->gtFlags;
-
-#ifdef DEBUG
-        /* GTF_NODE_MASK should not be propagated from 'tree' to 'copy' */
-        addFlags &= ~GTF_NODE_MASK;
-#endif
-        copy->gtFlags |= addFlags;
-
-        // Update side effect flags since they may be different from the source side effect flags.
-        // For example, we may have replaced some locals with constants and made indirections non-throwing.
-        gtUpdateNodeSideEffects(copy);
-        if ((varNum != BAD_VAR_NUM) && copy->OperIsSsaDef())
-        {
-            fgAssignSetVarDef(copy);
-        }
-    }
-
-    /* GTF_COLON_COND should be propagated from 'tree' to 'copy' */
-    copy->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
+    copy->gtFlags  = tree->gtFlags;
 
 #if defined(DEBUG)
     // Non-node debug flags should be propagated from 'tree' to 'copy'
@@ -9833,25 +9779,18 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
 //
 // Arguments:
 //    tree - the call to clone
-//    addFlags - GTF_* flags to add to the copied tree nodes
-//    deepVarNum - lclNum to replace uses of beyond the root, or BAD_VAR_NUM for no replacement
-//    deepVarVal - If replacing beyond root, replace `deepVarNum` with IntCns `deepVarVal`
 //
 // Returns:
 //    Cloned copy of call and all subtrees.
 
-GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
-                                             GenTreeFlags addFlags,
-                                             unsigned     deepVarNum,
-                                             int          deepVarVal)
+GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
 {
     GenTreeCall* copy = new (this, GT_CALL) GenTreeCall(tree->TypeGet());
 
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
     INDEBUG(copy->gtCallDebugFlags = tree->gtCallDebugFlags);
 
-    copy->gtArgs.InternalCopyFrom(this, &tree->gtArgs,
-                                  [=](GenTree* node) { return gtCloneExpr(node, addFlags, deepVarNum, deepVarVal); });
+    copy->gtArgs.InternalCopyFrom(this, &tree->gtArgs, [=](GenTree* node) { return gtCloneExpr(node); });
 
     // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
     // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
@@ -9864,15 +9803,14 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     copy->tailCallInfo = tree->tailCallInfo;
 
     copy->gtRetClsHnd        = tree->gtRetClsHnd;
-    copy->gtControlExpr      = gtCloneExpr(tree->gtControlExpr, addFlags, deepVarNum, deepVarVal);
+    copy->gtControlExpr      = gtCloneExpr(tree->gtControlExpr);
     copy->gtStubCallStubAddr = tree->gtStubCallStubAddr;
 
     /* Copy the union */
     if (tree->gtCallType == CT_INDIRECT)
     {
-        copy->gtCallCookie =
-            tree->gtCallCookie ? gtCloneExpr(tree->gtCallCookie, addFlags, deepVarNum, deepVarVal) : nullptr;
-        copy->gtCallAddr = tree->gtCallAddr ? gtCloneExpr(tree->gtCallAddr, addFlags, deepVarNum, deepVarVal) : nullptr;
+        copy->gtCallCookie = tree->gtCallCookie ? gtCloneExpr(tree->gtCallCookie) : nullptr;
+        copy->gtCallAddr   = tree->gtCallAddr ? gtCloneExpr(tree->gtCallAddr) : nullptr;
     }
     else
     {
@@ -10796,7 +10734,7 @@ bool GenTree::Precedes(GenTree* other)
 //
 void GenTree::SetIndirExceptionFlags(Compiler* comp)
 {
-    assert(OperIsIndirOrArrMetaData() && (OperIsSimple() || OperIs(GT_CMPXCHG)));
+    assert(OperIsIndirOrArrMetaData() && (OperIsSimple() || OperIs(GT_CMPXCHG, GT_STORE_DYN_BLK)));
 
     if (IndirMayFault(comp))
     {
@@ -10813,9 +10751,15 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     {
         gtFlags |= gtGetOp2()->gtFlags & GTF_EXCEPT;
     }
-    if (OperIs(GT_CMPXCHG))
+    else if (OperIs(GT_CMPXCHG))
     {
+        gtFlags |= AsCmpXchg()->Data()->gtFlags & GTF_EXCEPT;
         gtFlags |= AsCmpXchg()->Comparand()->gtFlags & GTF_EXCEPT;
+    }
+    else if (OperIs(GT_STORE_DYN_BLK))
+    {
+        gtFlags |= AsStoreDynBlk()->Data()->gtFlags & GTF_EXCEPT;
+        gtFlags |= AsStoreDynBlk()->gtDynamicSize->gtFlags & GTF_EXCEPT;
     }
 }
 
@@ -10899,6 +10843,8 @@ const char* GenTree::gtGetHandleKindString(GenTreeFlags flags)
             return "GTF_ICON_STATIC_ADDR_PTR";
         case GTF_ICON_SECREL_OFFSET:
             return "GTF_ICON_SECREL_OFFSET";
+        case GTF_ICON_TLSGD_OFFSET:
+            return "GTF_ICON_TLSGD_OFFSET";
         default:
             return "ILLEGAL!";
     }
@@ -11002,6 +10948,10 @@ void Compiler::gtDispNodeName(GenTree* tree)
         else if (tree->AsCall()->IsR2RRelativeIndir())
         {
             gtfType = " r2r_ind";
+        }
+        else if (tree->gtFlags & GTF_TLS_GET_ADDR)
+        {
+            gtfType = " _tls_get_addr";
         }
 #endif // FEATURE_READYTORUN
         else if (tree->gtFlags & GTF_CALL_UNMANAGED)
@@ -12130,6 +12080,9 @@ void Compiler::gtDispConst(GenTree* tree)
                             break;
                         case GTF_ICON_SECREL_OFFSET:
                             printf(" relative offset in section");
+                            break;
+                        case GTF_ICON_TLSGD_OFFSET:
+                            printf(" tls global dynamic offset");
                             break;
                         default:
                             printf(" UNKNOWN");
@@ -17967,9 +17920,13 @@ bool GenTree::canBeContained() const
     }
 
     // It is not possible for nodes that do not produce values or that are not containable values to be contained.
-    if (!IsValue() || ((DebugOperKind() & DBK_NOCONTAIN) != 0) || (OperIsHWIntrinsic() && !isContainableHWIntrinsic()))
+    if (!IsValue() || ((DebugOperKind() & DBK_NOCONTAIN) != 0))
     {
         return false;
+    }
+    else if (OperIsHWIntrinsic() && !isContainableHWIntrinsic())
+    {
+        return isEvexEmbeddedMaskingCompatibleHWIntrinsic();
     }
 
     return true;
@@ -19702,6 +19659,28 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 
     switch (intrinsicId)
     {
+        case NI_AVX512F_BlendVariableMask:
+        {
+            GenTree* op2 = hwintrinsic->Op(2);
+
+            if (op2->IsEmbMaskOp())
+            {
+                GenTree* op1 = hwintrinsic->Op(1);
+
+                if (op1->isContained())
+                {
+                    assert(op1->IsVectorZero());
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         case NI_AVX512F_Fixup:
         case NI_AVX512F_FixupScalar:
         case NI_AVX512F_VL_Fixup:
@@ -19792,18 +19771,34 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 // Return Value:
 // true if the intrisic node lowering instruction has an EVEX form
 //
-bool GenTree::isEvexCompatibleHWIntrinsic()
+bool GenTree::isEvexCompatibleHWIntrinsic() const
 {
-    assert(gtOper == GT_HWINTRINSIC);
-
-// TODO-XARCH-AVX512 remove the ReturnsPerElementMask check once K registers have been properly
-// implemented in the register allocator
-#if defined(TARGET_AMD64)
-    return HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId()) &&
+    // TODO-XARCH-AVX512 remove the ReturnsPerElementMask check once K registers have been properly
+    // implemented in the register allocator
+    return OperIsHWIntrinsic() && HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId()) &&
            !HWIntrinsicInfo::ReturnsPerElementMask(AsHWIntrinsic()->GetHWIntrinsicId());
-#else
+}
+
+//------------------------------------------------------------------------
+// isEvexEmbeddedMaskingCompatibleHWIntrinsic: Checks if the intrinsic is compatible
+// with the EVEX embedded masking form for its intended lowering instruction.
+//
+// Return Value:
+// true if the intrisic node lowering instruction has an EVEX embedded masking
+//
+bool GenTree::isEvexEmbeddedMaskingCompatibleHWIntrinsic() const
+{
+#if defined(TARGET_XARCH)
+    if (OperIsHWIntrinsic())
+    {
+        // TODO-AVX512F-CQ: Expand this to the full set of APIs and make it table driven
+        // using IsEmbMaskingCompatible. For now, however, limit it to some explicit ids
+        // for prototyping purposes.
+        return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_Add);
+    }
+#endif // TARGET_XARCH
+
     return false;
-#endif
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,

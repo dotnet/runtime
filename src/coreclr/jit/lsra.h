@@ -637,12 +637,15 @@ public:
     template <bool localVarsEnregistered>
     void           buildIntervals();
 
+    // This is where the actual assignment is done for scenarios where
+    // no local var enregistration is done.
+    void allocateRegistersMinimal();
+
 // This is where the actual assignment is done
 #ifdef TARGET_ARM64
     template <bool hasConsecutiveRegister = false>
 #endif
     void allocateRegisters();
-
     // This is the resolution phase, where cross-block mismatches are fixed up
     template <bool localVarsEnregistered>
     void           resolveRegisters();
@@ -937,6 +940,7 @@ private:
     static bool IsResolutionMove(GenTree* node);
     static bool IsResolutionNode(LIR::Range& containingRange, GenTree* node);
 
+    void verifyFreeRegisters(regMaskTP regsToFree);
     void verifyFinalAllocation();
     void verifyResolutionMove(GenTree* resolutionNode, LsraLocation currentLocation);
 #else  // !DEBUG
@@ -1001,6 +1005,7 @@ private:
 
     // Update allocations at start/end of block
     void unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap inVarToRegMap);
+    template <bool localVarsEnregistered>
     void processBlockEndAllocation(BasicBlock* current);
 
     // Record variable locations at start/end of block
@@ -1158,13 +1163,6 @@ private:
                                 regMaskTP    mask,
                                 unsigned     multiRegIdx = 0);
 
-    // This creates a RefTypeUse at currentLoc. It sets the treeNode to nullptr if it is not a
-    // lclVar interval.
-    RefPosition* newUseRefPosition(Interval* theInterval,
-                                   GenTree*  theTreeNode,
-                                   regMaskTP mask,
-                                   unsigned  multiRegIdx = 0);
-
     RefPosition* newRefPosition(
         regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, regMaskTP mask);
 
@@ -1186,8 +1184,10 @@ private:
 #endif
     template <bool needsConsecutiveRegisters = false>
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+    regNumber allocateRegMinimal(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
     template <bool needsConsecutiveRegisters = false>
     regNumber assignCopyReg(RefPosition* refPosition);
+    regNumber assignCopyRegMinimal(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
     bool isSpillCandidate(Interval* current, RefPosition* refPosition, RegRecord* physRegRecord);
@@ -1260,6 +1260,9 @@ private:
         template <bool hasConsecutiveRegister = false>
         FORCEINLINE regMaskTP select(Interval*    currentInterval,
                                      RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+
+        FORCEINLINE regMaskTP selectMinimal(Interval*    currentInterval,
+                                            RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
         // If the register is from unassigned set such that it was not already
         // assigned to the current interval
@@ -1344,7 +1347,9 @@ private:
         bool applySelection(int selectionScore, regMaskTP selectionCandidates);
         bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
         FORCEINLINE void calculateCoversSets();
+        FORCEINLINE void calculateUnassignedSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
+        FORCEINLINE void resetMinimal(Interval* interval, RefPosition* refPosition);
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
@@ -1777,9 +1782,11 @@ private:
         makeRegsAvailable(regMask);
     }
 
+    void clearAllNextIntervalRef();
     void clearNextIntervalRef(regNumber reg, var_types regType);
     void updateNextIntervalRef(regNumber reg, Interval* interval);
 
+    void clearAllSpillCost();
     void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
 

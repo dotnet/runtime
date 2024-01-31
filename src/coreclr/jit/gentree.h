@@ -470,6 +470,7 @@ enum GenTreeFlags : unsigned int
     GTF_CALL_NULLCHECK          = 0x08000000, // GT_CALL -- must check instance pointer for null
     GTF_CALL_POP_ARGS           = 0x04000000, // GT_CALL -- caller pop arguments?
     GTF_CALL_HOISTABLE          = 0x02000000, // GT_CALL -- call is hoistable
+    GTF_TLS_GET_ADDR            = 0x01000000, // GT_CALL -- call is tls_get_addr
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
@@ -536,6 +537,7 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
     GTF_ICON_STATIC_ADDR_PTR    = 0x13000000, // GT_CNS_INT -- constant is a pointer to a static base address
     GTF_ICON_SECREL_OFFSET      = 0x14000000, // GT_CNS_INT -- constant is an offset in a certain section.
+    GTF_ICON_TLSGD_OFFSET       = 0x15000000, // GT_CNS_INT -- constant is an argument to tls_get_addr.
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
@@ -555,12 +557,9 @@ enum GenTreeFlags : unsigned int
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
-    GTF_HW_ER_MASK                = 0x30000000, // Bits used by handle types below 
-    GTF_HW_ER_TO_EVEN             = 0x00000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToEven (Default) "{rn-sae}"
-    GTF_HW_ER_TO_NEGATIVEINFINITY = 0x10000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToNegativeInfinity "{rd-sae}"
-    GTF_HW_ER_TO_POSITIVEINFINITY = 0x20000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToPositiveInfinity "{ru-sae}"
-    GTF_HW_ER_TO_ZERO             = 0x30000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToZero "{rz-sae}"
-
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -1491,7 +1490,8 @@ public:
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
     bool isRMWHWIntrinsic(Compiler* comp);
-    bool isEvexCompatibleHWIntrinsic();
+    bool isEvexCompatibleHWIntrinsic() const;
+    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const;
 #else
     bool isCommutativeHWIntrinsic() const
     {
@@ -1508,7 +1508,12 @@ public:
         return false;
     }
 
-    bool isEvexCompatibleHWIntrinsic()
+    bool isEvexCompatibleHWIntrinsic() const
+    {
+        return false;
+    }
+
+    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const
     {
         return false;
     }
@@ -2230,49 +2235,28 @@ public:
         return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
-#ifdef FEATURE_HW_INTRINSICS
-
-    void ClearEmbRoundingMode()
-    {
-        assert(gtOper == GT_HWINTRINSIC);
-        gtFlags &= ~GTF_HW_ER_MASK;
-    }
-    // Set GenTreeFlags on HardwareIntrinsic node to specify the FloatRoundingMode.
-    // mode can be one of the values from System.Runtime.Intrinsics.X86.FloatRoundingMode.
-    void SetEmbRoundingMode(uint8_t mode)
-    {
-        assert(gtOper == GT_HWINTRINSIC);
-        ClearEmbRoundingMode();
-        switch (mode)
-        {
-            case 0x09:
-                gtFlags |= GTF_HW_ER_TO_NEGATIVEINFINITY;
-                break;
-            case 0x0A:
-                gtFlags |= GTF_HW_ER_TO_POSITIVEINFINITY;
-                break;
-            case 0x0B:
-                gtFlags |= GTF_HW_ER_TO_ZERO;
-                break;
-            default:
-                break;
-        }
-    }
-
-    uint8_t GetEmbRoundingMode()
-    {
-        assert(gtOper == GT_HWINTRINSIC);
-        return (uint8_t)((gtFlags & GTF_HW_ER_MASK) >> 28);
-    }
-
-#endif // FEATURE_HW_INTRINSICS
-
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
     void ClearIconHandleMask()
     {
         assert(gtOper == GT_CNS_INT);
         gtFlags &= ~GTF_ICON_HDL_MASK;
     }
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    bool IsEmbMaskOp()
+    {
+        bool result = (gtFlags & GTF_HW_EM_OP) != 0;
+        assert(!result || (gtOper == GT_HWINTRINSIC));
+        return result;
+    }
+
+    void MakeEmbMaskOp()
+    {
+        assert(!IsEmbMaskOp());
+        gtFlags |= GTF_HW_EM_OP;
+    }
+
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
     bool IsCall() const
     {
@@ -4583,6 +4567,15 @@ public:
 #endif
     }
 
+    bool IsMismatchedArgType() const
+    {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        return isValidIntArgReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
+#else
+        return false;
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+    }
+
     void SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa);
 
     // Get the number of bytes that this argument is occupying on the stack,
@@ -5570,7 +5563,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
@@ -7481,10 +7474,7 @@ public:
     GenTreeStoreDynBlk(GenTree* dstAddr, GenTree* data, GenTree* dynamicSize)
         : GenTreeBlk(GT_STORE_DYN_BLK, TYP_VOID, dstAddr, data, nullptr), gtDynamicSize(dynamicSize)
     {
-        // Conservatively the 'dstAddr' could be null or point into the global heap.
-        // Likewise, this is a store and so must be marked with the GTF_ASG flag.
-        gtFlags |= (GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
-        gtFlags |= (dynamicSize->gtFlags & GTF_ALL_EFFECT);
+        gtFlags |= dynamicSize->gtFlags & GTF_ALL_EFFECT;
     }
 
 #if DEBUGGABLE_GENTREE

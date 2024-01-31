@@ -126,6 +126,8 @@ struct UNIX_CONTEXT
     uint64_t& Lr();
     uint64_t& R0();
     uint64_t& R1();
+    uint64_t& R2();
+    uint64_t& R3();
     uint64_t& R4();
     uint64_t& R5();
     uint64_t& R6();
@@ -143,6 +145,8 @@ struct UNIX_CONTEXT
     {
         lambda((size_t*)&R0());
         lambda((size_t*)&R1());
+        lambda((size_t*)&R2());
+        lambda((size_t*)&R3());
         lambda((size_t*)&R4());
         lambda((size_t*)&R5());
         lambda((size_t*)&R6());

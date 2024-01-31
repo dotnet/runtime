@@ -1071,59 +1071,23 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         size_t numArgs        = node->GetOperandCount();
         size_t expectedArgNum = HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId);
+
         if (numArgs == expectedArgNum)
         {
-            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            uint32_t    simdSize        = node->GetSimdSize();
-            var_types   simdType        = node->TypeGet();
-            GenTree*    lastOp          = node->Op(numArgs);
+            GenTree* lastOp = node->Op(numArgs);
+            uint8_t  mode   = 0xFF;
 
             if (lastOp->IsCnsIntOrI())
             {
-                uint8_t mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
+                // Mark the constant as contained since it's specially encoded
+                MakeSrcContained(node, lastOp);
 
-                GenTreeHWIntrinsic* embRoundingNode;
-                switch (numArgs)
-                {
-                    case 3:
-                        embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), node->Op(2),
-                                                                         intrinsicId, simdBaseJitType, simdSize);
-                        break;
-                    case 2:
-                        embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), intrinsicId,
-                                                                         simdBaseJitType, simdSize);
-                        break;
-
-                    default:
-                        unreached();
-                }
-
-                embRoundingNode->SetEmbRoundingMode(mode);
-                BlockRange().InsertAfter(lastOp, embRoundingNode);
-                LIR::Use use;
-                if (BlockRange().TryGetUse(node, &use))
-                {
-                    use.ReplaceWith(embRoundingNode);
-                }
-                else
-                {
-                    embRoundingNode->SetUnusedValue();
-                }
-                BlockRange().Remove(node);
-                BlockRange().Remove(lastOp);
-                node = embRoundingNode;
-                if (mode != 0x08)
-                {
-                    // As embedded rounding can only work under register-to-register form, we can skip contain check at
-                    // this point.
-                    return node->gtNext;
-                }
+                mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
             }
-            else
+
+            if ((mode & 0x03) != 0x00)
             {
-                // If the control byte is not constant, generate a jump table fallback when emitting the code.
-                assert(!lastOp->IsCnsIntOrI());
-                node->SetEmbRoundingMode(0x08);
+                // Embedded rounding only works for register-to-register operations, so skip containment
                 return node->gtNext;
             }
         }
@@ -9745,8 +9709,69 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_SSE41_BlendVariable:
                             case NI_AVX_BlendVariable:
                             case NI_AVX2_BlendVariable:
+                            {
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op2);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    MakeSrcRegOptional(node, op2);
+                                }
+                                break;
+                            }
+
                             case NI_AVX512F_BlendVariableMask:
                             {
+                                // BlendVariableMask represents one of the following instructions:
+                                // * vblendmpd
+                                // * vblendmps
+                                // * vpblendmpb
+                                // * vpblendmpd
+                                // * vpblendmpq
+                                // * vpblendmpw
+                                //
+                                // In all cases, the node operands are ordered:
+                                // * op1: selectFalse
+                                // * op2: selectTrue
+                                // * op3: condition
+                                //
+                                // The managed API surface we expose doesn't directly support TYP_MASK
+                                // and we don't directly expose overloads for APIs like `vaddps` which
+                                // support embedded masking. Instead, we have decide to do pattern
+                                // recognition over the relevant ternary select APIs which functionally
+                                // execute `cond ? selectTrue : selectFalse` on a per element basis.
+                                //
+                                // To facilitate this, the mentioned ternary select APIs, such as
+                                // ConditionalSelect or TernaryLogic, with a correct control word, will
+                                // all compile down to BlendVariableMask when the condition is of TYP_MASK.
+                                //
+                                // So, before we do the normal containment checks for memory operands, we
+                                // instead want to check if `selectTrue` (op2) supports embedded masking and
+                                // if so, we want to mark it as contained. Codegen will then see that it is
+                                // contained and not a memory operand and know to invoke the special handling
+                                // so that the embedded masking can work as expected.
+
+                                if (op2->isEvexEmbeddedMaskingCompatibleHWIntrinsic())
+                                {
+                                    uint32_t maskSize = genTypeSize(simdBaseType);
+                                    uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
+
+                                    if ((maskSize == operSize) && IsInvariantInRange(op2, node))
+                                    {
+                                        MakeSrcContained(node, op2);
+                                        op2->MakeEmbMaskOp();
+
+                                        if (op1->IsVectorZero())
+                                        {
+                                            // When we are merging with zero, we can specialize
+                                            // and avoid instantiating the vector constant.
+                                            MakeSrcContained(node, op1);
+                                        }
+                                        break;
+                                    }
+                                }
+
                                 if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                                 {
                                     MakeSrcContained(node, op2);

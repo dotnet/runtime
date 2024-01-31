@@ -2256,13 +2256,6 @@ bool Compiler::fgNormalizeEHCase2()
                             //
                             fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
 
-                            if (predBlock->NextIs(newTryStart) && predBlock->KindIs(BBJ_COND))
-                            {
-                                predBlock->SetFalseTarget(newTryStart);
-                                fgRemoveRefPred(insertBeforeBlk, predBlock);
-                                fgAddRefPred(newTryStart, predBlock);
-                            }
-
                             JITDUMP("Redirect " FMT_BB " target from " FMT_BB " to " FMT_BB ".\n", predBlock->bbNum,
                                     insertBeforeBlk->bbNum, newTryStart->bbNum);
                         }
