@@ -41,6 +41,7 @@ namespace System.Net
         private IWebProxy? _proxy = WebRequest.DefaultWebProxy;
 
         private Task<HttpResponseMessage>? _sendRequestTask;
+        private HttpRequestMessage? _sendRequestMessage;
 
         private static int _defaultMaxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
 
@@ -1141,20 +1142,20 @@ namespace System.Net
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
 
-            var request = new HttpRequestMessage(HttpMethod.Parse(_originVerb), _requestUri);
+            _sendRequestMessage = new HttpRequestMessage(HttpMethod.Parse(_originVerb), _requestUri);
             _sendRequestCts = new CancellationTokenSource();
             _httpClient = GetCachedOrCreateHttpClient(async, out _disposeRequired);
             if (content is not null)
             {
-                request.Content = content;
+                _sendRequestMessage.Content = content;
             }
 
             if (_hostUri is not null)
             {
-                request.Headers.Host = Host;
+                _sendRequestMessage.Headers.Host = Host;
             }
 
-            AddCacheControlHeaders(request);
+            AddCacheControlHeaders(_sendRequestMessage);
 
             // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
             // HttpRequestMessage.Content.Headers.
@@ -1166,40 +1167,40 @@ namespace System.Net
                 if (IsWellKnownContentHeader(headerName))
                 {
                     // Create empty content so that we can send the entity-body header.
-                    request.Content ??= new ByteArrayContent(Array.Empty<byte>());
+                    _sendRequestMessage.Content ??= new ByteArrayContent(Array.Empty<byte>());
 
-                    request.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
+                    _sendRequestMessage.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                 }
                 else
                 {
-                    request.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
+                    _sendRequestMessage.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                 }
             }
 
             if (_servicePoint?.Expect100Continue == true)
             {
-                request.Headers.ExpectContinue = true;
+                _sendRequestMessage.Headers.ExpectContinue = true;
             }
 
-            request.Version = ProtocolVersion;
+            _sendRequestMessage.Version = ProtocolVersion;
 
-            request.Headers.TransferEncodingChunked = SendChunked;
+            _sendRequestMessage.Headers.TransferEncodingChunked = SendChunked;
 
             if (KeepAlive)
             {
-                request.Headers.Connection.Add(HttpKnownHeaderNames.KeepAlive);
+                _sendRequestMessage.Headers.Connection.Add(HttpKnownHeaderNames.KeepAlive);
             }
             else
             {
-                request.Headers.ConnectionClose = true;
+                _sendRequestMessage.Headers.ConnectionClose = true;
             }
 
-            request.Version = ProtocolVersion;
+            _sendRequestMessage.Version = ProtocolVersion;
             HttpCompletionOption completionOption = _allowReadStreamBuffering ?
                             HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead;
             _sendRequestTask = async ?
-                _httpClient.SendAsync(request, completionOption, _sendRequestCts!.Token) :
-                Task.Run(() => _httpClient.Send(request, completionOption, _sendRequestCts!.Token));
+                _httpClient.SendAsync(_sendRequestMessage, completionOption, _sendRequestCts!.Token) :
+                Task.Run(() => _httpClient.Send(_sendRequestMessage, completionOption, _sendRequestCts!.Token));
 
             return _sendRequestTask!;
         }
@@ -1241,6 +1242,8 @@ namespace System.Net
                     WebExceptionStatus.ProtocolError,
                     response);
             }
+
+            _sendRequestMessage?.Dispose();
 
             if (_disposeRequired)
             {

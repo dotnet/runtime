@@ -16,7 +16,7 @@ namespace System.Net
     // amounts of data to the server such as from a file stream.
     internal sealed class RequestStream : Stream
     {
-        private readonly MemoryStream _buffer = new MemoryStream();
+        private readonly MemoryStream? _buffer;
         private readonly StreamBuffer _streamBuffer;
         private readonly StrongBox<int> _refCount;
         private readonly bool _isBuffered;
@@ -25,7 +25,10 @@ namespace System.Net
         public RequestStream(StrongBox<int> refCount, StreamBuffer streamBuffer, bool isBuffered)
         {
             _refCount = refCount;
-            _buffer = new MemoryStream();
+            if (isBuffered)
+            {
+                _buffer = new MemoryStream();
+            }
             _streamBuffer = streamBuffer;
             _isBuffered = isBuffered;
         }
@@ -63,10 +66,10 @@ namespace System.Net
         {
             ThrowIfDisposed();
 
-            if (_isBuffered && _buffer.Length > 0)
+            if (_isBuffered && _buffer!.Length > 0)
             {
-                _streamBuffer.Write(_buffer.GetBuffer().AsSpan(0, (int) _buffer.Length));
-                _buffer.SetLength(0);
+                _streamBuffer.Write(_buffer!.GetBuffer().AsSpan(0, (int) _buffer!.Length));
+                _buffer!.SetLength(0);
             }
         }
 
@@ -74,10 +77,10 @@ namespace System.Net
         {
             ThrowIfDisposed();
 
-            if (_isBuffered && _buffer.Length > 0)
+            if (_isBuffered && _buffer!.Length > 0)
             {
-                Task task = _streamBuffer.WriteAsync(_buffer.GetBuffer().AsMemory(0, (int) _buffer.Length), cancellationToken).AsTask();
-                _buffer.SetLength(0);
+                Task task = _streamBuffer.WriteAsync(_buffer!.GetBuffer().AsMemory(0, (int) _buffer!.Length), cancellationToken).AsTask();
+                _buffer!.SetLength(0);
                 return task;
             }
 
