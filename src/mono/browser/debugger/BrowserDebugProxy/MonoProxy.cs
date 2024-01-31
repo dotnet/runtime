@@ -147,14 +147,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "Debugger.scriptParsed":
                     {
-                        if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
-                            return false;
                         try
                         {
                             var url = args["url"]?.ToString();
                             if (url?.Contains("/_framework/") == true)//it is from dotnet runtime framework
                             {
-                                context.FrameworkScriptList.Add(args["scriptId"].Value<int>());
+                                if (Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
+                                    context.FrameworkScriptList.Add(args["scriptId"].Value<int>());
                                 return false;
                             }
                             if (url?.Equals("") == false)
