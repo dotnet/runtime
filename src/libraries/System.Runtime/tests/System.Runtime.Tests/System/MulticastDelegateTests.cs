@@ -24,7 +24,7 @@ namespace System.Tests
                 Assert.Same(d, dfoo);
                 count++;
             }
-            Assert.Equal(count, 1);
+            Assert.Equal(1, count);
         }
 
         [Fact]
