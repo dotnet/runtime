@@ -2155,6 +2155,7 @@ namespace System
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
         protected Delegate(object target, string method) { }
         protected Delegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method) { }
+        public bool HasSingleTarget { get { throw null; } }
         public System.Reflection.MethodInfo Method { get { throw null; } }
         public object? Target { get { throw null; } }
         public virtual object Clone() { throw null; }
@@ -2178,6 +2179,7 @@ namespace System
         public static System.Delegate? CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
         public object? DynamicInvoke(params object?[]? args) { throw null; }
         protected virtual object? DynamicInvokeImpl(object?[]? args) { throw null; }
+        public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate? d) where TDelegate : System.Delegate { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public virtual System.Delegate[] GetInvocationList() { throw null; }
@@ -2190,6 +2192,13 @@ namespace System
         public static System.Delegate? Remove(System.Delegate? source, System.Delegate? value) { throw null; }
         public static System.Delegate? RemoveAll(System.Delegate? source, System.Delegate? value) { throw null; }
         protected virtual System.Delegate? RemoveImpl(System.Delegate d) { throw null; }
+        public partial struct InvocationListEnumerator<TDelegate> where TDelegate : System.Delegate
+        {
+            public TDelegate Current { get { throw null; } }
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public System.Delegate.InvocationListEnumerator<TDelegate> GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
+        }
     }
     public partial class DivideByZeroException : System.ArithmeticException
     {
