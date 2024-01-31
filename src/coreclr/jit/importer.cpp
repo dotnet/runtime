@@ -4437,7 +4437,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 // the previous call to a finally returns to this call (to the next finally in the chain)
                 step->SetTarget(callBlock);
-                fgAddRefPred(callBlock, step);
+                FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
+                newEdge->setLikelihood(1.0);
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4487,7 +4488,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             assert(callBlock->KindIs(BBJ_CALLFINALLY));
             assert(callBlock->TargetIs(HBtab->ebdHndBeg));
-            fgAddRefPred(callBlock->GetTarget(), callBlock);
+            FlowEdge* const newEdge = fgAddRefPred(callBlock->GetTarget(), callBlock);
+            newEdge->setLikelihood(1.0);
 
             GenTree* endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, finallyNesting);
             endLFinStmt      = gtNewStmt(endLFin);
@@ -4537,7 +4539,8 @@ void Compiler::impImportLeave(BasicBlock* block)
         assert(!step->HasInitializedTarget());
 
         step->SetTarget(finalStep);
-        fgAddRefPred(finalStep, step);
+        FlowEdge* const newEdge = fgAddRefPred(finalStep, step);
+        newEdge->setLikelihood(1.0);
 
         // The new block will inherit this block's weight.
         finalStep->inheritWeight(block);
@@ -4566,7 +4569,8 @@ void Compiler::impImportLeave(BasicBlock* block)
         impEndTreeList(finalStep, endLFinStmt, lastStmt);
 
         // this is the ultimate destination of the LEAVE
-        fgAddRefPred(leaveTarget, finalStep);
+        FlowEdge* const newEdge = fgAddRefPred(leaveTarget, finalStep);
+        newEdge->setLikelihood(1.0);
 
         // Queue up the jump target for importing
 
@@ -4684,7 +4688,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                 }
                 step->SetTarget(exitBlock); // the previous step (maybe a call to a nested finally, or a nested catch
                                             // exit) returns to this block
-                fgAddRefPred(exitBlock, step);
+                FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
+                newEdge->setLikelihood(1.0);
 
                 // The new block will inherit this block's weight.
                 exitBlock->inheritWeight(block);
@@ -4728,7 +4733,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // next block, and flow optimizations will remove it.
                 fgRemoveRefPred(block->GetTarget(), block);
                 block->SetKindAndTarget(BBJ_ALWAYS, callBlock);
-                fgAddRefPred(callBlock, block);
+                FlowEdge* const newEdge = fgAddRefPred(callBlock, block);
+                newEdge->setLikelihood(1.0);
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4797,7 +4803,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                         fgRemoveRefPred(step->GetTarget(), step);
                     }
                     step->SetTarget(step2);
-                    fgAddRefPred(step2, step);
+                    FlowEdge* const newEdge = fgAddRefPred(step2, step);
+                    newEdge->setLikelihood(1.0);
                     step2->inheritWeight(block);
                     step2->CopyFlags(block, BBF_RUN_RARELY);
                     step2->SetFlags(BBF_IMPORTED);
@@ -4838,7 +4845,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                 }
                 step->SetTarget(callBlock); // the previous call to a finally returns to this call (to the next
                                             // finally in the chain)
-                fgAddRefPred(callBlock, step);
+                FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
+                newEdge->setLikelihood(1.0);
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4874,7 +4882,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             assert(callBlock->KindIs(BBJ_CALLFINALLY));
             assert(callBlock->TargetIs(HBtab->ebdHndBeg));
-            fgAddRefPred(callBlock->GetTarget(), callBlock);
+            FlowEdge* const newEdge = fgAddRefPred(callBlock->GetTarget(), callBlock);
+            newEdge->setLikelihood(1.0);
         }
         else if (HBtab->HasCatchHandler() && jitIsBetween(blkAddr, tryBeg, tryEnd) &&
                  !jitIsBetween(jmpAddr, tryBeg, tryEnd))
@@ -4941,7 +4950,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                     fgRemoveRefPred(step->GetTarget(), step);
                 }
                 step->SetTarget(catchStep);
-                fgAddRefPred(catchStep, step);
+                FlowEdge* const newEdge = fgAddRefPred(catchStep, step);
+                newEdge->setLikelihood(1.0);
 
                 // The new block will inherit this block's weight.
                 catchStep->inheritWeight(block);
@@ -4995,7 +5005,8 @@ void Compiler::impImportLeave(BasicBlock* block)
             fgRemoveRefPred(step->GetTarget(), step);
         }
         step->SetTarget(leaveTarget); // this is the ultimate destination of the LEAVE
-        fgAddRefPred(leaveTarget, step);
+        FlowEdge* const newEdge = fgAddRefPred(leaveTarget, step);
+        newEdge->setLikelihood(1.0);
 
 #ifdef DEBUG
         if (verbose)
@@ -5056,7 +5067,8 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     {
         BasicBlock* dupBlock = BasicBlock::New(this, BBJ_CALLFINALLY, block->GetTarget());
         dupBlock->CopyFlags(block);
-        fgAddRefPred(dupBlock->GetTarget(), dupBlock);
+        FlowEdge* const newEdge = fgAddRefPred(dupBlock->GetTarget(), dupBlock);
+        newEdge->setLikelihood(1.0);
         dupBlock->copyEHRegion(block);
         dupBlock->bbCatchTyp = block->bbCatchTyp;
 
@@ -5087,7 +5099,8 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 
     fgRemoveRefPred(block->GetTarget(), block);
     block->SetKindAndTarget(BBJ_LEAVE, fgLookupBB(jmpAddr));
-    fgAddRefPred(block->GetTarget(), block);
+    FlowEdge* const newEdge = fgAddRefPred(block->GetTarget(), block);
+    newEdge->setLikelihood(1.0);
 
     // We will leave the BBJ_ALWAYS block we introduced. When it's reimported
     // the BBJ_ALWAYS block will be unreachable, and will be removed after. The
@@ -12244,7 +12257,8 @@ void Compiler::impFixPredLists()
                         }
 
                         BasicBlock* const continuation = predBlock->Next();
-                        fgAddRefPred(continuation, finallyBlock);
+                        FlowEdge* const   newEdge      = fgAddRefPred(continuation, finallyBlock);
+                        newEdge->setLikelihood(1.0);
 
                         jumpEhf->bbeSuccs[predNum] = continuation;
                         ++predNum;
