@@ -4,7 +4,7 @@
 
 #pragma once
 
-#if defined(TARGET_UNIX)
+// #if defined(TARGET_UNIX)
 
 #include "pal_compiler.h"
 
@@ -182,4 +182,4 @@ typedef struct _Range {
     int32_t length;
 } Range;
 
-#endif
+// #endif
