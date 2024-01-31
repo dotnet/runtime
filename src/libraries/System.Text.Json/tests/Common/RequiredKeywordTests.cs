@@ -667,22 +667,30 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DerivedClassWithRequiredProperty()
         {
-            var value = new DerivedClassWithRequiredInitOnlyProperty { MyInt = 42 };
+            var value = new DerivedClassWithRequiredInitOnlyProperty { MyInt = 42, MyBool = true, MyLong = 4242 };
             string json = await Serializer.SerializeWrapper(value);
-            Assert.Equal("""{"MyInt":42}""", json);
+            Assert.Equal("""{"MyInt":42,"MyBool":true,"MyString":null,"MyLong":4242}""", json);
 
             value = await Serializer.DeserializeWrapper<DerivedClassWithRequiredInitOnlyProperty>(json);
             Assert.Equal(42, value.MyInt);
+            Assert.True(value.MyBool);
+            Assert.Null(value.MyString);
+            Assert.Equal(4242, value.MyLong);
         }
 
         public class BaseClassWithInitOnlyProperty
         {
             public int MyInt { get; init; }
+            public bool MyBool { get; init; }
+            public string MyString { get; set; }
         }
 
         public class DerivedClassWithRequiredInitOnlyProperty : BaseClassWithInitOnlyProperty
         {
             public new required int MyInt { get; init; }
+            public new required bool MyBool { get; set; }
+            public new string MyString { get; init; }
+            public required long MyLong { get; init; }
         }
 
         public static IEnumerable<object[]> InheritedPersonWithRequiredMembersSetsRequiredMembersWorksAsExpectedSources()
