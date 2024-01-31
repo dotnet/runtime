@@ -4,19 +4,9 @@
 
 #pragma once
 
-#include "pal_locale.h"
+#include "pal_locale_hg.h"
 #include "pal_compiler.h"
 
-/*
- * These values should be kept in sync with System.Text.NormalizationForm
- */
-typedef enum
-{
-    FormC = 0x1,
-    FormD = 0x2,
-    FormKC = 0x5,
-    FormKD = 0x6
-} NormalizationForm;
 PALEXPORT int32_t GlobalizationNative_IsNormalized(NormalizationForm normalizationForm,
                                                    const UChar* lpStr,
                                                    int32_t cwStrLength);

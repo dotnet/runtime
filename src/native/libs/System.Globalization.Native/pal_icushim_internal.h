@@ -16,7 +16,7 @@
 #else
 
 #if !defined(LOCAL_BUILD)
-#define U_DISABLE_RENAMING 1
+#define U_DISABLE_RENAMING 1 // this
 #endif
 
 // All ICU headers need to be included here so that all function prototypes are

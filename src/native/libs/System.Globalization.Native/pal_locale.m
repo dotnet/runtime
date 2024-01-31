@@ -3,11 +3,15 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "pal_locale_internal.h"
-#include "pal_localeStringData.h"
-#include "pal_localeNumberData.h"
+#include "pal_hybrid.h"
+#include "pal_common.h"
+// #include "pal_locale_hybrid.h"
+// #include "pal_locale_internal.h"
+// #include "pal_localeStringData.h"
+// #include "pal_localeNumberData.h"
 
 #import <Foundation/Foundation.h>
+#import <Foundation/NSFormatter.h>
 
 #if !__has_feature(objc_arc)
 #error This file relies on ARC for memory management, but ARC is not enabled.
@@ -35,6 +39,7 @@ char* DetectDefaultAppleLocaleName(void)
     return strdup([localeName UTF8String]);
 }
 
+
 const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path)
 {
     @autoreleasepool
@@ -54,7 +59,4 @@ const char* GlobalizationNative_GetICUDataPathFallback(void)
         return strdup([dataPath UTF8String]);
     }
 }
-
-
-
 

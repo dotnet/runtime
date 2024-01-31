@@ -3,15 +3,9 @@
 
 #pragma once
 
-#include "pal_locale.h"
+#include "pal_locale_hg.h"
 #include "pal_compiler.h"
 #include "pal_errors.h"
-
-typedef struct SortHandle SortHandle;
-typedef struct _Range {
-    int32_t location;
-    int32_t length;
-} Range;
 
 PALEXPORT ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle);
 

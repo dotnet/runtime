@@ -55,10 +55,9 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_NormalizeString)
     DllImportEntry(GlobalizationNative_StartsWith)
     DllImportEntry(GlobalizationNative_WindowsIdToIanaId)
-
-     DllImportEntry(GlobalizationNative_ToAscii)
-     DllImportEntry(GlobalizationNative_ToUnicode)
-     DllImportEntry(GlobalizationNative_InitOrdinalCasingPage)
+    DllImportEntry(GlobalizationNative_ToAscii)
+    DllImportEntry(GlobalizationNative_ToUnicode)
+    DllImportEntry(GlobalizationNative_InitOrdinalCasingPage)
 };
 
 EXTERN_C const void* GlobalizationResolveDllImport(const char* name);

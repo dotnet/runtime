@@ -101,9 +101,6 @@ else ()
     # we only need to build System.Globalization.Native when building static libs.
     if (STATIC_LIBS_ONLY)
         add_subdirectory(System.Globalization.Native)
-        if (CLR_CMAKE_TARGET_APPLE)
-            add_subdirectory(System.HybridGlobalization.Native)
-        endif ()
     endif ()
 endif ()
 
@@ -160,6 +157,5 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_APPLE)
         add_subdirectory(System.Security.Cryptography.Native.Apple)
-        add_subdirectory(System.HybridGlobalization.Native)
     endif ()
 endif ()

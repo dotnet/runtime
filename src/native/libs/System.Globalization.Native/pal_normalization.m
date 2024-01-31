@@ -3,8 +3,9 @@
 //
 
 #include "pal_errors.h"
-#include "pal_icushim_internal.h"
-#include "pal_normalization.h"
+#include "pal_common.h"
+#include "pal_hybrid.h"
+#include "pal_normalization_hg.h"
 #import <Foundation/Foundation.h>
 
 #if !__has_feature(objc_arc)
@@ -88,3 +89,4 @@ int32_t GlobalizationNative_NormalizeStringNative(NormalizationForm normalizatio
     }
 }
 #endif
+

@@ -1,33 +1,3 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-#pragma once
-
-#include "pal_compiler.h"
-
-PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength);
-
-PALEXPORT int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength);
-
-PALEXPORT int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLength);
-
-PALEXPORT int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName);
-
-PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
-                                                          int shortFormat, UChar* value,
-                                                          int32_t valueLength);
-#if defined(APPLE_HYBRID_GLOBALIZATION)
-
-PALEXPORT const char* GlobalizationNative_GetDefaultLocaleNameNative(void);
-
-PALEXPORT const char* GlobalizationNative_GetLocaleNameNative(const char* localeName);
-
-PALEXPORT const char* GlobalizationNative_GetLocaleTimeFormatNative(const char* localeName, int shortFormat);
-
-PALEXPORT int32_t GlobalizationNative_GetLocalesNative(UChar* locales, int32_t length);
-
-PALEXPORT int32_t GlobalizationNative_IsPredefinedLocaleNative(const char* localeName);
-
 /* ### Data tables **************************************************/
 
 /**
@@ -401,4 +371,33 @@ NULL,
 NULL
 };
 
-#endif
+/**
+ * Append a code point to a string, overwriting 1 or 2 code units.
+ * The offset points to the current end of the string contents
+ * and is advanced (post-increment).
+ * "Safe" macro, checks for a valid code point.
+ * Converts code points outside of Basic Multilingual Plane into
+ * corresponding surrogate pairs if sufficient space in the string.
+ * High surrogate range: 0xD800 - 0xDBFF 
+ * Low surrogate range: 0xDC00 - 0xDFFF
+ * If the code point is not valid or a trail surrogate does not fit,
+ * then isError is set to true.
+ *
+ * @param buffer const uint16_t * string buffer
+ * @param offset string offset, must be offset<capacity
+ * @param capacity size of the string buffer
+ * @param codePoint code point to append
+ * @param isError output bool set to true if an error occurs, otherwise not modified
+ */
+#define Append(buffer, offset, capacity, codePoint, isError) { \
+    if ((offset) >= (capacity)) /* insufficiently sized destination buffer */ { \
+        (isError) = InsufficientBuffer; \
+    } else if ((uint32_t)(codePoint) > 0x10ffff) /* invalid code point */  { \
+        (isError) = InvalidCodePoint; \
+    } else if ((uint32_t)(codePoint) <= 0xffff) { \
+        (buffer)[(offset)++] = (uint16_t)(codePoint); \
+    } else { \
+        (buffer)[(offset)++] = (uint16_t)(((codePoint) >> 10) + 0xd7c0); \
+        (buffer)[(offset)++] = (uint16_t)(((codePoint)&0x3ff) | 0xdc00); \
+    } \
+}

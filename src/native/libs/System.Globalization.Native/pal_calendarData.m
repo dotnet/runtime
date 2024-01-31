@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <assert.h>
-#include "pal_icushim_internal.h"
-#include "pal_calendarData.h"
+#include "pal_calendarData_hg.h"
 #import <Foundation/Foundation.h>
 
 #if !__has_feature(objc_arc)

@@ -4,16 +4,14 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "pal_icushim_internal.h"
+#include "pal_common.h"
 #include "pal_icushim.h"
-#include "pal_calendarData.h"
-#include "pal_casing.h"
-#include "pal_collation.h"
-#include "pal_locale.h"
-#include "pal_localeNumberData.h"
-#include "pal_localeStringData.h"
-#include "pal_normalization.h"
-#include "pal_timeZoneInfo.h"
+#include "pal_calendarData_hg.h"
+#include "pal_casing_hg.h"
+#include "pal_collation_hg.h"
+#include "pal_locale_hg.h"
+#include "pal_normalization_hg.h"
+#include "pal_timeZoneInfo_hg.h"
 
 #ifdef DEBUG
 #define assert_err(cond, msg, err) do \

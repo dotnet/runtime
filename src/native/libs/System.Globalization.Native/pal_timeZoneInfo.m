@@ -3,8 +3,9 @@
 //
 
 #include "pal_errors_internal.h"
-#include "pal_icushim_internal.h"
-#include "pal_timeZoneInfo.h"
+#include "pal_common.h"
+#include "pal_hybrid.h"
+#include "pal_timeZoneInfo_hg.h"
 #import <Foundation/Foundation.h>
 
 #if !__has_feature(objc_arc)
