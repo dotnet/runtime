@@ -4583,14 +4583,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_MORPH_INIT, &Compiler::fgMorphInit);
 
+    // Inline callee methods into this root method
+    //
+    DoPhase(this, PHASE_MORPH_INLINE, &Compiler::fgInline);
+
     // Disable profile checks now.
     // Over time we will move this further and further back in the phase list, as we fix issues.
     //
     activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
-    // Inline callee methods into this root method
-    //
-    DoPhase(this, PHASE_MORPH_INLINE, &Compiler::fgInline);
 
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
