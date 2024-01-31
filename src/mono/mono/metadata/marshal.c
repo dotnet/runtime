@@ -690,72 +690,12 @@ mono_array_to_lparray_impl (MonoArrayHandle array_handle, MonoError *error)
 		return NULL;
 
 	MonoArray *array = MONO_HANDLE_RAW (array_handle); // FIXMEcoop
-
-#ifndef DISABLE_COM
-	gpointer *nativeArray = NULL;
-	int nativeArraySize = 0;
-	int i = 0;
-	MonoClass *klass = array->obj.vtable->klass;
-	MonoClass *klass_element_class = m_class_get_element_class (klass);
-
-	switch (m_class_get_byval_arg (klass_element_class)->type) {
-	case MONO_TYPE_VOID:
-		g_assert_not_reached ();
-		break;
-	case MONO_TYPE_CLASS:
-		nativeArraySize = array->max_length;
-		nativeArray = g_new (gpointer, nativeArraySize);
-		for (i = 0; i < nativeArraySize; ++i) {
-			nativeArray [i] = mono_cominterop_get_com_interface (((MonoObject **)array->vector)[i], klass_element_class, error);
-			if (!is_ok (error)) {
-				// FIXME? Returns uninitialized.
-				break;
-			}
-		}
-		return nativeArray;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-	case MONO_TYPE_VALUETYPE:
-	case MONO_TYPE_PTR:
-		/* nothing to do */
-		break;
-	case MONO_TYPE_GENERICINST:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_STRING:
-	default:
-		g_warning ("type 0x%x not handled", m_class_get_byval_arg (klass_element_class)->type);
-		g_assert_not_reached ();
-	}
-#endif
 	return array->vector;
 }
 
 void
 mono_free_lparray_impl (MonoArrayHandle array, gpointer* nativeArray, MonoError *error)
 {
-#ifndef DISABLE_COM
-	if (!nativeArray || MONO_HANDLE_IS_NULL (array))
-		return;
-
-	MonoClass * const klass = mono_handle_class (array);
-
-	if (m_class_get_byval_arg (m_class_get_element_class (klass))->type == MONO_TYPE_CLASS)
-		g_free (nativeArray);
-#endif
 }
 
 /* This is a JIT icall, it sets the pending exception (in wrapper) and returns on error */
@@ -3474,11 +3414,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		/* The COM code is not AOT compatible, it calls mono_custom_attrs_get_attr_checked () */
 		if (aot)
 			return method;
-#ifndef DISABLE_COM
-		return mono_cominterop_get_native_wrapper (method);
-#else
+		
 		g_assert_not_reached ();
-#endif
 	}
 
 	sig = mono_method_signature_internal (method);

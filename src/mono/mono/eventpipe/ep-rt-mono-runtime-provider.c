@@ -1547,8 +1547,6 @@ bulk_type_log_single_type (
 		val->fixed_sized_data.flags |= TYPE_FLAGS_FINALIZABLE;
 	if (m_class_is_delegate (klass))
 		val->fixed_sized_data.flags |= TYPE_FLAGS_DELEGATE;
-	if (mono_class_is_com_object (klass))
-		val->fixed_sized_data.flags |= TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT;
 	val->fixed_sized_data.cor_element_type = (uint8_t)mono_underlying_type->type;
 
 	// Sets val variable sized parameter type data, type_parameters_count, and mono_type_parameters associated
