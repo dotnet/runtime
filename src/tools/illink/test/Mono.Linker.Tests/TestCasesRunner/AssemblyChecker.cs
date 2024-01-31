@@ -171,8 +171,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				foreach (var attr in original.CustomAttributes.Where (l => l.AttributeType.Name == nameof (CreatedMemberAttribute))) {
 					var newName = original.FullName + "::" + attr.ConstructorArguments[0].Value.ToString ();
 
-					// Assert.AreEqual (1, linkedMembers.RemoveWhere (l => l.Contains (newName)), $"Newly created member '{newName}' was not found");
-					var asdf = linkedMembers.Where (l => l.Contains (newName)).ToList ();
 					if (1 != linkedMembers.RemoveWhere (l => l.Contains (newName))) {
 						yield return $"Newly created member '{newName}' was not found";
 					}
@@ -630,14 +628,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected static IEnumerable<string> VerifyInstructions (MethodDefinition src, MethodDefinition linked)
 		{
-			foreach (var err in VerifyBodyProperties (
+			let errs = VerifyBodyProperties (
 				src,
 				linked,
 				nameof (ExpectedInstructionSequenceAttribute),
 				nameof (ExpectBodyModifiedAttribute),
 				"instructions",
 				m => FormatMethodBody (m.Body),
-				attr => GetStringArrayAttributeValue (attr).ToArray ())) yield return err;
+				attr => GetStringArrayAttributeValue (attr).ToArray ());
+			foreach (var err in errs)
+				yield return err;
 		}
 
 		public static string[] FormatMethodBody (MethodBody body)
@@ -756,14 +756,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static IEnumerable<string> VerifyLocals (MethodDefinition src, MethodDefinition linked)
 		{
-			foreach (var err in VerifyBodyProperties (
+			let errs = VerifyBodyProperties (
 				src,
 				linked,
 				nameof (ExpectedLocalsSequenceAttribute),
 				nameof (ExpectLocalsModifiedAttribute),
 				"locals",
 				m => m.Body.Variables.Select (v => v.VariableType.ToString ()).ToArray (),
-				attr => GetStringOrTypeArrayAttributeValue (attr).ToArray ())) yield return err;
+				attr => GetStringOrTypeArrayAttributeValue (attr).ToArray ());
+			foreach (var err in errs)
+				yield return err;
 		}
 
 		public static IEnumerable<string> VerifyBodyProperties (MethodDefinition src, MethodDefinition linked, string sequenceAttributeName, string expectModifiedAttributeName,
@@ -845,7 +847,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					yield return $"Resource '{resource.Name}' data doesn't match.";
 			}
 
-			if (expectedResourceNames.Any ()) yield return $"Resource '{expectedResourceNames.FirstOrDefault ()}' should be kept.";
+			if (expectedResourceNames.Any ())
+				yield return $"Resource '{expectedResourceNames.FirstOrDefault ()}' should be kept.";
 		}
 
 		IEnumerable<string> VerifyExportedTypes (AssemblyDefinition original, AssemblyDefinition linked)
@@ -876,19 +879,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		protected virtual IEnumerable<string> VerifyPseudoAttributes (FieldDefinition src, FieldDefinition linked)
 		{
 			var expected = (FieldAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if (expected != linked.Attributes) yield return $"Field `{src}' pseudo attributes did not match expected";
+			if (expected != linked.Attributes)
+				yield return $"Field `{src}' pseudo attributes did not match expected";
 		}
 
 		protected virtual IEnumerable<string> VerifyPseudoAttributes (PropertyDefinition src, PropertyDefinition linked)
 		{
 			var expected = (PropertyAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if (expected != linked.Attributes) yield return $"Property `{src}' pseudo attributes did not match expected";
+			if (expected != linked.Attributes)
+				yield return $"Property `{src}' pseudo attributes did not match expected";
 		}
 
 		protected virtual IEnumerable<string> VerifyPseudoAttributes (EventDefinition src, EventDefinition linked)
 		{
 			var expected = (EventAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if (expected != linked.Attributes) yield return $"Event `{src}' pseudo attributes did not match expected";
+			if (expected != linked.Attributes)
+				yield return $"Event `{src}' pseudo attributes did not match expected";
 		}
 
 		protected virtual IEnumerable<string> VerifyCustomAttributes (ICustomAttributeProvider src, ICustomAttributeProvider linked)
@@ -937,7 +943,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					yield return $"Could not locate original private implementation details method {methodName}";
 
 				var linkedMethod = linkedImplementationDetails.Methods.FirstOrDefault (m => m.Name == methodName);
-				foreach (var erro in VerifyMethodKept (originalMethod, linkedMethod, compilerGenerated: true)) yield return erro;
+				foreach (var erro in VerifyMethodKept (originalMethod, linkedMethod, compilerGenerated: true))
+					yield return erro;
 				linkedMembers.Remove (linkedMethod.FullName);
 			}
 			verifiedGeneratedTypes.Add (srcImplementationDetails.FullName);
@@ -946,16 +953,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		static IEnumerable<string> VerifyPrivateImplementationDetailsType (ModuleDefinition src, ModuleDefinition linked, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails)
 		{
 			srcImplementationDetails = src.Types.FirstOrDefault (t => IsPrivateImplementationDetailsType (t));
+			if (srcImplementationDetails == null)
+				yield return "Could not locate <PrivateImplementationDetails> in the original assembly. Does your test use initializers?";
 
 			linkedImplementationDetails = linked.Types.FirstOrDefault (t => IsPrivateImplementationDetailsType (t));
-			const string srcMissingMessage = "Could not locate <PrivateImplementationDetails> in the original assembly. Does your test use initializers?";
-			const string linkedMissingMessage = "Could not locate <PrivateImplementationDetails> in the linked assembly";
-			return (srcImplementationDetails, linkedImplementationDetails) switch {
-				(null, null) => [srcMissingMessage, linkedMissingMessage],
-				(null, _) => [srcMissingMessage],
-				(_, null) => [linkedMissingMessage],
-				_ => Enumerable.Empty<string> ()
-			};
+			if (linkedImplementationDetails == null)
+				yield return  "Could not locate <PrivateImplementationDetails> in the linked assembly";
+
 		}
 
 		protected virtual IEnumerable<string> VerifyArrayInitializers (MethodDefinition src, MethodDefinition linked)
@@ -1198,9 +1202,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 					if (checkNames) {
 						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute))) {
-							if (lnkp.Name != string.Empty) yield return $"Expected empty parameter name. Parameter {i} of {(src as MethodDefinition)}";
+							if (lnkp.Name != string.Empty)
+								yield return $"Expected empty parameter name. Parameter {i} of {(src as MethodDefinition)}";
 						} else {
-							if (srcp.Name != lnkp.Name) yield return $"Mismatch in parameter name. Parameter {i} of {(src as MethodDefinition)}";
+							if (srcp.Name != lnkp.Name)
+								yield return $"Mismatch in parameter name. Parameter {i} of {(src as MethodDefinition)}";
 						}
 					}
 				}
