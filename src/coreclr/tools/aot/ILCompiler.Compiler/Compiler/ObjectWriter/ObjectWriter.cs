@@ -184,7 +184,7 @@ namespace ILCompiler.ObjectWriter
                     adjustedAddend |= definedSymbol.Value & maskThumbBitIn;
                     adjustedAddend -= offset;
 
-                    if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && (uint)adjustedAddend >= 0xFFFFFF)
+                    if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend))
                     {
                         EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
                     }

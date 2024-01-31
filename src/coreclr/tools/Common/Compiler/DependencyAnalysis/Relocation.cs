@@ -163,7 +163,7 @@ namespace ILCompiler.DependencyAnalysis
         //*****************************************************************************
         // Returns whether the offset fits into bl instruction
         //*****************************************************************************
-        private static bool FitsInThumb2BlRel24(int imm24)
+        public static bool FitsInThumb2BlRel24(int imm24)
         {
             return ((imm24 << 7) >> 7) == imm24;
         }
