@@ -121,7 +121,7 @@ function allocateUnusedWorker(): PThreadWorker {
 
 
 export function dumpThreads(): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     // eslint-disable-next-line no-console
     console.log("Running workers:");
     getRunningWorkers().forEach((worker) => {

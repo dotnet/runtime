@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { ENVIRONMENT_IS_NODE, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_wasm_wait_for_debugger } from "./debug";
@@ -89,7 +89,7 @@ export function find_entry_point(assembly: string) {
 }
 
 export function nativeExit(code: number) {
-    if (MonoWasmThreads) {
+    if (WasmEnableThreads) {
         cancelThreads();
     }
     cwraps.mono_wasm_exit(code);

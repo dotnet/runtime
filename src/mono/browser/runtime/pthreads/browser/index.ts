@@ -3,11 +3,11 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { pthreadPtr } from "../shared/types";
+import { MonoWorkerToMainMessage, pthreadPtr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
 import { PThreadWorker, allocateUnusedWorker, getRunningWorkers, getUnusedWorkerPool, getWorker, loadWasmModuleToWorker } from "../shared/emscripten-internals";
-import { createPromiseController, runtimeHelpers } from "../../globals";
-import { PromiseAndController, PromiseController } from "../../types/internal";
+import { createPromiseController, mono_assert, runtimeHelpers } from "../../globals";
+import { MainToWorkerMessageType, PromiseAndController, PromiseController, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
 
 const threadPromises: Map<pthreadPtr, PromiseController<Thread>[]> = new Map();
 
@@ -15,6 +15,13 @@ export interface Thread {
     readonly pthreadPtr: pthreadPtr;
     readonly port: MessagePort;
     postMessageToWorker<T extends MonoThreadMessage>(message: T): void;
+}
+
+class ThreadImpl implements Thread {
+    constructor(readonly pthreadPtr: pthreadPtr, readonly worker: Worker, readonly port: MessagePort) { }
+    postMessageToWorker<T extends MonoThreadMessage>(message: T): void {
+        this.port.postMessage(message);
+    }
 }
 
 /// wait until the thread with the given id has set up a message port to the runtime
@@ -50,26 +57,54 @@ export function resolveThreadPromises(pthreadPtr: pthreadPtr, thread?: Thread): 
 }
 
 // handler that runs in the main thread when a message is received from a pthread worker
-function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMessage>): void {
+function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>): void {
     if (!WasmEnableThreads) return;
-    /// N.B. important to ignore messages we don't recognize - Emscripten uses the message event to send internal messages
-    const data = ev.data;
-    if (isMonoWorkerMessagePreload(data)) {
-        const port = data[monoSymbol].port;
-        port.postMessage(makeMonoThreadMessageApplyMonoConfig(runtimeHelpers.config));
+    let pthreadId: pthreadPtr;
+    // this is emscripten message
+    if (ev.data.cmd === "killThread") {
+        pthreadId = ev.data["thread"];
+        mono_assert(pthreadId == worker.info.pthreadId, "expected pthreadId to match");
+        worker.info.isRunning = false;
+        worker.info.pthreadId = 0;
+        return;
     }
-    else if (isMonoWorkerMessageChannelCreated(data)) {
-        const port = data[monoSymbol].port;
-        const pthreadId = data[monoSymbol].threadId;
-        const thread = addThread(pthreadId, worker, port);
-        port.addEventListener("message", (ev) => monoDedicatedChannelMessageFromWorkerToMain(ev, thread));
-        port.start();
-        resolvePromises(pthreadId, thread);
+
+    const message = ev.data[monoMessageSymbol] as MonoWorkerToMainMessage;
+    if (message === undefined) {
+        /// N.B. important to ignore messages we don't recognize - Emscripten uses the message event to send internal messages
+        return;
     }
-    else if (isMonoWorkerMessageEnabledInterop(data)) {
-        const pthreadId = data[monoSymbol].threadId;
-        const worker = Internals.getWorker(pthreadId) as PThreadWorker;
-        worker.interopInstalled = true;
+
+    let port: MessagePort;
+    let thread: Thread;
+    pthreadId = message.info?.pthreadId ?? 0;
+
+    switch (message.monoCmd) {
+        case WorkerToMainMessageType.preload:
+            // this one shot port from setupPreloadChannelToMainThread
+            port = message.port!;
+            port.postMessage({
+                type: "pthread",
+                cmd: MainToWorkerMessageType.applyConfig,
+                config: JSON.stringify(runtimeHelpers.config)
+            });
+            port.close();
+            break;
+        case WorkerToMainMessageType.pthreadCreated:
+            port = message.port!;
+            thread = new ThreadImpl(pthreadId, worker, port);
+            worker.thread = thread;
+            worker.info.isRunning = true;
+            resolveThreadPromises(pthreadId, thread);
+        // fall through
+        case WorkerToMainMessageType.monoRegistered:
+        case WorkerToMainMessageType.monoAttached:
+        case WorkerToMainMessageType.enabledInterop:
+        case WorkerToMainMessageType.monoUnRegistered:
+            worker.info = Object.assign(worker.info!, message.info, {});
+            break;
+        default:
+            throw new Error(`Unhandled message from worker: ${message.monoCmd}`);
     }
 }
 
