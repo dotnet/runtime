@@ -15,8 +15,15 @@ export function is_runtime_running() {
 }
 
 export function assert_runtime_running() {
-    mono_assert(runtimeHelpers.runtimeReady, ".NET runtime didn't start yet. Please call dotnet.create() first.");
-    mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use runtime.runMain() which doesn't exit the runtime.`);
+    if (!is_exited()) {
+        if (MonoWasmThreads && ENVIRONMENT_IS_WORKER) {
+            mono_assert(runtimeHelpers.runtimeReady, "The WebWorker is not attached to the runtime. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
+        } else {
+            mono_assert(runtimeHelpers.runtimeReady, ".NET runtime didn't start yet. Please call dotnet.create() first.");
+        }
+    } else {
+        mono_assert(!loaderHelpers.assertAfterExit, () => `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use runtime.runMain() which doesn't exit the runtime.`);
+    }
 }
 
 export function register_exit_handlers() {
@@ -135,6 +142,7 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     }
 
     if (runtimeHelpers.runtimeReady && runtimeHelpers.nativeExit) {
+        runtimeHelpers.runtimeReady = false;
         try {
             runtimeHelpers.nativeExit(exit_code);
         }

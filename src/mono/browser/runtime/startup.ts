@@ -220,7 +220,7 @@ async function preRunAsync(userPreRun: (() => void)[]) {
         userPreRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.preRun);
     } catch (err) {
-        mono_log_error("user callback preRun() failed", err);
+        mono_log_error("preRunAsync() failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;
     }
@@ -349,7 +349,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
         userpostRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.postRun);
     } catch (err) {
-        mono_log_error("user callback posRun() failed", err);
+        mono_log_error("postRunAsync() failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;
     }
