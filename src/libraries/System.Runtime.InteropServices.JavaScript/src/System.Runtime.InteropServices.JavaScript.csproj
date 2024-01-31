@@ -11,10 +11,10 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'browser'">SR.SystemRuntimeInteropServicesJavaScript_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
-    <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == '' and '$(FeatureWasmThreads)' == 'true'">true</WasmEnableJsInteropByValue>
+    <FeatureWasmManagedThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
+    <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == '' and '$(FeatureWasmManagedThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
-    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
     <DefineConstants Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(DefineConstants);ENABLE_JS_INTEROP_BY_VALUE</DefineConstants>
     <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -64,8 +64,8 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Exception.cs" />
   </ItemGroup>
 
-  <!-- only include threads support when FeatureWasmThreads is enabled -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(FeatureWasmThreads)' == 'true'">
+  <!-- only include threads support when FeatureWasmManagedThreads is enabled -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(FeatureWasmManagedThreads)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSWebWorker.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
   </ItemGroup>

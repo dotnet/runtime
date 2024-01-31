@@ -8,8 +8,8 @@
   </PropertyGroup>
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
-    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <FeatureWasmManagedThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>

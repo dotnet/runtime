@@ -8,8 +8,8 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
-    <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
-    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <FeatureWasmManagedThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- to see timing and which test aborted the runtime -->
@@ -31,12 +31,12 @@
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\timers.mjs" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureWasmThreads)' != 'true'">
+  <ItemGroup Condition="'$(FeatureWasmManagedThreads)' != 'true'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureWasmThreads)' == 'true'">
+  <ItemGroup Condition="'$(FeatureWasmManagedThreads)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestBase.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.Http.cs" />

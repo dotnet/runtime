@@ -11,7 +11,7 @@ This also works with released versions of .NET 7 or later and the `wasmbrowser` 
 
 ## Libraries feature defines ##
 
-We use the `FeatureWasmThreads` property in the libraries projects to conditionally define
+We use the `FeatureWasmManagedThreads` property in the libraries projects to conditionally define
 `FEATURE_WASM_THREADS` which is used to affect how the libraries are built for the multi-threaded
 runtime.
 
