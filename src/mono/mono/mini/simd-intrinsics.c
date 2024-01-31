@@ -554,13 +554,14 @@ static MonoInst*
 emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, MonoInst *arg1, MonoInst *arg2)
 {
 #ifdef TARGET_ARM64
+	gint32 simd_size = mono_class_value_size (klass, NULL);
 	if (!COMPILE_LLVM (cfg)) {
 		MonoInst* cmp = emit_xcompare (cfg, klass, element_type, arg1, arg2);
 		MonoInst* ret = emit_simd_ins (cfg, mono_defaults.boolean_class, OP_XEXTRACT, cmp->dreg, -1);
 		ret->inst_c0 = SIMD_EXTR_ARE_ALL_SET;
 		ret->inst_c1 = mono_class_value_size (klass, NULL);
 		return ret;
-	} else if (mono_class_value_size (klass, NULL) == 16) {
+	} else if (simd_size== 16 || simd_size == 12) {
 		return emit_simd_ins (cfg, klass, OP_XEQUAL_ARM64_V128_FAST, arg1->dreg, arg2->dreg);
 	} else {
 		return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
@@ -2720,11 +2721,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 				ins = emit_vector_insert_element (cfg, klass, ins, MONO_TYPE_R4, args [i + 1], i, FALSE);
 
 			if(len == 3){
-				float r4_0 = 0.0f;
+				static float r4_0 = 0;
 				MonoInst *zero;
 				int zero_dreg = alloc_freg (cfg);
 				MONO_INST_NEW (cfg, zero, OP_R4CONST);
-				zero->type = STACK_R4;
 				zero->inst_p0 = (void*)&r4_0;
 				zero->dreg = zero_dreg;
 				MONO_ADD_INS (cfg->cbb, zero);
