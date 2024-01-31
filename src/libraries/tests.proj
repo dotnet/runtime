@@ -100,6 +100,12 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Transactions.Local\tests\System.Transactions.Local.Tests.csproj" />
   </ItemGroup>
 
+  <!-- Projects that won't work when DotNetBuildFromSource. -->
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <!-- Project targets an older target framework which does not get built. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetArchitecture)' == 'ARMv6'">
     <!-- https://github.com/dotnet/runtime/issues/64673 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Ping\tests\FunctionalTests\System.Net.Ping.Functional.Tests.csproj" />

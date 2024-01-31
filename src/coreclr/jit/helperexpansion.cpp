@@ -1828,28 +1828,9 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 //
 PhaseStatus Compiler::fgLateCastExpansion()
 {
-    if (!doesMethodHaveExpandableCasts())
+    if (!doesMethodHaveExpandableCasts() || opts.OptimizationDisabled())
     {
         // Nothing to expand in the current method
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    if (!opts.IsOptimizedWithProfile())
-    {
-        // Currently, we're only interested in expanding cast helpers using profile data
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    if (JitConfig.JitConsumeProfileForCasts() == 0)
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
-    if (preferSize)
-    {
-        // The optimization comes with a codegen size increase
-        JITDUMP("Optimized for size - bail out.\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -1862,6 +1843,7 @@ enum class TypeCheckFailedAction
 {
     ReturnNull,
     CallHelper,
+    CallHelper_Specialized,
     CallHelper_AlwaysThrows
 };
 
@@ -1978,14 +1960,25 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
     const bool isCastToExact = comp->info.compCompHnd->isExactType(castToCls);
     if (isCastToExact && ((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY)))
     {
-        // (string)obj
-        // (string[])obj
-        //
-        // Fallbacks for these expansions always throw InvalidCastException
-        *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
+        result = castToCls;
 
-        // Assume that exceptions are rare
-        *likelihood = 100;
+        // obj is string
+        // obj is string[]
+        //
+        if ((helper == CORINFO_HELP_CHKCASTCLASS))
+        {
+            // (string)obj
+            //
+            // Fallback for this expansion always throws InvalidCastException
+            // TODO: can we do the same for string[]? (importer did not)
+            *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
+
+            // Assume that exceptions are rare
+            *likelihood = 100;
+
+            // Update the common denominator class to be more exact
+            *commonCls = result;
+        }
 
         // We're done, there is no need in consulting with PGO data
     }
@@ -1996,39 +1989,55 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
         // obj is string[]
         //
         // Fallbacks for these expansions simply return null
+        // TODO: should we keep the helper call for ISINSTANCEOFARRAY like we do for CHKCASTARRAY above?
+        // The logic is copied from the importer.
         *typeCheckFailed = TypeCheckFailedAction::ReturnNull;
+
+        // We're done, there is no need in consulting with PGO data
+        result = castToCls;
     }
     else
     {
+        CORINFO_CLASS_HANDLE exactClass = NO_CLASS_HANDLE;
         // 2) If VM can tell us the exact class for this "cast to" class - use it.
         // Just make sure the class is truly exact.
-        if ((comp->info.compCompHnd->getExactClasses(castToCls, 1, &result) == 1) &&
-            comp->info.compCompHnd->isExactType(result))
+        if ((comp->info.compCompHnd->getExactClasses(castToCls, 1, &exactClass) == 1) &&
+            comp->info.compCompHnd->isExactType(exactClass))
         {
-            if (isCastClass)
+            result = exactClass;
+
+            if ((helper == CORINFO_HELP_CHKCASTINTERFACE) || (helper == CORINFO_HELP_CHKCASTCLASS))
             {
                 // Fallback call is only needed for castclass and only to throw InvalidCastException
                 *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
 
                 // Assume that exceptions are rare
                 *likelihood = 100;
+
+                // Update the common denominator class to be more exact
+                *commonCls = result;
             }
-            else
+            else if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS))
             {
                 // Fallback for isinst simply returns null here
                 *typeCheckFailed = TypeCheckFailedAction::ReturnNull;
-            }
 
-            // Update the common denominator class to be more exact
-            *commonCls = result;
+                // Update the common denominator class to be more exact
+                *commonCls = result;
+            }
         }
         else
         {
             // 3) Consult with PGO data
             LikelyClassMethodRecord likelyClasses[MAX_GDV_TYPE_CHECKS];
-            unsigned                likelyClassCount =
-                getLikelyClasses(likelyClasses, MAX_GDV_TYPE_CHECKS, comp->fgPgoSchema, comp->fgPgoSchemaCount,
-                                 comp->fgPgoData, (int)castHelper->gtCastHelperILOffset);
+            unsigned                likelyClassCount = 0;
+
+            if (comp->opts.IsOptimizedWithProfile() && (JitConfig.JitConsumeProfileForCasts() != 0))
+            {
+                const int ilOffset = (int)castHelper->gtCastHelperILOffset;
+                likelyClassCount   = getLikelyClasses(likelyClasses, MAX_GDV_TYPE_CHECKS, comp->fgPgoSchema,
+                                                    comp->fgPgoSchemaCount, comp->fgPgoData, ilOffset);
+            }
 
             if (likelyClassCount != 0)
             {
@@ -2183,10 +2192,12 @@ static CORINFO_CLASS_HANDLE PickCandidateForTypeCheck(Compiler*              com
         unreached();
     }
 
-    if (isCastClass && (result == castToCls) && (*typeCheckFailed == TypeCheckFailedAction::CallHelper))
+    if ((helper == CORINFO_HELP_CHKCASTCLASS) && (result == castToCls) &&
+        (*typeCheckFailed == TypeCheckFailedAction::CallHelper))
     {
-        // TODO-InlineCast: Change helper to faster CORINFO_HELP_CHKCASTCLASS_SPECIAL
-        // it won't check for null and castToCls assuming we've already done it inline.
+        // A small optimization - use a slightly faster fallback which assumes that we've already checked
+        // for null and for castToCls itself so it won't do it again.
+        *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
     }
 
     assert(result != NO_CLASS_HANDLE);
@@ -2299,6 +2310,12 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
     else
     {
+        if (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_Specialized)
+        {
+            // A slightly faster fallback which assumes that we've already checked
+            // for null and for castToCls itself.
+            call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL);
+        }
         GenTree* fallbackTree = gtNewTempStore(tmpNum, call);
         fallbackBb            = fgNewBBFromTreeAfter(BBJ_ALWAYS, typeCheckBb, fallbackTree, debugInfo, lastBb, true);
     }
@@ -2346,10 +2363,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //
     nullcheckBb->inheritWeight(firstBb);
     typeCheckBb->inheritWeightPercentage(nullcheckBb, 50);
-    fallbackBb->inheritWeightPercentage(typeCheckBb,
-                                        (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_AlwaysThrows)
-                                            ? 0
-                                            : 100 - likelihood);
+    fallbackBb->inheritWeightPercentage(typeCheckBb, fallbackBb->KindIs(BBJ_THROW) ? 0 : 100 - likelihood);
     typeCheckSucceedBb->inheritWeightPercentage(typeCheckBb, likelihood);
     lastBb->inheritWeight(firstBb);
 

@@ -693,15 +693,39 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             break;
 
         case BBJ_COND:
-
-            // Functionally equivalent to above
+        {
+            FlowEdge* oldEdge = fgRemoveRefPred(oldTarget, block);
             if (block->TrueTargetIs(oldTarget))
             {
-                block->SetTrueTarget(newTarget);
-                fgRemoveRefPred(oldTarget, block);
+                if (block->FalseTargetIs(oldTarget))
+                {
+                    // fgRemoveRefPred returns nullptr for BBJ_COND blocks with two flow edges to target
+                    assert(oldEdge == nullptr);
+                    fgRemoveConditionalJump(block);
+                    assert(block->KindIs(BBJ_ALWAYS));
+                    block->SetTarget(newTarget);
+                }
+                else
+                {
+                    // fgRemoveRefPred should have removed the flow edge
+                    assert(oldEdge != nullptr);
+                    block->SetTrueTarget(newTarget);
+                }
+
+                // TODO-NoFallThrough: Proliferate weight from oldEdge
+                // (we avoid doing so when updating the true target to reduce diffs for now, as a quirk)
                 fgAddRefPred(newTarget, block);
             }
+            else
+            {
+                // fgRemoveRefPred should have removed the flow edge
+                assert(oldEdge != nullptr);
+                assert(block->FalseTargetIs(oldTarget));
+                block->SetFalseTarget(newTarget);
+                fgAddRefPred(newTarget, block, oldEdge);
+            }
             break;
+        }
 
         case BBJ_SWITCH:
         {
@@ -5032,13 +5056,17 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
     if (curr->KindIs(BBJ_COND))
     {
-        curr->SetFalseTarget(curr->Next());
-        fgReplacePred(succ, curr, newBlock);
         if (curr->TrueTargetIs(succ))
         {
-            // Now 'curr' jumps to newBlock
             curr->SetTrueTarget(newBlock);
         }
+        else
+        {
+            assert(curr->FalseTargetIs(succ));
+            curr->SetFalseTarget(newBlock);
+        }
+
+        fgReplacePred(succ, curr, newBlock);
         fgAddRefPred(newBlock, curr);
     }
     else if (curr->KindIs(BBJ_SWITCH))
@@ -5178,7 +5206,7 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
 //
 // Arguments:
 //   block       - the block to remove
-//   unreachable - the block to remove
+//   unreachable - indicates whether removal is because block is unreachable or empty
 //
 // Return Value:
 //   The block after the block, or blocks, removed.
@@ -5345,24 +5373,15 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     break;
 
                 case BBJ_COND:
-                    /* The links for the direct predecessor case have already been updated above */
-                    if (!predBlock->TrueTargetIs(block))
+                    if (predBlock->TrueTargetIs(block))
                     {
-                        break;
-                    }
-
-                    /* Check if both sides of the BBJ_COND now jump to the same block */
-                    if (predBlock->FalseTargetIs(succBlock))
-                    {
-                        // Make sure we are replacing "block" with "succBlock" in predBlock->bbTarget.
-                        noway_assert(predBlock->TrueTargetIs(block));
                         predBlock->SetTrueTarget(succBlock);
-                        fgRemoveConditionalJump(predBlock);
-                        break;
                     }
 
-                    noway_assert(predBlock->TrueTargetIs(block));
-                    predBlock->SetTrueTarget(succBlock);
+                    if (predBlock->FalseTargetIs(block))
+                    {
+                        predBlock->SetFalseTarget(succBlock);
+                    }
                     break;
 
                 case BBJ_CALLFINALLY:
@@ -5397,7 +5416,9 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 break;
 
             case BBJ_COND:
-                bPrev->SetFalseTarget(block->Next());
+                // block should not be a target anymore
+                assert(!bPrev->TrueTargetIs(block));
+                assert(!bPrev->FalseTargetIs(block));
 
                 /* Check if both sides of the BBJ_COND now jump to the same block */
                 if (bPrev->TrueTargetIs(bPrev->GetFalseTarget()))
@@ -5473,7 +5494,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
     /* If bSrc falls through to a block that is not bDst, we will insert a jump to bDst */
 
-    if (bSrc->KindIs(BBJ_COND) && !bSrc->NextIs(bDst))
+    if (bSrc->KindIs(BBJ_COND) && bSrc->FalseTargetIs(bDst) && !bSrc->NextIs(bDst))
     {
         // Add a new block after bSrc which jumps to 'bDst'
         jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true, bDst);
@@ -5531,10 +5552,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
     else if (bSrc->KindIs(BBJ_ALWAYS) && bSrc->HasInitializedTarget() && bSrc->JumpsToNext())
     {
         bSrc->SetFlags(BBF_NONE_QUIRK);
-    }
-    else if (bSrc->KindIs(BBJ_COND) && bSrc->NextIs(bDst))
-    {
-        bSrc->SetFalseTarget(bDst);
     }
 
     return jmpBlk;
@@ -6049,11 +6066,15 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     // We have decided to insert the block(s) after fgLastBlock
     fgMoveBlocksAfter(bStart, bLast, insertAfterBlk);
 
-    // If bPrev falls through, we will insert a jump to block
-    fgConnectFallThrough(bPrev, bStart);
+    if (bPrev->KindIs(BBJ_ALWAYS) && bPrev->JumpsToNext())
+    {
+        bPrev->SetFlags(BBF_NONE_QUIRK);
+    }
 
-    // If bLast falls through, we will insert a jump to bNext
-    fgConnectFallThrough(bLast, bNext);
+    if (bLast->KindIs(BBJ_ALWAYS) && bLast->JumpsToNext())
+    {
+        bLast->SetFlags(BBF_NONE_QUIRK);
+    }
 
 #endif // !FEATURE_EH_FUNCLETS
 
@@ -6943,9 +6964,6 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
             }
         }
     }
-
-    /* If afterBlk falls through, we insert a jump around newBlk */
-    fgConnectFallThrough(afterBlk, newBlk->Next());
 
 #ifdef DEBUG
     fgVerifyHandlerTab();

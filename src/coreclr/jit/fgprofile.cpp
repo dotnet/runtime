@@ -521,14 +521,6 @@ void BlockCountInstrumentor::RelocateProbes()
                 // Redirect any jumps
                 //
                 m_comp->fgReplaceJumpTarget(pred, intermediary, block);
-
-                // Handle case where we had a fall through critical edge
-                //
-                if (pred->NextIs(intermediary))
-                {
-                    m_comp->fgRemoveRefPred(pred, block);
-                    m_comp->fgAddRefPred(intermediary, block);
-                }
             }
         }
     }
