@@ -94,13 +94,6 @@ ADVANCE_TYPE:
         if (!GetCurrentModule()->GetAvailableParamTypes()->FindNext(&m_typeIterator, &m_typeIteratorEntry))
             goto ADVANCE_ASSEMBLY;
 
-        //if (m_typeIteratorEntry->data != TypeHandle(m_mainMD->GetMethodTable()))
-        //    goto ADVANCE_TYPE;
-
-        // When looking up the AvailableParamTypes table we have to be really careful since
-        // the entries may be unrestored, and may have all sorts of encoded tokens in them.
-        // Similar logic occurs in the Lookup function for that table.  We will clean this
-        // up in Whidbey Beta2.
         TypeHandle th = m_typeIteratorEntry->GetTypeHandle();
 
         if (th.IsTypeDesc())

@@ -1487,9 +1487,7 @@ void DacDbiInterfaceImpl::GetTypeHandles(VMPTR_TypeHandle  vmThExact,
      *pThExact = TypeHandle::FromPtr(vmThExact.GetDacPtr());
      *pThApprox = TypeHandle::FromPtr(vmThApprox.GetDacPtr());
 
-    // If we can't find the class, return the proper HR to the right side. Note: if the class is not a value class and
-    // the class is also not restored, then we must pretend that the class is still not loaded. We are gonna let
-    // unrestored value classes slide, though, and special case access to the class's parent below.
+    // If we can't find the class, return the proper HR to the right side.
     if (pThApprox->IsNull())
     {
         LOG((LF_CORDB, LL_INFO10000, "D::GASCI: class isn't loaded.\n"));
@@ -3000,9 +2998,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactClassTypeHandle(DebuggerIPCE_ExpandedTyp
     TypeHandle typeConstructor =
         ClassLoader::LookupTypeDefOrRefInModule(pModule, pTopLevelTypeData->ClassTypeData.metadataToken);
 
-    // If we can't find the class, throw the appropriate HR. Note: if the class is not a value class and
-    // the class is also not restored, then we must pretend that the class is still not loaded. We are gonna let
-    // unrestored value classes slide, though, and special case access to the class's parent below.
+    // If we can't find the class, throw the appropriate HR.
     if (typeConstructor.IsNull())
     {
         LOG((LF_CORDB, LL_INFO10000, "D::ETITTH: class isn't loaded.\n"));
