@@ -1732,6 +1732,7 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
             // if we get an object reference we get the hash code out of that
             if (*(Object**)((BYTE *)objHandle.Get()->UnBox() + *fieldOffset + field->GetOffsetUnsafe()) != NULL)
             {
+                *fieldOffset += field->GetOffsetUnsafe();
                 ret = ValueTypeHashCodeStrategy::ReferenceField;
             }
             else
@@ -1745,17 +1746,17 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
             CorElementType fieldType = field->GetFieldType();
             if (fieldType == ELEMENT_TYPE_R8)
             {
-                *fieldOffset = field->GetOffsetUnsafe();
+                *fieldOffset += field->GetOffsetUnsafe();
                 ret = ValueTypeHashCodeStrategy::DoubleField;
             }
             else if (fieldType == ELEMENT_TYPE_R4)
             {
-                *fieldOffset = field->GetOffsetUnsafe();
+                *fieldOffset += field->GetOffsetUnsafe();
                 ret = ValueTypeHashCodeStrategy::SingleField;
             }
             else if (fieldType != ELEMENT_TYPE_VALUETYPE)
             {
-                *fieldOffset = field->GetOffsetUnsafe();
+                *fieldOffset += field->GetOffsetUnsafe();
                 *fieldSize = field->LoadSize();
                 ret = ValueTypeHashCodeStrategy::FastGetHashCode;
             }
@@ -1767,7 +1768,7 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
                 MethodTable* fieldMT = fieldTH.GetMethodTable();
                 if (CanCompareBitsOrUseFastGetHashCode(fieldMT))
                 {
-                    *fieldOffset = field->GetOffsetUnsafe();
+                    *fieldOffset += field->GetOffsetUnsafe();
                     *fieldSize = field->LoadSize();
                     ret = ValueTypeHashCodeStrategy::FastGetHashCode;
                 }
