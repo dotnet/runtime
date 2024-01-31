@@ -83,6 +83,7 @@ namespace System
         {
             private readonly MulticastDelegate? _delegate;
             private int _index;
+            private TDelegate? _current;
 
             internal InvocationListEnumerator(MulticastDelegate? d)
             {
@@ -95,7 +96,7 @@ namespace System
             /// </summary>
             public TDelegate Current
             {
-                get => Unsafe.As<TDelegate>(_delegate?.TryGetAt(_index));
+                get => _current!;
             }
 
             /// <summary>
@@ -104,7 +105,7 @@ namespace System
             public bool MoveNext()
             {
                 int index = _index + 1;
-                if (_delegate?.TryGetAt(index) == null)
+                if ((_current = Unsafe.As<TDelegate>(_delegate?.TryGetAt(index))) == null)
                 {
                     return false;
                 }

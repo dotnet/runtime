@@ -436,7 +436,7 @@ namespace System
         internal new bool HasSingleTarget => !(_invocationList is object[]);
 
         // Used by delegate invocation list enumerator
-        internal Delegate? TryGetAt(int index)
+        internal object? /* Delegate? */ TryGetAt(int index)
         {
             if (!(_invocationList is object[] invocationList))
             {
@@ -444,7 +444,7 @@ namespace System
             }
             else
             {
-                return ((uint)index < (uint)_invocationCount) ? (Delegate)invocationList[index] : null;
+                return ((uint)index < (uint)_invocationCount) ? invocationList[index] : null;
             }
         }
 
