@@ -112,6 +112,9 @@ namespace System.Runtime.InteropServices.JavaScript
                         return;
                     }
 
+                    // JSSynchronizationContext also registers to _cancellationToken
+                    _jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(false, _cancellationToken);
+
                     // receive callback when the cancellation is requested
                     _cancellationRegistration = _cancellationToken.Register(static (o) =>
                     {
@@ -119,9 +122,6 @@ namespace System.Runtime.InteropServices.JavaScript
                         // this could be executing on any thread
                         self.PropagateCompletionAndDispose(Task.FromCanceled<T>(self._cancellationToken));
                     }, this);
-
-                    // JSSynchronizationContext also registers to _cancellationToken
-                    _jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(false, _cancellationToken);
 
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
 
