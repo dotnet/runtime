@@ -88,7 +88,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 		}
-		public IEnumerable<string> VerifyImpl()
+
+		IEnumerable<string> VerifyImpl()
 		{
 			// There are no type forwarders left after compilation in Native AOT
 			// VerifyExportedTypes (originalAssembly, linkedAssembly);

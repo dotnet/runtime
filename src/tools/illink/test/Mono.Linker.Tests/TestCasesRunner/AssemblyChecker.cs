@@ -628,7 +628,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected static IEnumerable<string> VerifyInstructions (MethodDefinition src, MethodDefinition linked)
 		{
-			let errs = VerifyBodyProperties (
+			var errs = VerifyBodyProperties (
 				src,
 				linked,
 				nameof (ExpectedInstructionSequenceAttribute),
