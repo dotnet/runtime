@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // initialized and set by caller
             try
             {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 // when we arrive here, we are on the thread which owns the proxies
                 arg_exc.AssertCurrentThreadContext();
 #endif
@@ -108,7 +108,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_2 = ref arguments_buffer[3];
             try
             {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 // when we arrive here, we are on the thread which owns the proxies
                 arg_exc.AssertCurrentThreadContext();
 #endif
@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];
             try
             {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 // when we arrive here, we are on the thread which owns the proxies
                 arg_exc.AssertCurrentThreadContext();
 #endif
@@ -178,7 +178,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // arg_4 set by JS caller when there are arguments
             try
             {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 // when we arrive here, we are on the thread which owns the proxies
                 arg_exc.AssertCurrentThreadContext();
 #endif
@@ -215,7 +215,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var ctx = arg_exc.AssertCurrentThreadContext();
                 var holder = ctx.GetPromiseHolder(arg_1.slot.GCHandle);
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 lock (ctx)
                 {
                     if (holder.Callback == null)
@@ -225,9 +225,12 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 if (holder.CallbackReady != null)
                 {
+                    var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
+                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
 #pragma warning disable CA1416 // Validate platform compatibility
                     holder.CallbackReady?.Wait();
 #pragma warning restore CA1416 // Validate platform compatibility
+                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
                 }
 #endif
                 var callback = holder.Callback!;
@@ -271,7 +274,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 
         // this is here temporarily, until JSWebWorker becomes public API
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Runtime.InteropServices.JavaScript.JSWebWorker", "System.Runtime.InteropServices.JavaScript")]

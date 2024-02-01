@@ -1580,9 +1580,10 @@ enum class ProfileChecks : unsigned int
 {
     CHECK_NONE          = 0,
     CHECK_CLASSIC       = 1 << 0, // check "classic" jit weights
-    CHECK_LIKELY        = 1 << 1, // check likelihood based weights
-    RAISE_ASSERT        = 1 << 2, // assert on check failure
-    CHECK_ALL_BLOCKS    = 1 << 3, // check blocks even if bbHasProfileWeight is false
+    CHECK_HASLIKELIHOOD = 1 << 1, // check all FlowEdges for hasLikelihood
+    CHECK_LIKELY        = 1 << 2, // fully check likelihood based weights
+    RAISE_ASSERT        = 1 << 3, // assert on check failure
+    CHECK_ALL_BLOCKS    = 1 << 4, // check blocks even if bbHasProfileWeight is false
 };
 
 inline constexpr ProfileChecks operator ~(ProfileChecks a)
@@ -5863,15 +5864,13 @@ public:
 
     void fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSwitchBlock);
 
-    void fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* newTarget, BasicBlock* oldTarget);
-
     void fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock);
 
     void fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc);
 
     void fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ);
 
-    void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, BasicBlock* oldTarget);
+    void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget);
 
     void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
 

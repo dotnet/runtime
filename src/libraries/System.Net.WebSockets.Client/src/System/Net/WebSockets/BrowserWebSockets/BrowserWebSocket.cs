@@ -268,7 +268,7 @@ namespace System.Net.WebSockets
                 self.responseStatusHandle?.Dispose();
             }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             // if this is finalizer thread, we need to postpone the abort -> dispose
             _innerWebSocket?.SynchronizationContext.Post(Cleanup, this);
 #else
