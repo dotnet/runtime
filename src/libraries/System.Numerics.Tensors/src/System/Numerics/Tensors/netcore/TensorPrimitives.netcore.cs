@@ -911,17 +911,13 @@ namespace System.Numerics.Tensors
                     case 33:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
                         Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
@@ -929,12 +925,10 @@ namespace System.Numerics.Tensors
                     case 32:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -956,17 +950,13 @@ namespace System.Numerics.Tensors
                     case 17:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
                         Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
@@ -974,12 +964,10 @@ namespace System.Numerics.Tensors
                     case 16:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -1078,17 +1066,13 @@ namespace System.Numerics.Tensors
                     case 17:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
                         Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
@@ -1096,12 +1080,10 @@ namespace System.Numerics.Tensors
                     case 16:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -1115,17 +1097,13 @@ namespace System.Numerics.Tensors
                     case 9:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
                         Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
@@ -1133,12 +1111,10 @@ namespace System.Numerics.Tensors
                     case 8:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -1196,29 +1172,23 @@ namespace System.Numerics.Tensors
                     case 9:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
                         Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 8:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -1227,29 +1197,23 @@ namespace System.Numerics.Tensors
                     case 5:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
                         Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 4:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -1293,58 +1257,46 @@ namespace System.Numerics.Tensors
                     case 5:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
                         Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 4:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
                     case 3:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
                         Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 2:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -2107,7 +2059,6 @@ namespace System.Numerics.Tensors
                     case 33:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
@@ -2116,10 +2067,7 @@ namespace System.Numerics.Tensors
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
@@ -2127,13 +2075,11 @@ namespace System.Numerics.Tensors
                     case 32:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -2155,7 +2101,6 @@ namespace System.Numerics.Tensors
                     case 17:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
@@ -2164,10 +2109,7 @@ namespace System.Numerics.Tensors
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
@@ -2175,13 +2117,11 @@ namespace System.Numerics.Tensors
                     case 16:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -2280,7 +2220,6 @@ namespace System.Numerics.Tensors
                     case 17:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
@@ -2289,10 +2228,7 @@ namespace System.Numerics.Tensors
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
@@ -2300,13 +2236,11 @@ namespace System.Numerics.Tensors
                     case 16:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -2320,7 +2254,6 @@ namespace System.Numerics.Tensors
                     case 9:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
@@ -2329,10 +2262,7 @@ namespace System.Numerics.Tensors
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
@@ -2340,13 +2270,11 @@ namespace System.Numerics.Tensors
                     case 8:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -2404,7 +2332,6 @@ namespace System.Numerics.Tensors
                     case 9:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
@@ -2413,23 +2340,18 @@ namespace System.Numerics.Tensors
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 8:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -2438,7 +2360,6 @@ namespace System.Numerics.Tensors
                     case 5:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
@@ -2447,23 +2368,18 @@ namespace System.Numerics.Tensors
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 4:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -2509,7 +2425,6 @@ namespace System.Numerics.Tensors
                     case 5:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
@@ -2518,30 +2433,24 @@ namespace System.Numerics.Tensors
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 4:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
                     case 3:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
@@ -2550,23 +2459,18 @@ namespace System.Numerics.Tensors
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 2:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -5247,7 +5151,7 @@ namespace System.Numerics.Tensors
 
                     // One Vector256's worth of data.
                     case 32:
-                        {
+                    {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
 
                         Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
