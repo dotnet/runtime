@@ -37,3 +37,14 @@ namespace System.Diagnostics
         public static System.Diagnostics.DebugProvider SetProvider(System.Diagnostics.DebugProvider provider) { throw null; }
     }
 }
+
+#if FEATURE_WASM_THREADS
+namespace System.Threading
+{
+    public partial class Monitor
+    {
+        [ThreadStatic]
+        public static bool ThrowOnBlockingWaitOnJSInteropThread;
+    }
+}
+#endif

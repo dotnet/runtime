@@ -136,7 +136,10 @@ namespace System.Runtime.InteropServices
                         thunkData->Handle = GCHandle.Alloc(del, GCHandleType.Weak);
 
                         // if it is an open static delegate get the function pointer
-                        thunkData->FunctionPtr = del.GetRawFunctionPointerForOpenStaticDelegate();
+                        if (del.IsOpenStatic)
+                            thunkData->FunctionPtr = del.GetFunctionPointer(out RuntimeTypeHandle _, out bool _, out bool _);
+                        else
+                            thunkData->FunctionPtr = default;
                     }
                 }
             }
@@ -163,7 +166,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private static PInvokeDelegateThunk AllocateThunk(Delegate del)
+        private static unsafe PInvokeDelegateThunk AllocateThunk(Delegate del)
         {
             if (s_thunkPoolHeap == null)
             {
@@ -181,9 +184,9 @@ namespace System.Runtime.InteropServices
             //
             //  For open static delegates set target to ReverseOpenStaticDelegateStub which calls the static function pointer directly
             //
-            bool openStaticDelegate = del.GetRawFunctionPointerForOpenStaticDelegate() != IntPtr.Zero;
+            bool openStaticDelegate = del.IsOpenStatic;
 
-            IntPtr pTarget = RuntimeInteropData.GetDelegateMarshallingStub(del.GetTypeHandle(), openStaticDelegate);
+            IntPtr pTarget = RuntimeInteropData.GetDelegateMarshallingStub(new RuntimeTypeHandle(del.GetMethodTable()), openStaticDelegate);
             Debug.Assert(pTarget != IntPtr.Zero);
 
             RuntimeAugments.SetThunkData(s_thunkPoolHeap, delegateThunk.Thunk, delegateThunk.ContextData, pTarget);

@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
 namespace HostActivation.Tests
@@ -138,13 +139,7 @@ namespace HostActivation.Tests
                     .AddMockSDK("9999.0.0-dev", "9999.0.0")
                     .Build();
 
-                File.WriteAllText(Path.Combine(MockSDK.BinPath, "global.json"),
-                    @"
-{
-    ""sdk"": {
-      ""version"": ""9999.0.0-dev""
-    }
-}");
+                GlobalJson.CreateWithVersion(MockSDK.BinPath, "9999.0.0-dev");
 
                 App = TestApp.CreateFromBuiltAssets("HelloWorld");
                 RuntimeConfig.FromFile(App.RuntimeConfigJson)

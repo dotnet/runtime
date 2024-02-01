@@ -59,11 +59,9 @@
       "abstract": true,
       "description": "iOS Mono Runtime and AOT Workload",
       "packs": [
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.ios-arm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.ios-arm64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-arm64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-x64",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-x86"
       ],
       "extends": [ "runtimes-ios-net8" ],
       "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
@@ -72,11 +70,9 @@
       "abstract": true,
       "description": "iOS Mono Runtime Packs",
       "packs": [
-        "Microsoft.NETCore.App.Runtime.Mono.net8.ios-arm",
         "Microsoft.NETCore.App.Runtime.Mono.net8.ios-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.net8.iossimulator-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.net8.iossimulator-x64",
-        "Microsoft.NETCore.App.Runtime.Mono.net8.iossimulator-x86"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling-net8" ],
       "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]

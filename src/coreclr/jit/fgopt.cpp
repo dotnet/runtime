@@ -1014,7 +1014,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         while (preds.Height() > 0)
         {
             BasicBlock* const predBlock = preds.Pop();
-            fgReplaceJumpTarget(predBlock, block, bNext);
+            fgReplaceJumpTarget(predBlock, bNext, block);
         }
     }
 
@@ -3491,19 +3491,35 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         }
     }
 
-    // If we will be reordering blocks, re-establish implicit fallthrough for BBJ_COND blocks
+    // If we will be reordering blocks, ensure the false target of a BBJ_COND block is its next block
     if (useProfile)
     {
         for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
         {
             if (block->KindIs(BBJ_COND) && !block->NextIs(block->GetFalseTarget()))
             {
-                BasicBlock* jmpBlk = fgConnectFallThrough(block, block->GetFalseTarget());
-                assert(jmpBlk != nullptr);
-                assert(block->NextIs(jmpBlk));
+                if (block->CanRemoveJumpToTarget(block->GetTrueTarget(), this))
+                {
+                    // Reverse the jump condition
+                    GenTree* test = block->lastNode();
+                    assert(test->OperIsConditionalJump());
+                    test->AsOp()->gtOp1 = gtReverseCond(test->AsOp()->gtOp1);
 
-                // Skip next block
-                block = jmpBlk;
+                    BasicBlock* newFalseTarget = block->GetTrueTarget();
+                    BasicBlock* newTrueTarget  = block->GetFalseTarget();
+                    block->SetTrueTarget(newTrueTarget);
+                    block->SetFalseTarget(newFalseTarget);
+                    assert(block->CanRemoveJumpToTarget(newFalseTarget, this));
+                }
+                else
+                {
+                    BasicBlock* jmpBlk = fgConnectFallThrough(block, block->GetFalseTarget());
+                    assert(jmpBlk != nullptr);
+                    assert(block->NextIs(jmpBlk));
+
+                    // Skip next block
+                    block = jmpBlk;
+                }
             }
         }
     }

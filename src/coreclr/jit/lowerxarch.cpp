@@ -7867,16 +7867,16 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_BroadcastVector128ToVector512:
                 case NI_AVX512F_BroadcastVector256ToVector512:
                 {
+                    assert(!supportsSIMDScalarLoads);
+
                     if (parentNode->OperIsMemoryLoad())
                     {
                         supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
                         break;
                     }
-                    else
-                    {
-                        supportsGeneralLoads = true;
-                        break;
-                    }
+
+                    supportsGeneralLoads = true;
+                    break;
                 }
 
                 case NI_SSE41_ConvertToVector128Int16:
@@ -7942,15 +7942,17 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 }
 
                 case NI_SSE2_ConvertToVector128Double:
-                case NI_SSE3_MoveAndDuplicate:
                 case NI_AVX_ConvertToVector256Double:
+                case NI_AVX512F_ConvertToVector512Double:
+                case NI_AVX512F_VL_ConvertToVector128Double:
+                case NI_AVX512F_VL_ConvertToVector256Double:
                 {
                     assert(!supportsSIMDScalarLoads);
 
                     // Most instructions under the non-VEX encoding require aligned operands.
                     // Those used for Sse2.ConvertToVector128Double (CVTDQ2PD and CVTPS2PD)
-                    // and Sse3.MoveAndDuplicate (MOVDDUP) are exceptions and don't fail for
-                    // unaligned inputs as they read mem64 (half the vector width) instead
+                    // are exceptions and don't fail for unaligned inputs as they read half
+                    // the vector width instead
 
                     supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
                     supportsUnalignedSIMDLoads = true;
@@ -7958,10 +7960,29 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                    // For broadcasts we can only optimize constants and memory operands
-                    const bool broadcastIsContainable = childNode->OperIsConst() || childNode->isMemoryOp();
-                    supportsGeneralLoads =
-                        broadcastIsContainable && supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    if (childNode->OperIsConst() || childNode->isMemoryOp())
+                    {
+                        // For broadcasts we can only optimize constants and memory operands
+                        // since we're going from a smaller base type to a larger base type
+                        supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    }
+                    break;
+                }
+
+                case NI_SSE3_MoveAndDuplicate:
+                {
+                    // Most instructions under the non-VEX encoding require aligned operands.
+                    // Those used for Sse3.MoveAndDuplicate (MOVDDUP) are exceptions and don't
+                    // fail for unaligned inputs as they read half the vector width instead
+
+                    supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
+                    supportsUnalignedSIMDLoads = true;
+
+                    const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
+
+                    supportsGeneralLoads    = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    supportsSIMDScalarLoads = true;
                     break;
                 }
 
@@ -7987,8 +8008,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     break;
                 }
             }
-
-            assert(supportsSIMDScalarLoads == false);
             break;
         }
 
@@ -9710,8 +9729,69 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_SSE41_BlendVariable:
                             case NI_AVX_BlendVariable:
                             case NI_AVX2_BlendVariable:
+                            {
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op2);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    MakeSrcRegOptional(node, op2);
+                                }
+                                break;
+                            }
+
                             case NI_AVX512F_BlendVariableMask:
                             {
+                                // BlendVariableMask represents one of the following instructions:
+                                // * vblendmpd
+                                // * vblendmps
+                                // * vpblendmpb
+                                // * vpblendmpd
+                                // * vpblendmpq
+                                // * vpblendmpw
+                                //
+                                // In all cases, the node operands are ordered:
+                                // * op1: selectFalse
+                                // * op2: selectTrue
+                                // * op3: condition
+                                //
+                                // The managed API surface we expose doesn't directly support TYP_MASK
+                                // and we don't directly expose overloads for APIs like `vaddps` which
+                                // support embedded masking. Instead, we have decide to do pattern
+                                // recognition over the relevant ternary select APIs which functionally
+                                // execute `cond ? selectTrue : selectFalse` on a per element basis.
+                                //
+                                // To facilitate this, the mentioned ternary select APIs, such as
+                                // ConditionalSelect or TernaryLogic, with a correct control word, will
+                                // all compile down to BlendVariableMask when the condition is of TYP_MASK.
+                                //
+                                // So, before we do the normal containment checks for memory operands, we
+                                // instead want to check if `selectTrue` (op2) supports embedded masking and
+                                // if so, we want to mark it as contained. Codegen will then see that it is
+                                // contained and not a memory operand and know to invoke the special handling
+                                // so that the embedded masking can work as expected.
+
+                                if (op2->isEvexEmbeddedMaskingCompatibleHWIntrinsic())
+                                {
+                                    uint32_t maskSize = genTypeSize(simdBaseType);
+                                    uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
+
+                                    if ((maskSize == operSize) && IsInvariantInRange(op2, node))
+                                    {
+                                        MakeSrcContained(node, op2);
+                                        op2->MakeEmbMaskOp();
+
+                                        if (op1->IsVectorZero())
+                                        {
+                                            // When we are merging with zero, we can specialize
+                                            // and avoid instantiating the vector constant.
+                                            MakeSrcContained(node, op1);
+                                        }
+                                        break;
+                                    }
+                                }
+
                                 if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                                 {
                                     MakeSrcContained(node, op2);

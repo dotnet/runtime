@@ -76,15 +76,18 @@ namespace System.Net.Security
         {
             int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
 
+            bool mustRelease = false;
             try
             {
-                bool ignore = false;
-                phContext.DangerousAddRef(ref ignore);
+                phContext.DangerousAddRef(ref mustRelease);
                 status = Interop.SspiCli.QueryContextAttributesW(ref phContext._handle, contextAttribute, buffer);
             }
             finally
             {
-                phContext.DangerousRelease();
+                if (mustRelease)
+                {
+                    phContext.DangerousRelease();
+                }
             }
 
             if (status == 0 && refHandle != null)
@@ -111,15 +114,18 @@ namespace System.Net.Security
             SafeDeleteContext phContext,
             Interop.SspiCli.ContextAttribute contextAttribute, byte[] buffer)
         {
+            bool mustRelease = false;
             try
             {
-                bool ignore = false;
-                phContext.DangerousAddRef(ref ignore);
+                phContext.DangerousAddRef(ref mustRelease);
                 return Interop.SspiCli.SetContextAttributesW(ref phContext._handle, contextAttribute, buffer, buffer.Length);
             }
             finally
             {
-                phContext.DangerousRelease();
+                if (mustRelease)
+                {
+                    phContext.DangerousRelease();
+                }
             }
         }
     }
@@ -569,11 +575,12 @@ namespace System.Net.Security
         {
             int errorCode = (int)Interop.SECURITY_STATUS.InvalidHandle;
 
+            bool mustReleaseCredentials = false;
+            bool mustReleaseOutContext = false;
             try
             {
-                bool ignore = false;
-                inCredentials.DangerousAddRef(ref ignore);
-                outContext.DangerousAddRef(ref ignore);
+                inCredentials.DangerousAddRef(ref mustReleaseCredentials);
+                outContext.DangerousAddRef(ref mustReleaseOutContext);
 
                 Interop.SspiCli.CredHandle credentialHandle = inCredentials._handle;
 
@@ -616,12 +623,15 @@ namespace System.Net.Security
                     outContext._EffectiveCredential?.DangerousRelease();
                     outContext._EffectiveCredential = inCredentials;
                 }
-                else
+                else if (mustReleaseCredentials)
                 {
                     inCredentials.DangerousRelease();
                 }
 
-                outContext.DangerousRelease();
+                if (mustReleaseOutContext)
+                {
+                    outContext.DangerousRelease();
+                }
             }
 
             // The idea is that SSPI has allocated a block and filled up outUnmanagedBuffer+8 slot with the pointer.
@@ -863,13 +873,13 @@ namespace System.Net.Security
         {
             int errorCode = (int)Interop.SECURITY_STATUS.InvalidHandle;
 
+            bool mustReleaseCredentials = false;
+            bool mustReleaseOutContext = false;
             // Run the body of this method as a non-interruptible block.
             try
             {
-                bool ignore = false;
-
-                inCredentials.DangerousAddRef(ref ignore);
-                outContext.DangerousAddRef(ref ignore);
+                inCredentials.DangerousAddRef(ref mustReleaseCredentials);
+                outContext.DangerousAddRef(ref mustReleaseOutContext);
 
                 Interop.SspiCli.CredHandle credentialHandle = inCredentials._handle;
                 long timeStamp;
@@ -908,12 +918,15 @@ namespace System.Net.Security
                     outContext._EffectiveCredential?.DangerousRelease();
                     outContext._EffectiveCredential = inCredentials;
                 }
-                else
+                else if (mustReleaseCredentials)
                 {
                     inCredentials.DangerousRelease();
                 }
 
-                outContext.DangerousRelease();
+                if (mustReleaseOutContext)
+                {
+                    outContext.DangerousRelease();
+                }
             }
 
             // The idea is that SSPI has allocated a block and filled up outUnmanagedBuffer+8 slot with the pointer.
