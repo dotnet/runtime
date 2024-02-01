@@ -553,7 +553,7 @@ static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
 // Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
 static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 
-// Returns the encoding for the immediate value as 1-bits at bit locations '9-8'.
+// Returns the encoding for the immediate value as 2-bits at bit locations '9-8'.
 static code_t insEncodeUimm2_9_to_8(ssize_t imm);
 
 // Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
