@@ -28,6 +28,11 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
             availableThreadCount++;
         });
         onWorkerLoadInitiated(worker, afterLoaded);
+        if (loaderHelpers.config.exitOnUnhandledError) {
+            worker.onerror = (e) => {
+                loaderHelpers.mono_exit(1, e);
+            };
+        }
         return afterLoaded;
     };
     modulePThread.threadInitTLS = (): void => {
