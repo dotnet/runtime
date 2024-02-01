@@ -11554,6 +11554,7 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
             assert(isGeneralRegister(reg2));
             assert(isGeneralRegister(reg3));
             assert(isGeneralRegister(reg4));
+            assert(insScalableOptsNone(sopt));
             fmt = IF_DR_4A;
             break;
 
@@ -11567,6 +11568,7 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(isVectorRegister(reg4));
+            assert(insScalableOptsNone(sopt));
             fmt = IF_DV_4A;
             break;
 
@@ -11574,6 +11576,48 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
             fmt = IF_NONE;
             break;
 
+        // Fallback handles emitting the SVE instructions.
+        default:
+            return emitInsSve_R_R_R_R(ins, attr, reg1, reg2, reg3, reg4, opt, sopt);
+    }
+    assert(fmt != IF_NONE);
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(opt);
+
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
+    id->idReg4(reg4);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a SVE instruction referencing four registers.
+ *  Do not call this directly. Use 'emitIns_R_R_R_R' instead.
+ */
+
+void emitter::emitInsSve_R_R_R_R(instruction     ins,
+                                 emitAttr        attr,
+                                 regNumber       reg1,
+                                 regNumber       reg2,
+                                 regNumber       reg3,
+                                 regNumber       reg4,
+                                 insOpts         opt /* = INS_OPT_NONE*/,
+                                 insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+{
+    emitAttr  size = EA_SIZE(attr);
+    insFormat fmt  = IF_NONE;
+
+    /* Figure out the encoding format of the instruction */
+    switch (ins)
+    {
         case INS_sve_cmpeq:
         case INS_sve_cmpgt:
         case INS_sve_cmpge:
