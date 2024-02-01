@@ -471,29 +471,27 @@ namespace System
             if (value.IsEmpty)
             {
                 // There's nothing beyond significant leading block. Return it as the result.
-                if ((int)(leading ^ signBits) < 0)
+                if ((int)(leading ^ signBits) > 0)
+                {
+                    // Small value that fits in Int32.
+                    // Delegate to the constructor for int.MinValue handling.
+                    result = new BigInteger((int)leading);
+                    return ParsingStatus.OK;
+                }
+                else if (leading != 0)
                 {
                     // The sign of result differs with leading digit.
                     // Require to store in _bits.
-                    if ((int)signBits < 0)
-                    {
-                        // Negative value
-                        result = leading == 0
-                            ? new BigInteger(-1, [leading, 1u])
-                            : new BigInteger(-1, [unchecked((uint)-(int)leading)]);
-                    }
-                    else
-                    {
-                        // Positive value
-                        result = new BigInteger(1, [leading]);
-                    }
+
+                    // Positive: sign=1, bits=[leading]
+                    // Negative: sign=-1, bits=[leading ^ -1 + 1]=[-leading]
+                    result = new BigInteger((int)signBits | 1, [leading ^ signBits - signBits]);
                     return ParsingStatus.OK;
                 }
                 else
                 {
-                    // Small value that fits in Int32.
-                    result = new BigInteger((int)leading);
-                    return ParsingStatus.OK;
+                    // -1 << 32, which requires an additional uint
+                    result = new BigInteger(-1, [0, 1]);
                 }
             }
 
