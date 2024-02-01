@@ -735,7 +735,6 @@ namespace System.Net.Quic.Tests
                 await using QuicListener listener = await CreateQuicListener(listenerOptions);
 
                 QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
-                // Use different target host on purpose to get RemoteCertificateNameMismatch ssl error.
                 clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
                 // client connection attempt will fail
@@ -754,7 +753,47 @@ namespace System.Net.Quic.Tests
                     c.Dispose();
                 }
             }
+        }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task Client_CertificateWithEphemeralKey_Throws()
+        {
+            (X509Certificate2 clientCertificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates(nameof(Client_CertificateWithEphemeralKey_Throws), ephemeralKey: true);
+            Configuration.Certificates.CleanupCertificates(nameof(Client_CertificateWithEphemeralKey_Throws));
+
+            try
+            {
+                QuicListenerOptions listenerOptions = new QuicListenerOptions()
+                {
+                    ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                    ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                    ConnectionOptionsCallback = (_, _, _) =>
+                    {
+                        var serverOptions = CreateQuicServerOptions();
+                        serverOptions.ServerAuthenticationOptions.ClientCertificateRequired = true;
+                        serverOptions.ServerAuthenticationOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                        return ValueTask.FromResult(serverOptions);
+                    }
+                };
+                await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+                QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+                clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection() { clientCertificate };
+                clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = delegate { return true; };
+
+                AuthenticationException e = await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(clientOptions));
+                Assert.Contains("ephemeral", e.Message);
+            }
+            finally
+            {
+                Configuration.Certificates.CleanupCertificates(nameof(Client_CertificateWithEphemeralKey_Throws));
+                clientCertificate.Dispose();
+                foreach (X509Certificate c in chain)
+                {
+                    c.Dispose();
+                }
+            }
         }
 
         [Theory]
