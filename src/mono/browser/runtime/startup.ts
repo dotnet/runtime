@@ -122,7 +122,7 @@ async function instantiateWasmWorker(
     imports: WebAssembly.Imports,
     successCallback: InstantiateWasmSuccessCallback
 ): Promise<void> {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     // wait for the config to arrive by message from the main thread
     await loaderHelpers.afterConfigLoaded.promise;
 
@@ -169,7 +169,7 @@ function preInit(userPreInit: (() => void)[]) {
 }
 
 async function preInitWorkerAsync() {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     const mark = startMeasure();
     try {
         mono_log_debug("preInitWorker");
@@ -193,7 +193,7 @@ async function preInitWorkerAsync() {
 
 // runs for each re-attached worker
 export function preRunWorker() {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     const mark = startMeasure();
     try {
         jiterpreter_allocate_tables(); // this will return quickly if already allocated
@@ -362,7 +362,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
 
 // runs for each re-detached worker
 export function postRunWorker() {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     const mark = startMeasure();
     try {
         if (runtimeHelpers.proxy_context_gc_handle) {
@@ -664,7 +664,7 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 /// 2. Emscripten does not run any event but preInit in the workers.
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
 export async function configureWorkerStartup(module: DotnetModuleInternal): Promise<void> {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
 
     initWorkerThreadEvents();
     currentWorkerThreadEvents.addEventListener(dotnetPthreadCreated, () => {
