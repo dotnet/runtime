@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -40,85 +39,77 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public void Verify ()
 		{
-			var failures = GetFailures ().ToList ();
-			if (failures.Count > 0)
-				Assert.Fail (string.Join (Environment.NewLine, failures));
+			VerifyExportedTypes (originalAssembly, linkedAssembly);
 
-			IEnumerable<string> GetFailures ()
-			{
-				foreach (var err in VerifyExportedTypes (originalAssembly, linkedAssembly)) yield return err;
-				foreach (var err in VerifyCustomAttributes (originalAssembly, linkedAssembly)) yield return err;
-				foreach (var err in VerifySecurityAttributes (originalAssembly, linkedAssembly)) yield return err;
+			VerifyCustomAttributes (originalAssembly, linkedAssembly);
+			VerifySecurityAttributes (originalAssembly, linkedAssembly);
 
-				foreach (var originalModule in originalAssembly.Modules)
-					foreach (var err in VerifyModule (originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name))) yield return err;
+			foreach (var originalModule in originalAssembly.Modules)
+				VerifyModule (originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name));
 
-				foreach (var err in VerifyResources (originalAssembly, linkedAssembly)) yield return err;
-				foreach (var err in VerifyReferences (originalAssembly, linkedAssembly)) yield return err;
-				foreach (var err in VerifyKeptByAttributes (originalAssembly, originalAssembly.FullName)) yield return err;
+			VerifyResources (originalAssembly, linkedAssembly);
+			VerifyReferences (originalAssembly, linkedAssembly);
+			VerifyKeptByAttributes (originalAssembly, originalAssembly.FullName);
 
-				linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Select (s => {
-					return s.FullName;
-				}), StringComparer.Ordinal);
+			linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Select (s => {
+				return s.FullName;
+			}), StringComparer.Ordinal);
 
-				// Workaround for compiler injected attribute to describe the language version
-				linkedMembers.Remove ("System.Void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor()");
-				linkedMembers.Remove ("System.Int32 System.Runtime.CompilerServices.RefSafetyRulesAttribute::Version");
-				linkedMembers.Remove ("System.Void System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(System.Int32)");
+			// Workaround for compiler injected attribute to describe the language version
+			linkedMembers.Remove ("System.Void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor()");
+			linkedMembers.Remove ("System.Int32 System.Runtime.CompilerServices.RefSafetyRulesAttribute::Version");
+			linkedMembers.Remove ("System.Void System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(System.Int32)");
 
-				// Workaround for compiler injected attribute to describe the language version
-				verifiedGeneratedTypes.Add ("Microsoft.CodeAnalysis.EmbeddedAttribute");
-				verifiedGeneratedTypes.Add ("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
+			// Workaround for compiler injected attribute to describe the language version
+			verifiedGeneratedTypes.Add ("Microsoft.CodeAnalysis.EmbeddedAttribute");
+			verifiedGeneratedTypes.Add ("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
 
-				var membersToAssert = originalAssembly.MainModule.Types;
-				foreach (var originalMember in membersToAssert) {
-					if (originalMember is TypeDefinition td) {
-						if (td.Name == "<Module>") {
-							linkedMembers.Remove (td.Name);
-							continue;
-						}
-
-						TypeDefinition linkedType = linkedAssembly.MainModule.GetType (originalMember.FullName);
-						foreach (var err in VerifyTypeDefinition (td, linkedType)) yield return err;
-						linkedMembers.Remove (td.FullName);
-
+			var membersToAssert = originalAssembly.MainModule.Types;
+			foreach (var originalMember in membersToAssert) {
+				if (originalMember is TypeDefinition td) {
+					if (td.Name == "<Module>") {
+						linkedMembers.Remove (td.Name);
 						continue;
 					}
 
-					yield return $"Don't know how to check member of type {originalMember.GetType ()}";
+					TypeDefinition linkedType = linkedAssembly.MainModule.GetType (originalMember.FullName);
+					VerifyTypeDefinition (td, linkedType);
+					linkedMembers.Remove (td.FullName);
+
+					continue;
 				}
 
-				if (linkedMembers.Any ())
-					foreach (var err in linkedMembers.Select (m => $"Member `{m}' was not expected to be kept")) yield return err;
+				throw new NotImplementedException ($"Don't know how to check member of type {originalMember.GetType ()}");
 			}
+
+			Assert.IsEmpty (linkedMembers, "Linked output includes unexpected member");
 		}
 
 		static bool IsBackingField (FieldDefinition field) => field.Name.StartsWith ("<") && field.Name.EndsWith (">k__BackingField");
 
-		protected virtual IEnumerable<string> VerifyModule (ModuleDefinition original, ModuleDefinition linked)
+		protected virtual void VerifyModule (ModuleDefinition original, ModuleDefinition linked)
 		{
 			// We never link away a module today so let's make sure the linked one isn't null
 			if (linked == null)
-				yield return $"Linked assembly `{original.Assembly.Name.Name}` is missing module `{original.Name}`";
+				Assert.Fail ($"Linked assembly `{original.Assembly.Name.Name}` is missing module `{original.Name}`");
 
 			var expected = original.Assembly.MainModule.AllDefinedTypes ()
 				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptModuleReferenceAttribute)))
-				.ToHashSet ();
+				.ToArray ();
 
 			var actual = linked.ModuleReferences
 				.Select (name => name.Name)
-				.ToHashSet ();
+				.ToArray ();
 
-			if (!expected.SetEquals (actual))
-				yield return $"In module {original.FileName} Expected module references `{string.Join (", ", expected)}` but got `{string.Join (", ", actual)}`";
+			Assert.That (actual, Is.EquivalentTo (expected));
 
-			foreach (var err in VerifyCustomAttributes (original, linked)) yield return err;
+			VerifyCustomAttributes (original, linked);
 		}
 
-		protected virtual IEnumerable<string> VerifyTypeDefinition (TypeDefinition original, TypeDefinition linked)
+		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDefinition linked)
 		{
 			if (linked != null && verifiedGeneratedTypes.Contains (linked.FullName))
-				yield break;
+				return;
 
 			ModuleDefinition linkedModule = linked?.Module;
 
@@ -135,7 +126,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (!expectedKept) {
 				if (linked == null)
-					yield break;
+					return;
 
 				// Compiler generated members can't be annotated with `Kept` attributes directly
 				// For some of them we have special attributes (backing fields for example), but it's impractical to define
@@ -146,13 +137,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				// we do want to validate. There's no specific use case right now, but I can easily imagine one
 				// for more detailed testing of for example custom attributes on local functions, or similar.
 				if (!IsCompilerGeneratedMember (original))
-					yield return $"Type `{original}' should have been removed";
+					Assert.Fail ($"Type `{original}' should have been removed");
 			}
 
 			bool prev = checkNames;
 			checkNames |= original.HasAttribute (nameof (VerifyMetadataNamesAttribute));
 
-			foreach (var err in VerifyTypeDefinitionKept (original, linked)) yield return err;
+			VerifyTypeDefinitionKept (original, linked);
 
 			checkNames = prev;
 
@@ -160,11 +151,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				foreach (var attr in original.CustomAttributes.Where (l => l.AttributeType.Name == nameof (CreatedMemberAttribute))) {
 					var newName = original.FullName + "::" + attr.ConstructorArguments[0].Value.ToString ();
 
-					// Assert.AreEqual (1, linkedMembers.RemoveWhere (l => l.Contains (newName)), $"Newly created member '{newName}' was not found");
-					var asdf = linkedMembers.Where (l => l.Contains (newName)).ToList ();
-					if (1 != linkedMembers.RemoveWhere (l => l.Contains (newName))) {
-						yield return $"Newly created member '{newName}' was not found";
-					}
+					Assert.AreEqual (1, linkedMembers.RemoveWhere (l => l.Contains (newName)), $"Newly created member '{newName}' was not found");
 				}
 			}
 		}
@@ -172,21 +159,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		/// <summary>
 		/// Validates that all <see cref="KeptByAttribute"/> instances on a member are valid (i.e. ILLink recorded a marked dependency described in the attribute)
 		/// </summary>
-		IEnumerable<string> VerifyKeptByAttributes (IMemberDefinition src, IMemberDefinition linked)
+		void VerifyKeptByAttributes (IMemberDefinition src, IMemberDefinition linked)
 		{
-			return src.CustomAttributes.Where (ca => ca.AttributeType.IsTypeOf<KeptByAttribute> ()).SelectMany (keptByAttribute => VerifyKeptByAttribute (linked.FullName, keptByAttribute));
+			foreach (var keptByAttribute in src.CustomAttributes.Where (ca => ca.AttributeType.IsTypeOf<KeptByAttribute> ()))
+				VerifyKeptByAttribute (linked.FullName, keptByAttribute);
 		}
 
 		/// <summary>
 		/// Validates that all <see cref="KeptByAttribute"/> instances on an attribute provider are valid (i.e. ILLink recorded a marked dependency described in the attribute)
 		/// <paramref name="src"/> is the attribute provider that may have a <see cref="KeptByAttribute"/>, and <paramref name="attributeProviderFullName"/> is the 'FullName' of <paramref name="src"/>.
 		/// </summary>
-		IEnumerable<string> VerifyKeptByAttributes (ICustomAttributeProvider src, string attributeProviderFullName)
+		void VerifyKeptByAttributes (ICustomAttributeProvider src, string attributeProviderFullName)
 		{
-			return src.CustomAttributes.Where (ca => ca.AttributeType.IsTypeOf<KeptByAttribute> ()).SelectMany (attr => VerifyKeptByAttribute (attributeProviderFullName, attr));
+			foreach (var keptByAttribute in src.CustomAttributes.Where (ca => ca.AttributeType.IsTypeOf<KeptByAttribute> ()))
+				VerifyKeptByAttribute (attributeProviderFullName, keptByAttribute);
 		}
 
-		IEnumerable<string> VerifyKeptByAttribute (string keptAttributeProviderName, CustomAttribute attribute)
+		void VerifyKeptByAttribute (string keptAttributeProviderName, CustomAttribute attribute)
 		{
 			// public KeptByAttribute (string dependencyProvider, string reason) { }
 			// public KeptByAttribute (Type dependencyProvider, string reason) { }
@@ -224,58 +213,57 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			foreach (var dep in this.linkedTestCase.Customizations.DependencyRecorder.Dependencies) {
 				if (dep == expectedDependency) {
-					yield break;
+					return;
 				}
 			}
-			yield return $"{keptAttributeProviderName} was expected to be kept by {expectedDependency.Source} with reason {expectedDependency.DependencyKind.ToString ()}.";
+			string errorMessage = $"{keptAttributeProviderName} was expected to be kept by {expectedDependency.Source} with reason {expectedDependency.DependencyKind.ToString ()}.";
+			Assert.Fail (errorMessage);
 		}
 
-		protected virtual IEnumerable<string> VerifyTypeDefinitionKept (TypeDefinition original, TypeDefinition linked)
+		protected virtual void VerifyTypeDefinitionKept (TypeDefinition original, TypeDefinition linked)
 		{
-			if (linked == null) {
-				yield return $"Type `{original}' should have been kept";
-				yield break;
-			}
+			if (linked == null)
+				Assert.Fail ($"Type `{original}' should have been kept");
 
 			// Skip verification of type metadata for compiler generated types (we don't currently need it yet)
 			if (!IsCompilerGeneratedMember (original)) {
-				foreach (var err in VerifyKeptByAttributes (original, linked)) yield return err;
+				VerifyKeptByAttributes (original, linked);
 				if (!original.IsInterface)
-					foreach (var err in VerifyBaseType (original, linked)) yield return err;
+					VerifyBaseType (original, linked);
 
-				foreach (var err in VerifyInterfaces (original, linked)) yield return err;
-				foreach (var err in VerifyPseudoAttributes (original, linked)) yield return err;
-				foreach (var err in VerifyGenericParameters (original, linked, compilerGenerated: false)) yield return err;
-				foreach (var err in VerifyCustomAttributes (original, linked)) yield return err;
-				foreach (var err in VerifySecurityAttributes (original, linked)) yield return err;
+				VerifyInterfaces (original, linked);
+				VerifyPseudoAttributes (original, linked);
+				VerifyGenericParameters (original, linked, compilerGenerated: false);
+				VerifyCustomAttributes (original, linked);
+				VerifySecurityAttributes (original, linked);
 
-				foreach (var err in VerifyFixedBufferFields (original, linked)) yield return err;
+				VerifyFixedBufferFields (original, linked);
 			}
 
 			// Need to check delegate cache fields before the normal field check
-			foreach (var err in VerifyDelegateBackingFields (original, linked)) yield return err;
-			foreach (var err in VerifyPrivateImplementationDetails (original, linked)) yield return err;
+			VerifyDelegateBackingFields (original, linked);
+			VerifyPrivateImplementationDetails (original, linked);
 
 			foreach (var td in original.NestedTypes) {
-				foreach (var err in VerifyTypeDefinition (td, linked?.NestedTypes.FirstOrDefault (l => td.FullName == l.FullName))) yield return err;
+				VerifyTypeDefinition (td, linked?.NestedTypes.FirstOrDefault (l => td.FullName == l.FullName));
 				linkedMembers.Remove (td.FullName);
 			}
 
 			// Need to check properties before fields so that the KeptBackingFieldAttribute is handled correctly
 			foreach (var p in original.Properties) {
-				foreach (var err in VerifyProperty (p, linked?.Properties.FirstOrDefault (l => p.Name == l.Name), linked)) yield return err;
+				VerifyProperty (p, linked?.Properties.FirstOrDefault (l => p.Name == l.Name), linked);
 				linkedMembers.Remove (p.FullName);
 			}
 			// Need to check events before fields so that the KeptBackingFieldAttribute is handled correctly
 			foreach (var e in original.Events) {
-				foreach (var err in VerifyEvent (e, linked?.Events.FirstOrDefault (l => e.Name == l.Name), linked)) yield return err;
+				VerifyEvent (e, linked?.Events.FirstOrDefault (l => e.Name == l.Name), linked);
 				linkedMembers.Remove (e.FullName);
 			}
 
 			foreach (var f in original.Fields) {
 				if (verifiedGeneratedFields.Contains (f.FullName))
 					continue;
-				foreach (var err in VerifyField (f, linked?.Fields.FirstOrDefault (l => f.Name == l.Name))) yield return err;
+				VerifyField (f, linked?.Fields.FirstOrDefault (l => f.Name == l.Name));
 				linkedMembers.Remove (f.FullName);
 			}
 
@@ -283,12 +271,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (verifiedEventMethods.Contains (m.FullName))
 					continue;
 				var msign = m.GetSignature ();
-				foreach (var err in VerifyMethod (m, linked?.Methods.FirstOrDefault (l => msign == l.GetSignature ()))) yield return err;
+				VerifyMethod (m, linked?.Methods.FirstOrDefault (l => msign == l.GetSignature ()));
 				linkedMembers.Remove (m.FullName);
 			}
 		}
 
-		IEnumerable<string> VerifyBaseType (TypeDefinition src, TypeDefinition linked)
+		void VerifyBaseType (TypeDefinition src, TypeDefinition linked)
 		{
 			string expectedBaseName;
 			var expectedBaseGenericAttr = src.CustomAttributes.FirstOrDefault (w => w.AttributeType.Name == nameof (KeptBaseTypeAttribute) && w.ConstructorArguments.Count > 1);
@@ -298,31 +286,24 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				var defaultBaseType = src.IsEnum ? "System.Enum" : src.IsValueType ? "System.ValueType" : "System.Object";
 				expectedBaseName = GetCustomAttributeCtorValues<object> (src, nameof (KeptBaseTypeAttribute)).FirstOrDefault ()?.ToString () ?? defaultBaseType;
 			}
-			if (expectedBaseName != linked.BaseType?.FullName)
-				yield return $"Incorrect base type on : {linked.Name}";
+			Assert.AreEqual (expectedBaseName, linked.BaseType?.FullName, $"Incorrect base type on : {linked.Name}");
 		}
 
-		IEnumerable<string> VerifyInterfaces (TypeDefinition src, TypeDefinition linked)
+		void VerifyInterfaces (TypeDefinition src, TypeDefinition linked)
 		{
 			var expectedInterfaces = new HashSet<string> (src.CustomAttributes
 				.Where (w => w.AttributeType.Name == nameof (KeptInterfaceAttribute))
 				.Select (FormatBaseOrInterfaceAttributeValue));
 			if (expectedInterfaces.Count == 0) {
-				if (linked.HasInterfaces) {
-					yield return $"Type `{src}' has unexpected interfaces";
-				}
+				Assert.IsFalse (linked.HasInterfaces, $"Type `{src}' has unexpected interfaces");
 			} else {
 				foreach (var iface in linked.Interfaces) {
 					if (!expectedInterfaces.Remove (iface.InterfaceType.FullName)) {
-						if (!expectedInterfaces.Remove (iface.InterfaceType.Resolve ().FullName)) {
-							yield return $"Type `{src}' interface `{iface.InterfaceType.FullName}' should have been removed";
-						}
+						Assert.IsTrue (expectedInterfaces.Remove (iface.InterfaceType.Resolve ().FullName), $"Type `{src}' interface `{iface.InterfaceType.Resolve ().FullName}' should have been removed");
 					}
 				}
 
-				if (expectedInterfaces.Any ()) {
-					yield return $"Expected interfaces were not found on {src}: {string.Join (", ", expectedInterfaces.Select(i => i.Split('.', '/').Last()))}";
-				}
+				Assert.IsEmpty (expectedInterfaces, $"Expected interfaces were not found on {src}");
 			}
 		}
 
@@ -396,7 +377,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return builder.ToString ();
 		}
 
-		IEnumerable<string> VerifyField (FieldDefinition src, FieldDefinition linked)
+		void VerifyField (FieldDefinition src, FieldDefinition linked)
 		{
 			bool compilerGenerated = IsCompilerGeneratedMember (src);
 			bool expectedKept = ShouldBeKept (src) ||
@@ -404,123 +385,115 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (!expectedKept) {
 				if (linked != null)
-					yield return $"Field `{src}' should have been removed";
+					Assert.Fail ($"Field `{src}' should have been removed");
 
-				yield break;
+				return;
 			}
 
-			foreach (var err in VerifyFieldKept (src, linked, compilerGenerated)) yield return err;
+			VerifyFieldKept (src, linked, compilerGenerated);
 		}
 
-		IEnumerable<string> VerifyFieldKept (FieldDefinition src, FieldDefinition linked, bool compilerGenerated)
+		void VerifyFieldKept (FieldDefinition src, FieldDefinition linked, bool compilerGenerated)
 		{
-			if (linked == null) {
-				yield return $"Field `{src}' should have been kept";
-				yield break;
-			}
+			if (linked == null)
+				Assert.Fail ($"Field `{src}' should have been kept");
 
-			if (!src?.Constant?.Equals (linked?.Constant) == true)
-				yield return $"Field `{src}' value was expected to be {src?.Constant} but was {linked?.Constant}";
+			Assert.AreEqual (src?.Constant, linked?.Constant, $"Field `{src}' value");
 
-			foreach (var err in VerifyKeptByAttributes (src, linked)) yield return err;
+			VerifyKeptByAttributes (src, linked);
 			VerifyPseudoAttributes (src, linked);
 			if (!compilerGenerated)
-				foreach (var err in VerifyCustomAttributes (src, linked)) yield return err;
+				VerifyCustomAttributes (src, linked);
 		}
 
-		IEnumerable<string> VerifyProperty (PropertyDefinition src, PropertyDefinition linked, TypeDefinition linkedType)
+		void VerifyProperty (PropertyDefinition src, PropertyDefinition linked, TypeDefinition linkedType)
 		{
-			foreach (var err in VerifyMemberBackingField (src, linkedType)) yield return err;
+			VerifyMemberBackingField (src, linkedType);
 
 			bool compilerGenerated = IsCompilerGeneratedMember (src);
 			bool expectedKept = ShouldBeKept (src) || compilerGenerated;
 
 			if (!expectedKept) {
 				if (linked != null)
-					yield return $"Property `{src}' should have been removed";
+					Assert.Fail ($"Property `{src}' should have been removed");
 
-				yield break;
+				return;
 			}
 
-			if (linked == null) {
-				yield return $"Property `{src}' should have been kept";
-				yield break;
-			}
+			if (linked == null)
+				Assert.Fail ($"Property `{src}' should have been kept");
 
-			if (src?.Constant != linked?.Constant)
-				yield return $"Property `{src}' value";
+			Assert.AreEqual (src?.Constant, linked?.Constant, $"Property `{src}' value");
 
-			foreach (var err in VerifyKeptByAttributes (src, linked)) yield return err;
-			foreach (var err in VerifyPseudoAttributes (src, linked)) yield return err;
+			VerifyKeptByAttributes (src, linked);
+			VerifyPseudoAttributes (src, linked);
 			if (!compilerGenerated)
-				foreach (var err in VerifyCustomAttributes (src, linked)) yield return err;
+				VerifyCustomAttributes (src, linked);
 		}
 
-		IEnumerable<string> VerifyEvent (EventDefinition src, EventDefinition linked, TypeDefinition linkedType)
+		void VerifyEvent (EventDefinition src, EventDefinition linked, TypeDefinition linkedType)
 		{
-			foreach (var err in VerifyMemberBackingField (src, linkedType)) yield return err;
+			VerifyMemberBackingField (src, linkedType);
 
 			bool compilerGenerated = IsCompilerGeneratedMember (src);
 			bool expectedKept = ShouldBeKept (src) || compilerGenerated;
 
 			if (!expectedKept) {
 				if (linked != null)
-					yield return $"Event `{src}' should have been removed";
+					Assert.Fail ($"Event `{src}' should have been removed");
 
-				yield break;
+				return;
 			}
 
-			if (linked == null) {
-				yield return $"Event `{src}' should have been kept";
-				yield break;
-			}
+			if (linked == null)
+				Assert.Fail ($"Event `{src}' should have been kept");
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventAddMethodAttribute))) {
-				foreach (var err in VerifyMethodInternal (src.AddMethod, linked.AddMethod, true, compilerGenerated)) yield return err;
+				VerifyMethodInternal (src.AddMethod, linked.AddMethod, true, compilerGenerated);
 				verifiedEventMethods.Add (src.AddMethod.FullName);
 				linkedMembers.Remove (src.AddMethod.FullName);
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventRemoveMethodAttribute))) {
-				foreach (var err in VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true, compilerGenerated)) yield return err;
+				VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true, compilerGenerated);
 				verifiedEventMethods.Add (src.RemoveMethod.FullName);
 				linkedMembers.Remove (src.RemoveMethod.FullName);
 			}
 
-			foreach (var err in VerifyKeptByAttributes (src, linked)) yield return err;
-			foreach (var err in VerifyPseudoAttributes (src, linked)) yield return err;
+			VerifyKeptByAttributes (src, linked);
+			VerifyPseudoAttributes (src, linked);
 			if (!compilerGenerated)
-				foreach (var err in VerifyCustomAttributes (src, linked)) yield return err;
+				VerifyCustomAttributes (src, linked);
 		}
 
-		IEnumerable<string> VerifyMethod (MethodDefinition src, MethodDefinition linked)
+		void VerifyMethod (MethodDefinition src, MethodDefinition linked)
 		{
 			bool compilerGenerated = IsCompilerGeneratedMember (src);
 			bool expectedKept = ShouldMethodBeKept (src);
-			foreach (var err in VerifyMethodInternal (src, linked, expectedKept, compilerGenerated)) yield return err;
+			VerifyMethodInternal (src, linked, expectedKept, compilerGenerated);
 		}
 
-		IEnumerable<string> VerifyMethodInternal (MethodDefinition src, MethodDefinition linked, bool expectedKept, bool compilerGenerated)
+		void VerifyMethodInternal (MethodDefinition src, MethodDefinition linked, bool expectedKept, bool compilerGenerated)
 		{
 			if (!expectedKept) {
 				if (linked == null)
-					yield break;
+					return;
 
 				// Similar to comment on types, compiler-generated methods can't be annotated with Kept attribute directly
 				// so we're not going to validate kept/remove on them. Note that we're still going to go validate "into" them
 				// to check for other properties (like parameter name presence/removal for example)
 				if (!compilerGenerated)
-					yield return $"Method `{src.FullName}' should have been removed";
+					Assert.Fail ($"Method `{src.FullName}' should have been removed");
 			}
 
-			foreach (var err in VerifyMethodKept (src, linked, compilerGenerated)) yield return err;
+			VerifyMethodKept (src, linked, compilerGenerated);
 		}
 
-		IEnumerable<string> VerifyMemberBackingField (IMemberDefinition src, TypeDefinition linkedType)
+		void VerifyMemberBackingField (IMemberDefinition src, TypeDefinition linkedType)
 		{
 			var keptBackingFieldAttribute = src.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == nameof (KeptBackingFieldAttribute));
 			if (keptBackingFieldAttribute == null)
-				yield break;
+				return;
 
 			var backingFieldName = src.MetadataToken.TokenType == TokenType.Property
 				? $"<{src.Name}>k__BackingField" : src.Name;
@@ -535,56 +508,51 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				srcField = src.DeclaringType.Fields.FirstOrDefault (f => f.Name == backingFieldName);
 			}
 
-			if (srcField == null) {
-				yield return $"{src.MetadataToken.TokenType} `{src}', could not locate the expected backing field {backingFieldName}";
-				yield break;
-			}
+			if (srcField == null)
+				Assert.Fail ($"{src.MetadataToken.TokenType} `{src}', could not locate the expected backing field {backingFieldName}");
 
-			foreach (var err in VerifyFieldKept (srcField, linkedType?.Fields.FirstOrDefault (l => srcField.Name == l.Name), compilerGenerated: true)) yield return err;
+			VerifyFieldKept (srcField, linkedType?.Fields.FirstOrDefault (l => srcField.Name == l.Name), compilerGenerated: true);
 			verifiedGeneratedFields.Add (srcField.FullName);
 			linkedMembers.Remove (srcField.FullName);
 		}
 
-		protected virtual IEnumerable<string> VerifyMethodKept (MethodDefinition src, MethodDefinition linked, bool compilerGenerated)
+		protected virtual void VerifyMethodKept (MethodDefinition src, MethodDefinition linked, bool compilerGenerated)
 		{
-			if (linked == null) {
-				yield return $"Method `{src.FullName}' should have been kept";
-				yield break;
-			}
+			if (linked == null)
+				Assert.Fail ($"Method `{src.FullName}' should have been kept");
 
-			foreach (var err in VerifyPseudoAttributes (src, linked)) yield return err;
-			foreach (var err in VerifyGenericParameters (src, linked, compilerGenerated)) yield return err;
+			VerifyPseudoAttributes (src, linked);
+			VerifyGenericParameters (src, linked, compilerGenerated);
 			if (!compilerGenerated) {
-				foreach (var err in VerifyCustomAttributes (src, linked)) yield return err;
-				foreach (var err in VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType)) yield return err;
-
+				VerifyCustomAttributes (src, linked);
+				VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType);
 			}
-			foreach (var err in VerifyParameters (src, linked, compilerGenerated)) yield return err;
-			foreach (var err in VerifySecurityAttributes (src, linked)) yield return err;
-			foreach (var err in VerifyArrayInitializers (src, linked)) yield return err;
-			foreach (var err in VerifyMethodBody (src, linked)) yield return err;
-			foreach (var err in VerifyKeptByAttributes (src, linked)) yield return err;
+			VerifyParameters (src, linked, compilerGenerated);
+			VerifySecurityAttributes (src, linked);
+			VerifyArrayInitializers (src, linked);
+			VerifyMethodBody (src, linked);
+			VerifyKeptByAttributes (src, linked);
 		}
 
-		protected virtual IEnumerable<string> VerifyMethodBody (MethodDefinition src, MethodDefinition linked)
+		protected virtual void VerifyMethodBody (MethodDefinition src, MethodDefinition linked)
 		{
 			if (!src.HasBody)
-				yield break;
+				return;
 
-			foreach (var err in VerifyInstructions (src, linked)) yield return err;
-			foreach (var err in VerifyLocals (src, linked)) yield return err;
+			VerifyInstructions (src, linked);
+			VerifyLocals (src, linked);
 		}
 
-		protected static IEnumerable<string> VerifyInstructions (MethodDefinition src, MethodDefinition linked)
+		protected static void VerifyInstructions (MethodDefinition src, MethodDefinition linked)
 		{
-			foreach (var err in VerifyBodyProperties (
+			VerifyBodyProperties (
 				src,
 				linked,
 				nameof (ExpectedInstructionSequenceAttribute),
 				nameof (ExpectBodyModifiedAttribute),
 				"instructions",
 				m => FormatMethodBody (m.Body),
-				attr => GetStringArrayAttributeValue (attr).ToArray ())) yield return err;
+				attr => GetStringArrayAttributeValue (attr).ToArray ());
 		}
 
 		public static string[] FormatMethodBody (MethodBody body)
@@ -701,19 +669,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		static IEnumerable<string> VerifyLocals (MethodDefinition src, MethodDefinition linked)
+		static void VerifyLocals (MethodDefinition src, MethodDefinition linked)
 		{
-			foreach (var err in VerifyBodyProperties (
+			VerifyBodyProperties (
 				src,
 				linked,
 				nameof (ExpectedLocalsSequenceAttribute),
 				nameof (ExpectLocalsModifiedAttribute),
 				"locals",
 				m => m.Body.Variables.Select (v => v.VariableType.ToString ()).ToArray (),
-				attr => GetStringOrTypeArrayAttributeValue (attr).ToArray ())) yield return err;
+				attr => GetStringOrTypeArrayAttributeValue (attr).ToArray ());
 		}
 
-		public static IEnumerable<string> VerifyBodyProperties (MethodDefinition src, MethodDefinition linked, string sequenceAttributeName, string expectModifiedAttributeName,
+		public static void VerifyBodyProperties (MethodDefinition src, MethodDefinition linked, string sequenceAttributeName, string expectModifiedAttributeName,
 			string propertyDescription,
 			Func<MethodDefinition, string[]> valueCollector,
 			Func<CustomAttribute, string[]> getExpectFromSequenceAttribute)
@@ -723,27 +691,30 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var srcValues = valueCollector (src);
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == expectModifiedAttributeName)) {
-				if (linkedValues.ToHashSet ().SetEquals (srcValues.ToHashSet ())) {
-					yield return $"Expected method `{src} to have it's {propertyDescription} modified, however, the {propertyDescription} were the same as the original\n{FormattingUtils.FormatSequenceCompareFailureMessage (linkedValues, srcValues)}";
-				}
+				Assert.That (
+					linkedValues,
+					Is.Not.EqualTo (srcValues),
+					$"Expected method `{src} to have {propertyDescription} modified, however, the {propertyDescription} were the same as the original\n{FormattingUtils.FormatSequenceCompareFailureMessage (linkedValues, srcValues)}");
 			} else if (expectedSequenceAttribute != null) {
 				var expected = getExpectFromSequenceAttribute (expectedSequenceAttribute).ToArray ();
-				if (!linkedValues.ToHashSet ().SetEquals (expected.ToHashSet ())) {
-					yield return $"Expected method `{src} to have it's {propertyDescription} modified, however, the sequence of {propertyDescription} does not match the expected value\n{FormattingUtils.FormatSequenceCompareFailureMessage2 (linkedValues, expected, srcValues)}";
-				}
+				Assert.That (
+					linkedValues,
+					Is.EqualTo (expected),
+					$"Expected method `{src} to have it's {propertyDescription} modified, however, the sequence of {propertyDescription} does not match the expected value\n{FormattingUtils.FormatSequenceCompareFailureMessage2 (linkedValues, expected, srcValues)}");
 			} else {
-				if (!linkedValues.ToHashSet ().SetEquals (srcValues.ToHashSet ())) {
-					yield return $"Expected method `{src} to have it's {propertyDescription} unchanged, however, the {propertyDescription} differ from the original\n{FormattingUtils.FormatSequenceCompareFailureMessage (linkedValues, srcValues)}";
-				}
+				Assert.That (
+					linkedValues,
+					Is.EqualTo (srcValues),
+					$"Expected method `{src} to have it's {propertyDescription} unchanged, however, the {propertyDescription} differ from the original\n{FormattingUtils.FormatSequenceCompareFailureMessage (linkedValues, srcValues)}");
 			}
 		}
 
-		IEnumerable<string> VerifyReferences (AssemblyDefinition original, AssemblyDefinition linked)
+		void VerifyReferences (AssemblyDefinition original, AssemblyDefinition linked)
 		{
 			var expected = original.MainModule.AllDefinedTypes ()
 				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptReferenceAttribute)))
 				.Select (ReduceAssemblyFileNameOrNameToNameOnly)
-				.ToHashSet ();
+				.ToArray ();
 
 			/*
 			 - The test case will always need to have at least 1 reference.
@@ -754,15 +725,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			 Once 1 kept reference attribute is used, the test will need to define all of of it's expected references
 			*/
-			if (expected.Count == 0)
-				yield break;
+			if (expected.Length == 0)
+				return;
 
 			var actual = linked.MainModule.AssemblyReferences
 				.Select (name => name.Name)
-				.ToHashSet ();
+				.ToArray ();
 
-			if (!expected.SetEquals (actual))
-				yield return $"Expected references `{string.Join (", ", expected)}` do not match actual references `{string.Join (", ", actual)}`";
+			Assert.That (actual, Is.EquivalentTo (expected));
 		}
 
 		string ReduceAssemblyFileNameOrNameToNameOnly (string fileNameOrAssemblyName)
@@ -774,7 +744,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return fileNameOrAssemblyName;
 		}
 
-		IEnumerable<string> VerifyResources (AssemblyDefinition original, AssemblyDefinition linked)
+		void VerifyResources (AssemblyDefinition original, AssemblyDefinition linked)
 		{
 			var expectedResourceNames = original.MainModule.AllDefinedTypes ()
 				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptResourceAttribute)))
@@ -782,129 +752,111 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			foreach (var resource in linked.MainModule.Resources) {
 				if (!expectedResourceNames.Remove (resource.Name))
-					yield return $"Resource '{resource.Name}' should be removed.";
+					Assert.Fail ($"Resource '{resource.Name}' should be removed.");
 
 				EmbeddedResource embeddedResource = (EmbeddedResource) resource;
 
 				var expectedResource = (EmbeddedResource) original.MainModule.Resources.First (r => r.Name == resource.Name);
 
-				if (!embeddedResource.GetResourceData ().SequenceEqual (expectedResource.GetResourceData ()))
-					yield return $"Resource '{resource.Name}' data doesn't match.";
+				Assert.That (embeddedResource.GetResourceData (), Is.EquivalentTo (expectedResource.GetResourceData ()), $"Resource '{resource.Name}' data doesn't match.");
 			}
 
-			if (expectedResourceNames.Any ()) yield return $"Resource '{expectedResourceNames.FirstOrDefault ()}' should be kept.";
+			Assert.IsEmpty (expectedResourceNames, $"Resource '{expectedResourceNames.FirstOrDefault ()}' should be kept.");
 		}
 
-		IEnumerable<string> VerifyExportedTypes (AssemblyDefinition original, AssemblyDefinition linked)
+		void VerifyExportedTypes (AssemblyDefinition original, AssemblyDefinition linked)
 		{
 			var expectedTypes = original.MainModule.AllDefinedTypes ()
-				.SelectMany (t => GetCustomAttributeCtorValues<TypeReference> (t, nameof (KeptExportedTypeAttribute)).Select (l => l.FullName));
+				.SelectMany (t => GetCustomAttributeCtorValues<TypeReference> (t, nameof (KeptExportedTypeAttribute)).Select (l => l.FullName)).ToArray ();
 
-			if (!linked.MainModule.ExportedTypes.Select (l => l.FullName).ToHashSet ().SetEquals (expectedTypes.ToHashSet ()))
-				yield return $"Exported types do not match expected.";
+			Assert.That (linked.MainModule.ExportedTypes.Select (l => l.FullName), Is.EquivalentTo (expectedTypes));
 		}
 
-		protected virtual IEnumerable<string> VerifyPseudoAttributes (MethodDefinition src, MethodDefinition linked)
+		protected virtual void VerifyPseudoAttributes (MethodDefinition src, MethodDefinition linked)
 		{
 			var expected = (MethodAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if (expected != linked.Attributes)
-				yield return $"Method `{src}' pseudo attributes did not match expected";
+			Assert.AreEqual (expected, linked.Attributes, $"Method `{src}' pseudo attributes did not match expected");
 		}
 
-		protected virtual IEnumerable<string> VerifyPseudoAttributes (TypeDefinition src, TypeDefinition linked)
+		protected virtual void VerifyPseudoAttributes (TypeDefinition src, TypeDefinition linked)
 		{
 			var expected = (TypeAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if (expected == linked.Attributes)
-				yield break;
-
-			yield return $"Type `{src}' pseudo attributes did not match expected";
+			Assert.AreEqual (expected, linked.Attributes, $"Type `{src}' pseudo attributes did not match expected");
 		}
 
-		protected virtual IEnumerable<string> VerifyPseudoAttributes (FieldDefinition src, FieldDefinition linked)
+		protected virtual void VerifyPseudoAttributes (FieldDefinition src, FieldDefinition linked)
 		{
 			var expected = (FieldAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if (expected != linked.Attributes) yield return $"Field `{src}' pseudo attributes did not match expected";
+			Assert.AreEqual (expected, linked.Attributes, $"Field `{src}' pseudo attributes did not match expected");
 		}
 
-		protected virtual IEnumerable<string> VerifyPseudoAttributes (PropertyDefinition src, PropertyDefinition linked)
+		protected virtual void VerifyPseudoAttributes (PropertyDefinition src, PropertyDefinition linked)
 		{
 			var expected = (PropertyAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if (expected != linked.Attributes) yield return $"Property `{src}' pseudo attributes did not match expected";
+			Assert.AreEqual (expected, linked.Attributes, $"Property `{src}' pseudo attributes did not match expected");
 		}
 
-		protected virtual IEnumerable<string> VerifyPseudoAttributes (EventDefinition src, EventDefinition linked)
+		protected virtual void VerifyPseudoAttributes (EventDefinition src, EventDefinition linked)
 		{
 			var expected = (EventAttributes) GetExpectedPseudoAttributeValue (src, (uint) src.Attributes);
-			if (expected != linked.Attributes) yield return $"Event `{src}' pseudo attributes did not match expected";
+			Assert.AreEqual (expected, linked.Attributes, $"Event `{src}' pseudo attributes did not match expected");
 		}
 
-		protected virtual IEnumerable<string> VerifyCustomAttributes (ICustomAttributeProvider src, ICustomAttributeProvider linked)
+		protected virtual void VerifyCustomAttributes (ICustomAttributeProvider src, ICustomAttributeProvider linked)
 		{
-			var expectedAttrs = GetExpectedAttributes (src).ToHashSet ();
-			var linkedAttrs = FilterLinkedAttributes (linked).ToHashSet ();
-			if (!linkedAttrs.SetEquals (expectedAttrs)) {
-				var missing = $"Missing: {string.Join (", ", expectedAttrs.Except (linkedAttrs))}";
-				var extra = $"Extra: {string.Join (", ", linkedAttrs.Except (expectedAttrs))}";
+			var expectedAttrs = GetExpectedAttributes (src).ToList ();
+			var linkedAttrs = FilterLinkedAttributes (linked).ToList ();
 
-				yield return string.Join (Environment.NewLine, $"Custom attributes on `{src}' are not matching:", missing, extra);
-			}
+			Assert.That (linkedAttrs, Is.EquivalentTo (expectedAttrs), $"Custom attributes on `{src}' are not matching");
 		}
 
-		protected virtual IEnumerable<string> VerifySecurityAttributes (ICustomAttributeProvider src, ISecurityDeclarationProvider linked)
+		protected virtual void VerifySecurityAttributes (ICustomAttributeProvider src, ISecurityDeclarationProvider linked)
 		{
 			var expectedAttrs = GetCustomAttributeCtorValues<object> (src, nameof (KeptSecurityAttribute))
 				.Select (attr => attr.ToString ())
-				.ToHashSet ();
+				.ToList ();
 
-			var linkedAttrs = FilterLinkedSecurityAttributes (linked).ToHashSet ();
+			var linkedAttrs = FilterLinkedSecurityAttributes (linked).ToList ();
 
-			if (!linkedAttrs.SetEquals (expectedAttrs)) {
-				var missing = $"Missing: {string.Join (", ", expectedAttrs.Except (linkedAttrs))}";
-				var extra = $"Extra: {string.Join (", ", linkedAttrs.Except (expectedAttrs))}";
-				yield return string.Join ($"Security attributes on `{src}' are not matching:", missing, extra);
-			}
+			Assert.That (linkedAttrs, Is.EquivalentTo (expectedAttrs), $"Security attributes on `{src}' are not matching");
 		}
 
-		IEnumerable<string> VerifyPrivateImplementationDetails (TypeDefinition original, TypeDefinition linked)
+		void VerifyPrivateImplementationDetails (TypeDefinition original, TypeDefinition linked)
 		{
 			var expectedImplementationDetailsMethods = GetCustomAttributeCtorValues<string> (original, nameof (KeptPrivateImplementationDetailsAttribute))
 				.Select (attr => attr.ToString ())
 				.ToList ();
 
 			if (expectedImplementationDetailsMethods.Count == 0)
-				yield break;
+				return;
 
-			TypeDefinition srcImplementationDetails;
-			TypeDefinition linkedImplementationDetails;
-			foreach (var err in VerifyPrivateImplementationDetailsType (original.Module, linked.Module, out srcImplementationDetails, out linkedImplementationDetails)) yield return err;
+			VerifyPrivateImplementationDetailsType (original.Module, linked.Module, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails);
 			foreach (var methodName in expectedImplementationDetailsMethods) {
 				var originalMethod = srcImplementationDetails.Methods.FirstOrDefault (m => m.Name == methodName);
 				if (originalMethod == null)
-					yield return $"Could not locate original private implementation details method {methodName}";
+					Assert.Fail ($"Could not locate original private implementation details method {methodName}");
 
 				var linkedMethod = linkedImplementationDetails.Methods.FirstOrDefault (m => m.Name == methodName);
-				foreach (var erro in VerifyMethodKept (originalMethod, linkedMethod, compilerGenerated: true)) yield return erro;
+				VerifyMethodKept (originalMethod, linkedMethod, compilerGenerated: true);
 				linkedMembers.Remove (linkedMethod.FullName);
 			}
 			verifiedGeneratedTypes.Add (srcImplementationDetails.FullName);
 		}
 
-		static IEnumerable<string> VerifyPrivateImplementationDetailsType (ModuleDefinition src, ModuleDefinition linked, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails)
+		static void VerifyPrivateImplementationDetailsType (ModuleDefinition src, ModuleDefinition linked, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails)
 		{
 			srcImplementationDetails = src.Types.FirstOrDefault (t => IsPrivateImplementationDetailsType (t));
 
+			if (srcImplementationDetails == null)
+				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the original assembly.  Does your test use initializers?");
+
 			linkedImplementationDetails = linked.Types.FirstOrDefault (t => IsPrivateImplementationDetailsType (t));
-			const string srcMissingMessage = "Could not locate <PrivateImplementationDetails> in the original assembly. Does your test use initializers?";
-			const string linkedMissingMessage = "Could not locate <PrivateImplementationDetails> in the linked assembly";
-			return (srcImplementationDetails, linkedImplementationDetails) switch {
-				(null, null) => [srcMissingMessage, linkedMissingMessage],
-				(null, _) => [srcMissingMessage],
-				(_, null) => [linkedMissingMessage],
-				_ => Enumerable.Empty<string> ()
-			};
+
+			if (linkedImplementationDetails == null)
+				Assert.Fail ("Could not locate <PrivateImplementationDetails> in the linked assembly");
 		}
 
-		protected virtual IEnumerable<string> VerifyArrayInitializers (MethodDefinition src, MethodDefinition linked)
+		protected virtual void VerifyArrayInitializers (MethodDefinition src, MethodDefinition linked)
 		{
 			var expectedIndices = GetCustomAttributeCtorValues<object> (src, nameof (KeptInitializerData))
 				.Cast<int> ()
@@ -913,13 +865,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var expectKeptAll = src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptInitializerData) && !attr.HasConstructorArguments);
 
 			if (expectedIndices.Length == 0 && !expectKeptAll)
-				yield break;
+				return;
 
 			if (!src.HasBody)
-				yield return $"`{nameof (KeptInitializerData)}` cannot be used on methods that don't have bodies";
-			TypeDefinition srcImplementationDetails;
-			TypeDefinition linkedImplementationDetails;
-			foreach (var err in VerifyPrivateImplementationDetailsType (src.Module, linked.Module, out srcImplementationDetails, out linkedImplementationDetails)) yield return err;
+				Assert.Fail ($"`{nameof (KeptInitializerData)}` cannot be used on methods that don't have bodies");
+
+			VerifyPrivateImplementationDetailsType (src.Module, linked.Module, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails);
 
 			var possibleInitializerFields = src.Body.Instructions
 				.Where (ins => IsLdtokenOnPrivateImplementationDetails (srcImplementationDetails, ins))
@@ -927,32 +878,32 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.ToArray ();
 
 			if (possibleInitializerFields.Length == 0)
-				yield return $"`{src}` does not make use of any initializers";
+				Assert.Fail ($"`{src}` does not make use of any initializers");
 
 			if (expectKeptAll) {
 				foreach (var srcField in possibleInitializerFields) {
 					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.InitialValue.SequenceEqual (srcField.InitialValue));
-					foreach (var err in VerifyInitializerField (srcField, linkedField)) yield return err;
+					VerifyInitializerField (srcField, linkedField);
 				}
 			} else {
 				foreach (var index in expectedIndices) {
 					if (index < 0 || index > possibleInitializerFields.Length)
-						yield return $"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndices.Length}";
+						Assert.Fail ($"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndices.Length}");
 
 					var srcField = possibleInitializerFields[index];
 					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.InitialValue.SequenceEqual (srcField.InitialValue));
 
-					foreach (var err in VerifyInitializerField (srcField, linkedField)) yield return err;
+					VerifyInitializerField (srcField, linkedField);
 				}
 			}
 		}
 
-		IEnumerable<string> VerifyInitializerField (FieldDefinition src, FieldDefinition linked)
+		void VerifyInitializerField (FieldDefinition src, FieldDefinition linked)
 		{
-			foreach (var err in VerifyFieldKept (src, linked, compilerGenerated: true)) yield return err;
+			VerifyFieldKept (src, linked, compilerGenerated: true);
 			verifiedGeneratedFields.Add (linked.FullName);
 			linkedMembers.Remove (linked.FullName);
-			foreach (var err in VerifyTypeDefinitionKept (src.FieldType.Resolve (), linked.FieldType.Resolve ())) yield return err;
+			VerifyTypeDefinitionKept (src.FieldType.Resolve (), linked.FieldType.Resolve ());
 			linkedMembers.Remove (linked.FieldType.FullName);
 			linkedMembers.Remove (linked.DeclaringType.FullName);
 			verifiedGeneratedTypes.Add (linked.DeclaringType.FullName);
@@ -1026,7 +977,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (attr => attr.AttributeType.ToString ());
 		}
 
-		IEnumerable<string> VerifyFixedBufferFields (TypeDefinition src, TypeDefinition linked)
+		void VerifyFixedBufferFields (TypeDefinition src, TypeDefinition linked)
 		{
 			var fields = src.Fields.Where (f => f.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptFixedBufferAttribute)));
 
@@ -1036,28 +987,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				// while mcs and other versions of csc name it `<fieldname>__FixedBuffer0`
 				var originalCompilerGeneratedBufferType = src.NestedTypes.FirstOrDefault (t => t.FullName.Contains ($"<{field.Name}>") && t.FullName.Contains ("__FixedBuffer"));
 				if (originalCompilerGeneratedBufferType == null)
-					yield return $"Could not locate original compiler generated fixed buffer type for field {field}";
+					Assert.Fail ($"Could not locate original compiler generated fixed buffer type for field {field}");
 
 				var linkedCompilerGeneratedBufferType = linked.NestedTypes.FirstOrDefault (t => t.Name == originalCompilerGeneratedBufferType.Name);
 				if (linkedCompilerGeneratedBufferType == null)
-					yield return $"Missing expected type {originalCompilerGeneratedBufferType}";
+					Assert.Fail ($"Missing expected type {originalCompilerGeneratedBufferType}");
 
 				// Have to verify the field before the type
 				var originalElementField = originalCompilerGeneratedBufferType.Fields.FirstOrDefault ();
 				if (originalElementField == null)
-					yield return $"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}";
+					Assert.Fail ($"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}");
 
 				var linkedField = linkedCompilerGeneratedBufferType?.Fields.FirstOrDefault ();
-				foreach (var err in VerifyFieldKept (originalElementField, linkedField, compilerGenerated: true)) yield return err;
+				VerifyFieldKept (originalElementField, linkedField, compilerGenerated: true);
 				verifiedGeneratedFields.Add (originalElementField.FullName);
 				linkedMembers.Remove (linkedField.FullName);
 
-				foreach (var err in VerifyTypeDefinitionKept (originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType)) yield return err;
+				VerifyTypeDefinitionKept (originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType);
 				verifiedGeneratedTypes.Add (originalCompilerGeneratedBufferType.FullName);
 			}
 		}
 
-		IEnumerable<string> VerifyDelegateBackingFields (TypeDefinition src, TypeDefinition linked)
+		void VerifyDelegateBackingFields (TypeDefinition src, TypeDefinition linked)
 		{
 			var expectedFieldNames = src.CustomAttributes
 				.Where (a => a.AttributeType.Name == nameof (KeptDelegateCacheFieldAttribute))
@@ -1066,7 +1017,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.ToList ();
 
 			if (expectedFieldNames.Count == 0)
-				yield break;
+				return;
 
 			foreach (var nestedType in src.NestedTypes) {
 				if (!IsDelegateBackingFieldsType (nestedType))
@@ -1076,20 +1027,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				foreach (var expectedFieldName in expectedFieldNames) {
 					var originalField = nestedType.Fields.FirstOrDefault (f => f.Name == expectedFieldName);
 					if (originalField is null)
-						yield return $"Invalid expected delegate backing field {expectedFieldName} in {src}. This member was not in the unlinked assembly";
+						Assert.Fail ($"Invalid expected delegate backing field {expectedFieldName} in {src}. This member was not in the unlinked assembly");
 
 					var linkedField = linkedNestedType?.Fields.FirstOrDefault (f => f.Name == expectedFieldName);
-					foreach (var err in VerifyFieldKept (originalField, linkedField, compilerGenerated: true)) yield return err;
+					VerifyFieldKept (originalField, linkedField, compilerGenerated: true);
 					verifiedGeneratedFields.Add (linkedField.FullName);
 					linkedMembers.Remove (linkedField.FullName);
 				}
 
-				foreach (var err in VerifyTypeDefinitionKept (nestedType, linkedNestedType)) yield return err;
+				VerifyTypeDefinitionKept (nestedType, linkedNestedType);
 				verifiedGeneratedTypes.Add (linkedNestedType.FullName);
 			}
 		}
 
-		IEnumerable<string> VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked, bool compilerGenerated)
+		void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked, bool compilerGenerated)
 		{
 			Assert.AreEqual (src.HasGenericParameters, linked.HasGenericParameters);
 			if (src.HasGenericParameters) {
@@ -1099,44 +1050,38 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					var lnkp = linked.GenericParameters[i];
 
 					if (!compilerGenerated) {
-						foreach (var err in VerifyCustomAttributes (srcp, lnkp)) yield return err;
+						VerifyCustomAttributes (srcp, lnkp);
 					}
 
 					if (checkNames) {
 						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute))) {
 							string name = (src.GenericParameterType == GenericParameterType.Method ? "!!" : "!") + srcp.Position;
-							if (name != lnkp.Name) {
-								yield return $"Expected empty generic parameter name. Parameter {i} of {(src.ToString ())}";
-							}
+							Assert.AreEqual (name, lnkp.Name, "Expected empty generic parameter name");
 						} else {
-							if (srcp.Name != lnkp.Name) {
-								yield return $"Mismatch in generic parameter name. Parameter {i} of {(src.ToString ())}";
-							}
+							Assert.AreEqual (srcp.Name, lnkp.Name, "Mismatch in generic parameter name");
 						}
 					}
 				}
 			}
 		}
 
-		IEnumerable<string> VerifyParameters (IMethodSignature src, IMethodSignature linked, bool compilerGenerated)
+		void VerifyParameters (IMethodSignature src, IMethodSignature linked, bool compilerGenerated)
 		{
-			if (src.HasParameters != linked.HasParameters)
-				yield return $"Mismatch in parameters. {src} has parameters: {src.HasParameters}, {linked} has parameters: {linked.HasParameters}";
+			Assert.AreEqual (src.HasParameters, linked.HasParameters);
 			if (src.HasParameters) {
 				for (int i = 0; i < src.Parameters.Count; ++i) {
 					var srcp = src.Parameters[i];
 					var lnkp = linked.Parameters[i];
 
 					if (!compilerGenerated) {
-						foreach (var err in VerifyCustomAttributes (srcp, lnkp)) yield return err;
+						VerifyCustomAttributes (srcp, lnkp);
 					}
 
 					if (checkNames) {
-						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute))) {
-							if (lnkp.Name != string.Empty) yield return $"Expected empty parameter name. Parameter {i} of {(src as MethodDefinition)}";
-						} else {
-							if (srcp.Name != lnkp.Name) yield return $"Mismatch in parameter name. Parameter {i} of {(src as MethodDefinition)}";
-						}
+						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute)))
+							Assert.IsEmpty (lnkp.Name, $"Expected empty parameter name. Parameter {i} of {(src as MethodDefinition)}");
+						else
+							Assert.AreEqual (srcp.Name, lnkp.Name, $"Mismatch in parameter name. Parameter {i} of {(src as MethodDefinition)}");
 					}
 				}
 			}
@@ -1168,7 +1113,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private static IEnumerable<CustomAttribute> GetActiveKeptAttributes (ICustomAttributeProvider provider, string attributeName)
 		{
-			return provider.CustomAttributes.Where (ca => {
+			return provider.CustomAttributes.Where(ca => {
 				if (ca.AttributeType.Name != attributeName) {
 					return false;
 				}
@@ -1176,7 +1121,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				object keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
 				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.Trimmer);
 			});
-		}
+ 		}
 
 		private static bool HasActiveKeptAttribute (ICustomAttributeProvider provider)
 		{
