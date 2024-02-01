@@ -495,7 +495,7 @@ namespace System
                 }
             }
 
-            // Now the size of bits array can be definitely calculated
+            // Now the size of bits array can be calculated, except edge cases of -2^32N
             int wholeBlockCount = value.Length / TParser.DigitsPerBlock;
             int totalUIntCount = wholeBlockCount + 1;
 
@@ -519,15 +519,16 @@ namespace System
             if (signBits != 0)
             {
                 // For negative values, negate the whole array
-                Span<uint> trimmed = new Span<uint>(bits).TrimStart(0u);
-                if (trimmed.Length == 0)
+                if (bits.AsSpan().ContainsAnyExcept(0u))
                 {
-                    bits = new uint[bits.Length + 1];
-                    bits[^1] = 1;
+                    NumericsHelpers.DangerousMakeTwosComplement(bits);
                 }
                 else
                 {
-                    NumericsHelpers.DangerousMakeTwosComplement(trimmed);
+                    // For negative values with all-zero trailing digits,
+                    // It requires additional leading 1.
+                    bits = new uint[bits.Length + 1];
+                    bits[^1] = 1;
                 }
 
                 result = new BigInteger(-1, bits);
