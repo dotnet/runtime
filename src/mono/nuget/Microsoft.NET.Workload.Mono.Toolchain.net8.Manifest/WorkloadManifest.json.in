@@ -61,7 +61,7 @@
       "packs": [
         "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.ios-arm64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-arm64",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-x64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-x64"
       ],
       "extends": [ "runtimes-ios-net8" ],
       "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
@@ -72,7 +72,7 @@
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.net8.ios-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.net8.iossimulator-arm64",
-        "Microsoft.NETCore.App.Runtime.Mono.net8.iossimulator-x64",
+        "Microsoft.NETCore.App.Runtime.Mono.net8.iossimulator-x64"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling-net8" ],
       "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
