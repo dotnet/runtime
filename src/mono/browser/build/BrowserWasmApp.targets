@@ -28,7 +28,7 @@
       _WasmGenerateRunV8Script;
     </WasmGenerateAppBundleDependsOn>
 
-    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and ( '$(WasmEnableThreads)' == 'true' or '$(WasmEnableThreads)' == 'true' )">true</WasmEnableJsInteropByValue>
+    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and $(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->

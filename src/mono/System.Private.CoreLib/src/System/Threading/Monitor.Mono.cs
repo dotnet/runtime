@@ -71,7 +71,7 @@ namespace System.Threading
             return ObjectHeader.IsEntered(obj);
         }
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public static bool Wait(object obj, int millisecondsTimeout)

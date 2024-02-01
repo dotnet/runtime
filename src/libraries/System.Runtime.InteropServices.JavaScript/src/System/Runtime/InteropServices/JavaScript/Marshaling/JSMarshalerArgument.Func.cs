@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 args_exception.InitializeWithContext(JSObject.ProxyContext);
                 args_return.InitializeWithContext(JSObject.ProxyContext);
                 JSProxyContext.JSImportNoCapture();
@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_return = ref arguments[1];
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 args_exception.InitializeWithContext(JSObject.ProxyContext);
                 args_return.InitializeWithContext(JSObject.ProxyContext);
                 args_arg1.InitializeWithContext(JSObject.ProxyContext);
@@ -94,7 +94,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 args_exception.InitializeWithContext(JSObject.ProxyContext);
                 args_return.InitializeWithContext(JSObject.ProxyContext);
                 args_arg1.InitializeWithContext(JSObject.ProxyContext);
@@ -137,7 +137,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
                 ref JSMarshalerArgument args_arg3 = ref arguments[4];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 args_exception.InitializeWithContext(JSObject.ProxyContext);
                 args_return.InitializeWithContext(JSObject.ProxyContext);
                 args_arg1.InitializeWithContext(JSObject.ProxyContext);
@@ -261,7 +261,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 args_exception.InitializeWithContext(JSObject.ProxyContext);
                 args_return.InitializeWithContext(JSObject.ProxyContext);
                 JSProxyContext.JSImportNoCapture();
@@ -300,7 +300,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_return = ref arguments[1];
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 args_exception.InitializeWithContext(JSObject.ProxyContext);
                 args_return.InitializeWithContext(JSObject.ProxyContext);
                 args_arg1.InitializeWithContext(JSObject.ProxyContext);
@@ -342,7 +342,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 args_exception.InitializeWithContext(JSObject.ProxyContext);
                 args_return.InitializeWithContext(JSObject.ProxyContext);
                 args_arg1.InitializeWithContext(JSObject.ProxyContext);
@@ -389,7 +389,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
                 ref JSMarshalerArgument args_arg3 = ref arguments[4];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 args_exception.InitializeWithContext(JSObject.ProxyContext);
                 args_return.InitializeWithContext(JSObject.ProxyContext);
                 args_arg1.InitializeWithContext(JSObject.ProxyContext);

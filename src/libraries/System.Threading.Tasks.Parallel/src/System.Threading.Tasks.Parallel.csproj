@@ -9,7 +9,7 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <FeatureWasmManagedThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
-    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Threading\Tasks\Parallel.cs" />

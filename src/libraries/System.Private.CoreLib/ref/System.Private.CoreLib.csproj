@@ -13,7 +13,7 @@
     <FeatureWasmPerfTracing Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmPerfTracing>
     <FeatureWasmManagedThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
     <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
-    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
     <DefineConstants>$(DefineConstants);BUILDING_CORELIB_REFERENCE</DefineConstants>
     <!-- Disable binplacing since the System.Private.CoreLib reference assembly is internal to our build and shouldn't be exposed anywhere -->
     <EnableBinPlacing>false</EnableBinPlacing>

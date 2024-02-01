@@ -14,7 +14,7 @@
     <FeatureWasmManagedThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == '' and '$(FeatureWasmManagedThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
-    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
     <DefineConstants Condition="'$(WasmEnableJsInteropByValue)' == 'true'">$(DefineConstants);ENABLE_JS_INTEROP_BY_VALUE</DefineConstants>
     <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>

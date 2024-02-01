@@ -91,22 +91,22 @@ namespace System.Threading
         public static void Sleep(int millisecondsTimeout) { }
         public static void Sleep(System.TimeSpan timeout) { }
         public static void SpinWait(int iterations) { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void Start() { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void Start(object? parameter) { }
         [System.ObsoleteAttribute("Thread.Suspend has been deprecated. Use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.")]
         public void Suspend() { }
         public bool TrySetApartmentState(System.Threading.ApartmentState state) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void UnsafeStart() { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void UnsafeStart(object? parameter) { }

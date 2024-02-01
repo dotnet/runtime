@@ -10,7 +10,7 @@
     <EnableBinPlacing>false</EnableBinPlacing>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\ref\System.Threading.ThreadPool.cs" />

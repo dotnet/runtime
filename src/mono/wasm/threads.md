@@ -12,7 +12,7 @@ This also works with released versions of .NET 7 or later and the `wasmbrowser` 
 ## Libraries feature defines ##
 
 We use the `FeatureWasmManagedThreads` property in the libraries projects to conditionally define
-`FEATURE_WASM_THREADS` which is used to affect how the libraries are built for the multi-threaded
+`FEATURE_WASM_MANAGED_THREADS` which is used to affect how the libraries are built for the multi-threaded
 runtime.
 
 We use the `FeatureWasmPerfTracing` property in the libraries projects to
@@ -23,7 +23,7 @@ internally can use multithreading for EventPipe diagnostics.
 ### Ref asssemblies ###
 
 For ref assemblies that have APIs that are related to threading, we use
-`[UnsupportedOSPlatform("browser")]` under a `FEATURE_WASM_THREADS` define to mark APIs that are not
+`[UnsupportedOSPlatform("browser")]` under a `FEATURE_WASM_MANAGED_THREADS` define to mark APIs that are not
 supported with the single-threaded runtime.  Each such ref assembly (for example
 `System.Threading.Thread`) is defined in two places: `src/libraries/System.Threading.Thread/ref` for
 the single-threaded ref assemblies, and
