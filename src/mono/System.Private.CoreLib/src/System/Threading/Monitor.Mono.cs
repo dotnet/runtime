@@ -9,7 +9,7 @@ namespace System.Threading
 {
     public static partial class Monitor
     {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
         [ThreadStatic]
         public static bool ThrowOnBlockingWaitOnJSInteropThread;
 #endif
@@ -76,13 +76,13 @@ namespace System.Threading
             return ObjectHeader.IsEntered(obj);
         }
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
 #endif
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             if (ThrowOnBlockingWaitOnJSInteropThread)
             {
                 throw new PlatformNotSupportedException("blocking Wait is not supported on the JS interop threads.");

@@ -3,7 +3,7 @@
 
 /// <reference lib="webworker" />
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { ENVIRONMENT_IS_PTHREAD, loaderHelpers, mono_assert } from "../../globals";
 import { mono_wasm_pthread_ptr, postMessageToMain, update_thread_info } from "../shared";
@@ -75,7 +75,7 @@ export let currentWorkerThreadEvents: WorkerThreadEventTarget = undefined as any
 // this is very very early in the worker startup
 export function initWorkerThreadEvents() {
     // treeshake if threads are disabled
-    currentWorkerThreadEvents = MonoWasmThreads ? new globalThis.EventTarget() : null as any as WorkerThreadEventTarget;
+    currentWorkerThreadEvents = WasmEnableThreads ? new globalThis.EventTarget() : null as any as WorkerThreadEventTarget;
 }
 
 // this is the message handler for the worker that receives messages from the main thread
@@ -89,7 +89,7 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
 /// for the same webworker, since emscripten can reuse workers.
 /// This is an implementation detail, that shouldn't be used directly.
 export function mono_wasm_pthread_on_pthread_created(): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     try {
         const pthread_id = mono_wasm_pthread_ptr();
         mono_assert(!is_nullish(pthread_id), "pthread_self() returned null");
@@ -131,7 +131,7 @@ export function mono_wasm_pthread_on_pthread_created(): void {
 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes registered to the mono runtime.
 export function mono_wasm_pthread_on_pthread_registered(pthread_id: number): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     try {
         mono_assert(monoThreadInfo !== null && monoThreadInfo.pthreadId == pthread_id, "expected monoThreadInfo to be set already when registering");
         postMessageToMain({
@@ -149,7 +149,7 @@ export function mono_wasm_pthread_on_pthread_registered(pthread_id: number): voi
 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes attached to the mono runtime.
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: number, thread_name: CharPtr, background_thread: number, threadpool_thread: number, external_eventloop: number, debugger_thread: number): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     try {
         mono_assert(monoThreadInfo !== null && monoThreadInfo.pthreadId == pthread_id, "expected monoThreadInfo to be set already when attaching");
 
@@ -189,7 +189,7 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number, thread
 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
 export function mono_wasm_pthread_on_pthread_unregistered(pthread_id: number): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     try {
         mono_assert(pthread_id === monoThreadInfo.pthreadId, "expected pthread_id to match when un-registering");
         postRunWorker();

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { onWorkerLoadInitiated, resolveThreadPromises } from "../browser";
@@ -16,7 +16,7 @@ import { mono_log_warn } from "../../logging";
  */
 
 export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
 
     const originalLoadWasmModuleToWorker = modulePThread.loadWasmModuleToWorker;
     const originalThreadInitTLS = modulePThread.threadInitTLS;
@@ -76,7 +76,7 @@ export function is_thread_available() {
 }
 
 function getNewWorker(modulePThread: PThreadLibrary): PThreadWorker {
-    if (!MonoWasmThreads) return null as any;
+    if (!WasmEnableThreads) return null as any;
 
     if (modulePThread.unusedWorkers.length == 0) {
         mono_log_warn(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
@@ -107,7 +107,7 @@ function getNewWorker(modulePThread: PThreadLibrary): PThreadWorker {
 
 /// We replace Module["PThreads"].allocateUnusedWorker with this version that knows about assets
 function allocateUnusedWorker(): PThreadWorker {
-    if (!MonoWasmThreads) return null as any;
+    if (!WasmEnableThreads) return null as any;
 
     const asset = loaderHelpers.resolve_single_asset_path("js-module-threads");
     const uri = asset.resolvedUrl;
@@ -126,7 +126,7 @@ function allocateUnusedWorker(): PThreadWorker {
 
 
 export function dumpThreads(): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     // eslint-disable-next-line no-console
     console.log("Running workers:");
     getRunningWorkers().forEach((worker) => {
