@@ -89,7 +89,218 @@ int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
     return EVP_PKEY_up_ref(pkey);
 }
 
-static bool CheckKey(EVP_PKEY* key, int32_t algId, int32_t (*check_func)(EVP_PKEY_CTX*))
+static bool Lcm(const BIGNUM* num1, const BIGNUM* num2, BN_CTX* ctx, BIGNUM* result)
+{
+    assert(result);
+
+    // lcm(num1, num2) = (num1 * num2) / gcd(num1, num2)
+    BIGNUM* mul = NULL;
+    BIGNUM* gcd = NULL;
+    bool ret = false;
+
+    if ((mul = BN_new()) == NULL ||
+        (gcd = BN_new()) == NULL ||
+        !BN_mul(mul, num1, num2, ctx) ||
+        !BN_gcd(gcd, num1, num2, ctx) ||
+        !BN_div(result, NULL, mul, gcd, ctx))
+    {
+        goto done;
+    }
+
+    ret = true;
+done:
+    BN_clear_free(mul);
+    BN_clear_free(gcd);
+    return ret;
+}
+
+static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
+{
+    // This method does some lightweight key consistency checks on an RSA key to make sure all supplied values are
+    // sensible. This is not intended to be a strict key check that verifies a key conforms to any particular set
+    // of criteria or standards.
+
+    const BIGNUM* n = NULL;
+    const BIGNUM* e = NULL;
+    const BIGNUM* d = NULL;
+    const BIGNUM* p = NULL;
+    const BIGNUM* q = NULL;
+    const BIGNUM* dp = NULL;
+    const BIGNUM* dq = NULL;
+    const BIGNUM* inverseQ = NULL;
+    BN_CTX* ctx = NULL;
+
+    // x and y are scratch integers that receive the result of some operations.
+    BIGNUM* x = NULL;
+    BIGNUM* y = NULL;
+
+    // p1 and q1 are to hold p-1 and q-1, respectively. We need these values a couple of times, so don't waste time
+    // recomputing them in scratch integers.
+    BIGNUM* p1 = NULL;
+    BIGNUM* q1 = NULL;
+    int ret = 0;
+
+    RSA_get0_key(rsa, &n, &e, &d);
+
+    // Always need public parameters.
+    if (!n || !e)
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        goto done;
+    }
+
+    // Compatibility: We put this error for OpenSSL 1.0.2 and 1.1.x when the modulus is zero because OpenSSL did not
+    // handle this correctly. Continue to use the same error if the modulus is zero.
+    if (BN_is_zero(n))
+    {
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DECODE_ERROR, __FILE__, __LINE__);
+        goto done;
+    }
+
+    // OpenSSL has kept this value at 16,384 for all versions.
+    if (BN_num_bits(n) > OPENSSL_RSA_MAX_MODULUS_BITS)
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_MODULUS_TOO_LARGE, __FILE__, __LINE__);
+        goto done;
+    }
+
+    // Exponent cannot be 1 and must be odd
+    if (BN_is_one(e) || !BN_is_odd(e))
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_BAD_E_VALUE, __FILE__, __LINE__);
+        goto done;
+    }
+
+    // At this point everything that is public has been checked. Mark as successful and clean up.
+    if (isPublic)
+    {
+        ret = 1;
+        goto done;
+    }
+
+    // We do not support validating multi-prime RSA. If there are extra primes (more than two) then treat it as a
+    // decoding failure.
+    if (RSA_get_multi_prime_extra_count(rsa) != 0)
+    {
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DECODE_ERROR, __FILE__, __LINE__);
+        goto done;
+    }
+
+    // Get the private components now that we've moved on to checking the private parameters.
+    RSA_get0_factors(rsa, &p, &q);
+
+    // Need all the private parameters now.
+    if (!d || !p || !q)
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        goto done;
+    }
+
+    ctx = BN_CTX_new();
+
+    // Setup the scratch integers
+    if ((x = BN_new()) == NULL || (y = BN_new()) == NULL || (p1 = BN_new()) == NULL || (q1 = BN_new()) == NULL)
+    {
+        goto done;
+    }
+
+    // multiply p and q and put the result in x.
+    if (!BN_mul(x, p, q, ctx))
+    {
+        goto done;
+    }
+
+    // p * q == n
+    if (BN_cmp(x, n) != 0)
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_N_DOES_NOT_EQUAL_P_Q, __FILE__, __LINE__);
+        goto done;
+    }
+
+    // Checking congruence of private parameters.
+    // de = 1 % lambda(n)
+    // lambda(n) = lcm(p-1, q-1)
+    // lambda(n) is known to be lambda(pq) already.
+    // p1 = p-1
+    // q1 = q-1
+    // x = lcm(x, y)
+    if (!BN_sub(p1, p, BN_value_one()) || !BN_sub(q1, q, BN_value_one()) || !Lcm(p1, q1, ctx, x))
+    {
+        goto done;
+    }
+
+    // de % lambda(n)
+    // put the result in y
+    if (!BN_mod_mul(y, d, e, x, ctx))
+    {
+        goto done;
+    }
+
+    // Given de = 1 % lambda(n), de % lambda(n) should be one.
+    if (!BN_is_one(y))
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_D_E_NOT_CONGRUENT_TO_1, __FILE__, __LINE__);
+        goto done;
+    }
+
+    // Move on to checking the CRT parameters. In compatibility with what OpenSSL does,
+    // these are optional and only check them if all are present.
+    RSA_get0_crt_params(rsa, &dp, &dq, &inverseQ);
+
+    if (dp && dq && inverseQ)
+    {
+        // Check dp = d % (p-1)
+        // compute d % (p-1) and put in x
+        if (!BN_div(NULL, x, d, p1, ctx))
+        {
+            goto done;
+        }
+
+        if (BN_cmp(x, dp) != 0)
+        {
+            ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_DMP1_NOT_CONGRUENT_TO_D, __FILE__, __LINE__);
+            goto done;
+        }
+
+        // Check dq = d % (q-1)
+        // compute d % (q-1) and put in x
+        if (!BN_div(NULL, x, d, q1, ctx))
+        {
+            goto done;
+        }
+
+        if (BN_cmp(x, dq) != 0)
+        {
+            ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_DMQ1_NOT_CONGRUENT_TO_D, __FILE__, __LINE__);
+            goto done;
+        }
+
+        // Check inverseQ = q^-1 % p
+        // Use mod_inverse and put the result in x.
+        if (!BN_mod_inverse(x, q, p, ctx))
+        {
+            goto done;
+        }
+
+        if (BN_cmp(x, inverseQ) != 0)
+        {
+            ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_IQMP_NOT_INVERSE_OF_Q, __FILE__, __LINE__);
+            goto done;
+        }
+    }
+
+    // If we made it to the end, everything looks good.
+    ret = 1;
+done:
+    if (x) BN_clear_free(x);
+    if (y) BN_clear_free(y);
+    if (p1) BN_clear_free(p1);
+    if (q1) BN_clear_free(q1);
+    if (ctx) BN_CTX_free(ctx);
+    return ret;
+}
+
+static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*check_func)(EVP_PKEY_CTX*))
 {
     if (algId != NID_undef && EVP_PKEY_get_base_id(key) != algId)
     {
@@ -104,16 +315,10 @@ static bool CheckKey(EVP_PKEY* key, int32_t algId, int32_t (*check_func)(EVP_PKE
     {
         const RSA* rsa = EVP_PKEY_get0_RSA(key);
 
+        // If we can get the RSA object, use that for a faster path to validating the key that skips primality tests.
         if (rsa != NULL)
         {
-            const BIGNUM* modulus = NULL;
-            RSA_get0_key(rsa, &modulus, NULL, NULL);
-
-            if (modulus != NULL && BN_is_zero(modulus))
-            {
-                ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DECODE_ERROR, __FILE__, __LINE__);
-                return false;
-            }
+            return QuickRsaCheck(rsa, isPublic) == 1;
         }
     }
 
@@ -149,7 +354,7 @@ EVP_PKEY* CryptoNative_DecodeSubjectPublicKeyInfo(const uint8_t* buf, int32_t le
 
     EVP_PKEY* key = d2i_PUBKEY(NULL, &buf, len);
 
-    if (key != NULL && !CheckKey(key, algId, EVP_PKEY_public_check))
+    if (key != NULL && !CheckKey(key, algId, true, EVP_PKEY_public_check))
     {
         EVP_PKEY_free(key);
         key = NULL;
@@ -175,7 +380,7 @@ EVP_PKEY* CryptoNative_DecodePkcs8PrivateKey(const uint8_t* buf, int32_t len, in
     EVP_PKEY* key = EVP_PKCS82PKEY(p8info);
     PKCS8_PRIV_KEY_INFO_free(p8info);
 
-    if (key != NULL && !CheckKey(key, algId, EVP_PKEY_check))
+    if (key != NULL && !CheckKey(key, algId, false, EVP_PKEY_check))
     {
         EVP_PKEY_free(key);
         key = NULL;
