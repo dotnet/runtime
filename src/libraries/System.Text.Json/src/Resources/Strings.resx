@@ -386,7 +386,7 @@
     <value>Deserialization of interface or abstract types is not supported. Type '{0}'.</value>
   </data>
   <data name="DeserializationMustSpecifyTypeDiscriminator" xml:space="preserve">
-    <value>The JSON payload for interface or abstract type '{0}' must specify a type discriminator.</value>
+    <value>The JSON payload for polymorphic interface or abstract type '{0}' must specify a type discriminator.</value>
   </data>
   <data name="SerializationConverterOnAttributeNotCompatible" xml:space="preserve">
     <value>The converter specified on '{0}' is not compatible with the type '{1}'.</value>

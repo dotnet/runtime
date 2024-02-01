@@ -2696,7 +2696,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = """{"Value" : 42}""";
             NotSupportedException exn = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<PolymorphicAbstractClass>(json));
-            Assert.Contains($"The JSON payload for interface or abstract type '{typeof(PolymorphicAbstractClass)}' must specify a type discriminator.", exn.Message);
+            Assert.Contains($"The JSON payload for polymorphic interface or abstract type '{typeof(PolymorphicAbstractClass)}' must specify a type discriminator.", exn.Message);
         }
 
         [JsonDerivedType(typeof(Derived), "derived")]
