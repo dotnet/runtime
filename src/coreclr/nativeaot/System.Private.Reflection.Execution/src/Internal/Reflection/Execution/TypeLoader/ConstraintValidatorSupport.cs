@@ -260,11 +260,6 @@ namespace Internal.Reflection.Execution
             return typeof(object) == type;
         }
 
-        private static bool IsSystemValueType(this Type type)
-        {
-            return typeof(ValueType) == type;
-        }
-
         private static bool IsSystemArray(this Type type)
         {
             return typeof(Array) == type;

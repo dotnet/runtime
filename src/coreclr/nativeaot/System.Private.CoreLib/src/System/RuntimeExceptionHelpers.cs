@@ -21,7 +21,7 @@ namespace System
         }
     }
 
-    public class RuntimeExceptionHelpers
+    internal static class RuntimeExceptionHelpers
     {
         //------------------------------------------------------------------------------------------------------------
         // @TODO: this function is related to throwing exceptions out of Rtm. If we did not have to throw

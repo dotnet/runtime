@@ -83,8 +83,24 @@ namespace BrowserDebugProxy
                     && !f.Attributes.HasFlag(FieldAttributes.Static));
             foreach (var field in writableFields)
             {
-                lastWritableFieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, isOwn: true, field.TypeId, forDebuggerDisplayAttribute: false);
-                fields.Add(GetFieldWithMetadata(field, lastWritableFieldValue, isStatic: false));
+                //check if it's fixed size array and behave as a inline array
+                ElementType etype = (ElementType)cmdReader.ReadByte();
+                if (etype == (ElementType)ValueTypeId.FixedArray && writableFields.Count() == 1)
+                {
+                    ElementType elementType = (ElementType)cmdReader.ReadByte();
+                    var arraySize = cmdReader.ReadInt32();
+                    inlineArray = new(arraySize + 1);
+                    for (int i = 0; i < arraySize; i++)
+                    {
+                        inlineArray.Add(await sdbAgent.ValueCreator.CreateFixedArrayElement(cmdReader, elementType, $"{i}", token));
+                    }
+                }
+                else
+                {
+                    cmdReader.BaseStream.Position-=sizeof(byte);
+                    lastWritableFieldValue = await sdbAgent.ValueCreator.ReadAsVariableValue(cmdReader, field.Name, token, isOwn: true, field.TypeId, forDebuggerDisplayAttribute: false);
+                    fields.Add(GetFieldWithMetadata(field, lastWritableFieldValue, isStatic: false));
+                }
             }
             if (inlineArraySize > 0)
             {

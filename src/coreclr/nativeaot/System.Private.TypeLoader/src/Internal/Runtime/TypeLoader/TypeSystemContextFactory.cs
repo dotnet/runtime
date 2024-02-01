@@ -18,7 +18,7 @@ namespace Internal.Runtime.TypeLoader
         // This allows us to avoid recreating the type resolution context again and again, but still allows it to go away once the types are no longer being built
         private static GCHandle s_cachedContext = GCHandle.Alloc(null, GCHandleType.Weak);
 
-        private static Lock s_lock = new Lock();
+        private static Lock s_lock = new Lock(useTrivialWaits: true);
 
         public static TypeSystemContext Create()
         {

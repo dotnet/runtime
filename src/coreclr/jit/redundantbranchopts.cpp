@@ -1727,12 +1727,11 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     {
         Statement* const lastStmt = jti.m_block->lastStmt();
         fgRemoveStmt(jti.m_block, lastStmt);
-        JITDUMP("  repurposing " FMT_BB " to always fall through to " FMT_BB "\n", jti.m_block->bbNum,
+        JITDUMP("  repurposing " FMT_BB " to always jump to " FMT_BB "\n", jti.m_block->bbNum,
                 jti.m_falseTarget->bbNum);
         fgRemoveRefPred(jti.m_trueTarget, jti.m_block);
         jti.m_block->SetKindAndTarget(BBJ_ALWAYS, jti.m_falseTarget);
         jti.m_block->SetFlags(BBF_NONE_QUIRK);
-        assert(jti.m_block->JumpsToNext());
     }
 
     // Now reroute the flow from the predecessors.
@@ -1772,7 +1771,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
                     " implies predicate true; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                     predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_trueTarget->bbNum);
 
-            fgReplaceJumpTarget(predBlock, jti.m_trueTarget, jti.m_block);
+            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_trueTarget);
         }
         else
         {
@@ -1780,7 +1779,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
                     " implies predicate false; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                     predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_falseTarget->bbNum);
 
-            fgReplaceJumpTarget(predBlock, jti.m_falseTarget, jti.m_block);
+            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_falseTarget);
         }
     }
 
@@ -2038,10 +2037,18 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
+        if (!prevTree->OperIs(GT_STORE_LCL_VAR))
+        {
+            JITDUMP(" -- prev tree not STORE_LCL_VAR\n");
+            break;
+        }
+
+        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
+
         // If prevTree has side effects, bail, unless it is in the immediately preceding statement.
         // We'll handle exceptional side effects with VNs below.
         //
-        if ((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0)
+        if (((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0) || ((prevTreeData->gtFlags & GTF_ASG) != 0))
         {
             if (prevStmt->GetNextStmt() != stmt)
             {
@@ -2053,28 +2060,11 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             sideEffect = true;
         }
 
-        if (!prevTree->OperIs(GT_STORE_LCL_VAR))
-        {
-            JITDUMP(" -- prev tree not STORE_LCL_VAR\n");
-            break;
-        }
-
-        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
-
         // If we are seeing PHIs we have run out of interesting stmts.
         //
         if (prevTreeData->OperIs(GT_PHI))
         {
             JITDUMP(" -- prev tree is a phi\n");
-            break;
-        }
-
-        // Bail if value has an embedded assignment. We could handle this
-        // if we generalized the interference check we run below.
-        //
-        if ((prevTreeData->gtFlags & GTF_ASG) != 0)
-        {
-            JITDUMP(" -- prev tree RHS has embedded assignment\n");
             break;
         }
 
@@ -2148,7 +2138,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
-            if (gtHasRef(prevTreeData, definedLocals[i]))
+            if (gtTreeHasLocalRead(prevTreeData, definedLocals[i]))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
                 interferes = true;
@@ -2158,6 +2148,12 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         if (interferes)
         {
+            break;
+        }
+
+        if (gtMayHaveStoreInterference(prevTreeData, tree))
+        {
+            JITDUMP(" -- prev tree has an embedded store that interferes with [%06u]\n", dspTreeID(tree));
             break;
         }
 
@@ -2191,7 +2187,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             // replacing.
             for (Statement* cur = prevStmt->GetNextStmt(); cur != stmt; cur = cur->GetNextStmt())
             {
-                if (gtHasRef(cur->GetRootNode(), prevTreeLclNum))
+                if (gtTreeHasLocalRead(cur->GetRootNode(), prevTreeLclNum))
                 {
                     JITDUMP("-- prev tree has GTF_GLOB_REF and " FMT_STMT " has an interfering use\n", cur->GetID());
                     hasExtraUses = true;

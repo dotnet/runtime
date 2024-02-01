@@ -220,6 +220,13 @@ AffinitySet g_processAffinitySet;
 extern "C" int g_highestNumaNode;
 extern "C" bool g_numaAvailable;
 
+static int64_t g_totalPhysicalMemSize = 0;
+
+#ifdef TARGET_APPLE
+static int *g_kern_memorystatus_level_mib = NULL;
+static size_t g_kern_memorystatus_level_mib_length = 0;
+#endif
+
 // Initialize the interface implementation
 // Return:
 //  true if it has succeeded, false if it has failed
@@ -316,6 +323,55 @@ bool GCToOSInterface::Initialize()
 #endif // HAVE_SCHED_GETAFFINITY
 
     NUMASupportInitialize();
+
+#ifdef TARGET_APPLE
+    const char* mem_free_name = "kern.memorystatus_level";
+    int rc = sysctlnametomib(mem_free_name, NULL, &g_kern_memorystatus_level_mib_length);
+    if (rc != 0)
+    {
+        return false;
+    }
+
+    g_kern_memorystatus_level_mib = (int*)malloc(g_kern_memorystatus_level_mib_length * sizeof(int));
+    if (g_kern_memorystatus_level_mib == NULL)
+    {
+        return false;
+    }
+
+    rc = sysctlnametomib(mem_free_name, g_kern_memorystatus_level_mib, &g_kern_memorystatus_level_mib_length);
+    if (rc != 0)
+    {
+        free(g_kern_memorystatus_level_mib);
+        g_kern_memorystatus_level_mib = NULL;
+        g_kern_memorystatus_level_mib_length = 0;
+        return false;
+    }
+#endif
+
+    // Get the physical memory size
+#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
+    long pages = sysconf(_SC_PHYS_PAGES);
+    if (pages == -1)
+    {
+        return false;
+    }
+
+    g_totalPhysicalMemSize = (uint64_t)pages * (uint64_t)g_pageSizeUnixInl;
+#elif HAVE_SYSCTL
+    int mib[2];
+    mib[0] = CTL_HW;
+    mib[1] = HW_MEMSIZE;
+    size_t length = sizeof(INT64);
+    int rc = sysctl(mib, 2, &g_totalPhysicalMemSize, &length, NULL, 0);
+    if (rc == 0)
+    {
+        return false;
+    }
+#else // HAVE_SYSCTL
+#error "Don't know how to get total physical memory on this platform"
+#endif // HAVE_SYSCTL
+
+    assert(g_totalPhysicalMemSize != 0);
 
     return true;
 }
@@ -1211,34 +1267,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
         return restricted_limit;
     }
 
-    // Get the physical memory size
-#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
-    long pages = sysconf(_SC_PHYS_PAGES);
-    if (pages == -1)
-    {
-        return 0;
-    }
-
-    long pageSize = sysconf(_SC_PAGE_SIZE);
-    if (pageSize == -1)
-    {
-        return 0;
-    }
-
-    return (uint64_t)pages * (uint64_t)pageSize;
-#elif HAVE_SYSCTL
-    int mib[3];
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
-    int64_t physical_memory = 0;
-    size_t length = sizeof(INT64);
-    int rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
-    assert(rc == 0);
-
-    return physical_memory;
-#else // HAVE_SYSCTL
-#error "Don't know how to get total physical memory on this platform"
-#endif // HAVE_SYSCTL
+    return g_totalPhysicalMemSize;
 }
 
 // Get amount of physical memory available for use in the system
@@ -1248,20 +1277,15 @@ uint64_t GetAvailablePhysicalMemory()
 
     // Get the physical memory available.
 #if defined(__APPLE__)
-    vm_size_t page_size;
-    mach_port_t mach_port;
-    mach_msg_type_number_t count;
-    vm_statistics_data_t vm_stats;
-    mach_port = mach_host_self();
-    count = sizeof(vm_stats) / sizeof(natural_t);
-    if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
+    uint32_t mem_free = 0;
+    size_t mem_free_length = sizeof(uint32_t);
+    assert(g_kern_memorystatus_level_mib != NULL);
+    int rc = sysctl(g_kern_memorystatus_level_mib, g_kern_memorystatus_level_mib_length, &mem_free, &mem_free_length, NULL, 0);
+    assert(rc == 0);
+    if (rc == 0)
     {
-        if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
-        {
-            available = (int64_t)vm_stats.free_count * (int64_t)page_size;
-        }
+        available = (int64_t)mem_free * g_totalPhysicalMemSize / 100;
     }
-    mach_port_deallocate(mach_task_self(), mach_port);
 #elif defined(__FreeBSD__)
     size_t inactive_count = 0, laundry_count = 0, free_count = 0;
     size_t sz = sizeof(inactive_count);
@@ -1279,7 +1303,7 @@ uint64_t GetAvailablePhysicalMemory()
 
     if (tryReadMemInfo)
     {
-        // Ensure that we don't try to read the /proc/meminfo in successive calls to the GlobalMemoryStatusEx
+        // Ensure that we don't try to read the /proc/meminfo in successive calls to the GetAvailablePhysicalMemory
         // if we have failed to access the file or the file didn't contain the MemAvailable value.
         tryReadMemInfo = ReadMemAvailable(&available);
     }

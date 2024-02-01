@@ -2862,6 +2862,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
     opts.dspGCtbls       = false;
+    opts.dspMetrics      = false;
     opts.disAsm2         = false;
     opts.dspUnwind       = false;
     opts.compLongAddress = false;
@@ -2951,6 +2952,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             opts.optRepeat = true;
         }
+
+        opts.dspMetrics = (JitConfig.JitMetrics() != 0);
     }
 
     if (verboseDump)
@@ -3046,19 +3049,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.dspDiffable = true;
         }
     }
-
-// These are left for backward compatibility, to be removed
-#ifdef DEBUG
-    if (JitConfig.JitDasmWithAlignmentBoundaries())
-    {
-        opts.disAlignment = true;
-    }
-    if (JitConfig.JitDiffableDasm())
-    {
-        opts.disDiffable = true;
-        opts.dspDiffable = true;
-    }
-#endif // DEBUG
 
 //-------------------------------------------------------------------------
 
@@ -3659,6 +3649,12 @@ void Compiler::dumpRegMask(regMaskTP regs) const
     {
         printf("[allDouble]");
     }
+#ifdef TARGET_XARCH
+    else if (regs == RBM_ALLMASK)
+    {
+        printf("[allMask]");
+    }
+#endif // TARGET_XARCH
     else
     {
         dspRegMask(regs);

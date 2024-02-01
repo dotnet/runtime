@@ -194,6 +194,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     _cancellationRegistration?.Dispose();
                     _cancellationRegistration = null;
+                    _thread?.Join(50);
                 }
 
                 if (_jsSynchronizationContext != null)

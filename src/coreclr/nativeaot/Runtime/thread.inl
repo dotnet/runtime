@@ -102,7 +102,7 @@ FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame* pFrame)
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame);
 }
 
-EXTERN_C void RhpWaitForGC2(PInvokeTransitionFrame* pFrame);
+EXTERN_C void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame* pFrame);
 
 FORCEINLINE void Thread::InlinePInvokeReturn(PInvokeTransitionFrame* pFrame)
 {
