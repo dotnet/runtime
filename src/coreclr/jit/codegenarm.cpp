@@ -899,7 +899,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     // The following instruction includes a release half barrier
     GetEmitter()->emitIns_R_R_R(insSt, dataSize, exResultReg, dataReg, addrReg);
 
-    GetEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, targetReg, 0);
+    GetEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, exResultReg, 0);
     GetEmitter()->emitIns_J(INS_bne, labelRetry);
 
     genDefineTempLabel(labelCompareFail);
