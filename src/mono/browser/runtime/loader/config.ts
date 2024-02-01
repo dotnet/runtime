@@ -188,8 +188,8 @@ export function normalizeConfig() {
         config.cachedResourcesPurgeDelay = 10000;
     }
 
-    if (WasmEnableThreads && !Number.isInteger(config.pthreadPoolSize)) {
-        // ActiveIssue https://github.com/dotnet/runtime/issues/91538
+    if (MonoWasmThreads && !Number.isInteger(config.pthreadPoolSize)) {
+        // ActiveIssue https://github.com/dotnet/runtime/issues/75602
         config.pthreadPoolSize = 7;
     }
 

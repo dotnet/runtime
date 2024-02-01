@@ -147,10 +147,26 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "Debugger.scriptParsed":
                     {
-                        if (args["url"]?.ToString()?.Contains("/_framework/") == true) //is from dotnet runtime framework
+                        try
                         {
-                            if (Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
-                                context.FrameworkScriptList.Add(args["scriptId"].Value<int>());
+                            var url = args["url"]?.ToString();
+                            if (url?.Contains("/_framework/") == true)//it is from dotnet runtime framework
+                            {
+                                if (Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
+                                    context.FrameworkScriptList.Add(args["scriptId"].Value<int>());
+                                return false;
+                            }
+                            if (url?.Equals("") == false)
+                                return false;
+                            var callStack = args["stackTrace"]?["callFrames"]?.Value<JArray>();
+                            var topFrameFunctionName = callStack?.Count > 0 ? callStack?[0]?["functionName"]?.Value<string>() : null;
+                            //skip mono_wasm_fire_debugger_agent_message_with_data_to_pause or mono_wasm_runtime_ready (both of them have debugger; statement)
+                            if (topFrameFunctionName?.StartsWith("mono_wasm_", StringComparison.OrdinalIgnoreCase) == true)
+                                return true;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogDebug($"Debugger.scriptParsed - {args} - failed with exception: {ex}");
                         }
                         return false;
                     }
