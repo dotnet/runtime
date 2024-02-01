@@ -1057,7 +1057,7 @@ static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE* nextInstr) {
         int bit11 = imm & ~(-1 << 1);
         imm >>= 1;
         int bits1to10 = imm & ~(-1 << 10);
-        imm >> 10;
+        imm >>= 10;
         int signBits = imm;
 
         int offset = (bits1to10 << 1) | (bit11 << 11) | (bits12to19 << 12) | (signBits << 20);
