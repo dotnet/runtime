@@ -605,30 +605,9 @@ namespace Microsoft.Interop.Analyzers
                 return false;
             }
 
-            // By default we always prefer collection expressions for C# 12 and above
-            bool useCollectionExpression = ((CSharpParseOptions)documentSyntaxTree.Options).LanguageVersion >= LanguageVersion.CSharp12;
-
-            AnalyzerConfigOptions options = editor.OriginalDocument.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GetOptions(documentSyntaxTree);
-
-            if (options.TryGetValue("dotnet_style_prefer_collection_expression", out string? preferCollectionExpressionsRule))
-            {
-                // Option may be declared with `value:severity` syntax. We don't need severity, so just extract the `value` from the whole string
-                int indexOfColon = preferCollectionExpressionsRule.IndexOf(':');
-                if (indexOfColon > -1)
-                {
-                    preferCollectionExpressionsRule = preferCollectionExpressionsRule.Substring(0, indexOfColon);
-                }
-
-                if (preferCollectionExpressionsRule is "false" or "never")
-                {
-                    // User explicitly specified they don't prefer collection expressions
-                    useCollectionExpression = false;
-                }
-            }
-
             ExpressionSyntax typeOfExpression = (ExpressionSyntax)generator.TypeOfExpression(generator.TypeExpression(callingConventionType));
 
-            SyntaxNode argumentValue = useCollectionExpression
+            SyntaxNode argumentValue = ShouldUseCollectionExpression(editor.OriginalDocument, documentSyntaxTree)
                 ? SyntaxFactory.CollectionExpression(
                     SyntaxFactory.SingletonSeparatedList<CollectionElementSyntax>(
                         SyntaxFactory.ExpressionElement(typeOfExpression)))
@@ -639,6 +618,36 @@ namespace Microsoft.Interop.Analyzers
             unmanagedCallConvAttribute = generator.Attribute(TypeNames.UnmanagedCallConvAttribute,
                 generator.AttributeArgument("CallConvs", argumentValue));
 
+            return true;
+        }
+
+        private static bool ShouldUseCollectionExpression(Document document, SyntaxTree syntaxTree)
+        {
+            if (((CSharpParseOptions)syntaxTree.Options).LanguageVersion < LanguageVersion.CSharp12)
+            {
+                // Collection expressions are available only in C# 12 and above
+                return false;
+            }
+
+            AnalyzerConfigOptions options = document.Project.AnalyzerOptions.AnalyzerConfigOptionsProvider.GetOptions(syntaxTree);
+
+            if (options.TryGetValue("dotnet_style_prefer_collection_expression", out string? preferCollectionExpressionsRule))
+            {
+                // Option may be declared with `value:severity` syntax. We don't need severity, so just extract the `value` from the whole string if needed
+                int indexOfColon = preferCollectionExpressionsRule.IndexOf(':');
+                if (indexOfColon > -1)
+                {
+                    preferCollectionExpressionsRule = preferCollectionExpressionsRule.Substring(0, indexOfColon);
+                }
+
+                if (preferCollectionExpressionsRule is "false" or "never")
+                {
+                    // User explicitly specified they don't prefer collection expressions
+                    return false;
+                }
+            }
+
+            // By default we prefer collection expressions
             return true;
         }
 
