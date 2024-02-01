@@ -419,6 +419,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task WaitAssertsOnJSInteropThreads(Executor executor)
+        {
+            var cts = CreateTestCaseTimeoutSource();
+            await executor.Execute(Task () =>
+            {
+                Exception? exception = null;
+                try {
+                    Task.Delay(10, cts.Token).Wait();
+                } catch (Exception ex) {
+                    exception = ex;
+                }
+
+                executor.AssertBlockingWait(exception);
+
+                return Task.CompletedTask;
+            }, cts.Token);
+        }
+
+        [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedYield(Executor executor)
         {
             using var cts = CreateTestCaseTimeoutSource();
