@@ -2026,7 +2026,8 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
-        fgAddRefPred(hndBlk, newBlk);
+        FlowEdge* const newEdge = fgAddRefPred(hndBlk, newBlk);
+        newEdge->setLikelihood(1.0);
 
         // Spill into a temp.
         unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));

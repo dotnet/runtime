@@ -390,17 +390,29 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
         // fgRemoveRefPred()/fgAddRefPred() will do the right thing: the second and
         // subsequent duplicates will simply subtract from and add to the duplicate
         // count (respectively).
-
+        //
+        // However this does the "wrong" thing with respect to edge profile
+        // data; the old edge is not returned by fgRemoveRefPred until it has
+        // a dup count of 0, and the fgAddRefPred only uses the optional
+        // old edge arg when the new edge is first created.
         //
         // Remove the old edge [oldSwitchBlock => bJump]
         //
         assert(bJump->countOfInEdges() > 0);
-        fgRemoveRefPred(bJump, oldSwitchBlock);
+        FlowEdge* const oldEdge = fgRemoveRefPred(bJump, oldSwitchBlock);
 
         //
         // Create the new edge [newSwitchBlock => bJump]
         //
-        fgAddRefPred(bJump, newSwitchBlock);
+        FlowEdge* const newEdge = fgAddRefPred(bJump, newSwitchBlock);
+
+        // Handle the profile update, once we get our hands on the old edge.
+        //
+        if (oldEdge != nullptr)
+        {
+            assert(!newEdge->hasLikelihood());
+            newEdge->setLikelihood(oldEdge->getLikelihood());
+        }
     }
 
     if (m_switchDescMap != nullptr)
@@ -4822,7 +4834,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     curr->SetFlags(BBF_NONE_QUIRK);
     assert(curr->JumpsToNext());
 
-    fgAddRefPred(newBlock, curr);
+    FlowEdge* const newEdge = fgAddRefPred(newBlock, curr);
+    newEdge->setLikelihood(1.0);
 
     return newBlock;
 }

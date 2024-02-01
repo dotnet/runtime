@@ -4068,7 +4068,6 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
         assert(block == edge->m_sourceBlock);
         FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(edge->m_targetBlock, block);
         assert(flowEdge != nullptr);
-        assert(!flowEdge->hasLikelihood());
         weight_t likelihood = 0;
 
         if (nEdges == 1)
@@ -5534,6 +5533,8 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         }
         else
         {
+            JITDUMP("Missing likelihood on %p " FMT_BB "->" FMT_BB "\n", predEdge, predEdge->getSourceBlock()->bbNum,
+                    block->bbNum);
             missingLikelyWeight++;
         }
 
@@ -5658,6 +5659,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
             }
             else
             {
+                JITDUMP("Missing likelihood on %p " FMT_BB "->" FMT_BB "\n", succEdge, block->bbNum, succBlock->bbNum);
                 missingLikelihood++;
             }
         }
