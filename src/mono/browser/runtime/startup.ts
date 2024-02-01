@@ -296,9 +296,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         runtimeHelpers.runtimeReady = true;
         runtimeList.registerRuntime(exportedRuntimeAPI);
 
-        runtimeHelpers.runtimeReady = true;
-        runtimeList.registerRuntime(exportedRuntimeAPI);
-
         if (WasmEnableThreads) {
             runtimeHelpers.javaScriptExports.install_main_synchronization_context();
         }
