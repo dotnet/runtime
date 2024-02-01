@@ -10,9 +10,9 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 		{
 #if SUPPORTS_DEFAULT_INTERFACE_METHODS
 			M<UsedAsIBase> ();
-			NotUsedAsIBase.Keep ();
+			NotUsedInGeneric.Keep ();
 			GenericType<UsedAsIBase2>.M ();
-
+			GenericType2<UsedInUnconstrainedGeneric>.Keep ();
 #endif
 		}
 
@@ -59,6 +59,20 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 			}
 		}
 
+		[Kept]
+		[KeptInterface (typeof (IBase))]
+		[KeptInterface (typeof (IMiddle))]
+		interface IDerived2 : IMiddle
+		{
+			// https://github.com/dotnet/runtime/issues/97798
+			// This shouldn't need to be kept. Implementor UsedInUnconstrainedGeneric is not passed as a constrained generic
+			[Kept]
+			static int IBase.Value {
+				[Kept]
+				get => 2;
+			}
+		}
+
 		interface INotReferenced
 		{ }
 
@@ -71,17 +85,33 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 		}
 
 		[Kept]
-		class NotUsedAsIBase : IDerived, INotReferenced
+		class NotUsedInGeneric : IDerived, INotReferenced
 		{
 			[Kept]
 			public static void Keep () { }
 		}
 
 		[Kept]
+		[KeptInterface (typeof (IBase))]
+		[KeptInterface (typeof (IMiddle))]
+		[KeptInterface (typeof (IDerived2))]
+		class UsedInUnconstrainedGeneric : IDerived2, INotReferenced
+		{
+		}
+
+
+		[Kept]
 		class GenericType<T> where T : IBase
 		{
 			[Kept]
 			public static int M () => T.Value;
+		}
+
+		[Kept]
+		class GenericType2<T>
+		{
+			[Kept]
+			public static void Keep() { }
 		}
 
 		[Kept]
