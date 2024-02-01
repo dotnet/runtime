@@ -3250,7 +3250,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToNative(MngdNati
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements);
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements);
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativeArrayMarshaler* pThis, void** pNativeHome, INT32 cElements);
 
 class ILFixedArrayMarshaler : public ILMngdMarshaler
 {
@@ -3297,7 +3297,6 @@ struct MngdFixedArrayMarshaler
     MethodTable* m_pElementMT;
     PCODE        m_pManagedElementMarshaler;
     TypeHandle   m_Array;
-    BOOL         m_NativeDataValid;
     BOOL         m_BestFitMap;
     BOOL         m_ThrowOnUnmappableChar;
     VARTYPE      m_vt;
@@ -3307,7 +3306,7 @@ struct MngdFixedArrayMarshaler
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ClearNativeContents(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ClearNativeContents(MngdFixedArrayMarshaler* pThis, void* pNativeHome);
 
 #ifdef FEATURE_COMINTEROP
 class ILSafeArrayMarshaler : public ILMngdMarshaler
@@ -3394,7 +3393,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeAr
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged);
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, void** pNativeHome);
 #endif // FEATURE_COMINTEROP
 
 class ILReferenceCustomMarshaler : public ILMngdMarshaler

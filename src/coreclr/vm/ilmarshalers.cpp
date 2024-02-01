@@ -3786,8 +3786,7 @@ void ILAsAnyMarshalerBase::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(marshalerType);
     DWORD dwTmpLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    _ASSERTE(sizeof(MngdNativeArrayMarshaler) == sizeof(void*) * 3 + 16);
-    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 3 + 16); // sizeof(MngdNativeArrayMarshaler)
+    pslILEmit->EmitLDC(sizeof(MngdNativeArrayMarshaler));
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(dwTmpLocalNum);
 
@@ -3884,8 +3883,7 @@ void ILNativeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    _ASSERTE(sizeof(MngdNativeArrayMarshaler) == sizeof(void*) * 3 + 16);
-    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 3 + 16); // sizeof(MngdNativeArrayMarshaler)
+    pslILEmit->EmitLDC(sizeof(MngdNativeArrayMarshaler));
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
 
@@ -3921,7 +3919,7 @@ void ILNativeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
         pslILEmit->EmitLoadNullPtr();
     }
 
-    pslILEmit->EmitCALL(METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CREATE_MARSHALER, 4, 0);
+    pslILEmit->EmitCALL(METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CREATE_MARSHALER, 5, 0);
 }
 
 bool ILNativeArrayMarshaler::CanMarshalViaPinning()
@@ -4238,7 +4236,6 @@ void ILNativeArrayMarshaler::EmitClearNative(ILCodeStream* pslILEmit)
     STANDARD_VM_CONTRACT;
 
     EmitLoadMngdMarshaler(pslILEmit);
-    EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadNativeSize(pslILEmit);
 
@@ -4273,7 +4270,6 @@ void ILNativeArrayMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
     STANDARD_VM_CONTRACT;
 
     EmitLoadMngdMarshaler(pslILEmit);
-    EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadNativeSize(pslILEmit);
 
@@ -4355,7 +4351,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToNative(MngdN
     GCPROTECT_BEGIN(arrayRef);
     arrayRef = (BASEARRAYREF)pManagedHome.Get();
 
-    if (arrayRef == NULL)
+    if (arrayRef != NULL)
     {
         const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, TRUE);
         SIZE_T cElements = arrayRef->GetNumComponents();
@@ -4446,15 +4442,11 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(Mngd
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements)
+extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativeArrayMarshaler* pThis, void** pNativeHome, INT32 cElements)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
     GCX_COOP();
-
-    OBJECTREF managedHome = NULL;
-    GCPROTECT_BEGIN(managedHome);
-    managedHome = pManagedHome.Get();
 
     if (*pNativeHome != NULL)
     {
@@ -4465,7 +4457,6 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativ
             pMarshaler->ClearOleArray(*pNativeHome, cElements, pThis->m_pElementMT, pThis->m_pManagedMarshaler);
         }
     }
-    GCPROTECT_END();
 
     END_QCALL;
 }
@@ -4476,8 +4467,7 @@ void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    _ASSERTE(sizeof(MngdFixedArrayMarshaler) == sizeof(void*) * 4 + 16);
-    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 4 + 16); // sizeof(MngdFixedArrayMarshaler)
+    pslILEmit->EmitLDC(sizeof(MngdFixedArrayMarshaler));
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
 
@@ -4560,7 +4550,7 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFi
             else
             {
                 pMarshaler->ComToOleArray(&arrayRef, pNativeHome, pThis->m_pElementMT, pThis->m_BestFitMap,
-                    pThis->m_ThrowOnUnmappableChar, pThis->m_NativeDataValid, pThis->m_cElements, pThis->m_pManagedElementMarshaler);
+                    pThis->m_ThrowOnUnmappableChar, false, pThis->m_cElements, pThis->m_pManagedElementMarshaler);
             }
         }
     }
@@ -4641,11 +4631,11 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdF
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ClearNativeContents(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
+extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ClearNativeContents(MngdFixedArrayMarshaler* pThis, void* pNativeHome)
 {
     QCALL_CONTRACT;
-
     BEGIN_QCALL;
+    GCX_COOP();
 
     const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, FALSE);
 
@@ -4926,7 +4916,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSa
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, void** pNativeHome)
 {
     QCALL_CONTRACT;
 

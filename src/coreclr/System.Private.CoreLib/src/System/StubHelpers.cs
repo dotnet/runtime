@@ -637,25 +637,19 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ConvertContentsToManaged")]
         private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
-        internal static void ClearNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome, int cElements)
+        internal static unsafe void ClearNative(IntPtr pMarshalState, IntPtr pNativeHome, int cElements)
         {
-            object managedHome = pManagedHome;
-            ClearNativeContents(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome, cElements);
+            IntPtr nativeHome = *(IntPtr*)pNativeHome;
 
-            if (pNativeHome != IntPtr.Zero)
+            if (nativeHome != IntPtr.Zero)
             {
-                Marshal.FreeCoTaskMem(pNativeHome);
+                ClearNativeContents(pMarshalState, pNativeHome, cElements);
+                Marshal.FreeCoTaskMem(nativeHome);
             }
         }
 
-        internal static void ClearNativeContents(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome, int cElements)
-        {
-            object managedHome = pManagedHome;
-            ClearNativeContents(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome, cElements);
-        }
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ClearNativeContents")]
-        private static partial void ClearNativeContents(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, int cElements);
+        internal static partial void ClearNativeContents(IntPtr pMarshalState, IntPtr pNativeHome, int cElements);
     }  // class MngdNativeArrayMarshaler
 
     internal static partial class MngdFixedArrayMarshaler
@@ -667,7 +661,6 @@ namespace System.StubHelpers
             internal IntPtr m_pElementMT;
             internal IntPtr m_pManagedElementMarshaler;
             internal IntPtr m_Array;
-            internal int m_NativeDataValid;
             internal int m_BestFitMap;
             internal int m_ThrowOnUnmappableChar;
             internal ushort m_vt;
@@ -675,13 +668,12 @@ namespace System.StubHelpers
 #pragma warning restore CA1823, IDE0044
         }
 
-        internal static unsafe void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, bool nativeDataValid, int cElements, IntPtr pManagedMarshaler)
+        internal static unsafe void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, int cElements, IntPtr pManagedMarshaler)
         {
             MarshalerState* pState = (MarshalerState*)pMarshalState;
             pState->m_pElementMT = pMT;
             pState->m_Array = default;
             pState->m_pManagedElementMarshaler = pManagedMarshaler;
-            pState->m_NativeDataValid = nativeDataValid ? 1 : 0;
             pState->m_BestFitMap = (byte)(dwFlags >> 16);
             pState->m_ThrowOnUnmappableChar = (byte)(dwFlags >> 24);
             pState->m_vt = (ushort)dwFlags;
@@ -729,14 +721,15 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ConvertContentsToManaged")]
         private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
+#pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
         internal static void ClearNativeContents(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
         {
-            object managedHome = pManagedHome;
-            ClearNativeContents(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
+            ClearNativeContents(pMarshalState, pNativeHome);
         }
+#pragma warning restore IDE0060
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ClearNativeContents")]
-        private static partial void ClearNativeContents(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
+        private static partial void ClearNativeContents(IntPtr pMarshalState, IntPtr pNativeHome);
     }  // class MngdFixedArrayMarshaler
 
 #if FEATURE_COMINTEROP
@@ -745,7 +738,7 @@ namespace System.StubHelpers
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_CreateMarshaler")]
         [SuppressGCTransition]
-        internal static partial void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, IntPtr pManagedMarshaler);
+        internal static partial void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int iRank, int dwFlags, IntPtr pManagedMarshaler);
 
         internal static void ConvertSpaceToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
         {
@@ -756,7 +749,7 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertSpaceToNative")]
         private static partial void ConvertSpaceToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
-        internal static void ConvertContentsToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome, in object pOriginalManagedObject)
+        internal static void ConvertContentsToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome, object pOriginalManagedObject)
         {
             object managedHome = pManagedHome;
             object originalManagedObject = pOriginalManagedObject;
@@ -766,17 +759,15 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertContentsToNative")]
         private static partial void ConvertContentsToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, ObjectHandleOnStack pOriginalManagedObject);
 
-        internal static void ConvertSpaceToManaged(IntPtr pMarshalState, ref object? pManagedHome, IntPtr pNativeHome,
-                                                          int cElements)
+        internal static void ConvertSpaceToManaged(IntPtr pMarshalState, ref object? pManagedHome, IntPtr pNativeHome)
         {
             object? managedHome = null;
-            ConvertSpaceToManaged(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome, cElements);
+            ConvertSpaceToManaged(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
             pManagedHome = managedHome;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertSpaceToManaged")]
-        private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome,
-                                                         int cElements);
+        private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
         internal static void ConvertContentsToManaged(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
         {
@@ -787,23 +778,15 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertContentsToManaged")]
         private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
-        internal static void ClearNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome, int cElements)
+#pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
+        internal static void ClearNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
         {
-            object managedHome = pManagedHome;
-            ClearNative(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome, cElements);
+            ClearNative(pMarshalState, pNativeHome);
         }
+#pragma warning restore IDE0060
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ClearNative")]
-        private static partial void ClearNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, int cElements);
-
-        internal static void ClearNativeContents(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome, int cElements)
-        {
-            object managedHome = pManagedHome;
-            ClearNativeContents(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome, cElements);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ClearNativeContents")]
-        private static partial void ClearNativeContents(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, int cElements);
+        private static partial void ClearNative(IntPtr pMarshalState, IntPtr pNativeHome);
     }  // class MngdSafeArrayMarshaler
 #endif // FEATURE_COMINTEROP
 
