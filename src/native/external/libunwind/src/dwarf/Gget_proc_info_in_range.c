@@ -62,6 +62,8 @@ unw_get_proc_info_in_range (unw_word_t        start_ip,
         if ((*a->access_mem)(as, eh_frame_table, &data, 0, arg) < 0) {
             return -UNW_EINVAL;
         }
+        /* we are reading only the first 4 `char` members of `struct dwarf_eh_frame_hdr`, which
+         * are guaranteed to fit into the first `sizeof(unw_word_t)` bytes */
         struct dwarf_eh_frame_hdr exhdr;
         memcpy(&exhdr, &data, sizeof(data));
 
