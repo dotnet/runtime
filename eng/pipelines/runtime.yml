@@ -530,7 +530,7 @@ extends:
           runAOT: false
           shouldRunSmokeOnly: false
           alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:2
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # AOT Library tests
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
