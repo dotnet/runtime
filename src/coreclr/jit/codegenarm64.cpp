@@ -2342,7 +2342,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     else
                     {
                         attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
-                        GetEmitter()->emitIns_R_R_I(INS_ldr, attr, tree->GetReg(), REG_R0, tree->AsIntCon()->gtIconVal);
+                        GetEmitter()->emitIns_R_R_I(INS_ldr, attr, tree->GetRegNum(), REG_R0, tree->AsIntCon()->gtIconVal);
                         //GetEmitter()->emitInsLoadStoreOp(INS_lea, attr, targetReg, tree);
                     }
                     break;

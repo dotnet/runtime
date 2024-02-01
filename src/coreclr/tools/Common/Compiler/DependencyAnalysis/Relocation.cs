@@ -539,6 +539,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_TPOFF:
                 case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                     return *(int*)location;
                 case RelocType.IMAGE_REL_BASED_DIR64:
                     return *(long*)location;
@@ -553,7 +554,6 @@ namespace ILCompiler.DependencyAnalysis
                     return GetArm64Rel21((uint*)location);
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                     return GetArm64Rel12((uint*)location);
-                case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
                 case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12:
                 case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC:
