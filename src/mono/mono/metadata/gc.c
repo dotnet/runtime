@@ -189,7 +189,6 @@ mono_gc_run_finalize (void *obj, void *data)
 #ifndef HAVE_SGEN_GC
 	MonoObject *o2;
 #endif
-	MonoMethod* finalizer = NULL;
 	MonoDomain *caller_domain = mono_domain_get ();
 
 	// This function is called from the innards of the GC, so our best alternative for now is to do polling here
@@ -281,7 +280,6 @@ mono_gc_run_finalize (void *obj, void *data)
 		return;
 	}
 
-	finalizer = mono_class_get_finalizer (o->vtable->klass);
 
 	/*
 	 * To avoid the locking plus the other overhead of mono_runtime_invoke_checked (),
@@ -318,6 +316,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	MONO_PROFILER_RAISE (gc_finalizing_object, (o));
 
 #ifdef HOST_WASM
+	MonoMethod* finalizer = mono_class_get_finalizer (o->vtable->klass);
 	if (finalizer) { // null finalizers work fine when using the vcall invoke as Object has an empty one
 		gpointer params [1];
 		params [0] = NULL;
