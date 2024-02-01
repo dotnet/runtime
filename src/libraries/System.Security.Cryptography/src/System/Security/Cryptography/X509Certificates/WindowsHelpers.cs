@@ -69,11 +69,6 @@ namespace Internal.Cryptography
             }
         }
 
-        public static byte[] ValueAsAscii(this Oid oid)
-        {
-            return Encoding.ASCII.GetBytes(oid.Value!);
-        }
-
         public unsafe delegate void DecodedObjectReceiver(void* pvDecodedObject, int cbDecodedObject);
         public unsafe delegate TResult DecodedObjectReceiver<TResult>(void* pvDecodedObject, int cbDecodedObject);
         public unsafe delegate TResult DecodedObjectReceiver<TState, TResult>(void* pvDecodedObject, int cbDecodedObject, TState state);
