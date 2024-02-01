@@ -29,6 +29,13 @@
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\timers.mjs" />
+    <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureWasmManagedThreads)' != 'true'">
@@ -46,6 +53,5 @@
     <None Include="System\Runtime\InteropServices\JavaScript\test.json" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\test.json" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 </Project>

@@ -49,6 +49,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var ctx = new JSSynchronizationContext(isMainThread, cancellationToken);
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
+            Monitor.ThrowOnBlockingWaitOnJSInteropThread = true;
 
             var proxyContext = ctx.ProxyContext;
             JSProxyContext.CurrentThreadContext = proxyContext;
@@ -215,7 +216,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     Environment.FailFast($"JSSynchronizationContext.Send failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 }
 
+                var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
+                Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
                 signal.Wait();
+                Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
 
                 if (_isCancellationRequested)
                 {
