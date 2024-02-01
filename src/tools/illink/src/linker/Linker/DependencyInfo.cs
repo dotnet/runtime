@@ -145,8 +145,6 @@ namespace Mono.Linker
 		DynamicallyAccessedMemberOnType = 88, // type with DynamicallyAccessedMembers annotations (including those inherited from base types and interfaces)
 
 		UnsafeAccessorTarget = 89, // the member is referenced via UnsafeAccessor attribute
-
-		DefaultImplementationForImplementingType = 90 // The member is a default implementation of an interface method for a type that (may) need the method
 	}
 
 	public readonly struct DependencyInfo : IEquatable<DependencyInfo>

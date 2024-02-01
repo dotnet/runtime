@@ -215,7 +215,6 @@ namespace Mono.Linker.Steps
 			DependencyKind.ReturnTypeMarshalSpec,
 			DependencyKind.XmlDescriptor,
 			DependencyKind.UnsafeAccessorTarget,
-			DependencyKind.DefaultImplementationForImplementingType,
 		};
 #endif
 
@@ -2550,16 +2549,54 @@ namespace Mono.Linker.Steps
 		{
 			var @base = overrideInformation.Base;
 			var method = overrideInformation.Override;
-			Debug.Assert(@base.DeclaringType.IsInterface);
+			Debug.Assert (@base.DeclaringType.IsInterface);
 			if (@base is null || method is null || @base.DeclaringType is null)
 				return false;
 
 			if (Annotations.IsMarked (method))
 				return false;
 
-			// If the override is a DIM that provides an implementation for a type that requires the interface, mark the method
-			if (Annotations.GetDefaultInterfaceImplementations (@base).Where (dim => dim.DefaultInterfaceMethod == overrideInformation.Override).Any (dim => Annotations.IsRelevantToVariantCasting (dim.InstanceType)))
-				return true;
+			// If the override is a DIM that provides an implementation for a type that requires the interface, we may need to mark the DIM
+			var dims = Annotations.GetDefaultInterfaceImplementations (@base).Where(dim => Annotations.IsRelevantToVariantCasting (dim.InstanceType));
+			if (dims.Any (dim => dim.DefaultInterfaceMethod == method && Annotations.IsRelevantToVariantCasting (dim.InstanceType)))
+			{
+				// We need to find the most derived DIM for each type that has DIMs -- if there is a most derived DIM, we only mark that DIM
+				var dimsByInstanceType = dims.GroupBy (dim => dim.InstanceType).Where(group => group.Any(dim => dim.DefaultInterfaceMethod == method));
+				foreach (var group in dimsByInstanceType) {
+					var allDims = group.ToArray ();
+					int mostDerivedDimIndex = -1;
+					for (int i = 0; i < allDims.Length; i++) {
+						var derivesFromAllOtherDimProviders = true;
+						// Check if DIM i is the most specific DIM for the type by checking if it implements all the other DIM providers for the type
+						for (int j = 0; j < allDims.Length && derivesFromAllOtherDimProviders; j++) {
+							if (j == i)
+								continue;
+							// If the DIM provider i implements DIM provider j, then i is a more specific implementation that j. Otherwise, it is not and we check the next DIM provider
+							if (!allDims[i].DefaultInterfaceMethod.DeclaringType.Interfaces
+								.Any(iface => Context.Resolve(iface.InterfaceType) == allDims[j].DefaultInterfaceMethod.DeclaringType))
+							{
+								derivesFromAllOtherDimProviders = false;
+								break;
+							}
+						}
+						if (derivesFromAllOtherDimProviders) {
+							mostDerivedDimIndex = i;
+							break;
+						}
+					}
+					// If there is a most derived DIM, we only need to mark that DIM -- return true if the override is the most derived DIM
+					if (mostDerivedDimIndex != -1) {
+						if (allDims[mostDerivedDimIndex].DefaultInterfaceMethod == method)
+							return true;
+						else
+							continue;
+					} else {
+						// If there is no most derived DIM, all DIMs should be marked.
+						// We already checked that the override is a DIM that provides an implementation for a type that requires the interface, so we can return true
+						return true;
+					}
+				}
+			}
 
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
@@ -2581,7 +2618,7 @@ namespace Mono.Linker.Steps
 			// If the method is static and the implementing type is relevant to variant casting, mark the implementation method.
 			// A static method may only be called through a constrained call if the type is relevant to variant casting.
 			if (@base.IsStatic)
-				return Annotations.IsRelevantToVariantCasting (method.DeclaringType) || method.DeclaringType.IsInterface
+				return Annotations.IsRelevantToVariantCasting (method.DeclaringType)
 					|| IgnoreScope (@base.DeclaringType.Scope);
 
 			// If the implementing type is marked as instantiated, mark the implementation method.

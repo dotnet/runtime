@@ -42,9 +42,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 		[KeptInterface (typeof (IBase))]
 		interface IMiddle : IBase
 		{
-			[Kept] // Should be removable -- Add link to bug before merge
 			static int IBase.Value {
-				[Kept] // Should be removable -- Add link to bug before merge
 				get => 1;
 			}
 		}

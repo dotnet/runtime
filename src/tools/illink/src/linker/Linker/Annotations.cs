@@ -246,22 +246,8 @@ namespace Mono.Linker
 
 		public void MarkRelevantToVariantCasting (TypeDefinition type)
 		{
-			if (type == null)
-				return;
-
-			if (!types_relevant_to_variant_casting.Add (type))
-				return;
-
-			foreach (var baseType in type.Interfaces) {
-				var resolvedBaseType = context.Resolve (baseType.InterfaceType);
-				if (resolvedBaseType is null)
-					continue;
-				// Don't need to recurse for interfaces - types implement all interfaces in the interface/base type hierarchy
-				types_relevant_to_variant_casting.Add (resolvedBaseType);
-			}
-			if (type.BaseType is not null && context.Resolve(type.BaseType) is {} baseTypeDef) {
-				MarkRelevantToVariantCasting (baseTypeDef);
-			}
+			if (type != null)
+				types_relevant_to_variant_casting.Add (type);
 		}
 
 		public bool IsRelevantToVariantCasting (TypeDefinition type)
