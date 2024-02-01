@@ -699,7 +699,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             assert(dstCount == 1);
             regMaskTP mask = RBM_NONE;
-            if (tree->gtTreeID == 21)
             if (((tree->gtFlags & GTF_ICON_SECREL_OFFSET) == GTF_ICON_SECREL_OFFSET))
             {
                 mask = genRegMask(REG_R0, TYP_I_IMPL);
