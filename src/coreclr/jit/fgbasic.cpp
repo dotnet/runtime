@@ -630,8 +630,6 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
             break;
 
         case BBJ_COND:
-        {
-            FlowEdge* const oldEdge = fgRemoveRefPred(oldTarget, block);
 
             if (block->TrueTargetIs(oldTarget))
             {
@@ -648,6 +646,12 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                     block->SetTrueTarget(newTarget);
                 }
 
+                // fgRemoveRefPred should have removed the flow edge
+                FlowEdge* oldEdge = fgRemoveRefPred(oldTarget, block);
+                assert(oldEdge != nullptr);
+
+                // TODO-NoFallThrough: Proliferate weight from oldEdge
+                // (as a quirk, we avoid doing so for the true target to reduce diffs for now)
                 FlowEdge* const newEdge = fgAddRefPred(newTarget, block);
                 if (block->KindIs(BBJ_ALWAYS))
                 {
@@ -656,6 +660,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                 else if (oldEdge->hasLikelihood())
                 {
                     newEdge->setLikelihood(oldEdge->getLikelihood());
+                }
             }
             else
             {
@@ -682,7 +687,18 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
                     jumpTab[i]              = newTarget;
                     changed                 = true;
                     FlowEdge* const oldEdge = fgRemoveRefPred(oldTarget, block);
-                    fgAddRefPred(newTarget, block, oldEdge);
+                    FlowEdge* const newEdge = fgAddRefPred(newTarget, block, oldEdge);
+
+                    // Handle the profile update, once we get our hands on the old edge.
+                    // (see notes in fgChangeSwitchBlock for why this extra step is necessary)
+                    //
+                    // We do it slightly differently here so we don't lose the old
+                    // edge weight propagation that would sometimes happen
+                    //
+                    if ((oldEdge != nullptr) && !newEdge->hasLikelihood())
+                    {
+                        newEdge->setLikelihood(oldEdge->getLikelihood());
+                    }
                 }
             }
 
