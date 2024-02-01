@@ -621,7 +621,7 @@ namespace Microsoft.Interop.Analyzers
 
                 if (preferCollectionExpressionsRule is "false" or "never")
                 {
-                    // User explicitly specified that he doesn't prefer collection expressions
+                    // User explicitly specified they don't prefer collection expressions
                     useCollectionExpression = false;
                 }
             }
