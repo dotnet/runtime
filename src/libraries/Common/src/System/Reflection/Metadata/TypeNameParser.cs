@@ -1,10 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if SYSTEM_PRIVATE_CORELIB
+#define NET8_0_OR_GREATER
+#endif
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Reflection.Metadata
@@ -26,30 +28,64 @@ namespace System.Reflection.Metadata
 
         private TypeNameParser(ReadOnlySpan<char> name, bool throwOnError, TypeNameParserOptions? options) : this()
         {
-            _inputString = name.TrimStart(' '); // spaces at beginning are always OK
+            _inputString = name;
             _throwOnError = throwOnError;
             _parseOptions = options ?? new();
         }
 
-        public static TypeName? Parse(ReadOnlySpan<char> name, bool allowFullyQualifiedName = true, bool throwOnError = true, TypeNameParserOptions? options = default)
+        public static TypeName? Parse(ReadOnlySpan<char> typeName, bool allowFullyQualifiedName = true, bool throwOnError = true, TypeNameParserOptions? options = default)
         {
-            TypeNameParser parser = new(name, throwOnError, options);
-
-            int recursiveDepth = 0;
-            TypeName? typeName = parser.ParseNextTypeName(allowFullyQualifiedName, ref recursiveDepth);
-            if (typeName is not null && !parser._inputString.IsEmpty)
+            ReadOnlySpan<char> trimmedName = TrimStart(typeName); // whitespaces at beginning are always OK
+            if (trimmedName.IsEmpty)
             {
-                return ThrowInvalidTypeNameOrReturnNull(throwOnError);
+                // whitespace input needs to report the error index as 0
+                return ThrowInvalidTypeNameOrReturnNull(throwOnError, 0);
             }
 
-            return typeName;
+            int recursiveDepth = 0;
+            TypeNameParser parser = new(trimmedName, throwOnError, options);
+            TypeName? parsedName = parser.ParseNextTypeName(allowFullyQualifiedName, ref recursiveDepth);
+
+            if (parsedName is not null && parser._inputString.IsEmpty) // unconsumed input == error
+            {
+                return parsedName;
+            }
+            else if (!throwOnError)
+            {
+                return null;
+            }
+
+            // there was an error and we need to throw
+#if !SYSTEM_PRIVATE_CORELIB
+            if (recursiveDepth >= parser._parseOptions.MaxRecursiveDepth)
+            {
+                throw new InvalidOperationException("SR.RecursionCheck_MaxDepthExceeded");
+            }
+#endif
+            int errorIndex = typeName.Length - parser._inputString.Length;
+            return ThrowInvalidTypeNameOrReturnNull(throwOnError, errorIndex);
+
+            static TypeName? ThrowInvalidTypeNameOrReturnNull(bool throwOnError, int errorIndex = 0)
+            {
+                if (!throwOnError)
+                {
+                    return null;
+                }
+
+#if SYSTEM_PRIVATE_CORELIB
+                throw new ArgumentException(SR.Arg_ArgumentException, $"typeName@{errorIndex}");
+#else
+                throw new ArgumentException("SR.Argument_InvalidTypeName");
+#endif
+            }
         }
 
         public override string ToString() => _inputString.ToString(); // TODO: add proper debugger display stuff
 
+        // this method should return null instead of throwing, so the caller can get errorIndex and include it in error msg
         private TypeName? ParseNextTypeName(bool allowFullyQualifiedName, ref int recursiveDepth)
         {
-            if (!Dive(ref recursiveDepth))
+            if (!TryDive(ref recursiveDepth))
             {
                 return null;
             }
@@ -57,7 +93,7 @@ namespace System.Reflection.Metadata
             List<int>? nestedNameLengths = null;
             if (!TryGetTypeNameLengthWithNestedNameLengths(_inputString, ref nestedNameLengths, out int typeNameLength))
             {
-                return ThrowInvalidTypeNameOrReturnNull(_throwOnError);
+                return null;
             }
 
             ReadOnlySpan<char> typeName = _inputString.Slice(0, typeNameLength);
@@ -69,13 +105,12 @@ namespace System.Reflection.Metadata
 
             List<TypeName>? genericArgs = null; // TODO: use some stack-based list in CoreLib
 
-            // Are there any captured generic args? We'll look for "[[".
+            // Are there any captured generic args? We'll look for "[[" and "[".
             // There are no spaces allowed before the first '[', but spaces are allowed
             // after that. The check slices _inputString, so we'll capture it into
             // a local so we can restore it later if needed.
             ReadOnlySpan<char> capturedBeforeProcessing = _inputString;
-            if (TryStripFirstCharAndTrailingSpaces(ref _inputString, '[')
-                && TryStripFirstCharAndTrailingSpaces(ref _inputString, '['))
+            if (IsBeginningOfGenericAgs(ref _inputString, out bool doubleBrackets))
             {
                 int startingRecursionCheck = recursiveDepth;
                 int maxObservedRecursionCheck = recursiveDepth;
@@ -83,8 +118,10 @@ namespace System.Reflection.Metadata
             ParseAnotherGenericArg:
 
                 recursiveDepth = startingRecursionCheck;
-                TypeName? genericArg = ParseNextTypeName(allowFullyQualifiedName: true, ref recursiveDepth); // generic args always allow AQNs
-                if (genericArg is null) // parsing failed, but not thrown due to _throwOnError being true
+                // Namespace.Type`1[[GenericArgument1, AssemblyName1],[GenericArgument2, AssemblyName2]] - double square bracket syntax allows for fully qualified type names
+                // Namespace.Type`1[GenericArgument1,GenericArgument2] - single square bracket syntax is legal only for non-fully qualified type names
+                TypeName? genericArg = ParseNextTypeName(allowFullyQualifiedName: doubleBrackets, ref recursiveDepth);
+                if (genericArg is null) // parsing failed
                 {
                     return null;
                 }
@@ -94,20 +131,21 @@ namespace System.Reflection.Metadata
                     maxObservedRecursionCheck = recursiveDepth;
                 }
 
-                // There had better be a ']' after the type name.
-                if (!TryStripFirstCharAndTrailingSpaces(ref _inputString, ']'))
+                // For [[, there had better be a ']' after the type name.
+                if (doubleBrackets && !TryStripFirstCharAndTrailingSpaces(ref _inputString, ']'))
                 {
-                    return ThrowInvalidTypeNameOrReturnNull(_throwOnError);
+                    return null;
                 }
 
                 (genericArgs ??= new()).Add(genericArg);
 
-                // Is there a ',[' indicating another generic type arg?
                 if (TryStripFirstCharAndTrailingSpaces(ref _inputString, ','))
                 {
-                    if (!TryStripFirstCharAndTrailingSpaces(ref _inputString, '['))
+                    // For [[, is there a ',[' indicating another generic type arg?
+                    // For [, it's just a ','
+                    if (doubleBrackets && !TryStripFirstCharAndTrailingSpaces(ref _inputString, '['))
                     {
-                        return ThrowInvalidTypeNameOrReturnNull(_throwOnError);
+                        return null;
                     }
 
                     goto ParseAnotherGenericArg;
@@ -117,7 +155,7 @@ namespace System.Reflection.Metadata
                 // the generic type arg list.
                 if (!TryStripFirstCharAndTrailingSpaces(ref _inputString, ']'))
                 {
-                    return ThrowInvalidTypeNameOrReturnNull(_throwOnError);
+                    return null;
                 }
 
                 // And now that we're at the end, restore the max observed recursion count.
@@ -138,14 +176,14 @@ namespace System.Reflection.Metadata
             // iterate over the decorators to ensure there are no illegal combinations
             while (TryParseNextDecorator(ref _inputString, out int parsedDecorator))
             {
-                if (!Dive(ref recursiveDepth))
+                if (!TryDive(ref recursiveDepth))
                 {
                     return null;
                 }
 
                 if (previousDecorator == TypeName.ByRef) // it's illegal for managed reference to be followed by any other decorator
                 {
-                    return ThrowInvalidTypeNameOrReturnNull(_throwOnError);
+                    return null;
                 }
                 previousDecorator = parsedDecorator;
             }
@@ -161,7 +199,7 @@ namespace System.Reflection.Metadata
                 }
                 throw new IO.FileLoadException(SR.InvalidAssemblyName, _inputString.ToString());
 #else
-                return ThrowInvalidTypeNameOrReturnNull(_throwOnError);
+                return null;
 #endif
             }
 
@@ -285,6 +323,9 @@ namespace System.Reflection.Metadata
             return true;
         }
 
+        private static ReadOnlySpan<char> TrimStart(ReadOnlySpan<char> input)
+            => input.TrimStart(' '); // TODO: the CLR parser should trim all whitespaces, but there seems to be no test coverage
+
         private static TypeName? GetContainingType(ref ReadOnlySpan<char> typeName, List<int>? nestedNameLengths, AssemblyName? assemblyName)
         {
             if (nestedNameLengths is null)
@@ -303,34 +344,49 @@ namespace System.Reflection.Metadata
             return containingType;
         }
 
-        private bool Dive(ref int depth)
+        private bool TryDive(ref int depth)
         {
             if (depth >= _parseOptions.MaxRecursiveDepth)
             {
-                if (_throwOnError)
-                {
-                    return false;
-                }
-                else
-                {
-                    Throw();
-                }
+                return false;
             }
             depth++;
             return true;
-
-            [DoesNotReturn]
-            static void Throw() => throw new InvalidOperationException("SR.RecursionCheck_MaxDepthExceeded");
         }
 
-        private static TypeName? ThrowInvalidTypeNameOrReturnNull(bool throwOnError)
-            => throwOnError ? throw new ArgumentException("SR.Argument_InvalidTypeName") : null;
+        // Are there any captured generic args? We'll look for "[[" and "[" that is not followed by "]", "*" and ",".
+        private static bool IsBeginningOfGenericAgs(ref ReadOnlySpan<char> span, out bool doubleBrackets)
+        {
+            doubleBrackets = false;
+
+            if (!span.IsEmpty && span[0] == '[')
+            {
+                // There are no spaces allowed before the first '[', but spaces are allowed after that.
+                ReadOnlySpan<char> trimmed = TrimStart(span.Slice(1));
+                if (!trimmed.IsEmpty)
+                {
+                    if (trimmed[0] == '[')
+                    {
+                        doubleBrackets = true;
+                        span = TrimStart(trimmed.Slice(1));
+                        return true;
+                    }
+                    if (!(trimmed[0] is ',' or '*' or ']')) // [] or [*] or [,] or [,,,, ...]
+                    {
+                        span = trimmed;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         private static bool TryStripFirstCharAndTrailingSpaces(ref ReadOnlySpan<char> span, char value)
         {
             if (!span.IsEmpty && span[0] == value)
             {
-                span = span.Slice(1).TrimStart(' ');
+                span = TrimStart(span.Slice(1));
                 return true;
             }
             return false;

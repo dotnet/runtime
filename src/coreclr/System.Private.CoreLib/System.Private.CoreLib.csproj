@@ -202,7 +202,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameParser.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameResolver.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\RuntimeTypeMetadataUpdateHandler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />

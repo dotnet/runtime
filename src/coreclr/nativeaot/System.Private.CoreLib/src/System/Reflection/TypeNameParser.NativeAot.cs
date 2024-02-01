@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Runtime.Assemblies;
@@ -53,7 +51,13 @@ namespace System.Reflection
                 return null;
             }
 
-            return new TypeNameParser(typeName)
+            var parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError: throwOnError);
+            if (parsed is null)
+            {
+                return null;
+            }
+
+            return new TypeNameParser()
             {
                 _assemblyResolver = assemblyResolver,
                 _typeResolver = typeResolver,
@@ -61,7 +65,7 @@ namespace System.Reflection
                 _ignoreCase = ignoreCase,
                 _extensibleParser = extensibleParser,
                 _defaultAssemblyName = defaultAssemblyName
-            }.Parse();
+            }.Resolve(parsed);
         }
 
         internal static Type? GetType(
@@ -70,35 +74,37 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
-            return new TypeNameParser(typeName)
+            var parsed = Metadata.TypeNameParser.Parse(typeName,
+               allowFullyQualifiedName: true, // let it get parsed, but throw when topLevelAssembly was specified
+               throwOnError: throwOnError);
+
+            if (parsed is null)
+            {
+                return null;
+            }
+            else if (parsed.AssemblyName is not null && topLevelAssembly is not null)
+            {
+                return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
+            }
+
+            return new TypeNameParser()
             {
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
                 _topLevelAssembly = topLevelAssembly,
-            }.Parse();
+            }.Resolve(parsed);
         }
 
-        private bool CheckTopLevelAssemblyQualifiedName()
-        {
-            if (_topLevelAssembly is not null)
-            {
-                if (_throwOnError)
-                    throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
-                return false;
-            }
-            return true;
-        }
-
-        private Assembly? ResolveAssembly(string assemblyName)
+        private Assembly? ResolveAssembly(AssemblyName assemblyName)
         {
             Assembly? assembly;
             if (_assemblyResolver is not null)
             {
-                assembly = _assemblyResolver(new AssemblyName(assemblyName));
+                assembly = _assemblyResolver(assemblyName);
             }
             else
             {
-                assembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(RuntimeAssemblyName.Parse(assemblyName));
+                assembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(RuntimeAssemblyName.Parse(assemblyName.FullName)); // TODO adsitnik: remove the redundant parsing
             }
 
             if (assembly is null && _throwOnError)
@@ -113,7 +119,7 @@ namespace System.Reflection
             Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "GetType APIs are marked as RequiresUnreferencedCode.")]
-        private Type? GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string? assemblyNameIfAny)
+        private Type? GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName? assemblyNameIfAny)
         {
             Assembly? assembly;
 

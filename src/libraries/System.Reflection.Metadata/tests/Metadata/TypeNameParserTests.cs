@@ -210,6 +210,7 @@ namespace System.Reflection.Metadata.Tests
 
         [Theory]
         [InlineData(typeof(int))]
+        [InlineData(typeof(int?))]
         [InlineData(typeof(int[]))]
         [InlineData(typeof(int[,]))]
         [InlineData(typeof(int[,,,]))]

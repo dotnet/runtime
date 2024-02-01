@@ -1459,8 +1459,8 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\TypeNameParser.cs">
-      <Link>Common\System\Reflection\TypeNameParser.cs</Link>
+    <Compile Include="$(CommonPath)System\Reflection\TypeNameParser.Helpers.cs">
+      <Link>Common\System\Reflection\TypeNameParser.Helpers</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Reflection\AssemblyNameParser.cs">
       <Link>Common\System\Reflection\AssemblyNameParser.cs</Link>

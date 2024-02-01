@@ -2429,7 +2429,7 @@ namespace System.Reflection.Metadata
     }
     public ref partial struct TypeNameParser
     {
-        public static System.Reflection.Metadata.TypeName? Parse(System.ReadOnlySpan<char> name, bool allowFullyQualifiedName = true, bool throwOnError = true, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
+        public static System.Reflection.Metadata.TypeName? Parse(System.ReadOnlySpan<char> typeName, bool allowFullyQualifiedName = true, bool throwOnError = true, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
     }
     public partial class TypeNameParserOptions
     {

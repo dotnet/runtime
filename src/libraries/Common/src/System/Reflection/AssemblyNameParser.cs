@@ -241,9 +241,13 @@ namespace System.Reflection
 
         private bool TryParseVersion(string attributeValue, ref Version? version)
         {
+#if NET8_0_OR_GREATER
             ReadOnlySpan<char> attributeValueSpan = attributeValue;
             Span<Range> parts = stackalloc Range[5];
             parts = parts.Slice(0, attributeValueSpan.Split(parts, '.'));
+#else
+            string[] parts = attributeValue.Split('.');
+#endif
             if (parts.Length is < 2 or > 4)
             {
                 return false;
@@ -258,7 +262,13 @@ namespace System.Reflection
                     break;
                 }
 
-                if (!ushort.TryParse(attributeValueSpan[parts[i]], NumberStyles.None, NumberFormatInfo.InvariantInfo, out versionNumbers[i]))
+                if (!ushort.TryParse(
+#if NET8_0_OR_GREATER
+                    attributeValueSpan[parts[i]],
+#else
+                    parts[i],
+#endif
+                    NumberStyles.None, NumberFormatInfo.InvariantInfo, out versionNumbers[i]))
                 {
                     return false;
                 }
