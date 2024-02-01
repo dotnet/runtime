@@ -9,6 +9,11 @@ namespace System.Threading
 {
     public static partial class Monitor
     {
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+        public static bool ThrowOnBlockingWaitOnJSInteropThread;
+#endif
+
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)] // Interpreter is missing this intrinsic
         public static void Enter(object obj) => Enter(obj);
@@ -77,6 +82,12 @@ namespace System.Threading
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);
+#if FEATURE_WASM_THREADS
+            if (ThrowOnBlockingWaitOnJSInteropThread)
+            {
+                throw new PlatformNotSupportedException("blocking Wait is not supported on the JS interop threads.");
+            }
+#endif
             return ObjWait(millisecondsTimeout, obj);
         }
 
