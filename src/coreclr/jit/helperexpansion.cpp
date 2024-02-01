@@ -669,6 +669,16 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
             GenTree* tlsValueDef            = gtNewStoreLclVarNode(tlsLclNum, tlsRootOffset); // [000017]
             //tlsValueDef->gtFlags
             GenTree* tlsValueUse         = gtNewLclVarNode(tlsLclNum); // [000018]
+            GenTree* tlsDefUse   = gtNewOperNode(GT_COMMA, TYP_I_IMPL, tlsValueDef, tlsValueUse);
+
+            //fgInsertStmtAtBeg(block, fgNewStmtFromTree(tlsValueDef));
+
+            /*BasicBlock* oldBb = block;
+            BasicBlock* newBlock             = fgNewBBFromTreeAfter(BBJ_ALWAYS, prevBb, tlsValueDef, debugInfo);
+            newBlock->SetTarget(block);
+            fgAddRefPred(block, newBlock);*/
+            
+
 
 
             //tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET; 
@@ -695,6 +705,12 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
             // [000020]
             GenTree* tlsCall1 = gtCloneExpr(tlsCallParam1);
+            tlsCall1->gtFlags &= ~GTF_ICON_TLSGD_OFFSET;
+            tlsCall1->gtFlags |= GTF_ICON_SECREL_OFFSET;
+                //gtNewOperNode(GT_COMMA, TYP_I_IMPL, tlsValueDef,
+                //              gtCloneExpr(
+                //                  tlsCallParam1)); // TODO:
+                //                                   // IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21gtCloneExpr(tlsValueUse);
             //tlsCall1->SetContained();
             GenTree* tlsCallAddr =
                 gtNewIndir(TYP_I_IMPL, tlsCall1,
@@ -789,7 +805,10 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     // fallback will just execute first time
     fallbackBb->bbSetRunRarely();
 
-    fgRemoveRefPred(block, prevBb);
+    //if (!(TargetOS::IsUnix && TargetArchitecture::IsArm64))
+    {
+        fgRemoveRefPred(block, prevBb);
+    }
     fgAddRefPred(tlsRootNullCondBB, prevBb);
     prevBb->SetTarget(tlsRootNullCondBB);
 
