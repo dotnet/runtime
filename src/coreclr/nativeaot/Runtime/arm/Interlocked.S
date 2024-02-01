@@ -36,6 +36,7 @@ LEAF_END RhpLockCmpXchg8, _TEXT
 // r1 = value
 // r2 = comparand
 LEAF_ENTRY RhpLockCmpXchg16, _TEXT
+          uxth         r2, r2
           dmb
 ALTERNATE_ENTRY RhpLockCmpXchg16AVLocation
 LOCAL_LABEL(CmpXchg16Retry):
@@ -46,7 +47,7 @@ LOCAL_LABEL(CmpXchg16Retry):
           cmp          r12, #0
           bne          LOCAL_LABEL(CmpXchg16Retry)
 LOCAL_LABEL(CmpXchg16Exit):
-          mov          r0, r3
+          sxth         r0, r3
           dmb
           bx           lr
 LEAF_END RhpLockCmpXchg16, _TEXT
