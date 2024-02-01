@@ -168,8 +168,6 @@ class ScalarEvolutionContext
     Compiler*          m_comp;
     FlowGraphNaturalLoop* m_loop = nullptr;
     ScalarEvolutionMap m_cache;
-    ScalarEvolutionMap m_cyclicCache;
-    bool m_usingCyclicCache = false;
 
     Scev* AnalyzeNew(BasicBlock* block, GenTree* tree);
     Scev* CreateSimpleAddRec(GenTreeLclVarCommon* headerStore, Scev* start, BasicBlock* stepDefBlock, GenTree* stepDefData);
@@ -181,8 +179,7 @@ class ScalarEvolutionContext
 public:
     ScalarEvolutionContext(Compiler* comp) :
         m_comp(comp),
-        m_cache(comp->getAllocator(CMK_LoopScalarEvolution)),
-        m_cyclicCache(comp->getAllocator(CMK_LoopScalarEvolution))
+        m_cache(comp->getAllocator(CMK_LoopScalarEvolution))
     {
     }
 
@@ -386,36 +383,34 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
 
             GenTree* stepDefData = stepDef->Data();
 
-            Scev* simpleAddRec = CreateSimpleAddRec(store, enterScev, stepDefBlock, stepDefData);
-
-            if (simpleAddRec != nullptr)
-            {
-                return simpleAddRec;
-            }
-
-            ScevConstant* symbolicAddRec = NewConstant(TYP_INT, 0xdeadbeef);
-            m_cyclicCache.Emplace(store, symbolicAddRec);
-
-            Scev* result;
-            if (m_usingCyclicCache)
-            {
-                result = Analyze(stepDefBlock, stepDefData);
-            }
-            else
-            {
-                m_usingCyclicCache = true;
-
-                result = Analyze(stepDefBlock, stepDefData);
-                m_usingCyclicCache = false;
-                m_cyclicCache.RemoveAll();
-            }
-
-            if (result == nullptr)
-            {
-                return nullptr;
-            }
-
-            return MakeAddRecFromRecursiveScev(enterScev, result, symbolicAddRec);
+            // We currently do not handle complicated addrecs. We can do this
+            // by inserting a symbolic node in the cache and analyzing with it
+            // cached it. It would allow us to model things like
+            //
+            //   int i = 0;
+            //   while (i < n)
+            //   {
+            //     int j = i + 1;
+            //     ...
+            //     i = j;
+            //   }
+            // => <L, 0, 1>
+            //
+            // and chains of recurrences, such as
+            //
+            //   int i = 0;
+            //   int j = 0;
+            //   while (i < n)
+            //   {
+            //     j++;
+            //     i += j;
+            //   }
+            // => <L, 0, <L, 1, 1>>
+            //
+            // The main issue is that it requires cache invalidation afterwards
+            // and turning the recursive result into an addrec.
+            //
+            return CreateSimpleAddRec(store, enterScev, stepDefBlock, stepDefData);
         }
         case GT_CAST:
         {
@@ -541,14 +536,10 @@ Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev*
 Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree)
 {
     Scev* result;
-    if (!m_cache.Lookup(tree, &result) && (!m_usingCyclicCache || !m_cyclicCache.Lookup(tree, &result)))
+    if (!m_cache.Lookup(tree, &result))
     {
         result = AnalyzeNew(block, tree);
-
-        if (m_usingCyclicCache)
-            m_cyclicCache.Set(tree, result, ScalarEvolutionMap::Overwrite);
-        else
-            m_cache.Set(tree, result);
+        m_cache.Set(tree, result);
     }
 
     return result;
