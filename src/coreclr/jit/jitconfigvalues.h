@@ -343,7 +343,7 @@ CONFIG_INTEGER(EnableSSSE3,                 W("EnableSSSE3"),               1) /
 #elif defined(TARGET_ARM64)
 CONFIG_INTEGER(EnableArm64AdvSimd,          W("EnableArm64AdvSimd"),        1) // Allows Arm64 AdvSimd+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableArm64Aes,              W("EnableArm64Aes"),            1) // Allows Arm64 Aes+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableArm64Atomics,          W("EnableArm64Atomics"),        1) // Allows Arm64 Atomics+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Atomics,          W("EnableArm64Atomics"),        0) // Allows Arm64 Atomics+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableArm64Crc32,            W("EnableArm64Crc32"),          1) // Allows Arm64 Crc32+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableArm64Dczva,            W("EnableArm64Dczva"),          1) // Allows Arm64 Dczva+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableArm64Dp,               W("EnableArm64Dp"),             1) // Allows Arm64 Dp+ hardware intrinsics to be disabled
