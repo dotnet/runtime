@@ -963,7 +963,7 @@ namespace System
                     currentBuffer = buffer.Slice(0, currentBufferSize);
 
                     trailingZeroBuffer = trailingZeroBuffer.Slice(0, currentTrailingZeroBufferLength);
-                    if (trailingZeroBuffer.Length <= 1)
+                    if (trailingZeroBuffer.Length <= 1 && currentBufferSize < buffer.Length)
                     {
                         Debug.Assert(trailingZeroBuffer.Length == 1);
                         uint trailingZero = trailingZeroBuffer[0];
