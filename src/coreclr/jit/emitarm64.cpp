@@ -1131,7 +1131,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_EG_3A: // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
-            assert(insOptsNone(id->idInsOpt()));
+        case IF_SVE_EY_3A: // ...........iimmm ......nnnnnddddd -- SVE integer dot product (indexed)
+            assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmm
@@ -10285,13 +10286,22 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 
         case INS_sve_sdot:
         case INS_sve_udot:
-            assert(insOptsNone(opt));
+            assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg1)); // ddddd
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmm
             assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
             // assert(isValidUimm2(imm)); // ii
-            fmt = IF_SVE_EG_3A;
+
+            if (opt == INS_OPTS_SCALABLE_B)
+            {
+                fmt = IF_SVE_EY_3A;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_H);
+                fmt = IF_SVE_EG_3A;
+            }
             break;
 
         case INS_fmul: // by element, imm[0..3] selects the element of reg3
@@ -18055,6 +18065,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SVE_EG_3A: // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
+        case IF_SVE_EY_3A: // ...........iimmm ......nnnnnddddd -- SVE integer dot product (indexed)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
@@ -21157,9 +21168,11 @@ void emitter::emitDispInsHelp(
 
         // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
         case IF_SVE_EG_3A: // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
-            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_S, true);  // ddddd
-            emitDispSveReg(id->idReg2(), INS_OPTS_SCALABLE_H, true);  // nnnnn
-            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_H, false); // mmm
+        // <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_EY_3A: // ...........iimmm ......nnnnnddddd -- SVE integer dot product (indexed)
+            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_S, true); // ddddd
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);      // nnnnn
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);     // mmm
             // emitDispElementIndex(emitGetInsSC(id)); // ii
             break;
 
@@ -24008,6 +24021,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_CY_3A: // ........xx.iiiii ...gggnnnnn.DDDD -- SVE integer compare with signed immediate
         case IF_SVE_CY_3B: // ........xx.iiiii ii.gggnnnnn.DDDD -- SVE integer compare with unsigned immediate
         case IF_SVE_EG_3A: // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
+        case IF_SVE_EY_3A: // ...........iimmm ......nnnnnddddd -- SVE integer dot product (indexed)
             result.insLatency    = PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
