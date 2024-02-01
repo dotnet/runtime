@@ -343,13 +343,7 @@ void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
     {
         *instrToReplace = INTERRUPT_INSTR;
     }
-#elif defined(TARGET_LOONGARCH64)
-    bool protectReturn = ispointerKind;
-    if (protectReturn)
-        *(DWORD*)instrToReplace = INTERRUPT_INSTR_PROTECT_RET;
-    else
-        *(DWORD*)instrToReplace = INTERRUPT_INSTR;
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool protectReturn = ispointerKind;
     if (protectReturn)
         *(DWORD*)instrToReplace = INTERRUPT_INSTR_PROTECT_RET;
@@ -684,6 +678,15 @@ void GCCoverageInfo::SprinkleBreakpoints(
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
+#ifdef TARGET_RISCV64
+enum
+{
+    REG_RA = 1,
+    JAL = 0x6f,
+    JALR = 0x67,
+};
+#endif
+
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
 void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID pGCCover)
@@ -784,28 +787,15 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
         instructionIsACallThroughRegister = TRUE;
     }
 #elif defined(TARGET_RISCV64)
-    const DWORD instr = *((DWORD*)savedInstrPtr - 1);
-    const int REG_RA = 0x1;
-    const int JAL = 0x6f;
-    const int JALR = 0x67;
-    if (((instr & 0x7F) == JAL) && (((instr >> 7) & 0x1f) == REG_RA))
-        instructionIsACallThroughImmediate = TRUE;
-    else
-    if (((instr & 0x7F) == JALR) && (((instr >> 7) & 0x1f) == REG_RA))
-    {
-        int offset = ((instr >> 20) & 0xfff);
-        if (offset & 0x800)
-        {
-            offset |= 0xfffff000;
-        }
-        // Don't handle offsets for now
-        _ASSERTE(offset == 0);
-        instructionIsACallThroughRegister = TRUE;
-    }
-    int opcode = (instr & 0x7F);
-    LOG((LF_GCROOTS, LL_INFO10, "GCCOVER: Doing replaceSafePointInstructionWithGcStressInstr: op=%d imm=%d reg=%d\n",
-            opcode, instructionIsACallThroughImmediate, instructionIsACallThroughRegister));
+    const INT32 instr = *((INT32*)savedInstrPtr - 1);
 
+    int opcode = instr & ~(-1 << 7);
+    int linkReg = (instr >> 7) & ~(-1 << 5);
+
+    if ((opcode == JAL) && (linkReg == REG_RA))
+        instructionIsACallThroughImmediate = TRUE;
+    else if ((opcode == JALR) && (linkReg == REG_RA))
+        instructionIsACallThroughRegister = TRUE;
 #endif  // _TARGET_XXXX_
 
     // safe point must always be after a call instruction
@@ -1053,28 +1043,37 @@ static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE* nextInstr) {
         return 0; // Fail
     }
 #elif defined(TARGET_RISCV64)
-    const DWORD instr = *reinterpret_cast<DWORD*>(instrPtr);
-    const int REG_RA = 0x1;
-    const int JAL = 0x6f;
-    const int JALR = 0x67;
-    if (((instr & 0x7F) == JALR) && (((instr >> 7) & 0x1f) == REG_RA))
+    INT32 instr = *reinterpret_cast<INT32*>(instrPtr);
+    int opcode = instr & ~(-1 << 7);
+    int linkReg = (instr >> 7) & ~(-1 << 5);
+
+    if ((opcode == JAL) && (linkReg == REG_RA))
+    {
+        // call through immediate
+        int imm = (instr >> 12);
+
+        int bits12to19 = imm & ~(-1 << 8);
+        imm >>= 8;
+        int bit11 = imm & ~(-1 << 1);
+        imm >>= 1;
+        int bits1to10 = imm & ~(-1 << 10);
+        imm >> 10;
+        int signBits = imm;
+
+        int offset = (bits1to10 << 1) | (bit11 << 11) | (bits12to19 << 12) | (signBits << 20);
+
+        *nextInstr = instrPtr + 4;
+        return PC + offset;
+    }
+    else if ((opcode == JALR) && (linkReg == REG_RA))
     {
         // call through register
-        *nextInstr = instrPtr + 4;
+        *nextInstr = instrPtr + 4;  // TODO: adjust once we support "C" (compressed instructions)
 
-        int offset = ((instr >> 20) & 0xfff);
-        if (offset & 0x800)
-        {
-            offset |= 0xfffff000;
-        }
-        _ASSERTE(offset == 0);
-        unsigned int regnum = (instr >> 15) & 0x1f;
-        // TODO: Make sure that produced value is correct
-        size_t value = getRegVal(regnum, regs) & 0xfffffffffffffffe;
+        int offset = (instr >> 20);
+        int jumpBaseReg = (instr >> 15) & ~(-1 << 5);
+        size_t value = (getRegVal(jumpBaseReg, regs) + offset) & ~(size_t)1;
         return (BYTE *)value;
-    }
-    else if (((instr & 0x7F) == JAL) && (((instr >> 7) & 0x1f) == REG_RA)) {
-        _ASSERTE(!"Not implemented CallThroughImmediate - RISCV");
     }
 #endif
 
