@@ -40,10 +40,10 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (jsonTypeInfo.CreateObject == null)
                     {
-                        ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
+                        ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                     }
 
-                    obj = jsonTypeInfo.CreateObject()!;
+                    obj = jsonTypeInfo.CreateObject();
                 }
 
                 PopulatePropertiesFastPath(obj, jsonTypeInfo, options, ref reader, ref state);
@@ -116,10 +116,10 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         if (jsonTypeInfo.CreateObject == null)
                         {
-                            ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
+                            ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                         }
 
-                        obj = jsonTypeInfo.CreateObject()!;
+                        obj = jsonTypeInfo.CreateObject();
                     }
 
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)

@@ -589,13 +589,25 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException_DeserializeNoConstructor(Type type, ref Utf8JsonReader reader, scoped ref ReadStack state)
+        public static void ThrowNotSupportedException_DeserializeNoConstructor(JsonTypeInfo typeInfo, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
+            Type type = typeInfo.Type;
             string message;
 
-            if (type.IsInterface)
+            if (type.IsInterface || type.IsAbstract)
             {
-                message = SR.Format(SR.DeserializePolymorphicInterface, type);
+                if (typeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators is true)
+                {
+                    message = SR.Format(SR.DeserializationMustSpecifyTypeDiscriminator, type);
+                }
+                else if (typeInfo.Kind is JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary)
+                {
+                    message = SR.Format(SR.CannotPopulateCollection, type);
+                }
+                else
+                {
+                    message = SR.Format(SR.DeserializeInterfaceOrAbstractType, type);
+                }
             }
             else
             {

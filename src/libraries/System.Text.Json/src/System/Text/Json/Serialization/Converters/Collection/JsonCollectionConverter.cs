@@ -34,17 +34,7 @@ namespace System.Text.Json.Serialization
 
             if (typeInfo.CreateObject is null)
             {
-                // The contract model was not able to produce a default constructor for two possible reasons:
-                // 1. Either the declared collection type is abstract and cannot be instantiated.
-                // 2. The collection type does not specify a default constructor.
-                if (Type.IsAbstract || Type.IsInterface)
-                {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
-                }
-                else
-                {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(Type, ref reader, ref state);
-                }
+                ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(typeInfo, ref reader, ref state);
             }
 
             state.Current.ReturnValue = typeInfo.CreateObject();

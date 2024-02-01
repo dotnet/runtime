@@ -2692,6 +2692,22 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task PolymorphicAbstractClass_NoDiscriminatorInPayload_ThrowsNotSupportedException()
+        {
+            string json = """{"Value" : 42}""";
+            NotSupportedException exn = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<PolymorphicAbstractClass>(json));
+            Assert.Contains($"The JSON payload for interface or abstract type '{typeof(PolymorphicAbstractClass)}' must specify a type discriminator.", exn.Message);
+        }
+
+        [JsonDerivedType(typeof(Derived), "derived")]
+        public abstract class PolymorphicAbstractClass
+        {
+            public int Value { get; set; }
+
+            public class Derived : PolymorphicAbstractClass;
+        }
+
+        [Fact]
         public async Task PolymorphicClass_CustomConverter_NoTypeDiscriminator_Serialization()
         {
             var value = new PolymorphicClass_CustomConverter_NoTypeDiscriminator.DerivedClass { Number = 42 };
