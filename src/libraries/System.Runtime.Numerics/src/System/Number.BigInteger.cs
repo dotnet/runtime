@@ -492,6 +492,7 @@ namespace System
                 {
                     // -1 << 32, which requires an additional uint
                     result = new BigInteger(-1, [0, 1]);
+                    return ParsingStatus.OK;
                 }
             }
 
