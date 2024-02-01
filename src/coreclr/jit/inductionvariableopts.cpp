@@ -170,7 +170,7 @@ class ScalarEvolutionContext
 
     Scev* AnalyzeNew(BasicBlock* block, GenTree* tree);
     GenTreeLclVarCommon* GetSsaDef(GenTreeLclVarCommon* lcl, BasicBlock** defBlock);
-    bool IsInvariantInLoop(Scev* scev, FlowGraphNaturalLoop* loop);
+    bool IsInvariantInLoop(GenTree* tree, FlowGraphNaturalLoop* loop);
 
 public:
     ScalarEvolutionContext(Compiler* comp) : m_comp(comp), m_map(comp->getAllocator(CMK_LoopScalarEvolution))
@@ -237,42 +237,22 @@ GenTreeLclVarCommon* ScalarEvolutionContext::GetSsaDef(GenTreeLclVarCommon* lcl,
     return ssaDef;
 }
 
-bool ScalarEvolutionContext::IsInvariantInLoop(Scev* scev, FlowGraphNaturalLoop* loop)
+bool ScalarEvolutionContext::IsInvariantInLoop(GenTree* tree, FlowGraphNaturalLoop* loop)
 {
-    switch (scev->Oper)
+    if (tree->IsInvariant())
     {
-        case ScevOper::Constant:
-        {
-            return true;
-        }
-        case ScevOper::Local:
-        {
-            ScevLocal* invariantLocal = (ScevLocal*)scev;
-            LclVarDsc*          dsc            = m_comp->lvaGetDesc(invariantLocal->LclNum);
-            LclSsaVarDsc*       ssaDsc         = dsc->GetPerSsaData(invariantLocal->SsaNum);
-            return (ssaDsc->GetBlock() == nullptr) || !loop->ContainsBlock(ssaDsc->GetBlock());
-        }
-        case ScevOper::ZeroExtend:
-        case ScevOper::SignExtend:
-        {
-            ScevUnop* unop = (ScevUnop*)scev;
-            return IsInvariantInLoop(unop->Op1, loop);
-        }
-        case ScevOper::Add:
-        case ScevOper::Mul:
-        case ScevOper::Lsh:
-        {
-            ScevBinop* binop = (ScevBinop*)scev;
-            return IsInvariantInLoop(binop->Op1, loop) && IsInvariantInLoop(binop->Op2, loop);
-        }
-        case ScevOper::AddRec:
-        {
-            ScevAddRec* addRec = (ScevAddRec*)scev;
-            return !loop->ContainsBlock(addRec->Loop->GetHeader());
-        }
-        default:
-            unreached();
+        return true;
     }
+
+    if (tree->OperIs(GT_LCL_VAR) && tree->AsLclVarCommon()->HasSsaName())
+    {
+        LclVarDsc* dsc = m_comp->lvaGetDesc(tree->AsLclVarCommon());
+        LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(tree->AsLclVarCommon()->GetSsaNum());
+
+        return (ssaDsc->GetBlock() == nullptr) || !loop->ContainsBlock(ssaDsc->GetBlock());
+    }
+
+    return false;
 }
 
 Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
@@ -387,9 +367,19 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
                 return nullptr;
             }
 
+            if (!IsInvariantInLoop(stepTree, phiLoop))
+            {
+                // TODO: This is also conservative, e.g. it won't handle
+                // chasing through SSA defs for the step. But maybe we don't
+                // care.
+                return nullptr;
+            }
+
+            // The invariance check guarantees that this doesn't find a cycle
+            // involving this GT_STORE_LCL_VAR.
             Scev* step = Analyze(stepDefBlock, stepTree);
 
-            if ((step == nullptr) || !IsInvariantInLoop(step, phiLoop))
+            if (step == nullptr)
             {
                 return nullptr;
             }
@@ -466,9 +456,7 @@ Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree)
     Scev* result;
     if (!m_map.Lookup(tree, &result))
     {
-        result      = AnalyzeNew(block, tree);
-        if (result != nullptr)
-            result = Fold(result);
+        result = AnalyzeNew(block, tree);
         m_map.Set(tree, result);
     }
 
@@ -623,6 +611,9 @@ PhaseStatus Compiler::optInductionVariables()
                     if (scev != nullptr)
                     {
                         JITDUMP("[%06u] => ", dspTreeID(node));
+                        DumpScev(scev);
+                        Scev* folded = scevContext.Fold(scev);
+                        JITDUMP(" => ");
                         DumpScev(scev);
                         JITDUMP("\n");
                     }
