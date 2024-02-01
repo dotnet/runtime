@@ -1199,7 +1199,7 @@ namespace System.Net
 
                 HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
 
-                HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);
+                HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer, DefaultMaximumErrorResponseLength);
 
                 int maxSuccessStatusCode = AllowAutoRedirect ? 299 : 399;
                 if ((int)response.StatusCode > maxSuccessStatusCode || (int)response.StatusCode < 200)
@@ -1706,7 +1706,7 @@ namespace System.Net
                                     int retryCount = 0;
                                     for (; retryCount < int.MaxValue; retryCount++)
                                     {
-                                        IPEndPoint endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, context.DnsEndPoint.Port), retryCount);
+                                        IPEndPoint? endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, context.DnsEndPoint.Port), retryCount);
                                         if (endPoint != null)
                                         {
                                             try
