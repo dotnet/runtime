@@ -5786,6 +5786,16 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_I(INS_sve_udot, EA_SCALABLE, REG_V15, REG_V16, REG_V7, 3,
                                 INS_OPTS_SCALABLE_B); // UDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
 
+    // IF_SVE_EZ_3A
+    theEmitter->emitIns_R_R_R_I(INS_sve_sudot, EA_SCALABLE, REG_V17, REG_V18, REG_V0, 0,
+                                INS_OPTS_SCALABLE_B); // SUDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_sudot, EA_SCALABLE, REG_V19, REG_V20, REG_V1, 1,
+                                INS_OPTS_SCALABLE_B); // SUDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V21, REG_V22, REG_V2, 2,
+                                INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V23, REG_V24, REG_V3, 3,
+                                INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+
     // IF_SVE_ED_1A
     theEmitter->emitIns_R_I(INS_sve_smax, EA_SCALABLE, REG_V0, -128,
                             INS_OPTS_SCALABLE_B); // SMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>
