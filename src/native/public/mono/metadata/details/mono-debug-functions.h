@@ -9,6 +9,7 @@
 MONO_API_FUNCTION(mono_bool, mono_debug_enabled, (void))
 
 MONO_API_FUNCTION(void, mono_debug_init, (MonoDebugFormat format))
+MONO_API_FUNCTION(void, mono_debug_open_image_from_memory, (MonoImage *image, const mono_byte *raw_contents, int size))
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_debug_cleanup, (void))
 
 MONO_API_FUNCTION(void, mono_debug_close_image, (MonoImage *image))
