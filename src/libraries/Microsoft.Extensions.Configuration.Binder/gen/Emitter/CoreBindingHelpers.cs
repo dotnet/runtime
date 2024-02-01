@@ -709,7 +709,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         break;
                     case ComplexTypeSpec complexType when _typeIndex.CanInstantiate(complexType):
                         {
+                            // If a section possesses a null or empty string value and lacks any children, we bind to the default value of the type.
+                            // In the case of a non-null or non-empty string value without any section children, binding cannot be performed at that moment,
+                            // and this section should be skipped.
                             EmitBindCheckForSectionValue();
+
                             EmitBindingLogic(complexType, Identifier.value, Identifier.section, InitializationKind.Declaration, ValueDefaulting.None);
                             _writer.WriteLine($"{addExpr}({Identifier.value});");
                         }
@@ -721,6 +725,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             // EmitBindCheckForSectionValue produce the following code:
             // if (!string.IsNullOrEmpty(section.Value) && !section.GetChildren().GetEnumerator().MoveNext()) { continue; }
+            //
+            // If a section possesses a null or empty string value and lacks any children, we bind to the default value of the type.
+            // In the case of a non-null or non-empty string value without any section children, binding cannot be performed at that moment,
+            // and this section should be skipped.
             private void EmitBindCheckForSectionValue()
             {
                 // We utilize GetEnumerator().MoveNext() instead of employing Linq's Any() since there is no assurance that the System.Linq reference is included.
