@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-maccatalyst</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
-    <HybridGlobalization>true</HybridGlobalization>
+    <HybridGlobalization>false</HybridGlobalization>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <UnicodeUcdVersion>15.0</UnicodeUcdVersion>
